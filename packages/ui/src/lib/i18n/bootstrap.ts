@@ -57,7 +57,28 @@ const FR_MESSAGES: BootstrapMessages = {
   loadingData: (providersText, agentsText) => `Chargement des données (${providersText}, ${agentsText})…`,
 };
 
-export const getBootstrapMessages = (locale: Locale): BootstrapMessages => (locale === 'fr' ? FR_MESSAGES : EN_MESSAGES);
+const ZH_CN_MESSAGES: BootstrapMessages = {
+  startingApi: '正在启动 OpenCode API…',
+  initializing: '正在初始化…',
+  connecting: '正在连接…',
+  connected: '已连接！',
+  connectionError: '连接错误',
+  disconnected: '已断开连接',
+  reconnecting: '正在重连…',
+  initialDataLoadFailed: 'OpenCode 已连接，但初始数据加载失败。',
+  cliNotFound: '未找到 OpenCode CLI，请先安装。',
+  providersReady: '✓ 提供商',
+  providersLoading: '… 提供商',
+  agentsReady: '✓ 智能体',
+  agentsLoading: '… 智能体',
+  startingDevServer: (hostLabel) => `正在启动 webview 开发服务器 (${hostLabel})...`,
+  waitingDevServer: (hostLabel, attempt) => `正在等待 webview 开发服务器 (${hostLabel})... 第 ${attempt} 次尝试`,
+  loadingData: (providersText, agentsText) => `正在加载数据 (${providersText}, ${agentsText})…`,
+};
+
+export const getBootstrapMessages = (locale: Locale): BootstrapMessages => (
+  locale === 'fr' ? FR_MESSAGES : locale === 'zh-CN' ? ZH_CN_MESSAGES : EN_MESSAGES
+);
 
 export const readStoredLocaleForBootstrap = (): Locale => {
   if (typeof window === 'undefined') {

@@ -438,12 +438,6 @@ export const listConfiguredQuotaProviders = () => {
     configured.add('nano-gpt');
   }
 
-  const copilotAuth = normalizeAuthEntry(getAuthEntry(auth, ['github-copilot', 'copilot']));
-  if (copilotAuth && ((copilotAuth as Record<string, unknown>).access || (copilotAuth as Record<string, unknown>).token)) {
-    configured.add('github-copilot');
-    configured.add('github-copilot-addon');
-  }
-
   if (readTextFile(OLLAMA_CLOUD_COOKIE_PATH)) {
     configured.add('ollama-cloud');
   }
@@ -932,149 +926,6 @@ export const fetchClaudeQuota = async (): Promise<ProviderResult> => {
     return buildResult({
       providerId: 'claude',
       providerName: 'Claude',
-      ok: false,
-      configured: true,
-      error: error instanceof Error ? error.message : 'Request failed',
-    });
-  }
-};
-
-const buildCopilotWindows = (payload: Record<string, unknown>) => {
-  const quota = (payload.quota_snapshots as Record<string, unknown>) ?? {};
-  const resetAt = toTimestamp(payload.quota_reset_date);
-  const windows: Record<string, UsageWindow> = {};
-
-  const addWindow = (label: string, snapshot?: Record<string, unknown>) => {
-    if (!snapshot) return;
-    const entitlement = toNumber(snapshot.entitlement);
-    const remaining = toNumber(snapshot.remaining);
-    const usedPercent = entitlement && remaining !== null
-      ? Math.max(0, Math.min(100, 100 - (remaining / entitlement) * 100))
-      : null;
-    const valueLabel = entitlement !== null && remaining !== null
-      ? `${remaining.toFixed(0)} / ${entitlement.toFixed(0)} left`
-      : null;
-    windows[label] = toUsageWindow({
-      usedPercent,
-      windowSeconds: null,
-      resetAt,
-      valueLabel,
-    });
-  };
-
-  addWindow('chat', quota.chat as Record<string, unknown> | undefined);
-  addWindow('completions', quota.completions as Record<string, unknown> | undefined);
-  addWindow('premium', quota.premium_interactions as Record<string, unknown> | undefined);
-
-  return windows;
-};
-
-export const fetchCopilotQuota = async (): Promise<ProviderResult> => {
-  const auth = readAuthFile();
-  const entry = normalizeAuthEntry(getAuthEntry(auth, ['github-copilot', 'copilot'])) as Record<string, unknown> | null;
-  const accessToken = (entry?.access as string | undefined) ?? (entry?.token as string | undefined);
-
-  if (!accessToken) {
-    return buildResult({
-      providerId: 'github-copilot',
-      providerName: 'GitHub Copilot',
-      ok: false,
-      configured: false,
-      error: 'Not configured',
-    });
-  }
-
-  try {
-    const response = await fetch('https://api.github.com/copilot_internal/user', {
-      method: 'GET',
-      headers: {
-        Authorization: `token ${accessToken}`,
-        Accept: 'application/json',
-        'Editor-Version': 'vscode/1.96.2',
-        'X-Github-Api-Version': '2025-04-01',
-      },
-    });
-
-    if (!response.ok) {
-      return buildResult({
-        providerId: 'github-copilot',
-        providerName: 'GitHub Copilot',
-        ok: false,
-        configured: true,
-        error: `API error: ${response.status}`,
-      });
-    }
-
-    const payload = await response.json() as Record<string, unknown>;
-    return buildResult({
-      providerId: 'github-copilot',
-      providerName: 'GitHub Copilot',
-      ok: true,
-      configured: true,
-      usage: { windows: buildCopilotWindows(payload) },
-    });
-  } catch (error) {
-    return buildResult({
-      providerId: 'github-copilot',
-      providerName: 'GitHub Copilot',
-      ok: false,
-      configured: true,
-      error: error instanceof Error ? error.message : 'Request failed',
-    });
-  }
-};
-
-export const fetchCopilotAddonQuota = async (): Promise<ProviderResult> => {
-  const auth = readAuthFile();
-  const entry = normalizeAuthEntry(getAuthEntry(auth, ['github-copilot', 'copilot'])) as Record<string, unknown> | null;
-  const accessToken = (entry?.access as string | undefined) ?? (entry?.token as string | undefined);
-
-  if (!accessToken) {
-    return buildResult({
-      providerId: 'github-copilot-addon',
-      providerName: 'GitHub Copilot Add-on',
-      ok: false,
-      configured: false,
-      error: 'Not configured',
-    });
-  }
-
-  try {
-    const response = await fetch('https://api.github.com/copilot_internal/user', {
-      method: 'GET',
-      headers: {
-        Authorization: `token ${accessToken}`,
-        Accept: 'application/json',
-        'Editor-Version': 'vscode/1.96.2',
-        'X-Github-Api-Version': '2025-04-01',
-      },
-    });
-
-    if (!response.ok) {
-      return buildResult({
-        providerId: 'github-copilot-addon',
-        providerName: 'GitHub Copilot Add-on',
-        ok: false,
-        configured: true,
-        error: `API error: ${response.status}`,
-      });
-    }
-
-    const payload = await response.json() as Record<string, unknown>;
-    const windows = buildCopilotWindows(payload);
-    const premium = windows.premium ? { premium: windows.premium } : windows;
-
-    return buildResult({
-      providerId: 'github-copilot-addon',
-      providerName: 'GitHub Copilot Add-on',
-      ok: true,
-      configured: true,
-      usage: { windows: premium },
-    });
-  } catch (error) {
-    return buildResult({
-      providerId: 'github-copilot-addon',
-      providerName: 'GitHub Copilot Add-on',
       ok: false,
       configured: true,
       error: error instanceof Error ? error.message : 'Request failed',
@@ -1868,10 +1719,6 @@ export const fetchQuotaForProvider = async (providerId: string): Promise<Provide
       return fetchClaudeQuota();
     case 'codex':
       return fetchCodexQuota();
-    case 'github-copilot':
-      return fetchCopilotQuota();
-    case 'github-copilot-addon':
-      return fetchCopilotAddonQuota();
     case 'google':
       return fetchGoogleQuota();
     case 'kimi-for-coding':

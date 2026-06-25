@@ -9,7 +9,6 @@ export const QUOTA_PROVIDERS: QuotaProviderMeta[] = [
   { id: 'claude', name: 'Claude' },
   { id: 'codex', name: 'Codex' },
   { id: 'cursor', name: 'Cursor' },
-  { id: 'github-copilot', name: 'GitHub Copilot' },
   { id: 'google', name: 'Google' },
   { id: 'kimi-for-coding', name: 'Kimi for Coding' },
   { id: 'nano-gpt', name: 'NanoGPT' },

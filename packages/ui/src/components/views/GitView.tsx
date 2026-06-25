@@ -52,7 +52,6 @@ import { ChangesPanel, type ChangesGroupConfig } from './git/ChangesPanel';
 import { CommitSection } from './git/CommitSection';
 import { GitEmptyState } from './git/GitEmptyState';
 import { HistorySection } from './git/HistorySection';
-import { PullRequestSection } from './git/PullRequestSection';
 import { ConflictDialog } from './git/ConflictDialog';
 import { StashDialog } from './git/StashDialog';
 import { InProgressOperationBanner } from './git/InProgressOperationBanner';
@@ -68,7 +67,7 @@ import { useI18n } from '@/lib/i18n';
 type SyncAction = 'fetch' | 'pull' | 'push' | 'sync' | null;
 type CommitAction = 'commit' | 'commitAndPush' | null;
 type BranchOperation = 'merge' | 'rebase' | null;
-type ActionTab = 'commit' | 'branch' | 'pr';
+type ActionTab = 'commit' | 'branch';
 type GitLogDialogMode = 'history' | 'graph';
 type HistoryBranchDivider = {
   insertBeforeIndex: number;
@@ -80,7 +79,7 @@ const GIT_ACTION_TAB_STORAGE_KEY = 'oc.git.actionTab';
 const GIT_RECONCILE_DELAY_MS = 15000;
 
 const isActionTab = (value: unknown): value is ActionTab =>
-  value === 'commit' || value === 'branch' || value === 'pr';
+  value === 'commit' || value === 'branch';
 
 type GitViewSnapshot = {
   directory?: string;
@@ -620,7 +619,6 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
   const actionTabItems = React.useMemo(() => [
     { id: 'commit', label: t('gitView.tabs.commit'), icon: <Icon name="git-commit" className="h-3.5 w-3.5" /> },
     { id: 'branch', label: t('gitView.tabs.update'), icon: <Icon name="git-merge" className="h-3.5 w-3.5" /> },
-    { id: 'pr', label: t('gitView.tabs.pr'), icon: <Icon name="git-pull-request" className="h-3.5 w-3.5" /> },
   ], [t]);
   const [actionTab, setActionTab] = React.useState<ActionTab>(() => {
     if (typeof window === 'undefined') {
@@ -1571,9 +1569,6 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
   const canShowIntegrateCommitsSection = Boolean(
     worktreeMetadata && repoRootForIntegrate && sourceBranchForIntegrate && shouldShowIntegrateCommits
   );
-  const canShowPullRequestSection = Boolean(
-    currentDirectory && currentBranch
-  );
   const canShowBranchWorkflows = Boolean(currentBranch);
   const integrateCommitsProps =
     canShowIntegrateCommitsSection && repoRootForIntegrate && sourceBranchForIntegrate && worktreeMetadata
@@ -1583,15 +1578,6 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
           worktreeMetadata,
         }
       : null;
-  const pullRequestProps = React.useMemo(() => {
-    if (!canShowPullRequestSection || !currentDirectory || !currentBranch) {
-      return null;
-    }
-    return {
-      directory: currentDirectory,
-      branch: currentBranch,
-    };
-  }, [canShowPullRequestSection, currentBranch, currentDirectory]);
 
   React.useEffect(() => {
     if (!currentDirectory || !git || !log?.all?.length || !currentBranch || !baseBranch || currentBranch === baseBranch) {
@@ -2518,28 +2504,6 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
                 </div>
               ) : null}
 
-              {actionTab === 'pr' ? (
-                <div className="space-y-4">
-                  {pullRequestProps ? (
-                    <PullRequestSection
-                      directory={pullRequestProps.directory}
-                      branch={pullRequestProps.branch}
-                      baseBranch={baseBranch}
-                      trackingBranch={status?.tracking ?? undefined}
-                      remotes={remotes}
-                      remoteBranches={remoteBranches}
-                      onGeneratedDescription={scrollActionPanelToBottom}
-                    />
-                  ) : (
-                    <div className="space-y-1">
-                      <div className="typography-ui-header font-semibold text-foreground">{t('gitView.pullRequest.title')}</div>
-                      <div className="typography-micro text-muted-foreground">
-                        {t('gitView.pullRequest.createHint')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : null}
             </ScrollableOverlay>
           </div>
         </div>

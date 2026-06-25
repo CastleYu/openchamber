@@ -1,6 +1,7 @@
 import { registerFsRoutes } from '../fs/routes.js';
 import { registerQuotaRoutes } from '../quota/routes.js';
-import { registerGitHubRoutes } from '../github/routes.js';
+// GitHub integration removed for Chinese localization build
+// import { registerGitHubRoutes } from '../github/routes.js';
 import { registerGitRoutes } from '../git/routes.js';
 import { registerMagicPromptRoutes } from '../magic-prompts/routes.js';
 import { registerSessionFoldersRoutes } from '../session-folders/routes.js';
@@ -261,7 +262,8 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     });
 
     registerQuotaRoutes(app, { getQuotaProviders });
-    registerGitHubRoutes(app);
+    // GitHub routes disabled for Chinese localization build
+    // registerGitHubRoutes(app);
     registerGitRoutes(app);
     registerMagicPromptRoutes(app, {
       fsPromises,

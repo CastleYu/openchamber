@@ -97,7 +97,7 @@ type Props = {
   editTitle: string;
   openSidebarMenuKey: string | null;
   liveSessionById: Map<string, Session>;
-  prVisualStateByDirectoryBranch: Map<string, {
+  prVisualStateByDirectoryBranch?: Map<string, {
     visualState: 'draft' | 'open' | 'blocked' | 'merged' | 'closed';
     number: number;
     url: string | null;
@@ -268,10 +268,10 @@ const areGroupPropsEqual = (prev: Props, next: Props): boolean => {
   // whole map reference.
   if (prev.prVisualStateByDirectoryBranch !== next.prVisualStateByDirectoryBranch) {
     const prevVal = prev.group?.directory && prev.group?.branch
-      ? prev.prVisualStateByDirectoryBranch.get(`${prev.group.directory}::${prev.group.branch.trim()}`)
+      ? prev.prVisualStateByDirectoryBranch?.get(`${prev.group.directory}::${prev.group.branch.trim()}`)
       : undefined;
     const nextVal = next.group?.directory && next.group?.branch
-      ? next.prVisualStateByDirectoryBranch.get(`${next.group.directory}::${next.group.branch.trim()}`)
+      ? next.prVisualStateByDirectoryBranch?.get(`${next.group.directory}::${next.group.branch.trim()}`)
       : undefined;
     if (!Object.is(prevVal, nextVal)) return false;
   }
@@ -725,7 +725,7 @@ function SessionGroupSectionBase(props: Props): React.ReactNode {
   const groupDirectoryKey = normalizePath(group.directory ?? null);
   const groupBranchKey = group.branch?.trim() ?? null;
   const prIndicator = groupDirectoryKey && groupBranchKey
-    ? (prVisualStateByDirectoryBranch.get(`${groupDirectoryKey}::${groupBranchKey}`) ?? null)
+    ? (prVisualStateByDirectoryBranch?.get(`${groupDirectoryKey}::${groupBranchKey}`) ?? null)
     : null;
   const showInlinePrTitle = Boolean(prIndicator && group.branch);
   const showBranchSubtitle = !prIndicator && !group.isMain && Boolean(group.branch);

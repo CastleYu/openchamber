@@ -9,7 +9,6 @@ import { buildResult } from '../utils/index.js';
 
 import * as claude from './claude.js';
 import * as codex from './codex.js';
-import * as copilot from './copilot.js';
 import * as cursor from './cursor.js';
 import * as google from './google/index.js';
 import * as kimi from './kimi.js';
@@ -77,18 +76,6 @@ const registry = {
     providerName: nanogpt.providerName,
     isConfigured: nanogpt.isConfigured,
     fetchQuota: nanogpt.fetchQuota
-  },
-  'github-copilot': {
-    providerId: copilot.providerId,
-    providerName: copilot.providerName,
-    isConfigured: copilot.isConfigured,
-    fetchQuota: copilot.fetchQuota
-  },
-  'github-copilot-addon': {
-    providerId: copilot.providerIdAddon,
-    providerName: copilot.providerNameAddon,
-    isConfigured: copilot.isConfigured,
-    fetchQuota: copilot.fetchQuotaAddon
   },
   'minimax-coding-plan': {
     providerId: minimaxCodingPlan.providerId,
@@ -163,8 +150,6 @@ export const fetchOpenaiQuota = openai.fetchQuota;
 export const fetchGoogleQuota = google.fetchGoogleQuota;
 export const fetchCodexQuota = codex.fetchQuota;
 export const fetchCursorQuota = cursor.fetchQuota;
-export const fetchCopilotQuota = copilot.fetchQuota;
-export const fetchCopilotAddonQuota = copilot.fetchQuotaAddon;
 export const fetchKimiQuota = kimi.fetchQuota;
 export const fetchOpenRouterQuota = openrouter.fetchQuota;
 export const fetchZaiQuota = zai.fetchQuota;

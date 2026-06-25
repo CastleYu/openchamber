@@ -154,9 +154,10 @@ const LOCAL_HOST_ID = 'local';
 const LOCAL_DESKTOP_CLIENT_KIND = 'desktop-local';
 const LOCAL_DESKTOP_CLIENT_DEDUPE_KEY = 'desktop-local';
 const ENV_OVERRIDE_HOST_ID = '__env';
-const CHANGELOG_URL = 'https://raw.githubusercontent.com/openchamber/openchamber/main/CHANGELOG.md';
-const GITHUB_BUG_REPORT_URL = 'https://github.com/openchamber/openchamber/issues/new?template=bug_report.yml';
-const GITHUB_FEATURE_REQUEST_URL = 'https://github.com/openchamber/openchamber/issues/new?template=feature_request.yml';
+// GitHub URLs removed for Chinese localization build
+const CHANGELOG_URL = '';
+const GITHUB_BUG_REPORT_URL = '';
+const GITHUB_FEATURE_REQUEST_URL = '';
 const DISCORD_INVITE_URL = 'https://discord.gg/ZYRSdnwwKA';
 const INSTALLED_APPS_CACHE_TTL_SECS = 60 * 60 * 24;
 const INSTALLED_APPS_CACHE_FILE = 'discovered-apps.json';
@@ -2482,7 +2483,9 @@ const compareSemver = (left, right) => {
 };
 
 const parseGithubRepo = () => {
-  return { owner: 'openchamber', repo: 'openchamber' };
+  // GitHub integration removed for Chinese localization build
+  // Returns placeholder values — auto-update will check the generic URL configured in package.json
+  return { owner: '', repo: '' };
 };
 
 const setupAutoUpdater = () => {
@@ -2496,12 +2499,14 @@ const setupAutoUpdater = () => {
   autoUpdater.disableWebInstaller = false;
   autoUpdater.logger = log;
 
-  const { owner, repo } = parseGithubRepo();
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner,
-    repo,
-  });
+  // GitHub auto-update disabled for Chinese localization build
+  // const { owner, repo } = parseGithubRepo();
+  // autoUpdater.setFeedURL({
+  //   provider: 'github',
+  //   owner,
+  //   repo,
+  // });
+  void parseGithubRepo; // suppress unused warning
 
   autoUpdater.on('download-progress', (progress) => {
     const total = Number(progress.total || 0);

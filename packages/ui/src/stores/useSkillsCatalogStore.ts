@@ -25,7 +25,7 @@ const FALLBACK_SOURCES: SkillsCatalogSource[] = [
     description: "Anthropic's public skills repository",
     source: 'anthropics/skills',
     defaultSubpath: 'skills',
-    sourceType: 'github',
+    sourceType: 'clawdhub',
   },
   {
     id: 'clawdhub',

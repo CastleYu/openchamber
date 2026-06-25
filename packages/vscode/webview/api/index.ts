@@ -6,7 +6,6 @@ import { createVSCodeToolsAPI } from './tools';
 import { createVSCodeEditorAPI } from './editor';
 import { createVSCodeGitAPI } from './git';
 import { createVSCodeActionsAPI } from './vscode';
-import { createVSCodeGitHubAPI } from './github';
 import { createVSCodeNotificationsAPI } from './notifications';
 
 // Stub APIs return sensible defaults instead of throwing
@@ -26,7 +25,6 @@ export const createVSCodeAPIs = (): RuntimeAPIs => ({
   settings: createVSCodeSettingsAPI(),
   permissions: createVSCodePermissionsAPI(),
   notifications: createVSCodeNotificationsAPI(),
-  github: createVSCodeGitHubAPI(),
   tools: createVSCodeToolsAPI(),
   editor: createVSCodeEditorAPI(),
   vscode: createVSCodeActionsAPI(),

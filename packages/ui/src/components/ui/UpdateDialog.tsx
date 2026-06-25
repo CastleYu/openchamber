@@ -30,8 +30,6 @@ interface UpdateDialogProps {
   runtimeType?: 'desktop' | 'web' | 'vscode' | null;
 }
 
-const GITHUB_RELEASES_URL = 'https://github.com/btriapitsyn/openchamber/releases';
-
 type ChangelogSection = {
   version: string;
   date: string;
@@ -204,10 +202,6 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
   const [copied, setCopied] = useState(false);
   const [webUpdateState, setWebUpdateState] = useState<WebUpdateState>('idle');
   const [webError, setWebError] = useState<string | null>(null);
-
-  const releaseUrl = info?.version
-    ? `${GITHUB_RELEASES_URL}/tag/v${info.version}`
-    : GITHUB_RELEASES_URL;
 
   const progressPercent = progress?.total
     ? Math.round((progress.downloaded / progress.total) * 100)
@@ -461,18 +455,8 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
         </div>
 
         {/* Action Footer */}
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <a
-            href={releaseUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <Icon name="external-link" className="h-4 w-4" />
-            GitHub
-          </a>
-
-          <div className="flex-1 flex justify-end">
+        <div className="mt-4 flex items-center justify-end gap-4">
+          <div className="flex justify-end">
             {/* Desktop Buttons */}
             {!isWebRuntime && !downloaded && !downloading && (
               <button

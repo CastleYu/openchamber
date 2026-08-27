@@ -846,6 +846,7 @@ interface UIStore {
   autoSaveEnabled: boolean;
   worktreeDiscoveryEnabled: boolean;
   worktreeDiscoveryIntervalMs: number;
+  backgroundProjectSessionLoadingEnabled: boolean;
   autoDeleteAfterDays: number;
   sessionRetentionAction: SessionRetentionAction;
   autoDeleteLastRunAt: number | null;
@@ -1053,6 +1054,7 @@ interface UIStore {
   setAutoSaveEnabled: (value: boolean) => void;
   setWorktreeDiscoveryEnabled: (value: boolean) => void;
   setWorktreeDiscoveryIntervalMs: (value: number) => void;
+  setBackgroundProjectSessionLoadingEnabled: (value: boolean) => void;
   setAutoDeleteAfterDays: (days: number) => void;
   setSessionRetentionAction: (value: SessionRetentionAction) => void;
   setAutoDeleteLastRunAt: (timestamp: number | null) => void;
@@ -1238,6 +1240,7 @@ export const useUIStore = create<UIStore>()(
          autoSaveEnabled: true,
          worktreeDiscoveryEnabled: true,
          worktreeDiscoveryIntervalMs: 0,
+         backgroundProjectSessionLoadingEnabled: true,
         autoDeleteAfterDays: 30,
         sessionRetentionAction: 'archive',
         autoDeleteLastRunAt: null,
@@ -2068,6 +2071,10 @@ export const useUIStore = create<UIStore>()(
 
         setWorktreeDiscoveryIntervalMs: (value) => {
           set({ worktreeDiscoveryIntervalMs: Math.max(0, Math.floor(value)) });
+        },
+
+        setBackgroundProjectSessionLoadingEnabled: (value) => {
+          set({ backgroundProjectSessionLoadingEnabled: value });
         },
 
         setAutoDeleteAfterDays: (days) => {
@@ -2976,6 +2983,9 @@ export const useUIStore = create<UIStore>()(
           if (typeof state.worktreeDiscoveryIntervalMs !== 'number' || !Number.isFinite(state.worktreeDiscoveryIntervalMs)) {
             state.worktreeDiscoveryIntervalMs = 0;
           }
+          if (typeof state.backgroundProjectSessionLoadingEnabled !== 'boolean') {
+            state.backgroundProjectSessionLoadingEnabled = true;
+          }
 
           state.contextRailHiddenSurfaces = Array.isArray(state.contextRailHiddenSurfaces)
             ? (state.contextRailHiddenSurfaces as unknown[]).filter((id): id is string => typeof id === 'string' && id.trim() !== '')
@@ -3025,6 +3035,7 @@ export const useUIStore = create<UIStore>()(
            autoSaveEnabled: state.autoSaveEnabled,
            worktreeDiscoveryEnabled: state.worktreeDiscoveryEnabled,
            worktreeDiscoveryIntervalMs: state.worktreeDiscoveryIntervalMs,
+           backgroundProjectSessionLoadingEnabled: state.backgroundProjectSessionLoadingEnabled,
           autoDeleteAfterDays: state.autoDeleteAfterDays,
           sessionRetentionAction: state.sessionRetentionAction,
           autoDeleteLastRunAt: state.autoDeleteLastRunAt,

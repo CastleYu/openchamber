@@ -74,6 +74,7 @@ export type DesktopSettings = {
   sidebarShowRecentSection?: boolean;
   worktreeDiscoveryEnabled?: boolean;
   worktreeDiscoveryIntervalMs?: number;
+  backgroundProjectSessionLoadingEnabled?: boolean;
   securityScopedBookmarks?: string[];
   pinnedDirectories?: string[];
   showReasoningTraces?: boolean;

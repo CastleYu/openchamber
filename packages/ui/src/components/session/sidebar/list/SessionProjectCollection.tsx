@@ -12,7 +12,7 @@ import { useArchivedAutoFolders } from '../folders/useArchivedAutoFolders';
 import { ProjectSessionSelectionEffect } from '../projects/useProjectSessionSelection';
 import type { WorktreeMetadata } from '@/types/worktree';
 import { useRecentSessionCollection, useSessionProjectCollection } from './sessionCollection';
-import { buildSessionBootstrapDemands } from './sessionBootstrapDemands';
+import { buildSessionBootstrapDemands, filterBackgroundEligibleSections } from './sessionBootstrapDemands';
 import { useChildStoreManager } from '@/sync/sync-context';
 import { createSessionOwnershipIndex } from '../sessions/sessionOwnership';
 import { useProjectSessionLists } from '../projects/useProjectSessionLists';
@@ -191,6 +191,15 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     () => createSessionOwnershipIndex(collection.sessions, topology.projects, topology.availableWorktreesByProject, topology.isVSCode, collection.archivedSessions),
     [collection.archivedSessions, collection.sessions, topology.availableWorktreesByProject, topology.isVSCode, topology.projects],
   );
+  const backgroundProjectSessionLoadingEnabled = useUIStore((state) => state.backgroundProjectSessionLoadingEnabled);
+  const backgroundEligibleProjectIds = React.useMemo(() => (
+    backgroundProjectSessionLoadingEnabled
+      ? null
+      : new Set([
+        ...(view.activeProjectId ? [view.activeProjectId] : []),
+        ...ownership.sessionsByProject.keys(),
+      ])
+  ), [backgroundProjectSessionLoadingEnabled, ownership.sessionsByProject, view.activeProjectId]);
   const { getSessionsForProject, getArchivedSessionsForProject } = useProjectSessionLists({ ownership });
   // Built before the sections hook runs, because that hook owns the search data
   // for every group the sidebar renders — the chats group included. A group the
@@ -243,6 +252,10 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     foldersMap,
     standaloneGroups,
   });
+  const sectionsForBootstrapDemand = React.useMemo(
+    () => filterBackgroundEligibleSections(projectSections, backgroundEligibleProjectIds, projectView.collapsedProjects),
+    [backgroundEligibleProjectIds, projectSections, projectView.collapsedProjects],
+  );
 
   const onSearchMatchCountChange = view.onSearchMatchCountChange;
   React.useEffect(() => {
@@ -262,7 +275,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
   const expansionDemandOwner = `session-collection-expansion:${React.useId()}`;
   React.useEffect(() => {
     childStores.setBootstrapDemand(expansionDemandOwner, buildSessionBootstrapDemands({
-      projectSections,
+      projectSections: sectionsForBootstrapDemand,
       activeProjectId: view.activeProjectId,
       collapsedProjects: projectView.collapsedProjects,
       collapsedGroups: projectView.collapsedGroups,
@@ -270,7 +283,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
       currentSessionDirectory: null,
     }));
     return () => childStores.clearBootstrapDemand(expansionDemandOwner);
-  }, [childStores, expansionDemandOwner, projectSections, projectView.collapsedProjects, projectView.collapsedGroups, view.activeProjectId]);
+  }, [childStores, expansionDemandOwner, projectView.collapsedProjects, projectView.collapsedGroups, sectionsForBootstrapDemand, view.activeProjectId]);
   const source = view.useGroupedSections ? sectionsForRender : flatSectionsForRender;
   const sectionsForSidebarRender = React.useMemo(() => view.showInlineArchived ? source : source.map((section) => (
     section.groups.some((group) => group.isArchivedBucket)

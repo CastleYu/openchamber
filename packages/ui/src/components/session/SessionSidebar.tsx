@@ -214,6 +214,10 @@ const SessionSidebarComponent: React.FC<SessionSidebarProps> = ({
     ) : [],
     [activeProjectId, availableWorktreesByProject, projects, worktreeDiscoveryEnabled, worktreeDiscoverySessions],
   );
+  const worktreeDiscoveryProjectIds = React.useMemo(
+    () => new Set(worktreeDiscoveryProjects.map((project) => project.id)),
+    [worktreeDiscoveryProjects],
+  );
   const projectWorktreeDiscoveryKey = React.useMemo(
     () => `${runtimeKey}|${worktreeDiscoveryProjects
       .map((project) => `${project.id}:${normalizePath(project.path) ?? ''}`)
@@ -467,8 +471,8 @@ const SessionSidebarComponent: React.FC<SessionSidebarProps> = ({
 
   const gitRepoStatus = useGitRepoStatusMap(isVisible ? normalizedProjectPaths : EMPTY_STRING_ARRAY);
   useProjectRepoStatus({
-    enabled: isVisible,
-    normalizedProjects,
+    enabled: isVisible && worktreeDiscoveryEnabled,
+    normalizedProjects: normalizedProjects.filter((project) => worktreeDiscoveryProjectIds.has(project.id)),
     gitRepoStatus,
     setProjectRepoStatus,
     setProjectRootBranches,

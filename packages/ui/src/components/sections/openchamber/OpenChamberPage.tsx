@@ -150,8 +150,10 @@ const GeneralSectionContent: React.FC = () => {
             <OpenChamberVisualSettings visibleSettings={[
                 'fileEditorKeymap',
                 ...(!isVSCode ? ['sessionTabs' as const] : []),
-                'autoSaveEnabled',
-                ...(!isVSCode ? ['terminalQuickKeys' as const] : []),
+                 'autoSaveEnabled',
+                 'worktreeDiscovery',
+                 'worktreeDiscoveryInterval',
+                 ...(!isVSCode ? ['terminalQuickKeys' as const] : []),
                 ...(!isVSCode ? ['terminalShell' as const] : []),
                 ...(!isVSCode ? ['terminalLoginShell' as const] : []),
                 'messageTransport',

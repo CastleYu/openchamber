@@ -250,8 +250,8 @@ const SessionSidebarComponent: React.FC<SessionSidebarProps> = ({
             revision: 0,
             worktreesByProject: new Map(),
           };
-          setUnresolvedWorktreeProjectPaths(new Set());
-          setResolvedWorktreeTopologyKey(projectWorktreeDiscoveryKey);
+          setUnresolvedWorktreeProjectPaths((current) => current.size === 0 ? current : new Set());
+          setResolvedWorktreeTopologyKey((current) => current === projectWorktreeDiscoveryKey ? current : projectWorktreeDiscoveryKey);
         }
         return;
       }

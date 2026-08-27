@@ -153,6 +153,7 @@ const GeneralSectionContent: React.FC = () => {
                  'autoSaveEnabled',
                  'worktreeDiscovery',
                  'worktreeDiscoveryInterval',
+                 'backgroundProjectSessionLoading',
                  ...(!isVSCode ? ['terminalQuickKeys' as const] : []),
                 ...(!isVSCode ? ['terminalShell' as const] : []),
                 ...(!isVSCode ? ['terminalLoginShell' as const] : []),

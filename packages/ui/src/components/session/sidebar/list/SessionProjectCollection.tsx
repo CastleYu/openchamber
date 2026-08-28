@@ -191,15 +191,10 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     () => createSessionOwnershipIndex(collection.sessions, topology.projects, topology.availableWorktreesByProject, topology.isVSCode, collection.archivedSessions),
     [collection.archivedSessions, collection.sessions, topology.availableWorktreesByProject, topology.isVSCode, topology.projects],
   );
-  const backgroundProjectSessionLoadingEnabled = useUIStore((state) => state.backgroundProjectSessionLoadingEnabled);
-  const backgroundEligibleProjectIds = React.useMemo(() => (
-    backgroundProjectSessionLoadingEnabled
-      ? null
-      : new Set([
-        ...(view.activeProjectId ? [view.activeProjectId] : []),
-        ...ownership.sessionsByProject.keys(),
-      ])
-  ), [backgroundProjectSessionLoadingEnabled, ownership.sessionsByProject, view.activeProjectId]);
+  const backgroundEligibleProjectIds = React.useMemo(() => new Set([
+    ...(view.activeProjectId ? [view.activeProjectId] : []),
+    ...ownership.sessionsByProject.keys(),
+  ]), [ownership.sessionsByProject, view.activeProjectId]);
   const { getSessionsForProject, getArchivedSessionsForProject } = useProjectSessionLists({ ownership });
   // Built before the sections hook runs, because that hook owns the search data
   // for every group the sidebar renders — the chats group included. A group the

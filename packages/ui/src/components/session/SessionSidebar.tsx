@@ -241,13 +241,15 @@ const SessionSidebarComponent: React.FC<SessionSidebarProps> = ({
     revision: 0,
     worktreesByProject: new Map(),
   });
+  const worktreeDiscoveryProjectsRef = React.useRef(worktreeDiscoveryProjects);
+  worktreeDiscoveryProjectsRef.current = worktreeDiscoveryProjects;
 
   React.useEffect(() => {
     let cancelled = false;
 
     const discoverWorktrees = async () => {
       const discoveryRuntimeKey = runtimeKey;
-      const projectEntries = worktreeDiscoveryProjects;
+      const projectEntries = worktreeDiscoveryProjectsRef.current;
       if (projectEntries.length === 0 || isVSCode) {
         if (!cancelled) {
           rawWorktreesByProjectRef.current = {
@@ -351,7 +353,7 @@ const SessionSidebarComponent: React.FC<SessionSidebarProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isVSCode, projectWorktreeDiscoveryKey, runtimeKey, worktreeDiscoveryProjects, worktreeDiscoveryRevision]);
+  }, [isVSCode, projectWorktreeDiscoveryKey, runtimeKey, worktreeDiscoveryRevision]);
 
   React.useEffect(() => {
     if (isVSCode) return;

@@ -816,6 +816,8 @@ export const dict = {
   'gitView.empty.cleanTitle': 'Working tree temiz',
   'gitView.empty.discoveringRepositories': 'Git depoları aranıyor...',
   'gitView.empty.discoverFailed': 'Git depoları taranamadı',
+  'gitView.empty.retryDiscovery': 'Yeniden dene',
+  'gitView.empty.selectRepositoryPlaceholder': 'Bir depo seçin...',
   'gitView.empty.pullBehindPlural': '{count} commit pull et',
   'gitView.empty.pullBehindSingle': '{count} commit pull et',
   'gitView.header.identityTooltip': 'Git kimliği',

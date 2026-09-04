@@ -42,11 +42,11 @@ const childStores = {
 type Session = { id: string; directory: string };
 type GlobalSessionsState = { activeSessions: Session[]; archivedSessions: Session[]; status: 'ready' };
 const globalSessions: GlobalSessionsState = { activeSessions: [], archivedSessions: [], status: 'ready' };
-const liveSessions: { current: Session[] } = { current: [] };
+let liveSessions: Session[] = [];
 
 mock.module('@/sync/sync-context', () => ({
   useChildStoreManager: () => childStores,
-  useAllLiveSessions: () => liveSessions.current,
+  useAllLiveSessions: () => liveSessions,
 }));
 mock.module('@/sync/sync-refs', () => ({ getAllSyncSessions: () => [] }));
 mock.module('@/stores/useGlobalSessionsStore', () => ({
@@ -105,7 +105,7 @@ describe('useSessionListSync', () => {
     state.unsubscriptions = 0;
     globalSessions.activeSessions = [];
     globalSessions.archivedSessions = [];
-    liveSessions.current = [];
+    liveSessions = [];
     dom = installHookTestDom();
     root = createRoot(dom.container);
     useProjectsStore.setState({ projects, activeProjectId: 'project' });
@@ -186,7 +186,7 @@ describe('useSessionListSync', () => {
     });
     useProjectCollapseStore.setState({ collapsedProjectIds: new Set(['closed']) });
     globalSessions.activeSessions = [{ id: 'historical', directory: '/closed' }];
-    liveSessions.current = [{ id: 'running', directory: '/closed' }];
+    liveSessions = [{ id: 'running', directory: '/closed' }];
 
     act(() => root.render(<LifecycleProbe isVSCode={false} />));
 

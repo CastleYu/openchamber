@@ -121,6 +121,115 @@ describe('reapOrphanedProcesses', () => {
   describe('on Windows', () => {
     beforeEach(() => setPlatform('win32'));
 
+    it('reaps managed MCP descendants after the recorded OpenCode root is gone', async () => {
+      readdirMock.mockResolvedValue(['777.json']);
+      readFileMock.mockResolvedValue(
+        JSON.stringify({
+          pid: 777,
+          ownerPid: 12345,
+          port: 4096,
+          binary: 'opencode.exe',
+          runtime: 'desktop',
+          startedAt: '2026-09-05T00:00:00.000Z',
+        }),
+      );
+      // The OpenCode root and owner are gone; the MCP child survived.
+      killAliveFor([888]);
+      execFileYields((cmd, args, _opts, cb) => {
+        if (cmd === 'powershell') {
+          return cb(null, JSON.stringify({
+            ProcessId: 888,
+            ParentProcessId: 777,
+            Name: 'node.exe',
+            CreationDate: '20260905000100.000000+000',
+            CommandLine: 'node background-process-mcp',
+          }), '');
+        }
+        if (cmd === 'taskkill') return cb(null, '', '');
+        cb(new Error(`unexpected cmd: ${cmd} ${args.join(' ')}`));
+      });
+      rmMock.mockResolvedValue();
+
+      const result = await reapOrphanedProcesses({ log: () => {} });
+
+      expect(result).toEqual({ inspected: 1, reaped: 1 });
+      expect(execFileImpl).toHaveBeenCalledWith(
+        'taskkill',
+        ['/PID', '888', '/T', '/F'],
+        expect.objectContaining({ windowsHide: true }),
+        expect.any(Function),
+      );
+    });
+
+    it('does not scan descendants when a legacy entry has no start time', async () => {
+      readdirMock.mockResolvedValue(['777.json']);
+      readFileMock.mockResolvedValue(
+        JSON.stringify({ pid: 777, ownerPid: 12345, port: 4096, binary: 'opencode.exe', runtime: 'desktop' }),
+      );
+      killMock.mockImplementation(() => {
+        const error = new Error('ESRCH');
+        error.code = 'ESRCH';
+        throw error;
+      });
+      rmMock.mockResolvedValue();
+
+      await reapOrphanedProcesses();
+
+      expect(execFileImpl).not.toHaveBeenCalled();
+    });
+
+    it('leaves old or unrelated descendants untouched', async () => {
+      readdirMock.mockResolvedValue(['777.json']);
+      readFileMock.mockResolvedValue(
+        JSON.stringify({
+          pid: 777,
+          ownerPid: 12345,
+          port: 4096,
+          binary: 'opencode.exe',
+          runtime: 'desktop',
+          startedAt: '2026-09-05T00:00:00.000Z',
+        }),
+      );
+      killMock.mockImplementation(() => {
+        const error = new Error('ESRCH');
+        error.code = 'ESRCH';
+        throw error;
+      });
+      execFileYields((cmd, _args, _opts, cb) => {
+        if (cmd === 'powershell') {
+          return cb(null, JSON.stringify([
+            {
+              ProcessId: 888,
+              ParentProcessId: 777,
+              Name: 'node.exe',
+              CreationDate: '20260831235900.000000+000',
+              CommandLine: 'node background-process-mcp',
+            },
+            {
+              ProcessId: 889,
+              ParentProcessId: 777,
+              Name: 'notepad.exe',
+              CreationDate: '20260905000100.000000+000',
+              CommandLine: 'notepad.exe',
+            },
+          ]), '');
+        }
+        if (cmd === 'taskkill') return cb(null, '', '');
+        cb(new Error(`unexpected cmd: ${cmd}`));
+      });
+      rmMock.mockResolvedValue();
+
+      const result = await reapOrphanedProcesses({ log: () => {} });
+
+      expect(result).toEqual({ inspected: 1, reaped: 0 });
+      expect(execFileImpl).not.toHaveBeenCalledWith(
+        'taskkill',
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
     it('reaps an opencode image whose owner is gone', async () => {
       readdirMock.mockResolvedValue(['777.json']);
       readFileMock.mockResolvedValue(

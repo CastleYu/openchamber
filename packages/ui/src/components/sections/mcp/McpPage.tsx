@@ -18,8 +18,10 @@ import {
   parseImportedMcpSnippet,
   applyImportedMcpToDraft,
 } from './mcpImport';
+import { describeMcpFailure } from './mcpFailureHints';
 import { useMcpStore } from '@/stores/useMcpStore';
 import { usePendingOpenCodeRestartStore } from '@/stores/usePendingOpenCodeRestartStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { cn } from '@/lib/utils';
@@ -53,7 +55,7 @@ import {
 } from '@/components/ui/select';
 import { Icon } from "@/components/icon/Icon";
 import { SortableTabsStrip, type SortableTabsStripItem } from '@/components/ui/sortable-tabs-strip';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, getCurrentIntlLocale } from '@/lib/i18n';
 
 // ─────────────────────────────────────────────────────────────
 // CommandTextarea  — one arg per line, paste-friendly
@@ -588,6 +590,7 @@ export const McpPage: React.FC = () => {
   const clearAuthMcp = useMcpStore((state) => state.clearAuth);
   const testConnectionMcp = useMcpStore((state) => state.testConnection);
   const pendingRestartChanges = usePendingOpenCodeRestartStore((state) => state.changes);
+  const setSettingsPage = useUIStore((state) => state.setSettingsPage);
 
   const mcpServers = useMcpConfigStore((state) => selectMcpServersForDirectory(state, currentDirectory));
   const selectedServer = selectedMcpName ? getMcpByName(selectedMcpName, currentDirectory) : null;
@@ -1331,6 +1334,16 @@ export const McpPage: React.FC = () => {
     tUnsafe,
     effectiveRuntimeStatus && 'error' in effectiveRuntimeStatus ? effectiveRuntimeStatus.error : undefined,
   );
+  const runtimeFailureError = effectiveRuntimeStatus?.status === 'failed'
+    ? (effectiveRuntimeStatus && 'error' in effectiveRuntimeStatus ? effectiveRuntimeStatus.error : undefined)
+    : undefined;
+  const runtimeFailureHint = effectiveRuntimeStatus?.status === 'failed'
+    ? describeMcpFailure(runtimeFailureError)
+    : null;
+  const runtimeFailureTime = runtimeDiagnostic?.at ?? null;
+  const runtimeFailureTimeLabel = runtimeFailureTime
+    ? new Intl.DateTimeFormat(getCurrentIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(runtimeFailureTime)
+    : null;
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'connected':
@@ -1451,6 +1464,21 @@ export const McpPage: React.FC = () => {
                     <StatusBadge status={effectiveRuntimeStatus?.status} enabled={enabled} getStatusLabel={getStatusLabel} />
                   </div>
                   <p className="typography-meta text-muted-foreground">{runtimeDescription}</p>
+                  {runtimeFailureHint && (
+                    <div className="space-y-1">
+                      <p className="typography-micro text-muted-foreground">
+                        {tUnsafe(runtimeFailureHint.causeKey)}
+                      </p>
+                      <p className="typography-micro text-muted-foreground">
+                        {tUnsafe(runtimeFailureHint.hintKey)}
+                      </p>
+                    </div>
+                  )}
+                  {runtimeFailureTimeLabel && (
+                    <p className="typography-micro text-muted-foreground/80">
+                      {t('settings.mcp.page.status.lastFailedAt', { time: runtimeFailureTimeLabel })}
+                    </p>
+                  )}
                   <p className="typography-micro text-muted-foreground/80">
                     {draftScope === 'project'
                       ? t('settings.mcp.page.status.projectScopedTo', { directory: currentDirectory ?? t('settings.mcp.page.status.activeProject') })
@@ -1468,6 +1496,17 @@ export const McpPage: React.FC = () => {
                       disabled={isTestingConnection || !enabled}
                     >
                       {isTestingConnection ? t('settings.mcp.page.actions.testing') : t('settings.mcp.page.actions.testConnection')}
+                    </Button>
+                  )}
+                  {effectiveRuntimeStatus?.status === 'failed' && (
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="!font-normal gap-1 text-muted-foreground"
+                      onClick={() => setSettingsPage('logs')}
+                    >
+                      <Icon name="file-code" className="h-3.5 w-3.5" />
+                      {t('settings.mcp.page.actions.viewLogs')}
                     </Button>
                   )}
                 </div>

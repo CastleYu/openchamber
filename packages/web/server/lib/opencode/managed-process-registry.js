@@ -28,7 +28,11 @@
 //   2. Before killing, it re-verifies the live pid is still an `opencode serve`
 //      matching the recorded port (guards against the OS recycling a dead pid
 //      onto an unrelated process).
-//   3. It kills only when the spawning owner is provably gone — the child has
+//   3. On Windows, a dead recorded root is checked for newer MCP descendants
+//      whose command identifies the managed tool chain before those descendants
+//      are reaped. A live owner, an unknown command, or an unknown start time is
+//      left alone.
+//   4. It kills only when the spawning owner is provably gone — the child has
 //      been reparented to init/pid 1, or the recorded owner pid is dead. A
 //      child still owned by a live instance is left untouched.
 //
@@ -52,6 +56,15 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const defaultExecFileAsync = promisify(execFile);
+
+const WINDOWS_PROCESS_QUERY = [
+  '$ErrorActionPreference = "Stop"',
+  'Get-CimInstance -ClassName Win32_Process',
+  '| Select-Object ProcessId, ParentProcessId, Name, CreationDate, CommandLine',
+  '| ConvertTo-Json -Compress',
+].join(' ');
+const WINDOWS_PROCESS_QUERY_TIMEOUT_MS = 5000;
+const WINDOWS_MANAGED_DESCENDANT_PATTERN = /(?:mcp|opencode|node(?:\.exe)?|python(?:\.exe)?|npm(?:\.cmd)?|npx(?:\.cmd)?|codegraph|background-process|bgpm)/i;
 
 const resolveRegistryDir = () => {
   const override = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
@@ -188,6 +201,92 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
     }
   };
 
+  const readWindowsProcessTree = async () => {
+    try {
+      const { stdout } = await execFileAsync('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        WINDOWS_PROCESS_QUERY,
+      ], {
+        encoding: 'utf8',
+        timeout: WINDOWS_PROCESS_QUERY_TIMEOUT_MS,
+        windowsHide: true,
+      });
+      const parsed = JSON.parse((stdout || '').trim() || '[]');
+      const rows = Array.isArray(parsed) ? parsed : [parsed];
+      return rows.filter((row) => row && Number.isInteger(Number(row.ProcessId)))
+        .map((row) => ({
+          pid: Number(row.ProcessId),
+          parentPid: Number(row.ParentProcessId),
+          name: row.Name == null ? '' : String(row.Name),
+          creationDate: row.CreationDate == null ? '' : String(row.CreationDate),
+          commandLine: row.CommandLine == null ? '' : String(row.CommandLine),
+        }));
+    } catch {
+      return null;
+    }
+  };
+
+  const parseProcessDate = (value) => {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const parsed = Date.parse(text);
+    if (Number.isFinite(parsed)) return parsed;
+    const dmtf = text.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+    if (!dmtf) return null;
+    return Date.UTC(
+      Number(dmtf[1]), Number(dmtf[2]) - 1, Number(dmtf[3]),
+      Number(dmtf[4]), Number(dmtf[5]), Number(dmtf[6]),
+    );
+  };
+
+  const findWindowsManagedDescendants = (rows, entry) => {
+    const startedAt = parseProcessDate(entry.startedAt);
+    if (startedAt === null) return [];
+
+    const byParent = new Map();
+    for (const row of rows) {
+      const children = byParent.get(row.parentPid) || [];
+      children.push(row);
+      byParent.set(row.parentPid, children);
+    }
+
+    const descendants = [];
+    const pending = [...(byParent.get(entry.pid) || [])];
+    while (pending.length > 0) {
+      const row = pending.shift();
+      if (!row) continue;
+      descendants.push(row);
+      pending.push(...(byParent.get(row.pid) || []));
+    }
+
+    const candidates = descendants.filter((row) => {
+      const createdAt = parseProcessDate(row.creationDate);
+      const command = `${row.name} ${row.commandLine}`;
+      return createdAt !== null
+        && createdAt >= startedAt
+        && WINDOWS_MANAGED_DESCENDANT_PATTERN.test(command);
+    });
+    const candidatePids = new Set(candidates.map((row) => row.pid));
+    return candidates.filter((row) => !candidatePids.has(row.parentPid));
+  };
+
+  const reapWindowsManagedDescendants = async (entry, { log }) => {
+    const rows = await readWindowsProcessTree();
+    if (!rows) {
+      log?.(`[lifecycle] orphan descendant scan failed pid=${entry.pid}`);
+      return 0;
+    }
+    const roots = findWindowsManagedDescendants(rows, entry);
+    log?.(`[lifecycle] orphan descendant scan pid=${entry.pid} candidates=${roots.length}`);
+    for (const row of roots) {
+      await killOrphan(row.pid);
+      log?.(`[lifecycle] reaped orphaned managed descendant pid=${row.pid} root=${entry.pid}`);
+    }
+    return roots.length;
+  };
+
   const killOrphan = async (pid) => {
     if (process.platform === 'win32') {
       try {
@@ -227,10 +326,17 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
 
   // Decide+act on a single registry entry. Returns true if it was reaped.
   const processEntry = async (entry, { log }) => {
-    // Dead pid → nothing to do (caller drops the file).
-    if (!isPidAlive(entry.pid)) return false;
-
     const ownerGone = Number.isInteger(entry.ownerPid) && !isPidAlive(entry.ownerPid);
+    const startedAt = parseProcessDate(entry.startedAt);
+
+    if (!isPidAlive(entry.pid)) {
+      if (process.platform === 'win32' && ownerGone && startedAt !== null) {
+        const descendantsReaped = await reapWindowsManagedDescendants(entry, { log });
+        if (descendantsReaped > 0) return true;
+      }
+      log?.(`[lifecycle] managed OpenCode root absent pid=${entry.pid} ownerGone=${ownerGone}`);
+      return false;
+    }
 
     if (process.platform === 'win32') {
       const image = await readWindowsImageName(entry.pid);
@@ -240,7 +346,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
       // AND the image still looks like opencode.
       if (looksLikeOpencode && ownerGone) {
         await killOrphan(entry.pid);
-        log?.(`[lifecycle] reaped orphaned OpenCode pid ${entry.pid} (owner ${entry.ownerPid} gone)`);
+        log?.(`[lifecycle] reaped orphaned OpenCode pid=${entry.pid} owner=${entry.ownerPid}`);
         return true;
       }
       return false;
@@ -254,7 +360,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
     if (!orphaned) return false; // still owned by a live instance
 
     await killOrphan(entry.pid);
-    log?.(`[lifecycle] reaped orphaned OpenCode pid ${entry.pid} (reparented/owner gone)`);
+    log?.(`[lifecycle] reaped orphaned OpenCode pid=${entry.pid} ownerGone=${ownerGone} reparented=${info.ppid === 1}`);
     return true;
   };
 

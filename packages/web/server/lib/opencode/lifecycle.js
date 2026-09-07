@@ -429,6 +429,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+    console.log('[lifecycle] managed OpenCode spawned', {
+      pid: child.pid || null,
+      ownerPid: process.pid,
+      port,
+      runtime: process.env.OPENCHAMBER_RUNTIME || 'web',
+    });
     let runtimeStderrTail = '';
     let runtimeStderrAttached = false;
     let observedExitCode = null;
@@ -527,6 +533,11 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       binary,
       runtime: process.env.OPENCHAMBER_RUNTIME || 'web',
     });
+    console.log('[lifecycle] managed OpenCode registered', {
+      pid: child.pid || null,
+      ownerPid: process.pid,
+      port,
+    });
 
     let registrationDropped = false;
     const dropManagedProcessRegistration = async () => {
@@ -540,7 +551,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     // itself) never reaches teardown, so nothing else prunes its entry. Both
     // the listener and the immediate check are attached AFTER the registry
     // write, so a removal can never overtake the write that creates the file.
-    child.on('exit', () => {
+    child.on('exit', (code, signal) => {
+      console.log('[lifecycle] managed OpenCode exited', {
+        pid: child.pid || null,
+        code: code ?? null,
+        signal: signal ?? null,
+      });
       void dropManagedProcessRegistration();
     });
     if (hasChildProcessExited(child)) {
@@ -560,7 +576,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         return getManagedProcessSnapshot().stderrTail;
       },
       async close() {
+        console.log('[lifecycle] managed OpenCode close requested', { pid: child.pid || null, port });
         await closeManagedOpenCodeChild(child, dropManagedProcessRegistration);
+        console.log('[lifecycle] managed OpenCode close finished', {
+          pid: child.pid || null,
+          exited: hasChildProcessExited(child),
+        });
       },
     };
   };

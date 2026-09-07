@@ -660,6 +660,21 @@ export async function handleSystemBridgeMessage(
       }
     }
 
+    case 'vscode:openLocalPath': {
+      const { path: localPath } = (payload || {}) as { path?: string };
+      const target = typeof localPath === 'string' ? localPath.trim() : '';
+      if (!target) {
+        return { id, type, success: false, error: 'Path is required' };
+      }
+      try {
+        const opened = await vscode.env.openExternal(vscode.Uri.file(target));
+        return { id, type, success: true, data: { opened } };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { id, type, success: false, error: errorMessage };
+      }
+    }
+
     default:
       return null;
   }

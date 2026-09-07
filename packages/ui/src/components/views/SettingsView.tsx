@@ -39,6 +39,7 @@ import { MagicPromptsPage } from '@/components/sections/magic-prompts/MagicPromp
 import { SnippetsSidebar } from '@/components/sections/snippets/SnippetsSidebar';
 import { SnippetsPage } from '@/components/sections/snippets/SnippetsPage';
 import { GitPage } from '@/components/sections/git-identities/GitPage';
+import { LogsPage } from '@/components/sections/logs/LogsPage';
 import { IntegrationsPage } from '@/components/sections/integrations/IntegrationsPage';
 import type { OpenChamberSection } from '@/components/sections/openchamber/types';
 import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
@@ -102,6 +103,7 @@ const pageOrder: SettingsPageSlug[] = [
   'voice',
   'integrations',
   'usage',
+  'logs',
   'about',
   // 'projects' group — Workspace
   'projects',
@@ -393,6 +395,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.voice.title');
       case 'tunnel':
         return t('settings.page.tunnel.title');
+      case 'logs':
+        return t('settings.page.logs.title');
       case 'about':
         return t('settings.page.about.title');
       case 'home':
@@ -666,6 +670,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <ProvidersPage />;
       case 'usage':
         return <UsagePage />;
+      case 'logs':
+        return <LogsPage />;
       case 'about':
         return (
           <SettingsPageLayout title={t('settings.page.about.title')} showSaveStatus={false}>

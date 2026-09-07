@@ -913,6 +913,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['stt', 'dictation', 'voice input', 'transcribe', 'whisper', 'parakeet', 'microphone'],
   },
   {
+    id: 'logs.file',
+    page: 'logs',
+    titleKey: 'settings.logs.section.title',
+    descriptionKey: 'settings.page.logs.description',
+    keywords: ['runtime log', 'log file', 'open logs', 'download logs', 'troubleshoot', 'diagnostics'],
+  },
+  {
     id: 'tunnel.provider',
     page: 'tunnel',
     titleKey: 'settings.openchamber.tunnel.field.provider',

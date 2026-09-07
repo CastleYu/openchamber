@@ -87,6 +87,7 @@ const MOBILE_SETTINGS_PAGES = [
   'providers',
   'usage',
   'voice',
+  'logs',
   'integrations',
   'about',
 ] as const;

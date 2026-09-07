@@ -18,26 +18,34 @@ import { useDeviceInfo } from '@/lib/device';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useMcpConfigStore } from '@/stores/useMcpConfigStore';
 import { computeMcpHealth, useMcpStore } from '@/stores/useMcpStore';
+import { describeMcpFailure, type McpFailureHintKey } from '@/components/sections/mcp/mcpFailureHints';
 import { McpIcon } from '@/components/icons/McpIcon';
 import { Icon } from "@/components/icon/Icon";
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type I18nKey } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { startMcpAuthorization } from '@/components/sections/mcp/startMcpAuthorization';
 
+type McpDropdownTranslate = (key: I18nKey | McpFailureHintKey, params?: { error?: string; cause?: string }) => string;
+
 const statusTooltip = (
   status: McpStatus | undefined,
-  t: (key: 'mcpDropdown.status.unknown' | 'mcpDropdown.status.connected' | 'mcpDropdown.status.failed' | 'mcpDropdown.status.unknownError' | 'mcpDropdown.status.needsAuth' | 'mcpDropdown.status.needsRegistration', params?: { error?: string }) => string
+  t: McpDropdownTranslate
 ): string => {
   if (!status) return t('mcpDropdown.status.unknown');
   switch (status.status) {
     case 'connected':
       return t('mcpDropdown.status.connected');
-    case 'failed':
-      return t('mcpDropdown.status.failed', { error: (status as { error?: string }).error || t('mcpDropdown.status.unknownError') });
+    case 'failed': {
+      const error = status.error || t('mcpDropdown.status.unknownError');
+      const cause = describeMcpFailure(error);
+      return cause
+        ? t('mcpDropdown.status.failedWithCause', { cause: t(cause.causeKey), error })
+        : t('mcpDropdown.status.failed', { error });
+    }
     case 'needs_auth':
       return t('mcpDropdown.status.needsAuth');
     case 'needs_client_registration':
-      return t('mcpDropdown.status.needsRegistration', { error: (status as { error?: string }).error || '' });
+      return t('mcpDropdown.status.needsRegistration', { error: status.error });
     default:
       return status.status;
   }

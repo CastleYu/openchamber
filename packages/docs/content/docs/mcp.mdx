@@ -24,6 +24,20 @@ Pick the scope when you add a server:
 
 Server names use lowercase letters, numbers, hyphens, and underscores.
 
+## Troubleshooting
+
+If a server fails to start or stops responding:
+
+1. Open **Settings → Logs** and check the most recent server output.
+2. Open **Settings → MCP** and select the failed server to see the failure
+   reason, the last failure time, and the suggested next step.
+3. Use **View logs** on the failure card to open the relevant log file. Log
+   downloads redact credentials and authorization headers.
+
+The MCP page reports the failure category, but it does not retry a server or
+change its configuration. Fix the command, URL, headers, or environment in the
+server settings, then save and try again.
+
 ## Related
 
 - [Providers, Models & Agents](/providers/) — connect a model first

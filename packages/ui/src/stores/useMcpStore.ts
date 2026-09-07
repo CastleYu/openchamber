@@ -2,17 +2,33 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { McpStatus } from '@opencode-ai/sdk/v2';
 import { opencodeClient } from '@/lib/opencode/client';
+import { runtimeFetch } from '@/lib/runtime-fetch';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
+import {
+  mergeMcpDiagnostics,
+  type McpFailureSource,
+  type McpRuntimeDiagnostic,
+  type McpRuntimeDiagnosticMap,
+  type McpStatusMap,
+} from '@/stores/mcpDiagnostics';
 
-export type McpStatusMap = Record<string, McpStatus>;
-type McpRuntimeDiagnostic = {
-  status: 'failed';
-  error: string;
-};
-type McpRuntimeDiagnosticMap = Record<string, McpRuntimeDiagnostic>;
+export type { McpFailureSource, McpRuntimeDiagnostic, McpRuntimeDiagnosticMap, McpStatusMap };
 
 const EMPTY_STATUS: McpStatusMap = {};
 const EMPTY_DIAGNOSTICS: McpRuntimeDiagnosticMap = {};
+
+const reportMcpDiagnosticFailure = async (
+  name: string,
+  directory: string | null,
+  error: string,
+  source: McpFailureSource,
+): Promise<void> => {
+  await runtimeFetch('/api/logs/mcp-diagnostics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, directory, error, source, at: Date.now() }),
+  }).catch(() => undefined);
+};
 
 type McpHealth = {
   connected: number;
@@ -155,19 +171,28 @@ export const useMcpStore = create<McpStore>()(
         const result = await api.mcp.status();
         if (generation !== mcpGeneration) return;
         const data = (result.data ?? {}) as McpStatusMap;
+        const previousDiagnostics = get().diagnosticsByDirectory[key] ?? {};
+        const nextDiagnostics = mergeMcpDiagnostics(previousDiagnostics, data, Date.now());
 
         set((state) => ({
           byDirectory: { ...state.byDirectory, [key]: data },
           diagnosticsByDirectory: {
             ...state.diagnosticsByDirectory,
-            [key]: Object.fromEntries(
-              Object.entries(state.diagnosticsByDirectory[key] ?? {}).filter(([name]) => !data[name])
-            ),
+            [key]: nextDiagnostics,
           },
           loadingKeys: { ...state.loadingKeys, [key]: false },
           lastErrorKeys: { ...state.lastErrorKeys, [key]: null },
           refreshedAtKeys: { ...state.refreshedAtKeys, [key]: Date.now() },
         }));
+
+        // A failure whose message is new (or newly tracked) is a transition
+        // into failure — report it once to the server log. Steady-state polls
+        // with an unchanged message stay silent.
+        for (const [name, diagnostic] of Object.entries(nextDiagnostics)) {
+          if (diagnostic.source !== 'status') continue;
+          if (previousDiagnostics[name]?.error === diagnostic.error) continue;
+          void reportMcpDiagnosticFailure(name, directory, diagnostic.error, 'status');
+        }
       } catch (error) {
         if (generation !== mcpGeneration) return;
         const message = error instanceof Error ? error.message : 'Failed to load MCP status';
@@ -204,10 +229,11 @@ export const useMcpStore = create<McpStore>()(
             ...state.diagnosticsByDirectory,
             [key]: {
               ...(state.diagnosticsByDirectory[key] ?? {}),
-              [name]: { status: 'failed', error: message },
+              [name]: { status: 'failed', error: message, at: Date.now(), source: 'connect' },
             },
           },
         }));
+        void reportMcpDiagnosticFailure(name, normalized, message, 'connect');
         throw error;
       }
       await get().refresh({ directory: normalized, silent: true });
@@ -247,10 +273,11 @@ export const useMcpStore = create<McpStore>()(
             ...state.diagnosticsByDirectory,
             [key]: {
               ...(state.diagnosticsByDirectory[key] ?? {}),
-              [name]: { status: 'failed', error: message },
+              [name]: { status: 'failed', error: message, at: Date.now(), source: 'auth' },
             },
           },
         }));
+        void reportMcpDiagnosticFailure(name, normalized, message, 'auth');
         throw error;
       }
       await get().refresh({ directory: normalized, silent: true });
@@ -296,10 +323,11 @@ export const useMcpStore = create<McpStore>()(
             ...state.diagnosticsByDirectory,
             [key]: {
               ...(state.diagnosticsByDirectory[key] ?? {}),
-              [name]: { status: 'failed', error: errorMessage ?? 'Connection failed' },
+              [name]: { status: 'failed', error: errorMessage ?? 'Connection failed', at: Date.now(), source: 'test' },
             },
           },
         }));
+        void reportMcpDiagnosticFailure(name, normalized, errorMessage, 'test');
       }
 
       await get().refresh({ directory: normalized, silent: true });

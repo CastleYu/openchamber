@@ -58,6 +58,7 @@ import { createSettingsNormalizationRuntime } from './lib/opencode/settings-norm
 import { createSettingsHelpers } from './lib/opencode/settings-helpers.js';
 import { createThemeRuntime } from './lib/opencode/theme-runtime.js';
 import { createFeatureRoutesRuntime } from './lib/opencode/feature-routes-runtime.js';
+import { createRuntimeLog, installConsoleTee } from './lib/logs/runtime-log.js';
 import { parseServeCliOptions } from './lib/opencode/cli-options.js';
 import {
   registerAuthAndAccessRoutes,
@@ -308,6 +309,11 @@ const CLIENT_PAIRING_SESSIONS_FILE_PATH = path.join(OPENCHAMBER_DATA_DIR, 'clien
 const CLOUDFLARE_MANAGED_REMOTE_TUNNELS_FILE_PATH = path.join(OPENCHAMBER_DATA_DIR, 'cloudflare-managed-remote-tunnels.json');
 const CLOUDFLARE_LEGACY_NAMED_TUNNELS_FILE_PATH = path.join(OPENCHAMBER_DATA_DIR, 'cloudflare-named-tunnels.json');
 const CLOUDFLARE_MANAGED_REMOTE_TUNNELS_VERSION = 1;
+
+// Runtime log: tees console output into daily JSONL files under
+// <dataDir>/logs so users can inspect server behavior without terminal access.
+const runtimeLog = createRuntimeLog({ dataDir: OPENCHAMBER_DATA_DIR });
+installConsoleTee({ runtimeLog });
 
 const managedTunnelConfigRuntime = createManagedTunnelConfigRuntime({
   fsPromises,
@@ -1876,6 +1882,7 @@ async function main(options = {}) {
     resolveGitBinaryForSpawn,
     createFsSearchRuntime: createFsSearchRuntimeFactory,
     openchamberDataDir: OPENCHAMBER_DATA_DIR,
+    runtimeLog,
     openchamberUserConfigRoot: OPENCHAMBER_USER_CONFIG_ROOT,
     normalizeDirectoryPath,
     resolveProjectDirectory,

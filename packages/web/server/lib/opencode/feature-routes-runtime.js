@@ -9,6 +9,7 @@ import { registerGitRoutes } from '../git/routes.js';
 import { registerDevServerRoutes } from '../dev-servers/routes.js';
 import { registerMagicPromptRoutes } from '../magic-prompts/routes.js';
 import { registerSessionFoldersRoutes } from '../session-folders/routes.js';
+import { registerLogsRoutes } from '../logs/routes.js';
 import { registerProjectContextRoutes } from '../project-context/routes.js';
 import { registerAgentMemoryRoutes } from '../agent-memory/routes.js';
 import { registerSessionKnowledgeRoutes } from '../session-knowledge/routes.js';
@@ -96,6 +97,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       resolveGitBinaryForSpawn,
       createFsSearchRuntime,
       openchamberDataDir,
+      runtimeLog,
       openchamberUserConfigRoot,
       normalizeDirectoryPath,
       resolveProjectDirectory,
@@ -318,6 +320,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       path,
       openchamberDataDir,
     });
+    registerLogsRoutes(app, { runtimeLog });
     registerFsRoutes(app, {
       os,
       path,

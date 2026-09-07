@@ -3294,4 +3294,5 @@ export const dict = {
   'memoryDebugPanel.requests.windowHint': 'son {seconds} sn',
   'memoryDebugPanel.requests.percentileChartLabel': 'Zaman içinde devam eden request yaş yüzdelikleri (p50, p90, p99, maks)',
   'chat.workStatus.cost.breakdown': 'Session {session} · Subagent\'ler {subagents}',
+  'mcpDropdown.status.failedWithCause': "{cause}: {error}",
 };

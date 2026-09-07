@@ -1,5 +1,5 @@
 import type { VSCodeAPI } from '@openchamber/ui/lib/api/types';
-import { executeVSCodeCommand, openVSCodeExternalUrl, sendBridgeMessage } from './bridge';
+import { executeVSCodeCommand, openVSCodeExternalUrl, openVSCodeLocalPath, sendBridgeMessage } from './bridge';
 
 export const createVSCodeActionsAPI = (): VSCodeAPI => ({
   async executeCommand(command: string, ...args: unknown[]): Promise<unknown> {
@@ -13,6 +13,10 @@ export const createVSCodeActionsAPI = (): VSCodeAPI => ({
 
   async openExternalUrl(url: string): Promise<void> {
     await openVSCodeExternalUrl(url);
+  },
+
+  async openLocalPath(path: string): Promise<void> {
+    await openVSCodeLocalPath(path);
   },
 
   async addWorkspaceFolder(path: string): Promise<Array<{ name: string; path: string }>> {

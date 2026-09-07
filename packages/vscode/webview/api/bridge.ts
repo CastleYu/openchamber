@@ -218,6 +218,10 @@ export async function openVSCodeExternalUrl(url: string): Promise<void> {
   await sendBridgeMessage('vscode:openExternalUrl', { url });
 }
 
+export async function openVSCodeLocalPath(path: string): Promise<void> {
+  await sendBridgeMessage('vscode:openLocalPath', { path });
+}
+
 type CommandHandler = (payload: unknown) => void;
 const commandHandlers = new Map<string, CommandHandler>();
 

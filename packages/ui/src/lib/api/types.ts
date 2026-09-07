@@ -823,8 +823,28 @@ export interface NotificationsAPI {
   canNotify?: () => boolean | Promise<boolean>;
 }
 
-interface DiagnosticsAPI {
-  downloadLogs(): Promise<{ fileName: string; content: string }>;
+export interface LogFileInfo {
+  name: string;
+  size: number;
+  modifiedAt: number;
+}
+
+export interface LogsInfo {
+  /** Server-side directory that holds the log files. */
+  directory: string;
+  /** File name currently being appended to, when known. */
+  current: string | null;
+  files: LogFileInfo[];
+}
+
+export interface DiagnosticsAPI {
+  /** Metadata about the server-side runtime log files. */
+  getLogsInfo(): Promise<LogsInfo>;
+  /**
+   * Returns one log file's content. Without a file name, the most recently
+   * modified file is returned.
+   */
+  downloadLogs(fileName?: string): Promise<{ fileName: string; content: string }>;
 }
 
 export interface ToolsAPI {
@@ -846,6 +866,8 @@ export interface VSCodeAPI {
   executeCommand(command: string, ...args: unknown[]): Promise<unknown>;
   openAgentManager(): Promise<void>;
   openExternalUrl(url: string): Promise<void>;
+  /** Opens a local file path with the OS default program (extension host machine). */
+  openLocalPath?(path: string): Promise<void>;
   pickFiles?(options?: { extensions?: string[] }): Promise<unknown>;
   saveImage?(payload: unknown): Promise<unknown>;
   saveMarkdown?(payload: unknown): Promise<unknown>;

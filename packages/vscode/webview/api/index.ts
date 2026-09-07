@@ -1,6 +1,7 @@
 import type { RuntimeAPIs, TerminalAPI } from '@openchamber/ui/lib/api/types';
 import { createVSCodeFilesAPI } from './files';
 import { createVSCodeSettingsAPI } from './settings';
+import { createVSCodeDiagnosticsAPI } from './diagnostics';
 import { createVSCodePermissionsAPI } from './permissions';
 import { createVSCodeToolsAPI } from './tools';
 import { createVSCodeEditorAPI } from './editor';
@@ -31,6 +32,7 @@ export const createVSCodeAPIs = (): RuntimeAPIs => ({
   git: createVSCodeGitAPI(),
   files: createVSCodeFilesAPI(),
   settings: createVSCodeSettingsAPI(),
+  diagnostics: createVSCodeDiagnosticsAPI(),
   permissions: createVSCodePermissionsAPI(),
   notifications: createVSCodeNotificationsAPI(),
   github: createVSCodeGitHubAPI(),

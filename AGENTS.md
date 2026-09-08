@@ -103,6 +103,7 @@ process violation.
 | iOS Simulator build, launch, preview, gestures, or `serve-sim` control | `serve-sim` |
 | The maintainer explicitly asks to update the changelog (main app or VS Code extension) — the only time `changelog/unreleased.md` is edited | `update-changelog` |
 | Creating or editing skills, `AGENTS.md`, or docs reached through agent instructions/context pointers | `writing-for-agents` |
+| Syncing the personal branch with community upstream or resolving conflicts from that intake | `personal-upstream-sync` |
 | Reviewing a single pull request or drafting a PR verdict/close/review comment | `pr-review` |
 | Triaging, cleaning up, or batch-processing the open PR queue | `triage-prs` |
 | Triaging, cleaning up, or batch-processing the issue backlog | `triage-issues` |

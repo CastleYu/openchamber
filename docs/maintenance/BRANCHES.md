@@ -15,9 +15,9 @@
 
 Use `upstream/main` for community intake and `origin/codex/personal` for a future personal branch publication. Fetch before deciding whether a merge is needed. Do not push to community upstream. A fork's GitHub Sync fork operation belongs on its community mirror branch, never on the personal branch.
 
-Before each merge, record the current commit, preserve dirty files in a named stash or separate backup, and create a dated backup ref. Merge upstream into a temporary integration branch from the personal branch; do not rebase published personal history. Resolve conflicts by preserving the contracts below, then run affected upstream and personal tests. Promote the integration branch only after review. Never automatically use `ours`/`theirs` for a complete file.
+For upstream intake or its merge conflicts, use the project [personal-upstream-sync skill](../../.agents/skills/personal-upstream-sync/SKILL.md). It owns the fetch, isolated integration, conflict resolution, validation, restoration and authorized-push workflow. The checklist below owns this fork's personal behavior requirements.
 
-Updating fork `main`, pushing `codex/personal`, or dispatching remote Actions is a separate publication step. This session performs no remote push. Maintenance changes are committed separately from the preserved user edits.
+Updating fork `main`, pushing `codex/personal`, or dispatching remote Actions is a separate publication step. Push only when requested. Maintenance changes are committed separately from the preserved user edits.
 
 ## Personal feature regression checklist
 

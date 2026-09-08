@@ -480,7 +480,9 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
             GitHub
           </a>
 
-          <div className="flex-1 flex justify-end">
+          {info?.notifyOnly ? (
+            <p className="text-sm text-muted-foreground">{t('updateDialog.personalNotice')}</p>
+          ) : <div className="flex-1 flex justify-end">
             {/* Desktop Buttons */}
             {!isWebRuntime && !isMobileRuntime && !downloaded && !downloading && (
               <button
@@ -542,7 +544,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
                 {t('updateDialog.status.updating')}
               </button>
             )}
-          </div>
+          </div>}
         </div>
       </DialogContent>
     </Dialog>

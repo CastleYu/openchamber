@@ -65,6 +65,11 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
 
     const fetchVersion = async () => {
       try {
+        const desktopVersion = await getDesktopAppVersion();
+        if (desktopVersion) {
+          setVersion(desktopVersion);
+          return;
+        }
         const response = await runtimeFetch('/api/system/info');
         if (response.ok) {
           const data = await response.json();

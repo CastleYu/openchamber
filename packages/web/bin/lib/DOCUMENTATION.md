@@ -58,6 +58,7 @@ Command modules implement user-facing commands and preserve output contracts acr
 
 - `commands-update.js`
   - Implements `openchamber update`.
+  - Personal-build policy rejects replacement before discovering or stopping instances; the package-manager execution boundary enforces the same policy.
   - Loads the package-manager helper, performs update flow, and coordinates restart behavior after updates.
 
 - `commands-tunnel.js`

@@ -1,3 +1,5 @@
+import { PERSONAL_BUILD } from '../personal-build.js';
+
 const SYSTEMD_SERVICE_UNIT_PATTERN = /^[A-Za-z0-9:_.@-]+\.service$/;
 
 function resolveSystemdServiceUnit(environment) {
@@ -60,7 +62,7 @@ export const registerOpenChamberRoutes = (app, dependencies) => {
         installId: parseString(req.query.installId),
         reportUsage: parseReportUsage(parseString(req.query.reportUsage)),
       });
-      res.json(updateInfo);
+      res.json({ ...updateInfo, notifyOnly: PERSONAL_BUILD.notifyOnly });
     } catch (error) {
       console.error('Failed to check for updates:', error);
       res.status(500).json({
@@ -71,6 +73,9 @@ export const registerOpenChamberRoutes = (app, dependencies) => {
   });
 
   app.post('/api/openchamber/update-install', async (_req, res) => {
+    if (PERSONAL_BUILD.notifyOnly) {
+      return res.status(403).json({ error: PERSONAL_BUILD.disabledMessage });
+    }
     try {
       const { spawn: spawnChild, spawnSync } = await import('child_process');
       const {

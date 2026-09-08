@@ -75,8 +75,8 @@ describe('OpenChamber foreground update route', () => {
 
     await request(app)
       .post('/api/openchamber/update-install')
-      .expect(409, {
-        error: 'Foreground servers must be updated by their service manager. Set OPENCHAMBER_SYSTEMD_UNIT when running under systemd, or run openchamber update and restart the service.',
+      .expect(403, {
+        error: 'Personal builds only notify about updates. Sync the source and rebuild to keep personal features.',
       });
 
     expect(childProcess.spawnSync).not.toHaveBeenCalled();
@@ -92,14 +92,14 @@ describe('OpenChamber foreground update route', () => {
 
     await request(app)
       .post('/api/openchamber/update-install')
-      .expect(409, {
-        error: 'Foreground servers must be updated by their service manager. Set OPENCHAMBER_SYSTEMD_UNIT when running under systemd, or run openchamber update and restart the service.',
+      .expect(403, {
+        error: 'Personal builds only notify about updates. Sync the source and rebuild to keep personal features.',
       });
 
     expect(childProcess.spawnSync).not.toHaveBeenCalled();
   });
 
-  it('queues the install in a transient systemd unit and returns its job identifier', async () => {
+  it('also denies installation for a valid systemd-managed personal build', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
     childProcess.spawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '' });
     const { app } = createApp({
@@ -112,30 +112,10 @@ describe('OpenChamber foreground update route', () => {
 
     await request(app)
       .post('/api/openchamber/update-install')
-      .expect(200, {
-        success: true,
-        message: 'Update queued; OpenChamber will restart after installation completes',
-        version: '1.17.1',
-        packageManager: 'npm',
-        autoRestart: true,
-        restartManager: 'systemd',
-        jobId: 'openchamber-update-1700000000000',
-        logPath: 'journalctl --user-unit openchamber-update-1700000000000.service',
+      .expect(403, {
+        error: 'Personal builds only notify about updates. Sync the source and rebuild to keep personal features.',
       });
 
-    expect(childProcess.spawnSync).toHaveBeenCalledWith('systemd-run', [
-      '--user',
-      '--unit=openchamber-update-1700000000000',
-      '--collect',
-      '--service-type=exec',
-      '--setenv=PATH=/home/syu/.npm-global/bin:/usr/bin:/bin',
-      '/bin/sh',
-      '-c',
-      "set -eu\nnpm install -g @openchamber/web@latest\nsystemctl --user restart 'openchamber@wsl.service'",
-    ], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 5000,
-    });
+    expect(childProcess.spawnSync).not.toHaveBeenCalled();
   });
 });

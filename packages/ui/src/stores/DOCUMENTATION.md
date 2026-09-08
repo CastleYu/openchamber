@@ -2,6 +2,8 @@
 
 ## Purpose
 
+Update metadata may set `notifyOnly` for a personal runtime. `useUpdateStore` preserves that server/desktop capability so `UpdateDialog` renders the localized notice instead of replacement controls. Runtime entrypoints enforce the policy independently of the UI.
+
 `packages/ui/src/stores` contains app-level Zustand stores for persistent UI state, runtime state, and feature caches.
 
 Not all state in the UI belongs here.

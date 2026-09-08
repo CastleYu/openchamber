@@ -22,7 +22,7 @@ async function withTempOpenChamberDataDir(fn) {
 }
 
 describe('update command', () => {
-  it('uses the package-manager helpers on the update-available path', async () => {
+  it('denies personal updates before stopping instances or loading the package manager', async () => {
     await withTempOpenChamberDataDir(async () => {
       const originalWrite = process.stdout.write;
       process.stdout.write = vi.fn(() => true);
@@ -39,9 +39,10 @@ describe('update command', () => {
       });
 
       try {
-        await updateCommand({ json: true });
-
-        expect(executeUpdate).toHaveBeenCalledWith('npm', { silent: true });
+        for (const options of [{ json: true }, { quiet: true }, {}]) {
+          await expect(updateCommand(options)).rejects.toThrow('Personal builds only notify');
+        }
+        expect(executeUpdate).not.toHaveBeenCalled();
       } finally {
         process.stdout.write = originalWrite;
       }

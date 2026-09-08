@@ -160,6 +160,7 @@ async function checkForWebUpdates(runtime: ClientRuntime, currentVersion?: strin
     const data = await response.json();
     return {
       available: data.available ?? false,
+      notifyOnly: data.notifyOnly === true,
       version: data.version,
       currentVersion: data.currentVersion ?? 'unknown',
       body: data.body,
@@ -222,6 +223,7 @@ export const useUpdateStore = create<UpdateStore>()((set, get) => ({
           checkForDesktopUpdates(),
           checkForWebUpdates('desktop', appVersion),
         ]);
+        if (desktopResult.status === 'rejected') throw desktopResult.reason;
         const desktopInfo = desktopResult.status === 'fulfilled' ? desktopResult.value : null;
         suggestedSec = apiResult.status === 'fulfilled'
           ? (apiResult.value?.nextSuggestedCheckInSec ?? null)

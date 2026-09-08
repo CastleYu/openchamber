@@ -64,6 +64,8 @@ bun run lint:electron
 
 ## Packaging
 
+This personal fork defaults to Windows x64 portable builds and notification-only updates. See [the personal build guide](../../docs/maintenance/BUILD.md) for version ownership, local commands, Actions artifacts and replacement instructions. The upstream packaging and updater details below describe the retained platform implementation; personal policy blocks its installation paths.
+
 From the repo root:
 
 ```bash
@@ -80,7 +82,7 @@ That runs, in order:
 
 Build output goes to `packages/electron/dist`.
 
-macOS builds produce `dmg` and `zip` artifacts. Windows builds produce an NSIS installer. Linux builds produce an AppImage for the native x64 or arm64 host.
+macOS builds produce `dmg` and `zip` artifacts. Windows builds default to a portable executable. Linux builds produce an AppImage for the native x64 or arm64 host. The root personal build command currently supports Windows x64; use package-level platform commands for the other targets.
 
 ## Platform Notes
 

@@ -16,6 +16,7 @@ type ManagedRemoteTunnelPreset = {
 
 export type UpdateInfo = {
   available: boolean;
+  notifyOnly?: boolean;
   version?: string;
   currentVersion: string;
   body?: string;

@@ -105,6 +105,7 @@
     "bin",
     "public",
     "package.json",
+    "personal-build.json",
     "README.md"
   ]
 }

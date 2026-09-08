@@ -10,6 +10,8 @@ import { execFile, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import updaterPkg from 'electron-updater';
+import { PERSONAL_BUILD, personalVersion, assertUpdatesAllowed } from '../web/server/lib/personal-build.js';
+import { checkPersonalUpdate } from './personal-updates.mjs';
 import { ElectronSshManager } from './ssh-manager.mjs';
 import { replaceFileWithRetry } from './windows-file-replace.mjs';
 import { createTrayController } from './tray.mjs';
@@ -213,7 +215,10 @@ const readAppMetadata = () => {
 };
 
 const APP_METADATA = readAppMetadata();
-const APP_VERSION = APP_METADATA.version;
+const UPSTREAM_VERSION = APP_METADATA.version.split('-personal.')[0];
+const APP_VERSION = APP_METADATA.version.includes('-personal.')
+  ? APP_METADATA.version
+  : personalVersion(UPSTREAM_VERSION);
 
 const DEFAULT_DESKTOP_PORT = 57123;
 const LOOPBACK_BIND_HOST = '127.0.0.1';
@@ -3101,6 +3106,7 @@ const setupAutoUpdater = () => {
   }
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
+  if (PERSONAL_BUILD.notifyOnly) return;
   autoUpdater.allowPrerelease = false;
   autoUpdater.fullChangelog = true;
   autoUpdater.disableWebInstaller = false;
@@ -4477,6 +4483,15 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
     }
 
     case 'desktop_check_for_updates': {
+      if (PERSONAL_BUILD.notifyOnly) {
+        state.pendingUpdate = null;
+        return checkPersonalUpdate({
+          currentVersion: APP_VERSION,
+          upstreamVersion: UPSTREAM_VERSION,
+          compareVersions: compareSemver,
+          request: electronNet.fetch,
+        });
+      }
       assertUpdaterCapability({ packaged: app.isPackaged });
       const currentVersion = APP_VERSION;
       const { available, updateInfo, updateResult, nextVersion, pendingUpdate } = await checkForDesktopUpdate({
@@ -4501,6 +4516,7 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
     }
 
     case 'desktop_download_and_install_update':
+      assertUpdatesAllowed();
       assertUpdaterCapability({ packaged: app.isPackaged });
       if (!state.pendingUpdate) {
         throw new Error('No pending update');
@@ -4558,7 +4574,10 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
 
     case 'desktop_restart': {
       const applyUpdate = Boolean(state.pendingUpdate?.downloaded && app.isPackaged);
-      if (applyUpdate) assertUpdaterCapability({ packaged: app.isPackaged });
+      if (applyUpdate) {
+        assertUpdatesAllowed();
+        assertUpdaterCapability({ packaged: app.isPackaged });
+      }
       log.info(`[electron] desktop_restart applyUpdate=${applyUpdate} packaged=${app.isPackaged}`);
       if (applyUpdate && process.platform === 'darwin' && typeof app.isInApplicationsFolder === 'function') {
         try {

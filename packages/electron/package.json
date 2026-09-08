@@ -107,7 +107,7 @@
     "win": {
       "icon": "resources/icons/icon.ico",
       "target": [
-        "nsis"
+        "portable"
       ],
       "verifyUpdateCodeSignature": false,
       "artifactName": "${productName}-${version}-win-${arch}.${ext}"

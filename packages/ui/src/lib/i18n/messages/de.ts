@@ -5,6 +5,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 export const dict = {
   'sessions.sidebar.projectAction.active': 'Projektaktion aktiv',
   ...settingsDict,
+  'updateDialog.personalNotice': 'Persönliche Builds zeigen Updates nur an. Synchronisiere den Quellcode und baue neu, um deine Funktionen zu behalten.',
   ...linearIssuePickerI18n.de,
   ...linearPanelI18n.de,
   'common.language.german': 'Deutsch',

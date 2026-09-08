@@ -9,6 +9,7 @@ import { Icon } from "@/components/icon/Icon";
 import { OpenChamberLogo } from '@/components/ui/OpenChamberLogo';
 import { useI18n } from '@/lib/i18n';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { getDesktopAppVersion } from '@/lib/desktopNative';
 import { InstanceServiceUrls } from './InstanceServiceUrls';
 import {
   SettingsSection,
@@ -54,6 +55,11 @@ export const AboutSettings: React.FC<AboutSettingsProps> = ({ initialUpdateDialo
 
     const loadOpenChamberVersion = async () => {
       try {
+        const desktopVersion = await getDesktopAppVersion();
+        if (desktopVersion) {
+          if (!cancelled) setOpenChamberVersion(desktopVersion);
+          return;
+        }
         const response = await runtimeFetch('/api/system/info', {
           method: 'GET',
           headers: { Accept: 'application/json' },

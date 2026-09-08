@@ -1,6 +1,8 @@
 # OpenCode Module Documentation
 
 ## Purpose
+
+Personal-build OpenChamber update checks include `notifyOnly`. The install route rejects replacement with HTTP 403 before loading process/package-manager dependencies. Policy and version ownership are documented in [the personal build guide](../../../../../docs/maintenance/BUILD.md).
 This module provides OpenCode server integration utilities for the web server runtime, including configuration management and provider authentication.
 
 ## Entrypoints and structure

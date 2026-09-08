@@ -5,6 +5,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 export const dict = {
   'sessions.sidebar.projectAction.active': 'Action du projet en cours',
   ...settingsDict,
+  'updateDialog.personalNotice': 'Les versions personnelles signalent uniquement les mises à jour. Synchronisez les sources et recompilez pour conserver vos fonctions.',
   ...linearIssuePickerI18n.fr,
   ...linearPanelI18n.fr,
   'terminalView.actions.attachSelection': 'Joindre la sortie sélectionnée',

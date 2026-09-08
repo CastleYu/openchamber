@@ -1,4 +1,5 @@
 import { requestServerShutdown } from './cli-http.js';
+import { assertUpdatesAllowed } from '../../server/lib/personal-build.js';
 import { discoverRunningInstances } from './cli-lifecycle.js';
 import {
   readInstanceOptions,
@@ -18,6 +19,7 @@ import {
 
 function createUpdateCommand({ importFromFilePath, packageManagerPath, serveCommand }) {
   return async function updateCommand(options = {}) {
+    assertUpdatesAllowed();
     const showOutput = shouldRenderHumanOutput(options);
     const updateSpin = createSpinner(options);
 

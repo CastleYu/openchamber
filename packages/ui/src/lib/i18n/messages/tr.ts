@@ -5,6 +5,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 export const dict = {
   'sessions.sidebar.projectAction.active': 'Proje eylemi çalışıyor',
   ...settingsDict,
+  'updateDialog.personalNotice': 'Kişisel derlemeler yalnızca güncelleme bildirir. Özelliklerinizi korumak için kaynak kodunu eşitleyip yeniden derleyin.',
   ...linearIssuePickerI18n.tr,
   ...linearPanelI18n.tr,
   'terminalView.actions.attachSelection': 'Seçili çıktıyı ekle',

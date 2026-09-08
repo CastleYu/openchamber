@@ -6,6 +6,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 export const dict: Record<I18nKey, string> = {
   'sessions.sidebar.projectAction.active': 'Acción del proyecto en curso',
   ...settingsDict,
+  'updateDialog.personalNotice': 'Las versiones personales solo notifican actualizaciones. Sincroniza el código y vuelve a compilar para conservar tus funciones.',
   ...linearIssuePickerI18n.es,
   ...linearPanelI18n.es,
   'terminalView.actions.attachSelection': 'Adjuntar salida seleccionada',

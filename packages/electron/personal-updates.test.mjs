@@ -8,8 +8,9 @@ import { executeUpdate } from '../web/server/lib/package-manager.js';
 const compareVersions = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
 test('personal and CI versions retain independent upstream and feature components', () => {
-  assert.equal(personalVersion('1.22.2'), `1.22.2-personal.${PERSONAL_BUILD.featureVersion}`);
-  assert.equal(personalVersion('1.23.0', '12.2'), `1.23.0-personal.${PERSONAL_BUILD.featureVersion}.ci.12.2`);
+  assert.match(PERSONAL_BUILD.featureVersion, /^[1-9]\d*$/);
+  assert.equal(personalVersion('1.22.2'), `1.22.2-DIJIANG.${PERSONAL_BUILD.featureVersion}`);
+  assert.equal(personalVersion('1.23.0', '12.2'), `1.23.0-DIJIANG.${PERSONAL_BUILD.featureVersion}`);
   assert.throws(() => personalVersion('latest'));
   assert.throws(() => personalVersion('1.22.2', '../bad'));
 });

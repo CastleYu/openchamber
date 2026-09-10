@@ -48,13 +48,13 @@ Retain the local personal commit stack and three uncommitted edits plus `Temp/`.
 
 ### REL-01, independent version and updates
 
-Community version remains in workspace manifests. `packages/web/personal-build.json` owns the personal semantic version and update policy. Desktop display/artifact version combines both; CI adds run and attempt numbers. Update availability compares the community version only. Checks remain available; download, install, auto-install-on-quit, direct HTTP installation and CLI replacement are blocked before side effects. An ordinary restart still works.
+Community version remains in workspace manifests. `packages/web/personal-build.json` owns the single-integer DIJIANG revision and update policy. Desktop display/artifact version combines both, for example `1.22.2-DIJIANG.1`; CI records run and attempt numbers only in build metadata. Update availability compares the community version only. Checks remain available; download, install, auto-install-on-quit, direct HTTP installation and CLI replacement are blocked before side effects. An ordinary restart still works.
 
 Acceptance: same/newer/invalid/failed release checks; no installer spawn through direct entrypoints; localized notification-only UI; current personal version visible; no community update manifest published from the fork. Actual packaged launch is required in addition to unit tests.
 
 ### REL-02, portable builds
 
-Windows x64 is the first supported personal artifact. One root script runs existing staging, OpenCode verification, native rebuild and packaging with publishing disabled. Actions invokes that same script and uploads versioned artifacts plus build metadata. CI increments the build identity without committing generated version churn. Personal feature releases bump the separate semantic version deliberately.
+Windows x64 is the first supported personal artifact. One root script runs existing staging, OpenCode verification, native rebuild and packaging with publishing disabled. Actions invokes that same script and uploads versioned artifacts plus build metadata. CI records its build identity without changing the app version. Personal releases increment the DIJIANG integer deliberately.
 
 Acceptance: clean dependency install with the lockfile, local executable produced, packaged assets/native modules load, bundled OpenCode verified, version matches metadata, launch and close succeed, failed build emits no successful artifact. Actions execution requires pushing the reviewed branch; do not claim remote success from YAML inspection. Portable means no installer; existing AppData/config locations still apply.
 

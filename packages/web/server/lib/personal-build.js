@@ -9,13 +9,13 @@ export const PERSONAL_BUILD = Object.freeze({
 });
 
 export function personalVersion(upstream, build = '') {
-  if (!/^\d+\.\d+\.\d+$/.test(upstream) || !/^\d+\.\d+\.\d+$/.test(config.featureVersion)) {
-    throw new Error('Upstream and personal versions must use major.minor.patch.');
+  if (!/^\d+\.\d+\.\d+$/.test(upstream) || !/^[1-9]\d*$/.test(config.featureVersion)) {
+    throw new Error('Upstream versions must use major.minor.patch; DIJIANG revisions must be positive integers.');
   }
   if (build && !/^[1-9]\d*\.[1-9]\d*$/.test(build)) {
     throw new Error('CI build must use run_number.run_attempt.');
   }
-  return `${upstream}-personal.${config.featureVersion}${build ? `.ci.${build}` : ''}`;
+  return `${upstream}-DIJIANG.${config.featureVersion}`;
 }
 
 export function assertUpdatesAllowed() {

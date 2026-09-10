@@ -32,6 +32,7 @@ if (process.argv.includes('--version')) {
   fs.writeFileSync(path.join(output, 'build-info.json'), `${JSON.stringify({
     upstreamVersion: upstream,
     personalVersion: PERSONAL_BUILD.featureVersion,
+    ciBuild: process.env.OPENCHAMBER_BUILD_NUMBER || null,
     version,
     architecture: process.arch,
     updatePolicy: PERSONAL_BUILD.updatePolicy,

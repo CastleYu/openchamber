@@ -2,9 +2,9 @@
 
 ## Version ownership
 
-Workspace `package.json` versions continue to follow community releases. Edit `packages/web/personal-build.json` to change the independent personal feature version. Major means a breaking personal contract, minor means a personal feature, and patch means a compatible personal fix. A community merge alone does not reset or increment the personal feature version.
+Workspace `package.json` versions continue to follow community releases. Edit `packages/web/personal-build.json` to increment the independent DIJIANG revision: `1`, `2`, `3`. It is a single positive integer. A community merge alone does not reset or increment it.
 
-Example local identity: `1.22.2-personal.0.1.0`. CI adds `.ci.<run_number>.<run_attempt>`, so reruns have distinct artifacts without rewriting committed workspace versions. SemVer treats this as a prerelease identifier; do not compare it to community releases to decide whether upstream has changed. The checker compares only the community component. Build metadata records both versions and the CI source commit when available.
+Example identity: `1.22.2-DIJIANG.1`. CI uses the same identity and records its run and attempt in `build-info.json`, without adding version levels. SemVer treats this as a prerelease identifier; the update checker compares only the community component. Build metadata records both versions and the CI source commit when available.
 
 ## Local Windows x64
 

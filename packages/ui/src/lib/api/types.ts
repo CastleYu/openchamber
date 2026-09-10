@@ -1,6 +1,5 @@
 import type { WorktreeMetadata } from '@/types/worktree';
-import type { DraftStarterRef } from '@/lib/draftStarters';
-import type { InputHistoryScope } from '@/lib/inputHistoryScope';
+import type { DesktopSettings } from '@/lib/settings/registry';
 
 type RuntimePlatform = 'web' | 'desktop' | 'vscode';
 
@@ -191,18 +190,22 @@ export interface GetGitDiffOptions {
 
 /**
  * Diff between two refs. Uses three-dot (`base...head`) semantics server-side, so changes
- * pulled into `head` by merging `base` are excluded — only the branch's own work is returned.
+ * pulled into `head` by merging `base` are excluded. Refs are used as selected.
+ * includeWorkingTree compares that merge base with the checked-out branch's
+ * current files, including staged, unstaged, and untracked changes.
  */
 export interface GetGitRangeDiffOptions {
   base: string;
   head: string;
   path?: string;
   contextLines?: number;
+  includeWorkingTree?: boolean;
 }
 
 export interface GetGitRangeFilesOptions {
   base: string;
   head: string;
+  includeWorkingTree?: boolean;
 }
 
 /** One changed file in a `base...head` range, with its change letter (A/M/D/R/C). */
@@ -389,6 +392,7 @@ export interface GitLogResponse {
 
 export interface CommitFileEntry {
   path: string;
+  previousPath?: string;
   insertions: number;
   deletions: number;
   isBinary: boolean;
@@ -397,6 +401,13 @@ export interface CommitFileEntry {
 
 export interface GitCommitFilesResponse {
   files: CommitFileEntry[];
+}
+
+export interface GetGitCommitDiffOptions {
+  hash: string;
+  path?: string;
+  previousPath?: string;
+  contextLines?: number;
 }
 
 export interface CommitFileDiffResponse {
@@ -570,6 +581,7 @@ export interface GitAPI {
   renameBranch(directory: string, oldName: string, newName: string): Promise<{ success: boolean; branch: string }>;
   getGitLog(directory: string, options?: GitLogOptions): Promise<GitLogResponse>;
   getCommitFiles(directory: string, hash: string): Promise<GitCommitFilesResponse>;
+  getGitCommitDiff?(directory: string, options: GetGitCommitDiffOptions): Promise<GitDiffResponse>;
   getCommitFileDiff?(directory: string, hash: string, filePath: string, isBinary: boolean): Promise<CommitFileDiffResponse>;
   getCurrentGitIdentity(directory: string): Promise<GitIdentitySummary | null>;
   hasLocalIdentity?(directory: string): Promise<boolean>;
@@ -700,82 +712,11 @@ export interface ProjectEntry {
   sidebarCollapsed?: boolean;
 }
 
-export interface SettingsPayload {
-  workStatusPanelEnabled?: boolean;
-  workStatusHiddenSections?: string[];
-  workStatusHiddenSectionsExplicit?: boolean;
-  themeId?: string;
-  useSystemTheme?: boolean;
-  themeVariant?: 'light' | 'dark';
-  lightThemeId?: string;
-  darkThemeId?: string;
-  lastDirectory?: string;
-  homeDirectory?: string;
-  opencodeBinary?: string;
-  projects?: ProjectEntry[];
-  activeProjectId?: string;
-  sidebarProjectDisplayMode?: 'all' | 'single';
-  sidebarSessionGroupingMode?: 'by-worktree' | 'flat';
-  sidebarProjectSortOrder?: 'manual' | 'a-z' | 'z-a' | 'date-added' | 'recent';
-  sidebarShowRecentSection?: boolean;
-  securityScopedBookmarks?: string[];
-  pinnedDirectories?: string[];
-  showReasoningTraces?: boolean;
-  collapsibleThinkingBlocks?: boolean;
-  showDeletionDialog?: boolean;
-  nativeNotificationsEnabled?: boolean;
-  notificationMode?: 'always' | 'hidden-only';
-  autoDeleteEnabled?: boolean;
-  autoSaveEnabled?: boolean;
-  autoDeleteAfterDays?: number;
-  sessionRetentionAction?: 'archive' | 'delete';
-  followUpBehavior?: 'steer' | 'queue';
-  queueModeEnabled?: boolean;
-  inputHistoryScope?: InputHistoryScope;
-  inputHistoryLimit?: number;
-  gitmojiEnabled?: boolean;
-  inputSpellcheckEnabled?: boolean;
-  enterToSend?: boolean;
-  enterToSendConfigured?: boolean;
-  showOpenCodeUpdateNotifications?: boolean;
-  openCodeUpdateToastDismissedVersion?: string;
-  showToolFileIcons?: boolean;
-  codeBlockLineWrap?: boolean;
-  showTurnChangedFiles?: boolean;
-  showExpandedBashTools?: boolean;
-  showExpandedEditTools?: boolean;
-  chatRenderMode?: 'sorted' | 'live';
-  messageStreamTransport?: 'auto' | 'ws' | 'sse';
-  activityRenderMode?: 'collapsed' | 'summary';
-  mermaidRenderingMode?: 'svg' | 'ascii';
-  showSplitAssistantMessageActions?: boolean;
-  fontSize?: number;
-  terminalFontSize?: number;
-  terminalShell?: TerminalShell;
-  terminalLoginShells?: TerminalShell[];
-  editorFontSize?: number;
-  uiFont?: string;
-  monoFont?: string;
-  padding?: number;
-  cornerRadius?: number;
-  inputBarOffset?: number;
-  shortcutOverrides?: Record<string, string>;
-  diffLayoutPreference?: 'dynamic' | 'inline' | 'side-by-side';
-  gitChangesViewMode?: 'flat' | 'tree';
-  toolJsonViewMode?: 'summary' | 'formatted' | 'raw';
-  directoryShowHidden?: boolean;
-  filesViewShowGitignored?: boolean;
-  openInAppId?: string;
-  gitProviderId?: string;
-  gitModelId?: string;
-  pwaAppName?: string;
-  mobileKeyboardMode?: 'native' | 'resize-content';
-  draftStarters?: DraftStarterRef[];
-  draftStartersVisible?: boolean;
-  draftStartersCraftGoalAdded?: boolean;
-
-  [key: string]: unknown;
-}
+/**
+ * The settings document on the wire. Defined once in the settings registry;
+ * this alias keeps the runtime `SettingsAPI` contract readable.
+ */
+export type SettingsPayload = DesktopSettings;
 
 export interface SettingsLoadResult {
   settings: SettingsPayload;

@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { checkPersonalUpdate } from './personal-updates.mjs';
-import { PERSONAL_BUILD, personalVersion, assertUpdatesAllowed } from '../web/server/lib/personal-build.js';
+import { PERSONAL_BUILD, personalVersion, personalIdentity, assertUpdatesAllowed } from '../web/server/lib/personal-build.js';
 import { executeUpdate } from '../web/server/lib/package-manager.js';
 
 const compareVersions = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+
+test('desktop resolves source and packaged DIJIANG metadata without duplicating the suffix', () => {
+  assert.deepEqual(personalIdentity('1.23.0'), { upstream: '1.23.0', version: personalVersion('1.23.0') });
+  assert.deepEqual(personalIdentity('1.23.0-DIJIANG.12'), { upstream: '1.23.0', version: '1.23.0-DIJIANG.12' });
+  assert.throws(() => personalIdentity('1.23.0-DIJIANG.1.2'));
+});
 
 test('personal and CI versions retain independent upstream and feature components', () => {
   assert.match(PERSONAL_BUILD.featureVersion, /^[1-9]\d*$/);

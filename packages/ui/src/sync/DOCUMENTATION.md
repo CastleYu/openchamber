@@ -52,7 +52,7 @@ So:
 | `viewport-store.ts` | Scroll anchors, session memory, loading indicators | App UI state |
 | `attachment-files.ts` | Attachment picker allowlists, MIME/content validation, structured-text sanitization, and HEIC conversion | Local chat attachments across shared UI runtimes |
 | `document-attachments.ts` | Bounded Office/OpenDocument extraction, document text serialization, embedded-image extraction, and positional citations | DOCX, PPTX, XLSX, ODT, ODP, and ODS chat attachments |
-| `input-store.ts` | Draft input state, attached files, synthetic parts | App UI state |
+| `input-store.ts` | Draft input state, attached files, synthetic parts, destination-scoped fork replay handoff | App UI state; fork replay targets runtime + directory + session |
 | `selection-store.ts` | Model/agent/variant selections | App UI state |
 | `voice-store.ts` | Voice state | App UI state |
 
@@ -311,6 +311,8 @@ Rules:
 10. Session-scoped ArrowUp and ArrowDown recall merges the visible transcript's user prompts (`useUserMessageHistory`) with the persisted input-history bucket for runtime + normalized directory + session identity. Revert markers hide prompts from the transcript source only; the persisted bucket still recalls them. Global scope reads the persisted runtime bucket alone.
 11. Part arrays preserve authoritative response/event order. Part IDs are identity keys and have the same rollover limitation; identity lookup/removal must not require a part array to be lexically ID-sorted.
 
+A successful local session creation publishes its session record and calls `SessionMessageLoader.initializeCreatedSession` before selection starts navigation loading. The create response establishes an empty transcript only if no transcript has arrived yet. Initialization supersedes an earlier unresolved history load, preserves any messages or metadata received before the create response, and uses the server-returned directory. Opening that new session needs no history read; forced recovery and later eviction still use normal fetching. Creation responses from a previous runtime cannot select or initialize a session in the current runtime.
+
 Initial loads use smaller pages on constrained VS Code/mobile surfaces. Prefetch resolves only the initial renderable page; it does not eagerly download older history. The mounted chat timeline requests older pages when its viewport is underfilled or the user scrolls toward history, while mobile uses its explicit load-older action. Timeline caches, pending work, prepend snapshots, and stale checks use runtime + directory + session identity so equal session IDs in different worktrees cannot share lifecycle state. Older pages are fetched through the same loader and merged with optimistic records before publication. The same chronology contract applies in the VS Code webview because it consumes this shared loader and sync store; the extension bridge must transport OpenCode records without introducing its own ID-based ordering.
 
 ## Failed-turn diagnostics
@@ -355,7 +357,9 @@ Incomplete-session materialization is deduplicated by runtime, directory, and se
 
 When `session.idle` or `session.error` settles a session but the trailing assistant message still contains a `pending` or `running` tool, sync refreshes that session tail. This narrowly reconciles a missed terminal tool-part event without refetching normally completed turns or stale tools from older turns. A stale refresh or delayed part event cannot regress a locally observed terminal tool to an active status.
 
-When a session is authoritatively settled — `session.idle`/`session.error` event, or an authoritative status snapshot that lowers a previously busy session — and the trailing assistant message is still *unfinished* (`time.completed` missing) with no pending question/permission, the turn is treated as interrupted (managed OpenCode process died mid-turn; the server never finalizes the message or parts, see openchamber#2577 / anomalyco/opencode#19023). The unfinished assistant message is completed locally with `MessageAbortedError`, including text-only turns and turns whose tools had already finished, so the chat shows a visible interrupted state. Any active parts are also finalized as `error`/`Interrupted` with an end time, so tool timers stop and cards render the error state. The mark is gated on an explicit idle status (absent status is "unknown", never judged), never applies while the session is busy (including question/permission waits), and a later terminal event can supersede it while a stale unfinished refresh cannot regress the locally finalized message or parts.
+A completed assistant message is authoritative for its own tool parts. During materialization, a `pending` or `running` tool under `time.completed` becomes `error`/`Interrupted` with an end time. This handles stale persisted tool state during reload. The merge preserves a terminal part already observed live, and a later terminal server snapshot can replace the local interrupted marker.
+
+When a session is authoritatively settled — `session.idle`/`session.error` event, or an authoritative status snapshot that lowers a previously busy session — and the trailing assistant message is still *unfinished* (`time.completed` missing) with no pending question/permission, the turn is treated as interrupted (managed OpenCode process died mid-turn; the server never finalizes the message or parts, see openchamber#2577 / anomalyco/opencode#19023). The unfinished assistant message is completed locally with `MessageAbortedError`, including text-only turns and turns whose tools had already finished, so the chat shows a visible interrupted state. Any active parts are also finalized as `error`/`Interrupted` with an end time, so tool timers stop and cards render the error state. The mark is gated on an explicit idle status (absent status is "unknown", never judged), never applies while the session is busy (including question/permission waits), and a later terminal event can supersede it while a stale unfinished refresh cannot regress the locally finalized message or parts. A successful authoritative snapshot records explicit idle for previously unknown candidates, and message hydration retries this reconciliation after the transcript arrives; a failed status fetch leaves the session unknown. Recovery rejects responses after a runtime or SDK switch, request invalidation, or directory-store disposal before publishing local or global state.
 
 Directory stores also own session-keyed sidecar notification channels for permissions, questions, and message materialization. High-frequency realtime part events annotate the exact session/message before committing, so visible records, user history, renderability, and sidebar permission and question rows are not notified by unrelated sessions. Structural message replacements notify only changed subscribed session buckets; unannotated bulk part replacement conservatively resets active message subscribers so bootstrap, pagination, rollback, and legacy writers cannot leave stale projections.
 
@@ -379,7 +383,7 @@ The discriminator is whether the server confirmed the path, not whether the valu
 
 Rules:
 
-1. Ownership comes from the session record's own `directory`. `getSyncSessionDirectory()` reports *containment*, not ownership, and is only the fallback for a record without a directory: a project's session list includes the sessions of its worktrees so the sidebar can group them, so the parent repository holds worktree sessions too, and reading ownership from membership routes a worktree session to its parent. `null` means "not indexed yet", never "no directory".
+1. Ownership comes from the session record's own `directory`. When directory sync has no owning record yet, the global session index supplies that record's directory before local selection, worktree, or remembered hints. `getSyncSessionDirectory()` reports *containment*, not ownership, and is only the fallback for a record without a directory: a project's session list includes the sessions of its worktrees so the sidebar can group them, so the parent repository holds worktree sessions too, and reading ownership from membership routes a worktree session to its parent. `null` means "not indexed yet", never "no directory".
 2. `attachment` and `worktreeMetadata` hold the worktree path this client asked for, before the server canonicalized it. They are a hint for a session sync has not indexed yet, never a correction of a confirmed directory — otherwise a stale local path re-creates the very mismatch this precedence exists to prevent.
 3. Never persist or rank a guessed directory. `selectSession` may fall back to the active directory to keep routing usable, but that value is not written to runtime memory, not written to the last-active snapshot, and not passed as `selected` — a persisted guess outlives the race that produced it and survives reloads and restarts.
 4. Components must not read `currentSessionDirectory` to build request or queue keys; use `getDirectoryForSession()` so every consumer resolves identically.
@@ -529,6 +533,12 @@ Zustand skips re-renders when a selector returns the same reference (`Object.is`
 During streaming, `message.part.delta` fires ~60 times/sec. Eagerly cloning all fields caused every subscriber in the entire app to re-render 60/sec — a 10x overhead. Targeted cloning reduced MessageList renders from ~1972 to ~296 per session.
 
 ## Event → field mapping
+
+Queue recovery is independent of the directory-bootstrap debounce. The sync
+provider subscribes to `message-queue-sync.ts` for control-stream updates and
+requests a queue refresh on every main-stream connection or transport switch,
+including the first connection. The queue store coalesces these requests with
+bootstrap and owns snapshot ordering and legacy-upload lifetime.
 
 Keep this in sync with `handleDirectoryEvent` in `sync-context.tsx`:
 

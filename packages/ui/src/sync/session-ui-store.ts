@@ -327,6 +327,8 @@ export type NewSessionDraftState = {
   projectContextPins?: { notes: string[]; plans: string[] }
   target: NewSessionDraftTarget
   preparedChatDirectory?: string | null
+  /** Opened as a programmatic fallback (no session active at boot), not by the user. */
+  openedAutomatically?: boolean
 }
 
 export type ViewportAnchor = {
@@ -524,6 +526,11 @@ const getAuthoritativeSessionDirectory = (sessionId: string): string | null => {
   const target = getAllSyncSessions().find((s) => s.id === sessionId)
   const recordDirectory = target ? resolveDirectoryKey(target) : null
   if (recordDirectory) return normalizePath(recordDirectory)
+  // The sidebar can know this session before its directory store bootstraps.
+  // Use that record's own directory before falling back to local routing hints.
+  const globalSession = useGlobalSessionsStore.getState().entityById.get(sessionId)
+  const globalDirectory = normalizePath(globalSession?.directory)
+  if (globalDirectory) return globalDirectory
   const owningDirectory = getSyncSessionDirectory(sessionId)
   return owningDirectory ? normalizePath(owningDirectory) : null
 }
@@ -1280,6 +1287,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
       syntheticParts: options?.syntheticParts,
       targetFolderId: options?.targetFolderId,
       projectContextPins: options?.projectContextPins,
+      openedAutomatically: options?.automatic === true,
     }
 
     set({
@@ -2087,14 +2095,15 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
         throw new Error("Project is not registered in OpenChamber")
       }
 
-      const [branchNameModule, configModule, createModule] = await Promise.all([
+      const [branchNameModule, configModule, trustModule, createModule] = await Promise.all([
         import("@/lib/git/branchNameGenerator"),
         import("@/lib/openchamberConfig"),
+        import("@/lib/sharedTrustConfirmation"),
         import("@/lib/worktrees/worktreeCreate"),
       ])
       const branchName = branchNameModule.generateBranchName()
       createdWorktreeProject = { id: project.id, path: project.path }
-      const setupCommands = await configModule.getWorktreeSetupCommands(createdWorktreeProject)
+      const setupCommands = await trustModule.resolveWorktreeSetupCommands(createdWorktreeProject)
       createdWorktree = await createModule.createWorktreeWithDefaults(createdWorktreeProject, {
         preferredName: branchName,
         mode: "new",

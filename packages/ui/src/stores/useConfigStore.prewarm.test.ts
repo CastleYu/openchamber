@@ -85,6 +85,7 @@ const agentNameForDirectory = (directory: string | null | undefined): string =>
 mock.module('@/stores/utils/safeStorage', () => ({
   getDeferredSafeStorage: () => makeStorage(),
   getSafeStorage: () => makeStorage(),
+  getSafeSessionStorage: () => makeStorage(),
   createDeferredSafeJSONStorage: () => makeJSONStorage(),
 }));
 
@@ -130,6 +131,7 @@ mock.module('@/lib/runtime-fetch', () => ({
 }));
 
 mock.module('@/lib/persistence', () => ({
+  loadDesktopSettings: mock(async () => ({})),
   updateDesktopSettings: mock(async () => undefined),
 }));
 

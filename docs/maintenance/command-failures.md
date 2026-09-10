@@ -15,3 +15,15 @@
 - HMR smoke initially pointed Vite at its default API port 3001 instead of the isolated Electron backend. Seed `desktopLocalPort` and use matching `OPENCHAMBER_PORT`/`OPENCHAMBER_HMR_API_PORT` in the test environment. Desktop About uses its own dialog, not the mobile-only Settings navigation entry.
 - Automatic approval rejected termination by port alone. Read-only inspection proved PID 51608 was this task's project Vite command started at 13:17:18. A retry targeting that PID and rechecking its command was approved.
 - Reusing the HMR debugging port let a later smoke attach to the wrong page. Final portable verification used a dedicated port, explicit packaged mode, the `openchamber-ui:` URL requirement and a 90-second timeout. It passed version-display and update-denial checks. Cleanup requests were retried only after approval-service quota errors cleared and the user resumed.
+
+## 2026-09-10 upstream sync
+
+- Sandbox Node-to-Git and Bun workspace subprocesses failed with EPERM / Failed to start process. The same scoped commands ran with escalation.
+- The clean upstream comparison worktree needed both web and UI node_modules links; the root link alone cannot resolve Vitest or @pierre/diffs.
+- The upstream package-import test calls npm without a Windows executable shim and fails with spawnSync npm ENOENT on both upstream and integration.
+- Windows Git fixtures assume POSIX paths, LF, executable shell hooks and command quoting. Compare their failures against the exact fetched upstream before attributing them to integration.
+- Native rebuild reached MSB8040 because Visual Studio Spectre libraries are absent. Web assets, OpenCode CLI verification and Electron main bundling completed; do not call this a successful portable package. The dependency already ships Windows prebuilds for an isolated runtime check.
+- The smoke helper exports evaluateValue, not evaluate. Use the actual export when constructing the CDP probe.
+- A failure-log patch assumed a nonexistent heading. Anchor patches to observed text.
+- CDP Browser.close can close the socket without a response; wait for the child exit with a bounded timeout rather than await that response indefinitely. A later port probe correctly returned ECONNREFUSED after the owned process exited.
+- HMR reloaded during a long component-mount wait. The separate HMR bridge check passed; full panel interaction was validated with bundled assets. Keep those claims separate.

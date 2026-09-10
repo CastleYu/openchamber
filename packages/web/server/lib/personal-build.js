@@ -21,3 +21,9 @@ export function personalVersion(upstream, build = '') {
 export function assertUpdatesAllowed() {
   if (PERSONAL_BUILD.notifyOnly) throw new Error(PERSONAL_BUILD.disabledMessage);
 }
+
+export function personalIdentity(version) {
+  const match = /^(\d+\.\d+\.\d+)(?:-DIJIANG\.[1-9]\d*)?$/.exec(version);
+  if (!match) throw new Error('Invalid DIJIANG build identity.');
+  return { upstream: match[1], version: version === match[1] ? personalVersion(version) : version };
+}

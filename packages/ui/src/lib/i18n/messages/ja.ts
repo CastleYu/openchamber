@@ -4,6 +4,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.title': "パフォーマンス",
+  'performance.memory': "メモリ",
+  'performance.cpu': "CPU",
+  'performance.processes': "プロセス数",
+  'performance.metric': "ヘッダーの指標",
+  'performance.paused': "計測を一時停止中",
+  'performance.failed': "計測に失敗しました。以前の値は古い可能性があります。",
+  'performance.loading': "計測中…",
+  'performance.scope': "現在のサーバーと Electron、OpenCode、MCP、ターミナルの子プロセスが対象です。外部サービスとブラウザークライアントは含みません。",
+  'performance.pause': "一時停止",
+  'performance.resume': "再開",
+  'performance.history': "直近30回の計測 · 5秒間隔",
+  'performance.accounting': "メモリはワーキングセット / RSS の合計で、共有ページが重複する場合があります。CPU はマシン全体の容量に対する割合です。新しいプロセスには2回の計測が必要です。",
+  'performance.updated': "更新時刻 {time}",
   'sessions.sidebar.projectAction.active': 'プロジェクトアクション実行中',
   ...settingsDict,
   'updateDialog.personalNotice': '個人版では更新の通知のみ行います。独自機能を維持するには、ソースを同期して再ビルドしてください。',

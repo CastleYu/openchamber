@@ -3,6 +3,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'performance.title': "Performances",
+  'performance.memory': "Mémoire",
+  'performance.cpu': "CPU",
+  'performance.processes': "Processus",
+  'performance.metric': "Mesure dans l’en-tête",
+  'performance.paused': "Mesure en pause",
+  'performance.failed': "Échec de la mesure. Les données précédentes peuvent être périmées.",
+  'performance.loading': "Mesure en cours…",
+  'performance.scope': "Serveur actif et ses processus Electron, OpenCode, MCP et terminaux. Services externes et navigateurs clients exclus.",
+  'performance.pause': "Pause",
+  'performance.resume': "Reprendre",
+  'performance.history': "30 dernières mesures · toutes les 5 secondes",
+  'performance.accounting': "Mémoire : somme des ensembles de travail / RSS ; pages partagées parfois comptées plusieurs fois. CPU sur capacité totale ; deux mesures pour les nouveaux processus.",
+  'performance.updated': "Mis à jour à {time}",
   'sessions.sidebar.projectAction.active': 'Action du projet en cours',
   ...settingsDict,
   'updateDialog.personalNotice': 'Les versions personnelles signalent uniquement les mises à jour. Synchronisez les sources et recompilez pour conserver vos fonctions.',

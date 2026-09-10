@@ -4,6 +4,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.title': "Продуктивність",
+  'performance.memory': "Пам’ять",
+  'performance.cpu': "CPU",
+  'performance.processes': "Процеси",
+  'performance.metric': "Показник у заголовку",
+  'performance.paused': "Вимірювання призупинено",
+  'performance.failed': "Помилка вимірювання. Попередні дані можуть бути застарілими.",
+  'performance.loading': "Вимірювання…",
+  'performance.scope': "Активний сервер і його процеси Electron, OpenCode, MCP та термінали. Без зовнішніх служб і клієнтських браузерів.",
+  'performance.pause': "Призупинити",
+  'performance.resume': "Продовжити",
+  'performance.history': "Останні 30 вимірювань · кожні 5 секунд",
+  'performance.accounting': "Пам’ять підсумовує робочі набори / RSS; спільні сторінки можуть враховуватися повторно. CPU відносно всієї потужності; новим процесам потрібні два вимірювання.",
+  'performance.updated': "Оновлено о {time}",
   'sessions.sidebar.projectAction.active': 'Виконується дія проєкту',
   ...settingsDict,
   'updateDialog.personalNotice': 'Особисті збірки лише сповіщають про оновлення. Синхронізуйте код і зберіть знову, щоб зберегти власні функції.',

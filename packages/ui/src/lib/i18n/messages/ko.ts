@@ -4,6 +4,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.title': "성능 분석",
+  'performance.memory': "메모리",
+  'performance.cpu': "CPU",
+  'performance.processes': "프로세스 수",
+  'performance.metric': "상단 표시 지표",
+  'performance.paused': "측정 일시 중지됨",
+  'performance.failed': "측정 실패. 이전 데이터가 오래되었을 수 있습니다.",
+  'performance.loading': "측정 중…",
+  'performance.scope': "현재 서버와 Electron, OpenCode, MCP, 터미널 하위 프로세스입니다. 외부 서비스와 브라우저 클라이언트는 제외됩니다.",
+  'performance.pause': "일시 중지",
+  'performance.resume': "계속",
+  'performance.history': "최근 30회 측정 · 5초 간격",
+  'performance.accounting': "메모리는 작업 집합 / RSS 합계이며 공유 페이지가 중복될 수 있습니다. CPU는 전체 장치 기준이며 새 프로세스는 두 번 측정해야 합니다.",
+  'performance.updated': "{time} 업데이트",
   'sessions.sidebar.projectAction.active': '프로젝트 작업 실행 중',
   ...settingsDict,
   'updateDialog.personalNotice': '개인 빌드는 업데이트 알림만 표시합니다. 개인 기능을 유지하려면 소스를 동기화하고 다시 빌드하세요.',

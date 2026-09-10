@@ -3,6 +3,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'performance.title': "Performans",
+  'performance.memory': "Bellek",
+  'performance.cpu': "CPU",
+  'performance.processes': "İşlemler",
+  'performance.metric': "Üst bilgi ölçütü",
+  'performance.paused': "Ölçüm duraklatıldı",
+  'performance.failed': "Ölçüm başarısız. Önceki veriler güncel olmayabilir.",
+  'performance.loading': "Ölçülüyor…",
+  'performance.scope': "Etkin sunucu ve Electron, OpenCode, MCP ve terminal alt işlemleri. Harici hizmetler ve tarayıcı istemcileri hariçtir.",
+  'performance.pause': "Duraklat",
+  'performance.resume': "Sürdür",
+  'performance.history': "Son 30 ölçüm · 5 saniye aralıkla",
+  'performance.accounting': "Bellek çalışma kümeleri / RSS toplamıdır; paylaşılan sayfalar birden çok sayılabilir. CPU toplam kapasiteye göredir; yeni işlemler iki ölçüm gerektirir.",
+  'performance.updated': "Güncellendi: {time}",
   'sessions.sidebar.projectAction.active': 'Proje eylemi çalışıyor',
   ...settingsDict,
   'updateDialog.personalNotice': 'Kişisel derlemeler yalnızca güncelleme bildirir. Özelliklerinizi korumak için kaynak kodunu eşitleyip yeniden derleyin.',

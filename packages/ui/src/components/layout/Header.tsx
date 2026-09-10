@@ -32,6 +32,7 @@ import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 import { useDesktopWindowControlsLayout } from '@/hooks/useDesktopWindowControlsLayout';
 import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
 import { WindowsWindowControls } from '@/components/desktop/WindowsWindowControls';
+import { PerformancePanel } from './PerformancePanel';
 import { UpdateDialog } from '@/components/ui/UpdateDialog';
 import { useDeviceInfo, useTabletStandalonePwaRuntime } from '@/lib/device';
 import { cn } from '@/lib/utils';
@@ -1693,6 +1694,7 @@ export const Header: React.FC = () => {
           ) : null}
 
           {desktopSidebarActions}
+          {!isVSCode && <PerformancePanel />}
           <WindowsWindowControls visible={usesFramelessChrome && windowControlsSide === 'right'} position="right" />
         </div>
       </div>

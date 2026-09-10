@@ -4,6 +4,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.title': "Rendimiento",
+  'performance.memory': "Memoria",
+  'performance.cpu': "CPU",
+  'performance.processes': "Procesos",
+  'performance.metric': "Métrica de cabecera",
+  'performance.paused': "Muestreo pausado",
+  'performance.failed': "Error de muestreo. Los datos anteriores pueden estar desactualizados.",
+  'performance.loading': "Muestreando…",
+  'performance.scope': "Servidor activo y sus procesos Electron, OpenCode, MCP y terminales. Excluye servicios externos y navegadores clientes.",
+  'performance.pause': "Pausar",
+  'performance.resume': "Reanudar",
+  'performance.history': "Últimas 30 muestras · cada 5 segundos",
+  'performance.accounting': "Memoria: suma de conjuntos de trabajo / RSS; puede duplicar páginas compartidas. CPU sobre capacidad total; procesos nuevos necesitan dos muestras.",
+  'performance.updated': "Actualizado {time}",
   'sessions.sidebar.projectAction.active': 'Acción del proyecto en curso',
   ...settingsDict,
   'updateDialog.personalNotice': 'Las versiones personales solo notifican actualizaciones. Sincroniza el código y vuelve a compilar para conservar tus funciones.',

@@ -4,6 +4,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.title': "性能分析",
+  'performance.memory': "内存",
+  'performance.cpu': "CPU",
+  'performance.processes': "进程数",
+  'performance.metric': "顶部显示指标",
+  'performance.paused': "采样已暂停",
+  'performance.failed': "采样失败，先前数据可能已过期。",
+  'performance.loading': "正在采样…",
+  'performance.scope': "当前服务及其 Electron、OpenCode、MCP、终端进程树。外部服务和浏览器客户端不计入。",
+  'performance.pause': "暂停",
+  'performance.resume': "继续",
+  'performance.history': "最近 30 次采样 · 每 5 秒一次",
+  'performance.accounting': "内存为工作集 / RSS 总和，共享页可能重复计入。CPU 按整机算力计算，新进程需要两次采样。",
+  'performance.updated': "更新于 {time}",
   'sessions.sidebar.projectAction.active': '项目操作正在运行',
   ...settingsDict,
   'updateDialog.personalNotice': '个人版仅提示更新。请同步源码后重新打包，以保留个人功能。',

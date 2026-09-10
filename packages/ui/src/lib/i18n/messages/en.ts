@@ -3,6 +3,20 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'performance.title': "Performance",
+  'performance.memory': "Memory",
+  'performance.cpu': "CPU",
+  'performance.processes': "Processes",
+  'performance.metric': "Header metric",
+  'performance.paused': "Sampling paused",
+  'performance.failed': "Sampling failed. Previous readings may be stale.",
+  'performance.loading': "Sampling…",
+  'performance.scope': "Active server and its process tree, including Electron, OpenCode, MCP and terminal descendants. External services and browser clients are excluded.",
+  'performance.pause': "Pause",
+  'performance.resume': "Resume",
+  'performance.history': "Last 30 samples · 5-second interval",
+  'performance.accounting': "Memory sums working sets / RSS and may count shared pages more than once. CPU uses total machine capacity; new processes need two samples.",
+  'performance.updated': "Updated {time}",
   'updateDialog.personalNotice': 'Updates are notification-only in personal builds. Sync the source and rebuild to keep your features.',
   'sessions.sidebar.projectAction.active': 'Project action active',
   ...settingsDict,

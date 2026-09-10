@@ -44,6 +44,12 @@ Artifacts: `.worktrees/sync-20260910-1338/sync-native-profile/{result.json,panel
 
 ## Promotion and publication
 
-Promote by fast-forward only after confirming the personal branch still equals the integration base. Preserve remaining tracked and untracked work with an exact stash object ID and restore the original index split. Keep backup refs and the stash through restoration verification.
+The personal branch was confirmed at the integration base and fast-forwarded. Remaining work was preserved in stash `9dc433b38335dbe14db7256cb74a951a438a3f08`, which remains available alongside the older stash and backup branch. The snapshot covered 56 modified tracked files and 24 untracked files.
+
+Restoration required 12 conflict resolutions. The unrelated occupancy field moved into upstream's settings registry, including its parser, live-store binding and both generated snapshots. Git prefetch retains policy gating/configurable capacity and upstream's timed-out-request accounting. Walkthrough retains commit comparisons and separate load/generation cancellation. Those adaptations remain uncommitted in the original checkout; they are not part of the published integration.
+
+All 24 untracked files match their original SHA-256 hashes. All 7 modified tracked files untouched by upstream match the saved content after newline normalization. Shared changed files were merged with upstream; the original copies remain in the exact stash. No conflict entries or staged files remain. `git diff --check` passed. Restored-work validation: workspace type-check passed; Git store 43 tests, walkthrough store 17 tests, registry 10 tests and four backend-policy files with 19 tests passed. Registry Oxlint still reports its upstream unknown-parameter contracts at lines 110 and 609; the added occupancy parser and test have no new finding.
+
+Automatic approval rejected an initial batch restoration script. It was not executed. Recovery proceeded through individual reviewed patches; the three retired settings definitions were restored only after documenting their entire occupancy-only delta and moving that behavior into the new registry.
 
 The user authorized pushing only `codex/personal` to `origin`. Its existing workflow creates portable artifacts on push; a push does not prove the workflow passed. Do not publish to upstream, force-push, or change the branch's existing upstream tracking.

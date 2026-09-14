@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseRelease, renderReleaseNotes } from './changelog/lib.mjs';
 
-const FILES = { info: 'build-info.json', sums: 'SHA256SUMS.txt', notes: 'release-notes.md', history: 'update-history.md' };
+const FILES = { info: 'build-info.json', sums: 'SHA256SUMS.txt', notes: 'release-notes.md', history: 'update-history.md', chineseHistory: 'update-history.zh-CN.md' };
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runGh = args => execFileSync('gh', args, { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
 const digest = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -34,7 +34,8 @@ export function publishPersonal({ directory, repository, commit, version, gh = r
   const notesFile = path.join(directory, FILES.notes);
   fs.writeFileSync(notesFile, `Windows x64 portable build ${info.version}.\n\n${renderReleaseNotes(notes)}\n\nSource: ${commit}. Upstream updates remain notification-only.\n`);
   fs.copyFileSync(path.join(sourceRoot, 'packages/ui/src/content/update-history.md'), path.join(directory, FILES.history));
-  const names = [executable, FILES.info, FILES.history];
+  fs.copyFileSync(path.join(sourceRoot, 'packages/ui/src/content/update-history.zh-CN.md'), path.join(directory, FILES.chineseHistory));
+  const names = [executable, FILES.info, FILES.history, FILES.chineseHistory];
   fs.writeFileSync(path.join(directory, FILES.sums), names.map(name => `${digest(path.join(directory, name))}  ${name}\n`).join(''));
   names.push(FILES.sums);
   if (!release) {

@@ -51,7 +51,8 @@ artifacts for 30 days; unpacked application files are excluded.
 A separate publish job has `contents: write`. `scripts/publish-personal.mjs`
 checks the build version, source commit, architecture and notification-only
 policy, creates a draft tagged `v<personal-version>`, and uploads the EXE,
-`build-info.json`, complete `update-history.md` and `SHA256SUMS.txt`. It checks
+`build-info.json`, complete `update-history.md`, its Simplified Chinese counterpart
+`update-history.zh-CN.md`, and `SHA256SUMS.txt`. It checks
 GitHub's size and SHA-256 for every attachment before publishing. Release text
 comes from `changelog/unreleased.md` at the same source commit.
 

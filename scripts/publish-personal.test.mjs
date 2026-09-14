@@ -13,6 +13,7 @@ function fixture(t, options = {}) {
   fs.mkdirSync(path.join(root, 'packages/ui/src/content'), { recursive: true });
   fs.writeFileSync(path.join(root, 'changelog/unreleased.md'), '---\ntitle: Update history\n---\n\n## App\n\n### New\n- Read update history.\n');
   fs.writeFileSync(path.join(root, 'packages/ui/src/content/update-history.md'), 'History');
+  fs.writeFileSync(path.join(root, 'packages/ui/src/content/update-history.zh-CN.md'), '更新历史');
   const directory = path.join(root, 'output');
   fs.mkdirSync(directory);
   const commit = 'a'.repeat(40);
@@ -54,7 +55,8 @@ test('uploads all artifacts, verifies digests, then publishes', t => {
   const f = fixture(t);
   assert.equal(f.run().status, 'published');
   const upload = f.calls.find(args => args[1] === 'upload');
-  assert.equal(upload.slice(3, upload.indexOf('--repo')).length, 4);
+  assert.equal(upload.slice(3, upload.indexOf('--repo')).length, 5);
+  assert(upload.some(file => file.endsWith('update-history.zh-CN.md')));
   assert.equal(f.calls.filter(args => args.includes('PATCH')).length, 1);
 });
 test('uses the created draft identity even while release listings are stale', t => {

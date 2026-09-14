@@ -4,7 +4,7 @@ title: File previews and project controls
 
 Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-14. This is a retrospective summary, not a claim that every historical item is new in the next release.
 
-Official entries identify the community release that introduced the behavior. Personal entries describe the cumulative fork changes through 1.23.0-DIJIANG.3.2. The current personal package includes the official line through 1.23.0; every 1.23.1 entry and the v2 preview are marked not merged. Historical behavior can be superseded by a later entry.
+Official entries identify the community release that introduced the behavior. Personal entries describe the cumulative fork changes through 1.23.0-DIJIANG.3.3. The current personal package includes the official line through 1.23.0; every 1.23.1 entry and the v2 preview are marked not merged. Historical behavior can be superseded by a later entry.
 
 Two differences matter when reading this history. Official 1.23.1 removed automatic MCP reconnection, while this personal build retains managed reconnection with idle-release safeguards. Official desktop update improvements describe community builds; the personal build keeps notification-only updates. Portable refers to the executable, while settings and session data still use the established user directories.
 
@@ -18,7 +18,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
-- Personal / Settings: Update history preserves the complete official and personal summary offline, with source and application filters (thanks to @CastleYu).
+- Personal / Settings: Update history preserves the complete official and personal summary offline, with source and application filters. From DIJIANG.3.3, Simplified Chinese translates every entry and language changes preserve the filters (thanks to @CastleYu).
 - Official 1.23.0 / **Git:** Stage, unstage, or discard individual blocks of changes with controls beside each block in the web and desktop Changes view (thanks to @LABCAT).
 - **Personal / Files:** Preview video, audio, images and SVGs in Files, with playback controls and an external-open fallback when a format cannot be decoded (thanks to @CastleYu).
 - Official 1.22.0 / Linear: connect a workspace in Settings → Integrations, browse and filter issues, and start a session or worktree from an issue. OpenChamber reports session progress back to Linear and can attach an issue to your next message (thanks to @AlexKutas).
@@ -239,7 +239,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.1 (not merged) / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
 - Official 1.23.1 (not merged) / Desktop: Updated Electron to 43.7.0.
 - Personal / Distribution: Windows x64 releases use a versioned portable executable; previous executables and existing settings, sessions and OpenCode data are retained during replacement (thanks to @CastleYu).
-- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.2 (thanks to @CastleYu).
+- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.3 (thanks to @CastleYu).
 - Personal / Updates: Upstream releases produce a notice and link. App, web and CLI update paths cannot automatically download or replace the personal build; OpenCode's own updater is separate (thanks to @CastleYu).
 - Personal / Windows packaging: Local and CI builds use the same portable pipeline and record source/build metadata; this release provides an EXE, build information and SHA-256 checksums (thanks to @CastleYu).
 - Personal / Diagnostics: Optional DEBUG builds expose bounded process diagnostics. Normal release builds keep that endpoint disabled, and diagnostic events omit commands and credentials (thanks to @CastleYu).
@@ -263,7 +263,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
-- Personal / Settings: Update history is available in the extension, including a separately classified VS Code history (thanks to @CastleYu).
+- Personal / Settings: Update history is available in the extension, including a separately classified VS Code history. From DIJIANG.3.3, its complete text also follows the Simplified Chinese interface (thanks to @CastleYu).
 - Official 1.22.1 / Settings: Fixel Text is available as an interface font.
 - Official 1.22.1 / Usage: exe.dev usage windows are tracked.
 - Official 1.22.2 / Comments on code. Select lines, click the `+` in the gutter or right-click → OpenChamber → Add Comment, and write your note. It stays pinned to the code and goes out with your next message as a context card. Works in diffs too (thanks to @felipegenef).

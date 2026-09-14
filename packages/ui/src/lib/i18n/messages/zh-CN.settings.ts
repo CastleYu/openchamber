@@ -1,7 +1,7 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
   'settings.page.update-history.title': "更新历史",
-  'settings.page.update-history.description': "自 1.22.0 起的官方与个人版更新。标注“not merged”的内容尚未合入当前版本。",
+  'settings.page.update-history.description': "自 1.22.0 起的官方与个人版更新。标注“尚未合入”的内容未包含在当前版本中。",
   'settings.history.source': "来源",
   'settings.history.all': "全部",
   'settings.history.official': "官方",

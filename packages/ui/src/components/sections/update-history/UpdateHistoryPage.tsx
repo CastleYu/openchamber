@@ -1,5 +1,6 @@
 import React from 'react';
 import history from '@/content/update-history.md?raw';
+import chineseHistory from '@/content/update-history.zh-CN.md?raw';
 import { useI18n } from '@/lib/i18n';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { SimpleMarkdownRenderer } from '@/components/chat/MarkdownRenderer';
@@ -10,12 +11,14 @@ import {
 } from '@/lib/settings/updateHistory';
 
 const entries = parseUpdateHistory(history);
+const chineseEntries = parseUpdateHistory(chineseHistory);
 
 export function UpdateHistoryPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [origin, setOrigin] = React.useState<HistoryOrigin>(HistoryOrigin.All);
   const [surface, setSurface] = React.useState<HistorySurface>(() => isVSCodeRuntime() ? HistorySurface.VSCode : HistorySurface.App);
-  const selected = entries.filter(entry => entry.surface === surface && (origin === HistoryOrigin.All || entry.origin === origin));
+  const localized = locale === 'zh-CN' ? chineseEntries : entries;
+  const selected = localized.filter(entry => entry.surface === surface && (origin === HistoryOrigin.All || entry.origin === origin));
 
   return <SettingsPageLayout title={t('settings.page.update-history.title')} description={t('settings.page.update-history.description')}>
     <SettingsSection divider={false} settingsItem={UPDATE_HISTORY_ANCHOR}>

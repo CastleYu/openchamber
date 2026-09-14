@@ -13,8 +13,11 @@
 - `updateHistory.ts` — read-only history classification and page/search identities.
   Settings → Update history lazy-loads `content/update-history.md` with the app,
   so web, desktop, mobile and VS Code can read it offline. App/VS Code and
-  Official/Personal filters preserve every authored bullet. History content is
-  maintained in its source language; page controls use the interface locale.
+  Official/Personal filters preserve every authored bullet. Simplified Chinese
+  uses `content/update-history.zh-CN.md`; other locales retain the English source.
+  Controls use the interface locale. Switching locale updates the body in place
+  without resetting filters. Both sources retain matching entry order, scope,
+  versions, contributor credits and not-merged labels, enforced by history tests.
   Unknown headings or unclassified bullets fail validation instead of vanishing.
   This durable source is independent of release-note promotion/reset; the
   personal upstream-sync skill requires updating it with each integration.

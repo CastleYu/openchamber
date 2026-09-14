@@ -63,7 +63,8 @@ A conflict-free merge still needs review for semantic regressions. If a conflict
 ## Maintain the Settings update history
 
 Every upstream integration updates `packages/ui/src/content/update-history.md`,
-the durable source bundled by Settings → Update history. Read its scope and the
+and its complete Simplified Chinese counterpart `update-history.zh-CN.md`,
+the durable sources bundled by Settings → Update history. Read its scope and the
 `updateHistory.ts` parser contract first. It is independent of
 `changelog/unreleased.md` and survives release-note promotion and reset.
 
@@ -77,7 +78,11 @@ and distinguish superseded historical behavior from current behavior.
 Change `not merged` labels only when those changes are in the validated merge.
 Update the scope/version paragraph and retained or adapted personal behavior.
 Check the VS Code surface map before assigning extension entries. Record remaining
-coverage gaps; release titles alone are not sufficient evidence.
+coverage gaps; release titles alone are not sufficient evidence. Translate each
+new or changed entry into Simplified Chinese in the same integration. Keep entry
+order, platform/group/source, versions, credits, links and not-merged labels aligned
+with English. Verify the body changes with the interface language while filters
+stay selected; translated controls alone do not complete history localization.
 
 Run the update-history and Settings-search tests, check that no authored bullet
 was lost, and verify the Settings page. Changelog authoring and generated files

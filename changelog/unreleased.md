@@ -1,23 +1,18 @@
 ---
-title: Update history in Settings
+title: Update history in Chinese
 ---
 
-Personal release 1.23.0-DIJIANG.3.2. The complete official and personal history
-since 1.22.0 is retained in the app and attached to the portable release.
+Personal release 1.23.0-DIJIANG.3.3. The complete history remains available offline
+in English and Simplified Chinese, with both documents attached to the portable release.
 
 ## App
 
-### New
+### Fixes
 
-- **Settings:** Read the complete update history offline, filtering official and personal changes or App and VS Code entries. Updates not yet merged are marked explicitly (thanks to @CastleYu).
-
-### Misc
-
-- Windows releases: GitHub Actions builds portable packages and verifies their source and attachment checksums before publishing. Existing published versions remain unchanged (thanks to @CastleYu).
-- Maintenance: Upstream synchronization now requires refreshing the retained update history and checking coverage and platform availability (thanks to @CastleYu).
+- **Settings:** Update history now translates every entry into Simplified Chinese. Switching language keeps the source and application filters selected (thanks to @CastleYu).
 
 ## VS Code
 
-### New
+### Fixes
 
-- Settings: Read update history offline with the extension's entries selected initially and filters for official and personal changes (thanks to @CastleYu).
+- Settings: Update history displays its complete text in Simplified Chinese when selected as the interface language, keeping versions and unmerged changes visible (thanks to @CastleYu).

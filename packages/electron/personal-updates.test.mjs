@@ -10,11 +10,17 @@ const compareVersions = (a, b) => a.localeCompare(b, undefined, { numeric: true 
 test('desktop resolves source and packaged DIJIANG metadata without duplicating the suffix', () => {
   assert.deepEqual(personalIdentity('1.23.0'), { upstream: '1.23.0', version: personalVersion('1.23.0') });
   assert.deepEqual(personalIdentity('1.23.0-DIJIANG.12'), { upstream: '1.23.0', version: '1.23.0-DIJIANG.12' });
-  assert.throws(() => personalIdentity('1.23.0-DIJIANG.1.2'));
+  assert.deepEqual(personalIdentity('1.23.0-DIJIANG.1.2'), { upstream: '1.23.0', version: '1.23.0-DIJIANG.1.2' });
+  assert.deepEqual(personalIdentity('1.23.0-DIJIANG.2.0'), { upstream: '1.23.0', version: '1.23.0-DIJIANG.2.0' });
+  assert.deepEqual(personalIdentity('1.23.0-DIJIANG.1.1-DEBUG'), { upstream: '1.23.0', version: '1.23.0-DIJIANG.1.1-DEBUG' });
+  assert.throws(() => personalIdentity('1.23.0-DIJIANG.1.1-DEBUG-extra'));
+  for (const revision of ['0.1', '1.01', '01.1', '1.1.1', '1.-1']) {
+    assert.throws(() => personalIdentity(`1.23.0-DIJIANG.${revision}`));
+  }
 });
 
 test('personal and CI versions retain independent upstream and feature components', () => {
-  assert.match(PERSONAL_BUILD.featureVersion, /^[1-9]\d*$/);
+  assert.match(PERSONAL_BUILD.featureVersion, /^[1-9]\d*\.(?:0|[1-9]\d*)$/);
   assert.equal(personalVersion('1.22.2'), `1.22.2-DIJIANG.${PERSONAL_BUILD.featureVersion}`);
   assert.equal(personalVersion('1.23.0', '12.2'), `1.23.0-DIJIANG.${PERSONAL_BUILD.featureVersion}`);
   assert.throws(() => personalVersion('latest'));

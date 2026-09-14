@@ -2,9 +2,23 @@
 
 ## Version ownership
 
-Workspace `package.json` versions continue to follow community releases. Edit `packages/web/personal-build.json` to increment the independent DIJIANG revision: `1`, `2`, `3`. It is a single positive integer. A community merge alone does not reset or increment it.
+Workspace `package.json` versions continue to follow community releases. The
+independent personal revision lives in `packages/web/personal-build.json`, in
+`featureVersion`, and always has two numeric levels: `feature.fix`.
 
-Example identity: `1.22.2-DIJIANG.1`. CI uses the same identity and records its run and attempt in `build-info.json`, without adding version levels. SemVer treats this as a prerelease identifier; the update checker compares only the community component. Build metadata records both versions and the CI source commit when available.
+- A new feature or a refactor increments `feature` and resets `fix` to zero.
+- An optimization, bug fix or maintenance correction increments `fix`.
+- A release containing both uses the feature increment.
+- `feature` starts at one and `fix` starts at zero. Neither permits leading zeros.
+- A community merge alone does not reset or increment the personal revision.
+
+The previous `DIJIANG.1` is the historical baseline for `DIJIANG.1.0`. The first
+fix release under this rule is `1.23.0-DIJIANG.1.1`. Further fixes become `1.2`,
+`1.3`, and so on; the next feature or refactor release becomes `2.0`. Readers
+continue accepting old single-level installed identities, but new builds use
+two levels.
+
+Example identity: `1.23.0-DIJIANG.1.1`. CI uses the same identity and records its run and attempt in `build-info.json`, without adding version levels. SemVer treats this as a prerelease identifier; the update checker compares only the community component. Build metadata records both versions and the CI source commit when available.
 
 ## Local Windows x64
 
@@ -13,6 +27,18 @@ Install the existing lockfile dependencies with `bun install --frozen-lockfile`,
 The script uses existing web asset staging, pinned OpenCode preparation/verification, Electron bundling, native module rebuild and `electron-builder`. It explicitly requests `portable`, Windows x64 and `--publish=never`. Output is under `packages/electron/dist/personal/<version>/`, with one `.exe` and `build-info.json`. NSIS installer packaging remains available through the package script with an explicit target; the default Windows target is portable.
 
 Portable here means a standalone executable without an installation step. Electron user data/logs and OpenCode configuration still use their established AppData/home locations. Keep that data when replacing an executable. Full removable-drive data isolation is not implemented.
+
+When asked to package and install locally, deploy the portable release executable
+first. Use a versioned directory and a shortcut to that executable, retain the
+previous build and existing user data, and verify the deployed launch. Use the
+NSIS installation path only when the maintainer explicitly requests it. A normal
+release has no `-DEBUG` suffix and keeps performance diagnostics disabled.
+
+For a local diagnostic portable build, run `node scripts/build-personal.mjs --debug`.
+It keeps the personal revision and appends `-DEBUG`, for example
+`1.23.0-DIJIANG.1.1-DEBUG`. The debug desktop enables the existing server's
+`/api/system/performance/debug` endpoint; ordinary desktop builds return 404.
+CI keeps its normal build flags.
 
 ## Actions
 

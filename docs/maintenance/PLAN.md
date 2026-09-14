@@ -1,5 +1,56 @@
 # Personal maintenance plan
 
+## DIJIANG 3.1 file reliability, release preparation 2026-09-14
+
+- File loading now exposes recoverable errors, preserves dirty edits and stops
+  failed polling. Transfers serialize completion and cleanup, enforce final byte
+  counts, and cancel stale save/open work. Native launch failures reach callers.
+  Missing packaged documents show an independent recovery page.
+- Changes are committed by ownership: process sampling and shutdown, project
+  resource policy, file opening, then personal version and maintenance records.
+- Workspace type checks passed. File-route regression passed all 65 tests after
+  updating its directory-stat and isolated-import fixtures. The existing unused
+  variable in `LogsPage.tsx:119` still blocks the complete workspace lint.
+- The release executable is rebuilt after source commits with `GITHUB_SHA` set
+  to the source revision. Its `build-info.json` identifies that revision. Local
+  profiles and temporary test output are excluded from source commits.
+
+## DIJIANG 3.0 file opening, installed 2026-09-12
+
+- Implemented the approved file-opening design. Ownership and tested media
+  formats are documented in [FILE-OPENING-3.0.md](FILE-OPENING-3.0.md).
+- Workspace type checks passed. Focused transfer, ZIP, file-reference and
+  Markdown regression tests passed. New modules passed anti-slop lint. The
+  workspace lint run retains one unrelated pre-existing unused variable in
+  `packages/ui/src/components/sections/logs/LogsPage.tsx:119`.
+- Built and launched the final portable executable with an isolated profile.
+  Its runtime reported `1.23.0-DIJIANG.3.0`, native file APIs were available,
+  MKV decoded at 320 pixels wide with readyState 4, and Save as / System open
+  were present. HMR acceptance also covered audio, ZIP listings, inline images,
+  folder classification and the independent file context menu.
+- Installed to
+  `C:/Users/74756/AppData/Local/Programs/OpenChamber-Portable/1.23.0-DIJIANG.3.0/`.
+  The executable SHA-256 is
+  `1DC47BF73B0DEBB04CCFA847F215FB218FF49CCE8844E2FE2B9F833B90F777F3`.
+- Updated the existing Start Menu `OpenChamber.lnk` to the stable portable EXE,
+  retaining `dev.openchamber.desktop` and clearing test arguments. The previous
+  link is `OpenChamber-before-3.0.lnk` beside the new executable; the 2.1 portable
+  executable and user data remain intact.
+- Normal-profile launch through the shortcut was verified: the new instance
+  displayed `Abyssys | OpenChamber`, connected its managed OpenCode process,
+  and returned `status: ok` from its health endpoint. The shortcut still pointed
+  to the fixed version directory after launch.
+- Test artifacts were moved out of the repository to avoid indexing generated
+  browser profiles. Evidence is under
+  `C:/Users/74756/.codex/visualizations/2026/09/12/01a094ca-074b-73e2-be93-7a4fd01b27fd/file-opening-evidence/`;
+  final packaged acceptance is in the sibling `file-opening-qa/result.json` and
+  `window.png`. Live SSH/relay download and other-platform native operations
+  were not exercised. No Git commands or publication were requested.
+
+Local release validation for the maintainer-requested DIJIANG 1.2 performance
+optimization and portable installation is recorded in [MCP-1.2](evidence/MCP-1.2.md).
+This release record does not change the backlog acceptance statuses below.
+
 Last updated: 2026-09-08. Task statuses below are the source of truth for execution. Design choices can change through the decision log. This document describes future work unless a task has accepted evidence.
 
 ## Read first
@@ -48,7 +99,7 @@ Retain the local personal commit stack and three uncommitted edits plus `Temp/`.
 
 ### REL-01, independent version and updates
 
-Community version remains in workspace manifests. `packages/web/personal-build.json` owns the single-integer DIJIANG revision and update policy. Desktop display/artifact version combines both, for example `1.22.2-DIJIANG.1`; CI records run and attempt numbers only in build metadata. Update availability compares the community version only. Checks remain available; download, install, auto-install-on-quit, direct HTTP installation and CLI replacement are blocked before side effects. An ordinary restart still works.
+Community version remains in workspace manifests. `packages/web/personal-build.json` owns the two-level DIJIANG `feature.fix` revision and update policy. Features and refactors increment the first level and reset fixes to zero; optimizations and fixes increment the second level. See [BUILD.md](BUILD.md) for the version standard and legacy identity handling. Desktop display/artifact version combines both, for example `1.23.0-DIJIANG.1.1`; CI records run and attempt numbers only in build metadata. Update availability compares the community version only. Checks remain available; download, install, auto-install-on-quit, direct HTTP installation and CLI replacement are blocked before side effects. An ordinary restart still works.
 
 Acceptance: same/newer/invalid/failed release checks; no installer spawn through direct entrypoints; localized notification-only UI; current personal version visible; no community update manifest published from the fork. Actual packaged launch is required in addition to unit tests.
 
@@ -121,3 +172,31 @@ QA-02 is limited to the incomplete storage fixture in `packages/ui/src/stores/us
 ## Evidence template
 
 Each task evidence file records: task ID, base/final commit, owner, status, changed files, acceptance checklist, exact commands with outcomes, production/runtime artifacts, untested boundaries, rollback instructions, reviewer identity and findings. A code change that passes static checks remains `review` until its required runtime boundary is checked. Keep chronological attempts, including failed hypotheses, under the same ID.
+
+## Local acceptance: DIJIANG 2.1, 2026-09-12
+
+- Connected client project modes to the managed MCP lifecycle, retained active
+  clients and authoritative running sessions, handled multiple owned BGPM
+  connections, and added bounded release/restore/retention logs. Corrected the
+  route's missing JSON parser after packaged verification exposed HTTP 400.
+- Twenty focused MCP tests and three resource-report tests passed. Native
+  verification used two real BGPM connections: ten processes, 497 MiB working
+  sets, then zero owned processes after idle release; running-session protection
+  and prompt-time restoration passed. This is a controlled lifecycle result.
+- Workspace type checks passed. Focused ESLint/Oxlint passed. Full lint retains
+  the existing QA-02 `LogsPage.tsx` unused `currentFilePath` failure.
+- Built the portable package, then repackaged the server-only JSON parser fix
+  with the already validated UI/native assets. The installed SHA256 is
+  `13D5E2D806275FB39B358282AEF44C1E77E5876BA4B490DFB58175933DAFD828`.
+- Updated the existing Start Menu `OpenChamber.lnk`, preserving
+  `dev.openchamber.desktop`, and launched through that entry. The old shortcut
+  is backed up beside the installed executable; 2.0 remains available.
+- Normal-user acceptance at 15:14:54 CST: 13 reported directories were idle,
+  five MCP releases were logged, and native sampling found zero MCP guards and
+  zero Node helpers in the new app tree. Seven base processes remained, totaling
+  1163 MiB working sets and 0.21% machine CPU. These are current observations,
+  not a normalized whole-app performance comparison against the prior launch.
+- Evidence: `Temp/idle-native-result-final.log`, `Temp/portable-install-2.1.json`,
+  `Temp/idle-workspace-types.log`, `Temp/idle-workspace-lint.log` and
+  `Temp/idle-dead-code-final.log`. No Git commands, commits or publication were
+  requested. Other-platform native release behavior was not exercised.

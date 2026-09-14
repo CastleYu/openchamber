@@ -6,7 +6,9 @@ import { personalVersion, PERSONAL_BUILD } from '../packages/web/server/lib/pers
 const root = path.resolve(import.meta.dirname, '..');
 const desktop = path.join(root, 'packages/electron');
 const upstream = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
-const version = personalVersion(upstream, process.env.OPENCHAMBER_BUILD_NUMBER || '');
+const debug = process.argv.includes('--debug');
+const target = 'portable';
+const version = personalVersion(upstream, process.env.OPENCHAMBER_BUILD_NUMBER || '') + (debug ? '-DEBUG' : '');
 const output = path.join(desktop, 'dist/personal', version);
 const bun = process.platform === 'win32' ? 'bun.exe' : 'bun';
 
@@ -25,19 +27,21 @@ if (process.argv.includes('--version')) {
   for (const stage of ['build:web-assets', 'prepare:opencode-cli', 'verify:opencode-cli', 'bundle:main', 'rebuild:native']) {
     run(bun, ['run', stage]);
   }
-  run(process.execPath, ['scripts/package.mjs', '--win', 'portable', '--x64', '--publish=never',
+  run(process.execPath, ['scripts/package.mjs', '--win', target, '--x64', '--publish=never',
     `--config.extraMetadata.version=${version}`, `--config.directories.output=${output}`]);
   const artifacts = fs.readdirSync(output).filter((name) => name.endsWith('.exe'));
-  if (artifacts.length !== 1) throw new Error('Expected exactly one portable executable.');
+  if (artifacts.length !== 1) throw new Error('Expected exactly one desktop executable.');
   fs.writeFileSync(path.join(output, 'build-info.json'), `${JSON.stringify({
     upstreamVersion: upstream,
     personalVersion: PERSONAL_BUILD.featureVersion,
     ciBuild: process.env.OPENCHAMBER_BUILD_NUMBER || null,
     version,
+    debug,
+    target,
     architecture: process.arch,
     updatePolicy: PERSONAL_BUILD.updatePolicy,
     sourceCommit: process.env.GITHUB_SHA || null,
     artifacts,
   }, null, 2)}\n`);
-  console.log(`Portable build: ${path.join(output, artifacts[0])}`);
+  console.log(`Desktop build: ${path.join(output, artifacts[0])}`);
 }

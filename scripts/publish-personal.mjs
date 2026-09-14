@@ -38,12 +38,14 @@ export function publishPersonal({ directory, repository, commit, version, gh = r
   fs.writeFileSync(path.join(directory, FILES.sums), names.map(name => `${digest(path.join(directory, name))}  ${name}\n`).join(''));
   names.push(FILES.sums);
   if (!release) {
-    gh(['release', 'create', tag, '--repo', repository, '--target', commit, '--title', `OpenChamber ${info.version}`, '--notes-file', notesFile, '--draft']);
-    release = find();
+    release = JSON.parse(gh(['api', `${endpoint}/releases`, '--method', 'POST',
+      '-f', `tag_name=${tag}`, '-f', `target_commitish=${commit}`, '-f', `name=OpenChamber ${info.version}`,
+      '-F', 'draft=true', '-F', `body=@${notesFile}`]));
   }
-  if (!release?.draft || release.target_commitish !== commit) throw new Error('Release changed before upload');
+  if (!release?.draft || release.target_commitish !== commit || !Number.isSafeInteger(release.id)) throw new Error('Release changed before upload');
+  const releaseEndpoint = `${endpoint}/releases/${release.id}`;
   gh(['release', 'upload', tag, ...names.map(name => path.join(directory, name)), '--repo', repository, '--clobber']);
-  release = find();
+  release = JSON.parse(gh(['api', releaseEndpoint]));
   if (!release?.draft || release.target_commitish !== commit) throw new Error('Release changed during upload');
   for (const name of names) {
     const asset = release.assets.find(item => item.name === name);
@@ -52,8 +54,7 @@ export function publishPersonal({ directory, repository, commit, version, gh = r
       throw new Error(`Uploaded asset verification failed: ${name}`);
     }
   }
-  gh(['release', 'edit', tag, '--repo', repository, '--notes-file', notesFile, '--draft=false', '--latest']);
-  release = find();
+  release = JSON.parse(gh(['api', releaseEndpoint, '--method', 'PATCH', '-F', `body=@${notesFile}`, '-F', 'draft=false', '-f', 'make_latest=true']));
   if (!release || release.draft) throw new Error('Release publication was not confirmed');
   return { status: 'published', tag, url: release.html_url };
 }

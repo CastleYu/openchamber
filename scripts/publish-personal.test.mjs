@@ -27,8 +27,16 @@ function fixture(t, options = {}) {
   let release = options.release;
   const gh = args => {
     calls.push(args);
-    if (args[0] === 'api') return JSON.stringify(args[1].includes('/releases?') ? [[...(release ? [release] : [])]] : options.refs || []);
-    if (args[1] === 'create') release = { tag_name: `v${version}`, draft: true, target_commitish: commit, assets: [], html_url: 'https://github.com/CastleYu/openchamber/releases/tag/v' + version };
+    if (args[0] === 'api') {
+      if (args.includes('POST')) {
+        release = { id: 123, tag_name: `v${version}`, draft: true, target_commitish: commit, assets: [], html_url: 'https://github.com/CastleYu/openchamber/releases/tag/v' + version };
+        return JSON.stringify(release);
+      }
+      if (args.includes('PATCH')) { release.draft = false; return JSON.stringify(release); }
+      if (args[1].includes('/releases?')) return JSON.stringify([[...(release && !options.staleList ? [release] : [])]]);
+      if (args[1].includes('/releases/')) return JSON.stringify(release);
+      return JSON.stringify(options.refs || []);
+    }
     if (args[1] === 'upload') {
       release.assets = args.slice(3, args.indexOf('--repo')).map(file => ({
         name: path.basename(file), size: fs.statSync(file).size, state: 'uploaded',
@@ -37,7 +45,6 @@ function fixture(t, options = {}) {
       if (options.corrupt) release.assets[0].digest = 'sha256:incorrect';
       if (options.failUpload) throw new Error('Upload interrupted');
     }
-    if (args[1] === 'edit') release.draft = false;
     return '';
   };
   return { calls, run: () => publishPersonal({ directory, commit, version, repository: 'CastleYu/openchamber', sourceRoot: root, gh }) };
@@ -48,7 +55,12 @@ test('uploads all artifacts, verifies digests, then publishes', t => {
   assert.equal(f.run().status, 'published');
   const upload = f.calls.find(args => args[1] === 'upload');
   assert.equal(upload.slice(3, upload.indexOf('--repo')).length, 4);
-  assert.equal(f.calls.filter(args => args[1] === 'edit').length, 1);
+  assert.equal(f.calls.filter(args => args.includes('PATCH')).length, 1);
+});
+test('uses the created draft identity even while release listings are stale', t => {
+  const f = fixture(t, { staleList: true });
+  assert.equal(f.run().status, 'published');
+  assert.equal(f.calls.filter(args => args[1].includes('/releases?')).length, 1);
 });
 test('never mutates an already published version', t => {
   const f = fixture(t, { release: { tag_name: 'v1.23.0-DIJIANG.3.2', draft: false, target_commitish: 'old' } });
@@ -56,9 +68,9 @@ test('never mutates an already published version', t => {
   assert(f.calls.every(args => args[0] === 'api'));
 });
 test('resumes a draft only at the same source commit', t => {
-  const f = fixture(t, { release: { tag_name: 'v1.23.0-DIJIANG.3.2', draft: true, target_commitish: 'a'.repeat(40), assets: [] } });
+  const f = fixture(t, { release: { id: 123, tag_name: 'v1.23.0-DIJIANG.3.2', draft: true, target_commitish: 'a'.repeat(40), assets: [] } });
   assert.equal(f.run().status, 'published');
-  assert(!f.calls.some(args => args[1] === 'create'));
+  assert(!f.calls.some(args => args.includes('POST')));
 });
 test('rejects a draft or tag owned by another commit', t => {
   const f = fixture(t, { release: { tag_name: 'v1.23.0-DIJIANG.3.2', draft: true, target_commitish: 'b'.repeat(40) } });
@@ -70,7 +82,7 @@ test('failed upload and mismatched digest remain unpublished', t => {
   for (const options of [{ failUpload: true }, { corrupt: true }]) {
     const f = fixture(t, options);
     assert.throws(f.run);
-    assert(!f.calls.some(args => args[1] === 'edit'));
+    assert(!f.calls.some(args => args.includes('PATCH')));
   }
 });
 test('rejects debug, foreign commit and unexpected artifacts before remote calls', t => {

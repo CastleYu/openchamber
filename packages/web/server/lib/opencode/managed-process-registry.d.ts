@@ -4,6 +4,7 @@ export function registerManagedProcess(entry: {
   port?: number | null;
   binary?: string | null;
   runtime?: string;
+  startedAt?: string;
 }): Promise<void>;
 
 export function unregisterManagedProcess(pid?: number): Promise<void>;

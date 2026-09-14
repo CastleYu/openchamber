@@ -93,6 +93,10 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
   const runtime = createOpenCodeLifecycleRuntime({
     state,
     ...registry,
+    terminateWindowsTree: async (pid) => {
+      const child = spawnMock.mock.results.map((result) => result.value).findLast((value) => value?.pid === pid);
+      child?.kill();
+    },
     env: {
       ENV_CONFIGURED_OPENCODE_PORT: 45678,
       ENV_CONFIGURED_OPENCODE_HOST: null,
@@ -684,6 +688,26 @@ describe('OpenCode lifecycle', () => {
     await server.close();
 
     expect(unregisterManagedOpenCodeProcess).toHaveBeenCalledTimes(1);
+  });
+
+  it.skipIf(process.platform !== 'win32')('terminates the tree before allowing the Windows root to exit', async () => {
+    delete process.env.OPENCODE_BINARY;
+    const child = createMockChild();
+    spawnMock.mockImplementationOnce(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    const terminateWindowsTree = vi.fn(async (pid) => {
+      expect(pid).toBe(child.pid);
+      expect(child.kill).not.toHaveBeenCalled();
+      child.signalCode = 'SIGTERM';
+      child.emit('close', null, 'SIGTERM');
+    });
+    const runtime = createRuntime({ terminateWindowsTree });
+    const server = await runtime.startOpenCode();
+    await server.close();
+    expect(terminateWindowsTree).toHaveBeenCalledTimes(1);
+    expect(child.kill).not.toHaveBeenCalled();
   });
 
   it('removes the registry entry once for an explicitly closed managed child', async () => {

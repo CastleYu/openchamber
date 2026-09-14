@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useI18n } from '@/lib/i18n';
 import { subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
+import { exportPerformanceDiagnostics } from '@/lib/performance';
 import { PERFORMANCE_HISTORY, PERFORMANCE_INTERVAL, PerformanceMetric, formatMetric, metricValue, readPerformance, type PerformanceSnapshot } from '@/lib/performance';
 
 const choices = [
@@ -88,6 +89,7 @@ export function PerformancePanel() {
           <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setEnabled(!enabled)}>{t(enabled ? 'performance.pause' : 'performance.resume')}</Button>
         </div>
         {status && <p role="status" className="text-muted-foreground text-sm">{status}</p>}
+        <Button variant="ghost" size="sm" onClick={exportPerformanceDiagnostics}>{t('performance.export')}</Button>
         {sample && <>
           <div className="grid grid-cols-3 gap-3">
             {choices.map((choice) => <div key={choice.value}><p className="text-xs text-muted-foreground">{t(choice.label)}</p><p className="text-lg tabular-nums">{formatMetric(metricValue(sample, choice.value), choice.value)}</p></div>)}

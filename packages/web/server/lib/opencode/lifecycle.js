@@ -1,9 +1,15 @@
-import { spawn, spawnSync } from 'node:child_process';
+import { execFile, spawn, spawnSync } from 'node:child_process';
+import { promisify } from 'node:util';
 import net from 'node:net';
 import { stripAppImageArgv0Leak } from '../inherited-env.js';
 import { reapOrphanedProcesses, registerManagedProcess, unregisterManagedProcess } from './managed-process-registry.js';
 import { applyProviderEnvAliases } from './provider-env-aliases.js';
 import { recordStartupPerformance } from './startup-performance.js';
+
+const exec = promisify(execFile);
+const killWindowsTree = (pid, force) => exec('taskkill',
+  ['/pid', String(pid), '/t', ...(force ? ['/f'] : [])],
+  { windowsHide: true, timeout: 5000 });
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -114,6 +120,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     reapManagedOrphanedProcesses = reapOrphanedProcesses,
     registerManagedOpenCodeProcess = registerManagedProcess,
     unregisterManagedOpenCodeProcess = unregisterManagedProcess,
+    terminateWindowsTree = killWindowsTree,
     getWarmupDirectories = async () => [],
     onOpenCodeRestarted = null,
     now = Date.now,
@@ -314,21 +321,10 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     };
 
     if (process.platform === 'win32') {
+      // Keep the root alive until taskkill has discovered its descendants.
+      // Killing just the root first loses the tree as soon as it exits.
       try {
-        child.kill();
-      } catch {
-      }
-
-      if (await waitForChildProcessClose(child, 800)) {
-        return;
-      }
-
-      try {
-        spawnSync('taskkill', ['/pid', String(pid), '/t'], {
-          stdio: 'ignore',
-          timeout: 3000,
-          windowsHide: true,
-        });
+        await terminateWindowsTree(pid, false);
       } catch {
       }
 
@@ -337,11 +333,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       }
 
       try {
-        spawnSync('taskkill', ['/pid', String(pid), '/f', '/t'], {
-          stdio: 'ignore',
-          timeout: 5000,
-          windowsHide: true,
-        });
+        await terminateWindowsTree(pid, true);
       } catch {
       }
 
@@ -422,6 +414,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     };
     console.log('[OpenCode] Launching managed server', state.lastOpenCodeLaunchDiagnostics);
 
+    const startedAt = new Date().toISOString();
     const child = spawn(binary, args, {
       cwd,
       env: processEnv,
@@ -531,6 +524,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       ownerPid: process.pid,
       port,
       binary,
+      startedAt,
       runtime: process.env.OPENCHAMBER_RUNTIME || 'web',
     });
     console.log('[lifecycle] managed OpenCode registered', {

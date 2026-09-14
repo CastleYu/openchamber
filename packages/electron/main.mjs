@@ -1488,6 +1488,8 @@ const spawnLocalServer = async () => {
   }
   process.env.OPENCHAMBER_DIST_DIR = resolveWebDistDir();
   process.env.OPENCHAMBER_RUNTIME = 'desktop';
+  process.env.OPENCHAMBER_DESKTOP_VERSION = app.getVersion();
+  process.env.OPENCHAMBER_PERFORMANCE_DEBUG = app.getVersion().endsWith('-DEBUG') ? '1' : '0';
   // OpenCode uses process cwd as a fallback directory; app userData would make
   // packaged desktop look like a separate empty workspace.
   process.env.OPENCHAMBER_OPENCODE_CWD = resolveManagedOpenCodeCwd({
@@ -1563,21 +1565,38 @@ const launchDetachedOpenCodeKiller = (processInfo) => {
 $ErrorActionPreference = 'SilentlyContinue'
 $targetPid = ${normalizedPid}
 $graceMs = ${Math.max(0, Math.trunc(OPENCODE_SHUTDOWN_GRACE_MS))}
-function Stop-ProcessTree([int]$processId, [bool]$force) {
-  if ($processId -le 0) { return }
-  $children = Get-CimInstance Win32_Process -Filter "ParentProcessId=$processId"
-  foreach ($child in $children) {
-    Stop-ProcessTree ([int]$child.ProcessId) $force
-  }
-  if ($force) {
-    Stop-Process -Id $processId -Force
-  } else {
-    Stop-Process -Id $processId
+# Discover the tree once, before stopping its root. Preserve identities across
+# both passes so a failed child stop cannot lose its ancestry or hit a reused PID.
+$rows = @(Get-CimInstance Win32_Process)
+$root = $rows | Where-Object { $_.ProcessId -eq $targetPid } | Select-Object -First 1
+if (-not $root -or -not $root.CreationDate) { exit }
+$children = @{}
+foreach ($row in $rows) {
+  $parent = [int]$row.ParentProcessId
+  if (-not $children.ContainsKey($parent)) { $children[$parent] = [System.Collections.Generic.List[object]]::new() }
+  $children[$parent].Add($row)
+}
+$tree = [System.Collections.Generic.List[object]]::new()
+$seen = [System.Collections.Generic.HashSet[int]]::new()
+$tree.Add($root)
+[void]$seen.Add($targetPid)
+for ($index = 0; $index -lt $tree.Count; $index++) {
+  foreach ($row in $children[[int]$tree[$index].ProcessId]) {
+    if ($row.CreationDate -ge $root.CreationDate -and $seen.Add([int]$row.ProcessId)) { $tree.Add($row) }
   }
 }
-Stop-ProcessTree $targetPid $false
+function Stop-CapturedTree([bool]$force) {
+  for ($index = $tree.Count - 1; $index -ge 0; $index--) {
+    $row = $tree[$index]
+    $live = Get-Process -Id ([int]$row.ProcessId) -ErrorAction SilentlyContinue
+    if ($live -and $live.StartTime.ToUniversalTime().ToString('yyyyMMddHHmmssffffff') -eq $row.CreationDate.ToUniversalTime().ToString('yyyyMMddHHmmssffffff')) {
+      $live | Stop-Process -Force:$force
+    }
+  }
+}
+Stop-CapturedTree $false
 Start-Sleep -Milliseconds $graceMs
-Stop-ProcessTree $targetPid $true
+Stop-CapturedTree $true
 `;
     const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
     const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');

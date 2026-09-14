@@ -87,6 +87,12 @@ bun run lint:electron
 
 `electron:dev:bundled` builds and uses packaged web assets instead of the HMR server. Use it when testing behavior closer to a packaged app.
 
+For process-memory diagnosis, `node scripts/build-personal.mjs --debug`
+builds a portable executable with a `-DEBUG` version suffix. These desktop builds
+enable the authenticated `/api/system/performance/debug` route on the existing
+backend. See the [performance contract](../web/server/lib/performance/DOCUMENTATION.md)
+for fields and measurement units. Ordinary desktop versions keep the route disabled.
+
 ## Packaging
 
 This personal fork defaults to Windows x64 portable builds and notification-only updates. See [the personal build guide](../../docs/maintenance/BUILD.md) for version ownership, local commands, Actions artifacts and replacement instructions. The upstream packaging and updater details below describe the retained platform implementation; personal policy blocks its installation paths.
@@ -110,6 +116,12 @@ Build output goes to `packages/electron/dist`.
 macOS builds produce `dmg` and `zip` artifacts. Windows builds default to a portable executable. Linux builds produce an AppImage for the native x64 or arm64 host. The root personal build command currently supports Windows x64; use package-level platform commands for the other targets.
 
 ## Platform Notes
+
+Windows detached OpenCode shutdown captures the process tree once before
+termination and stops descendants before the root. The retry uses that same
+snapshot and verifies creation times to avoid acting on reused PIDs. It does not
+issue a separate WMI query for every descendant. The managed-process registry
+retains incomplete cleanup for a later run.
 
 macOS packaging needs Xcode/build tools for notarized builds and icon asset compilation.
 

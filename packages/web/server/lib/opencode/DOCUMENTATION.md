@@ -155,7 +155,20 @@ Transport-triggered health checks share the periodic monitor's failure accountin
 
 Managed health failures are classified as `timeout`, `connection_refused`, `connection_reset`, `invalid_response`, or `error`. The lifecycle retains the latest counted failure with a bounded detail string and source. Managed process wrappers continue capturing a sanitized, bounded stderr tail after readiness and retain exit code/signal. Before replacing a managed process, lifecycle snapshots the reason, latest health failure, process diagnostics/aliveness, busy-session count, and timestamp into `lastOpenCodeRestartDiagnostics`; successful startup does not clear this snapshot, and `/health` exposes it for post-restart diagnosis without process environment or credentials.
 
-Every managed OpenCode child is recorded in the shared managed-process registry so a later run can reap it if this process dies before teardown. Its entry is removed when the child exits, whether that is an explicit `close()` or a natural exit such as a crash or an external kill. Removal is ordered after the registering write and is idempotent across both paths, so a dead child never leaves a stale entry and neither path removes an entry twice. On Windows, if the recorded OpenCode root is already gone and its owner is also gone, the next run performs a bounded descendant scan. It reaps only newer descendants whose process name or command identifies the MCP/OpenCode tool chain; unknown start times, commands, and live owners are left alone. `registerManagedOpenCodeProcess`, `unregisterManagedOpenCodeProcess`, and `reapManagedOrphanedProcesses` are injectable dependencies that default to the shared registry. Lifecycle events record bounded PID, owner, port, and outcome fields in the runtime JSONL log without recording commands, paths, environment variables, or credentials.
+Every managed OpenCode child is recorded in the shared managed-process registry.
+The timestamp is captured before spawn so descendants created during startup are
+included. On Windows, shutdown awaits asynchronous tree termination before the
+root can be killed separately. A root exit requests registry removal, but removal
+requires a successful snapshot with no root or direct descendants. A failed scan
+or surviving descendant retains the record. Unix retains its process-group behavior.
+
+On Windows, if the recorded OpenCode root and owner are both gone, the next run
+performs a bounded descendant scan. It reaps only newer descendants whose name or
+command identifies the MCP/OpenCode chain. Unknown identities and live owners are
+left alone. A failed scan or termination retains the record for retry; a command
+reporting success is checked against target liveness. Parent cycles are bounded.
+Lifecycle registry operations remain injectable. Logs contain bounded PID, owner,
+port and outcome fields, never commands, paths, environment values or credentials.
 
 ## Public exports (env-runtime.js)
 - `createOpenCodeEnvRuntime(dependencies)`: creates runtime that owns OpenCode CLI environment and binary discovery state.

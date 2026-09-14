@@ -145,7 +145,7 @@ describe('reapOrphanedProcesses', () => {
             CommandLine: 'node background-process-mcp',
           }), '');
         }
-        if (cmd === 'taskkill') return cb(null, '', '');
+        if (cmd === 'taskkill') { killAliveFor([]); return cb(null, '', ''); }
         cb(new Error(`unexpected cmd: ${cmd} ${args.join(' ')}`));
       });
       rmMock.mockResolvedValue();
@@ -176,6 +176,26 @@ describe('reapOrphanedProcesses', () => {
       await reapOrphanedProcesses();
 
       expect(execFileImpl).not.toHaveBeenCalled();
+    });
+
+    it('retains an absent root record when the descendant scan fails', async () => {
+      readdirMock.mockResolvedValue(['777.json']);
+      readFileMock.mockResolvedValue(JSON.stringify({ pid: 777, ownerPid: 12345, startedAt: '2026-09-05T00:00:00Z' }));
+      killAliveFor([]);
+      execFileYields((_cmd, _args, _opts, cb) => cb(new Error('timeout')));
+      expect(await reapOrphanedProcesses()).toEqual({ inspected: 1, reaped: 0 });
+      expect(rmMock).not.toHaveBeenCalled();
+    });
+
+    it('retains a record when taskkill reports success but its target survives', async () => {
+      readdirMock.mockResolvedValue(['777.json']);
+      readFileMock.mockResolvedValue(JSON.stringify({ pid: 777, ownerPid: 12345, startedAt: '2026-09-05T00:00:00Z' }));
+      killAliveFor([888]);
+      execFileYields((cmd, _args, _opts, cb) => cb(null, cmd === 'powershell' ? JSON.stringify([
+        { ProcessId: 888, ParentProcessId: 777, Name: 'node.exe', CreationDate: '/Date(1788566460000)/', CommandLine: 'node mcp' },
+      ]) : '', ''));
+      expect(await reapOrphanedProcesses()).toEqual({ inspected: 1, reaped: 0 });
+      expect(rmMock).not.toHaveBeenCalled();
     });
 
     it('leaves old or unrelated descendants untouched', async () => {
@@ -239,7 +259,7 @@ describe('reapOrphanedProcesses', () => {
       killAliveFor([777]);
       execFileYields((cmd, _args, _opts, cb) => {
         if (cmd === 'tasklist') return cb(null, 'opencode.exe', '');
-        if (cmd === 'taskkill') return cb(null, '', '');
+        if (cmd === 'taskkill') { killAliveFor([]); return cb(null, '', ''); }
         cb(new Error(`unexpected cmd: ${cmd}`));
       });
       rmMock.mockResolvedValue();
@@ -379,11 +399,33 @@ describe('registerManagedProcess', () => {
 
 describe('unregisterManagedProcess', () => {
   it('removes the entry file', async () => {
+    setPlatform('linux');
     rmMock.mockResolvedValue();
 
     await unregisterManagedProcess(4242);
 
     expect(rmMock).toHaveBeenCalledWith(expect.stringContaining('4242.json'), { force: true });
+  });
+
+  it('keeps a Windows record when descendants survive or the snapshot fails', async () => {
+    setPlatform('win32');
+    readFileMock.mockResolvedValue(JSON.stringify({ pid: 777, startedAt: '2026-09-05T00:00:00Z' }));
+    execFileYields((_cmd, _args, _opts, cb) => cb(null, JSON.stringify([
+      { ProcessId: 888, ParentProcessId: 777, Name: 'node.exe', CreationDate: '2026-09-05T00:01:00Z' },
+    ]), ''));
+    await unregisterManagedProcess(777);
+    expect(rmMock).not.toHaveBeenCalled();
+    execFileYields((_cmd, _args, _opts, cb) => cb(new Error('snapshot unavailable')));
+    await unregisterManagedProcess(777);
+    expect(rmMock).not.toHaveBeenCalled();
+  });
+
+  it('removes a Windows record after a complete empty snapshot', async () => {
+    setPlatform('win32');
+    readFileMock.mockResolvedValue(JSON.stringify({ pid: 777 }));
+    execFileYields((_cmd, _args, _opts, cb) => cb(null, '[]', ''));
+    await unregisterManagedProcess(777);
+    expect(rmMock).toHaveBeenCalledWith(expect.stringContaining('777.json'), { force: true });
   });
 
   it('is a no-op for a non-integer pid', async () => {

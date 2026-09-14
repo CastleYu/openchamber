@@ -3,6 +3,7 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'performance.export': 'Exporter les diagnostics',
   'performance.title': "Performances",
   'performance.memory': "Mémoire",
   'performance.cpu': "CPU",

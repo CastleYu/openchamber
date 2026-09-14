@@ -60,7 +60,7 @@ const defaultExecFileAsync = promisify(execFile);
 const WINDOWS_PROCESS_QUERY = [
   '$ErrorActionPreference = "Stop"',
   'Get-CimInstance -ClassName Win32_Process',
-  '| Select-Object ProcessId, ParentProcessId, Name, CreationDate, CommandLine',
+  '| Select-Object ProcessId, ParentProcessId, Name, @{Name="CreationDate";Expression={$_.CreationDate.ToUniversalTime().ToString("o")}}, CommandLine',
   '| ConvertTo-Json -Compress',
 ].join(' ');
 const WINDOWS_PROCESS_QUERY_TIMEOUT_MS = 5000;
@@ -147,7 +147,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
   };
 
   /** Record an OpenCode process WE spawned so a future run can reap it if orphaned. */
-  const registerManagedProcess = async ({ pid, ownerPid, port, binary, runtime } = {}) => {
+  const registerManagedProcess = async ({ pid, ownerPid, port, binary, runtime, startedAt = new Date().toISOString() } = {}) => {
     if (!Number.isInteger(pid)) return;
     await writeEntryFile({
       pid,
@@ -155,7 +155,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
       port: Number.isInteger(port) ? port : null,
       binary: typeof binary === 'string' ? binary : null,
       runtime: typeof runtime === 'string' ? runtime : 'web',
-      startedAt: new Date().toISOString(),
+      startedAt,
     });
   };
 
@@ -163,6 +163,13 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
   const unregisterManagedProcess = async (pid) => {
     if (!Number.isInteger(pid)) return;
     try {
+      if (process.platform === 'win32') {
+        // A root exit is not evidence that its MCP descendants exited. Keep
+        // the record on unavailable or incomplete cleanup for the next run.
+        const entry = JSON.parse(await fs.readFile(entryFilePath(pid), 'utf8'));
+        const rows = await readWindowsProcessTree();
+        if (!rows || rows.some((row) => row.pid === pid || row.parentPid === pid) || findWindowsManagedDescendants(rows, entry).length > 0) return;
+      }
       await fs.rm(entryFilePath(pid), { force: true });
     } catch {
       // Best-effort: dropping a missing file is not an error.
@@ -233,6 +240,8 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
     if (!text) return null;
     const parsed = Date.parse(text);
     if (Number.isFinite(parsed)) return parsed;
+    const serialized = text.match(/^\/Date\((-?\d+)(?:[+-]\d{4})?\)\/$/);
+    if (serialized) return Number(serialized[1]);
     const dmtf = text.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
     if (!dmtf) return null;
     return Date.UTC(
@@ -254,9 +263,11 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
 
     const descendants = [];
     const pending = [...(byParent.get(entry.pid) || [])];
+    const visited = new Set([entry.pid]);
     while (pending.length > 0) {
       const row = pending.shift();
-      if (!row) continue;
+      if (!row || visited.has(row.pid)) continue;
+      visited.add(row.pid);
       descendants.push(row);
       pending.push(...(byParent.get(row.pid) || []));
     }
@@ -276,7 +287,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
     const rows = await readWindowsProcessTree();
     if (!rows) {
       log?.(`[lifecycle] orphan descendant scan failed pid=${entry.pid}`);
-      return 0;
+      throw new Error('Managed descendant snapshot unavailable');
     }
     const roots = findWindowsManagedDescendants(rows, entry);
     log?.(`[lifecycle] orphan descendant scan pid=${entry.pid} candidates=${roots.length}`);
@@ -298,6 +309,7 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
       } catch {
         // Best-effort: a failed kill is not fatal (startup reaper is a backstop).
       }
+      if (isPidAlive(pid)) throw new Error('Managed process still running');
       return;
     }
 
@@ -381,7 +393,8 @@ export const createManagedProcessRegistry = ({ fs = fsp, execFileAsync = default
         if (wasReaped) reaped += 1;
         // Drop the file when the process is gone (reaped now, or already dead);
         // keep it only while the process is still alive and owned by a live owner.
-        drop = wasReaped || !isPidAlive(entry.pid);
+        const ownerAlive = Number.isInteger(entry.ownerPid) && isPidAlive(entry.ownerPid);
+        drop = wasReaped || (!isPidAlive(entry.pid) && !ownerAlive);
       } catch (error) {
         log?.(`[lifecycle] reap check failed for pid ${entry.pid}: ${error?.message ?? error}`);
       }

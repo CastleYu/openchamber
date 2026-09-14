@@ -4,6 +4,7 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'performance.export': '导出诊断日志',
   'performance.title': "性能分析",
   'performance.memory': "内存",
   'performance.cpu': "CPU",

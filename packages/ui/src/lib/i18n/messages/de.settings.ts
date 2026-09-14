@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Updateverlauf",
+  'settings.page.update-history.description': "Offizielle und persönliche Updates seit 1.22.0. Mit „not merged“ markierte Einträge sind in diesem Build nicht enthalten.",
+  'settings.history.source': "Quelle",
+  'settings.history.all': "Alle",
+  'settings.history.official': "Offiziell",
+  'settings.history.personal': "Persönlich",
+  'settings.history.surface': "Anwendung",
+  'settings.history.app': "App",
+  'settings.history.new': "Neu",
+  'settings.history.improvements': "Verbesserungen",
+  'settings.history.fixes': "Fehlerbehebungen",
+  'settings.history.misc': "Sonstiges",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Bildlaufleisten immer anzeigen',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'Bildlaufleisten bleiben sichtbar, auch wenn sich der Mauszeiger außerhalb des scrollbaren Bereichs befindet. Gilt nur auf diesem Gerät.',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go Nutzungsverfolgung',

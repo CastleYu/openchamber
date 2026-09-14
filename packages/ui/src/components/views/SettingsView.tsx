@@ -41,6 +41,8 @@ import { SnippetsSidebar } from '@/components/sections/snippets/SnippetsSidebar'
 import { SnippetsPage } from '@/components/sections/snippets/SnippetsPage';
 import { GitPage } from '@/components/sections/git-identities/GitPage';
 import { LogsPage } from '@/components/sections/logs/LogsPage';
+import { UPDATE_HISTORY_PAGE } from '@/lib/settings/updateHistory';
+const UpdateHistoryPage = React.lazy(() => import('@/components/sections/update-history/UpdateHistoryPage').then(module => ({ default: module.UpdateHistoryPage })));
 import { IntegrationsPage } from '@/components/sections/integrations/IntegrationsPage';
 import type { OpenChamberSection } from '@/components/sections/openchamber/types';
 import { OpenChamberPage } from '@/components/sections/openchamber/OpenChamberPage';
@@ -108,6 +110,7 @@ const pageOrder: SettingsPageSlug[] = [
   'integrations',
   'usage',
   'logs',
+  UPDATE_HISTORY_PAGE,
   'about',
   // 'projects' group — Workspace
   'projects',
@@ -383,6 +386,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.tunnel.title');
       case 'logs':
         return t('settings.page.logs.title');
+      case UPDATE_HISTORY_PAGE:
+        return t('settings.page.update-history.title');
       case 'about':
         return t('settings.page.about.title');
       case 'home':
@@ -658,6 +663,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <UsagePage />;
       case 'logs':
         return <LogsPage />;
+      case UPDATE_HISTORY_PAGE:
+        return <React.Suspense fallback={null}><UpdateHistoryPage /></React.Suspense>;
       case 'about':
         return (
           <SettingsPageLayout title={t('settings.page.about.title')} showSaveStatus={false}>

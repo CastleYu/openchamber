@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Güncelleme geçmişi",
+  'settings.page.update-history.description': "1.22.0’dan bu yana resmî ve kişisel güncellemeler. “not merged” işaretli maddeler bu derlemeye dahil değildir.",
+  'settings.history.source': "Kaynak",
+  'settings.history.all': "Tümü",
+  'settings.history.official': "Resmî",
+  'settings.history.personal': "Kişisel",
+  'settings.history.surface': "Uygulama",
+  'settings.history.app': "Ana uygulama",
+  'settings.history.new': "Yenilikler",
+  'settings.history.improvements': "İyileştirmeler",
+  'settings.history.fixes': "Düzeltmeler",
+  'settings.history.misc': "Diğer",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Kaydırma çubuklarını her zaman göster',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'İşaretçi kaydırılabilir alanın dışındayken bile kaydırma çubuklarını görünür tutar. Yalnızca bu cihazda geçerlidir.',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go kullanım takibi',

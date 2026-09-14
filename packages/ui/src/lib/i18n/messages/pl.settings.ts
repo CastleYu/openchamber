@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Historia aktualizacji",
+  'settings.page.update-history.description': "Oficjalne i osobiste aktualizacje od 1.22.0. Wpisy „not merged” nie są zawarte w tej kompilacji.",
+  'settings.history.source': "Źródło",
+  'settings.history.all': "Wszystkie",
+  'settings.history.official': "Oficjalne",
+  'settings.history.personal': "Osobiste",
+  'settings.history.surface': "Aplikacja",
+  'settings.history.app': "Aplikacja główna",
+  'settings.history.new': "Nowości",
+  'settings.history.improvements': "Ulepszenia",
+  'settings.history.fixes': "Poprawki",
+  'settings.history.misc': "Inne",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Zawsze pokazuj paski przewijania',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'Paski przewijania pozostają widoczne nawet wtedy, gdy wskaźnik znajduje się poza przewijanym obszarem. Dotyczy tylko tego urządzenia.',
   'settings.providers.page.openCodeGo.title': 'Śledzenie użycia OpenCode Go',

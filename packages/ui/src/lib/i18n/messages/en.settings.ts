@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Update history",
+  'settings.page.update-history.description': "Official and personal updates since 1.22.0. Entries marked “not merged” are not included in this build.",
+  'settings.history.source': "Source",
+  'settings.history.all': "All",
+  'settings.history.official': "Official",
+  'settings.history.personal': "Personal",
+  'settings.history.surface': "Application",
+  'settings.history.app': "App",
+  'settings.history.new': "New",
+  'settings.history.improvements': "Improvements",
+  'settings.history.fixes': "Fixes",
+  'settings.history.misc': "Other",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Always show scrollbars',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'Keep scrollbars visible even when the pointer is outside the scrollable area. Applies on this device only.',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go usage tracking',

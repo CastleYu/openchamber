@@ -17,6 +17,12 @@ const runtimeCtx = {
 };
 
 describe('settings search', () => {
+  test('finds update history on every surface', () => {
+    for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isVSCode: true }, { ...runtimeCtx, isMobile: true }]) {
+      const results = buildSettingsSearchResults({ query: 'DIJIANG', runtimeCtx: context, t, getPageTitle: page => page });
+      expect(results.find(result => result.id === 'update-history.entries')?.page).toBe('update-history');
+    }
+  });
   test('finds the scrollbar preference on every surface', () => {
     for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isVSCode: true }, { ...runtimeCtx, isMobile: true }]) {
       const results = buildSettingsSearchResults({

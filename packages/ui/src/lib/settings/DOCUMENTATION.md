@@ -10,6 +10,14 @@
 - `parsers.ts` — value-level boundary parsers (zod schemas wrapped as `SettingsParser<T>`). `undefined` means "reject", never "default".
 - `registry-snapshot.ts` — renders the plain-JSON snapshot for the two consumers that cannot import the UI's TypeScript: the OpenChamber server (`packages/web/server/lib/opencode/settings-registry.json`) and the VS Code extension host (`packages/vscode/src/settings-registry.json`). Regenerate with `bun run settings-registry:generate`; `registry.test.ts` fails when a checked-in copy is stale.
 - `metadata.ts`, `search.ts` — Settings page metadata and the search index (unchanged by the registry; see `.agents/skills/settings-ui-patterns`).
+- `updateHistory.ts` — read-only history classification and page/search identities.
+  Settings → Update history lazy-loads `content/update-history.md` with the app,
+  so web, desktop, mobile and VS Code can read it offline. App/VS Code and
+  Official/Personal filters preserve every authored bullet. History content is
+  maintained in its source language; page controls use the interface locale.
+  Unknown headings or unclassified bullets fail validation instead of vanishing.
+  This durable source is independent of release-note promotion/reset; the
+  personal upstream-sync skill requires updating it with each integration.
 
 ## Invariants
 

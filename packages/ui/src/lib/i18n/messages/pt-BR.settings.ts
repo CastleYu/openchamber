@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Histórico de atualizações",
+  'settings.page.update-history.description': "Atualizações oficiais e pessoais desde 1.22.0. As entradas marcadas como “not merged” não estão incluídas nesta versão.",
+  'settings.history.source': "Origem",
+  'settings.history.all': "Todas",
+  'settings.history.official': "Oficiais",
+  'settings.history.personal': "Pessoais",
+  'settings.history.surface': "Aplicativo",
+  'settings.history.app': "Aplicativo principal",
+  'settings.history.new': "Novidades",
+  'settings.history.improvements': "Melhorias",
+  'settings.history.fixes': "Correções",
+  'settings.history.misc': "Outros",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Sempre mostrar barras de rolagem',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'Mantenha as barras de rolagem visíveis mesmo quando o ponteiro estiver fora da área de rolagem. Aplica-se apenas a este dispositivo.',
   'settings.providers.page.openCodeGo.title': 'Monitoramento de uso do OpenCode Go',

@@ -1,4 +1,5 @@
 import type { I18nKey } from '@/lib/i18n/store';
+import { UPDATE_HISTORY_PAGE, UPDATE_HISTORY_ANCHOR } from './updateHistory';
 import { useUIStore } from '@/stores/useUIStore';
 import type { SettingsPageSlug, SettingsRuntimeContext } from './metadata';
 import { getSettingsPageMeta } from './metadata';
@@ -985,6 +986,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.logs.section.title',
     descriptionKey: 'settings.page.logs.description',
     keywords: ['runtime log', 'log file', 'open logs', 'download logs', 'troubleshoot', 'diagnostics'],
+  },
+  {
+    id: UPDATE_HISTORY_ANCHOR,
+    page: UPDATE_HISTORY_PAGE,
+    titleKey: 'settings.page.update-history.title',
+    descriptionKey: 'settings.page.update-history.description',
+    keywords: ['changelog', 'release notes', 'official', 'personal', 'DIJIANG'],
   },
   {
     id: 'tunnel.provider',

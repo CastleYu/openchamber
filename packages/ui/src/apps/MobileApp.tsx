@@ -1,4 +1,5 @@
 import React from 'react';
+import { UPDATE_HISTORY_PAGE } from '@/lib/settings/updateHistory';
 
 import { AboutSettings } from '@/components/sections/openchamber/AboutSettings';
 import { OpenCodeUpdateToast } from '@/components/update/OpenCodeUpdateToast';
@@ -96,6 +97,7 @@ const MOBILE_SETTINGS_PAGES = [
   'usage',
   'voice',
   'logs',
+  UPDATE_HISTORY_PAGE,
   'integrations',
   'about',
 ] as const;

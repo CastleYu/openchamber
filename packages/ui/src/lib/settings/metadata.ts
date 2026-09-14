@@ -1,5 +1,6 @@
 import type { SidebarSection } from '@/constants/sidebar';
 import type { IconName } from '@/components/icon/icons';
+import { UPDATE_HISTORY_PAGE } from './updateHistory';
 
 export type SettingsPageSlug =
   | 'home'
@@ -26,6 +27,7 @@ export type SettingsPageSlug =
   | 'voice'
   | 'tunnel'
   | 'logs'
+  | typeof UPDATE_HISTORY_PAGE
   | 'about'
   | 'integrations';
 
@@ -201,6 +203,7 @@ export const SETTINGS_PAGE_METADATA: readonly SettingsPageMeta[] = [
 
   { slug: 'notifications', title: 'Notifications', group: 'general', kind: 'single', keywords: ['alerts', 'native', 'summary', 'summarization'], },
   { slug: 'logs', title: 'Logs', group: 'general', kind: 'single', keywords: ['log', 'logs', 'diagnostics', 'debug', 'troubleshoot', 'runtime log', 'log file'], },
+  { slug: UPDATE_HISTORY_PAGE, title: 'Update history', group: 'general', kind: 'single', keywords: ['changelog', 'release', 'official', 'personal', 'DIJIANG'], },
   { slug: 'voice', title: 'Voice', group: 'general', kind: 'single', keywords: ['tts', 'speech', 'voice'], isAvailable: (ctx) => !ctx.isVSCode },
   { slug: 'tunnel', title: 'External Tunnel', group: 'projects', kind: 'single', keywords: ['tunnel', 'external', 'cloudflare', 'qr', 'remote', 'mobile', 'share'], isAvailable: (ctx) => !ctx.isVSCode },
   { slug: 'about', title: 'About', group: 'general', kind: 'single', keywords: ['about', 'version', 'updates', 'release', 'changelog'], isAvailable: (ctx) => ctx.isMobile && !ctx.isVSCode },
@@ -302,6 +305,7 @@ export function getSettingsNavIcon(slug: SettingsPageSlug): IconName | null {
     case 'about':
       return 'information';
     case 'logs':
+    case UPDATE_HISTORY_PAGE:
       return 'file-code';
     case 'home':
       return null;

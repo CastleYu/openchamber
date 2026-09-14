@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "更新歷史",
+  'settings.page.update-history.description': "自 1.22.0 起的官方與個人版更新。標示「not merged」的內容尚未合併至目前版本。",
+  'settings.history.source': "來源",
+  'settings.history.all': "全部",
+  'settings.history.official': "官方",
+  'settings.history.personal': "個人版",
+  'settings.history.surface': "應用程式",
+  'settings.history.app': "主應用程式",
+  'settings.history.new': "新增",
+  'settings.history.improvements': "改進",
+  'settings.history.fixes': "修正",
+  'settings.history.misc': "其他",
   'settings.openchamber.visual.field.alwaysShowScrollbars': '一律顯示捲軸',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': '即使指標位於可捲動區域之外，也保持捲軸可見。僅在此裝置上生效。',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go 用量追蹤',

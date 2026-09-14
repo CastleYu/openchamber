@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "更新履歴",
+  'settings.page.update-history.description': "1.22.0 以降の公式版と個人版の更新です。「not merged」の項目はこのビルドに含まれていません。",
+  'settings.history.source': "提供元",
+  'settings.history.all': "すべて",
+  'settings.history.official': "公式版",
+  'settings.history.personal': "個人版",
+  'settings.history.surface': "アプリケーション",
+  'settings.history.app': "メインアプリ",
+  'settings.history.new': "新機能",
+  'settings.history.improvements': "改善",
+  'settings.history.fixes': "修正",
+  'settings.history.misc': "その他",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'スクロールバーを常に表示',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'ポインターがスクロール領域の外にあるときも、スクロールバーを表示します。このデバイスにのみ適用されます。',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go 使用量追跡',

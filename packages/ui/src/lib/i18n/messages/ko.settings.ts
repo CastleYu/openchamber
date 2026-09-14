@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "업데이트 기록",
+  'settings.page.update-history.description': "1.22.0 이후 공식 및 개인 버전의 업데이트입니다. “not merged” 항목은 이 빌드에 포함되지 않았습니다.",
+  'settings.history.source': "출처",
+  'settings.history.all': "전체",
+  'settings.history.official': "공식",
+  'settings.history.personal': "개인",
+  'settings.history.surface': "애플리케이션",
+  'settings.history.app': "메인 앱",
+  'settings.history.new': "새 기능",
+  'settings.history.improvements': "개선",
+  'settings.history.fixes': "수정",
+  'settings.history.misc': "기타",
   'settings.openchamber.visual.field.alwaysShowScrollbars': '스크롤바 항상 표시',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': '포인터가 스크롤 영역 밖에 있어도 스크롤바를 표시합니다. 이 기기에만 적용됩니다.',
   'settings.providers.page.openCodeGo.title': 'OpenCode Go 사용량 추적',

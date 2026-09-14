@@ -1,5 +1,17 @@
 import { linearIntegrationI18n } from './linear-integration.i18n';
 export const settingsDict = {
+  'settings.page.update-history.title': "Історія оновлень",
+  'settings.page.update-history.description': "Офіційні та особисті оновлення від 1.22.0. Записи «not merged» не включено до цієї збірки.",
+  'settings.history.source': "Джерело",
+  'settings.history.all': "Усі",
+  'settings.history.official': "Офіційні",
+  'settings.history.personal': "Особисті",
+  'settings.history.surface': "Застосунок",
+  'settings.history.app': "Основний застосунок",
+  'settings.history.new': "Нове",
+  'settings.history.improvements': "Покращення",
+  'settings.history.fixes': "Виправлення",
+  'settings.history.misc': "Інше",
   'settings.openchamber.visual.field.alwaysShowScrollbars': 'Завжди показувати смуги прокручування',
   'settings.openchamber.visual.field.alwaysShowScrollbarsHint': 'Залишати смуги прокручування видимими, навіть коли курсор поза областю прокручування. Лише на цьому пристрої.',
   'settings.providers.page.openCodeGo.title': 'Відстеження використання OpenCode Go',

@@ -60,6 +60,30 @@ Treat these files as coupled decisions:
 
 A conflict-free merge still needs review for semantic regressions. If a conflict requires a new product decision, record the competing behaviors and ask that specific question while continuing independent resolutions. Do not silently drop the personal feature or invent a broader redesign.
 
+## Maintain the Settings update history
+
+Every upstream integration updates `packages/ui/src/content/update-history.md`,
+the durable source bundled by Settings → Update history. Read its scope and the
+`updateHistory.ts` parser contract first. It is independent of
+`changelog/unreleased.md` and survives release-note promotion and reset.
+
+Compare pinned upstream release notes, commits and merged PR descriptions with
+the history. Preserve prior official and personal entries; fold follow-ups into
+the affected behavior without losing user-visible outcomes. Use
+`Official <version> / ...` and `Personal / ...` prefixes under the existing
+App/VS Code and New/Improvements/Fixes/Misc headings. Retain contributor credits
+and distinguish superseded historical behavior from current behavior.
+
+Change `not merged` labels only when those changes are in the validated merge.
+Update the scope/version paragraph and retained or adapted personal behavior.
+Check the VS Code surface map before assigning extension entries. Record remaining
+coverage gaps; release titles alone are not sufficient evidence.
+
+Run the update-history and Settings-search tests, check that no authored bullet
+was lost, and verify the Settings page. Changelog authoring and generated files
+still follow the explicit-request gate in `update-changelog`; this required
+history update does not authorize regeneration.
+
 ## Validate and promote
 
 Require `git diff --name-only --diff-filter=U` to be empty and inspect `git diff --cached --check`. Review the full integration diff against the personal base, including automatic resolutions. Apply the validation rules from `openchamber-change-discipline` and each affected module; derive commands from current package scripts.
@@ -78,7 +102,12 @@ Use an explicit remote and refspec, such as `git push origin codex/personal:refs
 
 Push only the personal branch requested, not all branches, tags, fork `main`, or community `upstream`. A non-fast-forward rejection means someone advanced the fork. Fetch, reconcile and revalidate; never bypass it with force. If network/auth fails, report the local commit and failure without changing credentials or remotes. Verify the remote tip with `git ls-remote` after success.
 
-The personal workflow can start on branch push. Report that trigger separately from its outcome; do not claim a successful CI build from a successful Git push. Follow the run only when requested or necessary for the user's stated acceptance criteria.
+The personal workflow starts on the verified fork's personal-branch push. It
+builds and automatically publishes a new DIJIANG version after source and asset
+verification. Published versions are skipped; another release requires a deliberate
+version increment. Read `docs/maintenance/BUILD.md` before pushing so publication
+intent covers that consequence. Report build and publication separately, including
+the release URL and matching source SHA when complete.
 
 ## Recovery and handoff
 

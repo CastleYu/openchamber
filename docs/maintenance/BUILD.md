@@ -42,9 +42,27 @@ CI keeps its normal build flags.
 
 ## Actions
 
-`.github/workflows/personal-portable.yml` runs on pushes to `codex/personal` or manual dispatch. It uses the same local script, pinned action revisions, Node 22 and Bun 1.3.14. Permissions are read-only and outputs are uploaded as Actions artifacts with 30-day retention. It does not create GitHub releases, publish npm packages, upload updater manifests or commit version changes.
+`.github/workflows/personal-portable.yml` runs on pushes to `codex/personal` or
+manual dispatch of that branch, only in `CastleYu/openchamber`. It uses the same
+local build script, pinned actions, Node 22 and Bun 1.3.14. The build job has
+read-only permissions and retains the portable EXE and metadata as Actions
+artifacts for 30 days; unpacked application files are excluded.
 
-The community release workflow is gated to the community repository. Do not enable its publishing chain for personal packages. This task does not push or dispatch Actions. After the reviewed branch is pushed, inspect the actual run before accepting CI packaging.
+A separate publish job has `contents: write`. `scripts/publish-personal.mjs`
+checks the build version, source commit, architecture and notification-only
+policy, creates a draft tagged `v<personal-version>`, and uploads the EXE,
+`build-info.json`, complete `update-history.md` and `SHA256SUMS.txt`. It checks
+GitHub's size and SHA-256 for every attachment before publishing. Release text
+comes from `changelog/unreleased.md` at the same source commit.
+
+Published versions are skipped on later pushes. A failed draft can be retried
+only from its original source commit. Draft/tag conflicts require a deliberate
+version increment; failed upload or digest verification leaves a draft. No npm
+package, updater manifest or version-changing commit is produced.
+
+The community release workflow stays gated to the community repository. After
+an authorized push, inspect both personal jobs and the public release assets;
+a successful push or build alone does not establish publication.
 
 ## Notification-only behavior
 

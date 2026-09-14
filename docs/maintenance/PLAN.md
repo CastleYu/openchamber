@@ -1,5 +1,23 @@
 # Personal maintenance plan
 
+## DIJIANG 3.2 update history and release automation, 2026-09-14
+
+- Settings has a lazy-loaded, offline Update history page on web, desktop,
+  mobile and VS Code. All 317 audited historical entries remain in its durable
+  Markdown source, with three new entries for this release. Search and filters
+  preserve platform and official/personal classification.
+- Workspace type checks, focused ESLint/Oxlint, eight history/search tests and
+  six release-publication tests passed. Dead-code inspection retains the existing
+  unused-export backlog. Real Electron HMR and packaged-protocol fixtures both
+  displayed 230 App entries, switched source/platform filters, and fit 390px width.
+- The personal workflow now separates read-only builds from write-scoped release
+  publication. Source/version checks, immutable published versions, draft retry,
+  tag conflicts, interrupted uploads and asset digest verification are tested.
+  The actual remote build and release remain separate acceptance outcomes.
+- Local QA output moved to the writable C-drive visualization directory after
+  H ran out of space. Only the failed task cache was removed; installed versions
+  and user data were retained.
+
 ## DIJIANG 3.1 file reliability, release preparation 2026-09-14
 
 - File loading now exposes recoverable errors, preserves dirty edits and stops

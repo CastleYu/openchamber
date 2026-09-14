@@ -239,7 +239,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.1 (not merged) / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
 - Official 1.23.1 (not merged) / Desktop: Updated Electron to 43.7.0.
 - Personal / Distribution: Windows x64 releases use a versioned portable executable; previous executables and existing settings, sessions and OpenCode data are retained during replacement (thanks to @CastleYu).
-- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.1 (thanks to @CastleYu).
+- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.2 (thanks to @CastleYu).
 - Personal / Updates: Upstream releases produce a notice and link. App, web and CLI update paths cannot automatically download or replace the personal build; OpenCode's own updater is separate (thanks to @CastleYu).
 - Personal / Windows packaging: Local and CI builds use the same portable pipeline and record source/build metadata; this release provides an EXE, build information and SHA-256 checksums (thanks to @CastleYu).
 - Personal / Diagnostics: Optional DEBUG builds expose bounded process diagnostics. Normal release builds keep that endpoint disabled, and diagnostic events omit commands and credentials (thanks to @CastleYu).

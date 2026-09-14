@@ -1,8 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
+import { z } from 'zod';
 import { HistoryOrigin, HistorySurface, parseUpdateHistory } from './updateHistory';
 
 describe('bundled update history', () => {
+  test('the history cutoff matches the release identity', () => {
+    const upstream = z.object({ version: z.string() }).parse(JSON.parse(readFileSync(new URL('../../../../../package.json', import.meta.url), 'utf8')));
+    const personal = z.object({ featureVersion: z.string() }).parse(JSON.parse(readFileSync(new URL('../../../../web/personal-build.json', import.meta.url), 'utf8')));
+    const source = readFileSync(new URL('../../content/update-history.md', import.meta.url), 'utf8');
+    expect(source).toContain(`This summary ends at ${upstream.version}-DIJIANG.${personal.featureVersion}`);
+  });
   test('keeps every authored entry and both platform scopes', () => {
     const source = readFileSync(new URL('../../content/update-history.md', import.meta.url), 'utf8');
     const entries = parseUpdateHistory(source);

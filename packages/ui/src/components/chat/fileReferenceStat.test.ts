@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { fileReferenceExists } from './fileReferenceStat';
+import { fileReferenceExists, fileReferenceKind } from './fileReferenceStat';
 
 const originalFetch = globalThis.fetch;
 
@@ -23,6 +23,11 @@ afterEach(() => {
 });
 
 describe('fileReferenceExists directory scoping (issue 3019)', () => {
+  test('identifies folders from filesystem metadata', async () => {
+    stubFetchWith(() => new Response(JSON.stringify({ isDirectory: true }), { status: 200 }));
+    expect(await fileReferenceKind('/folder-reference', '/repo', true)).toBe('folder');
+    expect(calls[0].url).toContain('/api/fs/directory-stat');
+  });
   test('sends the session directory on the stat probe', async () => {
     stubFetchWith(() => new Response(JSON.stringify({ path: '/repo-b/src/index.ts', isFile: true, size: 12 }), { status: 200 }));
 

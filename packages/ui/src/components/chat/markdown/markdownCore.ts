@@ -146,7 +146,7 @@ const renderMarkdownImageLabel = ({
 }): string => {
   const label = getMarkdownImageFilename(href ?? '', text);
   const titleAttr = title ? ` title="${escapeAttr(title)}"` : '';
-  return `<span${titleAttr} class="inline-flex items-center gap-1 align-text-bottom text-muted-foreground" data-openchamber-markdown-image-label="true">${escapeAttr(label)}</span>`;
+  return `<span${titleAttr} class="inline-flex items-center gap-1 align-text-bottom text-muted-foreground" data-openchamber-markdown-image-label="true">${escapeAttr(label)}</span><span data-openchamber-image-slot="${escapeAttr(href)}"></span>`;
 };
 
 export const extractMarkdownImageCandidates = (

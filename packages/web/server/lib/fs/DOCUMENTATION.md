@@ -41,6 +41,9 @@ Own filesystem API behavior for the web server runtime, including workspace-boun
 - `index.js` no longer owns FS route handlers or FS exec job state.
 
 ## Notes for contributors
+- `/api/fs/raw` streams through `sendFile` with range support. `archive=true`
+  reads ZIP central-directory metadata only, without extracting members.
+  `/api/fs/stat` reports both `isFile` and `isDirectory` for link classification.
 - Keep filesystem policy (workspace root checks, error mapping, exec timeout behavior) inside this module, not in the composition root.
 - Workspace checks accept, besides the active workspace and its worktrees, the **managed roots**: the OpenChamber config root and the managed chats root (`managedChatsRoot` dependency; `OPENCHAMBER_CHATS_DIR` upstream, default `<config root>/chats`). Chat worktrees may legitimately live outside every project workspace.
 - `GET /api/fs/home` answers `{ home, chatsRoot }`. `chatsRoot` is the server-resolved managed chats root; clients must use it instead of joining `home` + the well-known segment (a relocated root does not contain that segment).

@@ -1,3 +1,4 @@
+import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import React from 'react';
 import morphdom from 'morphdom';
 import { renderMermaidASCII, renderMermaidSVG } from 'beautiful-mermaid';
@@ -49,7 +50,7 @@ import {
   parseFileReference,
   type ParsedFileReference,
 } from './fileReferenceParser';
-import { fileReferenceExists } from './fileReferenceStat';
+import { fileReferenceKind } from './fileReferenceStat';
 import { streamPerfCount, streamPerfObserve } from '@/stores/utils/streamDebug';
 import { detachedMarkdownDomCache, type DetachedMarkdownDomKey } from './markdown/detachedMarkdownDomCache';
 import { TimelineRevealGateContext } from './timelineRevealGate';
@@ -188,7 +189,7 @@ const isLikelyFilePathValue = (path: string): boolean => {
     return true;
   }
 
-  return hasFileExtension(normalized);
+  return hasFileExtension(normalized) || normalized.includes('/');
 };
 
 const isLikelyFilePath = (value: string): boolean => {
@@ -373,6 +374,7 @@ const useFileReferenceInteractions = ({
       candidate.removeAttribute('data-openchamber-file-link');
       candidate.removeAttribute('data-openchamber-file-ref');
       candidate.removeAttribute('data-openchamber-file-path');
+      candidate.removeAttribute('data-openchamber-folder');
       if (candidate.getAttribute('title') === 'Open file') {
         candidate.removeAttribute('title');
       }
@@ -453,9 +455,7 @@ const useFileReferenceInteractions = ({
         const canGrantOutsideFile = isDesktopShell()
           && isDesktopLocalOriginActive()
           && !isFilePathWithinDirectory(resolved.resolvedPath, effectiveDirectory);
-        const existsPromise = canGrantOutsideFile
-          ? Promise.resolve(true)
-          : fileReferenceExists(resolved.resolvedPath, effectiveDirectory);
+        const existsPromise = fileReferenceKind(resolved.resolvedPath, effectiveDirectory, canGrantOutsideFile);
 
         void existsPromise.then((exists) => {
           if (cancelled || !exists || !container.contains(candidate)) {
@@ -471,7 +471,8 @@ const useFileReferenceInteractions = ({
           candidate.setAttribute('data-openchamber-file-link', 'true');
           candidate.setAttribute('data-openchamber-file-ref', latestRawCandidate);
           candidate.setAttribute('data-openchamber-file-path', latestResolved.resolvedPath);
-          candidate.setAttribute('title', 'Open file');
+          candidate.setAttribute('title', latestResolved.resolvedPath);
+          candidate.setAttribute('data-openchamber-folder', String(exists === 'folder'));
           if (candidate.tagName.toLowerCase() !== 'a') {
             candidate.setAttribute('role', 'button');
             candidate.setAttribute('tabindex', '0');
@@ -487,6 +488,10 @@ const useFileReferenceInteractions = ({
         return;
       }
 
+      if (sourceElement.getAttribute('data-openchamber-folder') === 'true') {
+        await getRegisteredRuntimeAPIs()?.files.openNative?.(resolved.resolvedPath, { directory: effectiveDirectory });
+        return;
+      }
       const contextDirectory = getContextDirectory(effectiveDirectory, resolved.resolvedPath);
       if (preferRuntimeEditor && editor) {
         void editor.openFile(
@@ -534,7 +539,7 @@ const useFileReferenceInteractions = ({
       event.preventDefault();
       event.stopPropagation();
 
-      void openFileReference(fileRefElement);
+      void openFileReference(fileRefElement).catch(() => {});
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1088,6 +1093,7 @@ const useMorphdomMarkdown = ({
         morphdom(el, temp, {
           childrenOnly: true,
           onBeforeElUpdated: (fromEl, toEl) => {
+            if (fromEl.hasAttribute('data-openchamber-image-slot') && fromEl.getAttribute('data-openchamber-image-slot') === toEl.getAttribute('data-openchamber-image-slot')) return false;
             if (fromEl.matches('details[data-md-details]') && toEl.matches('details[data-md-details]')
               && fromEl.querySelector('summary')?.textContent === toEl.querySelector('summary')?.textContent) {
               toEl.toggleAttribute('open', fromEl.hasAttribute('open'));

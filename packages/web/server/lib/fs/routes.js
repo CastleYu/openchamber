@@ -1,3 +1,4 @@
+import { readZipDirectory } from './zip-directory.js';
 import { createRealpathCache } from '../path-realpath-cache.js';
 import nodeFsPromises from 'node:fs/promises';
 import nodePath from 'node:path';
@@ -126,6 +127,8 @@ const FILE_MIME_MAP = Object.freeze({
   '.txt': 'text/plain',
   '.md': 'text/markdown',
   '.pdf': 'application/pdf',
+        '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.mkv': 'video/x-matroska', '.webm': 'video/webm',
+        '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.flac': 'audio/flac', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.opus': 'audio/ogg',
   '.csv': 'text/csv',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
@@ -924,11 +927,7 @@ export const registerFsRoutes = (app, dependencies) => {
       const canonicalPath = await fsPromises.realpath(resolved.resolved);
 
       const stats = await fsPromises.stat(canonicalPath);
-      if (!stats.isFile()) {
-        return res.status(400).json({ error: 'Specified path is not a file' });
-      }
-
-      return res.json({ path: canonicalPath, isFile: true, size: stats.size, mtimeMs: stats.mtimeMs });
+      return res.json({ path: canonicalPath, isFile: stats.isFile(), isDirectory: stats.isDirectory(), size: stats.size, mtimeMs: stats.mtimeMs });
     } catch (error) {
       const err = error;
       if (err && typeof err === 'object' && err.code === 'ENOENT') {
@@ -1042,6 +1041,7 @@ export const registerFsRoutes = (app, dependencies) => {
         return res.status(400).json({ error: 'Specified path is not a file' });
       }
 
+      if (req.query.archive === 'true') return res.json(await readZipDirectory(canonicalPath));
       const ext = path.extname(canonicalPath).toLowerCase();
       const mimeMap = {
         '.png': 'image/png',
@@ -1069,12 +1069,13 @@ export const registerFsRoutes = (app, dependencies) => {
         res.setHeader('Content-Disposition', `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`);
       }
 
-      const content = await fsPromises.readFile(canonicalPath);
       res.setHeader('Cache-Control', 'no-store');
       if (resolved.granted) {
         res.setHeader('Referrer-Policy', 'no-referrer');
       }
-      return res.type(mimeType).send(content);
+      return res.type(mimeType).sendFile(canonicalPath, { dotfiles: 'allow', acceptRanges: true, cacheControl: false }, (error) => {
+        if (error && !res.headersSent) res.status(error.status || 500).end();
+      });
     } catch (error) {
       const err = error;
       if (err && typeof err === 'object' && err.code === 'ENOENT') {

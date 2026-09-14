@@ -75,13 +75,12 @@ type OpenInAppButtonProps = {
 
 export const OpenInAppButton = ({ directory, className }: OpenInAppButtonProps) => {
   const { t } = useI18n();
-  const selectedAppId = useOpenInAppsStore((state) => state.selectedAppId);
+  const selectedAppId = DEFAULT_OPEN_IN_APP_ID;
   const availableApps = useOpenInAppsStore((state) => state.availableApps);
   const isCacheStale = useOpenInAppsStore((state) => state.isCacheStale);
   const isScanning = useOpenInAppsStore((state) => state.isScanning);
   const initialize = useOpenInAppsStore((state) => state.initialize);
   const loadInstalledApps = useOpenInAppsStore((state) => state.loadInstalledApps);
-  const selectApp = useOpenInAppsStore((state) => state.selectApp);
 
   React.useEffect(() => {
     initialize();
@@ -116,7 +115,6 @@ export const OpenInAppButton = ({ directory, className }: OpenInAppButtonProps) 
   };
 
   const handleSelect = async (app: OpenInAppOption) => {
-    await selectApp(app.id);
     await handleOpen(app);
   };
 

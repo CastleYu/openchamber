@@ -39,6 +39,8 @@ import { unsupportedAppSpecificOpenError, validateLocalPath } from './path-open-
 import { shouldAllowBrowserPanelCertificateError } from './browser-panel-security.mjs';
 import { createRelayDevTunnelBridge } from './relay-dev-tunnel.mjs';
 import { attachRendererRecovery } from './renderer-recovery.mjs';
+import { createPackagedUiHandler } from './packaged-ui-protocol.mjs';
+import { launchNativeApp } from './native-app-launch.mjs';
 import { mintOutsideFileGrant } from '@openchamber/web/server/lib/fs/routes.js';
 import { fetchUpdateNotes } from '@openchamber/web/server/lib/changelog/update-notes.js';
 import { applyConnectAttemptTimeout } from '@openchamber/web/server/lib/network-defaults.js';
@@ -51,6 +53,9 @@ const isDev = process.env.OPENCHAMBER_ELECTRON_DEV === '1' || !app.isPackaged;
 const electronStartupStartedAt = performance.now();
 
 const DEEP_LINK_PROTOCOL = 'openchamber';
+import { FILE_PROTOCOL, transfer, registerFileProtocol, releaseTransfers } from './file-transfers.mjs';
+import { WINDOWS_IDES, findWindowsIde, discoverWindowsIdes } from './windows-ides.mjs';
+
 const UI_PROTOCOL = 'openchamber-ui';
 const PACKAGED_APP_USER_MODEL_ID = 'dev.openchamber.desktop';
 const DEV_APP_USER_MODEL_ID = 'dev.openchamber.desktop.dev';
@@ -116,6 +121,7 @@ if (shouldIgnoreLoopbackConnectionLimit({
 applyConnectAttemptTimeout();
 
 protocol.registerSchemesAsPrivileged([
+  { scheme: FILE_PROTOCOL, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
   {
     scheme: UI_PROTOCOL,
     privileges: {
@@ -252,7 +258,7 @@ const INSTALLED_APPS_CACHE_TTL_SECS = 60 * 60 * 24;
 const INSTALLED_APPS_CACHE_FILE = 'discovered-apps.json';
 // Bump when discovery results change shape or matching semantics change, so cached
 // entries written by an older build are treated as stale and refresh immediately.
-const INSTALLED_APPS_CACHE_VERSION = 2;
+const INSTALLED_APPS_CACHE_VERSION = 3;
 const LINUX_DESKTOP_ENTRIES_CACHE_TTL_MS = 30_000;
 const OPENCODE_SHUTDOWN_GRACE_MS = 100;
 const { autoUpdater } = updaterPkg;
@@ -1151,47 +1157,22 @@ const hardenBrowserPanelSession = () => {
   panelSession.setDevicePermissionHandler(() => false);
 };
 
-const registerPackagedUiProtocol = () => {
-  if (!shouldUsePackagedUi()) return;
-  protocol.handle(UI_PROTOCOL, async (request) => {
-    const distPath = resolveWebDistDir();
-    let requestedPath = '/index.html';
-    try {
-      const url = new URL(request.url);
-      requestedPath = decodeURIComponent(url.pathname || '/index.html');
-    } catch {
-      requestedPath = '/index.html';
-    }
-    const normalized = path.normalize(requestedPath).replace(/^([/\\])+/, '');
-    const candidate = path.join(distPath, normalized || 'index.html');
-    const relative = path.relative(distPath, candidate);
-    const isInsideDist = relative && !relative.startsWith('..') && !path.isAbsolute(relative);
-    const filePath = isInsideDist ? candidate : path.join(distPath, 'index.html');
-    try {
-      const info = await fsp.stat(filePath);
-      if (info.isFile()) {
-        if (filePath.endsWith('.html')) {
-          const html = await fsp.readFile(filePath, 'utf8');
-          const body = injectRuntimeConfigIntoHtml(html);
-          // index.html must never be cached: it names the hashed asset
-          // bundles, and a cached copy keeps a freshly installed build
-          // loading the previous version's UI from the renderer disk cache.
-          return new Response(body, {
-            headers: {
-              'Content-Type': 'text/html; charset=utf-8',
-              'Cache-Control': 'no-store',
-            },
-          });
-        }
-        return electronNet.fetch(pathToFileURL(filePath).toString());
-      }
-    } catch {
-    }
-    const indexPath = path.join(distPath, 'index.html');
-    const html = await fsp.readFile(indexPath, 'utf8');
-    const body = injectRuntimeConfigIntoHtml(html);
-    return new Response(body, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+app.on('web-contents-created', (_event, contents) => {
+  const owner = contents.id;
+  contents.once('destroyed', () => {
+    void releaseTransfers(owner).catch(() => log.warn('[electron] file transfer cleanup failed'));
   });
+});
+
+const registerPackagedUiProtocol = () => {
+  registerFileProtocol(protocol, electronNet);
+  if (!shouldUsePackagedUi()) return;
+  protocol.handle(UI_PROTOCOL, createPackagedUiHandler({
+    getDistPath: resolveWebDistDir,
+    injectHtml: injectRuntimeConfigIntoHtml,
+    fetchFile: (url) => electronNet.fetch(url),
+    log,
+  }));
 };
 
 const normalizeNotificationInput = (raw) => {
@@ -3408,6 +3389,7 @@ const WINDOWS_CLI_BY_APP_ID = {
 };
 
 const WINDOWS_APP_EXECUTABLES = {
+  ...WINDOWS_IDES,
   terminal: ['wt.exe', 'WindowsTerminal.exe'],
   vscode: ['code.exe', 'code.cmd'],
   cursor: ['cursor.exe', 'cursor.cmd'],
@@ -3419,6 +3401,7 @@ const WINDOWS_APP_EXECUTABLES = {
 };
 
 const WINDOWS_APP_ID_BY_NAME = new Map([
+  ['pycharm', 'pycharm'], ['intellij idea', 'intellij'], ['webstorm', 'webstorm'], ['phpstorm', 'phpstorm'], ['rider', 'rider'], ['rustrover', 'rustrover'], ['android studio', 'android-studio'],
   ['finder', 'finder'],
   ['file explorer', 'finder'],
   ['terminal', 'terminal'],
@@ -3442,6 +3425,8 @@ const runWhere = (program) => {
 };
 
 const findWindowsExecutable = (appId) => {
+  const ide = findWindowsIde(appId);
+  if (ide) return ide;
   for (const program of WINDOWS_APP_EXECUTABLES[appId] || []) {
     const resolved = runWhere(program);
     if (resolved) return resolved;
@@ -3590,6 +3575,7 @@ const isWindowsAppInstalled = ({ appId, appName }) => {
 };
 
 const buildWindowsInstalledApps = async (apps) => {
+  await discoverWindowsIdes();
   const seen = new Set();
   const names = (Array.isArray(apps) ? apps : [])
     .map((appName) => String(appName || '').trim())
@@ -3728,13 +3714,9 @@ const resolveWindowsLaunchProgram = (program) => {
 
 const launchWindowsCommandScript = (spec, program) => {
   const commandLine = ['call', quoteWindowsCommandArg(program), ...spec.args.map(quoteWindowsCommandArg)].join(' ');
-  const child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', commandLine], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: false,
+  return launchNativeApp(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', commandLine], {
     windowsVerbatimArguments: true,
   });
-  child.unref();
 };
 
 const launchWindowsSpec = (spec) => {
@@ -3745,30 +3727,20 @@ const launchWindowsSpec = (spec) => {
 
   if (spec.shellStart) {
     const commandLine = ['start', '""', quoteWindowsCommandArg(program), ...spec.args.map(quoteWindowsCommandArg)].join(' ');
-    const child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', commandLine], {
-      detached: true,
-      stdio: 'ignore',
+    return launchNativeApp(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', commandLine], {
       windowsHide: false,
       windowsVerbatimArguments: true,
     });
-    child.unref();
-    return;
   }
 
   if (/\.(cmd|bat)$/i.test(program)) {
-    launchWindowsCommandScript(spec, program);
-    return;
+    return launchWindowsCommandScript(spec, program);
   }
 
-  const child = spawn(program, spec.args, {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: false,
-  });
-  child.unref();
+  return launchNativeApp(program, spec.args);
 };
 
-const runSpecChain = (specs, appName) => {
+const runSpecChain = async (specs, appName) => {
   if (!Array.isArray(specs) || specs.length === 0) {
     throw new Error(`Failed to open in ${appName}: no launch candidates`);
   }
@@ -3777,7 +3749,7 @@ const runSpecChain = (specs, appName) => {
     const failures = [];
     for (const spec of specs) {
       try {
-        launchWindowsSpec(spec);
+        await launchWindowsSpec(spec);
         return;
       } catch (error) {
         failures.push(`${spec.program}: ${error instanceof Error ? error.message : String(error)}`);
@@ -3826,6 +3798,9 @@ const closeAllDevTunnels = () => {
 };
 
 const handleInvoke = async (browserWindow, command, args = {}) => {
+  if (command.startsWith('desktop_file_')) {
+    return transfer(command, args, browserWindow.webContents.id, { dialog, shell, window: browserWindow });
+  }
   switch (command) {
     case 'desktop_start_window_drag':
       return null;
@@ -4203,7 +4178,7 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       const validated = await validateLocalPath(targetPath);
       if (process.platform === 'darwin') {
         const openArgs = appName ? ['-a', appName, validated.path] : [validated.path];
-        spawn('open', openArgs, { detached: true, stdio: 'ignore' }).unref();
+        await launchNativeApp('open', openArgs);
         return null;
       }
       if (appName && process.platform !== 'linux' && process.platform !== 'win32') {
@@ -4243,6 +4218,13 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       return null;
     }
 
+    case 'desktop_choose_file_app': {
+      const validated = await validateLocalPath(String(args.path || ''));
+      const result = await dialog.showOpenDialog(browserWindow, { properties: ['openFile'], filters: process.platform === 'win32' ? [{ name: 'Application', extensions: ['exe'] }] : [] });
+      if (result.canceled || !result.filePaths[0]) return false;
+      await launchNativeApp(result.filePaths[0], [validated.path]);
+      return true;
+    }
     case 'desktop_open_in_app': {
       const projectPath = typeof args.projectPath === 'string' ? args.projectPath.trim() : '';
       const appId = typeof args.appId === 'string' ? args.appId.trim().toLowerCase() : '';
@@ -4252,12 +4234,13 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       }
       const validated = await validateLocalPath(projectPath, 'Project path');
       if (process.platform === 'win32') {
+        await discoverWindowsIdes();
         if (appId === 'finder') {
           const error = await shell.openPath(validated.path);
           if (error) throw new Error(error);
           return null;
         }
-        runSpecChain(buildWindowsOpenProjectSpecs({ projectPath: validated.path, appId, appName }), appName);
+        await runSpecChain(buildWindowsOpenProjectSpecs({ projectPath: validated.path, appId, appName }), appName);
         return null;
       }
       if (process.platform === 'linux') {
@@ -4274,7 +4257,7 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       if (process.platform !== 'darwin') {
         throw new Error(unsupportedAppSpecificOpenError('projects'));
       }
-      runSpecChain(buildOpenProjectSpecs({ projectPath: validated.path, appId, appName }), appName);
+      await runSpecChain(buildOpenProjectSpecs({ projectPath: validated.path, appId, appName }), appName);
       return null;
     }
 
@@ -4287,7 +4270,8 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       }
       const validated = await validateLocalPath(filePath, 'File path');
       if (process.platform === 'win32') {
-        runSpecChain(buildWindowsOpenFileSpecs({ filePath: validated.path, appId, appName }), appName);
+        await discoverWindowsIdes();
+        await runSpecChain(buildWindowsOpenFileSpecs({ filePath: validated.path, appId, appName }), appName);
         return null;
       }
       if (process.platform === 'linux') {
@@ -4304,7 +4288,7 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       if (process.platform !== 'darwin') {
         throw new Error(unsupportedAppSpecificOpenError('files'));
       }
-      runSpecChain(buildOpenFileSpecs({ filePath: validated.path, appId, appName }), appName);
+      await runSpecChain(buildOpenFileSpecs({ filePath: validated.path, appId, appName }), appName);
       return null;
     }
 

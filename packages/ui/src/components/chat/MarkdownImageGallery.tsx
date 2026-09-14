@@ -158,7 +158,7 @@ const MarkdownImageThumbnail: React.FC<{
     <button
       ref={thumbnailRef}
       type="button"
-      className="w-[100px] shrink-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-focus-ring)]"
+      className="w-full max-w-md shrink-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-focus-ring)]"
       aria-label={candidate.filename}
       disabled={image.status === 'loading'}
       onClick={openPreview}
@@ -166,12 +166,12 @@ const MarkdownImageThumbnail: React.FC<{
       data-openchamber-markdown-image-source={candidate.source}
       data-openchamber-markdown-image-filename={candidate.filename}
     >
-      <span className="flex h-[72px] w-[100px] items-center justify-center overflow-hidden rounded-lg border border-border/40 bg-muted/10">
+      <span className="flex max-h-[360px] w-full min-h-[72px] items-center justify-center overflow-hidden rounded-lg border border-border/40 bg-muted/10">
         {image.url && image.status !== 'error' ? (
           <img
             src={image.url}
             alt={candidate.filename}
-            className="h-full w-full object-contain"
+            className="max-h-[360px] w-full object-contain"
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"

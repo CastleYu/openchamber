@@ -1,4 +1,4 @@
-import { requestExistingFileAccess } from '@/lib/desktop';
+import { hasDesktopInvoke, isDesktopLocalOriginActive, requestExistingFileAccess } from '@/lib/desktop';
 import { isFilePathWithinDirectory, normalizeFilePath } from '@/lib/path-utils';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 
@@ -109,8 +109,12 @@ export const resolveOutsideFileReadOptions = async (
     return { allowOutsideWorkspace: false };
   }
 
+  const outsideFileGrant = await ensureOutsideFileGrantForDesktop(path, workspaceRoot);
+  if (!outsideFileGrant && getRuntimeKey() === 'local' && hasDesktopInvoke() && isDesktopLocalOriginActive()) {
+    throw new Error('File access was not granted');
+  }
   return {
     allowOutsideWorkspace: true,
-    outsideFileGrant: await ensureOutsideFileGrantForDesktop(path, workspaceRoot),
+    outsideFileGrant,
   };
 };

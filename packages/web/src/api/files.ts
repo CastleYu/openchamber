@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type {
   DirectoryListResult,
   FileSearchQuery,
@@ -10,6 +11,9 @@ import {
   type FilesystemErrorReason,
 } from '@openchamber/ui/lib/api/files-errors';
 import { runtimeFetch } from '@openchamber/ui/lib/runtime-fetch';
+
+import { loadAsset, openNative, saveNative } from './file-assets';
+import { canUseElectronDesktopIPC } from '@openchamber/ui/lib/desktop';
 
 const normalizePath = (path: string): string => path.replace(/\\/g, '/');
 
@@ -67,6 +71,15 @@ const directoryHeaders = (getDirectory?: () => string | undefined, override?: st
 };
 
 export const createWebFilesAPI = ({ getDirectory }: WebFilesAPIOptions): FilesAPI => ({
+  async archiveEntries(path, options) {
+    const response = await runtimeFetch('/api/fs/raw', { query: { path, archive: true, directory: options?.directory || getDirectory?.() }, signal: options?.signal });
+    if (!response.ok) throw new Error('Archive preview failed');
+    return z.array(z.object({ name: z.string(), size: z.number(), compressedSize: z.number(), directory: z.boolean() })).parse(await response.json());
+  },
+  get nativeFiles() { return canUseElectronDesktopIPC(); },
+  loadAsset: (path, options) => loadAsset(path, { directory: getDirectory?.(), ...options }),
+  openNative: (path, options) => openNative(path, { directory: getDirectory?.(), ...options }),
+  saveAs: (path, options) => saveNative(path, { directory: getDirectory?.(), ...options }),
   async listDirectory(path: string, options): Promise<DirectoryListResult> {
     const target = normalizePath(path);
     const params = new URLSearchParams();
@@ -196,6 +209,7 @@ export const createWebFilesAPI = ({ getDirectory }: WebFilesAPIOptions): FilesAP
       params.set('optional', 'true');
     }
     const response = await runtimeFetch('/api/fs/read', {
+      signal: options?.signal,
       query: params,
       cache: options?.optional || options?.fresh ? 'no-store' : 'default',
       headers: directoryHeaders(getDirectory, options?.directory),
@@ -206,8 +220,25 @@ export const createWebFilesAPI = ({ getDirectory }: WebFilesAPIOptions): FilesAP
       throw new Error((error as { error?: string }).error || 'Failed to read file');
     }
 
-    const content = await response.text();
-    return { content, path: target };
+    if (!options?.onProgress || !response.body) return { content: await response.text(), path: target };
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let content = '';
+    let received = 0;
+    const length = response.headers.get('content-length');
+    const total = length ? Number(length) : undefined;
+    try {
+      while (true) {
+        options.signal?.throwIfAborted();
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        received += chunk.value.length;
+        content += decoder.decode(chunk.value, { stream: true });
+        options.onProgress(received, total);
+      }
+      content += decoder.decode();
+      return { content, path: target };
+    } finally { reader.releaseLock(); }
   },
 
   async writeFile(path: string, content: string): Promise<{ success: boolean; path: string }> {
@@ -313,6 +344,7 @@ export const createWebFilesAPI = ({ getDirectory }: WebFilesAPIOptions): FilesAP
   },
 
   async downloadFile(path: string): Promise<void> {
+    if (canUseElectronDesktopIPC()) { await saveNative(path, { directory: getDirectory?.() }); return; }
     const target = normalizePath(path);
     const response = await runtimeFetch('/api/fs/raw', {
       query: { path: target, download: true },

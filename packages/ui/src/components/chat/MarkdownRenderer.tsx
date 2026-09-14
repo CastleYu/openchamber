@@ -21,6 +21,8 @@ const MarkdownImageGalleryLazy = lazyWithChunkRecovery(() =>
   import('./MarkdownImageGallery').then((m) => ({ default: m.MarkdownImageGallery }))
 );
 
+const MarkdownFilesLazy = lazyWithChunkRecovery(() => import('./MarkdownFiles').then(m => ({ default: m.MarkdownFiles })));
+
 const fallback = <div className="break-words w-full min-w-0" />;
 
 const fallbackContentClassName = (variant: unknown): string => {
@@ -43,12 +45,10 @@ const MobileMarkdownFallback = (props: { content?: unknown; className?: unknown;
 
 export const MarkdownRenderer: React.FC<React.ComponentPropsWithoutRef<typeof MarkdownRendererLazy>> = (props) => {
   const loaded = getLoadedMarkdownRendererModule();
-  if (loaded) return <loaded.MarkdownRenderer {...props} />;
-  return (
-    <React.Suspense fallback={<MobileMarkdownFallback {...props} />}>
-      <MarkdownRendererLazy {...props} />
-    </React.Suspense>
-  );
+  const content = loaded ? <loaded.MarkdownRenderer {...props} /> : <MarkdownRendererLazy {...props} />;
+  return <React.Suspense fallback={<MobileMarkdownFallback {...props} />}>
+    <MarkdownFilesLazy sessionId={props.part?.sessionID} messageId={props.messageId || props.part?.messageID || ''} streaming={props.isStreaming} onShowPopup={props.onShowPopup}>{content}</MarkdownFilesLazy>
+  </React.Suspense>;
 };
 
 type SimpleMarkdownRendererProps = React.ComponentPropsWithoutRef<typeof SimpleMarkdownRendererLazy> & {

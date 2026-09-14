@@ -193,6 +193,12 @@ Use an explicit override when testing a different OpenCode CLI build or when a u
 - Native notifications.
 - User-confirmed local folder selection. The shared UI supplies the requested directory as the picker `defaultPath`; confirmation is required before filesystem access is retried.
 - One-click open/reveal/open-in-app actions.
+- Native executable handoff awaits the OS spawn result so an unavailable launch
+  candidate reports failure. This does not wait for an external application's UI.
+- Window-owned file transfers, native Save as, and system-default file opening.
+  See `docs/maintenance/FILE-OPENING-3.0.md` at the repository root for lifecycle
+  and cross-runtime behavior. The file protocol serves only completed opaque
+  transfer IDs; its IPC remains local-page gated.
 - Desktop host switcher and deep-link imports.
 - Local and remote instance handling.
 - SSH host import, connections, logs, and port forwarding.
@@ -226,6 +232,13 @@ Add new native capabilities in this order:
 Electron uses `electron-log`. In development, console logs are also visible in the terminal. In packaged apps, logs are written through the platform log path for the `OpenChamber` app name.
 
 Development builds use a separate user data directory named `OpenChamber Dev`, so dev state does not overwrite normal packaged app state.
+
+The packaged UI protocol returns 404 for missing subresources instead of serving
+HTML as JavaScript or media. If a document such as `index.html` or `mini-chat.html`
+cannot be read, it returns a 503 recovery page embedded in the main bundle. That
+page does not depend on web assets or reset user data. Retry reloads the same URL
+after files are restored. Missing runtime files still require restoring the
+application or relaunching the portable executable.
 
 ## Things To Be Careful With
 

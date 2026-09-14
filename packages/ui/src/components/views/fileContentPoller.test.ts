@@ -30,17 +30,20 @@ describe('createFileContentPoller', () => {
     expect(applied).toEqual([]);
   });
 
-  test('reports a failed read as unobserved instead of unchanged', async () => {
+  test('reports a failed read and stops repeated requests until reopened', async () => {
     const applied: string[] = [];
+    let reads = 0;
     const poller = createFileContentPoller({
-      readContent: async () => { throw new Error('read failed'); },
+      readContent: async () => { reads += 1; throw new Error('read failed'); },
       getLoadedContent: () => 'before',
       getLoadedRevision: () => 0,
       isDirty: () => false,
       applyContent: (content) => applied.push(content),
     });
 
-    expect(await poller.poll()).toBe(false);
+    await expect(poller.poll()).rejects.toThrow('read failed');
+    for (let tick = 0; tick < 10; tick += 1) expect(await poller.poll()).toBe(false);
+    expect(reads).toBe(1);
     expect(applied).toEqual([]);
   });
 

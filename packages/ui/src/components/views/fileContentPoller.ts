@@ -29,9 +29,12 @@ export const createFileContentPoller = (options: FileContentPollerOptions) => {
         }
         options.applyContent(content);
         return true;
-      } catch {
-        // A failed read is not proof the file is unchanged; the next poll retries.
-        return false;
+      } catch (error) {
+        if (!active) return false;
+        // Stop this polling lifetime. The view preserves the draft and exposes
+        // an explicit retry instead of repeating a failed read indefinitely.
+        active = false;
+        throw error;
       }
     },
     dispose: () => {

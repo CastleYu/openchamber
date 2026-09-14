@@ -46,6 +46,10 @@ const createMockResponse = () => {
       body = payload;
       return this;
     },
+    sendFile(file, options) {
+      body = { file, options };
+      return this;
+    },
     setHeader(name, value) {
       headers.set(name.toLowerCase(), value);
       return this;
@@ -656,6 +660,9 @@ describe('fs read', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.getHeader('referrer-policy')).toBe('no-referrer');
+    expect(fsPromises.readFile).not.toHaveBeenCalled();
+    expect(res.body.file).toBe('/outside/image.png');
+    expect(res.body.options.acceptRanges).toBe(true);
   });
 
   it('rejects outside workspace mkdir without a trusted directory grant', async () => {
@@ -1392,7 +1399,7 @@ describe('fs stat directory scope (issue 3019)', () => {
         stat: async (targetPath) => (
           targetPath === '/repo-b'
             ? { isDirectory: () => true, mtimeMs: 123 }
-            : { isFile: () => true, size: 12, mtimeMs: 456 }
+            : { isDirectory: () => false, isFile: () => true, size: 12, mtimeMs: 456 }
         ),
       },
       spawn: vi.fn(),
@@ -1445,6 +1452,7 @@ describe('fs stat directory error handling', () => {
     try {
       await mkdir(path.join(directory, 'fs'));
       await copyFile(new URL('./routes.js', import.meta.url), path.join(directory, 'fs/routes.mjs'));
+      await copyFile(new URL('./zip-directory.js', import.meta.url), path.join(directory, 'fs/zip-directory.js'));
       await copyFile(new URL('../path-realpath-cache.js', import.meta.url), path.join(directory, 'path-realpath-cache.js'));
       expect(() => execFileSync('node', [
         '--input-type=module',

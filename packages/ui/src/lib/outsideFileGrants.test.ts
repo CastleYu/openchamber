@@ -68,6 +68,14 @@ test('renews an expired outside-file grant before returning read options', async
     expect(await pending).toEqual({ allowOutsideWorkspace: true, outsideFileGrant: undefined });
     switchRuntimeEndpoint({ apiBaseUrl: 'http://127.0.0.1:57123/api', runtimeKey: 'local' });
     expect(getOutsideFileGrant('C:/outside/pending.txt')).toBe(undefined);
+    grantFileAccess = async () => { throw new Error('ENOENT'); };
+    await expect(resolveOutsideFileReadOptions('C:/outside/missing.mp4', 'C:/workspace', true))
+      .rejects.toThrow('File access was not granted');
+    expect(getOutsideFileGrant('C:/outside/missing.mp4')).toBeUndefined();
+    // Failure must not be cached permanently; a restored file can be reopened.
+    grantFileAccess = async (path) => ({ path, outsideFileGrant: 'restored', expiresAt: now + 60_000 });
+    expect(await resolveOutsideFileReadOptions('C:/outside/missing.mp4', 'C:/workspace', true))
+      .toEqual({ allowOutsideWorkspace: true, outsideFileGrant: 'restored' });
   } finally {
     switchRuntimeEndpoint({ apiBaseUrl: 'http://127.0.0.1:57123/api', runtimeKey: 'local' });
     Date.now = originalNow;

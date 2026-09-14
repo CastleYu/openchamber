@@ -668,6 +668,19 @@ interface ListDirectoryOptions {
   respectGitignore?: boolean;
 }
 
+export interface ArchiveEntry { name: string; size: number; compressedSize: number; directory: boolean; }
+
+export interface FileAsset {
+  url: string;
+  id?: string;
+  dispose(): void;
+}
+
+export interface FileTransferOptions extends FileReadOptions {
+  signal?: AbortSignal;
+  onProgress?: (received: number, total?: number) => void;
+}
+
 interface FileReadOptions {
   allowOutsideWorkspace?: boolean;
   outsideFileGrant?: string;
@@ -677,11 +690,16 @@ interface FileReadOptions {
 }
 
 export interface FilesAPI {
+  archiveEntries?(path: string, options?: FileTransferOptions): Promise<ArchiveEntry[]>;
+  nativeFiles?: boolean;
+  loadAsset?(path: string, options?: FileTransferOptions): Promise<FileAsset>;
+  openNative?(path: string, options?: FileTransferOptions & { app?: { id: string; appName: string }; reveal?: boolean }): Promise<void>;
+  saveAs?(path: string, options?: FileTransferOptions & { content?: string }): Promise<boolean>;
   listDirectory(path: string, options?: ListDirectoryOptions): Promise<DirectoryListResult>;
   search(payload: FileSearchQuery): Promise<FileSearchResult[]>;
   createDirectory(path: string): Promise<{ success: boolean; path: string }>;
   statFile?(path: string, options?: FileReadOptions): Promise<{ path: string; isFile: boolean; size: number; mtimeMs?: number }>;
-  readFile?(path: string, options?: FileReadOptions): Promise<{ content: string; path: string }>;
+  readFile?(path: string, options?: FileTransferOptions): Promise<{ content: string; path: string }>;
   readFileBinary?(path: string, options?: FileReadOptions): Promise<{ dataUrl: string; path: string }>;
   writeFile?(path: string, content: string): Promise<{ success: boolean; path: string }>;
   uploadFile?(path: string, file: Blob, options?: { overwrite?: boolean; directory?: string }): Promise<{ success: boolean; path: string }>;

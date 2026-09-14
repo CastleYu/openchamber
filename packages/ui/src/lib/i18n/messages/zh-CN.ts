@@ -4,6 +4,12 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'gitView.monitor.autoOn': '自动监控',
+  'gitView.monitor.autoOff': '已暂停',
+  'gitView.monitor.autoAria': '切换此项目的自动 git 状态监控',
+  'gitView.monitor.autoTooltip': '暂停后，此项目不会预取 diff，也不会在后台刷新 git 状态。用刷新按钮加载当前工作区。',
+  'gitView.monitor.refresh': '刷新 git 状态',
+  'gitView.monitor.refreshAria': '刷新此项目的 git 状态',
   'performance.export': '导出诊断日志',
   'performance.title': "性能分析",
   'performance.memory': "内存",

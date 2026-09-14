@@ -11,6 +11,7 @@ import { VoiceSettings } from './VoiceSettings';
 import { TunnelSettings } from './TunnelSettings';
 import { OpenCodeCliSettings } from './OpenCodeCliSettings';
 import { OpenChamberToolsSettings } from './OpenChamberToolsSettings';
+import { OccupancySettings } from './OccupancySettings';
 import { DesktopNetworkSettings } from './DesktopNetworkSettings';
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
@@ -147,6 +148,7 @@ const GeneralSectionContent: React.FC = () => {
             <AppLinkSecuritySettings />
             {!isVSCode && <OpenCodeCliSettings />}
             {!isVSCode && <OpenChamberToolsSettings />}
+            <OccupancySettings />
             <OpenChamberVisualSettings visibleSettings={[
                 'fileEditorKeymap',
                 ...(!isVSCode ? ['sessionTabs' as const] : []),

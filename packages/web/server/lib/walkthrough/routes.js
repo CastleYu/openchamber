@@ -4,6 +4,24 @@
 // client is still there.
 const clientIsGone = (res) => res.writableEnded || res.destroyed;
 
+/**
+ * GET /api/walkthrough runs untracked git diffs. Abort the in-flight pool when
+ * the client drops the load request — not when a generation is cancelled.
+ */
+export const attachWalkthroughLoadAbort = (req, res, abort) => {
+  const onAborted = () => abort.abort();
+  const onClose = () => {
+    if (!res.writableEnded) abort.abort();
+  };
+  req.on('aborted', onAborted);
+  res.on('close', onClose);
+  if (req.aborted || res.destroyed) abort.abort();
+  return () => {
+    req.off('aborted', onAborted);
+    res.off('close', onClose);
+  };
+};
+
 export function registerWalkthroughRoutes(app, { getWalkthroughService }) {
   const respondWithError = (res, error, fallback) => {
     const statusCode = Number(error?.statusCode) || 500;
@@ -29,9 +47,12 @@ export function registerWalkthroughRoutes(app, { getWalkthroughService }) {
   };
 
   app.get('/api/walkthrough', async (req, res) => {
+    const directory = typeof req.query.directory === 'string' ? req.query.directory : '';
+    const abort = new AbortController();
+    const detachAbort = attachWalkthroughLoadAbort(req, res, abort);
     try {
       const { getWalkthrough, getPullRequestDiff } = await getWalkthroughService();
-      const directory = typeof req.query.directory === 'string' ? req.query.directory : '';
+      if (abort.signal.aborted) return;
       if (!directory) {
         return res.status(400).json({ error: 'directory parameter is required' });
       }
@@ -43,11 +64,15 @@ export function registerWalkthroughRoutes(app, { getWalkthroughService }) {
           model: typeof req.query.model === 'string' ? req.query.model : undefined,
           language: typeof req.query.language === 'string' ? req.query.language : undefined,
         },
-        { getPullRequestDiff },
+        { getPullRequestDiff, signal: abort.signal },
       );
+      if (abort.signal.aborted || clientIsGone(res)) return;
       res.json(result);
     } catch (error) {
+      if (abort.signal.aborted || clientIsGone(res)) return;
       respondWithError(res, error, 'Failed to load walkthrough');
+    } finally {
+      detachAbort();
     }
   });
 

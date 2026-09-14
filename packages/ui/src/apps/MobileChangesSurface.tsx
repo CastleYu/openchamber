@@ -267,7 +267,7 @@ export const MobileChangesPane: React.FC<MobileChangesPaneProps> = ({ rootDirect
     if (!currentDirectory) return;
     try {
       await Promise.all([
-        fetchStatus(currentDirectory, git),
+        fetchStatus(currentDirectory, git, { source: 'manual' }),
         fetchBranches(currentDirectory, git),
       ]);
     } catch (error) {

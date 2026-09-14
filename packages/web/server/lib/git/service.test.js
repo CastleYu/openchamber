@@ -37,6 +37,7 @@ import {
   getDiff,
   getUntrackedDiffs,
   getFileDiff,
+  getUntrackedDiffs,
   validateWorktreeCreate,
   parseBranchCreationSource,
   getRangeFiles,
@@ -2185,5 +2186,73 @@ describe.runIf(canRunGit())('getRangeFiles', () => {
     const copyEntry = files.find((file) => file.status === 'C');
     expect(copyEntry).toBeDefined();
     expect(copyEntry.path).toBe('copied destination.md');
+  });
+});
+
+describe.runIf(canRunGit())('getUntrackedDiffs bounds', () => {
+  const policy = {
+    walkthroughUntrackedDiffsEnabled: true,
+    untrackedDiffConcurrency: 2,
+    untrackedDiffMaxFiles: 50,
+    untrackedDiffMaxFileBytes: 1024 * 1024,
+  };
+
+  it('bounds aggregate output even when each file is below its configured limit', async () => {
+    const { tmpDir } = await createTempRepo();
+    const files = Array.from({ length: 8 }, (_, index) => `asset-${index}.mjs`);
+    const content = 'x'.repeat(5 * 1024 * 1024);
+    for (const file of files) fs.writeFileSync(path.join(tmpDir, file), content);
+    const diffs = await getUntrackedDiffs(tmpDir, files, {
+      policy: { ...policy, untrackedDiffMaxFileBytes: 8 * 1024 * 1024 },
+    });
+    const retained = diffs.filter(Boolean);
+    expect(retained.length).toBeGreaterThan(0);
+    expect(retained.length).toBeLessThan(files.length);
+    expect(diffs.reduce((sum, diff) => sum + Buffer.byteLength(diff), 0)).toBeLessThanOrEqual(32 * 1024 * 1024);
+  });
+
+  it('skips binary and oversized files and caps how many diffs run', async () => {
+    const { tmpDir } = await createTempRepo();
+    fs.writeFileSync(path.join(tmpDir, 'small.txt'), 'hello\n');
+    fs.writeFileSync(path.join(tmpDir, 'huge.txt'), 'x'.repeat(2048));
+    fs.writeFileSync(path.join(tmpDir, 'binary.bin'), Buffer.from([0, 1, 2, 3, 0, 4]));
+
+    const diffs = await getUntrackedDiffs(tmpDir, ['small.txt', 'huge.txt', 'binary.bin'], {
+      policy: { ...policy, untrackedDiffMaxFiles: 8, untrackedDiffMaxFileBytes: 512 },
+      concurrency: 2,
+      skipBinary: true,
+    });
+
+    expect(diffs).toHaveLength(3);
+    expect(diffs[0]).toContain('hello');
+    expect(diffs[1]).toBe('');
+    expect(diffs[2]).toBe('');
+  });
+
+  it('does not start extra diffs after the consumer is cancelled', async () => {
+    const { tmpDir } = await createTempRepo();
+    fs.writeFileSync(path.join(tmpDir, 'a.txt'), 'a\n');
+    fs.writeFileSync(path.join(tmpDir, 'b.txt'), 'b\n');
+    fs.writeFileSync(path.join(tmpDir, 'c.txt'), 'c\n');
+
+    const controller = new AbortController();
+    const pending = getUntrackedDiffs(tmpDir, ['a.txt', 'b.txt', 'c.txt'], {
+      policy: { ...policy, untrackedDiffConcurrency: 1 },
+      concurrency: 1,
+      signal: controller.signal,
+    });
+    controller.abort();
+    const diffs = await pending;
+    const started = diffs.filter((patch) => typeof patch === 'string' && patch.includes('diff --git')).length;
+    expect(started).toBeLessThan(3);
+  });
+
+  it('returns nothing when walkthrough untracked diffs are disabled', async () => {
+    const { tmpDir } = await createTempRepo();
+    fs.writeFileSync(path.join(tmpDir, 'small.txt'), 'hello\n');
+    const diffs = await getUntrackedDiffs(tmpDir, ['small.txt'], {
+      policy: { ...policy, walkthroughUntrackedDiffsEnabled: false },
+    });
+    expect(diffs).toEqual([]);
   });
 });

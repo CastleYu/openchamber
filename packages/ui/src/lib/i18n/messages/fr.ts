@@ -3,6 +3,12 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'gitView.monitor.autoOn': 'Suivi auto',
+  'gitView.monitor.autoOff': 'En pause',
+  'gitView.monitor.autoAria': 'Activer ou non le suivi automatique du statut git pour ce projet',
+  'gitView.monitor.autoTooltip': 'En pause, ce projet ne précharge pas les diffs et ne rafraîchit pas le statut git en arrière-plan. Utilisez Actualiser pour charger l’arbre actuel.',
+  'gitView.monitor.refresh': 'Actualiser le statut git',
+  'gitView.monitor.refreshAria': 'Actualiser le statut git de ce projet',
   'performance.export': 'Exporter les diagnostics',
   'performance.title': "Performances",
   'performance.memory': "Mémoire",

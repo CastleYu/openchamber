@@ -4,6 +4,12 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'gitView.monitor.autoOn': '自動監視',
+  'gitView.monitor.autoOff': '停止中',
+  'gitView.monitor.autoAria': 'このプロジェクトの自動 git 状態監視を切り替え',
+  'gitView.monitor.autoTooltip': '停止中は、このプロジェクトの diff 先読みもバックグラウンドの git 更新もしません。更新ボタンで現在の作業ツリーを読み込みます。',
+  'gitView.monitor.refresh': 'git 状態を更新',
+  'gitView.monitor.refreshAria': 'このプロジェクトの git 状態を更新',
   'performance.export': '診断情報をエクスポート',
   'performance.title': "パフォーマンス",
   'performance.memory': "メモリ",

@@ -1,6 +1,7 @@
+import { EventEmitter } from 'node:events';
 import express from 'express';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { registerWalkthroughRoutes } from './routes.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { attachWalkthroughLoadAbort, registerWalkthroughRoutes } from './routes.js';
 
 // These run over real HTTP on purpose. The bug this file exists for was
 // invisible to unit tests: the service and the store were both correct, and the
@@ -15,11 +16,19 @@ describe('walkthrough routes', () => {
   let job;
 
   let lastArgs;
+  let lastDeps;
   let generateCalls = 0;
+  let holdLoads = false;
+  let loadSignals = [];
 
   const service = {
-    async getWalkthrough(args) {
+    async getWalkthrough(args, deps) {
       lastArgs = args;
+      lastDeps = deps;
+      if (holdLoads) {
+        loadSignals.push(deps.signal);
+        await new Promise((resolve) => deps.signal.addEventListener('abort', resolve, { once: true }));
+      }
       return { walkthrough: null, hunks: [], hunkCount: 0, generating: Boolean(job) };
     },
     async generateWalkthrough(args) {
@@ -47,6 +56,9 @@ describe('walkthrough routes', () => {
     job = null;
     releaseJob = undefined;
     lastArgs = undefined;
+    lastDeps = undefined;
+    holdLoads = false;
+    loadSignals = [];
     const app = express();
     app.use(express.json());
     registerWalkthroughRoutes(app, { getWalkthroughService: async () => service });
@@ -148,6 +160,33 @@ describe('walkthrough routes', () => {
     expect(lastArgs.language).toBeUndefined();
   });
 
+  it('forwards an abort signal on the load GET so untracked diffs can die with the request', async () => {
+    await fetch(
+      `${base}/api/walkthrough?directory=/repo&source=${encodeURIComponent(JSON.stringify(SOURCE))}`,
+    );
+    expect(lastDeps?.signal).toBeDefined();
+    expect(lastDeps.signal.aborted).toBe(false);
+  });
+
+  it('aborts only the disconnected HTTP load, preserving a sibling load and generation', async () => {
+    const seen = generateCalls;
+    const generating = generate();
+    await untilGenerateCalled(seen);
+    holdLoads = true;
+    const first = new AbortController();
+    const second = new AbortController();
+    const url = `${base}/api/walkthrough?directory=/repo&source=${encodeURIComponent(JSON.stringify(SOURCE))}`;
+    const firstLoad = fetch(url, { signal: first.signal }).catch(() => undefined);
+    const secondLoad = fetch(url, { signal: second.signal }).catch(() => undefined);
+    await vi.waitFor(() => expect(loadSignals).toHaveLength(2));
+    first.abort();
+    await vi.waitFor(() => expect(loadSignals.filter((signal) => signal.aborted)).toHaveLength(1));
+    expect(job).not.toBeNull();
+    second.abort();
+    releaseJob();
+    await Promise.all([firstLoad, secondLoad, generating]);
+  });
+
   it('cancels through its own endpoint rather than a dropped connection', async () => {
     const seen = generateCalls;
     generate().catch(() => {});
@@ -161,5 +200,19 @@ describe('walkthrough routes', () => {
 
     expect(await response.json()).toEqual({ cancelled: true });
     releaseJob();
+  });
+});
+
+describe('attachWalkthroughLoadAbort', () => {
+  it('aborts the load when the client drops and removes listeners', () => {
+    const req = new EventEmitter();
+    const res = new EventEmitter();
+    const abort = new AbortController();
+    const detach = attachWalkthroughLoadAbort(req, res, abort);
+    req.emit('aborted');
+    expect(abort.signal.aborted).toBe(true);
+    detach();
+    expect(req.listenerCount('aborted')).toBe(0);
+    expect(res.listenerCount('close')).toBe(0);
   });
 });

@@ -35,30 +35,48 @@ let lastReadModel: string | undefined;
 let lastGenerateModel: string | undefined;
 let lastReadLanguage: string | undefined;
 let lastGenerateLanguage: string | undefined;
+let lastGenerateSignal: AbortSignal | undefined;
+let cancelGenerationCalls = 0;
+const hangReads = new Set<string>();
+const readSignals = new Map<string, AbortSignal | undefined>();
 
 mock.module('@/lib/walkthrough/api', () => ({
   fetchWalkthrough: async (
-    _directory: string,
+    directory: string,
     _source: WalkthroughSource,
-    options: { model?: string; language?: string } = {},
+    options: { model?: string; language?: string; signal?: AbortSignal } = {},
   ) => {
     lastReadModel = options.model;
     lastReadLanguage = options.language;
+    readSignals.set(directory, options.signal);
+    if (hangReads.has(directory)) {
+      return new Promise<WalkthroughResult>((_resolve, reject) => {
+        const fail = () => reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+        if (options.signal?.aborted) {
+          fail();
+          return;
+        }
+        options.signal?.addEventListener('abort', fail, { once: true });
+      });
+    }
     return readResult;
   },
   generateWalkthrough: async (
     _directory: string,
     _source: WalkthroughSource,
-    options: { model?: string; language?: string } = {},
+    options: { model?: string; language?: string; signal?: AbortSignal } = {},
   ) => {
     generateCalls += 1;
     lastGenerateModel = options.model;
     lastGenerateLanguage = options.language;
+    lastGenerateSignal = options.signal;
     return new Promise<WalkthroughResult>((resolve) => {
       releaseGeneration = () => resolve(finished);
     });
   },
-  cancelWalkthroughGeneration: async () => {},
+  cancelWalkthroughGeneration: async () => {
+    cancelGenerationCalls += 1;
+  },
   // The store imports this for its progress poller. Leaving it out of the mock
   // makes the whole module fail to load, which reads as an unrelated crash.
   fetchWalkthroughStage: async () => null,
@@ -74,6 +92,7 @@ describe('useWalkthroughStore — reattaching to a running generation', () => {
     useWalkthroughStore.getState().reset();
     readResult = result();
     generateCalls = 0;
+    cancelGenerationCalls = 0;
     releaseGeneration = undefined;
   });
 
@@ -120,6 +139,100 @@ describe('useWalkthroughStore — reattaching to a running generation', () => {
 
     expect(generateCalls).toBe(1);
     expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('generating');
+  });
+});
+
+describe('useWalkthroughStore — abortLoad vs cancel', () => {
+  beforeEach(() => {
+    useWalkthroughStore.getState().reset();
+    cancelGenerationCalls = 0;
+    generateCalls = 0;
+    releaseGeneration = undefined;
+    lastGenerateSignal = undefined;
+    hangReads.clear();
+    readSignals.clear();
+  });
+
+  afterEach(() => {
+    useWalkthroughStore.getState().reset();
+    hangReads.clear();
+  });
+
+  test('abortLoad does not post a generation cancel', () => {
+    useWalkthroughStore.getState().abortLoad('/repo', SOURCE);
+    expect(cancelGenerationCalls).toBe(0);
+  });
+
+  test('cancel posts a generation cancel', async () => {
+    useWalkthroughStore.getState().cancel('/repo', SOURCE);
+    await flush();
+    expect(cancelGenerationCalls).toBe(1);
+  });
+
+  test('abortLoad during generate does not cancel the job and the result still lands', async () => {
+    void useWalkthroughStore.getState().generate('/repo', SOURCE);
+    await flush();
+    expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('generating');
+
+    useWalkthroughStore.getState().abortLoad('/repo', SOURCE);
+    await flush();
+
+    expect(cancelGenerationCalls).toBe(0);
+    expect(lastGenerateSignal?.aborted).toBe(false);
+    expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('generating');
+
+    releaseGeneration?.();
+    await flush();
+
+    const entry = useWalkthroughStore.getState().getEntry('/repo', SOURCE);
+    expect(entry.status).toBe('ready');
+    expect(entry.result?.walkthrough?.title).toBe('Change');
+  });
+
+  test('abortLoadsForDirectory aborts an in-flight load GET for that directory', async () => {
+    hangReads.add('/repo');
+    void useWalkthroughStore.getState().load('/repo', SOURCE);
+    await flush();
+    expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('loading');
+    expect(readSignals.get('/repo')?.aborted).toBe(false);
+
+    useWalkthroughStore.getState().abortLoadsForDirectory('/repo');
+    await flush();
+
+    expect(readSignals.get('/repo')?.aborted).toBe(true);
+    expect(cancelGenerationCalls).toBe(0);
+  });
+
+  test('abortLoadsForDirectory does not abort a longer directory that shares the prefix', async () => {
+    hangReads.add('/repo');
+    hangReads.add('/repo-extra');
+    void useWalkthroughStore.getState().load('/repo', SOURCE);
+    void useWalkthroughStore.getState().load('/repo-extra', SOURCE);
+    await flush();
+
+    useWalkthroughStore.getState().abortLoadsForDirectory('/repo');
+    await flush();
+
+    expect(readSignals.get('/repo')?.aborted).toBe(true);
+    expect(readSignals.get('/repo-extra')?.aborted).toBe(false);
+    expect(cancelGenerationCalls).toBe(0);
+  });
+
+  test('abortLoadsForDirectory during generate does not drop the paid job', async () => {
+    void useWalkthroughStore.getState().generate('/repo', SOURCE);
+    await flush();
+
+    useWalkthroughStore.getState().abortLoadsForDirectory('/repo');
+    await flush();
+
+    expect(cancelGenerationCalls).toBe(0);
+    expect(lastGenerateSignal?.aborted).toBe(false);
+    expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('generating');
+
+    releaseGeneration?.();
+    await flush();
+
+    expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('ready');
   });
 });
 

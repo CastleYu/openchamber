@@ -71,6 +71,9 @@ import { cn } from '@/lib/utils';
 import { generateCommitMessage as generateSessionCommitMessage, getGitWorktreeBootstrapStatus } from '@/lib/gitApi';
 import { sessionEvents } from '@/lib/sessionEvents';
 import { useI18n } from '@/lib/i18n';
+import { updateDesktopSettings } from '@/lib/persistence';
+import { isGitAutoMonitorEnabled, withGitAutoMonitorDirectory } from '@/lib/performance/occupancyPolicy';
+import { useOccupancyPolicyStore } from '@/stores/useOccupancyPolicyStore';
 
 type SyncAction = 'fetch' | 'pull' | 'push' | 'sync' | null;
 type CommitAction = 'commit' | 'commitAndPush' | null;
@@ -290,6 +293,16 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
   const currentIdentity = useGitIdentity(gitDirectory ?? null);
   const isLoading = useGitLoadingStatus(gitDirectory ?? null);
   const isLogLoading = useGitLoadingLog(gitDirectory ?? null);
+  const occupancyPolicy = useOccupancyPolicyStore((state) => state.policy);
+  const setOccupancyPolicy = useOccupancyPolicyStore((state) => state.setPolicy);
+  const autoMonitorEnabled = isGitAutoMonitorEnabled(gitDirectory, occupancyPolicy);
+  const handleAutoMonitorChange = React.useCallback((enabled: boolean) => {
+    if (!gitDirectory) return;
+    const next = withGitAutoMonitorDirectory(occupancyPolicy, gitDirectory, enabled);
+    setOccupancyPolicy(next);
+    if (!enabled) useGitStore.getState().cancelDiffWork(gitDirectory);
+    void updateDesktopSettings({ occupancy: next });
+  }, [gitDirectory, occupancyPolicy, setOccupancyPolicy]);
   const {
     setActiveDirectory,
     ensureAll,
@@ -356,7 +369,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
       if (normalizePath(directory) !== normalizePath(gitDirectory)) {
         return;
       }
-      void fetchStatus(directory, git, { silent: true });
+      void fetchStatus(directory, git, { silent: true, source: 'manual' });
     }, GIT_RECONCILE_DELAY_MS);
   }, [clearScheduledGitReconcile, gitDirectory, fetchStatus, git]);
 
@@ -537,6 +550,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
       force: true,
       silent: true,
       throwOnError: true,
+      source: 'manual',
     }).then(() => {
       if (cancelled) return;
       setPostBootstrapRefresh((current) => (
@@ -933,7 +947,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
       setActiveDirectory(currentDirectory);
       void ensureAll(gitDirectory, git);
     }
-  }, [isActive, currentDirectory, gitDirectory, setActiveDirectory, ensureAll, git]);
+  }, [isActive, currentDirectory, gitDirectory, setActiveDirectory, ensureAll, git, autoMonitorEnabled]);
 
   React.useEffect(() => {
     if (!isActive) return;
@@ -958,7 +972,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
 
       try {
         await Promise.all([
-          fetchStatus(gitDirectory, git),
+          fetchStatus(gitDirectory, git, { source: 'manual', force: true, throwOnError: true }),
           fetchBranches(gitDirectory, git),
         ]);
       } catch (err) {
@@ -976,6 +990,11 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
     if (!gitDirectory) return;
     await fetchLog(gitDirectory, git, logMaxCountLocal);
   }, [gitDirectory, git, fetchLog, logMaxCountLocal]);
+
+  const handleManualRefresh = React.useCallback(() => {
+    void refreshStatusAndBranches(true);
+    void refreshLog();
+  }, [refreshLog, refreshStatusAndBranches]);
 
   const refreshIdentity = React.useCallback(async () => {
     if (!gitDirectory) return;
@@ -2342,7 +2361,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
   const handleGraphActionSuccess = React.useCallback(() => {
     setGitLogDialogMode(null);
     if (gitDirectory) {
-      fetchStatus(gitDirectory, git);
+      fetchStatus(gitDirectory, git, { source: 'manual' });
       fetchBranches(gitDirectory, git);
       fetchLog(gitDirectory, git, logMaxCountLocal);
     }
@@ -2364,7 +2383,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
         }),
       });
       if (gitDirectory) {
-        fetchStatus(gitDirectory, git);
+        fetchStatus(gitDirectory, git, { source: 'manual' });
         fetchBranches(gitDirectory, git);
         fetchLog(gitDirectory, git, logMaxCountLocal);
       }
@@ -2426,6 +2445,18 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
   }
 
   if (isGitRepo === null || (isGitRepo === true && !status)) {
+    if (!autoMonitorEnabled && !isLoading) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-3">
+          <Button variant="chip" size="sm" aria-pressed={false} onClick={() => handleAutoMonitorChange(true)}>
+            {t('gitView.monitor.autoOff')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleManualRefresh}>
+            {t('gitView.monitor.refresh')}
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -2502,6 +2533,10 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
                 : undefined
             }
             repositoryRoot={gitDirectory !== currentDirectory ? currentDirectory : undefined}
+            autoMonitorEnabled={autoMonitorEnabled}
+            onAutoMonitorChange={handleAutoMonitorChange}
+            onManualRefresh={handleManualRefresh}
+            isRefreshing={isLoading}
           />
 
       {/* In-progress operation banner */}
@@ -2635,7 +2670,7 @@ export const GitView: React.FC<GitViewProps> = ({ isActive }) => {
               showHeader={false}
               onRefresh={() => {
                 if (!gitDirectory) return;
-                fetchStatus(gitDirectory, git);
+                fetchStatus(gitDirectory, git, { source: 'manual' });
                 fetchBranches(gitDirectory, git);
                 fetchLog(gitDirectory, git, logMaxCountLocal);
               }}

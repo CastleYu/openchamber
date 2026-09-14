@@ -5,6 +5,7 @@ import os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { createRequire } from 'module';
+import { readOccupancyPolicy } from '../performance/occupancy-policy.js';
 
 const fsp = fs.promises;
 const require = createRequire(import.meta.url);
@@ -2575,28 +2576,103 @@ export async function listUntrackedPaths(directory) {
  * Returns one entry per input path, in order; unreadable paths yield `''`
  * rather than failing the batch.
  */
-export async function getUntrackedDiffs(directory, filePaths = [], { concurrency = 8, contextLines = 3 } = {}) {
+const UNTRACKED_DIFF_TOTAL_BYTES = 32 * 1024 * 1024;
+
+const isAbortError = (error) => error?.name === 'AbortError' || error?.code === 'ABORT_ERR';
+
+export async function getUntrackedDiffs(directory, filePaths = [], options = {}) {
+  const policy = options.policy ?? readOccupancyPolicy();
   const paths = (Array.isArray(filePaths) ? filePaths : []).filter((value) => typeof value === 'string' && value);
   if (paths.length === 0) return [];
+  if (policy.walkthroughUntrackedDiffsEnabled === false) return [];
 
-  const { directoryPath, directoryGit, repoRoot } = await createRepositoryGitContext(directory);
-  const results = new Array(paths.length).fill('');
-  let cursor = 0;
+  const contextLines = options.contextLines ?? 3;
+  const concurrency = Math.min(
+    Math.max(1, Number(options.concurrency) || policy.untrackedDiffConcurrency || 1),
+    paths.length,
+  );
+  const maxFiles = Math.max(1, Number(options.maxFiles) || policy.untrackedDiffMaxFiles);
+  const maxFileBytes = Math.max(1, Number(options.maxFileBytes) || policy.untrackedDiffMaxFileBytes);
+  const skipBinary = options.skipBinary !== false;
 
-  const worker = async () => {
-    while (cursor < paths.length) {
-      const index = cursor++;
+  const controller = new AbortController();
+  const onCallerAbort = () => controller.abort();
+  if (options.signal) {
+    if (options.signal.aborted) return [];
+    options.signal.addEventListener('abort', onCallerAbort, { once: true });
+  }
+
+  try {
+    const { directoryPath, directoryGit, repoRoot } = await createRepositoryGitContext(directory);
+    if (controller.signal.aborted) return [];
+
+    const selected = [];
+    let selectedBytes = 0;
+    let outputBytes = 0;
+    const results = new Array(paths.length).fill('');
+    for (let pathIndex = 0; pathIndex < paths.length; pathIndex += 1) {
+      if (controller.signal.aborted) return results;
+      if (selected.length >= maxFiles) break;
       try {
-        const fileContext = await resolveGitFileContext(directoryPath, directoryGit, paths[index], repoRoot);
-        results[index] = await getNoIndexDiff(repoRoot, fileContext.repoPath, contextLines);
+        const fileContext = await resolveGitFileContext(directoryPath, directoryGit, paths[pathIndex], repoRoot);
+        const stat = await fsp.stat(fileContext.absolutePath);
+        if (!stat.isFile() || stat.size > maxFileBytes || selectedBytes + stat.size > UNTRACKED_DIFF_TOTAL_BYTES) continue;
+        if (skipBinary && await looksBinaryBySniff(fileContext.absolutePath)) continue;
+        selected.push({ index: pathIndex, fileContext });
+        selectedBytes += stat.size;
       } catch {
-        results[index] = '';
+        // Unreadable paths stay empty rather than failing the batch.
       }
     }
-  };
 
-  await Promise.all(Array.from({ length: Math.min(concurrency, paths.length) }, worker));
-  return results;
+    let cursor = 0;
+    const gitBinary = getGitBinary();
+    const env = await buildGitEnv();
+    const retain = (index, patch) => {
+      const bytes = Buffer.byteLength(patch);
+      if (outputBytes + bytes > UNTRACKED_DIFF_TOTAL_BYTES) return;
+      outputBytes += bytes;
+      results[index] = patch;
+    };
+
+    const worker = async () => {
+      while (cursor < selected.length) {
+        if (controller.signal.aborted) return;
+        const current = selected[cursor++];
+        const { index, fileContext } = current;
+        const args = ['diff', '--no-color', '--full-index'];
+        if (typeof contextLines === 'number' && !Number.isNaN(contextLines)) {
+          args.push(`-U${Math.max(0, contextLines)}`);
+        }
+        args.push('--no-index', '--', '/dev/null', fileContext.repoPath);
+        try {
+          const { stdout } = await execFileAsync(gitBinary, args, {
+            cwd: repoRoot,
+            env,
+            windowsHide: true,
+            maxBuffer: 20 * 1024 * 1024,
+            signal: controller.signal,
+          });
+          retain(index, String(stdout || ''));
+        } catch (error) {
+          if (isAbortError(error) || controller.signal.aborted) return;
+          // `git diff --no-index` exits 1 whenever there are differences, which
+          // for a new file is always. The patch is on stdout, not in the Error
+          // message (execFile puts the command line there).
+          const patch = String(error?.stdout || '');
+          retain(index, patch);
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, selected.length) }, worker));
+    if (controller.signal.aborted) return results;
+    return results;
+  } finally {
+    if (options.signal) {
+      options.signal.removeEventListener('abort', onCallerAbort);
+    }
+  }
 }
 
 const refResolvesToCommit = async (git, ref) => git

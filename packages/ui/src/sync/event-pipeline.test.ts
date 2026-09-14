@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import type { Event, OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createEventPipeline } from "./event-pipeline"
+import { projectResources } from '@/lib/performance/projectResources'
 
 const failAfter = (ms: number) => new Promise<never>((_, reject) => {
   setTimeout(() => reject(new Error("Timed out waiting for event pipeline flush")), ms)
@@ -45,13 +46,14 @@ function statusEvent(type: "busy" | "retry"): Event {
   } as Event
 }
 
-function createSdk(events: Event[], streamFinished: () => void): OpencodeClient {
+function createSdk(events: Event[], streamFinished: () => void, interval = 0): OpencodeClient {
   return {
     global: {
       event: async ({ signal }: { signal: AbortSignal }) => ({
         stream: (async function* () {
           for (const payload of events) {
             yield { directory: "/repo", payload }
+            if (interval) await new Promise((resolve) => setTimeout(resolve, interval))
           }
           streamFinished()
           await new Promise<void>((resolve) => {
@@ -68,6 +70,38 @@ function createSdk(events: Event[], streamFinished: () => void): OpencodeClient 
 }
 
 describe("createEventPipeline", () => {
+  test('background streaming publishes fewer batches without losing text', async () => {
+    const run = async (focused: boolean) => {
+      projectResources.update([{ id: 'repo', directories: ['/repo'], running: true, unread: false }], 'repo', true, true)
+      if (focused) projectResources.sent('/repo')
+      let finish!: () => void
+      const finished = new Promise<void>((resolve) => { finish = resolve })
+      let batches = 0
+      let text = ''
+      const pipeline = createEventPipeline({
+        sdk: createSdk(Array.from({ length: 60 }, () => deltaEvent('x')), finish, 4),
+        transport: 'sse',
+        heartbeatTimeoutMs: 1000,
+        onEvents: (_directory, events) => {
+          batches += 1
+          for (const event of events) if (event.type === 'message.part.delta') text += event.properties.delta
+        },
+      })
+      try {
+        await finished
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        expect(text).toBe('x'.repeat(60))
+        return batches
+      } finally {
+        pipeline.cleanup()
+        projectResources.reset()
+      }
+    }
+    const focused = await run(true)
+    const background = await run(false)
+    expect(background).toBeLessThan(focused)
+    console.log(JSON.stringify({ scenario: '60 deltas at 4ms', focusedBatches: focused, backgroundBatches: background }))
+  })
   test("delivers one ordered batch per directory flush", async () => {
     let resolveStreamFinished!: () => void
     const streamFinished = new Promise<void>((resolve) => {

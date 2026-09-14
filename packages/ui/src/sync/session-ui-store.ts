@@ -299,7 +299,10 @@ type AssistantMessageSessionSource = {
   text: string
 }
 
-function notifyMessageSent(sessionId: string): void {
+import { projectResources } from '@/lib/performance/projectResources';
+
+function notifyMessageSent(sessionId: string, directory: string): void {
+  projectResources.sent(directory)
   runtimeFetch(`/api/sessions/${sessionId}/message-sent`, { method: "POST" })
     .catch(() => { /* ignore */ })
 }
@@ -1741,7 +1744,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
         ? () => useInputHistoryStore.getState().appendSubmissions(historyIdentity, historySubmissions)
         : undefined
 
-      notifyMessageSent(createdDraftSession.sessionId)
+      notifyMessageSent(createdDraftSession.sessionId, createdDraftSession.directory ?? '')
 
       markPendingUserSendAnimation(createdDraftSession.sessionId)
 
@@ -1836,7 +1839,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
       ? normalizePath(capturedTarget?.directory ?? options?.directory ?? get().getDirectoryForSession(targetSessionId))
       : null
     if (targetSessionId) {
-      notifyMessageSent(targetSessionId)
+      notifyMessageSent(targetSessionId, currentSessionDirectory ?? '')
     }
 
     if (targetSessionId) {

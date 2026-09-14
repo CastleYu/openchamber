@@ -13,6 +13,7 @@
  */
 
 import type { Event, OpencodeClient, SessionStatus } from "@opencode-ai/sdk/v2/client"
+import { projectResources } from '@/lib/performance/projectResources';
 import { opencodeClient } from "@/lib/opencode/client"
 import { getRuntimeUrlResolver } from "@/lib/runtime-url"
 import { clearRuntimeUrlAuthToken, refreshRuntimeUrlAuthToken } from "@/lib/runtime-auth"
@@ -339,7 +340,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     const d = getOrCreateDir(directory)
     if (d.timer) return
     const elapsed = Date.now() - d.last
-    const flushFrameMs = Date.now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : FLUSH_FRAME_MS
+    const flushFrameMs = Math.max(projectResources.frame(directory), Date.now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : FLUSH_FRAME_MS)
     d.timer = setTimeout(() => flushDir(directory), Math.max(0, flushFrameMs - elapsed))
   }
 

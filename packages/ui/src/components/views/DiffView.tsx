@@ -754,7 +754,7 @@ export const MultiFileDiffEntry = React.memo<MultiFileDiffEntryProps>(({
             if (runtimeKey !== getRuntimeKey()) return;
             invalidatePatch();
             sessionEvents.requestGitRefresh({ directory, paths: [file.path] });
-            await fetchStatus(directory, git);
+            await fetchStatus(directory, git, { source: 'manual' });
         } catch (error) {
             if (runtimeKey !== getRuntimeKey()) return;
             invalidatePatch();

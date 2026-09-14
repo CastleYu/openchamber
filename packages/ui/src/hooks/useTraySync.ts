@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Session } from '@opencode-ai/sdk/v2';
 import { canUseElectronDesktopIPC, invokeDesktop, isDesktopLocalOriginActive } from '@/lib/desktop';
+import { shouldIdlePoll } from '@/lib/performance/occupancyPolicy';
 import { getRuntimeApiBaseUrl } from '@/lib/runtime-switch';
 import { desktopHostsGet, getDesktopHostApiUrl, locationMatchesHost, redactSensitiveUrl } from '@/lib/desktopHosts';
 import { getSyncChildStores } from '@/sync/sync-refs';
@@ -514,7 +515,10 @@ export const useTraySync = (): void => {
     // Global busy/retry status: fetch now and poll, so unsynced sessions don't
     // sit looking idle. Synced directories stay instant via their SSE stores.
     void refreshGlobalStatus();
-    const globalStatusInterval = window.setInterval(() => { void refreshGlobalStatus(); }, POLL_INTERVAL_MS);
+    const globalStatusInterval = window.setInterval(() => {
+      if (!shouldIdlePoll()) return;
+      void refreshGlobalStatus();
+    }, POLL_INTERVAL_MS);
 
     // Usage: push to the tray whenever the quota store changes, and do one
     // initial fetch for enabled providers so the submenu isn't empty on launch.

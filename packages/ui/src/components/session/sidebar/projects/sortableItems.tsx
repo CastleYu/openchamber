@@ -1,3 +1,6 @@
+import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
+import { isDesktopLocalOriginActive } from '@/lib/desktop';
+import { toast } from 'sonner';
 import { DirectoryActionIndicator } from '../sessions/DirectoryActionIndicator';
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
@@ -161,6 +164,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
   onProjectSelect,
 }) => {
   const { t } = useI18n();
+  const { files } = useRuntimeAPIs();
   const stickyZoneHeaders = useSessionDisplayStore((state) => state.stickyZoneHeaders);
   const {
     attributes,
@@ -196,6 +200,9 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
           {t('sessions.sidebar.project.actions.manageWorktrees')}
         </Item>
       )}
+      {files.nativeFiles && projectDirectory && <Item disabled={!isDesktopLocalOriginActive()} onClick={() => {
+        void files.openNative?.(projectDirectory, { directory: projectDirectory }).catch(() => toast.error(t('fileOpening.actionFailed')));
+      }}><Icon name="folder" className="mr-1.5 h-4 w-4" />{t('fileOpening.explorer')}</Item>}
       <Item onClick={onRenameStart}>
         <Icon name="pencil-ai" className="mr-1.5 h-4 w-4" />
         {t('sessions.sidebar.project.actions.edit')}

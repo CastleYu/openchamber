@@ -1,5 +1,6 @@
-import { registerPerformanceRoutes } from '../performance/collector.js';
 import { registerFsRoutes } from '../fs/routes.js';
+import { registerPerformanceRoutes } from '../performance/collector.js';
+import { registerResourceModeRoutes } from '../mcp-reconnect/resource-modes.js';
 import { registerQuotaRoutes } from '../quota/routes.js';
 import { registerSmallModelRoutes } from '../small-model/routes.js';
 import { registerWalkthroughRoutes } from '../walkthrough/routes.js';
@@ -84,7 +85,10 @@ export const createFeatureRoutesRuntime = (dependencies) => {
         import('../walkthrough/index.js'),
         import('../walkthrough/pull-request.js'),
       ]);
-      walkthroughService = { ...service, getPullRequestDiff: pullRequest.getPullRequestDiff };
+      walkthroughService = {
+        ...service,
+        getPullRequestDiff: pullRequest.getPullRequestDiff,
+      };
     }
     return walkthroughService;
   };
@@ -306,6 +310,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
 
     registerQuotaRoutes(app, { getQuotaProviders });
     registerPerformanceRoutes(app);
+    registerResourceModeRoutes(app);
     registerSmallModelRoutes(app, { getSmallModelService });
     registerWalkthroughRoutes(app, { getWalkthroughService });
     registerSessionGoalRoutes(app);

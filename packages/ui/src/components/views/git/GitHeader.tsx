@@ -23,6 +23,7 @@ import type {
 } from '@/lib/api/types';
 import { useI18n } from '@/lib/i18n';
 import { useDeviceInfo } from '@/lib/device';
+import { cn } from '@/lib/utils';
 
 type SyncAction = 'fetch' | 'pull' | 'push' | 'sync' | null;
 
@@ -61,6 +62,10 @@ interface GitHeaderProps {
   selectedRepository?: string | null;
   onSelectRepository?: (repository: string) => void;
   repositoryRoot?: string;
+  autoMonitorEnabled?: boolean;
+  onAutoMonitorChange?: (enabled: boolean) => void;
+  onManualRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const IDENTITY_ICON_MAP: Record<string, IconName> = {
@@ -273,6 +278,10 @@ export const GitHeader: React.FC<GitHeaderProps> = ({
   selectedRepository,
   onSelectRepository,
   repositoryRoot,
+  autoMonitorEnabled = true,
+  onAutoMonitorChange,
+  onManualRefresh,
+  isRefreshing = false,
 }) => {
   const { t } = useI18n();
   const { isMobile } = useDeviceInfo();
@@ -284,6 +293,41 @@ export const GitHeader: React.FC<GitHeaderProps> = ({
 
   const managementButtons = (
     <div className="flex items-center gap-1 shrink-0">
+      {onAutoMonitorChange ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="chip"
+              size="sm"
+              aria-pressed={autoMonitorEnabled}
+              aria-label={t('gitView.monitor.autoAria')}
+              onClick={() => onAutoMonitorChange(!autoMonitorEnabled)}
+            >
+              {autoMonitorEnabled ? t('gitView.monitor.autoOn') : t('gitView.monitor.autoOff')}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>{t('gitView.monitor.autoTooltip')}</TooltipContent>
+        </Tooltip>
+      ) : null}
+      {onManualRefresh ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 px-0"
+              aria-label={t('gitView.monitor.refreshAria')}
+              disabled={isRefreshing}
+              onClick={onManualRefresh}
+            >
+              <Icon name={isRefreshing ? 'loader-4' : 'refresh'} className={cn('size-4', isRefreshing && 'animate-spin')} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>{t('gitView.monitor.refresh')}</TooltipContent>
+        </Tooltip>
+      ) : null}
       {onOpenHistory || onOpenGraph || onOpenStashes || onOpenUpdateBranch ? (
         <DropdownMenu>
           <Tooltip>

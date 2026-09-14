@@ -202,8 +202,8 @@ export async function bootstrapDirectory(input: {
   // These enrich the UI but aren't required for basic functionality.
   // ---------------------------------------------------------------------------
   const runDeferredPhase = () => Promise.allSettled([
-    retry(() => sdk.command.list().then((x) => commit({ command: unwrap(x, "command.list") }))),
-    retry(() => sdk.mcp.status().then((x) => commit({ mcp: unwrap(x, "mcp.status") }))),
+    // Both MCP status and command.list (MCP prompts) start tool servers.
+    // Their feature stores load them when the foreground UI needs them.
     retry(() => sdk.lsp.status().then((x) => commit({ lsp: unwrap(x, "lsp.status") }))),
     retry(() =>
       sdk.vcs.get().then((x) => {

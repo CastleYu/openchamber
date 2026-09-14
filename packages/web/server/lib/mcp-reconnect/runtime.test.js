@@ -18,7 +18,7 @@ afterEach(async () => {
 const materialize = async (rawConfig = '{}') => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'openchamber-mcp-reconnect-'));
   temporaryDirectories.push(dataDir);
-  const runtime = createMcpReconnectRuntime({ fsPromises: fs, path, dataDir });
+  const runtime = createMcpReconnectRuntime({ fsPromises: fs, path, dataDir, prepareLaunch: async () => null });
   const prepared = await runtime.prepareManagedOpenCodeEnv(rawConfig);
   const pluginPath = path.join(dataDir, 'mcp-reconnect', 'openchamber-mcp-reconnect-plugin.js');
   const pluginModule = await import(`${pathToFileURL(pluginPath).href}?test=${Date.now()}-${Math.random()}`);
@@ -48,10 +48,31 @@ const createClient = (statuses, { onConnect } = {}) => {
 const start = async (plugin, client) => {
   const hooks = await plugin({ client });
   disposers.push(hooks.dispose);
+  await hooks['chat.message']();
   return hooks;
 };
 
 describe('managed MCP reconnect runtime', () => {
+  it('leaves 17 metadata-only directories dormant until a prompt or MCP event', async () => {
+    vi.useFakeTimers();
+    const { plugin } = await materialize();
+    const clients = [];
+    const hooks = [];
+    for (let index = 0; index < 17; index++) {
+      const client = createClient({ broken: { status: 'failed' } });
+      const hook = await plugin({ client, directory: `/project/${index}` });
+      clients.push(client); hooks.push(hook); disposers.push(hook.dispose);
+    }
+    await vi.advanceTimersByTimeAsync(600_000);
+    for (const client of clients) expect(client.mcp.status).not.toHaveBeenCalled();
+    await hooks[0]['chat.message']();
+    await hooks[1].event({ event: { type: 'mcp.tools.changed' } });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(clients[0].attempts).toHaveLength(1);
+    expect(clients[1].attempts).toHaveLength(1);
+    for (const client of clients.slice(2)) expect(client.mcp.status).not.toHaveBeenCalled();
+  });
+
   it('materializes the plugin and preserves existing plugin entries', async () => {
     const { prepared, pluginPath } = await materialize('{ "plugin": ["file:///existing.js"], "model": "test/model" }');
     const config = JSON.parse(prepared.OPENCODE_CONFIG_CONTENT);

@@ -4,7 +4,7 @@ import { bootstrapDirectory, bootstrapGlobal } from "./bootstrap"
 import { type GlobalState, INITIAL_STATE, type State } from "./types"
 
 const createSdk = (options?: {
-  commandList?: () => Promise<{ data: unknown[] }>
+  lspStatus?: () => Promise<{ data: unknown[] }>
   sessionStatus?: () => Promise<{ data: State['session_status'] }>
   questionList?: () => Promise<{ data?: unknown[]; error?: unknown; response?: { status?: number } }>
   recordCall?: (endpoint: string) => void
@@ -32,9 +32,9 @@ const createSdk = (options?: {
     },
   },
   session: { status: options?.sessionStatus ?? (async () => ({ data: {} })) },
-  command: { list: options?.commandList ?? (async () => ({ data: [] })) },
-  mcp: { status: async () => ({ data: {} }) },
-  lsp: { status: async () => ({ data: [] }) },
+  command: { list: async () => { options?.recordCall?.("command.list"); return { data: [] } } },
+  mcp: { status: async () => { options?.recordCall?.("mcp.status"); return { data: {} } } },
+  lsp: { status: options?.lspStatus ?? (async () => ({ data: [] })) },
   vcs: { get: async () => ({ data: { branch: "main" } }) },
   question: { list: options?.questionList ?? (async () => ({ data: [] })) },
   permission: { list: async () => ({ data: [] }) },
@@ -64,6 +64,20 @@ describe("bootstrapGlobal", () => {
 })
 
 describe("bootstrapDirectory", () => {
+  test("metadata discovery does not activate MCP status or MCP command prompts", async () => {
+    const calls: string[] = []
+    let state = createState()
+    await bootstrapDirectory({
+      directory: "/repo", sdk: createSdk({ recordCall: (endpoint) => calls.push(endpoint) }),
+      getState: () => state, set: (patch) => { state = { ...state, ...patch } },
+      global: { config: {}, projects: [project] }, loadSessions: async () => undefined,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(calls).not.toContain("mcp.status")
+    expect(calls).not.toContain("command.list")
+    expect(state.status).toBe("complete")
+  })
+
   test("prioritizes session loading without waiting for deferred fields", async () => {
     let state = createState()
     let deferredStarted = false
@@ -77,7 +91,7 @@ describe("bootstrapDirectory", () => {
     })
     let settled = false
     const sdk = createSdk({
-      commandList: async () => {
+      lspStatus: async () => {
         deferredStarted = true
         return deferred
       },

@@ -3,6 +3,12 @@ import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 
 export const dict = {
+  'gitView.monitor.autoOn': 'Otomatik izleme',
+  'gitView.monitor.autoOff': 'Duraklatıldı',
+  'gitView.monitor.autoAria': 'Bu projenin otomatik git durum izlemesini aç veya kapat',
+  'gitView.monitor.autoTooltip': 'Duraklatıldığında bu proje diff ön yüklemez ve arka planda git durumunu yenilemez. Geçerli ağacı yüklemek için Yenile’yi kullanın.',
+  'gitView.monitor.refresh': 'Git durumunu yenile',
+  'gitView.monitor.refreshAria': 'Bu projenin git durumunu yenile',
   'performance.export': 'Tanılama verilerini dışa aktar',
   'performance.title': "Performans",
   'performance.memory': "Bellek",

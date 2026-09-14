@@ -34,6 +34,9 @@ import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import { useNestedGitDirectory } from '@/hooks/useNestedGitDirectory';
 import { useUIStore } from '@/stores/useUIStore';
 import { useWalkthroughStore } from '@/stores/useWalkthroughStore';
+import { isGitAutoMonitorEnabled, shouldStartWalkthroughBackgroundWork } from '@/lib/performance/occupancyPolicy';
+import { applyWalkthroughVisibility } from '@/lib/walkthrough/visibility';
+import { useOccupancyPolicyStore } from '@/stores/useOccupancyPolicyStore';
 import { cn } from '@/lib/utils';
 import { WalkthroughBlocker } from './WalkthroughBlocker';
 import { WALKTHROUGH_ACTION_CLASS } from './walkthroughAction';
@@ -88,14 +91,19 @@ const HEADER_COMPACT_WIDTH = 680;
 
 export const WalkthroughView = ({ directory: rootDirectory, visible = true }: WalkthroughViewProps) => {
   const { t, locale, locales, label } = useI18n();
+  const occupancyPolicy = useOccupancyPolicyStore((state) => state.policy);
+  const surfaceWorkEnabled = shouldStartWalkthroughBackgroundWork(visible, occupancyPolicy);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [panelWidth, setPanelWidth] = useState(0);
 
   // The walkthrough documents one repository. When the root is not itself a
   // repository, that is the resolved nested repository; everything below keys
   // off `directory`.
-  const { rootIsGitRepo, gitDirectory, nestedRepos } = useNestedGitDirectory(rootDirectory || null, { enabled: visible });
+  const { rootIsGitRepo, gitDirectory, nestedRepos } = useNestedGitDirectory(rootDirectory || null, {
+    enabled: surfaceWorkEnabled,
+  });
   const directory = gitDirectory ?? rootDirectory;
+  const walkthroughWorkEnabled = surfaceWorkEnabled && isGitAutoMonitorEnabled(directory, occupancyPolicy);
 
   // Panel width, not viewport width: this surface is resizable independently of
   // the window.
@@ -185,8 +193,9 @@ export const WalkthroughView = ({ directory: rootDirectory, visible = true }: Wa
   const { github, git } = useRuntimeAPIs();
 
   useEffect(() => {
+    if (!walkthroughWorkEnabled) return;
     if (directory) void ensureAll(directory, git);
-  }, [directory, ensureAll, git]);
+  }, [directory, ensureAll, git, walkthroughWorkEnabled]);
 
   // Changes and walkthrough share the explicit base choice and reflog detection.
   const currentBranch = status?.current ?? null;
@@ -277,6 +286,7 @@ export const WalkthroughView = ({ directory: rootDirectory, visible = true }: Wa
   const load = useWalkthroughStore((state) => state.load);
   const generate = useWalkthroughStore((state) => state.generate);
   const cancel = useWalkthroughStore((state) => state.cancel);
+  const abortLoad = useWalkthroughStore((state) => state.abortLoad);
   const requestSource = useWalkthroughStore((state) => state.requestSource);
   useEffect(() => {
     if (!choosingBranchBase || !branchSource) return;
@@ -311,8 +321,15 @@ export const WalkthroughView = ({ directory: rootDirectory, visible = true }: Wa
   // request — and the language instruction is part of that request.
   const sourceRevision = source.kind === 'branch' ? branchRevision : '';
   useEffect(() => {
-    if (visible && !needsSourceSelection) void load(directory, source, { language: activeLanguage });
-  }, [activeLanguage, needsSourceSelection, directory, load, source, selectedModel, sourceRevision, visible]);
+    applyWalkthroughVisibility(walkthroughWorkEnabled && !needsSourceSelection, {
+      abortLoad: () => {
+        if (directory) abortLoad(directory, source);
+      },
+      load: () => {
+        void load(directory, source, { language: activeLanguage });
+      },
+    });
+  }, [abortLoad, activeLanguage, directory, load, source, selectedModel, sourceRevision, needsSourceSelection, walkthroughWorkEnabled]);
 
   const view = useMemo(() => needsSourceSelection ? null : buildWalkthroughView(entry.result), [needsSourceSelection, entry.result]);
 

@@ -12,6 +12,13 @@ import { getRuntimeKey } from '@/lib/runtime-switch';
 import { GitDirectoriesUnsupportedError, listGitDirectories } from '@/lib/gitApiHttp';
 import { subscribeGitStatusInvalidations } from '@/lib/gitStatusInvalidation';
 import { getWorktreeBootstrapState } from '@/lib/worktrees/worktreeBootstrap';
+import {
+  gitDiffConcurrencyFor,
+  shouldAutoFetchGitStatus,
+  shouldPrefetchGitDiffs,
+  shouldSkipPrefetchWithoutDiffStats,
+  type GitStatusFetchSource,
+} from '@/lib/performance/occupancyPolicy';
 
 const LOG_STALE_THRESHOLD = 10000;
 const REPO_CHECK_STALE_THRESHOLD = 60_000;
@@ -20,7 +27,6 @@ const BRANCHES_STALE_THRESHOLD = 30_000;
 const IDENTITY_STALE_THRESHOLD = 60_000;
 const DIFF_PREFETCH_MAX_FILES = 25;
 const DIFF_PREFETCH_FOCUS_MAX_FILES = 40;
-const DIFF_PREFETCH_CONCURRENCY = 2;
 const DIFF_PREFETCH_TIMEOUT_MS = 15000;
 const DIFF_PREFETCH_LARGE_FILE_THRESHOLD = 500; // skip prefetch for files with >500 changed lines
 
@@ -30,6 +36,13 @@ const DIFF_CACHE_MAX_TOTAL_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
 const DIFF_CACHE_MAX_GLOBAL_ENTRIES = 200;
 type GitStatusFetchMode = 'full' | 'light';
 type GitStatusRequestOptions = { mode?: 'light'; fresh?: boolean };
+type GitStatusFetchOptions = {
+  silent?: boolean;
+  mode?: 'light';
+  force?: boolean;
+  throwOnError?: boolean;
+  source?: GitStatusFetchSource;
+};
 
 // Discovery outcome for a root that is not itself a git repository. The three
 // states are mutually exclusive: a repository list (possibly empty), a failed
@@ -66,14 +79,15 @@ interface GitStore {
   setActiveDirectory: (directory: string | null) => void;
   getDirectoryState: (directory: string) => DirectoryGitState | null;
 
-  fetchStatus: (directory: string, git: GitAPI, options?: { silent?: boolean; mode?: 'light'; force?: boolean; throwOnError?: boolean }) => Promise<boolean>;
+  fetchStatus: (directory: string, git: GitAPI, options?: GitStatusFetchOptions) => Promise<boolean>;
+  cancelDiffWork: (directory: string) => void;
   fetchBranches: (directory: string, git: GitAPI) => Promise<void>;
   fetchLog: (directory: string, git: GitAPI, maxCount?: number) => Promise<void>;
   fetchIdentity: (directory: string, git: GitAPI) => Promise<void>;
   fetchAll: (directory: string, git: GitAPI, options?: { force?: boolean; silentIfCached?: boolean }) => Promise<void>;
 
   ensureStatus: (directory: string, git: GitAPI) => Promise<void>;
-  ensureAll: (directory: string, git: GitAPI) => Promise<void>;
+  ensureAll: (directory: string, git: GitAPI, options?: { source?: GitStatusFetchSource }) => Promise<void>;
   moveStatusPathsOptimistically: (directory: string, paths: string[], direction: 'stage' | 'unstage') => GitStatus | null;
   restoreStatus: (directory: string, status: GitStatus | null) => void;
   bumpIndexRevision: (directory: string) => void;
@@ -697,8 +711,16 @@ export const useGitStore = create<GitStore>()(
         return get().directories.get(directory) ?? null;
       },
 
+      cancelDiffWork: (directory) => {
+        bumpDiffFetchGeneration(directory);
+      },
+
       fetchStatus: async (directory, git, options = {}) => {
         if (getWorktreeBootstrapState(directory)?.status === 'pending') {
+          return false;
+        }
+        const fetchSource: GitStatusFetchSource = options.source ?? 'auto';
+        if (!shouldAutoFetchGitStatus(directory, fetchSource)) {
           return false;
         }
         const statusFetchMode: GitStatusFetchMode = options.mode ?? 'full';
@@ -1145,6 +1167,8 @@ export const useGitStore = create<GitStore>()(
       },
 
       prefetchDiffs: async (directory, git, filePaths, options = {}) => {
+        if (!shouldPrefetchGitDiffs(directory)) return;
+        const concurrency = gitDiffConcurrencyFor(undefined, directory);
         const dirState = get().directories.get(directory);
         if (!dirState?.status?.files || dirState.status.files.length === 0 || filePaths.length === 0) return;
 
@@ -1169,16 +1193,20 @@ export const useGitStore = create<GitStore>()(
           if (inFlight.has(filePath)) {
             continue;
           }
-          // Skip large files during prefetch — they'll be fetched on-demand when user clicks
+          // Skip large files and files with no line stats (untracked binaries /
+          // oversized new files). Those are fetched on demand when the user clicks.
           const stats = diffStats?.[filePath];
-          if (stats && (stats.insertions + stats.deletions) > DIFF_PREFETCH_LARGE_FILE_THRESHOLD) {
+          if (shouldSkipPrefetchWithoutDiffStats(
+            stats ? stats.insertions + stats.deletions : undefined,
+            DIFF_PREFETCH_LARGE_FILE_THRESHOLD,
+          )) {
             continue;
           }
           dedupedPaths.push(filePath);
         }
 
         const limitedFilePaths = dedupedPaths.slice(0, Math.max(1, maxFiles));
-        if (limitedFilePaths.length === 0 || inFlight.size >= DIFF_PREFETCH_CONCURRENCY) return;
+        if (limitedFilePaths.length === 0 || inFlight.size >= concurrency) return;
 
         const generation = getDiffFetchGeneration(directory);
 
@@ -1225,22 +1253,22 @@ export const useGitStore = create<GitStore>()(
 
         const worker = async () => {
           for (;;) {
-            if (generation !== getDiffFetchGeneration(directory) || !isRequestCurrent(token, directory)
-              || inFlight.size >= DIFF_PREFETCH_CONCURRENCY) {
+            if (!shouldPrefetchGitDiffs(directory) || generation !== getDiffFetchGeneration(directory) || !isRequestCurrent(token, directory)
+              || inFlight.size >= gitDiffConcurrencyFor(undefined, directory)) {
               return;
             }
             const next = takeNext();
             if (!next) return;
             if (inFlight.has(next)) continue;
             try {
-              results.push(await fetchWithTimeout(next));
+                results.push(await fetchWithTimeout(next));
             } catch {
               // Ignore individual failures/timeouts during prefetch.
             }
           }
         };
 
-        const workerCount = Math.min(DIFF_PREFETCH_CONCURRENCY, limitedFilePaths.length);
+        const workerCount = Math.min(concurrency, limitedFilePaths.length);
         await Promise.allSettled(Array.from({ length: workerCount }, () => worker()));
 
         if (generation !== getDiffFetchGeneration(directory) || !isRequestCurrent(token, directory)) {
@@ -1368,7 +1396,7 @@ export const useGitStore = create<GitStore>()(
         await get().fetchStatus(directory, git, { silent: Boolean(dirState?.status) });
       },
 
-      ensureAll: (directory, git) => {
+      ensureAll: (directory, git, options = {}) => {
         const ensureKey = runtimeDirectoryKey(getRuntimeKey(), directory);
         const existing = inFlightEnsureAllByDirectory.get(ensureKey);
         if (existing) return existing;
@@ -1377,9 +1405,13 @@ export const useGitStore = create<GitStore>()(
           const dirState = get().directories.get(directory);
           const now = Date.now();
           const needsFullStatus = !dirState?.status || dirState.status.diffStats === undefined;
+          const fetchSource = options.source ?? 'auto';
 
           if (needsFullStatus || now - (dirState?.lastStatusFetch ?? 0) >= STATUS_STALE_THRESHOLD) {
-            await get().fetchStatus(directory, git, { silent: Boolean(dirState?.status) });
+            await get().fetchStatus(directory, git, {
+              silent: Boolean(dirState?.status),
+              source: fetchSource,
+            });
           }
 
           const updatedState = get().directories.get(directory);

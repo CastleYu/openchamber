@@ -749,6 +749,36 @@ export const createSettingsHelpers = (dependencies) => {
         result.gitChangesViewMode = mode;
       }
     }
+    if (candidate.occupancy && typeof candidate.occupancy === 'object' && !Array.isArray(candidate.occupancy)) {
+      const occupancy = candidate.occupancy;
+      const parsed = {};
+      if (typeof occupancy.gitDiffPrefetchEnabled === 'boolean') parsed.gitDiffPrefetchEnabled = occupancy.gitDiffPrefetchEnabled;
+      if (typeof occupancy.walkthroughUntrackedDiffsEnabled === 'boolean') parsed.walkthroughUntrackedDiffsEnabled = occupancy.walkthroughUntrackedDiffsEnabled;
+      if (typeof occupancy.hiddenSurfaceWorkEnabled === 'boolean') parsed.hiddenSurfaceWorkEnabled = occupancy.hiddenSurfaceWorkEnabled;
+      if (typeof occupancy.browserTabKeepAliveEnabled === 'boolean') parsed.browserTabKeepAliveEnabled = occupancy.browserTabKeepAliveEnabled;
+      if (typeof occupancy.idlePollingEnabled === 'boolean') parsed.idlePollingEnabled = occupancy.idlePollingEnabled;
+      if (typeof occupancy.gitDiffConcurrency === 'number' && Number.isFinite(occupancy.gitDiffConcurrency)) {
+        parsed.gitDiffConcurrency = Math.max(1, Math.min(8, Math.round(occupancy.gitDiffConcurrency)));
+      }
+      if (typeof occupancy.untrackedDiffConcurrency === 'number' && Number.isFinite(occupancy.untrackedDiffConcurrency)) {
+        parsed.untrackedDiffConcurrency = Math.max(1, Math.min(8, Math.round(occupancy.untrackedDiffConcurrency)));
+      }
+      if (typeof occupancy.untrackedDiffMaxFiles === 'number' && Number.isFinite(occupancy.untrackedDiffMaxFiles)) {
+        parsed.untrackedDiffMaxFiles = Math.max(1, Math.min(200, Math.round(occupancy.untrackedDiffMaxFiles)));
+      }
+      if (typeof occupancy.untrackedDiffMaxFileBytes === 'number' && Number.isFinite(occupancy.untrackedDiffMaxFileBytes)) {
+        parsed.untrackedDiffMaxFileBytes = Math.max(65536, Math.min(8 * 1024 * 1024, Math.round(occupancy.untrackedDiffMaxFileBytes)));
+      }
+      if (Array.isArray(occupancy.gitAutoMonitorDisabledDirectories)) {
+        parsed.gitAutoMonitorDisabledDirectories = occupancy.gitAutoMonitorDisabledDirectories
+          .filter((value) => typeof value === 'string' && value.trim())
+          .map((value) => value.replace(/\\/g, '/').replace(/\/+$/, ''))
+          .filter(Boolean);
+      }
+      if (Object.keys(parsed).length > 0) {
+        result.occupancy = parsed;
+      }
+    }
     if (typeof candidate.toolJsonViewMode === 'string') {
       const mode = candidate.toolJsonViewMode.trim();
       if (mode === 'summary' || mode === 'formatted' || mode === 'raw') {

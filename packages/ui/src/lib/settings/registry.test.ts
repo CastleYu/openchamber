@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { useUIStore } from '@/stores/useUIStore';
+import { useOccupancyPolicyStore } from '@/stores/useOccupancyPolicyStore';
 import {
   AUTO_SAVE_KEYS,
   DESKTOP_SHELL_KEYS,
@@ -21,6 +22,22 @@ import { renderSettingsRegistrySnapshot, SETTINGS_REGISTRY_SNAPSHOT_PATHS } from
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', '..');
 
 describe('settings registry', () => {
+  test('round-trips the restored occupancy policy and applies its live store binding', () => {
+    const before = useOccupancyPolicyStore.getState().policy;
+    try {
+      const parsed = parseSettingsDocument({ occupancy: { gitDiffConcurrency: 4, gitDiffPrefetchEnabled: false } });
+      expect(parsed?.occupancy?.gitDiffConcurrency).toBe(4);
+      expect(parsed?.occupancy?.gitDiffPrefetchEnabled).toBe(false);
+      expect(parseSettingsDocument(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+      applySettingsToStores(parsed ?? {});
+      expect(useOccupancyPolicyStore.getState().policy.gitDiffConcurrency).toBe(4);
+      expect(useOccupancyPolicyStore.getState().policy.gitDiffPrefetchEnabled).toBe(false);
+      expect(parseSettingsDocument({ occupancy: { gitDiffConcurrency: 'invalid' } })?.occupancy).toBeUndefined();
+    } finally {
+      useOccupancyPolicyStore.getState().setPolicy(before);
+    }
+  });
+
   test('every key lives in exactly one table', () => {
     const all = [...SETTINGS_KEYS, ...LOCAL_DEVICE_KEYS, ...DESKTOP_SHELL_KEYS];
     expect(new Set(all).size).toBe(all.length);

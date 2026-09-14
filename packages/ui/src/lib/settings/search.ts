@@ -587,6 +587,19 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['ignored', 'files', 'gitignore'],
   },
   {
+    id: 'general.occupancy-scenario',
+    page: 'general',
+    titleKey: 'settings.openchamber.occupancy.title',
+    descriptionKey: 'settings.openchamber.occupancy.scenario.info',
+    keywords: ['performance', 'cpu', 'git', 'diff', 'prefetch', 'walkthrough', 'idle', 'polling', 'browser', 'concurrency', 'limit', 'untracked'],
+  },
+  {
+    id: 'general.occupancy-enabled',
+    page: 'general',
+    titleKey: 'settings.openchamber.occupancy.enabled',
+    keywords: ['performance', 'toggle', 'git monitor'],
+  },
+  {
     id: 'usage.work-status-panel',
     page: 'usage',
     titleKey: 'settings.usage.page.options.showInWorkStatus',

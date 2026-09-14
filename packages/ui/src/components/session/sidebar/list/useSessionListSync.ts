@@ -1,4 +1,5 @@
 import React from 'react';
+import { useProjectResources } from '@/hooks/useProjectResources';
 import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { refreshGlobalSessions, refreshGlobalSessionsForDirectories, useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { useAllLiveSessions, useChildStoreManager } from '@/sync/sync-context';
@@ -23,6 +24,7 @@ type UseSessionListSyncOptions = {
 export const useSessionListSync = ({
   isVSCode,
 }: UseSessionListSyncOptions) => {
+  useProjectResources();
   const childStores = useChildStoreManager();
   const projects = useProjectsStore((state) => state.projects);
   const activeProjectId = useProjectsStore((state) => state.activeProjectId);

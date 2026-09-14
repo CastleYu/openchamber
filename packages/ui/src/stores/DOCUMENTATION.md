@@ -19,6 +19,34 @@ Do not put high-frequency local component state here just because it is convenie
 
 ## Architecture
 
+### Project resource modes
+
+Non-VS Code clients report these modes through `resourceReporter.ts` to the
+managed server. A 30-second renewal keeps the window's 90-second lease live;
+multiple windows retain a directory while any reports it active. Pending reports
+are aborted on runtime switch/unmount. The backend independently checks live
+sessions before MCP release and restores released tools before prompt execution.
+
+`lib/performance/projectResources.ts` owns transient project resource modes.
+`useProjectResources` binds project/worktree ownership, live status, unseen turn
+notifications, window visibility and focus. Sending from the active focused
+project arms focused mode until project/window focus is lost; visiting or
+restoring focus does not arm it. In a visible window, running or unseen completed
+turns retain background mode; other projects become idle after 60 seconds.
+Hidden/minimized windows immediately use idle unless an unseen notification is
+present. Error completion notifications also retain background mode.
+
+Idle skips automatic Git refresh/prefetch, clears disposable diff caches and
+disposes unmounted, non-running directory stores through their existing ownership
+guards. Running execution, mounted consumers and pending approvals are retained.
+Background uses the configured Git concurrency; focused prefetch may use every
+eligible queued file. Event publication uses 16/64/250 ms windows for focused/
+background/idle projects, while preserving transport backpressure and event order.
+These are client work budgets, not OS process CPU or memory quotas. The server's
+OpenCode process is shared between projects. Unknown directories keep their
+previous behavior. Runtime changes clear transient priorities. The same policy
+applies to web/mobile/VS Code visibility; only desktop can enter a native tray.
+
 There are multiple store categories in this directory.
 
 ### Feature cache / query stores
@@ -28,6 +56,9 @@ These are the most performance-sensitive.
 - `useGitStore.ts`
 - `useGitHubPrStatusStore.ts`
 - `useFilesViewTabsStore.ts`
+- `useOccupancyPolicyStore.ts`
+
+`useOccupancyPolicyStore` holds the live extra-cost toggles and concurrency caps (`occupancy` in settings). Git prefetch, walkthrough background load, browser-tab keep-alive, and optional idle polling read those values through `lib/performance/occupancyPolicy.ts`. Per-project git auto-monitor lives in `gitAutoMonitorDisabledDirectories`; disabled projects still expose a manual refresh on a cold open. Active-session recovery polling remains enabled. Hidden walkthrough tabs abort their GET loads without cancelling a paid generation. Disabling browser keep-alive unmounts inactive tabs and all browser tabs when the panel closes. Git prefetch owns one batch per directory until its requests settle and checks the policy before each queued file.
 
 These stores act like centralized keyed caches. UI should consume narrow slices from them instead of re-fetching the same data in multiple places.
 

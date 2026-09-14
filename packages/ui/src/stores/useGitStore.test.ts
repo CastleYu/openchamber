@@ -4,6 +4,8 @@ import { useGitStore } from './useGitStore';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 import { notifyGitStatusInvalidated } from '@/lib/gitStatusInvalidation';
 import { clearWorktreeBootstrapState, markWorktreeBootstrapPending } from '@/lib/worktrees/worktreeBootstrap';
+import { DEFAULT_OCCUPANCY_POLICY, withGitAutoMonitorDirectory, withScenarioEnabled } from '@/lib/performance/occupancyPolicy';
+import { useOccupancyPolicyStore } from './useOccupancyPolicyStore';
 
 // The real transport has no server in tests and fails as a generic error.
 // Tests that exercise other failure modes swap this implementation; the
@@ -89,11 +91,12 @@ describe('useGitStore', () => {
   beforeEach(() => {
     clearWorktreeBootstrapState('/repo');
     useGitStore.getState().resetForRuntimeSwitch(getRuntimeKey());
+    useOccupancyPolicyStore.getState().setPolicy(DEFAULT_OCCUPANCY_POLICY);
   });
 
   test('keeps timed-out diff requests inside the concurrency limit until they settle', async () => {
     const paths = ['one.ts', 'two.ts', 'three.ts', 'four.ts'];
-    setDirectoryStatus(createStatus({}, paths.map((path) => ({ path, index: ' ', working_dir: 'M' }))));
+    setDirectoryStatus(createStatus(Object.fromEntries(paths.map(path => [path, { insertions: 1, deletions: 0 }])), paths.map((path) => ({ path, index: ' ', working_dir: 'M' }))));
     const pending: Array<{ path: string; request: Deferred<Awaited<ReturnType<GitAPI['getGitFileDiff']>>> }> = [];
     const git = createGitApi(async () => createStatus());
     git.getGitFileDiff = (_directory, { path }) => {
@@ -125,7 +128,7 @@ describe('useGitStore', () => {
 
   test('limits overlapping diff batches per directory and retains capacity across a cache reset', async () => {
     const paths = ['one.ts', 'two.ts', 'three.ts'];
-    const status = createStatus({}, paths.map((path) => ({ path, index: ' ', working_dir: 'M' })));
+    const status = createStatus(Object.fromEntries(paths.map(path => [path, { insertions: 1, deletions: 0 }])), paths.map((path) => ({ path, index: ' ', working_dir: 'M' })));
     const directories = ['/repo-a', '/repo-b', '/repo-c'];
     const populate = () => useGitStore.setState({
       directories: new Map(directories.map((directory) => [directory, createDirectoryState(status)])),
@@ -178,7 +181,7 @@ describe('useGitStore', () => {
 
   test('a duplicate diff demand does not discard the first batch or leave failure slots occupied', async () => {
     const paths = ['one.ts', 'two.ts', 'three.ts'];
-    setDirectoryStatus(createStatus({}, paths.map((path) => ({ path, index: ' ', working_dir: 'M' }))));
+    setDirectoryStatus(createStatus(Object.fromEntries(paths.map(path => [path, { insertions: 1, deletions: 0 }])), paths.map((path) => ({ path, index: ' ', working_dir: 'M' }))));
     const request = createDeferred<Awaited<ReturnType<GitAPI['getGitFileDiff']>>>();
     const git = createGitApi(async () => createStatus());
     let calls = 0;
@@ -710,5 +713,97 @@ describe('useGitStore nested repository discovery', () => {
     await Promise.all([first, second]);
 
     expect(useGitStore.getState().nestedReposByRoot.get('/root-a')).toBeNull();
+  });
+});
+
+describe('useGitStore occupancy', () => {
+  beforeEach(() => {
+    useGitStore.getState().resetForRuntimeSwitch(getRuntimeKey());
+    useOccupancyPolicyStore.getState().setPolicy(DEFAULT_OCCUPANCY_POLICY);
+  });
+
+  test('overlapping prefetch cannot exceed slots and disabling stops queued files', async () => {
+    const paths = ['one.ts', 'two.ts', 'three.ts'];
+    setDirectoryStatus(createStatus(
+      Object.fromEntries(paths.map((path) => [path, { insertions: 1, deletions: 0 }])),
+      paths.map((path) => ({ path, index: ' ', working_dir: 'M' })),
+    ));
+    useOccupancyPolicyStore.getState().setPolicy({ ...DEFAULT_OCCUPANCY_POLICY, gitDiffConcurrency: 1 });
+    const pending = createDeferred<{ original: string; modified: string; path: string }>();
+    let calls = 0;
+    const git = createGitApi(async () => createStatus());
+    git.getGitFileDiff = async () => { calls += 1; return pending.promise; };
+    const first = useGitStore.getState().prefetchDiffs('/repo', git, paths);
+    await useGitStore.getState().prefetchDiffs('/repo', git, ['two.ts']);
+    expect(calls).toBe(1);
+    useOccupancyPolicyStore.getState().setPolicy(
+      withScenarioEnabled(DEFAULT_OCCUPANCY_POLICY, 'gitDiffPrefetch', false),
+    );
+    pending.resolve({ original: '', modified: 'x', path: 'one.ts' });
+    await first;
+    expect(calls).toBe(1);
+  });
+
+  test('skips auto status and prefetch when git auto-monitor is off for the directory', async () => {
+    setDirectoryStatus(createStatus(
+      { 'src/index.ts': { insertions: 1, deletions: 0 } },
+      [{ path: 'src/index.ts', index: ' ', working_dir: 'M' }],
+    ));
+    useOccupancyPolicyStore.getState().setPolicy(
+      withGitAutoMonitorDirectory(DEFAULT_OCCUPANCY_POLICY, '/repo', false),
+    );
+    let statusCalls = 0;
+    let diffCalls = 0;
+    const git = createGitApi(async () => {
+      statusCalls += 1;
+      return createStatus();
+    });
+    git.getGitFileDiff = async () => {
+      diffCalls += 1;
+      return { original: '', modified: 'x', path: 'src/index.ts' };
+    };
+
+    await useGitStore.getState().fetchStatus('/repo', git, { silent: true });
+    await useGitStore.getState().prefetchDiffs('/repo', git, ['src/index.ts']);
+    expect(statusCalls).toBe(0);
+    expect(diffCalls).toBe(0);
+
+    await useGitStore.getState().fetchStatus('/repo', git, { source: 'manual' });
+    expect(statusCalls).toBe(1);
+  });
+
+  test('skips prefetch when the git-diff-prefetch setting is off', async () => {
+    setDirectoryStatus(createStatus(
+      { 'src/index.ts': { insertions: 1, deletions: 0 } },
+      [{ path: 'src/index.ts', index: ' ', working_dir: 'M' }],
+    ));
+    useOccupancyPolicyStore.getState().setPolicy(
+      withScenarioEnabled(DEFAULT_OCCUPANCY_POLICY, 'gitDiffPrefetch', false),
+    );
+    let diffCalls = 0;
+    const git = createGitApi(async () => createStatus());
+    git.getGitFileDiff = async () => {
+      diffCalls += 1;
+      return { original: '', modified: 'x', path: 'src/index.ts' };
+    };
+
+    await useGitStore.getState().prefetchDiffs('/repo', git, ['src/index.ts']);
+    expect(diffCalls).toBe(0);
+  });
+
+  test('does not prefetch files that have no line stats', async () => {
+    setDirectoryStatus(createStatus(
+      undefined,
+      [{ path: 'huge.bin', index: '?', working_dir: '?' }],
+    ));
+    let diffCalls = 0;
+    const git = createGitApi(async () => createStatus());
+    git.getGitFileDiff = async () => {
+      diffCalls += 1;
+      return { original: '', modified: 'x', path: 'huge.bin' };
+    };
+
+    await useGitStore.getState().prefetchDiffs('/repo', git, ['huge.bin']);
+    expect(diffCalls).toBe(0);
   });
 });

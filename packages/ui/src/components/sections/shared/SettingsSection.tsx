@@ -61,6 +61,42 @@ export const SETTINGS_NUMBER_STEPPER_ROW_CLASS = 'flex w-full min-w-0 items-cent
 export const SETTINGS_NUMBER_UNIT_CLASS =
   'typography-meta shrink-0 text-muted-foreground tabular-nums';
 
+type SettingsSliderProps = {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onValueChange: (value: number) => void;
+  ariaLabel: string;
+  className?: string;
+};
+
+/** Native range control sized to match settings NumberInput steppers. */
+export const SettingsSlider: React.FC<SettingsSliderProps> = ({
+  value,
+  min,
+  max,
+  step = 1,
+  onValueChange,
+  ariaLabel,
+  className,
+}) => (
+  <input
+    type="range"
+    min={min}
+    max={max}
+    step={step}
+    value={value}
+    aria-label={ariaLabel}
+    onChange={(event) => onValueChange(Number(event.target.value))}
+    className={cn(
+      SETTINGS_NUMBER_INPUT_CLASS,
+      'h-8 cursor-pointer accent-[var(--primary)]',
+      className,
+    )}
+  />
+);
+
 /** Vertical stack spacing for fields inside a column. */
 export const SETTINGS_FIELDS_STACK_CLASS = 'space-y-4';
 

@@ -8,13 +8,23 @@ Generation is **always user-initiated**. Nothing here runs on a timer, on a file
 change, or as a side effect of opening a panel — it spends tokens, so a person
 has to ask for it.
 
+Hiding the panel, or disabling the project's automatic monitoring, aborts in-flight
+`GET /api/walkthrough` loads so untracked git diffs stop. Those paths never POST
+`/api/walkthrough/cancel`. The on-screen Stop button is the client path that
+cancels a paid generation. Load and generate keep separate abort controllers so
+a hide or idle reclaim cannot drop a job that is already running.
+
+GET cancellation follows that request's abort signal, including response-socket
+closure after the GET body has been consumed. It never cancels a directory-wide
+pool: sibling loads and generation requests may be using the same repository.
+
 ## Files
 
 - `hunks.js` — parses a unified diff into files and hunks and assigns each hunk
   a stable id.
 - `generated.js` — recognises tool-produced files that are kept out of the
   model's input.
-- `sources.js` — turns a source descriptor into diff *sections*.
+- `sources.js` — turns a source descriptor into diff *sections*. Untracked-file diffs honor the occupancy policy: binary and oversized files are skipped, and count/bytes/concurrency are capped.
 - `digest.js` — builds the model-facing digest and the alias↔id mapping.
 - `prompt.js` — system prompt, size guidance, previous-walkthrough section, and
   `PROMPT_VERSION`.

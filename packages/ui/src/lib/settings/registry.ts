@@ -28,6 +28,8 @@ import { isInputHistoryLimit, isInputHistoryScope, type InputHistoryScope } from
 import { normalizeMobileKeyboardMode } from '@/lib/mobileKeyboardMode';
 import { isTerminalShell } from '@/lib/terminalShell';
 import { sanitizeWorkStatusHiddenSections } from '@/components/chat/work-status/sections';
+import { parseOccupancyPolicy } from '@/lib/performance/occupancyPolicy';
+import { applyOccupancyPolicyFromSettings, useOccupancyPolicyStore } from '@/stores/useOccupancyPolicyStore';
 import { useInputHistoryStore } from '@/stores/useInputHistoryStore';
 import { useMessageQueueStore } from '@/stores/messageQueueStore';
 import { useSessionDisplayStore } from '@/stores/useSessionDisplayStore';
@@ -342,6 +344,22 @@ export const SETTINGS_REGISTRY = {
   diffLayoutPreference: field({ scope: 'profile', parse: parseOneOf(['dynamic', 'inline', 'side-by-side']), ui: uiStore('diffLayoutPreference', (v) => useUIStore.getState().setDiffLayoutPreference(v)) }),
   diffWrapLines: field({ scope: 'profile', parse: parseBoolean, ui: uiStore('diffWrapLines', (v) => useUIStore.getState().setDiffWrapLines(v)) }),
   gitChangesViewMode: field({ scope: 'profile', parse: parseOneOf(['flat', 'tree']), ui: uiStore('gitChangesViewMode', (v) => useUIStore.getState().setGitChangesViewMode(v)) }),
+  occupancy: field({
+    scope: 'profile',
+    parse: fromSchema(z.object({
+      gitDiffPrefetchEnabled: z.boolean().optional(),
+      walkthroughUntrackedDiffsEnabled: z.boolean().optional(),
+      hiddenSurfaceWorkEnabled: z.boolean().optional(),
+      browserTabKeepAliveEnabled: z.boolean().optional(),
+      idlePollingEnabled: z.boolean().optional(),
+      gitDiffConcurrency: z.number().optional(),
+      untrackedDiffConcurrency: z.number().optional(),
+      untrackedDiffMaxFiles: z.number().optional(),
+      untrackedDiffMaxFileBytes: z.number().optional(),
+      gitAutoMonitorDisabledDirectories: z.array(z.string()).optional(),
+    }).transform(parseOccupancyPolicy)),
+    ui: { read: () => useOccupancyPolicyStore.getState().policy, write: applyOccupancyPolicyFromSettings, autoSave: false },
+  }),
   gitmojiEnabled: field({ scope: 'profile', parse: parseBoolean }),
   defaultFileViewerPreview: field({ scope: 'profile', parse: parseBoolean }),
   directoryShowHidden: field({

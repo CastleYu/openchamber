@@ -1,4 +1,5 @@
 import { getDiff, getRangeDiff, getCommitDiff, getUntrackedDiffs, listUntrackedPaths } from '../git/service.js';
+import { readOccupancyPolicy } from '../performance/occupancy-policy.js';
 
 // A walkthrough source resolves to one or more diff *sections*. A section is a
 // patch plus the scope its hunk ids live in; keeping staged and working-tree
@@ -77,11 +78,20 @@ export function sourceKey(source) {
 // `git diff` never reports untracked files, so a brand-new file would be
 // invisible in a walkthrough of local work. The batch helper resolves the
 // repository once and bounds how many diff processes run at a time.
-const untrackedSections = async (directory) => {
+const untrackedSections = async (directory, options = {}) => {
+  const policy = options.policy ?? readOccupancyPolicy();
+  if (!policy.walkthroughUntrackedDiffsEnabled) return [];
   const untracked = await listUntrackedPaths(directory);
   if (untracked.length === 0) return [];
 
-  const patches = await getUntrackedDiffs(directory, untracked);
+  const patches = await getUntrackedDiffs(directory, untracked, {
+    concurrency: policy.untrackedDiffConcurrency,
+    maxFiles: policy.untrackedDiffMaxFiles,
+    maxFileBytes: policy.untrackedDiffMaxFileBytes,
+    skipBinary: true,
+    policy,
+    signal: options.signal,
+  });
   return patches.filter((patch) => typeof patch === 'string' && patch.trim());
 };
 
@@ -90,7 +100,7 @@ const untrackedSections = async (directory) => {
  *
  * @returns {Promise<{sections: Array<{scope: string, patch: string}>, meta: object}>}
  */
-export async function loadSourceSections(directory, source, { getPullRequestDiff } = {}) {
+export async function loadSourceSections(directory, source, { getPullRequestDiff, signal, policy } = {}) {
   if (source.kind === 'working-tree') {
     const sections = [];
 
@@ -101,7 +111,7 @@ export async function loadSourceSections(directory, source, { getPullRequestDiff
 
     if (source.scope === 'all' || source.scope === 'working') {
       const patch = await getDiff(directory, { staged: false });
-      const untracked = await untrackedSections(directory);
+      const untracked = await untrackedSections(directory, { signal, policy });
       const combined = [patch, ...untracked].filter((value) => value && value.trim()).join('\n');
       if (combined.trim()) sections.push({ scope: 'working', patch: combined });
     }

@@ -51,6 +51,8 @@ import {
 } from './contextPanelEmbeddedChat';
 import { getContextSurfaceWidthFraction } from '@/lib/surfaces/registry';
 import { isTerminalEventTarget } from '@/lib/terminalFocus';
+import { shouldKeepAliveBrowserTabs } from '@/lib/performance/occupancyPolicy';
+import { useOccupancyPolicyStore } from '@/stores/useOccupancyPolicyStore';
 
 const CONTEXT_PANEL_MIN_WIDTH = 320;
 const CONTEXT_PANEL_MAX_WIDTH = 1400;
@@ -972,9 +974,14 @@ export const ContextPanel: React.FC = () => {
               /></React.Suspense>
             : null;
 
+  const browserKeepAlive = useOccupancyPolicyStore((state) => shouldKeepAliveBrowserTabs(state.policy));
   const browserTabs = React.useMemo(
-    () => tabs.filter((tab) => tab.mode === 'browser'),
-    [tabs],
+    () => {
+      const all = tabs.filter((tab) => tab.mode === 'browser');
+      if (browserKeepAlive) return all;
+        return isOpen ? all.filter((tab) => tab.id === activeTab?.id) : [];
+    },
+    [activeTab?.id, browserKeepAlive, isOpen, tabs],
   );
   const diffTabs = React.useMemo(
     () => tabs.filter((tab) => tab.mode === 'diff'),

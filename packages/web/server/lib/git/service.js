@@ -2656,6 +2656,7 @@ export async function getUntrackedDiffs(directory, filePaths = [], options = {})
           retain(index, String(stdout || ''));
         } catch (error) {
           if (isAbortError(error) || controller.signal.aborted) return;
+          if (error?.code !== 1) continue;
           // `git diff --no-index` exits 1 whenever there are differences, which
           // for a new file is always. The patch is on stdout, not in the Error
           // message (execFile puts the command line there).

@@ -11,6 +11,15 @@
 - Workspace type checks passed. File-route regression passed all 65 tests after
   updating its directory-stat and isolated-import fixtures. The existing unused
   variable in `LogsPage.tsx:119` still blocks the complete workspace lint.
+- Release checks also passed 85 runtime tests, 21 isolated test files and six
+  focused Git cases. A baseline comparison exposed a batch diff regression:
+  fatal Git exits could retain partial stdout. The release now accepts patch
+  output only from successful exits or exit 1. The existing single-file buffer
+  error-message assertion also fails on the baseline under Windows CRLF settings.
+  Other full Git-suite platform failures remain outside this release change.
+- Dead-code inspection completed with unused-export backlog. Anti-slop checking
+  of the Git service still reports existing findings outside the added exit-code
+  guard. Complete lint and the complete Git suite are not reported as passing.
 - The release executable is rebuilt after source commits with `GITHUB_SHA` set
   to the source revision. Its `build-info.json` identifies that revision. Local
   profiles and temporary test output are excluded from source commits.

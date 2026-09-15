@@ -38,7 +38,8 @@ Shared contracts must define intentional behavior for every applicable runtime: 
 ## Always-On Constraints
 
 - Do not modify `../opencode`; it is a separate repository.
-- Do not run git or GitHub commands unless the user explicitly asks.
+- Git and GitHub inspection is authorized for repository tasks. A request to implement and release also authorizes task-scoped commits, creating and pushing release tags to the requested repository, uploading release assets, and publishing the requested release or prerelease without another confirmation.
+- Stage an explicit list of reviewed task files and preserve unrelated worktree changes. Force pushes, deleting remote refs/releases, and publishing to a different repository require separate authorization.
 - Do not add dependencies unless explicitly requested.
 - Never add or log secrets, bearer tokens, pairing credentials, or sensitive user data.
 - Keep changes minimal and preserve unrelated worktree changes.

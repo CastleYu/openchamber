@@ -2,6 +2,14 @@
 
 This folder contains renderers for chat message parts (text, tools, reasoning, placeholders) and shared tool presentation helpers.
 
+Conversation content uses the 1.22 typography and theme colors, scoped by
+`.message-content-text` in `styles/chat-content.css`. File previews and app
+chrome retain the current typography. Conversation tables use fluid columns;
+standalone previews retain measured columns. Streaming reasoning grows in the
+transcript, then switches to a capped scroll box when complete. Keep the current
+file actions, inline images, Markdown worker, and DOM cache when adjusting this
+appearance.
+
 Use this doc when you ask an agent to change tool/header/description behavior.
 
 ## High-level flow

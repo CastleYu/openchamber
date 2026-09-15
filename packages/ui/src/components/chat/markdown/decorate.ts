@@ -350,6 +350,7 @@ const buildTableMenu = (action: string, items: Array<{ key: string; label: strin
 const TABLE_COLUMN_MIN_WIDTH = 120;
 const TABLE_COLUMN_MAX_WIDTH = 320;
 const TABLE_LAYOUT_ATTR = 'data-md-table-layout';
+const CHAT_CONTENT_SELECTOR = '.message-content-text';
 
 const decorateTables = (root: HTMLElement, labels: DecorateLabels): void => {
   const tables = root.querySelectorAll<HTMLTableElement>('table');
@@ -414,6 +415,9 @@ const decorateTables = (root: HTMLElement, labels: DecorateLabels): void => {
 };
 
 export const stabilizeMarkdownTableWidths = (root: HTMLElement): void => {
+  // Chat uses fluid columns, matching the original conversation layout. Keep
+  // measurement for standalone Markdown previews only.
+  if (root.closest(CHAT_CONTENT_SELECTOR)) return;
   const tables = Array.from(root.querySelectorAll<HTMLTableElement>(
     `table[data-markdown="table"]:not([${TABLE_LAYOUT_ATTR}="fixed"])`,
   ));

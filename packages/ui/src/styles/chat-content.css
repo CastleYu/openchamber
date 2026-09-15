@@ -1,0 +1,149 @@
+/* Conversation typography from 1.22. Keep file previews and app chrome on the
+   current scale. Values remain in rem so the interface zoom still applies. */
+.message-content-text {
+  --text-markdown: 0.9375rem;
+  --text-code: 0.8125rem;
+  --text-meta: 0.875rem;
+  --markdown-paragraph-spacing: 0.75rem;
+}
+
+.message-content-text .markdown-content {
+  line-height: inherit;
+}
+
+.message-content-text .markdown-content p {
+  margin: 0 0 var(--markdown-paragraph-spacing);
+}
+
+.message-content-text .markdown-content ul,
+.message-content-text .markdown-content ol,
+.message-content-text .markdown-content blockquote,
+.message-content-text .markdown-content hr,
+.message-content-text .markdown-content table {
+  margin: 0;
+}
+
+.message-content-text .markdown-content > [data-md-block]:last-child p:last-child,
+.message-content-text .markdown-content.markdown-tool p,
+.message-content-text .markdown-content.markdown-reasoning p {
+  margin-bottom: 0;
+}
+
+.message-content-text .markdown-content h1,
+.message-content-text .markdown-content h2,
+.message-content-text .markdown-content h3,
+.message-content-text .markdown-content h4,
+.message-content-text .markdown-content h5,
+.message-content-text .markdown-content h6 {
+  line-height: inherit;
+  font-weight: 600;
+}
+
+.message-content-text .markdown-content h1 {
+  font-size: 1.125em;
+  margin: 1em 0 0.5em;
+  color: var(--markdown-heading1, var(--primary));
+}
+
+.message-content-text .markdown-content h2 {
+  font-size: 1.0625em;
+  margin: 0.875em 0 0.375em;
+  color: var(--markdown-heading2, var(--primary));
+}
+
+.message-content-text .markdown-content h3 {
+  font-size: 1em;
+  margin: 0.75em 0 0.25em;
+  color: var(--markdown-heading3, var(--primary));
+}
+
+.message-content-text .markdown-content h4,
+.message-content-text .markdown-content h5,
+.message-content-text .markdown-content h6 {
+  font-size: 1em;
+  margin: 0.625em 0 0.25em;
+  color: var(--markdown-heading4, var(--foreground));
+}
+
+/* Reasoning keeps its own muted text, including headings. */
+.message-content-text .markdown-content.markdown-reasoning :is(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
+
+.message-content-text .markdown-content code[data-markdown="inline-code"] {
+  background-color: var(--markdown-inline-code-bg, var(--surface-subtle)) !important;
+  color: var(--markdown-inline-code, var(--foreground)) !important;
+  padding: 0.125rem 0.3125rem;
+}
+
+/* Match the base layer's important list rules before applying specificity. */
+@layer base {
+.message-content-text .markdown-content ul,
+.message-content-text .markdown-content ol {
+  padding-left: 2em !important;
+}
+
+.message-content-text .markdown-content ul {
+  list-style-type: none !important;
+}
+
+.message-content-text .markdown-content ul > li {
+  position: relative;
+}
+
+.message-content-text .markdown-content ul > li::before {
+  content: "–";
+  position: absolute;
+  left: -1.25em;
+  color: inherit;
+}
+
+.message-content-text .markdown-content ol {
+  list-style-type: decimal !important;
+}
+}
+
+.message-content-text .markdown-content li + li {
+  margin-top: 0;
+}
+
+.message-content-text .markdown-content blockquote {
+  border-left-width: 0;
+  padding-left: 0;
+}
+
+:root .message-content-text::selection,
+:root .message-content-text ::selection {
+  background: var(--interactive-selection);
+  color: var(--surface-foreground);
+}
+
+:root.light .message-content-text::selection,
+:root.light .message-content-text ::selection {
+  background: color-mix(in srgb, var(--interactive-border-focus) 18%, transparent);
+}
+
+:root .oc-chat-comment-rect {
+  background-color: var(--interactive-selection);
+}
+
+:root.light .oc-chat-comment-rect {
+  background-color: color-mix(in srgb, var(--interactive-border-focus) 18%, transparent);
+}
+
+/* Conversation tables use the original fluid layout; standalone previews keep
+   measured columns. No colgroup or inline widths are assigned in chat. */
+.message-content-text [data-markdown="table-wrapper"] {
+  width: auto;
+}
+
+.message-content-text table[data-markdown="table"] {
+  width: 100%;
+  table-layout: auto;
+}
+
+.message-content-text table[data-markdown="table"] :is(th, td) {
+  min-width: 0;
+  max-width: none;
+  overflow-wrap: normal;
+}

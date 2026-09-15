@@ -32,7 +32,7 @@ const runtimeApis: RuntimeAPIs = {
   runtime: { platform: 'web', isDesktop: false, isVSCode: false },
   get terminal() { return unavailable(); },
   get git() { return unavailable(); },
-  get files() { return unavailable(); },
+  files: { listDirectory: unavailable, search: unavailable, createDirectory: unavailable },
   get settings() { return unavailable(); },
   get permissions() { return unavailable(); },
   get notifications() { return unavailable(); },
@@ -317,14 +317,10 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
     expect(markup).toContain('aria-expanded="true"');
   });
 
-  test('streaming reasoning stays inside the capped nested scroll box', () => {
-    // The box is capped while streaming too, so a long thought scrolls inside
-    // its own box instead of growing the timeline; it is marked as a nested
-    // scroller so an upward wheel over it scrolls the box before the chat.
+  test('streaming reasoning grows in the transcript without a nested scroller', () => {
     const markup = renderPart(makeReasoningPart({ start: 1_000 }), 'streaming');
-
-    expect(markup).toContain('max-h-80');
-    expect(markup).toContain('data-scrollable="true"');
+    expect(markup).not.toContain('max-h-80');
+    expect(markup).not.toContain('data-scrollable="true"');
   });
 
   test('a live part with no committed text yet shows the busy header and no empty summary', () => {
@@ -385,62 +381,25 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
   });
 });
 
-describe('ReasoningTimelineBlock live follow', () => {
-  test('scrollbar scrolling releases live follow and returning to the bottom resumes it', async () => {
+describe('ReasoningTimelineBlock completion layout', () => {
+  test('caps completed reasoning and releases the cap when streaming resumes', async () => {
     const dom = installDomStub();
     const root = createRoot(dom.container);
     const renderBlock = (isStreaming: boolean) => (
       <TestProviders>
-        <ReasoningTimelineBlock
-          text="Working through the task step by step."
-          variant="thinking"
-          blockId="reasoning-follow"
-          defaultExpanded
-          isStreaming={isStreaming}
-          showDuration={false}
-        />
+        <ReasoningTimelineBlock text="Working through the task step by step."
+          variant="thinking" blockId="reasoning-layout" defaultExpanded
+          isStreaming={isStreaming} showDuration={false} />
       </TestProviders>
     );
-
     try {
       await act(async () => { root.render(renderBlock(true)); });
-      const scroller = dom.container.querySelector<HTMLElement>('[data-scrollable="true"]');
-      if (!scroller) throw new Error('Expected the mounted reasoning scroll box');
-      const body = scroller.firstElementChild;
-      const followObserver = dom.observers.find((observer) => observer.targets.size === 1 && body && observer.targets.has(body));
-      if (!followObserver) throw new Error('Expected an observer of the reasoning body');
-
-      let contentHeight = 800;
-      Object.defineProperties(scroller, {
-        clientHeight: { configurable: true, value: 320 },
-        scrollHeight: { configurable: true, get: () => contentHeight },
-      });
-      await act(async () => { followObserver.notify(); });
-      expect(scroller.scrollTop).toBe(480);
-
-      // A scrollbar drag emits scroll, without a wheel or touch event.
-      await act(async () => {
-        scroller.scrollTop = 120;
-        scroller.dispatchEvent(new window.Event('scroll'));
-      });
-      contentHeight = 1000;
-      await act(async () => { followObserver.notify(); });
-      expect(scroller.scrollTop).toBe(120);
-
-      await act(async () => {
-        scroller.scrollTop = 680;
-        scroller.dispatchEvent(new window.Event('scroll'));
-      });
-      contentHeight = 1200;
-      await act(async () => { followObserver.notify(); });
-      expect(scroller.scrollTop).toBe(880);
-
+      expect(dom.container.querySelector('[data-scrollable="true"]')).toBeNull();
       await act(async () => { root.render(renderBlock(false)); });
-      expect(followObserver.disconnectCount).toBe(1);
-      expect(followObserver.targets.size).toBe(0);
-      contentHeight = 1400;
-      await act(async () => { followObserver.notify(); });
-      expect(scroller.scrollTop).toBe(880);
+      expect(dom.container.querySelector('[data-scrollable="true"]')).not.toBeNull();
+      expect(dom.container.innerHTML).toContain('max-h-80');
+      await act(async () => { root.render(renderBlock(true)); });
+      expect(dom.container.querySelector('[data-scrollable="true"]')).toBeNull();
     } finally {
       await act(async () => { root.unmount(); });
       dom.restore();

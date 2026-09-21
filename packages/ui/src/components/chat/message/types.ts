@@ -29,6 +29,7 @@ export interface ToolPopupContent {
         index?: number;
     };
     mermaid?: {
+        language?: 'mermaid' | 'plantuml';
         url: string;
         mimeType?: string;
         filename?: string;

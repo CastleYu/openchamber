@@ -47,6 +47,7 @@ import {
     SettingsRadioOption,
     SettingsChipGroup,
     SETTINGS_SELECT_TRIGGER_CLASS,
+    SETTINGS_SELECT_ROW_TRIGGER_CLASS,
     SETTINGS_SELECT_SIZE,
     SETTINGS_ICON_BUTTON_CLASS,
     SETTINGS_CONTROL_CLUSTER_CLASS,
@@ -70,6 +71,7 @@ import { isTerminalShell } from '@/lib/terminalShell';
 import { subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
 import { formatShortcutForDisplay } from '@/lib/shortcuts';
 import { useInputHistoryStore } from '@/stores/useInputHistoryStore';
+import { MERMAID_STYLES, type MermaidStyle } from '@/lib/mermaidStyle';
 
 interface Option<T extends string> {
     id: T;
@@ -300,7 +302,7 @@ const normalizeUserMessageRenderingMode = (mode: unknown): 'markdown' | 'plain' 
     return mode === 'markdown' ? 'markdown' : 'plain';
 };
 
-type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'backgroundProjectSessionLoading';
+type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'mermaidStyle' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'backgroundProjectSessionLoading';
 
 
 const WINDOW_CONTROLS_POSITION_OPTIONS: Array<{ id: DesktopWindowControlsPosition; labelKey: string }> = [
@@ -344,6 +346,8 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
 
     const mermaidRenderingMode = useUIStore(state => state.mermaidRenderingMode);
     const setMermaidRenderingMode = useUIStore(state => state.setMermaidRenderingMode);
+    const mermaidStyle = useUIStore(state => state.mermaidStyle);
+    const setMermaidStyle = useUIStore(state => state.setMermaidStyle);
     const userMessageRenderingMode = useUIStore(state => state.userMessageRenderingMode);
     const setUserMessageRenderingMode = useUIStore(state => state.setUserMessageRenderingMode);
     const collapsibleUserMessages = useUIStore(state => state.collapsibleUserMessages);
@@ -608,6 +612,11 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
         void updateDesktopSettings({ mermaidRenderingMode: mode });
     }, [setMermaidRenderingMode]);
 
+    const handleMermaidStyleChange = React.useCallback((style: MermaidStyle) => {
+        setMermaidStyle(style);
+        void updateDesktopSettings({ mermaidStyle: style });
+    }, [setMermaidStyle]);
+
     const handleShowToolFileIconsChange = React.useCallback((enabled: boolean) => {
         setShowToolFileIcons(enabled);
         void updateDesktopSettings({ showToolFileIcons: enabled });
@@ -687,7 +696,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
         : (shouldShow('theme') || showWindowControlsPositionSetting || shouldShow('pwaInstallName') || shouldShow('pwaOrientation') || shouldShow('timeFormat') || shouldShow('weekStart'));
     const hasLayoutSettings = shouldShow('fontSize') || shouldShow('terminalFontSize') || shouldShow('editorFontSize') || shouldShow('spacing') || (shouldShow('scrollbars') && !hasThemeSettings) || (shouldShow('inputBarOffset') && isMobile);
     const hasNavigationSettings = (shouldShow('terminalQuickKeys') && !isMobile) || ((shouldShow('terminalShell') || shouldShow('terminalLoginShell')) && !isVSCode) || shouldShow('fileEditorKeymap') || shouldShow('autoSaveEnabled') || (shouldShow('sessionTabs') && !isVSCode && !isMobile);
-    const hasBehaviorSettings = shouldShow('mermaidRendering')
+    const hasBehaviorSettings = (shouldShow('mermaidRendering') || shouldShow('mermaidStyle'))
         || (shouldShow('sessionGoal') && !isVSCode)
         || shouldShow('userMessageRendering')
         || shouldShow('chatRenderMode')
@@ -718,6 +727,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
     const showTransportSection = shouldShow('messageTransport');
     const showBehaviorMessageOptions = shouldShow('userMessageRendering')
         || shouldShow('mermaidRendering')
+        || shouldShow('mermaidStyle')
         || (shouldShow('diffLayout') && !isVSCode)
         || shouldShow('followUpBehavior')
         || shouldShow('inputHistoryScope')
@@ -1754,9 +1764,9 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                         </SettingsControlGroup>
                                     )}
 
-                                    {shouldShow('mermaidRendering') && (
+                                    {(shouldShow('mermaidRendering') || shouldShow('mermaidStyle')) && (
                                         <SettingsControlGroup title={t('settings.openchamber.visual.section.mermaidRendering')}>
-                                            <SettingsRadioGroup aria-label={t('settings.openchamber.visual.section.mermaidRenderingAria')}>
+                                            {shouldShow('mermaidRendering') && <SettingsRadioGroup aria-label={t('settings.openchamber.visual.section.mermaidRenderingAria')}>
                                                 {MERMAID_RENDERING_OPTIONS.map((option) => (
                                                     <SettingsRadioOption
                                                         key={option.id}
@@ -1766,7 +1776,27 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                                         ariaLabel={t('settings.openchamber.visual.field.mermaidRenderingAria', { option: tUnsafe(option.labelKey) })}
                                                     />
                                                 ))}
-                                            </SettingsRadioGroup>
+                                            </SettingsRadioGroup>}
+                                            {shouldShow('mermaidStyle') && (
+                                                <SettingsFieldRow
+                                                    label={t('settings.openchamber.visual.field.mermaidStyle')}
+                                                    settingsItem="chat.mermaid-style"
+                                                >
+                                                    <Select value={mermaidStyle} onValueChange={(value) => {
+                                                        const style = MERMAID_STYLES.find((candidate) => candidate === value);
+                                                        if (style) handleMermaidStyleChange(style);
+                                                    }}>
+                                                        <SelectTrigger size={SETTINGS_SELECT_SIZE} className={SETTINGS_SELECT_ROW_TRIGGER_CLASS} aria-label={t('settings.openchamber.visual.field.mermaidStyleAria')}>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {MERMAID_STYLES.map((style) => (
+                                                                <SelectItem key={style} value={style}>{t(`settings.openchamber.visual.option.mermaidStyle.${style}`)}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </SettingsFieldRow>
+                                            )}
                                         </SettingsControlGroup>
                                     )}
 

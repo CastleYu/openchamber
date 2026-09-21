@@ -195,6 +195,7 @@ const ChatSectionContent: React.FC = () => {
                 'activityRenderMode',
                 'userMessageRendering',
                 'mermaidRendering',
+                'mermaidStyle',
                 'reasoning',
                 'showToolFileIcons',
                 'showTurnChangedFiles',

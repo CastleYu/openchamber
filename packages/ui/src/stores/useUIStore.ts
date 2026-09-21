@@ -15,6 +15,7 @@ import { useFilesViewTabsStore } from './useFilesViewTabsStore';
 import { isWindowsArm64 } from '@/lib/platform';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { getRuntimeKey, isTransientRuntimeKey } from '@/lib/runtime-switch';
+import type { MermaidStyle } from '@/lib/mermaidStyle';
 
 export type PendingDiffScope = 'working' | 'staged' | 'turn' | 'branch' | 'commit';
 const contextPanelModeSchema = z.enum(['diff', 'walkthrough', 'file', 'context', 'plan', 'chat', 'browser', 'git', 'pr', 'linear', 'notes', 'terminal']);
@@ -966,6 +967,7 @@ interface UIStore {
   desktopWindowControlsPosition: DesktopWindowControlsPosition;
   desktopWindowControlsStyle: DesktopWindowControlsStyle;
   mermaidRenderingMode: MermaidRenderingMode;
+  mermaidStyle: MermaidStyle;
   userMessageRenderingMode: UserMessageRenderingMode;
   collapsibleUserMessages: boolean;
   stickyUserHeader: boolean;
@@ -1154,6 +1156,7 @@ interface UIStore {
   setDesktopWindowControlsPosition: (value: DesktopWindowControlsPosition) => void;
   setDesktopWindowControlsStyle: (value: DesktopWindowControlsStyle) => void;
   setMermaidRenderingMode: (value: MermaidRenderingMode) => void;
+  setMermaidStyle: (value: MermaidStyle) => void;
   setUserMessageRenderingMode: (value: UserMessageRenderingMode) => void;
   setCollapsibleUserMessages: (value: boolean) => void;
   setStickyUserHeader: (value: boolean) => void;
@@ -1327,6 +1330,7 @@ export const useUIStore = create<UIStore>()(
         desktopWindowControlsPosition: 'right',
         desktopWindowControlsStyle: 'classic',
         mermaidRenderingMode: 'svg',
+        mermaidStyle: 'openchamber',
         userMessageRenderingMode: 'markdown',
         collapsibleUserMessages: true,
         stickyUserHeader: false,
@@ -2640,6 +2644,9 @@ export const useUIStore = create<UIStore>()(
         setMermaidRenderingMode: (value) => {
           set({ mermaidRenderingMode: value });
         },
+        setMermaidStyle: (value) => {
+          set({ mermaidStyle: value });
+        },
         setUserMessageRenderingMode: (value) => {
           set({ userMessageRenderingMode: value });
         },
@@ -3056,6 +3063,7 @@ export const useUIStore = create<UIStore>()(
           desktopWindowControlsStyle: state.desktopWindowControlsStyle,
           inputBarOffset: state.inputBarOffset,
           mermaidRenderingMode: state.mermaidRenderingMode,
+          mermaidStyle: state.mermaidStyle,
           userMessageRenderingMode: state.userMessageRenderingMode,
           collapsibleUserMessages: state.collapsibleUserMessages,
           stickyUserHeader: state.stickyUserHeader,

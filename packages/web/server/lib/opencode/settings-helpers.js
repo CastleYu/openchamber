@@ -7,6 +7,7 @@ import { isAgentMemoryFeatureAvailable } from '../agent-memory/feature-flag.js';
 // The server is plain ESM without a bundler, so the snapshot is read with
 // `createRequire` (import attributes differ across the Node versions we run on).
 const settingsRegistry = createRequire(import.meta.url)('./settings-registry.json');
+const MERMAID_STYLES = new Set(['openchamber', 'native', 'forest', 'neutral', 'hand-drawn', 'github-light', 'github-dark', 'nord', 'tokyo-night']);
 
 /**
  * Whether a client may persist this key through PUT /api/config/settings:
@@ -650,6 +651,9 @@ export const createSettingsHelpers = (dependencies) => {
       if (mode === 'svg' || mode === 'ascii') {
         result.mermaidRenderingMode = mode;
       }
+    }
+    if (MERMAID_STYLES.has(candidate.mermaidStyle)) {
+      result.mermaidStyle = candidate.mermaidStyle;
     }
     if (typeof candidate.userMessageRenderingMode === 'string') {
       const mode = candidate.userMessageRenderingMode.trim();

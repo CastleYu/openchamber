@@ -227,3 +227,32 @@ Each task evidence file records: task ID, base/final commit, owner, status, chan
   `Temp/idle-workspace-types.log`, `Temp/idle-workspace-lint.log` and
   `Temp/idle-dead-code-final.log`. No Git commands, commits or publication were
   requested. Other-platform native release behavior was not exercised.
+
+## Local acceptance: DIJIANG 3.5, 2026-09-21
+
+- The maintainer classified diagrams as an extension of the 3.x "more ways to
+  open" feature. The release identity is `1.23.0-DIJIANG.3.5`; the preliminary
+  local `4.0` artifact is superseded and is not a publication candidate.
+- Added PlantUML chat/file rendering and source/image export, nine Mermaid
+  styles, dark-mode line contrast, and shared expanded-view mouse/context-menu
+  controls. Unchanged directory refreshes retain state identity. The reported
+  scroll jank was not reproduced; no original-scenario FPS improvement is claimed.
+- Workspace types passed. Focused renderer, settings, viewer and release-policy
+  checks passed, including the four bilingual history/version tests. Full lint
+  still has the previously documented QA-02 unused LogsPage variable.
+- The full portable build completed web staging, pinned OpenCode verification,
+  native rebuild and Electron packaging. The final UI was rebuilt and repackaged
+  after updating the bilingual release history. Local EXE SHA-256:
+  `44247A42516DEFF49BB4FE853CCF20F1E84CAE5B85ECCCDB17684DD21D2D889F`.
+- Launched the final EXE with an independent temporary profile. About displayed
+  `1.23.0-DIJIANG.3.5` and OpenCode `1.18.30`; health returned 200 and the normal
+  build's debug endpoint returned 404. Actual Files previews rendered PlantUML
+  and Mermaid; the PlantUML large viewer zoomed and exposed reset/copy/export
+  menu items. No zoom buttons were present. The test instance was then closed.
+- Evidence is under `.codex-temp/diagrams-qa/`: `release-3.5-package.log`,
+  `release-3.5-final-assets.log`, `release-3.5-final-package.log`, and
+  `portable-3.5-profile/{result.json,acceptance.png,cleanup.json}`. These are local
+  acceptance artifacts; CI artifacts will carry the pushed source commit.
+- No installed user application or data was replaced. Rollback remains opening
+  the retained previous portable executable. Installed VS Code and mobile-device
+  behavior remain outside this acceptance run.

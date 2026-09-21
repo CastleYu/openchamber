@@ -22,6 +22,21 @@ import { renderSettingsRegistrySnapshot, SETTINGS_REGISTRY_SNAPSHOT_PATHS } from
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', '..');
 
 describe('settings registry', () => {
+  test('round-trips Mermaid style and preserves the live choice for missing or invalid values', () => {
+    const before = useUIStore.getState().mermaidStyle;
+    try {
+      const parsed = parseSettingsDocument({ mermaidStyle: 'nord' });
+      expect(parsed?.mermaidStyle).toBe('nord');
+      expect(parseSettingsDocument(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+      applySettingsToStores(parsed ?? {});
+      expect(useUIStore.getState().mermaidStyle).toBe('nord');
+      applySettingsToStores(parseSettingsDocument({ mermaidStyle: 'not-a-style' }) ?? {});
+      applySettingsToStores({});
+      expect(useUIStore.getState().mermaidStyle).toBe('nord');
+    } finally {
+      useUIStore.getState().setMermaidStyle(before);
+    }
+  });
   test('round-trips the restored occupancy policy and applies its live store binding', () => {
     const before = useOccupancyPolicyStore.getState().policy;
     try {

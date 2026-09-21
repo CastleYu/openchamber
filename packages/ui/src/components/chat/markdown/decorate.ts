@@ -3,12 +3,14 @@ import { getExternalFaviconUrl, isExternalHttpUrl, isLoopbackHttpUrl } from '@/l
 import { dropdownMenuItemClass, dropdownMenuPopupClass } from '@/components/ui/dropdown-menu.styles';
 import type { IconName } from '@/components/icon/icons';
 import { getMermaidViewerController } from './mermaidViewer';
+import { diagramPng, saveBlob } from './diagramExport';
+import { DIAGRAM_CODE_SELECTOR, type DeferredDiagram } from './deferredDiagrams';
 
 // ---------------------------------------------------------------------------
 // Shared decoration context
 // ---------------------------------------------------------------------------
 
-export type MermaidRender = { svg?: string; ascii?: string };
+export type MermaidRender = { svg?: string; ascii?: string; pending?: boolean; failed?: boolean };
 
 export type DecorateLabels = {
   copy: string;
@@ -19,6 +21,10 @@ export type DecorateLabels = {
   downloadTable: string;
   copyDiagram: string;
   downloadDiagram: string;
+  downloadPng: string;
+  diagramError: string;
+  downloadSource: string;
+  renderFailed: string;
   zoomInDiagram: string;
   zoomOutDiagram: string;
   resetDiagramView: string;
@@ -40,6 +46,9 @@ export type DecorateContext = {
   onToggleCodeBlockLineWrap?: () => void;
   // Renders a mermaid block source to svg/ascii using current theme colors.
   renderMermaid: (source: string) => MermaidRender;
+  renderPlantUml: (source: string) => DeferredDiagram;
+  prepareDiagrams: (blocks: readonly { html: string }[]) => Promise<void> | null;
+  cancelDiagrams: () => void;
   onPreviewLoopback?: (url: string) => void;
 };
 
@@ -240,7 +249,7 @@ const decorateCodeBlocks = (root: HTMLElement, ctx: DecorateContext): void => {
   const blocks = root.querySelectorAll<HTMLPreElement>('pre');
   for (const pre of Array.from(blocks)) {
     // Skip mermaid placeholders (handled separately).
-    if (pre.querySelector('code.language-mermaid')) continue;
+    if (pre.closest('[data-markdown="mermaid-block"]')) continue;
     const parent = pre.parentElement;
     if (!parent) continue;
     // Already wrapped (idempotent across morphdom passes).
@@ -517,16 +526,19 @@ export const stabilizeMarkdownTableWidths = (root: HTMLElement): void => {
 // ---------------------------------------------------------------------------
 
 const decorateMermaid = (root: HTMLElement, ctx: DecorateContext): void => {
-  const codes = root.querySelectorAll<HTMLElement>('pre > code.language-mermaid');
+  const codes = root.querySelectorAll<HTMLElement>(DIAGRAM_CODE_SELECTOR);
   for (const code of Array.from(codes)) {
-    const pre = code.parentElement as HTMLPreElement | null;
+    const pre = code.parentElement;
     if (!pre) continue;
-    const source = (code.textContent ?? '').replace(/\s+$/, '');
-    const rendered = ctx.renderMermaid(source);
+    const plantuml = !code.classList.contains('language-mermaid');
+    const source = plantuml ? (code.textContent ?? '') : (code.textContent ?? '').replace(/\s+$/, '');
+    const rendered: MermaidRender = plantuml ? ctx.renderPlantUml(source) : ctx.renderMermaid(source);
 
     const block = document.createElement('div');
     block.setAttribute('data-markdown', 'mermaid-block');
     block.setAttribute('data-md-source', source);
+    block.setAttribute('data-diagram-language', plantuml ? 'plantuml' : 'mermaid');
+    if (rendered.pending) block.setAttribute('data-diagram-pending', '');
     block.className = 'group relative';
 
     const scroll = document.createElement('div');
@@ -535,6 +547,11 @@ const decorateMermaid = (root: HTMLElement, ctx: DecorateContext): void => {
     const toolbar = document.createElement('div');
     toolbar.setAttribute('data-markdown', 'mermaid-toolbar');
     toolbar.className = 'absolute top-1 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity';
+    if (plantuml && ctx.mermaidControls.download) {
+      const download = makeIconButton('download', ctx.labels.downloadSource, 'plantuml-source');
+      download.setAttribute('data-md-source', source);
+      toolbar.appendChild(download);
+    }
 
     if (rendered.svg) {
       block.setAttribute('data-mermaid-render', 'svg');
@@ -560,8 +577,16 @@ const decorateMermaid = (root: HTMLElement, ctx: DecorateContext): void => {
         const download = makeIconButton('download', ctx.labels.downloadDiagram, 'mermaid-download');
         download.setAttribute('data-md-svg', '1');
         toolbar.appendChild(download);
+        toolbar.appendChild(makeIconButton('image', ctx.labels.downloadPng, 'diagram-png'));
       }
     } else {
+      if (rendered.failed) {
+        const error = document.createElement('p');
+        error.setAttribute('role', 'status');
+        error.className = 'text-muted-foreground text-sm';
+        error.textContent = ctx.labels.renderFailed;
+        scroll.appendChild(error);
+      }
       block.setAttribute('data-mermaid-render', 'ascii');
       const asciiPre = document.createElement('pre');
       asciiPre.setAttribute('data-markdown', 'mermaid-ascii');
@@ -643,15 +668,7 @@ export const decorateMarkdown = (root: HTMLElement, ctx: DecorateContext): void 
 // ---------------------------------------------------------------------------
 
 const downloadBlob = (filename: string, content: string, mime: string): void => {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  saveBlob(new Blob([content], { type: mime }), filename);
 };
 
 const closeAllMenus = (container: HTMLElement): void => {
@@ -815,6 +832,24 @@ export const attachMarkdownInteractions = (
         controller?.zoomOut();
       } else {
         controller?.fit();
+      }
+      return;
+    }
+
+    if (action === 'plantuml-source') {
+      downloadBlob('diagram.puml', actionEl.getAttribute('data-md-source') ?? '', 'text/plain;charset=utf-8');
+      return;
+    }
+
+    if (action === 'diagram-png') {
+      const svgHost = actionEl.closest('[data-markdown="mermaid-block"]')?.querySelector('[data-markdown="mermaid"]');
+      const svg = svgHost?.getAttribute('data-md-original-svg');
+      if (svg && actionEl instanceof HTMLButtonElement) {
+        actionEl.disabled = true;
+        void diagramPng(svg).then((blob) => saveBlob(blob, 'diagram.png')).catch(() => {
+          actionEl.setAttribute('aria-invalid', 'true');
+          actionEl.setAttribute('title', ctx.labels.diagramError);
+        }).finally(() => { actionEl.disabled = false; });
       }
       return;
     }

@@ -726,6 +726,13 @@ describe('settings helpers', () => {
 });
 
 describe('settings registry gate', () => {
+  it('preserves supported Mermaid styles and rejects unknown choices', () => {
+    const helpers = createTestHelpers();
+    for (const style of ['openchamber', 'native', 'forest', 'neutral', 'hand-drawn', 'github-light', 'github-dark', 'nord', 'tokyo-night']) {
+      expect(helpers.sanitizeSettingsUpdate({ mermaidStyle: style }).mermaidStyle).toBe(style);
+    }
+    expect(helpers.sanitizeSettingsUpdate({ mermaidStyle: 'missing-theme' })).not.toHaveProperty('mermaidStyle');
+  });
   const registryPath = join(dirname(testFilePath), 'settings-registry.json');
   const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
   const persistableKeys = Object.entries(registry.fields)
@@ -737,6 +744,7 @@ describe('settings registry gate', () => {
   // stops accepting a key the registry still lists — that is the drift the
   // registry exists to end.
   const validValues = {
+    mermaidStyle: 'openchamber',
     themeId: 'openchamber-dark', useSystemTheme: true, themeVariant: 'dark', lightThemeId: 'openchamber-light', darkThemeId: 'openchamber-dark',
     splashBgLight: '#fff', splashFgLight: '#000', splashBgDark: '#000', splashFgDark: '#fff',
     lastDirectory: '/home/testuser/project', homeDirectory: '/home/testuser', opencodeBinary: '/usr/local/bin/opencode',

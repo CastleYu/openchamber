@@ -5,6 +5,7 @@ import { WorkerHighlightedCode } from '@/components/code/WorkerHighlightedCode';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/utils';
+import { fencePlantUmlSource } from '@/lib/diagramSource';
 import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 import { toolDisplayStyles } from '@/lib/typography';
 import { getLanguageFromExtension } from '@/lib/toolHelpers';
@@ -100,7 +101,7 @@ const MERMAID_ASPECT_MAX_RETRIES = 3;
 
 const DIALOG_CODE_TAG_PROPS = { style: { background: 'transparent', backgroundColor: 'transparent', fontSize: 'inherit' } };
 
-const MERMAID_CONTROLS = { download: false, copy: false, showPanZoomControls: true };
+const MERMAID_CONTROLS = { download: false, copy: false, showPanZoomControls: false };
 
 type PierreThemeConfig = {
     theme: { light: string; dark: string };
@@ -862,7 +863,9 @@ const MermaidPreviewDialog: React.FC<{
         };
     }, [popup.open, source, status]);
 
-    const mermaidMarkdown = `\`\`\`mermaid\n${source}\n\`\`\``;
+    const mermaidMarkdown = popup.mermaid?.language === 'plantuml'
+        ? fencePlantUmlSource(source)
+        : `\`\`\`mermaid\n${source}\n\`\`\``;
 
     const dialogSize = React.useMemo(() => {
         const { maxWidth, maxHeight } = getPreviewViewportBounds(viewport, isMobile);

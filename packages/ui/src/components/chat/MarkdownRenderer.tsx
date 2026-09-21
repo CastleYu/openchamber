@@ -3,6 +3,7 @@ import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 import { isMobileSurfaceRuntime } from '@/lib/runtimeSurface';
 import { cn } from '@/lib/utils';
 import { getLoadedMarkdownRendererModule, loadMarkdownRendererModule } from './markdownRendererLoader';
+import { DiagramMenu } from './markdown/DiagramMenu';
 
 // Thin lazy wrapper around the MarkdownRenderer implementation.
 // The full implementation (marked + Shiki highlighting + KaTeX + morphdom
@@ -47,7 +48,9 @@ export const MarkdownRenderer: React.FC<React.ComponentPropsWithoutRef<typeof Ma
   const loaded = getLoadedMarkdownRendererModule();
   const content = loaded ? <loaded.MarkdownRenderer {...props} /> : <MarkdownRendererLazy {...props} />;
   return <React.Suspense fallback={<MobileMarkdownFallback {...props} />}>
-    <MarkdownFilesLazy sessionId={props.part?.sessionID} messageId={props.messageId || props.part?.messageID || ''} streaming={props.isStreaming} onShowPopup={props.onShowPopup}>{content}</MarkdownFilesLazy>
+    <MarkdownFilesLazy sessionId={props.part?.sessionID} messageId={props.messageId || props.part?.messageID || ''} streaming={props.isStreaming} onShowPopup={props.onShowPopup}>
+      <DiagramMenu onShowPopup={props.onShowPopup}>{content}</DiagramMenu>
+    </MarkdownFilesLazy>
   </React.Suspense>;
 };
 
@@ -57,10 +60,10 @@ type SimpleMarkdownRendererProps = React.ComponentPropsWithoutRef<typeof SimpleM
 
 export const SimpleMarkdownRenderer: React.FC<SimpleMarkdownRendererProps> = ({ fallbackContent, ...props }) => {
   const loaded = getLoadedMarkdownRendererModule();
-  if (loaded) return <loaded.SimpleMarkdownRenderer {...props} />;
+  const content = loaded ? <loaded.SimpleMarkdownRenderer {...props} /> : <SimpleMarkdownRendererLazy {...props} />;
   return (
     <React.Suspense fallback={fallbackContent ?? <MobileMarkdownFallback {...props} />}>
-      <SimpleMarkdownRendererLazy {...props} />
+      <DiagramMenu onShowPopup={props.onShowPopup} expanded={props.allowMermaidWheelEvents}>{content}</DiagramMenu>
     </React.Suspense>
   );
 };

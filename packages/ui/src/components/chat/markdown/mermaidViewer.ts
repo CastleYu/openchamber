@@ -398,7 +398,7 @@ const createMermaidViewerController = (block: HTMLElement): InternalMermaidViewe
   };
 
   const onWheel = (event: WheelEvent): void => {
-    if (!event.ctrlKey && !event.metaKey) {
+    if (!event.ctrlKey && !event.metaKey && !viewport.closest('[data-diagram-wheel-zoom="true"]')) {
       return;
     }
     event.preventDefault();

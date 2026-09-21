@@ -10,6 +10,10 @@ independent personal revision lives in `packages/web/personal-build.json`, in
 - An optimization, bug fix or maintenance correction increments `fix`.
 - A release containing both uses the feature increment.
 - `feature` starts at one and `fix` starts at zero. Neither permits leading zeros.
+
+The maintainer defines the feature boundary. Diagram rendering, export and viewer
+interaction extend the existing DIJIANG 3.x "more ways to open" feature, so this
+work advances `3.4` to `3.5`, not `4.0`.
 - A community merge alone does not reset or increment the personal revision.
 
 The previous `DIJIANG.1` is the historical baseline for `DIJIANG.1.0`. The first

@@ -71,6 +71,7 @@ let MarkdownRenderer: React.ComponentType<{
   part?: TextPart;
   isAnimated?: boolean;
   isStreaming?: boolean;
+  disableStreamAnimation?: boolean;
   enableFileReferences?: boolean;
 }>;
 let clearDetachedMarkdownDomCache: () => void;
@@ -299,6 +300,7 @@ const initializePerformanceDom = async (): Promise<void> => {
   mock.module('@/lib/path-utils', () => ({ getDirectoryForFilePath: () => '', isFilePathWithinDirectory: () => true, toAbsoluteFilePath: () => '', normalizeFilePath: (value: string) => value, isAbsoluteFilePath: (value: string) => value.startsWith('/') }));
   mock.module('@/lib/clipboard', () => ({ copyTextToClipboard: async () => undefined }));
   mock.module('beautiful-mermaid', () => ({
+    THEMES: {},
     renderMermaidASCII: () => 'diagram',
     renderMermaidSVG: () => '<svg viewBox="0 0 240 120" width="240" height="120"><path d="M0 0h1v1z" /></svg>',
   }));
@@ -326,6 +328,36 @@ afterAll(() => {
 });
 
 describe('MarkdownRenderer DOM mount performance contract', () => {
+  test('defers PlantUML until settlement when stream animations are disabled', async () => {
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const root = createRoot(host);
+    const content = '```plantuml\n@startuml\n!include external.puml\n@enduml\n```';
+    const render = async (streaming: boolean) => {
+      await act(async () => {
+        root.render(<MarkdownRenderer content={content} messageId="deferred-plantuml" isAnimated={false} isStreaming={streaming} disableStreamAnimation enableFileReferences={false} />);
+        await waitForSettledEffects();
+      });
+      await act(async () => waitForSettledEffects());
+    };
+    try {
+      await render(true);
+      expect(host.querySelectorAll('[data-diagram-pending]')).toHaveLength(1);
+      expect(host.querySelector('[role="status"]')).toBeNull();
+      expect(host.textContent).toContain('!include external.puml');
+      await render(false);
+      // Rejection is local and deterministic: external includes are unsupported.
+      for (let attempt = 0; attempt < 40 && !host.querySelector('[role="status"]'); attempt += 1) {
+        await act(async () => waitForSettledEffects());
+      }
+      expect(host.querySelector('[data-diagram-pending]')).toBeNull();
+      expect(host.querySelector('[role="status"]')?.textContent).toBe('markdownRenderer.diagram.renderFailed');
+      expect(host.textContent).toContain('!include external.puml');
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
   test('preserves disclosure choices through streaming, settlement, and redecorating', async () => {
     const host = document.createElement('div');
     document.body.replaceChildren(host);

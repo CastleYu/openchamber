@@ -89,14 +89,8 @@ import { useI18n } from '@/lib/i18n';
 import { sessionEvents } from '@/lib/sessionEvents';
 import { syncScheduledTaskLoops } from '@/lib/scheduledTasksApi';
 import { useProjectsStore } from '@/stores/useProjectsStore';
-
-type FileNode = {
-  name: string;
-  path: string;
-  type: 'file' | 'directory';
-  extension?: string;
-  relativePath?: string;
-};
+import { reuseFileNodes, type FileNode } from './fileNodeList';
+import { fencePlantUmlSource, isPlantUmlFile } from '@/lib/diagramSource';
 
 type FileStatSnapshot = {
   path: string;
@@ -793,12 +787,14 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
   const [textViewMode, setTextViewMode] = React.useState<TextViewMode>('edit');
   const [mdViewMode, setMdViewMode] = React.useState<PreviewViewMode>('edit');
+  const [plantumlViewMode, setPlantumlViewMode] = React.useState<PreviewViewMode>('edit');
   const [jsonViewMode, setJsonViewMode] = React.useState<'tree' | 'text'>('tree');
   const [htmlViewMode, setHtmlViewMode] = React.useState<PreviewViewMode>('edit');
   const [drawioViewMode, setDrawioViewMode] = React.useState<PreviewViewMode>('preview');
   const [drawioRemountNonce, setDrawioRemountNonce] = React.useState(0);
   const textViewModeByPathRef = React.useRef<Record<string, TextViewMode>>({});
   const mdViewModeByPathRef = React.useRef<Record<string, PreviewViewMode>>({});
+  const plantumlViewModeByPathRef = React.useRef<Record<string, PreviewViewMode>>({});
   const htmlViewModeByPathRef = React.useRef<Record<string, PreviewViewMode>>({});
   const drawioViewModeByPathRef = React.useRef<Record<string, PreviewViewMode>>({});
 
@@ -1206,7 +1202,12 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
           delete next[normalizedDir];
           return next;
         });
-        setChildrenByDir((prev) => ({ ...prev, [normalizedDir]: mapped }));
+        setChildrenByDir((prev) => {
+          const previous = prev[normalizedDir];
+          const children = reuseFileNodes(previous, mapped);
+          if (children === previous) return prev;
+          return { ...prev, [normalizedDir]: children };
+        });
       })
       .catch((error) => {
         if (!isCurrentRequest()) {
@@ -2472,15 +2473,17 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   // alone would flip canEdit/isTextFile true and show a dead edit toggle + no-op Save.
   const canEdit = Boolean(selectedFile && !selectedFileIsOutsideWorkspace && !isSelectedBinary && !isSelectedImage && files.writeFile && fileContent.length <= MAX_VIEW_CHARS);
   const isMarkdown = Boolean(selectedFile?.path && isMarkdownFile(selectedFile.path));
+  const isPlantUml = Boolean(selectedFile?.path && isPlantUmlFile(selectedFile.path));
   const isJson = Boolean(selectedFile?.path && isJsonFile(selectedFile.path));
   const isHtml = Boolean(selectedFile?.path && isHtmlFile(selectedFile.path));
   const isDrawio = Boolean(selectedFile?.path && isDrawioFile(selectedFile.path));
   const isTextFile = Boolean(selectedFile && !isSelectedBinary && !isSelectedImage);
-  const canUseShikiFileView = isTextFile && !isMarkdown && !isDrawio && !(isHtml && htmlViewMode === 'preview');
+  const canUseShikiFileView = isTextFile && !isMarkdown && !isPlantUml && !isDrawio && !(isHtml && htmlViewMode === 'preview');
   const isEditingFile = (isMarkdown && mdViewMode === 'edit')
+    || (isPlantUml && plantumlViewMode === 'edit')
     || (isHtml && htmlViewMode === 'edit')
     || (isJson && jsonViewMode === 'text')
-    || (!isMarkdown && !isHtml && !isJson && textViewMode === 'edit');
+    || (!isMarkdown && !isPlantUml && !isHtml && !isJson && textViewMode === 'edit');
   const staticLanguageExtension = React.useMemo(
     () => (selectedFilePath ? languageByExtension(selectedFilePath) : null),
     [selectedFilePath],
@@ -2538,6 +2541,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       // Ignore localStorage errors
     }
     setMdViewMode(mdViewModeByPathRef.current[selectedPath] ?? mdDefault);
+    setPlantumlViewMode(plantumlViewModeByPathRef.current[selectedPath] ?? mdDefault);
 
     let htmlDefault: PreviewViewMode = settingsDefaultFileViewerPreview ? 'preview' : 'edit';
     try {
@@ -2588,7 +2592,21 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     return mdViewMode;
   }, [mdViewMode]);
 
-  const mdPreviewFocusTargetPath = selectedFile && isMarkdown && getMdViewMode() === 'preview' && !fileLoading
+  const savePlantumlViewMode = React.useCallback((mode: PreviewViewMode) => {
+    const selectedPath = selectedFile?.path;
+    if (selectedPath) {
+      plantumlViewModeByPathRef.current[selectedPath] = mode;
+    }
+    setPlantumlViewMode(mode);
+  }, [selectedFile?.path]);
+
+  const getPlantumlViewMode = React.useCallback((): PreviewViewMode => {
+    return plantumlViewMode;
+  }, [plantumlViewMode]);
+
+  const mdPreviewFocusTargetPath = selectedFile && (isMarkdown || isPlantUml) && (
+    isMarkdown ? getMdViewMode() : getPlantumlViewMode()
+  ) === 'preview' && !fileLoading
     ? selectedFile.path
     : null;
   React.useEffect(() => {
@@ -2728,6 +2746,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
         if (isMarkdownFile(path)) {
           mdViewModeByPathRef.current[path] = previewMode;
         }
+        if (isPlantUmlFile(path)) {
+          plantumlViewModeByPathRef.current[path] = previewMode;
+        }
         if (isHtmlFile(path)) {
           htmlViewModeByPathRef.current[path] = previewMode;
         }
@@ -2738,6 +2759,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
       setTextViewMode('edit');
       setMdViewMode(previewMode);
+      setPlantumlViewMode(previewMode);
       setHtmlViewMode(previewMode);
       setDrawioViewMode(previewMode);
       setJsonViewMode(nextJsonMode);
@@ -3233,7 +3255,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   };
   const codePreviewActive = previewReady && canUseShikiFileView && textViewMode === 'view'
     && !(isJson && jsonViewMode === 'tree');
-  const markdownPreviewActive = previewReady && isMarkdown && getMdViewMode() === 'preview';
+  const markdownPreviewActive = previewReady && (isMarkdown || isPlantUml)
+    && (isMarkdown ? getMdViewMode() : getPlantumlViewMode()) === 'preview';
   const { setScroller: setMainCodeScroller, restore: restoreMainCodeScroll } = useFilePreviewScrollPosition(codePreviewActive ? `${filePositionKey}:code` : null);
   const { setScroller: setFullscreenCodeScroller, restore: restoreFullscreenCodeScroll } = useFilePreviewScrollPosition(codePreviewActive ? `${filePositionKey}:code:fullscreen` : null);
   const { setScroller: setMainMarkdownScroll } = useFilePreviewScrollPosition(markdownPreviewActive ? `${filePositionKey}:markdown` : null);
@@ -3380,7 +3403,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
 
 
-        {!isSelectedImage && !isSelectedPdf && !isUnsupportedBinary && (
+        {!isSelectedImage && !isSelectedPdf && !isUnsupportedBinary && (!isPlantUml || plantumlViewMode === 'edit') && (
           <>
             {withTooltip(wrapLines ? t('filesView.editor.disableLineWrap') : t('filesView.editor.enableLineWrap'),
               <Button
@@ -3465,6 +3488,15 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
               <Icon name={getMdViewMode() === 'preview' ? 'eye' : 'eye-off'} className="size-4" />
             </Button>
           )
+        )}
+
+        {isPlantUml && (
+          <PreviewToggleButton
+            currentMode={getPlantumlViewMode()}
+            onToggle={() => {
+              savePlantumlViewMode(getPlantumlViewMode() === 'preview' ? 'edit' : 'preview');
+            }}
+          />
         )}
 
         {isHtmlFile(selectedFile?.path ?? '') && (
@@ -3976,7 +4008,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
                 />
               </div>
             </ErrorBoundary>
-          ) : selectedFile && isMarkdown && getMdViewMode() === 'preview' ? (
+          ) : selectedFile && ((isMarkdown && getMdViewMode() === 'preview') || (isPlantUml && getPlantumlViewMode() === 'preview')) ? (
             <div className="relative h-full min-h-0">
               <div
                 className="oc-file-preview h-full overflow-auto p-3 outline-none"
@@ -3987,11 +4019,11 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
                 onMouseDown={focusMdPreviewContainer}
                 ref={setMainMarkdownScroller}
               >
-                <FilePreviewCommentMenu
+                {isMarkdown && <FilePreviewCommentMenu
                   containerRef={markdownPreviewRef}
                   filePath={selectedFile.path}
                   fileContent={fileContent}
-                />
+                />}
                 {fileContent.length > 500 * 1024 && (
                   <div className="mb-3 rounded-md border border-status-warning/20 bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
                     {t('filesView.warning.largeFilePreviewLimited', { sizeKb: Math.round(fileContent.length / 1024) })}
@@ -4008,14 +4040,14 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
                   }
                 >
                   <SimpleMarkdownRenderer
-                    content={fileContent}
+                    content={isPlantUml ? fencePlantUmlSource(fileContent) : fileContent}
                     className="typography-markdown-body"
                     stripFrontmatter
                     enableFileReferences={false}
                   />
                 </ErrorBoundary>
               </div>
-              {!isFullscreen && (
+              {!isFullscreen && isMarkdown && (
                 <MarkdownPreviewSearch
                   containerRef={mdPreviewContainerRef}
                   open={mdPreviewFindOpen}
@@ -4374,7 +4406,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
                 </Button>
               ) : null}
             </div>
-          ) : isMarkdown && getMdViewMode() === 'preview' ? (
+          ) : ((isMarkdown && getMdViewMode() === 'preview') || (isPlantUml && getPlantumlViewMode() === 'preview')) ? (
             // The find bar is a sibling of the scroll container, never a child:
             // inside it, its own "1/3" and "No matches" text would be walked and
             // highlighted by the search it drives.
@@ -4385,7 +4417,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
               onMouseDown={focusMdPreviewContainer}
               ref={setFullscreenMarkdownScroller}
             >
-              {selectedFile ? (
+              {selectedFile && isMarkdown ? (
                 <FilePreviewCommentMenu
                   containerRef={mdFullscreenPreviewContainerRef}
                   filePath={selectedFile.path}
@@ -4408,20 +4440,22 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
                 }
               >
                 <SimpleMarkdownRenderer
-                  content={fileContent}
+                  content={isPlantUml ? fencePlantUmlSource(fileContent) : fileContent}
                   className="typography-markdown-body"
                   stripFrontmatter
                   enableFileReferences={false}
                 />
               </ErrorBoundary>
             </div>
-              <MarkdownPreviewSearch
-                containerRef={mdFullscreenPreviewContainerRef}
-                open={mdPreviewFindOpen}
-                onOpenChange={setMdPreviewFindOpen}
-                focusNonce={mdPreviewFindFocusNonce}
-                className="right-4 top-16"
-              />
+              {isMarkdown && (
+                <MarkdownPreviewSearch
+                  containerRef={mdFullscreenPreviewContainerRef}
+                  open={mdPreviewFindOpen}
+                  onOpenChange={setMdPreviewFindOpen}
+                  focusNonce={mdPreviewFindFocusNonce}
+                  className="right-4 top-16"
+                />
+              )}
             </div>
           ) : canUseShikiFileView && textViewMode === 'view' ? (
             renderShikiFileView(selectedFile, isLargeFile ? fileContent : draftContent, fullscreenViewVirtualizer, restoreFullscreenCodeScroll)

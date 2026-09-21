@@ -1,7 +1,7 @@
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import React from 'react';
 import morphdom from 'morphdom';
-import { renderMermaidASCII, renderMermaidSVG } from 'beautiful-mermaid';
+import { renderMermaidASCII, renderMermaidSVG, THEMES } from 'beautiful-mermaid';
 import type { Part } from '@opencode-ai/sdk/v2';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -55,6 +55,7 @@ import { streamPerfCount, streamPerfObserve } from '@/stores/utils/streamDebug';
 import { detachedMarkdownDomCache, type DetachedMarkdownDomKey } from './markdown/detachedMarkdownDomCache';
 import { TimelineRevealGateContext } from './timelineRevealGate';
 import { getRuntimeKey } from '@/lib/runtime-switch';
+import { createDeferredDiagrams, DIAGRAM_PENDING_SELECTOR, isNativeMermaid } from './markdown/deferredDiagrams';
 
 const useCurrentMermaidTheme = () => {
   const themeSystem = useOptionalThemeSystem();
@@ -91,7 +92,7 @@ const useLinkInteractions = ({
 const DEFAULT_MERMAID_CONTROLS: MermaidControlOptions = {
   download: true,
   copy: true,
-  showPanZoomControls: true,
+  showPanZoomControls: false,
 };
 const DEFAULT_MERMAID_FULLSCREEN_ENABLED = true;
 
@@ -593,13 +594,11 @@ const useMermaidInlineInteractions = ({
   containerRef,
   onShowPopup,
   enableFullscreen,
-  enablePanZoom,
   allowMermaidWheelEvents,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
   onShowPopup?: (content: ToolPopupContent) => void;
   enableFullscreen?: boolean;
-  enablePanZoom?: boolean;
   allowMermaidWheelEvents?: boolean;
 }) => {
   React.useEffect(() => {
@@ -656,12 +655,13 @@ const useMermaidInlineInteractions = ({
           url: `data:text/plain;charset=utf-8,${encodeURIComponent(source)}`,
           source,
           filename,
+          language: block.getAttribute('data-diagram-language') === 'plantuml' ? 'plantuml' : 'mermaid',
         },
       });
     };
 
     const handleInlineWheel = (event: WheelEvent) => {
-      if (allowMermaidWheelEvents || ((event.ctrlKey || event.metaKey) && enablePanZoom)) {
+      if (allowMermaidWheelEvents || event.ctrlKey || event.metaKey) {
         return;
       }
 
@@ -686,7 +686,7 @@ const useMermaidInlineInteractions = ({
       container.removeEventListener('click', handleMermaidClick);
       container.removeEventListener('wheel', handleInlineWheel, true);
     };
-  }, [allowMermaidWheelEvents, containerRef, enableFullscreen, enablePanZoom, onShowPopup]);
+  }, [allowMermaidWheelEvents, containerRef, enableFullscreen, onShowPopup]);
 };
 
 // ---------------------------------------------------------------------------
@@ -755,11 +755,11 @@ const cachedMermaidRender = (key: string, compute: () => MermaidRender): Mermaid
 const mermaidColorsFromTheme = (theme: Theme) => ({
   bg: theme.colors.surface.elevated,
   fg: theme.colors.surface.foreground,
-  line: theme.colors.interactive.border,
+  line: theme.metadata.variant === 'dark' ? theme.colors.surface.mutedForeground : theme.colors.interactive.border,
   accent: theme.colors.primary.base,
   muted: theme.colors.surface.mutedForeground,
   surface: theme.colors.surface.muted,
-  border: theme.colors.interactive.border,
+  border: theme.metadata.variant === 'dark' ? theme.colors.surface.mutedForeground : theme.colors.interactive.border,
   transparent: true,
   font: 'system-ui, sans-serif',
 });
@@ -780,6 +780,10 @@ const useDecorateContext = (
     downloadTable: t('markdownRenderer.table.actions.downloadTitle'),
     copyDiagram: t('markdownRenderer.mermaid.actions.copySourceTitle'),
     downloadDiagram: t('markdownRenderer.mermaid.actions.downloadSvgTitle'),
+    downloadPng: t('markdownRenderer.diagram.downloadPng'),
+    diagramError: t('markdownRenderer.diagram.exportFailed'),
+    downloadSource: t('markdownRenderer.diagram.downloadSource'),
+    renderFailed: t('markdownRenderer.diagram.renderFailed'),
     zoomInDiagram: t('markdownRenderer.mermaid.actions.zoomInTitle'),
     zoomOutDiagram: t('markdownRenderer.mermaid.actions.zoomOutTitle'),
     resetDiagramView: t('markdownRenderer.mermaid.actions.resetViewTitle'),
@@ -788,17 +792,22 @@ const useDecorateContext = (
   }), [t]);
 
   const codeBlockLineWrap = useUIStore((state) => state.codeBlockLineWrap);
+  const mode = useUIStore((state) => state.mermaidRenderingMode);
+  const mermaidStyle = useUIStore((state) => state.mermaidStyle);
   const setCodeBlockLineWrap = useUIStore((state) => state.setCodeBlockLineWrap);
   const toggleCodeBlockLineWrap = React.useCallback(() => {
     setCodeBlockLineWrap(!useUIStore.getState().codeBlockLineWrap);
   }, [setCodeBlockLineWrap]);
 
   return React.useMemo<DecorateContext>(() => {
-    const colors = mermaidColorsFromTheme(currentTheme);
-    const mode = useUIStore.getState().mermaidRenderingMode;
+    const colors = mermaidStyle && Object.hasOwn(THEMES, mermaidStyle)
+      ? THEMES[mermaidStyle]
+      : mermaidColorsFromTheme(currentTheme);
     const themeId = currentTheme.metadata?.id ?? 'theme';
+    const deferred = createDeferredDiagrams(mode === 'ascii' ? 'openchamber' : mermaidStyle, currentTheme.metadata.variant === 'dark', currentTheme.colors.surface.elevated);
     const renderMermaid = (source: string): MermaidRender =>
-      cachedMermaidRender(`${themeId}:${mode}:${source}`, () => {
+      mode !== 'ascii' && isNativeMermaid(mermaidStyle) ? deferred.read(source, false)
+        : cachedMermaidRender(`${themeId}:${mode}:${mermaidStyle}:${source}`, () => {
         try {
           if (mode === 'ascii') return { ascii: renderMermaidASCII(source) };
           return { svg: renderMermaidSVG(source, colors) };
@@ -806,8 +815,14 @@ const useDecorateContext = (
           return {};
         }
       });
-    return { labels, mermaidControls, codeBlockLineWrap, deferCodeLineNumberSync, onToggleCodeBlockLineWrap: toggleCodeBlockLineWrap, renderMermaid, onPreviewLoopback };
-  }, [currentTheme, labels, mermaidControls, codeBlockLineWrap, deferCodeLineNumberSync, toggleCodeBlockLineWrap, onPreviewLoopback]);
+    return {
+      labels, mermaidControls, codeBlockLineWrap, deferCodeLineNumberSync,
+      onToggleCodeBlockLineWrap: toggleCodeBlockLineWrap, renderMermaid, onPreviewLoopback,
+      renderPlantUml: (source) => deferred.read(source, true),
+      prepareDiagrams: deferred.prepare,
+      cancelDiagrams: deferred.cancel,
+    };
+  }, [currentTheme, labels, mermaidControls, mode, mermaidStyle, codeBlockLineWrap, deferCodeLineNumberSync, toggleCodeBlockLineWrap, onPreviewLoopback]);
 };
 
 // Runs the async render pipeline into the container and keeps a stable
@@ -816,6 +831,7 @@ const useMorphdomMarkdown = ({
   containerRef,
   text,
   streaming,
+  diagramStreaming = streaming,
   imageMode = 'inline',
   syntaxVars,
   ctx,
@@ -825,6 +841,7 @@ const useMorphdomMarkdown = ({
   containerRef: React.RefObject<HTMLDivElement | null>;
   text: string;
   streaming: boolean;
+  diagramStreaming?: boolean;
   imageMode?: MarkdownImageMode;
   syntaxVars: Record<string, string>;
   ctx: DecorateContext;
@@ -894,7 +911,7 @@ const useMorphdomMarkdown = ({
   React.useLayoutEffect(() => {
     renderRevisionRef.current += 1;
     mountedDomRef.current = null;
-  }, [ctx, imageMode, streaming, text]);
+  }, [ctx, diagramStreaming, imageMode, streaming, text]);
 
   React.useLayoutEffect(() => {
     if (!domCacheKey) return;
@@ -1010,7 +1027,7 @@ const useMorphdomMarkdown = ({
 
     if (!streaming) {
       const cachedBlocks = getCachedMarkdownBlocks(text, imageMode);
-      if (cachedBlocks && domMatchesRenderedBlocks(target, cachedBlocks, decorationId)) {
+      if (cachedBlocks && !target.querySelector(DIAGRAM_PENDING_SELECTOR) && domMatchesRenderedBlocks(target, cachedBlocks, decorationId)) {
         mountedDomRef.current = domCacheKey
           ? { key: domCacheKey, copiedLabel: ctx.labels.copied }
           : null;
@@ -1021,8 +1038,18 @@ const useMorphdomMarkdown = ({
       }
     }
 
-    void renderMarkdownBlocks(text, streaming, imageMode).then((blocks) => {
+    void renderMarkdownBlocks(text, streaming, imageMode).then(async (blocks) => {
       if (!active || renderRevisionRef.current !== renderRevision) return;
+      // Stateful diagram engines run only after the response settles. A growing
+      // code fence stays readable without queuing layouts on each token.
+      if (!diagramStreaming) {
+        const preparation = ctx.prepareDiagrams(blocks);
+        if (preparation) {
+          releaseRevealHold();
+          await preparation;
+        }
+        if (!active || renderRevisionRef.current !== renderRevision) return;
+      }
       const existing = Array.from(target.children) as HTMLElement[];
       // Capture before block reconciliation: streaming completion changes the
       // wrapper layout, and theme changes can replace entire decorated blocks.
@@ -1046,7 +1073,7 @@ const useMorphdomMarkdown = ({
           isNewBlock = true;
         }
         if (el.getAttribute('data-md-id') === block.id) {
-          if (el.getAttribute(MARKDOWN_DECORATION_ID_ATTR) !== decorationId) {
+          if (el.getAttribute(MARKDOWN_DECORATION_ID_ATTR) !== decorationId || (!diagramStreaming && el.querySelector(DIAGRAM_PENDING_SELECTOR))) {
             const hasMermaidBlock = shouldRefreshMermaidViewers(el);
             if (hasMermaidBlock) {
               mermaidViewerRef.current?.cleanup();
@@ -1137,8 +1164,9 @@ const useMorphdomMarkdown = ({
 
     return () => {
       active = false;
+      ctx.cancelDiagrams();
     };
-  }, [containerRef, ctx, domCacheKey, imageMode, refreshMermaidViewers, releaseRevealHold, scheduleTableLayout, streaming, text]);
+  }, [containerRef, ctx, diagramStreaming, domCacheKey, imageMode, refreshMermaidViewers, releaseRevealHold, scheduleTableLayout, streaming, text]);
 
   React.useEffect(() => {
     const container = containerRef.current;
@@ -1206,7 +1234,6 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
     containerRef,
     onShowPopup,
     enableFullscreen: DEFAULT_MERMAID_FULLSCREEN_ENABLED,
-    enablePanZoom: DEFAULT_MERMAID_CONTROLS.showPanZoomControls,
   });
   useFileReferenceInteractions({
     containerRef,
@@ -1253,6 +1280,7 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
     containerRef,
     text: content,
     streaming: live,
+    diagramStreaming: isStreaming,
     imageMode,
     syntaxVars,
     ctx,
@@ -1327,7 +1355,6 @@ const SimpleMarkdownRendererImpl: React.FC<{
     containerRef,
     onShowPopup,
     enableFullscreen: DEFAULT_MERMAID_FULLSCREEN_ENABLED,
-    enablePanZoom: mermaidControls.showPanZoomControls,
     allowMermaidWheelEvents,
   });
   useFileReferenceInteractions({
@@ -1352,7 +1379,7 @@ const SimpleMarkdownRendererImpl: React.FC<{
   });
 
   return (
-    <div className={cn('break-words w-full min-w-0', className)} ref={containerRef}>
+    <div className={cn('break-words w-full min-w-0', className)} ref={containerRef} data-diagram-wheel-zoom={allowMermaidWheelEvents || undefined}>
       <div className={markdownContentClassName(variant)} data-markdown-content />
     </div>
   );

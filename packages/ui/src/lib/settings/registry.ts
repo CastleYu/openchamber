@@ -26,6 +26,7 @@ import { getFilesViewShowGitignored, setFilesViewShowGitignored } from '@/lib/fi
 import { isMonoFontOption, isUiFontOption, type MonoFontOption, type UiFontOption } from '@/lib/fontOptions';
 import { isInputHistoryLimit, isInputHistoryScope, type InputHistoryScope } from '@/lib/inputHistoryScope';
 import { normalizeMobileKeyboardMode } from '@/lib/mobileKeyboardMode';
+import { MERMAID_STYLES, type MermaidStyle } from '@/lib/mermaidStyle';
 import { isTerminalShell } from '@/lib/terminalShell';
 import { sanitizeWorkStatusHiddenSections } from '@/components/chat/work-status/sections';
 import { parseOccupancyPolicy } from '@/lib/performance/occupancyPolicy';
@@ -189,6 +190,7 @@ const parseDraftStarters: SettingsParser<DraftStarterRef[]> = mapParser(fromSche
 const parseWorkStatusHiddenSections: SettingsParser<string[]> = mapParser(fromSchema(z.array(z.unknown())), (value) => sanitizeWorkStatusHiddenSections(value));
 const parseLargeTextPasteBehavior: SettingsParser<LargeTextPasteBehavior> = parseOneOf(['ask', 'attach', 'inline']);
 const parseFileEditorKeymap: SettingsParser<FileEditorKeymap> = parseOneOf(['default', 'vim']);
+const parseMermaidStyle: SettingsParser<MermaidStyle> = parseOneOf(MERMAID_STYLES);
 
 /**
  * Removing a built-in starter must stay a durable choice, so the list is only
@@ -326,6 +328,7 @@ export const SETTINGS_REGISTRY = {
   chatRenderMode: field({ scope: 'profile', parse: parseOneOf(['sorted', 'live']), ui: uiStore('chatRenderMode', (v) => useUIStore.getState().setChatRenderMode(v)) }),
   activityRenderMode: field({ scope: 'profile', parse: parseOneOf(['collapsed', 'summary']), ui: uiStore('activityRenderMode', (v) => useUIStore.getState().setActivityRenderMode(v)) }),
   mermaidRenderingMode: field({ scope: 'profile', parse: parseOneOf(['svg', 'ascii']), ui: uiStore('mermaidRenderingMode', (v) => useUIStore.getState().setMermaidRenderingMode(v)) }),
+  mermaidStyle: field({ scope: 'profile', parse: parseMermaidStyle, ui: uiStore('mermaidStyle', (v) => useUIStore.getState().setMermaidStyle(v)) }),
   userMessageRenderingMode: field({ scope: 'profile', parse: parseOneOf(['markdown', 'plain']), ui: uiStore('userMessageRenderingMode', (v) => useUIStore.getState().setUserMessageRenderingMode(v)) }),
   collapsibleUserMessages: field({ scope: 'profile', parse: parseBoolean, ui: uiStore('collapsibleUserMessages', (v) => useUIStore.getState().setCollapsibleUserMessages(v)) }),
   stickyUserHeader: field({ scope: 'profile', perSurface: true, parse: parseBoolean, ui: uiStore('stickyUserHeader', (v) => useUIStore.getState().setStickyUserHeader(v)) }),

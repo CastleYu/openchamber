@@ -226,6 +226,7 @@ mock.module('react', () => ({ default: fakeReact }));
 mock.module('react/jsx-runtime', () => ({ jsx: fakeJsx, jsxs: fakeJsx, Fragment: 'fragment' }));
 mock.module('react/jsx-dev-runtime', () => ({ jsxDEV: fakeJsx, Fragment: 'fragment' }));
 mock.module('beautiful-mermaid', () => ({
+    THEMES: {},
     renderMermaidASCII: () => '',
     renderMermaidSVG: (_source: string, colors: { bg: string }) => colors.bg,
 }));

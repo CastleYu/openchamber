@@ -205,6 +205,12 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['messages', 'conversation', 'rendering'],
   },
   {
+    id: 'chat.mermaid-style',
+    page: 'chat',
+    titleKey: 'settings.openchamber.visual.field.mermaidStyle',
+    keywords: ['mermaid', 'diagram', 'theme', 'style', 'graph'],
+  },
+  {
     id: 'chat.message-transport',
     page: 'general',
     titleKey: 'settings.openchamber.visual.section.messageStreamTransport',

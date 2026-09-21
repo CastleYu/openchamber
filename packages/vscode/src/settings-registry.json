@@ -245,6 +245,9 @@
     "mermaidRenderingMode": {
       "scope": "profile"
     },
+    "mermaidStyle": {
+      "scope": "profile"
+    },
     "userMessageRenderingMode": {
       "scope": "profile"
     },

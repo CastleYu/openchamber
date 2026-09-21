@@ -2,9 +2,9 @@
 title: File previews and project controls
 ---
 
-Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-14. This is a retrospective summary, not a claim that every historical item is new in the next release.
+Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-21. This is a retrospective summary, not a claim that every historical item is new in the next release.
 
-Official entries identify the community release that introduced the behavior. Personal entries describe the cumulative fork changes through 1.23.0-DIJIANG.3.3. The current personal package includes the official line through 1.23.0; every 1.23.1 entry and the v2 preview are marked not merged. Historical behavior can be superseded by a later entry.
+Official entries identify the community release that introduced the behavior. Personal entries describe the cumulative fork changes through 1.23.0-DIJIANG.3.5. The current personal package includes the official line through 1.23.0; every 1.23.1 entry and the v2 preview are marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.23.0-DIJIANG.3.5.
 
 Two differences matter when reading this history. Official 1.23.1 removed automatic MCP reconnection, while this personal build retains managed reconnection with idle-release safeguards. Official desktop update improvements describe community builds; the personal build keeps notification-only updates. Portable refers to the executable, while settings and session data still use the established user directories.
 
@@ -18,6 +18,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
+- Personal / Chat and Files: Render PlantUML diagrams in chat and export their source as `.puml`; preview `.puml`, `.plantuml`, and `.pu` files. Choose from nine Mermaid styles, including native and hand-drawn rendering. Both diagram types support SVG and PNG export.
 - Personal / Settings: Update history preserves the complete official and personal summary offline, with source and application filters. From DIJIANG.3.3, Simplified Chinese translates every entry and language changes preserve the filters (thanks to @CastleYu).
 - Official 1.23.0 / **Git:** Stage, unstage, or discard individual blocks of changes with controls beside each block in the web and desktop Changes view (thanks to @LABCAT).
 - **Personal / Files:** Preview video, audio, images and SVGs in Files, with playback controls and an external-open fallback when a format cannot be decoded (thanks to @CastleYu).
@@ -66,6 +67,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Improvements
 
+- Personal / Diagrams: Click a diagram to open a large preview, then use wheel zoom, left-button dragging and a right-click menu for reset, copy and export. Default Mermaid lines have stronger contrast in dark mode. Native Mermaid and PlantUML wait until streaming ends, including when animations are disabled. Unchanged directory polls no longer publish new file-list state.
 - Official 1.22.0 / Chat: a session you open from the sidebar lands at the latest message and stays there. Switching sessions no longer jumps, renders half a conversation, crossfades, or shifts the tab title.
 - Official 1.22.0 / Voice: local text-to-speech and macOS say pick a voice that matches the language of the reply. More local models download the first time you need them, and the voice picker lists voices from every installed model.
 - Official 1.22.0 / Settings: each OpenChamber instance remembers its own theme, so windows connected to different instances keep the look you gave them (thanks to @kydorn).
@@ -130,6 +132,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Fixes
 
+- Personal / Chat: DIJIANG.3.4 restored the 1.22 chat typography, spacing, tables and reasoning appearance while retaining personal file and image features.
 - Official 1.22.0 / Chat: command, skill, and file autocomplete in a chat without a project no longer uses the project you had selected before.
 - Official 1.22.0 / Chat: reverting to a message or forking from one brings its attached context back to the composer. Review comments, chat and file quotes, terminal selections, and browser annotations are kept.
 - Official 1.22.0 / Chat: a stopped or unanswered turn now says what happened. The status report lists recent session, send, and managed OpenCode errors, and where to find the logs.
@@ -239,7 +242,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.1 (not merged) / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
 - Official 1.23.1 (not merged) / Desktop: Updated Electron to 43.7.0.
 - Personal / Distribution: Windows x64 releases use a versioned portable executable; previous executables and existing settings, sessions and OpenCode data are retained during replacement (thanks to @CastleYu).
-- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.3 (thanks to @CastleYu).
+- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.5 (thanks to @CastleYu).
 - Personal / Updates: Upstream releases produce a notice and link. App, web and CLI update paths cannot automatically download or replace the personal build; OpenCode's own updater is separate (thanks to @CastleYu).
 - Personal / Windows packaging: Local and CI builds use the same portable pipeline and record source/build metadata; this release provides an EXE, build information and SHA-256 checksums (thanks to @CastleYu).
 - Personal / Diagnostics: Optional DEBUG builds expose bounded process diagnostics. Normal release builds keep that endpoint disabled, and diagnostic events omit commands and credentials (thanks to @CastleYu).
@@ -263,6 +266,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
+- Personal / Diagrams: Chat supports PlantUML rendering and source export, nine Mermaid styles, and SVG/PNG export actions.
 - Personal / Settings: Update history is available in the extension, including a separately classified VS Code history. From DIJIANG.3.3, its complete text also follows the Simplified Chinese interface (thanks to @CastleYu).
 - Official 1.22.1 / Settings: Fixel Text is available as an interface font.
 - Official 1.22.1 / Usage: exe.dev usage windows are tracked.
@@ -283,6 +287,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Improvements
 
+- Personal / Diagrams: Both diagram types open in a large preview with wheel zoom, left-button dragging and a right-click menu. Default Mermaid lines are clearer in dark mode.
 - Official 1.22.0 / Chat: a session you open from the sidebar lands at its end and stays there. Switching sessions no longer jumps or renders half a conversation.
 - Official 1.22.1 / OpenCode Go: the usage request the extension sends now carries the `x-opencode-session` header OpenCode Go requires from 6 September. Chat traffic already had it.
 - Official 1.22.1 / Chat: a queued message keeps its attached context, file mentions, and skill, and editing it brings them back to the composer.
@@ -311,6 +316,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Fixes
 
+- Personal / Diagrams: Disabling stream animations no longer causes native Mermaid and PlantUML to run repeatedly while a response is arriving.
 - Official 1.22.0 / Chat: a turn that OpenCode stopped no longer ends with nothing on screen. What OpenCode reported shows under the last message, and a message an idle session left unanswered is named as such.
 - Official 1.22.0 / Chat: the status report (Ctrl/Cmd+Shift+L) lists the last session errors and rejected sends.
 - Official 1.22.1 / Worktrees: removing a worktree no longer freezes the interface. It runs in the background with a progress toast (thanks to @yulia-ivashko).

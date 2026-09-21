@@ -518,7 +518,7 @@ const highlightCodeBlocks = async (html: string): Promise<string> => {
       const requested = (rawLang || 'text').toLowerCase();
       // Leave mermaid fences untouched so the decorate pass can render them as
       // diagrams (highlighting would strip the `language-mermaid` class).
-      if (requested === 'mermaid') return null;
+      if (requested === 'mermaid' || requested === 'plantuml' || requested === 'puml') return null;
 
       const code = unescapeHtml(escapedCode ?? '');
 

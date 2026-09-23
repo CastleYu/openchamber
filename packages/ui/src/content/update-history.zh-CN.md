@@ -2,13 +2,13 @@
 title: 自 1.22.0 以来的更新历史
 ---
 
-完整汇总自 1.22.0 起的官方和个人版更新，包含 1.22.0 本身。核对日期为 2026-09-22。这是历史回顾，其中的历史条目不代表全部都是下一版新增功能。
+完整汇总自 1.22.0 起的官方和个人版更新，包含 1.22.0 本身。核对日期为 2026-09-24。这是历史回顾，其中的历史条目不代表全部都是下一版新增功能。
 
-官方条目标明引入相关行为的社区版本或 main 分支后续改动，个人版条目涵盖累计个人改动。本次整合包含官方 1.24.2 及 main 分支截至 `83ec4fbde` 的改动，独立的 v2 预览仍标为尚未合入。早期行为可能已被后续条目调整。本汇总截至 1.24.2-DIJIANG.3.7。
+官方条目标明引入相关行为的社区版本或 main 分支后续改动，个人版条目涵盖累计个人改动。本次整合包含官方 1.24.2 及 main 分支截至 `0af1eb00c` 的改动，包括 OpenCode 2.x 迁移。已发布的 v2 预览仍是独立构建，main 分支另行完成了 2.x 迁移。早期行为可能已被后续条目调整。本汇总截至 1.24.2-DIJIANG.3.7。
 
 阅读时请区分两点。官方 1.23.1 移除了 MCP 自动重连，当前个人版保留带空闲释放保护的托管重连。官方桌面更新器改进描述的是社区构建，个人版仅提示更新。“便携”指可执行文件，设置和会话数据仍使用既有用户目录。
 
-官方来源：[1.22.0](https://github.com/openchamber/openchamber/releases/tag/v1.22.0)、[1.22.1](https://github.com/openchamber/openchamber/releases/tag/v1.22.1)、[1.22.2](https://github.com/openchamber/openchamber/releases/tag/v1.22.2)、[1.23.0](https://github.com/openchamber/openchamber/releases/tag/v1.23.0)、[1.23.1](https://github.com/openchamber/openchamber/releases/tag/v1.23.1) 和 [v2 预览](https://github.com/openchamber/openchamber/releases/tag/v2-preview)。预览条目仅记录已发布快照，不描述未发布的分支工作。
+官方来源：[1.22.0](https://github.com/openchamber/openchamber/releases/tag/v1.22.0)、[1.22.1](https://github.com/openchamber/openchamber/releases/tag/v1.22.1)、[1.22.2](https://github.com/openchamber/openchamber/releases/tag/v1.22.2)、[1.23.0](https://github.com/openchamber/openchamber/releases/tag/v1.23.0)、[1.23.1](https://github.com/openchamber/openchamber/releases/tag/v1.23.1)、[1.24.0 至 1.24.2](https://github.com/openchamber/openchamber/releases)、[上次整合以来的 main](https://github.com/openchamber/openchamber/compare/83ec4fbde...0af1eb00c) 和 [v2 预览](https://github.com/openchamber/openchamber/releases/tag/v2-preview)。预览条目仅记录已发布快照，不描述未发布的分支工作。
 
 个人版来源：[已发布的 3.1 构建](https://github.com/CastleYu/openchamber/releases/tag/v1.23.0-DIJIANG.3.1)、[相对官方 1.23.0 的累计差异](https://github.com/CastleYu/openchamber/compare/d073858d...9ab28d4a) 和[文件打开行为](../../../../docs/maintenance/FILE-OPENING-3.0.md)。审计覆盖 1.22.0 标签之后至个人版 3.1 的 301 个提交，其中官方 229 个、个人版 72 个，另核对官方 1.23.1 的 46 个提交。同时核对了 69 个 PR 的说明，以及五个稳定版发布来源中的全部应用和 VS Code 条目。
 
@@ -18,6 +18,12 @@ title: 自 1.22.0 以来的更新历史
 
 ### 新增
 
+- 官方 1.24.2 后的 main / OpenCode：共享界面迁移至 OpenCode 2.x，采用新版会话与事件接口、托管 OpenCode 2.0.15，并可恢复旧版 CLI 创建的会话。
+- 官方 1.24.2 后的 main / 文件：以成品视图预览音频、视频、CSV 表格、字体和图表；可从文件夹菜单或文件树工具栏上传文件，代理也可让应用打开生成的文件。
+- 官方 1.24.2 后的 main / 扩展：已安装扩展可提供代理浏览器，并显示可接管、再交还代理的实时画面。
+- 官方 1.24.2 后的 main / 聊天：可从代理回答分叉会话、在空的侧边栏分组创建会话，并通过 Console 登录 OpenCode Go。
+- 官方 1.24.2 后的 main / 主题：新增内置 Cursor 与 Osaka Jade Refined 配色。
+- 官方 1.24.2 后的 main / 隔离空间：可将项目代码带入隔离空间，同时保留其出口管控边界。
 - 官方 1.24.2 后的 main / 侧边栏：在分组和时间线会话视图之间切换，并可选显示会话活动旋转图标。
 - 官方 1.24.2 后的 main / 权限：代理申请编辑文件权限时，可以预览文件补丁。
 - 个人版 / 测试：DIJIANG 回归测试文档列明特性契约和运行器，覆盖 Windows 进程、文件、更新策略及双语历史检查。
@@ -77,6 +83,9 @@ title: 自 1.22.0 以来的更新历史
 
 ### 改进
 
+- 官方 1.24.2 后的 main / 会话：侧边栏打开和滚动大型列表时占用更少内存，子智能体的实时活动仍归属于父轮次。
+- 官方 1.24.2 后的 main / 桌面端：托管 OpenCode 与 CLI 升级可从旧安装恢复，冷启动后更快显示可用窗口。
+- 官方 1.24.2 后的 main / 移动端：选中文本的评论改用输入框和引用预览；评论被拒绝后保留草稿。
 - 官方 1.24.2 后的 main / 启动：桌面端在主进程继续加载时显示首个窗口，服务器集成按需加载，全局会话列表先显示第一页再加载后续页。
 - 官方 1.24.2 后的 main / 内存：按完整会话历史回收空闲缓存，避免固定会话保留所有对话内容块。
 - 官方 1.24.2 后的 main / 文件：已认证用户显式读取工作区外文件时无需单独授权令牌，仍遵守系统权限和写入边界。
@@ -151,6 +160,12 @@ title: 自 1.22.0 以来的更新历史
 
 ### 修复
 
+- 官方 1.24.2 后的 main / 会话：归档和恢复保留完整会话记录；侧边栏可从启动失败恢复，并按最近轮次排序。
+- 官方 1.24.2 后的 main / 聊天：后台子智能体结束前父轮次保持进行中，过期快照不会抹掉实时子智能体链接，关闭阻碍后明确的“引导”操作仍保持原意。
+- 官方 1.24.2 后的 main / 文件：Markdown 预览中的相对图片和链接可用，标题链接可滚动定位，浏览器和远程会话能加载文件夹外的预览文件。
+- 官方 1.24.2 后的 main / 服务端：平稳关闭会结束已升级的套接字和扩展服务，也能处理与关机同时发生的服务启动。
+- 官方 1.24.2 后的 main / 移动端：设置帮助提示可点击，项目选择器可访问长列表中的全部项目，会话抽屉关闭时仍保持行顺序。
+- 官方 1.24.2 后的 main / Markdown：流式解析失败后，不再每次渲染都重复解析同一段内容。
 - 官方 1.24.2 后的 main / 会话：恢复后的工作树会话保持可见，操作使用会话自身目录并提供更明确的失败说明。
 - 官方 1.24.2 后的 main / 桌面：启动恢复显示 OpenCode 失败诊断，SSH 确认操作保留输入焦点，配对导入准确报告失败。
 - 个人版 / 进程：修复 Windows 进程注册表查询，在托管进程退出时等待记录清理。CLI 恢复先核实 Windows PID 文件对应的进程身份，再执行停止。

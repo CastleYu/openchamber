@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { Readable, Writable } from 'node:stream';
 import path from 'path';
 import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import * as nativeFs from 'node:fs/promises';
@@ -652,9 +653,8 @@ describe('fs read', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.getHeader('referrer-policy')).toBe('no-referrer');
-    expect(fsPromises.readFile).not.toHaveBeenCalled();
-    expect(res.body.file).toBe('/outside/image.png');
-    expect(res.body.options.acceptRanges).toBe(true);
+    expect(fsPromises.readFile).toHaveBeenCalledWith('/outside/image.png');
+    expect(res.body).toEqual(Buffer.from('secret'));
   });
 
   it('stats outside files without a grant', async () => {
@@ -1037,6 +1037,88 @@ describe('fs exec git-read cache', () => {
     await callExec(handler, { commands: [command], cwd: '/repo/worktree-499' }); // cached  -> no spawn
 
     expect(calls.length).toBe(afterFill + 2);
+  });
+});
+
+describe('fs raw byte ranges', () => {
+  const createStreamingResponse = () => {
+    const chunks = [];
+    const headers = new Map();
+    let statusCode = 200;
+    const res = new Writable({
+      write(chunk, _encoding, callback) {
+        chunks.push(Buffer.from(chunk));
+        callback();
+      },
+    });
+    Object.assign(res, {
+      status(code) { statusCode = code; return res; },
+      json(payload) { chunks.push(Buffer.from(JSON.stringify(payload))); return res; },
+      type() { return res; },
+      send(payload) { chunks.push(Buffer.from(payload)); return res; },
+      setHeader(name, value) { headers.set(name.toLowerCase(), value); return res; },
+      getHeader(name) { return headers.get(name.toLowerCase()); },
+    });
+    return {
+      res,
+      finished: new Promise((resolve) => res.on('finish', resolve)),
+      get statusCode() { return statusCode; },
+      get body() { return Buffer.concat(chunks).toString('utf8'); },
+    };
+  };
+
+  const registerRawWithFile = (bytes) => {
+    const open = vi.fn(async () => ({
+      createReadStream: ({ start, end }) => Readable.from([bytes.subarray(start, end + 1)]),
+    }));
+    const readFile = vi.fn(async () => bytes);
+    const handler = registerRaw({
+      stat: async () => ({ isFile: () => true, size: bytes.length }),
+      open,
+      readFile,
+    });
+    return { handler, open, readFile };
+  };
+
+  it('answers a bytes span with 206, the span headers, and only those bytes', async () => {
+    const { handler, open, readFile } = registerRawWithFile(Buffer.from('0123456789'));
+    const response = createStreamingResponse();
+
+    await handler({ query: { path: '/repo/clip.mp4' }, headers: { range: 'bytes=3-' } }, response.res);
+    await response.finished;
+
+    expect(response.statusCode).toBe(206);
+    expect(response.getHeader?.('content-range') ?? response.res.getHeader('content-range')).toBe('bytes 3-9/10');
+    expect(response.res.getHeader('content-length')).toBe('7');
+    expect(response.res.getHeader('accept-ranges')).toBe('bytes');
+    expect(response.body).toBe('3456789');
+    expect(open).toHaveBeenCalledWith('/repo/clip.mp4', 'r');
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('serves the whole file, advertising ranges, when no span is asked for', async () => {
+    const { handler, open } = registerRawWithFile(Buffer.from('0123456789'));
+    const res = createMockResponse();
+
+    await handler({ query: { path: '/repo/clip.mp4' }, headers: {} }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.getHeader('accept-ranges')).toBe('bytes');
+    expect(res.body.toString('utf8')).toBe('0123456789');
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('rejects a span past the end with 416 and the file size', async () => {
+    const { handler, open } = registerRawWithFile(Buffer.from('0123456789'));
+    const res = createMockResponse();
+    res.end = vi.fn(() => res);
+
+    await handler({ query: { path: '/repo/clip.mp4' }, headers: { range: 'bytes=10-' } }, res);
+
+    expect(res.statusCode).toBe(416);
+    expect(res.getHeader('content-range')).toBe('bytes */10');
+    expect(res.end).toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
   });
 });
 
@@ -1475,6 +1557,8 @@ describe('fs stat directory error handling', () => {
       await mkdir(path.join(directory, 'fs'));
       await copyFile(new URL('./routes.js', import.meta.url), path.join(directory, 'fs/routes.mjs'));
       await copyFile(new URL('./zip-directory.js', import.meta.url), path.join(directory, 'fs/zip-directory.js'));
+      await copyFile(new URL('./byte-range.js', import.meta.url), path.join(directory, 'fs/byte-range.js'));
+      await copyFile(new URL('./byte-range.js', import.meta.url), path.join(directory, 'fs/byte-range.js'));
       await copyFile(new URL('../path-realpath-cache.js', import.meta.url), path.join(directory, 'path-realpath-cache.js'));
       expect(() => execFileSync('node', [
         '--input-type=module',

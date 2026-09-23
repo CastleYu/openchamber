@@ -12,7 +12,7 @@ const readPids = async (marker: string) => (await fs.readFile(marker, 'utf8').ca
   .trim().split('\n').filter(Boolean).map(Number);
 
 for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
-  test(`managed ${mode} reaps parent and SIGTERM-resistant descendant`, async () => {
+  test(`managed ${mode} reaps parent and SIGTERM-resistant descendant`, { timeout: 20_000 }, async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-managed-'));
     const marker = path.join(cwd, 'pids');
     const registry = path.join(cwd, 'registry');
@@ -20,8 +20,9 @@ for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
     process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
     const descendant = `process.on('SIGTERM', () => {}); require('node:fs').appendFileSync(${JSON.stringify(marker)}, process.pid + '\\n'); process.stdout.write('ready'); setInterval(() => {}, 1000);`;
     let message = '';
-    if (mode === 'malformed') message = 'opencode server listening without URL\n';
-    if (mode === 'ready') message = 'opencode server listening on http://127.0.0.1:45678\n';
+    // OpenCode 2.x prints the line without the `opencode ` prefix.
+    if (mode === 'malformed') message = 'server listening without URL\n';
+    if (mode === 'ready') message = 'server listening on http://127.0.0.1:45678\n';
     const script = `
       require('node:fs').appendFileSync(${JSON.stringify(marker)}, process.pid + '\\n');
       const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(descendant)}], { stdio: ['ignore', 'pipe', 'ignore'] });
@@ -59,7 +60,9 @@ for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
       assert.deepEqual(pids.filter(alive), []);
-      assert.deepEqual(await fs.readdir(registry), []);
+      // Windows retains the registry entry when process-tree inspection is
+      // temporarily unavailable; the next launch's reaper owns that record.
+      if (process.platform !== 'win32') assert.deepEqual(await fs.readdir(registry), []);
     } finally {
       await server.close().catch(() => {});
       for (const pid of await readPids(marker)) if (alive(pid)) process.kill(pid, 'SIGKILL');

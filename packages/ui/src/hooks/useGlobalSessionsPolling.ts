@@ -1,12 +1,14 @@
 import React from 'react';
 import { isDesktopShell } from '@/lib/desktop';
-import { ensureGlobalSessionsLoaded, refreshGlobalSessionsForDirectories } from '@/stores/useGlobalSessionsStore';
-import { useKnownSessionDirectoriesStore } from '@/stores/useKnownSessionDirectoriesStore';
-import { getAllSyncSessions, subscribeToInitialScopedDirectoryLoad } from '@/sync/sync-refs';
+import { ensureGlobalSessionsLoaded } from '@/stores/useGlobalSessionsStore';
+import { getAllSyncSessions } from '@/sync/sync-refs';
 import { seedGlobalSessionStatusFromHost } from '@/sync/host-session-status-seed';
+import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
+import { refreshGlobalSessions, useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 
 /** Minimum spacing between two unscoped global refreshes, however many signals arrive. */
 export const GLOBAL_SESSIONS_REFRESH_COOLDOWN_MS = 30_000;
+export const GLOBAL_SESSIONS_REFRESH_INTERVAL_MS = 45_000;
 
 /**
  * Coarse backstop for a window that stays visible and focused for hours, so a
@@ -159,7 +161,39 @@ export const startGlobalSessionsPolling = (
 export const useGlobalSessionsPolling = (enabled: boolean): void => {
   React.useEffect(() => {
     if (!enabled) return;
-
+    let active = true;
+    let timeout: number | undefined;
+    let retry = 0;
+    let runtimeKey = getRuntimeKey();
+    const run = async (initial: boolean) => {
+      if (!active) return;
+      const runKey = runtimeKey;
+      try {
+        if (initial) {
+          if (shouldLoadInitialGlobalSnapshot()) await ensureGlobalSessionsLoaded(getAllSyncSessions());
+        } else {
+          await refreshGlobalSessions();
+        }
+      } catch { /* store records the failure and keeps cached data */ }
+      if (!active || getRuntimeKey() !== runKey) return;
+      const ready = useGlobalSessionsStore.getState().status === 'ready';
+      const delay = ready ? GLOBAL_SESSIONS_REFRESH_INTERVAL_MS : [1_000, 2_000, 4_000][retry++] ?? GLOBAL_SESSIONS_REFRESH_INTERVAL_MS;
+      timeout = window.setTimeout(() => { timeout = undefined; void run(false); }, delay);
+      void seedGlobalSessionStatusFromHost();
+    };
+    void run(true);
+    const unsubscribeRuntime = subscribeRuntimeEndpointChanged(() => {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      retry = 0;
+      runtimeKey = getRuntimeKey();
+      void run(true);
+    });
+    return () => {
+      active = false;
+      unsubscribeRuntime();
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    };
+    /*
     return startGlobalSessionsPolling({
       initialLoad: shouldLoadInitialGlobalSnapshot()
         ? () => { void ensureGlobalSessionsLoaded(getAllSyncSessions()).finally(() => seedGlobalSessionStatusFromHost()); }
@@ -175,6 +209,6 @@ export const useGlobalSessionsPolling = (enabled: boolean): void => {
       scheduleInterval: window.setInterval.bind(window),
       clearScheduledInterval: window.clearInterval.bind(window),
       subscribeToRecoverySignals: subscribeToBrowserRecoverySignals,
-    });
+    });*/
   }, [enabled]);
 };

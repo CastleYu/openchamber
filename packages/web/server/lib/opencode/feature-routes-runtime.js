@@ -35,8 +35,8 @@ import { getNpmInfo, clearCache as clearNpmCache } from './npm-registry.js';
 import { parseNpmSpec, parsePathSpec, isExactSemver } from './plugin-spec.js';
 import { registerOpenCodeRoutes } from './routes.js';
 import { getProviderSources, removeProviderConfig, upsertProviderConfig } from './providers.js';
-import { getAgentSources, getAgentConfig, createAgent, updateAgent, deleteAgent } from './agents.js';
-import { getCommandSources, createCommand, updateCommand, deleteCommand } from './commands.js';
+import { getAgentSources, getAgentConfig, getAgentPermissions, createAgent, updateAgent, deleteAgent } from './agents.js';
+import { getCommandSources, getCommandConfig, createCommand, updateCommand, deleteCommand } from './commands.js';
 import { listMcpConfigs, getMcpConfig, createMcpConfig, updateMcpConfig, deleteMcpConfig } from './mcp.js';
 import { listSnippets, getSnippet, createSnippet, updateSnippet, deleteSnippet, expandSnippets } from './snippets.js';
 import {
@@ -93,6 +93,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
         ...service,
         getPullRequestDiff: pullRequest.getPullRequestDiff,
       };
+      walkthroughService = { ...service, getPullRequestDiff: pullRequest.getPullRequestDiff, getPullRequestFileContents: pullRequest.getPullRequestFileContents };
     }
     return walkthroughService;
   };
@@ -122,6 +123,9 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       refreshOpenCodeAfterConfigChange,
       getOpenCodeResolutionSnapshot,
       getOpenCodeUpgradeCapability,
+      upgradeOpenCodeCli,
+      getOpenCodeCompatibility,
+      installOpenCodeV2,
       formatSettingsResponse,
       readSettingsFromDisk,
       readSettingsFromDiskMigrated,
@@ -165,7 +169,8 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerPermissionAutoAcceptRoutes(app, permissionAutoAcceptRuntime);
     registerMessageQueueRoutes(app, messageQueueRuntime);
     registerRoutingRoutes(app, routingRuntime);
-    // Before the generic OpenCode proxy: turns `openchamber/auto` into a real model.
+    // Before the generic OpenCode proxy: swallows the `openchamber/auto` model
+    // switch and routes the sends that follow it.
     registerRoutingPromptRewrite(app, routingRuntime);
 
     registerOpenCodeRoutes(app, {
@@ -173,6 +178,9 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       clientReloadDelayMs,
       getOpenCodeResolutionSnapshot,
       getOpenCodeUpgradeCapability,
+      upgradeOpenCodeCli,
+      getOpenCodeCompatibility,
+      installOpenCodeV2,
       formatSettingsResponse,
       readSettingsFromDisk,
       readSettingsFromDiskMigrated,
@@ -241,10 +249,12 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       clientReloadDelayMs,
       getAgentSources,
       getAgentConfig,
+      getAgentPermissions,
       createAgent,
       updateAgent,
       deleteAgent,
       getCommandSources,
+      getCommandConfig,
       createCommand,
       updateCommand,
       deleteCommand,

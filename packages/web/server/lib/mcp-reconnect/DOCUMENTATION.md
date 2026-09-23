@@ -72,10 +72,13 @@ server that was slow to start or crashed mid-session comes back on its own.
 
 ## Runtime flow
 
-1. `prepareManagedOpenCodeEnv(configContent)` materializes the plugin under
-   `<openchamber-data-dir>/mcp-reconnect/` and appends its `file://` URL to
-   `OPENCODE_CONFIG_CONTENT` through the shared merge in
-   `packages/web/server/lib/opencode/managed-plugin-config.js`.
+1. `materializePlugin()` writes a package directory under
+   `<openchamber-data-dir>/mcp-reconnect/` with `package.json` and the plugin
+   entrypoint. The managed OpenCode config runtime places that directory in
+   the watched `plugins` array. When the user owns `OPENCODE_CONFIG`, the same
+   directory is merged into `OPENCODE_CONFIG_CONTENT` as the documented
+   fallback through `managed-plugin-config.js`; a bare `file://` JavaScript
+   path is never injected because OpenCode 2.x accepts package directories.
 2. It is always on for managed OpenCode and owns failed-connection retries and
    idle release within that process.
 3. OpenCode loads the plugin once per project directory with an SDK client
@@ -116,7 +119,8 @@ a while after the server is back.
 
 ## Runtime parity
 
-- Web and Desktop managed OpenCode: injected automatically.
+- Web and Desktop managed OpenCode: injected automatically through the watched
+  managed config directory.
 - External OpenCode (`OPENCODE_HOST` or skip-start) and VS Code's separate
   OpenCode lifecycle: not injected, because OpenChamber does not control that
   process environment.

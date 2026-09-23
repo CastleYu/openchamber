@@ -272,10 +272,7 @@ describe('opencode plugin routes', () => {
 
     expect(response.body).toMatchObject({
       success: true,
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin entry created. Restart OpenCode to apply.',
+      message: 'Plugin entry created.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -311,10 +308,7 @@ describe('opencode plugin routes', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body).toMatchObject({
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin entry updated. Restart OpenCode to apply.',
+      message: 'Plugin entry updated.',
     });
     const after = await request(app).get('/api/config/plugins').expect(200);
     expect(after.body.entries[0]).toEqual(expect.objectContaining({ spec: 'b', scope: 'user' }));
@@ -333,10 +327,7 @@ describe('opencode plugin routes', () => {
     expect(readJson(userConfigPath).plugin).toBeUndefined();
     expect(response.body).toMatchObject({
       success: true,
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin entry deleted. Restart OpenCode to apply.',
+      message: 'Plugin entry deleted.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -346,10 +337,7 @@ describe('opencode plugin routes', () => {
 
     expect(response.body).toMatchObject({
       success: true,
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin file created. Restart OpenCode to apply.',
+      message: 'Plugin file created.',
     });
     expect(fs.readFileSync(path.join(rootDir, 'plugins', 'test.js'), 'utf8')).toBe('//x');
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
@@ -379,10 +367,7 @@ describe('opencode plugin routes', () => {
     expect(fs.readFileSync(path.join(rootDir, 'plugins', 'test.js'), 'utf8')).toBe('//y');
     expect(response.body).toMatchObject({
       success: true,
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin file updated. Restart OpenCode to apply.',
+      message: 'Plugin file updated.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -397,10 +382,7 @@ describe('opencode plugin routes', () => {
     expect(fs.existsSync(path.join(rootDir, 'plugins', 'test.js'))).toBe(false);
     expect(response.body).toMatchObject({
       success: true,
-      requiresReload: false,
-      requiresRestart: true,
-      restartDeferred: true,
-      message: 'Plugin file deleted. Restart OpenCode to apply.',
+      message: 'Plugin file deleted.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });

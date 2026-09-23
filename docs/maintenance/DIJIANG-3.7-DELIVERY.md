@@ -9,7 +9,9 @@ Implementation, commits, push and release publication are authorized.
 
 - Invoking and release branch: `codex/personal`.
 - Personal base: `a81e9c6658f41962298644d07fa40f33566a674a`.
-- Community main fetched on 2026-09-22: `83ec4fbde25a9d141785716bebe0371925f895b5`.
+- Community main fetched again on 2026-09-24: `0af1eb00c` (the latest
+  upstream tip at the second fetch). The first integration base was
+  `83ec4fbde25a9d141785716bebe0371925f895b5`.
 - Fork `origin/codex/personal` matched the personal base at fetch.
 - Backup: `codex/backup-dijiang-3.7-20260922`.
 - Original five tracked edits and four untracked maintenance documents are saved
@@ -37,7 +39,15 @@ Implementation, commits, push and release publication are authorized.
 
 ## Acceptance status
 
-In progress. No test pass, runtime acceptance or release is claimed yet.
+The complete root `bun run test` gate passed on the second upstream merge:
+scripts 9/9 files, SDK 15/15, UI 583/583, VS Code 50/50, Electron 33/33,
+and Web 262 passed/7 skipped files (3,768 passed/141 skipped tests).
+`bun install --frozen-lockfile` and `bun run changelog:check` also passed.
+Windows skips five POSIX-shell-only OpenCode installer fixtures; portable
+packaging checks the bundled Windows executable separately. Instrumented line
+coverage is unavailable in the repository, so `DIJIANG-TESTING.md` reviews
+feature contracts and their runtime boundaries instead of claiming a percent.
+The final native portable acceptance and public release are still pending.
 
 ## Runtime preservation decisions
 
@@ -65,6 +75,15 @@ In progress. No test pass, runtime acceptance or release is claimed yet.
   exist; locate auth through imports and use `rg --files` before reading.
 
 ## Verified fixes so far
+
+- The second upstream intake migrates to OpenCode 2.x. Managed MCP injection
+  now materializes a plugin directory and uses the 2.x config, session and MCP
+  client methods. Missing configuration leaves released connections retryable.
+- Session resource scheduling retains DIJIANG's focused/background frame
+  budgets alongside the upstream event pipeline. A deterministic 60-delta
+  test checks lossless background flushing.
+- File preview keeps DIJIANG's native media/ZIP path alongside upstream
+  artifact preview modes. UI fixtures use the 2.x provider and session models.
 
 - The Windows registry query missed a PowerShell statement separator. Real
   lifecycle tests caught retained records that mocked queries had not detected.

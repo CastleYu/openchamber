@@ -1,4 +1,3 @@
-import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { appendManagedPlugin } from '../opencode/managed-plugin-config.js';
 import { createIdleMcpReclaimer } from './idle-reclaim.js';
@@ -130,13 +129,16 @@ export const OpenChamberMcpReconnectPlugin = async ({ client, directory }) => {
       const entry = modes?.find(entry => entry.key === directoryKey)
       const mode = modes === null || entry?.activeUntil > Date.now() ? 'active' : entry?.idleUntil > Date.now() ? 'idle' : null
       if (modes === null) report('kept', 'mode-unavailable')
-      const statuses = (await client.mcp.status())?.data ?? {}
+      const listing = await client.mcp.list()
+      if (!Array.isArray(listing?.data)) throw new Error('MCP status unavailable')
+      const statuses = Object.fromEntries(listing.data.map((entry) => [entry.name, entry.status]))
       if (disposed) return
       const now = Date.now()
       const due = []
       for (const [name, entry] of Object.entries(statuses)) {
         if (idle.has(name)) continue
-        if (entry?.status !== "failed") {
+        const status = entry?.status?.status ?? entry?.status
+        if (status !== "failed") {
           attempts.delete(name)
           dueAt.delete(name)
           continue
@@ -155,7 +157,7 @@ export const OpenChamberMcpReconnectPlugin = async ({ client, directory }) => {
         }
       }
 
-      await Promise.allSettled(due.map((name) => client.mcp.connect({ path: { name } })))
+      await Promise.allSettled(due.map((name) => client.mcp.connect({ server: name })))
 
       // The result is read on the next tick: a server that came back clears
       // its counter there, one still failed waits out its backoff.
@@ -228,20 +230,46 @@ export const OpenChamberMcpReconnectPlugin = async ({ client, directory }) => {
 export const createMcpReconnectRuntime = ({ fsPromises, path, dataDir, prepareLaunch = prepareMcpLaunch }) => {
   const pluginDirectory = path.join(dataDir, 'mcp-reconnect');
   const pluginPath = path.join(pluginDirectory, 'openchamber-mcp-reconnect-plugin.js');
+  const manifestPath = path.join(pluginDirectory, 'package.json');
+  let scopePromise;
+  let materializePromise;
+
+  const ensureScope = async () => {
+    if (!scopePromise) {
+      scopePromise = (async () => {
+        const launch = await prepareLaunch(dataDir);
+        if (launch) launch.states = path.join(launch.states, randomUUID());
+        const scope = path.join(pluginDirectory, randomUUID());
+        await fsPromises.mkdir(scope, { recursive: true });
+        const modeFile = path.join(scope, 'resource-modes.json');
+        await resourceModes.start(modeFile);
+        return { launch, modeFile };
+      })();
+    }
+    return scopePromise;
+  };
+
+  const materializePlugin = () => {
+    if (!materializePromise) {
+      materializePromise = (async () => {
+        const { launch, modeFile } = await ensureScope();
+        await fsPromises.mkdir(pluginDirectory, { recursive: true });
+        await fsPromises.writeFile(manifestPath, `${JSON.stringify({
+          name: 'openchamber-mcp-reconnect', version: '0.0.0', private: true, type: 'module', exports: { '.': './openchamber-mcp-reconnect-plugin.js' },
+        }, null, 2)}\n`, { mode: 0o600 });
+        await fsPromises.writeFile(pluginPath, createPluginSource(launch, modeFile), { mode: 0o600 });
+        return pluginDirectory;
+      })();
+    }
+    return materializePromise;
+  };
 
   const prepareManagedOpenCodeEnv = async (rawConfig) => {
-    await fsPromises.mkdir(pluginDirectory, { recursive: true });
-    const launch = await prepareLaunch(dataDir);
-    if (launch) launch.states = path.join(launch.states, randomUUID());
-    const scope = path.join(pluginDirectory, randomUUID());
-    await fsPromises.mkdir(scope, { recursive: true });
-    const modeFile = path.join(scope, 'resource-modes.json');
-    await resourceModes.start(modeFile);
-    await fsPromises.writeFile(pluginPath, createPluginSource(launch, modeFile), { mode: 0o600 });
+    await materializePlugin();
     return {
-      OPENCODE_CONFIG_CONTENT: appendManagedPlugin(rawConfig, pathToFileURL(pluginPath).href, 'MCP reconnect plugin'),
+      OPENCODE_CONFIG_CONTENT: appendManagedPlugin(rawConfig, pluginDirectory, 'MCP reconnect plugin'),
     };
   };
 
-  return { prepareManagedOpenCodeEnv };
+  return { materializePlugin, prepareManagedOpenCodeEnv };
 };

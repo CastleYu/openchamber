@@ -42,38 +42,21 @@ const makeJSONStorage = <S,>(): PersistStorage<S> => {
 };
 
 const providerResponse = (id: string) => ({
-  id,
-  name: id,
-  source: 'config' as const,
-  env: [],
-  options: {},
-  models: {
-    [`${id}-model`]: {
-      id: `${id}-model`,
-      name: `${id}-model`,
-      providerID: id,
-      api: { id: 'chat', url: '', npm: '' },
-      capabilities: {
-        temperature: true,
-        reasoning: false,
-        attachment: false,
-        toolcall: true,
-        input: { text: true, audio: false, image: false, video: false, pdf: false },
-        output: { text: true, audio: false, image: false, video: false, pdf: false },
-        interleaved: false,
-      },
-      cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-      limit: { context: 0, output: 0 },
-      options: {},
-      release_date: '',
-      status: 'active' as const,
-      headers: {},
-      attachment: false,
-      reasoning: false,
-      temperature: true,
-      tool_call: true,
-    },
-  },
+  providers: [{ id, name: id, activation: 'enabled' as const, package: id }],
+  models: [{
+    id: `${id}/${id}-model`,
+    modelID: `${id}-model`,
+    providerID: id,
+    name: `${id}-model`,
+    capabilities: { tools: true, input: ['text'], output: ['text'] },
+    variants: [],
+    time: { released: 0 },
+    cost: [{ input: 0, output: 0, cache: { read: 0, write: 0 } }],
+    status: 'active' as const,
+    enabled: true,
+    limit: { context: 0, output: 0 },
+  }],
+  default: { providerID: id, id: `${id}-model` },
 });
 
 const providerIdForDirectory = (directory: string | null | undefined): string =>
@@ -109,7 +92,7 @@ mock.module('@/lib/opencode/client', () => ({
     getProvidersForConfig: mock(async (directory?: string | null) => {
       providerRequests.push(directory ?? null);
       const id = providerIdForDirectory(directory);
-      return { providers: [providerResponse(id)], default: { default: id } };
+      return providerResponse(id);
     }),
     listAgents: mock(async (directory?: string | null) => {
       agentRequests.push(directory ?? null);

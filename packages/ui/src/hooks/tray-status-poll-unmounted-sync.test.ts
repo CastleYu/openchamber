@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { collectTrayStatusPollTargets, readSyncedDirectories } from './tray-status-poll';
 
 // Separate file on purpose: sync refs are module-level and have no uninstall, so
@@ -10,11 +10,11 @@ const DIRECTORY = '/workspace/catalog';
 
 const makeSession = (id: string, directory: string): Session => ({
   id,
-  slug: id,
   projectID: 'project',
   directory,
   title: id,
-  version: '1',
+  cost: 0,
+  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
   time: { created: 1, updated: 1 },
 });
 

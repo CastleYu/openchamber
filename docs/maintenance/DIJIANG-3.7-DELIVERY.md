@@ -47,7 +47,25 @@ Windows skips five POSIX-shell-only OpenCode installer fixtures; portable
 packaging checks the bundled Windows executable separately. Instrumented line
 coverage is unavailable in the repository, so `DIJIANG-TESTING.md` reviews
 feature contracts and their runtime boundaries instead of claiming a percent.
-The final native portable acceptance and public release are still pending.
+The local build completed with the task-local Spectre workaround described
+below. The packaged `win-unpacked` app launched from an isolated profile,
+reported `1.24.2-DIJIANG.3.7`, reached the main interface after managed
+OpenCode 2.0.15 connected, and exited with code 0 and an empty managed-process
+registry. Its Update history page rendered the current official and personal
+entries; changing to Simplified Chinese while Personal was selected translated
+the entry body and retained that selected filter. The portable wrapper reached
+an Electron renderer once, but a complete wrapper lifecycle was not established
+locally. Public CI asset verification and publication are still pending.
+
+The local VS2022 toolset lacks Spectre libraries, so the first native rebuild
+failed with MSB8040. For QA only, the installed `node-pty` dependency's
+`binding.gyp` was backed up and its Spectre setting removed. The normal
+`electron:build` then produced the portable EXE; the original dependency file
+was restored and hash-checked immediately afterward. This task-local change
+is excluded from Git and the CI source. The first portable QA extraction left
+about 1.97 GB in its isolated temporary profile; that task-owned directory
+was verified inactive and removed after an `ENOSPC` failure. The public
+Release must be built afresh by CI from the committed tree.
 
 ## Runtime preservation decisions
 

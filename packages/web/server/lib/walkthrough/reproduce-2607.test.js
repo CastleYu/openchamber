@@ -19,8 +19,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const TEMP_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'oc-home-2607-'));
-process.env.HOME = TEMP_HOME;
-process.env.OPENCHAMBER_DATA_DIR = path.join(TEMP_HOME, '.config', 'openchamber');
+vi.stubEnv('HOME', TEMP_HOME);
+vi.stubEnv('USERPROFILE', TEMP_HOME);
+vi.stubEnv('OPENCHAMBER_DATA_DIR', path.join(TEMP_HOME, '.config', 'openchamber'));
 
 const CATALOG = {
   deepseek: {
@@ -81,6 +82,7 @@ describe('issue 2607 — walkthrough blocks unauthenticated providers', () => {
   });
 
   afterAll(() => {
+    vi.unstubAllEnvs();
     fs.rmSync(TEMP_HOME, { recursive: true, force: true });
     fs.rmSync(REPO_DIR, { recursive: true, force: true });
   });

@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import express from 'express';
 import fs from 'fs';
 import os from 'os';
@@ -14,8 +14,6 @@ let plugins;
 let refreshOpenCodeAfterConfigChange;
 let app;
 let cleanupPaths;
-
-const testUnlessRoot = typeof process.getuid === 'function' && process.getuid() === 0 ? test.skip : test;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -190,16 +188,22 @@ describe('opencode plugin routes', () => {
     expect(getNpmInfo).not.toHaveBeenCalled();
   });
 
-  testUnlessRoot('GET /registry reports unreadable path plugin', async () => {
+  test('GET /registry reports unreadable path plugin', async () => {
     createRegistryApp(mock(async () => ({ ok: true, latest: '1.0.0', versions: ['1.0.0'], distTags: { latest: '1.0.0' } })));
     const tmpFile = path.join(fs.mkdtempSync(path.join(rootDir, 'plugin-unreadable-')), 'plugin.js');
     fs.writeFileSync(tmpFile, '// plugin', 'utf8');
     cleanupPaths.push(tmpFile);
-    fs.chmodSync(tmpFile, 0);
-
-    const response = await request(app).get(`/api/config/plugins/registry?specs=${encodeURIComponent(tmpFile)}`).expect(200);
-
-    expect(response.body.results[0]).toEqual({ kind: 'path-unreadable', spec: tmpFile, absolutePath: tmpFile });
+    const accessSync = fs.accessSync;
+    const access = spyOn(fs, 'accessSync').mockImplementation((file, mode) => {
+      if (file === tmpFile) throw Object.assign(new Error('fixture access denied'), { code: 'EACCES' });
+      return accessSync(file, mode);
+    });
+    try {
+      const response = await request(app).get(`/api/config/plugins/registry?specs=${encodeURIComponent(tmpFile)}`).expect(200);
+      expect(response.body.results[0]).toEqual({ kind: 'path-unreadable', spec: tmpFile, absolutePath: tmpFile });
+    } finally {
+      access.mockRestore();
+    }
   });
 
   test('GET /registry reports npm network failure without failing route', async () => {

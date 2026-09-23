@@ -4,10 +4,18 @@ export const HistorySurface = { App: 'App', VSCode: 'VS Code' } as const;
 export const HistoryOrigin = { All: 'all', Official: 'Official', Personal: 'Personal' } as const;
 export const HistoryGroup = { New: 'New', Improvements: 'Improvements', Fixes: 'Fixes', Misc: 'Misc' } as const;
 const CHINESE_LABELS = { App: '应用', 'VS Code': 'VS Code', New: '新增', Improvements: '改进', Fixes: '修复', Misc: '其他', Official: '官方', Personal: '个人版' } as const;
+const CATEGORY_SEPARATOR = ' / ';
+const CATEGORY_MARKERS = [':', '：'] as const;
 export type HistorySurface = typeof HistorySurface[keyof typeof HistorySurface];
 export type HistoryOrigin = typeof HistoryOrigin[keyof typeof HistoryOrigin];
 type HistoryGroup = typeof HistoryGroup[keyof typeof HistoryGroup];
-type Entry = { surface: HistorySurface; group: HistoryGroup; origin: HistoryOrigin; markdown: string };
+export type UpdateHistoryEntry = {
+  surface: HistorySurface;
+  group: HistoryGroup;
+  origin: HistoryOrigin;
+  category?: string;
+  markdown: string;
+};
 
 export const HISTORY_GROUPS = [
   { value: HistoryGroup.New, label: 'settings.history.new' },
@@ -16,8 +24,8 @@ export const HISTORY_GROUPS = [
   { value: HistoryGroup.Misc, label: 'settings.history.misc' },
 ] as const;
 
-export function parseUpdateHistory(markdown: string): Entry[] {
-  const entries: Entry[] = [];
+export function parseUpdateHistory(markdown: string): UpdateHistoryEntry[] {
+  const entries: UpdateHistoryEntry[] = [];
   let surface: HistorySurface | undefined;
   let group: HistoryGroup | undefined;
   for (const line of markdown.split(/\r?\n/)) {
@@ -32,7 +40,16 @@ export function parseUpdateHistory(markdown: string): Entry[] {
       const label = line.slice(2).replaceAll('**', '');
       const origin = [HistoryOrigin.Official, HistoryOrigin.Personal].find(value => label.startsWith(value + ' ') || label.startsWith(CHINESE_LABELS[value] + ' '));
       if (!surface || !group || !origin) throw new Error('Unclassified update-history entry');
-      entries.push({ surface, group, origin, markdown: line });
+      const categoryStart = label.indexOf(CATEGORY_SEPARATOR);
+      const categoryLabel = categoryStart >= 0 ? label.slice(categoryStart + CATEGORY_SEPARATOR.length) : '';
+      const categoryEnds = CATEGORY_MARKERS.map(marker => {
+        const index = categoryLabel.indexOf(marker);
+        return index >= 0 ? index : undefined;
+      }).filter((index): index is number => index !== undefined);
+      const category = categoryEnds.length
+        ? categoryLabel.slice(0, Math.min(...categoryEnds)).trim() || undefined
+        : undefined;
+      entries.push({ surface, group, origin, category, markdown: line });
     }
   }
   return entries;

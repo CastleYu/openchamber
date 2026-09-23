@@ -18,6 +18,9 @@ export const createOpenCodeEnvRuntime = (deps) => {
     readSettingsFromDiskMigrated,
   } = deps;
   const runSpawnSync = typeof deps.spawnSync === 'function' ? deps.spawnSync : spawnSync;
+  const readProvidedLoginShellEnvSnapshot = typeof deps.providedLoginShellEnvSnapshot === 'function'
+    ? deps.providedLoginShellEnvSnapshot
+    : () => undefined;
   const resolveHomeDir = typeof deps.homedir === 'function' ? deps.homedir : () => os.homedir();
 
   const parseNullSeparatedEnvSnapshot = (raw) => {
@@ -193,6 +196,14 @@ export const createOpenCodeEnvRuntime = (deps) => {
   const getLoginShellEnvSnapshot = () => {
     if (state.cachedLoginShellEnvSnapshot !== undefined) {
       return state.cachedLoginShellEnvSnapshot;
+    }
+
+    // An embedding host (Desktop) that already probed the login shell hands
+    // its snapshot over; see login-shell-env.js.
+    const provided = readProvidedLoginShellEnvSnapshot();
+    if (provided !== undefined) {
+      state.cachedLoginShellEnvSnapshot = provided;
+      return provided;
     }
 
     if (process.platform === 'win32') {
@@ -1110,7 +1121,11 @@ export const createOpenCodeEnvRuntime = (deps) => {
         return resolved;
       }
 
-      process.env.OPENCODE_BINARY = resolved;
+      // AppImage updates inherit process.env. Keep automatic desktop bundle
+      // selection local so the next app does not treat the old mount as an override.
+      if (process.env.OPENCHAMBER_RUNTIME !== 'desktop' || state.resolvedOpencodeBinarySource !== 'bundled') {
+        process.env.OPENCODE_BINARY = resolved;
+      }
       prependToPath(path.dirname(resolved));
       ensureOpencodeShimRuntime(resolved);
       state.resolvedOpencodeBinary = resolved;

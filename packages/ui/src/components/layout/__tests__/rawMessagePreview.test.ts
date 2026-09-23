@@ -86,7 +86,7 @@ describe('derivePartsLabel', () => {
 
 describe('formatMessagePreviewTime', () => {
   // Fixed timestamp: 2024-01-15 14:35:00 UTC. Local rendering will vary; we
-  // only assert structural properties (no AM/PM in 24h mode, presence in 12h).
+  // assert the locale's day-period marker instead of assuming English AM/PM.
   const ts = Date.UTC(2024, 0, 15, 14, 35, 0);
 
   test('returns "-" for null', () => {
@@ -102,9 +102,12 @@ describe('formatMessagePreviewTime', () => {
     expect(/AM|PM/i.test(result)).toBe(false);
   });
 
-  test('12h mode includes AM or PM marker', () => {
+  test('12h mode includes the current locale day period', () => {
     const result = formatMessagePreviewTime(ts, '12h');
-    expect(/AM|PM/i.test(result)).toBe(true);
+    const period = new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: true })
+      .formatToParts(ts).find((part) => part.type === 'dayPeriod');
+    if (!period) throw new Error('Locale returned no day-period marker');
+    expect(result).toContain(period.value);
   });
 
   test('auto mode is non-empty', () => {

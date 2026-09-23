@@ -101,7 +101,16 @@ function isProcessRunning(pid) {
 // null when identity can't be determined on this platform (caller falls back to
 // liveness — so behaviour is unchanged where we can't check).
 function readProcessCmdline(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return null;
   try {
+    if (process.platform === 'win32') {
+      const result = spawnSync('powershell.exe', [
+        '-NoProfile', '-NonInteractive', '-Command',
+        `Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}' | Select-Object -ExpandProperty CommandLine`,
+      ], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+      if (result.error || result.status !== 0) return null;
+      return result.stdout?.trim() || null;
+    }
     if (process.platform === 'linux') {
       // /proc/<pid>/cmdline is a NUL-delimited argv list.
       return fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').replace(/\0/g, ' ').trim();
@@ -118,8 +127,7 @@ function readProcessCmdline(pid) {
   } catch {
     return null;
   }
-  // Windows / other: a process's full command line isn't cheaply available, so
-  // we can't verify identity — fall back to liveness-only.
+  // Unsupported or inaccessible process metadata leaves identity unknown.
   return null;
 }
 

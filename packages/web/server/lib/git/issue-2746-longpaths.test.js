@@ -65,6 +65,7 @@ describe('issue #2746 - worktree long path support', () => {
     try {
       const repo = createTempDir();
       runGit(repo, ['init', '-b', 'main']);
+      runGit(repo, ['config', 'core.autocrlf', 'false']);
       runGit(repo, ['config', 'user.email', 'test@example.com']);
       runGit(repo, ['config', 'user.name', 'Test User']);
 
@@ -122,6 +123,7 @@ describe('issue #2746 - worktree long path support', () => {
 
     const repo = createTempDir();
     runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'core.autocrlf', 'false']);
     runGit(repo, ['config', 'user.email', 'test@example.com']);
     runGit(repo, ['config', 'user.name', 'Test User']);
     fs.writeFileSync(path.join(repo, 'README.md'), '# Test\n');
@@ -143,6 +145,7 @@ describe('issue #2746 - worktree long path support', () => {
     try {
       const repo = createTempDir();
       runGit(repo, ['init', '-b', 'main']);
+      runGit(repo, ['config', 'core.autocrlf', 'false']);
       runGit(repo, ['config', 'user.email', 'test@example.com']);
       runGit(repo, ['config', 'user.name', 'Test User']);
 
@@ -172,7 +175,7 @@ describe('issue #2746 - worktree long path support', () => {
       }, { timeout: 10_000 }).toBe('failed');
 
       const status = await getWorktreeBootstrapStatus(created.path);
-      expect(status?.error).toMatch(/file name too long|filename too long/i);
+      expect(status?.error).toMatch(/file name too long|filename too long|cannot create directory at.*invalid argument/i);
       expect(status?.error).toMatch(/path-length limit/i);
       expect(runGit(created.path, ['config', '--get', 'core.longpaths']).trim()).toBe('true');
     } finally {
@@ -189,6 +192,7 @@ describe('issue #2746 - worktree long path support', () => {
 
     const repo = createTempDir();
     runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'core.autocrlf', 'false']);
     runGit(repo, ['config', 'user.email', 'test@example.com']);
     runGit(repo, ['config', 'user.name', 'Test User']);
     fs.writeFileSync(path.join(repo, 'README.md'), '# Test\n');

@@ -40,15 +40,26 @@ const createDeferred = <T>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
-const createStatus = (diffStats?: GitStatus['diffStats'], files: GitStatus['files'] = []): GitStatus => ({
+type DiffStatsInput = GitStatus['diffStats'] | Record<string, { insertions: number; deletions: number }>;
+const isScopedDiffStats = (value: NonNullable<DiffStatsInput>): value is NonNullable<GitStatus['diffStats']> => (
+  'staged' in value && 'working' in value
+);
+const createStatus = (diffStats?: DiffStatsInput, files: GitStatus['files'] = []): GitStatus => {
+  let normalizedDiffStats: GitStatus['diffStats'];
+  if (diffStats) {
+    if (isScopedDiffStats(diffStats)) normalizedDiffStats = diffStats;
+    else normalizedDiffStats = { staged: {}, working: { ...diffStats } };
+  }
+  return {
   current: 'main',
   tracking: null,
   ahead: 0,
   behind: 0,
   files,
   isClean: files.length === 0,
-  diffStats,
-});
+    diffStats: normalizedDiffStats,
+  };
+};
 
 const createDirectoryState = (status: GitStatus): DirectoryGitState => ({
   isGitRepo: true,
@@ -84,7 +95,7 @@ const createGitApi = (getGitStatus: GitAPI['getGitStatus']): GitAPI => ({
   getGitBranches: async () => ({ all: [], current: 'main', branches: {} }),
   getGitLog: async () => ({ all: [], latest: null, total: 0 }),
   getCurrentGitIdentity: async () => null,
-  getGitFileDiff: async (_directory, options) => ({ original: '', modified: '', path: options.path }),
+  getGitFileDiff: async (_directory, options) => ({ original: '', modified: '', path: options.path, submodule: null }),
 });
 
 describe('useGitStore', () => {
@@ -116,12 +127,12 @@ describe('useGitStore', () => {
       expect(pending.length).toBe(2);
       expect(useGitStore.getState().getDirectoryState('/repo')?.diffCache.size).toBe(0);
     } finally {
-      for (const { path, request } of pending) request.resolve({ path, original: 'before', modified: 'after' });
+      for (const { path, request } of pending) request.resolve({ path, original: 'before', modified: 'after', submodule: null });
       await prefetch;
     }
     // Late responses were discarded, but their real completion frees capacity.
     expect(useGitStore.getState().getDirectoryState('/repo')?.diffCache.size).toBe(0);
-    git.getGitFileDiff = async (_directory, { path }) => ({ path, original: 'fresh', modified: 'fresh' });
+    git.getGitFileDiff = async (_directory, { path }) => ({ path, original: 'fresh', modified: 'fresh', submodule: null });
     await useGitStore.getState().prefetchDiffs('/repo', git, paths);
     expect(useGitStore.getState().getDirectoryState('/repo')?.diffCache.size).toBe(4);
   }, 40_000);
@@ -152,7 +163,7 @@ describe('useGitStore', () => {
       await Promise.all(directories.map((directory) => useGitStore.getState().prefetchDiffs(directory, git, paths)));
       expect(calls.length).toBe(6);
     } finally {
-      request.resolve({ path: 'one.ts', original: '', modified: '' });
+      request.resolve({ path: 'one.ts', original: '', modified: '', submodule: null });
       await Promise.all(batches);
     }
     for (const directory of directories) expect(useGitStore.getState().getDirectoryState(directory)?.diffCache.size).toBe(0);
@@ -189,11 +200,11 @@ describe('useGitStore', () => {
       calls += 1;
       if (path === 'one.ts') return request.promise;
       if (path === 'two.ts') throw new Error('failed read');
-      return { path, original: '', modified: 'fresh' };
+      return { path, original: '', modified: 'fresh', submodule: null };
     };
     const first = useGitStore.getState().prefetchDiffs('/repo', git, paths);
     await useGitStore.getState().prefetchDiffs('/repo', git, paths);
-    request.resolve({ path: 'one.ts', original: '', modified: 'fresh' });
+    request.resolve({ path: 'one.ts', original: '', modified: 'fresh', submodule: null });
     await first;
     expect(calls).toBe(3);
     const cache = useGitStore.getState().getDirectoryState('/repo')?.diffCache;
@@ -222,13 +233,14 @@ describe('useGitStore', () => {
       { directory: '/repo', options: undefined },
     ]);
 
-    requests[1].resolve(createStatus({ 'src/index.ts': { insertions: 1, deletions: 0 } }));
+    requests[1].resolve(createStatus({ staged: {}, working: { 'src/index.ts': { insertions: 1, deletions: 0 } } }));
     await fullPromise;
     requests[0].resolve(createStatus());
     await lightPromise;
 
     expect(useGitStore.getState().getDirectoryState('/repo')?.status?.diffStats).toEqual({
-      'src/index.ts': { insertions: 1, deletions: 0 },
+      staged: {},
+      working: { 'src/index.ts': { insertions: 1, deletions: 0 } },
     });
   });
 
@@ -249,7 +261,7 @@ describe('useGitStore', () => {
 
     expect(statusCalls).toEqual([{ directory: '/repo', options: undefined }]);
 
-    requests[0].resolve(createStatus({ 'src/index.ts': { insertions: 1, deletions: 0 } }));
+    requests[0].resolve(createStatus({ staged: {}, working: { 'src/index.ts': { insertions: 1, deletions: 0 } } }));
     const [fullResult, lightResult] = await Promise.all([fullPromise, lightPromise]);
     expect(lightResult).toBe(fullResult);
   });
@@ -417,16 +429,16 @@ describe('useGitStore', () => {
   });
 
   test('rejects direct diff commits captured for another runtime', () => {
-    useGitStore.getState().setDiff('/repo', 'stale.ts', { original: 'a', modified: 'b' }, 'runtime-a');
+    useGitStore.getState().setDiff('/repo', 'stale.ts', { original: 'a', modified: 'b', submodule: null }, 'runtime-a');
     expect(useGitStore.getState().getDiff('/repo', 'stale.ts')).toBe(null);
   });
 
   test('clears cached file contents when a git refresh hint invalidates diffs', () => {
     setDirectoryStatus(createStatus(
-      { 'src/index.ts': { insertions: 1, deletions: 1 } },
+      { staged: {}, working: { 'src/index.ts': { insertions: 1, deletions: 1 } } },
       [{ path: 'src/index.ts', index: ' ', working_dir: 'M' }],
     ));
-    useGitStore.getState().setDiff('/repo', 'src/index.ts', { original: 'old', modified: 'stale' });
+    useGitStore.getState().setDiff('/repo', 'src/index.ts', { original: 'old', modified: 'stale', submodule: null });
 
     useGitStore.getState().clearDiffCache('/repo');
 
@@ -438,8 +450,8 @@ describe('useGitStore', () => {
       { path: 'src/first.ts', index: ' ', working_dir: 'M' },
       { path: 'src/second.ts', index: ' ', working_dir: 'M' },
     ]));
-    useGitStore.getState().setDiff('/repo', 'src/first.ts', { original: 'a', modified: 'b' });
-    useGitStore.getState().setDiff('/repo', 'src/second.ts', { original: 'c', modified: 'd' });
+    useGitStore.getState().setDiff('/repo', 'src/first.ts', { original: 'a', modified: 'b', submodule: null });
+    useGitStore.getState().setDiff('/repo', 'src/second.ts', { original: 'c', modified: 'd', submodule: null });
 
     useGitStore.getState().clearDiffCache('/repo', ['src/first.ts']);
 
@@ -534,10 +546,77 @@ describe('useGitStore', () => {
     expect(status?.files[0]).toBe(conflicted);
   });
 
-  test('preserves diff stats during optimistic moves', () => {
-    const diffStats = { 'src/index.ts': { insertions: 2, deletions: 1 } };
+  test('moves diff stats into the staged scope during optimistic staging', () => {
+    setDirectoryStatus(createStatus(
+      { staged: {}, working: { 'src/index.ts': { insertions: 2, deletions: 1 } } },
+      [{ path: 'src/index.ts', index: ' ', working_dir: 'M' }],
+    ));
+
+    useGitStore.getState().moveStatusPathsOptimistically('/repo', ['src/index.ts'], 'stage');
+    const status = useGitStore.getState().getDirectoryState('/repo')?.status;
+
+    expect(status?.diffStats).toEqual({
+      staged: { 'src/index.ts': { insertions: 2, deletions: 1 } },
+      working: {},
+    });
+  });
+
+  test('moves diff stats into the working scope during optimistic unstaging', () => {
+    setDirectoryStatus(createStatus(
+      { staged: { 'src/index.ts': { insertions: 2, deletions: 1 } }, working: {} },
+      [{ path: 'src/index.ts', index: 'M', working_dir: ' ' }],
+    ));
+
+    useGitStore.getState().moveStatusPathsOptimistically('/repo', ['src/index.ts'], 'unstage');
+    const status = useGitStore.getState().getDirectoryState('/repo')?.status;
+
+    expect(status?.diffStats).toEqual({
+      staged: {},
+      working: { 'src/index.ts': { insertions: 2, deletions: 1 } },
+    });
+  });
+
+  test('merges both scopes when optimistically staging a partially staged file', () => {
+    setDirectoryStatus(createStatus(
+      {
+        staged: { 'src/index.ts': { insertions: 2, deletions: 1 } },
+        working: { 'src/index.ts': { insertions: 3, deletions: 2 } },
+      },
+      [{ path: 'src/index.ts', index: 'M', working_dir: 'M' }],
+    ));
+
+    useGitStore.getState().moveStatusPathsOptimistically('/repo', ['src/index.ts'], 'stage');
+    const status = useGitStore.getState().getDirectoryState('/repo')?.status;
+
+    expect(status?.diffStats).toEqual({
+      staged: { 'src/index.ts': { insertions: 5, deletions: 3 } },
+      working: {},
+    });
+  });
+
+  test('merges both scopes when optimistically unstaging a partially staged file', () => {
+    setDirectoryStatus(createStatus(
+      {
+        staged: { 'src/index.ts': { insertions: 2, deletions: 1 } },
+        working: { 'src/index.ts': { insertions: 3, deletions: 2 } },
+      },
+      [{ path: 'src/index.ts', index: 'M', working_dir: 'M' }],
+    ));
+
+    useGitStore.getState().moveStatusPathsOptimistically('/repo', ['src/index.ts'], 'unstage');
+    const status = useGitStore.getState().getDirectoryState('/repo')?.status;
+
+    expect(status?.diffStats).toEqual({
+      staged: {},
+      working: { 'src/index.ts': { insertions: 5, deletions: 3 } },
+    });
+  });
+
+  test('preserves the diff stats reference when a moved path has no stats', () => {
+    const diffStats = { staged: {}, working: { 'other.ts': { insertions: 1, deletions: 1 } } };
     setDirectoryStatus(createStatus(diffStats, [
       { path: 'src/index.ts', index: ' ', working_dir: 'M' },
+      { path: 'other.ts', index: ' ', working_dir: 'M' },
     ]));
 
     useGitStore.getState().moveStatusPathsOptimistically('/repo', ['src/index.ts'], 'stage');
@@ -729,7 +808,7 @@ describe('useGitStore occupancy', () => {
       paths.map((path) => ({ path, index: ' ', working_dir: 'M' })),
     ));
     useOccupancyPolicyStore.getState().setPolicy({ ...DEFAULT_OCCUPANCY_POLICY, gitDiffConcurrency: 1 });
-    const pending = createDeferred<{ original: string; modified: string; path: string }>();
+    const pending = createDeferred<{ original: string; modified: string; path: string; submodule: null }>();
     let calls = 0;
     const git = createGitApi(async () => createStatus());
     git.getGitFileDiff = async () => { calls += 1; return pending.promise; };
@@ -739,7 +818,7 @@ describe('useGitStore occupancy', () => {
     useOccupancyPolicyStore.getState().setPolicy(
       withScenarioEnabled(DEFAULT_OCCUPANCY_POLICY, 'gitDiffPrefetch', false),
     );
-    pending.resolve({ original: '', modified: 'x', path: 'one.ts' });
+    pending.resolve({ original: '', modified: 'x', path: 'one.ts', submodule: null });
     await first;
     expect(calls).toBe(1);
   });
@@ -760,7 +839,7 @@ describe('useGitStore occupancy', () => {
     });
     git.getGitFileDiff = async () => {
       diffCalls += 1;
-      return { original: '', modified: 'x', path: 'src/index.ts' };
+      return { original: '', modified: 'x', path: 'src/index.ts', submodule: null };
     };
 
     await useGitStore.getState().fetchStatus('/repo', git, { silent: true });
@@ -784,7 +863,7 @@ describe('useGitStore occupancy', () => {
     const git = createGitApi(async () => createStatus());
     git.getGitFileDiff = async () => {
       diffCalls += 1;
-      return { original: '', modified: 'x', path: 'src/index.ts' };
+      return { original: '', modified: 'x', path: 'src/index.ts', submodule: null };
     };
 
     await useGitStore.getState().prefetchDiffs('/repo', git, ['src/index.ts']);
@@ -800,7 +879,7 @@ describe('useGitStore occupancy', () => {
     const git = createGitApi(async () => createStatus());
     git.getGitFileDiff = async () => {
       diffCalls += 1;
-      return { original: '', modified: 'x', path: 'huge.bin' };
+      return { original: '', modified: 'x', path: 'huge.bin', submodule: null };
     };
 
     await useGitStore.getState().prefetchDiffs('/repo', git, ['huge.bin']);

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { personalVersion, PERSONAL_BUILD } from '../packages/web/server/lib/personal-build.js';
+import { resolveBunExecutable } from './lib/bun-executable.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const desktop = path.join(root, 'packages/electron');
@@ -10,7 +11,7 @@ const debug = process.argv.includes('--debug');
 const target = 'portable';
 const version = personalVersion(upstream, process.env.OPENCHAMBER_BUILD_NUMBER || '') + (debug ? '-DEBUG' : '');
 const output = path.join(desktop, 'dist/personal', version);
-const bun = process.platform === 'win32' ? 'bun.exe' : 'bun';
+const bun = resolveBunExecutable();
 
 function run(command, args) {
   const result = spawnSync(command, args, { cwd: desktop, stdio: 'inherit', windowsHide: true });

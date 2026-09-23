@@ -2,9 +2,9 @@
 title: File previews and project controls
 ---
 
-Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-21. This is a retrospective summary, not a claim that every historical item is new in the next release.
+Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-22. This is a retrospective summary, not a claim that every historical item is new in the next release.
 
-Official entries identify the community release that introduced the behavior. Personal entries describe the cumulative fork changes through 1.23.0-DIJIANG.3.5. The current personal package includes the official line through 1.23.0; every 1.23.1 entry and the v2 preview are marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.23.0-DIJIANG.3.5.
+Official entries identify the community release or main-branch follow-up that introduced the behavior. Personal entries describe the cumulative fork changes. This integration includes official 1.24.2 and main through `83ec4fbde`; the separate v2 preview remains marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.24.2-DIJIANG.3.7.
 
 Two differences matter when reading this history. Official 1.23.1 removed automatic MCP reconnection, while this personal build retains managed reconnection with idle-release safeguards. Official desktop update improvements describe community builds; the personal build keeps notification-only updates. Portable refers to the executable, while settings and session data still use the established user directories.
 
@@ -18,6 +18,16 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
+- Official main after 1.24.2 / Sidebar: Switch between Grouped and Timeline session views, and optionally show session activity spinners.
+- Official main after 1.24.2 / Permissions: Preview the file patch when an agent requests permission to edit a file.
+- Personal / Testing: DIJIANG regression coverage now documents its feature contracts and runners, with Windows process, file, update-policy and bilingual-history checks.
+- Official 1.24.2 / Sessions: Collapsed folders and groups show when an agent is waiting for permission or an answer.
+- Official 1.24.0 / Extensions: Add third-party tools with panels, pages and chat actions, and use the extension SDK.
+- Official 1.24.0 / Themes: Browse VS Code themes from Open VSX or import theme files, choose variants and remove imported themes.
+- Official 1.24.0 / Projects: Choose a default agent for new chats in each project and its worktrees (thanks to @MltStephane).
+- Official 1.24.0 / Files: Keep the file tree open while the editor is closed (thanks to @cmdaltctr).
+- Official 1.24.1 / Chat: Attach files and images to `/btw` messages through the picker, paste or drag and drop.
+- Official 1.24.1 / Mini Chat: Use installed extensions from a message action menu.
 - Personal / Chat and Files: Render PlantUML diagrams in chat and export their source as `.puml`; preview `.puml`, `.plantuml`, and `.pu` files. Choose from nine Mermaid styles, including native and hand-drawn rendering. Both diagram types support SVG and PNG export.
 - Personal / Settings: Update history preserves the complete official and personal summary offline, with source and application filters. From DIJIANG.3.3, Simplified Chinese translates every entry and language changes preserve the filters (thanks to @CastleYu).
 - Official 1.23.0 / **Git:** Stage, unstage, or discard individual blocks of changes with controls beside each block in the web and desktop Changes view (thanks to @LABCAT).
@@ -49,10 +59,10 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Usage: ClinePass shows five-hour, weekly, and monthly limits in Usage settings, with an option to show them in work status (thanks to @NemeZZiZZ).
 - Official 1.23.0 / Usage: Charm Hyper now shows your remaining Hypercredits and their dollar value (thanks to @airtaxi).
 - Official 1.23.0 / Settings: "Always show scrollbars" keeps scrollbars visible on this device when you move the pointer away.
-- Official 1.23.1 (not merged) / Diff review: Review the changes in a published pull request directly in Changes, on desktop and mobile.
-- Official 1.23.1 (not merged) / Sessions: Ask AI to rename a session based on its recent conversation from the session menu or mobile actions.
-- Official 1.23.1 (not merged) / Settings/Sessions: Limit retention cleanup to archived sessions, with the retention period starting when each session was archived.
-- Official 1.23.1 (not merged) / Chat: Paste or drop non-image files into a message, with file references added to the draft automatically.
+- Official 1.23.1 / Diff review: Review the changes in a published pull request directly in Changes, on desktop and mobile.
+- Official 1.23.1 / Sessions: Ask AI to rename a session based on its recent conversation from the session menu or mobile actions.
+- Official 1.23.1 / Settings/Sessions: Limit retention cleanup to archived sessions, with the retention period starting when each session was archived.
+- Official 1.23.1 / Chat: Paste or drop non-image files into a message, with file references added to the draft automatically.
 - Personal / Files: Browse ZIP filenames and original/compressed sizes without extracting files. ZIP64, split archives and oversized directories report an unsupported preview (thanks to @CastleYu).
 - Personal / Desktop files: Save a copy, open it with the system application, choose another application, or reveal its folder from the file toolbar (thanks to @CastleYu).
 - Personal / Desktop: Discover installed JetBrains IDEs, including Toolbox installations, in Open in; a file can also be handed to a selected executable (thanks to @CastleYu).
@@ -67,6 +77,15 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Improvements
 
+- Official main after 1.24.2 / Startup: Desktop shows its first window while the main process loads; server integrations load on first use, and the global session list displays its first page before later pages finish.
+- Official main after 1.24.2 / Memory: Evict idle session histories as whole histories and stop pinned sessions from retaining every transcript's parts.
+- Official main after 1.24.2 / Files: Authenticated users can read explicitly requested outside-workspace files without a separate grant; OS permissions and write boundaries still apply.
+- Official 1.24.2 / Diff: Click a collapsed section to load and reveal surrounding lines with a loading indicator.
+- Official 1.24.2 / Interface: Widen the side panel on large screens while keeping chat visible.
+- Official 1.24.1 / Sessions: Large session lists open faster, use less memory and scroll more smoothly across projects (thanks to @deatheros).
+- Official 1.24.1 / Chat: Lower CPU use while the agent thinks or writes a response (thanks to @deatheros).
+- Official 1.24.0 / Desktop: The app window opens much faster.
+- Official 1.24.0 / Sessions: Sticky sidebar headers fade smoothly between sections.
 - Personal / Diagrams: Click a diagram to open a large preview, then use wheel zoom, left-button dragging and a right-click menu for reset, copy and export. Default Mermaid lines have stronger contrast in dark mode. Native Mermaid and PlantUML wait until streaming ends, including when animations are disabled. Unchanged directory polls no longer publish new file-list state.
 - Official 1.22.0 / Chat: a session you open from the sidebar lands at the latest message and stays there. Switching sessions no longer jumps, renders half a conversation, crossfades, or shifts the tab title.
 - Official 1.22.0 / Voice: local text-to-speech and macOS say pick a voice that matches the language of the reply. More local models download the first time you need them, and the voice picker lists voices from every installed model.
@@ -104,14 +123,14 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Settings/Chat: Send-shortcut choices and large-text paste behavior have clearer descriptions (thanks to @ChangeHow).
 - Official 1.23.0 / Chat: Tighter text and Activity spacing, stronger headings, and a softer divider make final answers easier to read. Message action buttons are smaller, with touch actions grouped in a menu.
 - Official 1.23.0 / Chat: Selected text uses the same visible highlight in messages, file previews, and comments across themes.
-- Official 1.23.1 (not merged) / Chat: Visual refinements across the message box, attachments, menus, and panels give the conversation more room and a more consistent look on desktop and mobile.
-- Official 1.23.1 (not merged) / Chat: Attachments and linked issues sit inside the message box, with model and agent controls grouped together on mobile. Queued messages start collapsed.
-- Official 1.23.1 (not merged) / Chat: Recaps retain the substance of recent work after short closing exchanges, and follow-up suggestions can stay quiet when there's nothing useful to add.
-- Official 1.23.1 (not merged) / Sessions: Markdown exports include attached quotes and comments with their source.
-- Official 1.23.1 (not merged) / App: Hidden Files, Changes, terminal, and walkthrough panels pause background work while you're using another panel.
-- Official 1.23.1 (not merged) / Chat: Inline code colors follow the selected theme.
-- Official 1.23.1 (not merged) / Mobile: A dot on the workspace button marks uncommitted changes.
-- Official 1.23.1 (not merged) / Chat: Removed the extra changed-files dropdown under answers in non-Git folders.
+- Official 1.23.1 / Chat: Visual refinements across the message box, attachments, menus, and panels give the conversation more room and a more consistent look on desktop and mobile.
+- Official 1.23.1 / Chat: Attachments and linked issues sit inside the message box, with model and agent controls grouped together on mobile. Queued messages start collapsed.
+- Official 1.23.1 / Chat: Recaps retain the substance of recent work after short closing exchanges, and follow-up suggestions can stay quiet when there's nothing useful to add.
+- Official 1.23.1 / Sessions: Markdown exports include attached quotes and comments with their source.
+- Official 1.23.1 / App: Hidden Files, Changes, terminal, and walkthrough panels pause background work while you're using another panel.
+- Official 1.23.1 / Chat: Inline code colors follow the selected theme.
+- Official 1.23.1 / Mobile: A dot on the workspace button marks uncommitted changes.
+- Official 1.23.1 / Chat: Removed the extra changed-files dropdown under answers in non-Git folders.
 - Personal / Sessions: Background project history loading is optional and off by default; the current project loads first, and complete history is fetched when needed (original work by wq.pan; integrated by @CastleYu).
 - Personal / Sidebar: Collapsed and inactive projects avoid unnecessary session and worktree discovery; expanding or selecting a project loads its content (original work by wq.pan; integrated by @CastleYu).
 - Personal / Startup: Desktop shows its initial interface before optional global history work and avoids preloading inactive project configuration (original work by wq.pan; integrated by @CastleYu).
@@ -126,12 +145,23 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Personal / Windows: Process sampling is faster and accounts for the managed process tree, including reparented descendants, while excluding the sampling helper (thanks to @CastleYu).
 - Personal / Logs: Server output is retained in daily structured logs with managed OpenCode startup, exit and cleanup events; repeated MCP failure reports are bounded (thanks to @CastleYu).
 - Personal / Language: Logs, MCP failure hints, file actions and resource settings include translations across the existing 12 interface languages; Turkish Git labels retain matching keys (thanks to @CastleYu).
-- Official 1.23.1 (not merged) / Sidebar: The activity header changes when it sticks during scrolling, keeping the current sidebar context visible.
-- Official 1.23.1 (not merged) / Chat: The composer and recap float over the conversation, autocomplete stays outside the composer, and suggested follow-ups are docked inside it.
+- Official 1.23.1 / Sidebar: The activity header changes when it sticks during scrolling, keeping the current sidebar context visible.
+- Official 1.23.1 / Chat: The composer and recap float over the conversation, autocomplete stays outside the composer, and suggested follow-ups are docked inside it.
 - Official 1.22.2 / Settings: Behavior settings shows the effective global AGENTS.md filename, including a custom OpenCode configuration directory (thanks to @travisdoherty).
 
 ### Fixes
 
+- Official main after 1.24.2 / Sessions: Restored worktree sessions stay visible, and actions use the session's own directory with clearer failure messages.
+- Official main after 1.24.2 / Desktop: Startup recovery shows OpenCode failure diagnostics; SSH confirmations preserve input focus, and pairing imports report failures accurately.
+- Personal / Processes: Correct the Windows process-registry query and await record cleanup when a managed process exits. CLI recovery verifies Windows PID-file identity before stopping a process.
+- Official 1.24.2 / Startup: Opening the app no longer starts MCP servers and background work for every saved project and worktree (thanks to @knorby).
+- Official 1.24.2 / Desktop/SSH: Reconnecting reuses the running remote server instead of starting duplicates (thanks to @yulia-ivashko).
+- Official 1.24.2 / Chat: Malformed Markdown stays readable as plain text without crashing the chat.
+- Official 1.24.2 / Sessions: Rename closes the menu and opens the name field again (thanks to @karimodm).
+- Official 1.24.1 / Web: Instances on different ports stay signed in independently (thanks to @jlu-lujing).
+- Official 1.24.1 / Chat: Reconnecting mid-response no longer drops streamed text (thanks to @deatheros).
+- Official 1.24.0 / Chat: Switching chats no longer loses draft attachments or moves them to another chat.
+- Official 1.24.0 / Desktop: Background OpenCode and tool processes are cleaned up after quit, restart or failed start.
 - Personal / Chat: DIJIANG.3.4 restored the 1.22 chat typography, spacing, tables and reasoning appearance while retaining personal file and image features.
 - Official 1.22.0 / Chat: command, skill, and file autocomplete in a chat without a project no longer uses the project you had selected before.
 - Official 1.22.0 / Chat: reverting to a message or forking from one brings its attached context back to the composer. Review comments, chat and file quotes, terminal selections, and browser annotations are kept.
@@ -199,28 +229,28 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Desktop/Linux: "Open in" no longer lists unrelated editors or launches the wrong app when an installed app has a non-Latin name (thanks to @ouyangjian28).
 - Official 1.23.0 / Scrollbars: Hovering over a scrollable area reveals its scrollbar, including in Settings and dialogs, without shifting the content (thanks to @sergiofspedro).
 - Official 1.23.0 / Language/Turkish: Agent and prompt labels use consistent terminology in Activity, turn stats, and input-history settings (thanks to @fitzgpt).
-- Official 1.23.1 (not merged) / Sessions: Default model, agent, and thinking choices survive restarts and instance switches, with faster loading in the model and agent pickers (thanks to @alvins82).
-- Official 1.23.1 (not merged) / Chat: Model favorites save from the first change, including when you reload immediately (thanks to @alvins82).
-- Official 1.23.1 (not merged) / Chat: Reading older messages keeps your place as earlier history loads, and a growing message box keeps the latest message in view.
-- Official 1.23.1 (not merged) / Chat: Reasoning and shell output keep scrolling with incoming text until you scroll up yourself.
-- Official 1.23.1 (not merged) / Chat: File lists under answers use the turn's direct edits, reducing unrelated files from other sessions. Long lists collapse after four files (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Chat: Queued messages containing only quotes or comments show a preview of their attached context.
-- Official 1.23.1 (not merged) / Chat: Slash commands stay available when switching projects.
-- Official 1.23.1 (not merged) / Chat: Session recaps disappear without making the conversation jump when you send a message.
-- Official 1.23.1 (not merged) / Files: Large text files can be edited and saved in full without cutting off their contents or changing line endings.
-- Official 1.23.1 (not merged) / Sessions: Retention cleanup protects child sessions that should be kept and avoids false failures when deleting session families.
-- Official 1.23.1 (not merged) / Sessions: Pressing Enter saves a renamed session.
-- Official 1.23.1 (not merged) / Worktrees: New sessions pick up the project's settings after checkout, fixing missing configuration in freshly created worktrees.
-- Official 1.23.1 (not merged) / Worktrees: Worktrees added or removed in another window, by an agent, or from a terminal appear in the sidebar on the next Git refresh (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Projects: Deeply nested projects can save settings, notes, plans, and memory without file-name errors (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Scheduled tasks: A project that fails to load no longer stops tasks in other projects from starting (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Scheduled tasks: Run now works for paused tasks while their schedule stays paused.
-- Official 1.23.1 (not merged) / Terminal: Right-click opens Copy and Paste actions again.
-- Official 1.23.1 (not merged) / Terminal: On macOS, Option+Left/Right moves by word and Option+Backspace deletes the previous word at shell prompts.
-- Official 1.23.1 (not merged) / Terminal: Attaching selected output to chat puts the cursor in the message box.
-- Official 1.23.1 (not merged) / Shortcuts: Cmd/Ctrl number shortcuts for sessions and panels work while typing in chat.
-- Official 1.23.1 (not merged) / Desktop: After an AppImage update, OpenCode starts from the current app bundle, fixing stale paths and incorrect upgrade offers (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Sessions: Long tab titles fade before the buttons when you hover over a tab.
+- Official 1.23.1 / Sessions: Default model, agent, and thinking choices survive restarts and instance switches, with faster loading in the model and agent pickers (thanks to @alvins82).
+- Official 1.23.1 / Chat: Model favorites save from the first change, including when you reload immediately (thanks to @alvins82).
+- Official 1.23.1 / Chat: Reading older messages keeps your place as earlier history loads, and a growing message box keeps the latest message in view.
+- Official 1.23.1 / Chat: Reasoning and shell output keep scrolling with incoming text until you scroll up yourself.
+- Official 1.23.1 / Chat: File lists under answers use the turn's direct edits, reducing unrelated files from other sessions. Long lists collapse after four files (thanks to @yulia-ivashko).
+- Official 1.23.1 / Chat: Queued messages containing only quotes or comments show a preview of their attached context.
+- Official 1.23.1 / Chat: Slash commands stay available when switching projects.
+- Official 1.23.1 / Chat: Session recaps disappear without making the conversation jump when you send a message.
+- Official 1.23.1 / Files: Large text files can be edited and saved in full without cutting off their contents or changing line endings.
+- Official 1.23.1 / Sessions: Retention cleanup protects child sessions that should be kept and avoids false failures when deleting session families.
+- Official 1.23.1 / Sessions: Pressing Enter saves a renamed session.
+- Official 1.23.1 / Worktrees: New sessions pick up the project's settings after checkout, fixing missing configuration in freshly created worktrees.
+- Official 1.23.1 / Worktrees: Worktrees added or removed in another window, by an agent, or from a terminal appear in the sidebar on the next Git refresh (thanks to @yulia-ivashko).
+- Official 1.23.1 / Projects: Deeply nested projects can save settings, notes, plans, and memory without file-name errors (thanks to @yulia-ivashko).
+- Official 1.23.1 / Scheduled tasks: A project that fails to load no longer stops tasks in other projects from starting (thanks to @yulia-ivashko).
+- Official 1.23.1 / Scheduled tasks: Run now works for paused tasks while their schedule stays paused.
+- Official 1.23.1 / Terminal: Right-click opens Copy and Paste actions again.
+- Official 1.23.1 / Terminal: On macOS, Option+Left/Right moves by word and Option+Backspace deletes the previous word at shell prompts.
+- Official 1.23.1 / Terminal: Attaching selected output to chat puts the cursor in the message box.
+- Official 1.23.1 / Shortcuts: Cmd/Ctrl number shortcuts for sessions and panels work while typing in chat.
+- Official 1.23.1 / Desktop: After an AppImage update, OpenCode starts from the current app bundle, fixing stale paths and incorrect upgrade offers (thanks to @yulia-ivashko).
+- Official 1.23.1 / Sessions: Long tab titles fade before the buttons when you hover over a tab.
 - Personal / Files: Failed authorization or reads end the loading indicator and offer Retry. A later successful authorization can recover the preview (thanks to @CastleYu).
 - Personal / Files: Failed refreshes preserve unsaved text and diagram changes; pending text autosave stops until the file is recovered or explicitly saved (thanks to @CastleYu).
 - Personal / Files: Video and audio stay out of text refresh and text-save operations, and late reads cannot replace a different file's preview (thanks to @CastleYu).
@@ -237,10 +267,14 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Misc
 
+- Official main after 1.24.2 / Development: Desktop development uses the bundled OpenCode CLI and clears stale HMR chunks.
+- Personal / Maintenance: Preserve category-grouped update history, use the upstream-pinned Bun runtime, and run native Node tests separately from Vitest.
+- Official 1.24.2 / Installation: npm installs no longer show dependency compatibility and deprecated-package warnings.
+- Official 1.24.0 / Usage: Remove Crof usage tracking after the service shut down (thanks to @kydorn).
 - Official 1.22.1 / Settings → Integrations no longer offers the Claude Code and Cursor plugin installs. It now holds GitHub and Linear.
 - Official 1.23.0 / Server: `OPENCHAMBER_DATA_DIR` also covers project settings, themes, speech models, and new managed chats. Existing managed chats stay in their current location.
-- Official 1.23.1 (not merged) / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
-- Official 1.23.1 (not merged) / Desktop: Updated Electron to 43.7.0.
+- Official 1.23.1 / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
+- Official 1.23.1 / Desktop: Updated Electron to 43.7.0.
 - Personal / Distribution: Windows x64 releases use a versioned portable executable; previous executables and existing settings, sessions and OpenCode data are retained during replacement (thanks to @CastleYu).
 - Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.5 (thanks to @CastleYu).
 - Personal / Updates: Upstream releases produce a notice and link. App, web and CLI update paths cannot automatically download or replace the personal build; OpenCode's own updater is separate (thanks to @CastleYu).
@@ -254,7 +288,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.22.2 / Development: Windows launchers find the real Bun executable, and npm-based commands work inside the checkout after dependency overrides were aligned (thanks to @hehuaiyu and @knorby).
 - Official 1.22.2 / Maintenance: Release notes gained per-version sources, separate extension notes, titles and grouped update dialogs; obsolete API wrappers were removed and regression checks expanded.
 - Official 1.23.0 / Runtime: OpenCode SDK updates progressed through 1.18.28 and 1.18.29 to 1.18.30, and the terminal moved to the in-repository libghostty adapter.
-- Official 1.23.1 (not merged) / Remote access: Relay connections report the app identity and version for the connected client.
+- Official 1.23.1 / Remote access: Relay connections report the app identity and version for the connected client.
 - Official 1.22.1 / Development: Remote development deployments can run on Bun-only hosts.
 - Official 1.23.0 / Development: Mini Chat opens the selected development interface while testing desktop changes.
 - Personal / Settings history: Earlier worktree-discovery switches and interval controls were removed from the interface as discovery became demand-driven; background history loading remains configurable (original work by wq.pan; integrated by @CastleYu).
@@ -279,8 +313,8 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Usage: ClinePass now shows five-hour, weekly, and monthly usage limits (thanks to @NemeZZiZZ).
 - Official 1.23.0 / Usage: Charm Hyper shows your remaining Hypercredits and their dollar value (thanks to @airtaxi).
 - Official 1.23.0 / Settings: "Always show scrollbars" keeps scrollbars visible when the pointer leaves a scrollable area.
-- Official 1.23.1 (not merged) / Settings/Sessions: Retention cleanup can target archived sessions only, counting their age from the archive date.
-- Official 1.23.1 (not merged) / Chat: Pasted and dropped files get references in the message draft automatically.
+- Official 1.23.1 / Settings/Sessions: Retention cleanup can target archived sessions only, counting their age from the archive date.
+- Official 1.23.1 / Chat: Pasted and dropped files get references in the message draft automatically.
 - Personal / Local files: Supported webview actions can hand a local path to the VS Code host for opening with the system application (thanks to @CastleYu).
 - Personal / MCP: Connection failures show the same translated cause and troubleshooting hints as the shared MCP interface (thanks to @CastleYu).
 - Official 1.23.0 / Turn stats: Work status shows completed-turn speed, time, tokens and reported cost, with the shared default-on preference (thanks to @alvins82).
@@ -303,11 +337,11 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Settings/Chat: Send-shortcut and large-text paste options have clearer descriptions (thanks to @ChangeHow).
 - Official 1.23.0 / Chat: More compact Markdown, smaller action buttons, and a softer final-answer divider make replies easier to scan.
 - Official 1.23.0 / Chat: Text selection and comment highlights use a consistent, readable accent tint across themes.
-- Official 1.23.1 (not merged) / Chat: Visual refinements to the message box, attachments, and menus make better use of the space in the sidebar and editor tabs.
-- Official 1.23.1 (not merged) / Chat: Attachments sit inside the message box, and queued messages start collapsed.
-- Official 1.23.1 (not merged) / Sessions: Markdown exports preserve attached quotes and comments with their source.
-- Official 1.23.1 (not merged) / Chat: Removed the changed-files bar above the message box and the extra file dropdown under answers in non-Git folders.
-- Official 1.23.1 (not merged) / Chat: Inline code uses colors from your VS Code theme.
+- Official 1.23.1 / Chat: Visual refinements to the message box, attachments, and menus make better use of the space in the sidebar and editor tabs.
+- Official 1.23.1 / Chat: Attachments sit inside the message box, and queued messages start collapsed.
+- Official 1.23.1 / Sessions: Markdown exports preserve attached quotes and comments with their source.
+- Official 1.23.1 / Chat: Removed the changed-files bar above the message box and the extra file dropdown under answers in non-Git folders.
+- Official 1.23.1 / Chat: Inline code uses colors from your VS Code theme.
 - Personal / Sessions: Project history follows workspace ownership and loading demand, with optional background loading and less unnecessary discovery (original work by wq.pan; integrated by @CastleYu).
 - Personal / Chat: Markdown images stay beside the text that references them and retain the image gallery controls (thanks to @CastleYu).
 - Personal / Resources: Shared session activity and background polling follow visibility and project priority; these controls do not stop the extension's OpenCode process (thanks to @CastleYu).
@@ -347,17 +381,17 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.0 / Usage: Provider requests have enough time to connect on slower networks, fixing premature "fetch failed" errors (thanks to @ouyangjian28).
 - Official 1.23.0 / Scrollbars: Hover reveals scrollbars in chat, Settings, and shared dialogs without moving the content sideways (thanks to @sergiofspedro).
 - Official 1.23.0 / Language/Turkish: Activity and input-history settings use consistent agent and prompt terminology (thanks to @fitzgpt).
-- Official 1.23.1 (not merged) / Sessions: Saved model, agent, and thinking defaults survive reloads and temporary provider unavailability, and their pickers display saved choices sooner (thanks to @alvins82).
-- Official 1.23.1 (not merged) / Chat: The first model you add to favorites stays saved after reloading the panel (thanks to @alvins82).
-- Official 1.23.1 (not merged) / Chat: Reloading panels or moving them between windows now closes old background connections, fixing a connection leak.
-- Official 1.23.1 (not merged) / Chat: Loading older history keeps your reading position, and the latest message stays in view as the message box grows.
-- Official 1.23.1 (not merged) / Chat: Reasoning and shell output continue following incoming text until you scroll up.
-- Official 1.23.1 (not merged) / Chat: File lists under answers use the turn's direct edits, reducing unrelated files from other sessions. Show more reveals files beyond the first four (thanks to @yulia-ivashko).
-- Official 1.23.1 (not merged) / Chat: Queued quotes and comments show their context in the message preview.
-- Official 1.23.1 (not merged) / Chat: Switching projects preserves the available slash commands.
-- Official 1.23.1 (not merged) / Sessions: Retention cleanup keeps protected child sessions and avoids false deletion failures for session families.
-- Official 1.23.1 (not merged) / Sessions: Enter saves a session rename from the sidebar.
-- Official 1.23.1 (not merged) / Projects: Settings save correctly for deeply nested workspace paths (thanks to @yulia-ivashko).
+- Official 1.23.1 / Sessions: Saved model, agent, and thinking defaults survive reloads and temporary provider unavailability, and their pickers display saved choices sooner (thanks to @alvins82).
+- Official 1.23.1 / Chat: The first model you add to favorites stays saved after reloading the panel (thanks to @alvins82).
+- Official 1.23.1 / Chat: Reloading panels or moving them between windows now closes old background connections, fixing a connection leak.
+- Official 1.23.1 / Chat: Loading older history keeps your reading position, and the latest message stays in view as the message box grows.
+- Official 1.23.1 / Chat: Reasoning and shell output continue following incoming text until you scroll up.
+- Official 1.23.1 / Chat: File lists under answers use the turn's direct edits, reducing unrelated files from other sessions. Show more reveals files beyond the first four (thanks to @yulia-ivashko).
+- Official 1.23.1 / Chat: Queued quotes and comments show their context in the message preview.
+- Official 1.23.1 / Chat: Switching projects preserves the available slash commands.
+- Official 1.23.1 / Sessions: Retention cleanup keeps protected child sessions and avoids false deletion failures for session families.
+- Official 1.23.1 / Sessions: Enter saves a session rename from the sidebar.
+- Official 1.23.1 / Projects: Settings save correctly for deeply nested workspace paths (thanks to @yulia-ivashko).
 - Personal / Sessions: Scoped loading preserves current session data while preventing inactive projects and stale requests from driving repeated background refreshes (original work by wq.pan; integrated by @CastleYu).
 - Personal / Files: File-reference checks retain project scoping and distinguish real directories from files (thanks to @CastleYu).
 - Official 1.23.0 / Connections: Unsupported app-only event subscriptions are skipped, avoiding repeated failed authorization and stream requests in standalone webviews.

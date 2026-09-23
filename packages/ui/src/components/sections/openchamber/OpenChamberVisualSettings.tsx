@@ -1,9 +1,12 @@
 import React from 'react';
+import { ThemeImportButton } from './ThemeImportButton';
+import { ThemeSelectItem } from './ThemeSelectItem';
 
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import type { ThemeMode } from '@/types/theme';
 import { useUIStore, type LargeTextPasteBehavior } from '@/stores/useUIStore';
 import { useMessageQueueStore, type FollowUpBehavior } from '@/stores/messageQueueStore';
+import { useSessionDisplayStore } from '@/stores/useSessionDisplayStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { NumberInput } from '@/components/ui/number-input';
@@ -302,8 +305,7 @@ const normalizeUserMessageRenderingMode = (mode: unknown): 'markdown' | 'plain' 
     return mode === 'markdown' ? 'markdown' : 'plain';
 };
 
-type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'mermaidStyle' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'backgroundProjectSessionLoading';
-
+type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'mermaidStyle' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'animatedActivityIndicators';
 
 const WINDOW_CONTROLS_POSITION_OPTIONS: Array<{ id: DesktopWindowControlsPosition; labelKey: string }> = [
     { id: 'left', labelKey: 'settings.openchamber.desktopNetwork.option.windowControlsLeft' },
@@ -343,6 +345,8 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
     const setStreamingAutoFollowEnabled = useUIStore(state => state.setStreamingAutoFollowEnabled);
     const collapsibleThinkingBlocks = useUIStore(state => state.collapsibleThinkingBlocks);
     const setCollapsibleThinkingBlocks = useUIStore(state => state.setCollapsibleThinkingBlocks);
+    const animatedActivityIndicators = useSessionDisplayStore((s) => s.animatedActivityIndicators);
+    const setAnimatedActivityIndicators = useSessionDisplayStore((s) => s.setAnimatedActivityIndicators);
 
     const mermaidRenderingMode = useUIStore(state => state.mermaidRenderingMode);
     const setMermaidRenderingMode = useUIStore(state => state.setMermaidRenderingMode);
@@ -683,6 +687,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
     }, []);
 
     const shouldShow = (setting: VisibleSetting): boolean => {
+        if (setting === 'enterToSend' && isMobile) return false;
         if (!visibleSettings) return true;
         return visibleSettings.includes(setting);
     };
@@ -958,9 +963,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {lightThemes.map((theme) => (
-                                                        <SelectItem key={theme.metadata.id} value={theme.metadata.id}>
-                                                            {formatThemeLabel(theme.metadata.name, 'light')}
-                                                        </SelectItem>
+                                                        <ThemeSelectItem key={theme.metadata.id} id={theme.metadata.id} label={formatThemeLabel(theme.metadata.name, 'light')} />
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -979,9 +982,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {darkThemes.map((theme) => (
-                                                        <SelectItem key={theme.metadata.id} value={theme.metadata.id}>
-                                                            {formatThemeLabel(theme.metadata.name, 'dark')}
-                                                        </SelectItem>
+                                                        <ThemeSelectItem key={theme.metadata.id} id={theme.metadata.id} label={formatThemeLabel(theme.metadata.name, 'dark')} />
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -1014,6 +1015,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                                 {t('settings.openchamber.visual.field.themeImportInfoTooltip')}
                                             </SettingsInfoHint>
                                         </div>
+                                        <ThemeImportButton />
                                     </div>
                                 </SettingsTwoColumn>
 
@@ -1510,6 +1512,23 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                     </SettingsSection>
                 )}
 
+                {shouldShow('animatedActivityIndicators') && (
+                    <SettingsSection
+                        title={t('settings.openchamber.visual.section.sessionActivity')}
+                        settingsItem="appearance.session-activity"
+                        contentClassName={SETTINGS_OPTION_STACK_CLASS}
+                    >
+                        <SettingsCheckboxRow
+                            checked={animatedActivityIndicators}
+                            onChange={setAnimatedActivityIndicators}
+                            label={t('settings.openchamber.visual.field.animatedActivityIndicators')}
+                            ariaLabel={t('settings.openchamber.visual.field.animatedActivityIndicatorsAria')}
+                            info={t('settings.openchamber.visual.field.animatedActivityIndicatorsInfo')}
+                            settingsItem="appearance.animated-activity-indicators"
+                        />
+                    </SettingsSection>
+                )}
+
                 {/* --- Navigation --- */}
                 {hasNavigationSettings && (
                     <SettingsSection title={t('settings.openchamber.visual.section.navigation')} contentClassName="space-y-4">
@@ -1628,11 +1647,11 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                                         className={cn(
                                                             'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
                                                             selected
-                                                                ? 'border-primary bg-primary/5'
-                                                                : 'border-border hover:border-border/80 hover:bg-muted/50'
+                                                                ? 'border-border bg-interactive-selection text-interactive-selection-foreground'
+                                                                : 'border-border hover:border-border/80 hover:bg-interactive-hover'
                                                         )}
                                                     >
-                                                        <span className={cn('typography-ui-label', selected ? 'text-foreground' : 'text-muted-foreground')}>
+                                                        <span className={cn('typography-ui-label', selected ? 'text-inherit' : 'text-muted-foreground')}>
                                                             {tUnsafe(option.labelKey)}
                                                         </span>
                                                         <div className="mt-2 w-full rounded-md border border-border/60 bg-muted/30 p-2">

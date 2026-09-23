@@ -3,6 +3,7 @@ import { isDesktopShell } from '@/lib/desktop';
 import { ensureGlobalSessionsLoaded, refreshGlobalSessionsForDirectories } from '@/stores/useGlobalSessionsStore';
 import { useKnownSessionDirectoriesStore } from '@/stores/useKnownSessionDirectoriesStore';
 import { getAllSyncSessions, subscribeToInitialScopedDirectoryLoad } from '@/sync/sync-refs';
+import { seedGlobalSessionStatusFromHost } from '@/sync/host-session-status-seed';
 
 /** Minimum spacing between two unscoped global refreshes, however many signals arrive. */
 export const GLOBAL_SESSIONS_REFRESH_COOLDOWN_MS = 30_000;
@@ -147,21 +148,28 @@ export const startGlobalSessionsPolling = (
   };
 };
 
-/** Owns the one global-session polling lifecycle for the main app runtime. */
+/**
+ * Owns the one global-session polling lifecycle for the main app runtime.
+ *
+ * Each load is followed by the host status seed: unopened directories are
+ * never bootstrapped, so a turn already running there when this client
+ * started is only known to the host's cross-project map. The seed resolves
+ * directories from the list just loaded, which is why it runs after it.
+ */
 export const useGlobalSessionsPolling = (enabled: boolean): void => {
   React.useEffect(() => {
     if (!enabled) return;
 
     return startGlobalSessionsPolling({
       initialLoad: shouldLoadInitialGlobalSnapshot()
-        ? () => { void ensureGlobalSessionsLoaded(getAllSyncSessions()); }
+        ? () => { void ensureGlobalSessionsLoaded(getAllSyncSessions()).finally(() => seedGlobalSessionStatusFromHost()); }
         : undefined,
       waitForInitialScopedLoad: subscribeToInitialScopedDirectoryLoad,
       scheduleIdleWork: scheduleBrowserIdleWork,
       refresh: () => {
         const directories = [...useKnownSessionDirectoriesStore.getState().directories];
         if (directories.length === 0) return;
-        void refreshGlobalSessionsForDirectories(directories, getAllSyncSessions());
+        void refreshGlobalSessionsForDirectories(directories, getAllSyncSessions()).finally(() => seedGlobalSessionStatusFromHost());
       },
       now: Date.now,
       scheduleInterval: window.setInterval.bind(window),

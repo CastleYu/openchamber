@@ -33,7 +33,18 @@ Fetch the verified community branch and fork before comparing commits. A failed 
 
 Compare the personal branch with both the fetched upstream and the fork's personal branch, if it exists. Use `git rev-list --left-right --count`, `git log --left-right --cherry-pick --oneline`, and `git merge-base --is-ancestor` as appropriate. Rewritten equivalent patches can produce large ahead/behind counts; do not treat that as permission to force-push or replay every commit. If the fork has new personal commits, reconcile them in the integration branch before community intake. Keep both sides' non-equivalent changes.
 
-Create a uniquely named backup ref at the personal base and a temporary `codex/sync-...` integration branch from that base. Prefer a separate worktree under `.worktrees/` so the user's working tree stays untouched. Record its absolute path and branch. Preserve the original branch, backup, and any pre-existing stashes.
+Create a uniquely named backup ref at the current branch tip. Perform the upstream
+merge on the branch that was checked out when this workflow began. That branch is
+the integration target, not a temporary `codex/sync-*` branch. Record its name and
+starting SHA before changing it.
+
+A separate worktree under `.worktrees/` is an optional safety mechanism when the
+current checkout has unrelated dirty files or the maintainer explicitly requests
+isolation. It is not a completion target. If isolation is needed, use it to inspect
+and resolve the merge, then bring the reviewed merge commit back to the invoking
+branch without rewriting either history. The workflow is incomplete while the
+result exists only in the isolated worktree. Preserve the original branch, backup,
+and any pre-existing stashes.
 
 If updating the original checkout later requires parking dirty changes, use a uniquely named stash with untracked files included and record its exact object ID. Preserve the original staged/unstaged split. Do not use a moving `stash@{0}` reference to identify that backup after other operations. Ignored files are not captured by `stash -u`; use the isolated worktree whenever those files would otherwise be at risk.
 
@@ -84,6 +95,11 @@ order, platform/group/source, versions, credits, links and not-merged labels ali
 with English. Verify the body changes with the interface language while filters
 stay selected; translated controls alone do not complete history localization.
 
+The Simplified Chinese history is a required page, not an optional translation
+follow-up. Append the English and Chinese entries in the same integration before
+promotion. Missing, stale or structurally mismatched Chinese content blocks the
+merge from the formal release line.
+
 Run the update-history and Settings-search tests, check that no authored bullet
 was lost, and verify the Settings page. Changelog authoring and generated files
 still follow the explicit-request gate in `update-changelog`; this required
@@ -97,9 +113,19 @@ Run affected upstream and personal regression tests. When manifests/lockfiles ch
 
 Compare failures with the recorded base or a reproducible clean-base run. New failures or unverified personal behavior in a touched area block promotion. Report reproducibly pre-existing failures separately; neither suppress them nor present the run as fully green. Put unresolved work and its evidence in the maintenance task queue.
 
-Commit the resolved integration with the repository's commit convention and a Chinese main description. Verify that both the original personal base and the pinned upstream SHA are ancestors of the integration tip. Record the resulting SHA, conflict decisions, checks and limits in a dated file under `docs/maintenance/evidence/`. Commit that record as a docs-only follow-up before promotion; it identifies the validated merge SHA rather than attempting to contain its own commit SHA.
+Commit the resolved integration with the repository's commit convention and a Chinese main description. Verify that both the invoking branch's original tip and the pinned upstream SHA are ancestors of the integration tip. Record the resulting SHA, conflict decisions, checks and limits in a dated file under `docs/maintenance/evidence/`. Commit that record as a docs-only follow-up before promotion; it identifies the validated merge SHA rather than attempting to contain its own commit SHA.
 
-Before promoting, confirm the personal branch still equals the recorded base. If another actor advanced it, integrate that work and revalidate the affected result rather than resetting it. Fast-forward the personal branch to the reviewed integration tip. If its checkout is dirty, preserve it as described above before the fast-forward. Apply the exact recorded stash with `--index` when needed, verify tracked/untracked content and the original staging split, and keep the backup until restoration is confirmed. A stash-apply conflict is a separate unresolved user-change restoration, not a successful sync.
+Promote the reviewed invoking branch into the formal release line,
+`codex/personal` by default, before calling the sync complete. If the invoking
+branch is already the formal release line, its integration commit satisfies this
+step. Otherwise merge it into the formal release line without squashing or
+rewriting the upstream merge. Confirm the formal release line still equals its
+recorded base first. If another actor advanced it, integrate that work and
+revalidate the affected result rather than resetting it. If its checkout is
+dirty, preserve it as described above before promotion. Apply the exact recorded
+stash with `--index` when needed, verify tracked/untracked content and the original
+staging split, and keep the backup until restoration is confirmed. A stash-apply
+conflict is a separate unresolved user-change restoration, not a successful sync.
 
 ## Publish when authorized
 

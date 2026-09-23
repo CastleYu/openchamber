@@ -14,12 +14,12 @@ import { Icon } from "@/components/icon/Icon";
 import { FadeInOnReveal } from '../FadeInOnReveal';
 import { getToolIcon } from './toolPresentation';
 import { getToolMetadata } from '@/lib/toolHelpers';
+import { useGuestToolPresentation } from '@/lib/guests/tool-presentation';
 import { isExpandableTool, isStandaloneTool, isStaticTool } from './toolRenderUtils';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useSkillsStore } from '@/stores/useSkillsStore';
-import { ensureOutsideFileGrantForDesktop } from '@/lib/outsideFileGrants';
 import ReasoningPart from './ReasoningPart';
 import JustificationBlock from './JustificationBlock';
 import { areRenderRelevantPartsEqual } from '../renderCompare';
@@ -558,8 +558,12 @@ const StaticToolRowInner: React.FC<{
     animateTailText: boolean;
 }> = ({ toolName, activities, animateTailText }) => {
     const showToolFileIcons = useUIStore((state) => state.showToolFileIcons);
-    const displayName = getToolMetadata(toolName).displayName;
-    const icon = getToolIcon(toolName);
+    // Grouped rows share one normalized name; the registry wants the full
+    // name OpenCode reported, which every activity in the group carries.
+    const firstPart = activities[0]?.part;
+    const presentation = useGuestToolPresentation(firstPart?.type === 'tool' ? firstPart.tool : null);
+    const displayName = presentation?.name ?? getToolMetadata(toolName).displayName;
+    const icon = getToolIcon(toolName, presentation);
     const isReadGroup = toolName.toLowerCase() === 'read';
     const runtime = React.useContext(RuntimeAPIContext);
     const mobileActions = useMobileAppActions();
@@ -626,7 +630,7 @@ const StaticToolRowInner: React.FC<{
 
         // Dedicated mobile app: stage the same pending file focus/navigation
         // desktop uses, then surface the Files pane (workspace drawer tab),
-        // which consumes it. Desktop grant flows don't apply here.
+        // which consumes it.
         if (mobileActions) {
             const uiStore = useUIStore.getState();
             const contextDirectory = currentDirectory || getDirectoryForFilePath(currentDirectory, absolutePath);
@@ -640,15 +644,13 @@ const StaticToolRowInner: React.FC<{
         }
 
         if (!isFilePathWithinDirectory(absolutePath, currentDirectory)) {
-            void ensureOutsideFileGrantForDesktop(absolutePath, currentDirectory).then(() => {
-                const uiStore = useUIStore.getState();
-                const contextDirectory = currentDirectory || getDirectoryForFilePath(currentDirectory, absolutePath);
-                if (offset && Number.isFinite(offset)) {
-                    uiStore.openContextFileAtLine(contextDirectory, absolutePath, Math.max(1, Math.trunc(offset)), 1);
-                    return;
-                }
-                uiStore.openContextFile(contextDirectory, absolutePath);
-            });
+            const uiStore = useUIStore.getState();
+            const contextDirectory = currentDirectory || getDirectoryForFilePath(currentDirectory, absolutePath);
+            if (offset && Number.isFinite(offset)) {
+                uiStore.openContextFileAtLine(contextDirectory, absolutePath, Math.max(1, Math.trunc(offset)), 1);
+                return;
+            }
+            uiStore.openContextFile(contextDirectory, absolutePath);
             return;
         }
 

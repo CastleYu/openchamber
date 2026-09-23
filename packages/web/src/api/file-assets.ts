@@ -4,7 +4,6 @@ import { runtimeFetch } from '@openchamber/ui/lib/runtime-fetch';
 import { acquireRuntimeUrlAuthToken, refreshRuntimeUrlAuthToken } from '@openchamber/ui/lib/runtime-auth';
 import { getRuntimeUrlResolver } from '@openchamber/ui/lib/runtime-url';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@openchamber/ui/lib/runtime-switch';
-import { resolveOutsideFileReadOptions } from '@openchamber/ui/lib/outsideFileGrants';
 import type { FileAsset, FileTransferOptions } from '@openchamber/ui/lib/api/types';
 
 const Command = {
@@ -22,9 +21,7 @@ const checkTransfer = (runtimeKey: string, signal?: AbortSignal) => {
 export async function loadAsset(path: string, options: FileTransferOptions = {}, forceCopy = false): Promise<FileAsset> {
   const runtimeKey = getRuntimeKey();
   checkTransfer(runtimeKey, options.signal);
-  const access = await resolveOutsideFileReadOptions(path, options.directory ?? '', Boolean(options.allowOutsideWorkspace));
-  checkTransfer(runtimeKey, options.signal);
-  const query = { path, directory: options.directory, allowOutsideWorkspace: options.allowOutsideWorkspace, outsideFileGrant: access.outsideFileGrant ?? options.outsideFileGrant };
+  const query = { path, directory: options.directory, allowOutsideWorkspace: options.allowOutsideWorkspace };
   if (!forceCopy && isDesktopLocalOriginActive()) {
     const base = getRuntimeApiBaseUrl();
     const release = acquireRuntimeUrlAuthToken(base);

@@ -8,6 +8,7 @@ import { loadSourceSections, parseSource, sourceKey } from '../walkthrough/sourc
 import { registerGitRoutes } from './routes.js';
 
 import {
+  unsupportedRepositoryRootReason,
   checkoutBranch,
   checkoutCommit,
   cherryPick,
@@ -21,8 +22,10 @@ import {
   getCommitFiles,
   getLog,
   getStatus,
+  getTrackingBranch,
   getWorktrees,
   isGitRepository,
+  observeWorktreeTopology,
   populateWorktreeWithLockRecovery,
   removeWorktree,
   resolvePrimaryWorktreeRoot,
@@ -32,15 +35,18 @@ import {
   revertCommit,
   setLocalIdentity,
   stageFiles,
+  subscribeWorktreeTopologyChanges,
   unstageFiles,
   applyHunk,
   getDiff,
+  getPathDiff,
+  revertFile,
   getUntrackedDiffs,
   getFileDiff,
-  getUntrackedDiffs,
   validateWorktreeCreate,
   parseBranchCreationSource,
   getRangeFiles,
+  push,
 } from './service.js';
 
 // ---------------------------------------------------------------------------
@@ -48,6 +54,26 @@ import {
 // ---------------------------------------------------------------------------
 
 const tempDirs = [];
+
+// Keep checkout contents stable when a Windows host has core.autocrlf enabled.
+// This only changes Git's environment in this isolated Vitest worker.
+const configIndex = Number(process.env.GIT_CONFIG_COUNT || 0);
+const configCount = process.env.GIT_CONFIG_COUNT;
+const configKey = process.env[`GIT_CONFIG_KEY_${configIndex}`];
+const configValue = process.env[`GIT_CONFIG_VALUE_${configIndex}`];
+process.env.GIT_CONFIG_COUNT = String(configIndex + 1);
+process.env[`GIT_CONFIG_KEY_${configIndex}`] = 'core.autocrlf';
+process.env[`GIT_CONFIG_VALUE_${configIndex}`] = 'false';
+afterAll(() => {
+  for (const [name, value] of [
+    ['GIT_CONFIG_COUNT', configCount],
+    [`GIT_CONFIG_KEY_${configIndex}`, configKey],
+    [`GIT_CONFIG_VALUE_${configIndex}`, configValue],
+  ]) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+});
 
 /** Create a temp dir and register it for afterEach cleanup. */
 const createTempDir = () => {
@@ -62,6 +88,10 @@ const runGit = (cwd, args) =>
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+const gitPath = (value) => value.replaceAll('\\', '/');
+const startNode = (script) => process.platform === 'win32'
+  ? `${process.execPath} ${script}`
+  : `${JSON.stringify(process.execPath)} ${JSON.stringify(script)}`;
 
 const readBranchConfig = (cwd, branch, key) => {
   try {
@@ -125,6 +155,23 @@ async function createTempRepo() {
 // ---------------------------------------------------------------------------
 // resolveBaseRefForLog
 // ---------------------------------------------------------------------------
+
+describe('unsupportedRepositoryRootReason', () => {
+  it('rejects a repository rooted at a filesystem root or the home directory', () => {
+    const home = path.join(os.tmpdir(), 'unsupported-root-home');
+    expect(unsupportedRepositoryRootReason('/', home)).toBe('filesystem-root');
+    expect(unsupportedRepositoryRootReason(path.parse(process.cwd()).root, home)).toBe('filesystem-root');
+    expect(unsupportedRepositoryRootReason(home, home)).toBe('home');
+    expect(unsupportedRepositoryRootReason(`${home}${path.sep}`, home)).toBe('home');
+  });
+
+  it('accepts an ordinary project root, including one directly under home', () => {
+    const home = path.join(os.tmpdir(), 'unsupported-root-home');
+    expect(unsupportedRepositoryRootReason(path.join(home, 'project'), home)).toBeNull();
+    expect(unsupportedRepositoryRootReason(path.join(os.tmpdir(), 'repo'), home)).toBeNull();
+    expect(unsupportedRepositoryRootReason('', home)).toBeNull();
+  });
+});
 
 describe('resolveBaseRefForLog', () => {
   it('returns the local ref unchanged when it exists, even if origin also exists', async () => {
@@ -423,6 +470,8 @@ describe('applyHunk', () => {
 
 describe.runIf(canRunGit())('untracked diffs', () => {
   it.each(['false', 'warn'])('returns only the patch with core.safecrlf=%s', async (safecrlf) => {
+    process.env[`GIT_CONFIG_VALUE_${configIndex}`] = 'true';
+    try {
     const { tmpDir, git } = await createTempRepo();
     await git.addConfig('core.autocrlf', 'true');
     await git.addConfig('core.safecrlf', safecrlf);
@@ -446,6 +495,9 @@ describe.runIf(canRunGit())('untracked diffs', () => {
     expect(diff).toContain('+first\n+second\n');
     expect(diff).not.toContain('warning:');
     expect(await getUntrackedDiffs(tmpDir, ['new file.txt'])).toEqual([diff]);
+    } finally {
+      process.env[`GIT_CONFIG_VALUE_${configIndex}`] = 'false';
+    }
   });
 
   it('accepts an empty untracked file without a process error', async () => {
@@ -502,6 +554,131 @@ describe('symlink diffs', () => {
       original: '',
       modified: 'source',
       isBinary: false,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Status paths that are not plain files (#3586)
+// ---------------------------------------------------------------------------
+
+describe.runIf(canRunGit())('diffs for status paths that are not plain files', () => {
+  const callDiffRoute = async (endpoint, query) => {
+    const routes = new Map();
+    registerGitRoutes({ get: (url, handler) => routes.set(url, handler), post() {}, put() {}, delete() {} });
+    let status = 200;
+    let body;
+    await routes.get(`/api/git/${endpoint}`)({ query }, {
+      status(value) { status = value; return this; },
+      json(value) { body = value; },
+    });
+    return { status, body };
+  };
+
+  const createRepositoryWithSubmodule = () => {
+    const { repository } = createRepositoryWithRemote();
+    const library = createTempDir();
+    runGit(library, ['init', '-b', 'main']);
+    runGit(library, ['config', 'user.email', 'test@example.com']);
+    runGit(library, ['config', 'user.name', 'Test']);
+    fs.writeFileSync(path.join(library, 'lib.txt'), 'lib\n');
+    runGit(library, ['add', '.']);
+    runGit(library, ['commit', '-m', 'lib']);
+    runGit(repository, ['-c', 'protocol.file.allow=always', 'submodule', 'add', library, 'sub']);
+    runGit(repository, ['commit', '-m', 'add submodule']);
+    return { repository, recorded: runGit(repository, ['rev-parse', 'HEAD:sub']).trim() };
+  };
+
+  it('answers 404 with a code when a listed file is gone before its diff is requested', async () => {
+    const { repository } = createRepositoryWithRemote();
+    for (const endpoint of ['diff', 'file-diff']) {
+      const { status, body } = await callDiffRoute(endpoint, { directory: repository, path: 'removed.txt' });
+      expect(status).toBe(404);
+      expect(body).toEqual({ code: 'path_not_found', error: 'Path not found in working tree, index, or HEAD: removed.txt' });
+    }
+  });
+
+  it('answers 422 for a nested repository that status lists as a directory', async () => {
+    const { repository } = createRepositoryWithRemote();
+    const nested = path.join(repository, 'nested');
+    fs.mkdirSync(nested);
+    runGit(nested, ['init', '-b', 'main']);
+    fs.writeFileSync(path.join(nested, 'inner.txt'), 'inner\n');
+    expect((await getStatus(repository)).files).toContainEqual(expect.objectContaining({ path: 'nested/' }));
+
+    for (const endpoint of ['diff', 'file-diff']) {
+      const { status, body } = await callDiffRoute(endpoint, { directory: repository, path: 'nested/' });
+      expect(status).toBe(422);
+      expect(body.code).toBe('nested_repository');
+    }
+    await expect(revertFile(repository, 'nested/')).rejects.toMatchObject({ code: 'nested_repository' });
+    expect(fs.existsSync(path.join(nested, 'inner.txt'))).toBe(true);
+  });
+
+  it('describes a submodule whose checked-out commit moved', async () => {
+    const { repository, recorded } = createRepositoryWithSubmodule();
+    const submodulePath = path.join(repository, 'sub');
+    runGit(submodulePath, ['config', 'user.email', 'test@example.com']);
+    runGit(submodulePath, ['config', 'user.name', 'Test']);
+    runGit(submodulePath, ['commit', '--allow-empty', '-m', 'moved']);
+    const moved = runGit(submodulePath, ['rev-parse', 'HEAD']).trim();
+    const submodule = { headCommit: recorded, indexCommit: recorded, worktreeCommit: moved, hasTrackedChanges: false, hasUntrackedFiles: false, hasConflict: false };
+
+    const patch = await callDiffRoute('diff', { directory: repository, path: 'sub' });
+    expect(patch.status).toBe(200);
+    expect(patch.body.diff).toContain(`+Subproject commit ${moved}`);
+    expect(patch.body.submodule).toEqual(submodule);
+
+    const split = await callDiffRoute('file-diff', { directory: repository, path: 'sub' });
+    expect(split.body).toEqual({
+      original: `Subproject commit ${recorded}\n`,
+      modified: `Subproject commit ${moved}\n`,
+      path: 'sub',
+      isBinary: false,
+      submodule,
+    });
+  });
+
+  it('reports a submodule merge conflict instead of an unchanged commit', async () => {
+    const { repository } = createRepositoryWithRemote();
+    const library = createTempDir();
+    runGit(library, ['init', '-b', 'main']);
+    runGit(library, ['config', 'user.email', 'test@example.com']);
+    runGit(library, ['config', 'user.name', 'Test']);
+    runGit(library, ['commit', '--allow-empty', '-m', 'base']);
+    runGit(library, ['checkout', '-b', 'left']);
+    runGit(library, ['commit', '--allow-empty', '-m', 'left']);
+    runGit(library, ['checkout', '-b', 'right', 'main']);
+    runGit(library, ['commit', '--allow-empty', '-m', 'right']);
+    runGit(library, ['checkout', 'main']);
+    runGit(repository, ['-c', 'protocol.file.allow=always', 'submodule', 'add', library, 'sub']);
+    runGit(repository, ['commit', '-m', 'add submodule']);
+    const submodulePath = path.join(repository, 'sub');
+    for (const [branch, commit] of [['other', 'right'], ['next', 'left']]) {
+      if (branch === 'other') runGit(repository, ['checkout', '-b', 'other']);
+      else runGit(repository, ['checkout', 'next']);
+      runGit(submodulePath, ['checkout', commit]);
+      runGit(repository, ['add', 'sub']);
+      runGit(repository, ['commit', '-m', `move to ${commit}`]);
+    }
+    expect(() => runGit(repository, ['merge', 'other'])).toThrow();
+
+    const { submodule } = await getPathDiff(repository, { path: 'sub' });
+    expect(submodule).toMatchObject({
+      headCommit: runGit(repository, ['rev-parse', 'HEAD:sub']).trim(),
+      indexCommit: null,
+      hasConflict: true,
+    });
+  });
+
+  it('reports untracked files inside a submodule even though its patch is empty', async () => {
+    const { repository, recorded } = createRepositoryWithSubmodule();
+    fs.writeFileSync(path.join(repository, 'sub', 'scratch.txt'), 'scratch\n');
+
+    const result = await getPathDiff(repository, { path: 'sub' });
+    expect(result).toEqual({
+      diff: '',
+      submodule: { headCommit: recorded, indexCommit: recorded, worktreeCommit: recorded, hasTrackedChanges: false, hasUntrackedFiles: true, hasConflict: false },
     });
   });
 });
@@ -602,6 +779,142 @@ describe('getStatus', () => {
       process.chdir(previousCwd);
     }
   });
+
+  it('scopes diff stats by staged and working instead of combining a partially staged file', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    const file = 'test.txt';
+    const filePath = path.join(repo, file);
+    fs.writeFileSync(filePath, 'one\ntwo\nthree\n');
+    runGit(repo, ['add', file]);
+    runGit(repo, ['commit', '-m', 'initial']);
+
+    // Stage one new line, then keep editing without staging another.
+    fs.writeFileSync(filePath, 'one\ntwo\nthree\nstaged\n');
+    runGit(repo, ['add', file]);
+    fs.writeFileSync(filePath, 'one\ntwo\nthree\nstaged\nworking\n');
+
+    const status = await getStatus(repo);
+
+    expect(status.diffStats.staged[file]).toEqual({ insertions: 1, deletions: 0 });
+    expect(status.diffStats.working[file]).toEqual({ insertions: 1, deletions: 0 });
+  });
+
+  it('scopes untracked files to working stats and staged additions to staged stats', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    fs.writeFileSync(path.join(repo, 'tracked.txt'), 'tracked\n');
+    runGit(repo, ['add', 'tracked.txt']);
+    runGit(repo, ['commit', '-m', 'initial']);
+
+    fs.writeFileSync(path.join(repo, 'untracked.txt'), 'a\nb\n');
+    fs.writeFileSync(path.join(repo, 'staged.txt'), 'c\nd\ne\n');
+    runGit(repo, ['add', 'staged.txt']);
+
+    const status = await getStatus(repo);
+
+    expect(status.diffStats.working['untracked.txt']).toEqual({ insertions: 2, deletions: 0 });
+    expect(status.diffStats.staged['staged.txt']).toEqual({ insertions: 3, deletions: 0 });
+    expect(status.diffStats.working['staged.txt']).toBeUndefined();
+  });
+});
+
+describe('push', () => {
+  it('publishes the current branch with an upstream and leaves other local branches alone', async () => {
+    if (!canRunGit()) return;
+
+    const remote = createTempDir();
+    const repo = createTempDir();
+    runGit(remote, ['init', '--bare']);
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    fs.writeFileSync(path.join(repo, 'README.md'), '# Test\n');
+    runGit(repo, ['add', 'README.md']);
+    runGit(repo, ['commit', '-m', 'Initial commit']);
+    runGit(repo, ['remote', 'add', 'fork', remote]);
+    runGit(repo, ['branch', 'unrelated']);
+    runGit(repo, ['checkout', '-b', 'feature']);
+    fs.writeFileSync(path.join(repo, 'feature.txt'), 'published\n');
+    runGit(repo, ['add', 'feature.txt']);
+    runGit(repo, ['commit', '-m', 'Add feature']);
+
+    const published = await push(repo, { remote: 'fork' });
+    expect(published.pushed).toEqual([{ local: 'refs/heads/feature', remote: 'fork' }]);
+
+    expect(runGit(repo, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim()).toBe('fork/feature');
+    expect(runGit(remote, ['rev-parse', 'refs/heads/feature']).trim()).toBe(runGit(repo, ['rev-parse', 'HEAD']).trim());
+    expect(() => runGit(remote, ['rev-parse', 'refs/heads/unrelated'])).toThrow();
+    expect(() => runGit(remote, ['rev-parse', 'refs/heads/main'])).toThrow();
+
+    expect((await push(repo)).pushed).toEqual([]);
+    fs.appendFileSync(path.join(repo, 'feature.txt'), 'next commit\n');
+    runGit(repo, ['commit', '-am', 'Update feature']);
+    expect((await push(repo)).pushed).toEqual([{ local: 'refs/heads/feature', remote: 'fork' }]);
+    expect(runGit(remote, ['rev-parse', 'feature']).trim()).toBe(runGit(repo, ['rev-parse', 'HEAD']).trim());
+
+    runGit(repo, ['reset', '--hard', 'HEAD~1']);
+    await expect(push(repo)).rejects.toThrow();
+    expect((await push(repo, { options: ['--force-with-lease'] })).pushed)
+      .toEqual([{ local: 'refs/heads/feature', remote: 'fork' }]);
+    expect(runGit(remote, ['rev-parse', 'feature']).trim()).toBe(runGit(repo, ['rev-parse', 'HEAD']).trim());
+  });
+
+  it.each(['remote.pushDefault', 'branch.next.pushRemote'])('preserves the %s destination independently of the fetch remote', async (key) => {
+    const { repository, remote: upstream } = createRepositoryWithRemote({ remoteName: 'upstream', defaultBranch: 'next' });
+    const fork = createTempDir();
+    runGit(fork, ['init', '--bare']);
+    runGit(repository, ['remote', 'add', 'fork', fork]);
+    runGit(repository, ['branch', '--set-upstream-to=upstream/next']);
+    if (key === 'branch.next.pushRemote') runGit(repository, ['config', 'remote.pushDefault', 'upstream']);
+    runGit(repository, ['config', key, 'fork']);
+    const upstreamHead = runGit(upstream, ['rev-parse', 'next']).trim();
+    fs.appendFileSync(path.join(repository, 'README.md'), 'fork change\n');
+    runGit(repository, ['commit', '-am', 'Change for fork']);
+
+    expect((await push(repository)).pushed).toEqual([{ local: 'refs/heads/next', remote: 'fork' }]);
+    expect(runGit(fork, ['rev-parse', 'next']).trim()).toBe(runGit(repository, ['rev-parse', 'HEAD']).trim());
+    expect(runGit(upstream, ['rev-parse', 'next']).trim()).toBe(upstreamHead);
+    expect(readBranchConfig(repository, 'next', 'remote')).toBe('upstream');
+    expect((await push(repository)).pushed).toEqual([]);
+  });
+
+  it.each(['remote.pushDefault', 'branch.next.pushRemote'])('uses %s for first publication without an upstream', async (key) => {
+    const { repository, remote: origin } = createRepositoryWithRemote();
+    const fork = createTempDir();
+    runGit(fork, ['init', '--bare']);
+    runGit(repository, ['remote', 'add', 'fork', fork]);
+    runGit(repository, ['config', key, 'fork']);
+    runGit(repository, ['config', 'push.autoSetupRemote', 'false']);
+
+    expect((await push(repository)).pushed).toEqual([{ local: 'refs/heads/next', remote: 'fork' }]);
+    expect(readBranchConfig(repository, 'next', 'remote')).toBe('fork');
+    expect(() => runGit(origin, ['rev-parse', 'refs/heads/next'])).toThrow();
+  });
+
+  it('lets an explicit push remote override configured destinations', async () => {
+    const { repository, remote: origin } = createRepositoryWithRemote({ defaultBranch: 'next' });
+    const fork = createTempDir();
+    runGit(fork, ['init', '--bare']);
+    runGit(repository, ['remote', 'add', 'fork', fork]);
+    runGit(repository, ['branch', '--set-upstream-to=origin/next']);
+    runGit(repository, ['config', 'branch.next.pushRemote', 'fork']);
+    fs.appendFileSync(path.join(repository, 'README.md'), 'origin change\n');
+    runGit(repository, ['commit', '-am', 'Change for origin']);
+
+    expect((await push(repository, { remote: 'origin' })).pushed)
+      .toEqual([{ local: 'refs/heads/next', remote: 'origin' }]);
+    expect(runGit(origin, ['rev-parse', 'next']).trim()).toBe(runGit(repository, ['rev-parse', 'HEAD']).trim());
+    expect(() => runGit(fork, ['rev-parse', 'next'])).toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -617,7 +930,7 @@ describe('worktree root resolution', () => {
     runGit(repo, ['init', '-b', 'main']);
     fs.mkdirSync(subdirectory, { recursive: true });
 
-    await expect(resolveWorktreeTopLevel(subdirectory)).resolves.toEqual({ root: fs.realpathSync(repo) });
+    await expect(resolveWorktreeTopLevel(subdirectory)).resolves.toEqual({ root: gitPath(fs.realpathSync(repo)) });
   });
 
   it('resolves the primary worktree root from a linked worktree', async () => {
@@ -634,7 +947,7 @@ describe('worktree root resolution', () => {
     fs.rmSync(worktree, { recursive: true, force: true });
     runGit(repo, ['worktree', 'add', '-b', 'feature/test', worktree, 'HEAD']);
 
-    await expect(resolvePrimaryWorktreeRoot(worktree)).resolves.toEqual({ root: fs.realpathSync(repo) });
+    await expect(resolvePrimaryWorktreeRoot(worktree)).resolves.toEqual({ root: gitPath(fs.realpathSync(repo)) });
   });
 });
 
@@ -681,6 +994,78 @@ describe('getWorktrees', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(warnSpy).not.toHaveBeenCalled();
   });
+  it('notifies subscribers only when another git process changes the worktree set', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    runGit(repo, ['commit', '--allow-empty', '-m', 'init']);
+    const worktreePath = path.join(createTempDir(), 'feature');
+
+    const events = [];
+    const unsubscribe = subscribeWorktreeTopologyChanges((event) => events.push(event));
+    try {
+      await observeWorktreeTopology(repo);
+      await observeWorktreeTopology(repo);
+      expect(events).toHaveLength(0);
+
+      runGit(repo, ['worktree', 'add', worktreePath, '-b', 'feature']);
+      await observeWorktreeTopology(worktreePath);
+      expect(events).toHaveLength(1);
+      expect(events[0].directories).toEqual(expect.arrayContaining([repo, worktreePath]));
+
+      await observeWorktreeTopology(repo);
+      expect(events).toHaveLength(1);
+
+      runGit(repo, ['worktree', 'remove', worktreePath]);
+      await observeWorktreeTopology(repo);
+      expect(events).toHaveLength(2);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('publishes worktrees this server creates and removes', async () => {
+    if (!canRunGit()) return;
+
+    const previousXdgDataHome = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = createTempDir();
+    const events = [];
+    const unsubscribe = subscribeWorktreeTopologyChanges((event) => events.push(event));
+    try {
+      const repo = createTempDir();
+      runGit(repo, ['init', '-b', 'main']);
+      runGit(repo, ['config', 'user.email', 'test@example.com']);
+      runGit(repo, ['config', 'user.name', 'Test User']);
+      runGit(repo, ['commit', '--allow-empty', '-m', 'init']);
+      await observeWorktreeTopology(repo);
+
+      const created = await createWorktree(repo, {
+        mode: 'new',
+        worktreeName: 'published',
+        branchName: 'openchamber/published',
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0].directories).toContain(repo);
+
+      // The publish refreshed the baseline, so the next observation is quiet.
+      await observeWorktreeTopology(repo);
+      expect(events).toHaveLength(1);
+
+      await removeWorktree(repo, { directory: created.path });
+      expect(events).toHaveLength(2);
+    } finally {
+      unsubscribe();
+      if (previousXdgDataHome === undefined) {
+        delete process.env.XDG_DATA_HOME;
+      } else {
+        process.env.XDG_DATA_HOME = previousXdgDataHome;
+      }
+    }
+  });
+
   it('flags a worktree whose directory was deleted outside git as prunable', async () => {
     const repo = createTempDir();
     runGit(repo, ['init', '-b', 'main']);
@@ -744,7 +1129,7 @@ describe('createWorktree', () => {
         branchName: 'feature/bootstrap-phases',
         worktreeName: 'bootstrap-phases',
         returnAfterDirectoryCreated: true,
-        startCommand: `${JSON.stringify(process.execPath)} ${JSON.stringify(setupScript)}`,
+        startCommand: startNode(setupScript),
       });
 
       expect(created.bootstrapStatus).toMatchObject({
@@ -829,7 +1214,9 @@ describe('createWorktree', () => {
       expect(previousHead).toBe('0000000000000000000000000000000000000000');
       expect(newHead).toBe(head);
       expect(flag).toBe('1');
-      expect(cwd).toBe(fs.realpathSync(created.path));
+      const expectedCwd = gitPath(fs.realpathSync(created.path))
+        .replace(gitPath(os.tmpdir()), process.platform === 'win32' ? '/tmp' : gitPath(os.tmpdir()));
+      expect(cwd).toBe(expectedCwd);
     } finally {
       if (previousXdgDataHome === undefined) {
         delete process.env.XDG_DATA_HOME;
@@ -839,7 +1226,7 @@ describe('createWorktree', () => {
     }
   });
 
-  it('skips a non-executable post-checkout hook', async () => {
+  it.skipIf(process.platform === 'win32')('skips a non-executable post-checkout hook', async () => {
     if (!canRunGit()) return;
 
     const previousXdgDataHome = process.env.XDG_DATA_HOME;
@@ -955,7 +1342,7 @@ describe('createWorktree', () => {
         branchName: 'feature/remove-bootstrap-race',
         worktreeName: 'remove-bootstrap-race',
         returnAfterDirectoryCreated: true,
-        startCommand: `${JSON.stringify(process.execPath)} ${JSON.stringify(setupScript)}`,
+        startCommand: startNode(setupScript),
       });
 
       await expect.poll(() => fs.existsSync(setupStarted), { timeout: 5_000 }).toBe(true);
@@ -1033,7 +1420,7 @@ describe('createWorktree', () => {
         branchName: 'feature/in-use',
         worktreeName: 'feature-in-use',
         returnAfterDirectoryCreated: true,
-      })).rejects.toThrow(`Branch is already checked out in ${canonicalWorktree}`);
+      })).rejects.toThrow(`Branch is already checked out in ${gitPath(canonicalWorktree)}`);
 
       const candidateDirectory = path.join(dataHome, 'opencode', 'worktree', projectID, 'feature-in-use');
       expect(fs.existsSync(candidateDirectory)).toBe(false);
@@ -1883,7 +2270,7 @@ describe.runIf(canRunGit())('commit comparisons', () => {
 
   it('keeps rename paths and original contents together, including whitespace in names', async () => {
     const { repository } = createRepositoryWithRemote();
-    const destination = ' new\nname.md';
+    const destination = process.platform === 'win32' ? ' new name.md' : ' new\nname.md';
     runGit(repository, ['mv', 'README.md', destination]);
     runGit(repository, ['commit', '-m', 'rename']);
     const hash = runGit(repository, ['rev-parse', 'HEAD']).trim();
@@ -2061,7 +2448,7 @@ describe.runIf(canRunGit())('getRangeDiff', () => {
     fs.symlinkSync(outside, path.join(repository, 'link.txt'));
     const diff = await getRangeDiff(repository, { base: 'origin/react', head: 'next', includeWorkingTree: true });
     expect(diff).toContain('new file mode 120000');
-    expect(diff).toContain(outside);
+    expect(diff).toContain(gitPath(outside));
     expect(diff).not.toContain('must not be in a diff');
   });
 
@@ -2254,5 +2641,140 @@ describe.runIf(canRunGit())('getUntrackedDiffs bounds', () => {
       policy: { ...policy, walkthroughUntrackedDiffsEnabled: false },
     });
     expect(diffs).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getTrackingBranch
+// ---------------------------------------------------------------------------
+
+describe('getTrackingBranch', () => {
+  const createCommittedRepo = () => {
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    runGit(repo, ['commit', '--allow-empty', '-m', 'Initial commit']);
+    return repo;
+  };
+
+  it('reports the same upstream name as status, including a gone upstream', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createCommittedRepo();
+    await expect(getTrackingBranch(repo)).resolves.toBeNull();
+
+    runGit(repo, ['remote', 'add', 'origin', 'https://example.invalid/repo.git']);
+    runGit(repo, ['config', 'branch.main.remote', 'origin']);
+    runGit(repo, ['config', 'branch.main.merge', 'refs/heads/main']);
+    await expect(getTrackingBranch(repo)).resolves.toBe('origin/main');
+    expect((await getStatus(repo)).tracking).toBe('origin/main');
+
+    runGit(repo, ['update-ref', 'refs/remotes/origin/main', 'HEAD']);
+    await expect(getTrackingBranch(repo)).resolves.toBe('origin/main');
+  });
+
+  it('is null for a detached HEAD and outside a repository', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createCommittedRepo();
+    runGit(repo, ['checkout', '--detach']);
+    await expect(getTrackingBranch(repo)).resolves.toBeNull();
+    await expect(getTrackingBranch(createTempDir())).resolves.toBeNull();
+  });
+});
+
+describe('getStatus concurrency', () => {
+  it('answers overlapping reads of one repository and reflects changes made while a read ran', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    runGit(repo, ['commit', '--allow-empty', '-m', 'Initial commit']);
+
+    const first = getStatus(repo);
+    fs.writeFileSync(path.join(repo, 'late.txt'), 'added after the first read was admitted\n');
+    const second = getStatus(repo, { mode: 'light' });
+    const third = getStatus(repo);
+
+    const [firstStatus, secondStatus, thirdStatus] = await Promise.all([first, second, third]);
+    expect(firstStatus.current).toBe('main');
+    expect(secondStatus.files.map((file) => file.path)).toContain('late.txt');
+    expect(thirdStatus.files.map((file) => file.path)).toContain('late.txt');
+    // The follow-up run served both later callers at the widest requested mode.
+    expect(secondStatus.diffStats).toBeDefined();
+    expect(thirdStatus.diffStats).toBeDefined();
+  });
+});
+
+describe('getStatus untracked directories', () => {
+  const callDiffRoute = async (endpoint, query) => {
+    const routes = new Map();
+    registerGitRoutes({ get: (url, handler) => routes.set(url, handler), post() {}, put() {}, delete() {} });
+    let status = 200;
+    let body;
+    await routes.get(`/api/git/${endpoint}`)({ query }, {
+      status(value) { status = value; return this; },
+      json(value) { body = value; },
+    });
+    return { status, body };
+  };
+
+  const createCommittedRepo = () => {
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    fs.writeFileSync(path.join(repo, 'README.md'), '# Test\n');
+    runGit(repo, ['add', 'README.md']);
+    runGit(repo, ['commit', '-m', 'Initial commit']);
+    return repo;
+  };
+
+  const writeFiles = (root, count) => {
+    fs.mkdirSync(root, { recursive: true });
+    for (let index = 0; index < count; index += 1) {
+      fs.writeFileSync(path.join(root, `file-${String(index).padStart(5, '0')}.txt`), `${index}\n`);
+    }
+  };
+
+  it('lists the files of an ordinary new directory one by one', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createCommittedRepo();
+    writeFiles(path.join(repo, 'feature', 'deep'), 3);
+    fs.writeFileSync(path.join(repo, 'loose.txt'), 'loose\n');
+
+    const paths = (await getStatus(repo)).files.map((file) => file.path);
+    expect(paths).toEqual([
+      'feature/deep/file-00000.txt',
+      'feature/deep/file-00001.txt',
+      'feature/deep/file-00002.txt',
+      'loose.txt',
+    ]);
+  });
+
+  it('keeps a directory with more than a thousand new files as one entry the diff routes explain', async () => {
+    if (!canRunGit()) return;
+
+    const repo = createCommittedRepo();
+    writeFiles(path.join(repo, 'node_modules', 'pkg'), 1001);
+    writeFiles(path.join(repo, 'small'), 2);
+
+    const status = await getStatus(repo);
+    expect(status.files.map((file) => file.path)).toEqual([
+      'node_modules/',
+      'small/file-00000.txt',
+      'small/file-00001.txt',
+    ]);
+    expect(status.files[0]).toMatchObject({ index: '?', working_dir: '?' });
+
+    for (const endpoint of ['diff', 'file-diff']) {
+      const { status: httpStatus, body } = await callDiffRoute(endpoint, { directory: repo, path: 'node_modules/' });
+      expect(httpStatus).toBe(422);
+      expect(body).toEqual({ code: 'untracked_directory', error: 'Path is a directory of untracked files: node_modules/' });
+    }
   });
 });

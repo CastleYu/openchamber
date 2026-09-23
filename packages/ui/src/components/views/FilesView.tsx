@@ -56,10 +56,10 @@ import { useDeviceInfo } from '@/lib/device';
 import { cn, getRevealLabelKey } from '@/lib/utils';
 import { getLanguageFromExtension, getImageMimeType, isBinaryFile, isDrawioFile, isImageFile, isPdfFile, isSvgFile, looksLikeBinaryText } from '@/lib/toolHelpers';
 import { shouldAllowFileDraftSave, shouldScheduleFileAutosave } from '@/lib/fileEditorAutosave';
+import { LARGE_FILE_CHAR_THRESHOLD, initialFileTextMode, makeFileContentCacheKey, prepareFileEditorContent, serializeEditorContent, type FileLineEnding } from './fileEditorContent';
 import { getRuntimeUrlResolver } from '@/lib/runtime-url';
 import { acquireRuntimeUrlAuthToken, refreshRuntimeUrlAuthToken, subscribeRuntimeUrlAuthToken } from '@/lib/runtime-auth';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@/lib/runtime-switch';
-import { getOutsideFileGrant, resolveOutsideFileReadOptions } from '@/lib/outsideFileGrants';
 import { subscribeToFileContentInvalidation } from '@/lib/fileContentInvalidation';
 import { DiagramEditor } from '@/components/diagram';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
@@ -68,7 +68,9 @@ import type { Extension } from '@codemirror/state';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useUIStore } from '@/stores/useUIStore';
 import { useFilesViewTabsStore } from '@/stores/useFilesViewTabsStore';
-import { useGitStatus } from '@/stores/useGitStore';
+import { useGitStatus, useGitStore } from '@/stores/useGitStore';
+import { DirectoryRequests } from './files/directoryRequests';
+import { buildFileTreeStatusIndex } from './files/fileTreeStatus';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { buildCodeMirrorCommentWidgets, FilePreviewCommentMenu, normalizeLineRange, useInlineCommentController } from '@/components/comments';
 import { opencodeClient } from '@/lib/opencode/client';
@@ -266,51 +268,7 @@ const isFileMissingError = (error: unknown): boolean => {
     || normalized.includes('does not exist');
 };
 
-const MAX_VIEW_CHARS = 200_000;
 const MAX_CONTENT_POLL_BYTES = 200_000;
-type FileLineEnding = '\n' | '\r\n';
-
-// Fast cache key for pierre's line/highlight caches: content-derived (not a
-// revision counter) so polling reloads and out-of-view changes can never hit
-// a stale entry. Mirrors the diff viewer's key scheme. Known residual: two
-// files identical in total length and in the first/last 200 characters can
-// collide and briefly show stale content; same profile as PierreDiffViewer.
-function makeContentCacheKey(contents: string): string {
-  const sample = contents.length > 400
-    ? `${contents.slice(0, 200)}${contents.slice(-200)}`
-    : contents;
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < sample.length; i += 1) {
-    hash ^= sample.charCodeAt(i);
-    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
-  }
-  return `${contents.length}:${hash.toString(16)}`;
-}
-
-const detectFileLineEnding = (content: string): FileLineEnding => {
-  let crlf = 0;
-  let lf = 0;
-
-  for (let index = 0; index < content.length; index += 1) {
-    if (content.charCodeAt(index) !== 10) {
-      continue;
-    }
-    if (index > 0 && content.charCodeAt(index - 1) === 13) {
-      crlf += 1;
-    } else {
-      lf += 1;
-    }
-  }
-
-  return crlf > lf ? '\r\n' : '\n';
-};
-
-const normalizeEditorLineEndings = (content: string): string => content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-const serializeEditorContent = (content: string, lineEnding: FileLineEnding): string => {
-  const normalized = normalizeEditorLineEndings(content);
-  return lineEnding === '\r\n' ? normalized.replace(/\n/g, '\r\n') : normalized;
-};
 
 const getFileIcon = (filePath: string, extension?: string): React.ReactNode => {
   return <FileTypeIcon filePath={filePath} extension={extension} />;
@@ -640,6 +598,7 @@ const Dialogs: React.FC<DialogsProps> = ({
 };
 
 interface FilesViewProps {
+  visible?: boolean;
   mode?: 'full' | 'editor-only';
 }
 
@@ -752,7 +711,7 @@ const useAssetAuthRefresh = (
   return { readyKey, nonce };
 };
 
-export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
+export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = true }) => {
   const { t } = useI18n();
   const { files, runtime } = useRuntimeAPIs();
   const { currentTheme, availableThemes, lightThemeId, darkThemeId } = useThemeSystem();
@@ -764,12 +723,21 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
   const currentDirectory = useEffectiveDirectory() ?? '';
   const root = normalizePath(currentDirectory.trim());
+  const treeEnabled = isMobile || mode === 'full';
+  const treeActive = treeEnabled && visible;
+  const runtimeKey = useGitStore((state) => state.runtimeKey);
+  const fileScope = JSON.stringify([runtimeKey, root]);
+  const fileScopeRef = React.useRef(fileScope);
+  fileScopeRef.current = fileScope;
+  const treeScope = JSON.stringify([runtimeKey, root, showHidden, showGitignored]);
+  const treeScopeRef = React.useRef(treeScope);
+  treeScopeRef.current = treeScope;
   // editor-only hosts (desktop context panel, the mobile Files surface) bring
   // their own chrome — the open-file tabs row is redundant there.
   const showEditorTabsRow = mode !== 'editor-only';
   const suppressFileLoadingIndicator = mode === 'editor-only' && !isMobile;
   const searchFiles = useFileSearchStore((state) => state.searchFiles);
-  const gitStatus = useGitStatus(currentDirectory);
+  const gitStatus = useGitStatus(treeActive ? currentDirectory : null);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 200);
@@ -816,6 +784,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   const openPaths = useFilesViewTabsStore((state) => (root ? (state.byRoot[root]?.openPaths ?? EMPTY_PATHS) : EMPTY_PATHS));
   const selectedPath = useFilesViewTabsStore((state) => (root ? (state.byRoot[root]?.selectedPath ?? null) : null));
   const expandedPaths = useFilesViewTabsStore((state) => (root ? (state.byRoot[root]?.expandedPaths ?? EMPTY_PATHS) : EMPTY_PATHS));
+  const expandedPathSet = React.useMemo(() => new Set(expandedPaths), [expandedPaths]);
   const removeOpenPath = useFilesViewTabsStore((state) => state.removeOpenPath);
   const removeOpenPathsByPrefix = useFilesViewTabsStore((state) => state.removeOpenPathsByPrefix);
   const removeExpandedPathsByPrefix = useFilesViewTabsStore((state) => state.removeExpandedPathsByPrefix);
@@ -848,7 +817,6 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   }, [openPaths, selectedPath]);
   const selectedFile = React.useMemo(() => (effectiveSelectedPath ? toFileNode(effectiveSelectedPath) : null), [effectiveSelectedPath, toFileNode]);
   const selectedFilePath = selectedFile?.path ?? '';
-  const [, setOutsideFileGrantRevision] = React.useState(0);
 
   React.useEffect(() => {
     if (!root || !selectedPath) return;
@@ -860,23 +828,16 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   }, [openPaths, root, selectedPath, setSelectedPath]);
 
   const selectedFileIsOutsideWorkspace = Boolean(root && selectedFilePath && !isPathWithinRoot(selectedFilePath, root));
-  const selectedOutsideFileGrant = selectedFileIsOutsideWorkspace ? getOutsideFileGrant(selectedFilePath) : undefined;
   const selectedFileReadOptions = React.useMemo(
     () => ({
-      allowOutsideWorkspace: mode === 'editor-only' && selectedFileIsOutsideWorkspace,
-      outsideFileGrant: selectedOutsideFileGrant,
+      allowOutsideWorkspace: selectedFileIsOutsideWorkspace,
       directory: root || undefined,
     }),
-    [mode, selectedFileIsOutsideWorkspace, selectedOutsideFileGrant, root],
+    [selectedFileIsOutsideWorkspace, root],
   );
-  const resolveFileReadOptions = React.useCallback(async (path: string) => {
-    const previousGrant = getOutsideFileGrant(path);
-    const readOptions = await resolveOutsideFileReadOptions(path, root, mode === 'editor-only');
-    if (readOptions.outsideFileGrant && readOptions.outsideFileGrant !== previousGrant) {
-      setOutsideFileGrantRevision((revision) => revision + 1);
-    }
-    return readOptions;
-  }, [mode, root]);
+  const resolveFileReadOptions = React.useCallback((path: string) => ({
+    allowOutsideWorkspace: Boolean(root && !isPathWithinRoot(path, root)),
+  }), [root]);
 
   // Editor tabs horizontal scroll fades
   const editorTabsScrollRef = React.useRef<HTMLDivElement>(null);
@@ -908,9 +869,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   const [childrenByDir, setChildrenByDir] = React.useState<Record<string, FileNode[]>>({});
   const [loadErrorsByDir, setLoadErrorsByDir] = React.useState<Record<string, string>>({});
   const loadedDirsRef = React.useRef<Set<string>>(new Set());
-  const inFlightDirsRef = React.useRef<Set<string>>(new Set());
-  const activeDirectoryLoadIdsRef = React.useRef<Map<string, number>>(new Map());
-  const nextDirectoryLoadIdRef = React.useRef(0);
+  const directoryRequests = React.useMemo(() => new DirectoryRequests(), []);
+  React.useEffect(() => () => directoryRequests.clear(), [directoryRequests]);
 
   const [searchResults, setSearchResults] = React.useState<FileNode[]>([]);
   const [searching, setSearching] = React.useState(false);
@@ -1155,45 +1115,27 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     return sortNodes(nodes);
   }, [showGitignored, showHidden]);
 
-  const loadDirectory = React.useCallback(async (dirPath: string) => {
+  const loadDirectory = React.useCallback(async (dirPath: string, force = false) => {
+    if (!treeActive) return;
     const normalizedDir = normalizePath(dirPath.trim());
     if (!normalizedDir) {
       return;
     }
 
-    if (loadedDirsRef.current.has(normalizedDir) || inFlightDirsRef.current.has(normalizedDir)) {
+    if (!force && loadedDirsRef.current.has(normalizedDir)) {
       return;
     }
 
-    inFlightDirsRef.current = new Set(inFlightDirsRef.current);
-    inFlightDirsRef.current.add(normalizedDir);
-    const requestId = nextDirectoryLoadIdRef.current + 1;
-    nextDirectoryLoadIdRef.current = requestId;
-    activeDirectoryLoadIdsRef.current = new Map(activeDirectoryLoadIdsRef.current);
-    activeDirectoryLoadIdsRef.current.set(normalizedDir, requestId);
-
-    const isCurrentRequest = () => activeDirectoryLoadIdsRef.current.get(normalizedDir) === requestId;
-
-    const listPromise = files.listDirectory
-      ? files.listDirectory(normalizedDir).then((result) => result.entries.map((entry) => ({
-        name: entry.name,
-        path: entry.path,
-        isDirectory: entry.isDirectory,
-      })))
-      : opencodeClient.listLocalDirectory(normalizedDir).then((result) => result.map((entry) => ({
-        name: entry.name,
-        path: entry.path,
-        isDirectory: entry.isDirectory,
-      })));
-
-    await listPromise
-      .then((entries) => {
-        if (!isCurrentRequest()) {
-          return;
-        }
-
+    const scope = treeScopeRef.current;
+    const requestRuntime = getRuntimeKey();
+    return directoryRequests.run(normalizedDir, async (ownsRequest) => {
+      const isCurrentRequest = () => ownsRequest() && treeScopeRef.current === scope && getRuntimeKey() === requestRuntime;
+      try {
+        const entries = files.listDirectory
+          ? (await files.listDirectory(normalizedDir)).entries
+          : await opencodeClient.listLocalDirectory(normalizedDir);
+        if (!isCurrentRequest()) return;
         const mapped = mapDirectoryEntries(normalizedDir, entries);
-
         loadedDirsRef.current = new Set(loadedDirsRef.current);
         loadedDirsRef.current.add(normalizedDir);
         setLoadErrorsByDir((prev) => {
@@ -1208,8 +1150,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
           if (children === previous) return prev;
           return { ...prev, [normalizedDir]: children };
         });
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!isCurrentRequest()) {
           return;
         }
@@ -1230,18 +1171,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
           ...prev,
           [normalizedDir]: message,
         }));
-      })
-      .finally(() => {
-        if (!isCurrentRequest()) {
-          return;
-        }
-
-        activeDirectoryLoadIdsRef.current = new Map(activeDirectoryLoadIdsRef.current);
-        activeDirectoryLoadIdsRef.current.delete(normalizedDir);
-        inFlightDirsRef.current = new Set(inFlightDirsRef.current);
-        inFlightDirsRef.current.delete(normalizedDir);
-      });
-  }, [files, mapDirectoryEntries, removeExpandedPathsByPrefix, root]);
+      }
+    }, force);
+  }, [directoryRequests, files, mapDirectoryEntries, removeExpandedPathsByPrefix, root, treeActive]);
 
   const refreshRoot = React.useCallback(async () => {
     if (!root) {
@@ -1249,13 +1181,12 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     }
 
     loadedDirsRef.current = new Set();
-    inFlightDirsRef.current = new Set();
-    activeDirectoryLoadIdsRef.current = new Map();
+    directoryRequests.clear();
     setLoadErrorsByDir({});
     setChildrenByDir((prev) => (Object.keys(prev).length === 0 ? prev : {}));
 
     await loadDirectory(root);
-  }, [loadDirectory, root]);
+  }, [directoryRequests, loadDirectory, root]);
 
   /**
    * Incrementally refresh a single directory without nuking the rest of the
@@ -1272,13 +1203,10 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     // Remove from loaded set so loadDirectory will actually fetch again.
     loadedDirsRef.current = new Set(loadedDirsRef.current);
     loadedDirsRef.current.delete(normalized);
-    // Also cancel any in-flight request for this dir so the new fetch wins.
-    inFlightDirsRef.current = new Set(inFlightDirsRef.current);
-    inFlightDirsRef.current.delete(normalized);
-    await loadDirectory(normalized);
+    await loadDirectory(normalized, true);
   }, [loadDirectory, refreshRoot]);
 
-  const lastFilesViewDirRef = React.useRef<string>('');
+  const lastFileScopeRef = React.useRef<string>('');
   const lastFilesViewTreeKeyRef = React.useRef<string>('');
 
   React.useEffect(() => {
@@ -1286,8 +1214,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       return;
     }
 
-    const treeKey = `${root}|h${showHidden ? '1' : '0'}|g${showGitignored ? '1' : '0'}`;
-    const dirChanged = lastFilesViewDirRef.current !== root;
+    const treeKey = treeScope;
+    const dirChanged = lastFileScopeRef.current !== fileScope;
     const treeKeyChanged = lastFilesViewTreeKeyRef.current !== treeKey;
 
     if (!dirChanged && !treeKeyChanged) {
@@ -1295,7 +1223,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     }
 
     if (dirChanged) {
-      lastFilesViewDirRef.current = root;
+      lastFileScopeRef.current = fileScope;
+      activeFileLoadIdRef.current += 1;
+      loadingFilePathRef.current = null;
       setFileContent('');
       setFileError(null);
       setDesktopImageSrc('');
@@ -1306,45 +1236,57 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     if (treeKeyChanged) {
       lastFilesViewTreeKeyRef.current = treeKey;
       loadedDirsRef.current = new Set();
-      inFlightDirsRef.current = new Set();
-      activeDirectoryLoadIdsRef.current = new Map();
+      directoryRequests.clear();
       setLoadErrorsByDir({});
       setChildrenByDir((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       void loadDirectory(root);
     }
-  }, [loadDirectory, root, showGitignored, showHidden]);
+  }, [directoryRequests, fileScope, loadDirectory, root, treeScope]);
 
   // Auto-refresh expanded directories when user returns to the tab
   React.useEffect(() => {
-    if (!files.listDirectory) return;
+    if (!treeActive || !files.listDirectory) return;
 
     const handleVisibilityChange = () => {
       if (!document.hidden && expandedPaths.length > 0) {
         for (const dir of expandedPaths) {
-          void refreshDirectory(dir);
+          if (!directoryRequests.has(dir)) void refreshDirectory(dir);
         }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [expandedPaths, files.listDirectory, refreshDirectory]);
+  }, [directoryRequests, expandedPaths, files.listDirectory, refreshDirectory, treeActive]);
+
+  const treeWasActiveRef = React.useRef(false);
+  React.useEffect(() => {
+    const resumed = treeActive && !treeWasActiveRef.current;
+    treeWasActiveRef.current = treeActive;
+    if (!treeActive || !root) return;
+    void loadDirectory(root);
+    if (resumed) {
+      for (const dir of expandedPaths) {
+        if (!directoryRequests.has(dir)) void refreshDirectory(dir);
+      }
+    }
+  }, [directoryRequests, expandedPaths, loadDirectory, refreshDirectory, root, treeActive]);
 
   // Poll expanded directories for external changes
   React.useEffect(() => {
-    if (!files.listDirectory) return;
+    if (!treeActive || !files.listDirectory) return;
     if (expandedPaths.length === 0) return;
 
     const interval = setInterval(() => {
       if (document.hidden) return;
       if (!shouldIdlePoll()) return;
       for (const dir of expandedPaths) {
-        void refreshDirectory(dir);
+        if (!directoryRequests.has(dir)) void refreshDirectory(dir);
       }
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [expandedPaths, files.listDirectory, refreshDirectory]);
+  }, [directoryRequests, expandedPaths, files.listDirectory, refreshDirectory, treeActive]);
 
   const handleDialogSubmit = React.useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -1558,7 +1500,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   // `fresh` bypasses the content cache and HTTP cache so external-change polling
   // compares against the file on disk rather than a cached copy.
   const readFile = React.useCallback(async (path: string, cacheOptions?: { fresh?: boolean }): Promise<string> => {
-    const options = await resolveFileReadOptions(path);
+    const options = resolveFileReadOptions(path);
     if (files.readFile) {
       textAbort.current?.abort();
       const controller = new AbortController();
@@ -1577,15 +1519,12 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     if (options.allowOutsideWorkspace) {
       params.set('allowOutsideWorkspace', 'true');
     }
-    if (options.outsideFileGrant) {
-      params.set('outsideFileGrant', options.outsideFileGrant);
-    }
     if (root) {
       params.set('directory', root);
     }
     const response = await runtimeFetch(
       `/api/fs/read?${params.toString()}`,
-      cacheOptions?.fresh ? { cache: 'no-store' } : undefined,
+      { cache: cacheOptions?.fresh ? 'no-store' : 'default', signal: AbortSignal.timeout(30_000) },
     );
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }));
@@ -1596,7 +1535,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
   const readFileStat = React.useCallback(async (path: string): Promise<FileStatSnapshot | null> => {
     if (files.statFile) {
-      const options = await resolveFileReadOptions(path);
+      const options = resolveFileReadOptions(path);
       const result = await files.statFile(path, { ...options, directory: root || undefined });
       return {
         path: result.path,
@@ -1620,7 +1559,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
     void Promise.all(paths.map(async (path) => {
       try {
-        const options = await resolveFileReadOptions(path);
+        const options = resolveFileReadOptions(path);
         const stat = await files.statFile?.(path, { ...options, directory: root || undefined });
         if (!cancelled && stat && !stat.isFile && !hasDraft(path)) {
           removeOpenPathsByPrefix(root, path);
@@ -1637,14 +1576,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     };
   }, [files, openPaths, removeOpenPathsByPrefix, resolveFileReadOptions, root, selectedFile?.path]);
 
-  const displayedContent = React.useMemo(() =>
-    fileContent.length > MAX_VIEW_CHARS
-      ? `${fileContent.slice(0, MAX_VIEW_CHARS)}\n\n… truncated …`
-      : fileContent,
-    [fileContent]
-  );
-
-  const isDirty = draftContent !== displayedContent;
+  const isDirty = draftContent !== fileContent;
 
   const saveDraft = React.useCallback(async () => {
     if (!selectedFile || !files.writeFile) {
@@ -1823,25 +1755,25 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   });
 
   const applyLoadedTextContent = React.useCallback((content: string) => {
-    const editorContent = normalizeEditorLineEndings(content);
+    const { content: editorContent, lineEnding } = prepareFileEditorContent(content);
     lastLoadedFileContentRef.current = content;
     lastLoadedFileRevisionRef.current += 1;
-    setLoadedFileLineEnding(detectFileLineEnding(content));
+    setLoadedFileLineEnding(lineEnding);
     setFileContent(editorContent);
     diagramXmlRef.current = editorContent;
     diagramSavedXmlRef.current = editorContent;
-    setDraftContent(editorContent.length > MAX_VIEW_CHARS
-      ? `${editorContent.slice(0, MAX_VIEW_CHARS)}\n\n… truncated …`
-      : editorContent);
+    setDraftContent(editorContent);
+    return editorContent;
   }, []);
 
   const loadSelectedFile = React.useCallback(async (node: FileNode) => {
-    const runtimeKey = getRuntimeKey();
     failedFilePathRef.current = null;
     const loadId = activeFileLoadIdRef.current + 1;
     activeFileLoadIdRef.current = loadId;
+    const requestRuntime = getRuntimeKey();
+    const requestScope = fileScopeRef.current;
     const isCurrentLoad = () => {
-      if (!root || getRuntimeKey() !== runtimeKey) return false;
+      if (!root || getRuntimeKey() !== requestRuntime || fileScopeRef.current !== requestScope) return false;
       const rootState = useFilesViewTabsStore.getState().byRoot[root];
       const currentPath = rootState?.selectedPath ?? rootState?.openPaths[0] ?? null;
       return activeFileLoadIdRef.current === loadId && currentPath === node.path;
@@ -1922,7 +1854,10 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
           setLoadedFilePath(node.path);
           return;
         }
-        applyLoadedTextContent(content);
+        const editorContent = applyLoadedTextContent(content);
+        const hasOwnPreviewMode = isMarkdownFile(node.path) || isHtmlFile(node.path)
+          || isJsonFile(node.path) || isDrawioFile(node.path);
+        setTextViewMode(hasOwnPreviewMode ? 'edit' : initialFileTextMode(editorContent, textViewModeByPathRef.current[node.path]));
         setLoadedFilePath(node.path);
         void readFileStat(node.path)
           .then((stat) => {
@@ -1992,7 +1927,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   }, [files.loadAsset, applyLoadedTextContent, expandPaths, isMobile, loadDirectory, readFile, readFileStat, removeOpenPathsByPrefix, resolveFileReadOptions, root, runtime.isDesktop, searchQuery, setSelectedPath, t]);
 
   const ensurePathVisible = React.useCallback(async (targetPath: string, includeTarget: boolean) => {
-    if (!root) {
+    if (!visible || !root) {
       return;
     }
 
@@ -2003,6 +1938,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       expandPaths(root, pathsToExpand);
     }
 
+    // Desktop editor-only still reveals the selected path in the shared sidebar.
+    // Only the surface that owns a tree needs to load these directories.
+    if (!treeActive) return;
     const loadPromises = pathsToExpand.map((path) => {
       if (!loadedDirsRef.current.has(path)) {
         return loadDirectory(path);
@@ -2010,7 +1948,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       return undefined;
     }).filter(Boolean);
     await Promise.all(loadPromises);
-  }, [expandPaths, loadDirectory, root]);
+  }, [expandPaths, loadDirectory, root, treeActive, visible]);
 
   const getNextOpenFile = React.useCallback((path: string, filesList: FileNode[]) => {
     const index = filesList.findIndex((file) => file.path === path);
@@ -2055,6 +1993,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   }, [ensurePathVisible, selectedFile?.path]);
 
   React.useEffect(() => {
+    if (!visible) return;
     if (!selectedFile) {
       activeFileLoadIdRef.current += 1;
       loadingFilePathRef.current = null;
@@ -2074,7 +2013,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
         loadingFilePathRef.current = null;
       }
     });
-  }, [fileContentRevision, loadSelectedFile, loadedFilePath, selectedFile]);
+  }, [fileContentRevision, loadSelectedFile, loadedFilePath, selectedFile, visible]);
 
   // Sync isDirty to a ref so the polling interval can read the latest value
   // without isDirty in its dependency array (avoids interval restart on every edit/save).
@@ -2105,11 +2044,13 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   // unchanged file never reads content, and a changed text file swaps content
   // in place; only other files fall back to a full reload.
   React.useEffect(() => {
-    if (!selectedFile?.path || loadedFilePath !== selectedFile.path || fileError) {
+    if (!visible || !selectedFile?.path || loadedFilePath !== selectedFile.path || fileError) {
       return;
     }
 
     const selectedPath = selectedFile.path;
+    const requestRuntime = getRuntimeKey();
+    const requestScope = fileScopeRef.current;
     // draw.io preview edits live in the XML refs, not the draft buffer, so an
     // in-place content swap has to treat them as unsaved too.
     const hasUnsavedChanges = () => isDirtyRef.current || (
@@ -2123,6 +2064,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
           getLoadedRevision: () => lastLoadedFileRevisionRef.current,
           isDirty: hasUnsavedChanges,
           applyContent: (content) => {
+            if (cancelled || getRuntimeKey() !== requestRuntime || fileScopeRef.current !== requestScope) return;
             // An external write can turn a text file binary; reload so the
             // binary guards run instead of pasting binary into the editor.
             if (looksLikeBinaryText(content)) {
@@ -2136,7 +2078,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
     let cancelled = false;
     let polling = false;
-    const interval = window.setInterval(() => {
+    const poll = () => {
       if (document.hidden || polling) {
         return;
       }
@@ -2144,7 +2086,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       polling = true;
       void readFileStat(selectedPath)
         .then(async (latestStat) => {
-          if (cancelled || !latestStat) {
+          if (cancelled || getRuntimeKey() !== requestRuntime || fileScopeRef.current !== requestScope || !latestStat) {
             return;
           }
 
@@ -2194,14 +2136,16 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
         .finally(() => {
           polling = false;
         });
-    }, 2000);
+    };
+    poll();
+    const interval = window.setInterval(poll, 2000);
 
     return () => {
       cancelled = true;
       contentPoller?.dispose();
       window.clearInterval(interval);
     };
-  }, [applyLoadedTextContent, contentDetectedBinary, fileError, loadedFilePath, readFile, readFileStat, selectedFile?.path, t]);
+  }, [applyLoadedTextContent, contentDetectedBinary, fileError, loadedFilePath, readFile, readFileStat, selectedFile?.path, t, visible]);
 
   const discardAndContinue = React.useCallback(() => {
     const nextFile = pendingSelectFileRef.current;
@@ -2216,7 +2160,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     setConfirmDiscardOpen(false);
 
     // Discard draft by reverting back to last loaded content
-    setDraftContent(displayedContent);
+    setDraftContent(fileContent);
 
     if (closePath) {
       if (root) {
@@ -2246,7 +2190,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
       return;
     }
 
-  }, [displayedContent, handleSelectFile, isMobile, removeOpenPath, root, selectedFile?.path, setSelectedPath]);
+  }, [fileContent, handleSelectFile, isMobile, removeOpenPath, root, selectedFile?.path, setSelectedPath]);
 
   const saveAndContinue = React.useCallback(async () => {
     const nextFile = pendingSelectFileRef.current;
@@ -2332,37 +2276,22 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     }
   }, [getNextOpenFile, handleSelectFile, isDirty, isMobile, openFiles, removeOpenPath, root, selectedFile?.path, setSelectedPath]);
 
+  const openPathSet = React.useMemo(() => new Set(openPaths), [openPaths]);
+  const statusIndex = React.useMemo(() => buildFileTreeStatusIndex(treeEnabled ? gitStatus?.files ?? [] : []), [gitStatus?.files, treeEnabled]);
   const getFileStatus = React.useCallback((path: string): FileStatus | null => {
     // Check open status
-    if (openPaths.includes(path)) return 'open';
+    if (openPathSet.has(path)) return 'open';
 
     // Check git status
-    if (gitStatus?.files) {
-      const relative = path.startsWith(root + '/') ? path.slice(root.length + 1) : path;
-      const file = gitStatus.files.find(f => f.path === relative);
-      if (file) {
-        if (file.index === 'A' || file.working_dir === '?') return 'git-added';
-        if (file.index === 'D') return 'git-deleted';
-        if (file.index === 'M' || file.working_dir === 'M') return 'git-modified';
-      }
-    }
-    return null;
-  }, [openPaths, gitStatus, root]);
+    const relative = path.startsWith(root + '/') ? path.slice(root.length + 1) : path;
+    return statusIndex.statusByPath.get(relative) ?? null;
+  }, [openPathSet, statusIndex, root]);
 
   const getFolderBadge = React.useCallback((dirPath: string): { modified: number; added: number } | null => {
     if (!gitStatus?.files) return null;
     const relativeDir = dirPath.startsWith(root + '/') ? dirPath.slice(root.length + 1) : dirPath;
-    const prefix = relativeDir ? `${relativeDir}/` : '';
-
-    let modified = 0, added = 0;
-    for (const f of gitStatus.files) {
-      if (f.path.startsWith(prefix)) {
-        if (f.index === 'M' || f.working_dir === 'M') modified++;
-        if (f.index === 'A' || f.working_dir === '?') added++;
-      }
-    }
-    return modified + added > 0 ? { modified, added } : null;
-  }, [gitStatus, root]);
+    return statusIndex.badgeByDir.get(relativeDir) ?? null;
+  }, [gitStatus, statusIndex, root]);
 
   const toggleDirectory = React.useCallback(async (dirPath: string) => {
     const normalized = normalizePath(dirPath);
@@ -2385,7 +2314,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
     return nodes.map((node, index) => {
       const isDir = node.type === 'directory';
-      const isExpanded = isDir && expandedPaths.includes(node.path);
+      const isExpanded = isDir && expandedPathSet.has(node.path);
       const isActive = selectedFile?.path === node.path;
       const isLast = index === nodes.length - 1;
 
@@ -2471,7 +2400,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   const canCopyPath = Boolean(selectedFile && displaySelectedPath.length > 0);
   // Keep image/SVG on the preview path: `isBinaryFile` excludes `.svg`, so binary
   // alone would flip canEdit/isTextFile true and show a dead edit toggle + no-op Save.
-  const canEdit = Boolean(selectedFile && !selectedFileIsOutsideWorkspace && !isSelectedBinary && !isSelectedImage && files.writeFile && fileContent.length <= MAX_VIEW_CHARS);
+  const canEdit = Boolean(selectedFile && !selectedFileIsOutsideWorkspace && !isSelectedBinary && !isSelectedImage && files.writeFile);
   const isMarkdown = Boolean(selectedFile?.path && isMarkdownFile(selectedFile.path));
   const isPlantUml = Boolean(selectedFile?.path && isPlantUmlFile(selectedFile.path));
   const isJson = Boolean(selectedFile?.path && isJsonFile(selectedFile.path));
@@ -3099,8 +3028,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
   const pdfAssetAuthKey = selectedFile?.path
     && isSelectedPdf && !files.loadAsset
-    && (!selectedFileReadOptions.allowOutsideWorkspace || selectedFileReadOptions.outsideFileGrant)
-    ? `${selectedFile.path}|${selectedFileReadOptions.allowOutsideWorkspace ? 'outside' : 'workspace'}|${selectedFileReadOptions.outsideFileGrant ?? ''}|${fileContentRevision}`
+    ? `${selectedFile.path}|${selectedFileReadOptions.allowOutsideWorkspace ? 'outside' : 'workspace'}|${fileContentRevision}`
     : '';
 
   const htmlAssetAuthKey = selectedFile?.path && isHtml && htmlViewMode === 'preview' && !runtime.isVSCode
@@ -3126,7 +3054,6 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     ? getRuntimeUrlResolver().authenticatedAsset('/api/fs/raw', {
       path: selectedFile.path,
       allowOutsideWorkspace: selectedFileReadOptions.allowOutsideWorkspace ? 'true' : undefined,
-      outsideFileGrant: selectedFileReadOptions.outsideFileGrant,
       directory: root || undefined,
     })
     : '';
@@ -3154,7 +3081,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
 
       setFileError(null);
 
-      const readOptions = await resolveFileReadOptions(selectedFile.path);
+      const readOptions = resolveFileReadOptions(selectedFile.path);
       if (cancelled) {
         return;
       }
@@ -3163,10 +3090,10 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
         ? files.readFileBinary(selectedFile.path, readOptions).then((result) => result.dataUrl)
         : (async () => {
           const response = await runtimeFetch('/api/fs/raw', {
+            signal: AbortSignal.timeout(30_000),
             query: {
               path: selectedFile.path,
               allowOutsideWorkspace: readOptions.allowOutsideWorkspace ? 'true' : undefined,
-              outsideFileGrant: readOptions.outsideFileGrant,
               directory: root || undefined,
             },
           });
@@ -3282,13 +3209,12 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
     setFullscreenMarkdownScroll(node);
   }, [setFullscreenMarkdownScroll]);
   const shikiWorkerPool = useWorkerPool('unified');
-  // Files above the editable size cap are rendered as a read-only preview; give
-  // them the full file content plus pierre's viewport virtualization and the
-  // shared Shiki worker pool so large files stay responsive.
-  const isLargeFile = fileContent.length > MAX_VIEW_CHARS;
+  // Large code previews use the full draft with viewport virtualization and
+  // the shared Shiki worker pool. The threshold does not disable editing.
+  const isLargeFile = draftContent.length > LARGE_FILE_CHAR_THRESHOLD;
   const largeFileCacheKey = React.useMemo(
-    () => (isLargeFile ? makeContentCacheKey(fileContent) : undefined),
-    [fileContent, isLargeFile],
+    () => (isLargeFile && codePreviewActive ? makeFileContentCacheKey(draftContent) : undefined),
+    [codePreviewActive, draftContent, isLargeFile],
   );
 
   const renderShikiFileView = React.useCallback((file: FileNode, content: string, virtualizer: FileViewVirtualizer, restoreScroll: ReturnType<typeof useFilePreviewScrollPosition>['restore']) => {
@@ -3768,7 +3694,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
               type="button"
               onClick={() => setShowMobilePageContent(false)}
               aria-label={t('filesView.editor.back')}
-              className="inline-flex size-7 flex-shrink-0 items-center justify-center mr-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex size-7 flex-shrink-0 items-center justify-center mr-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Icon name="arrow-left-s" className="size-5" />
             </button>
@@ -4081,7 +4007,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
             </div>
             )
           ) : selectedFile && canUseShikiFileView && textViewMode === 'view' ? (
-            renderShikiFileView(selectedFile, isLargeFile ? fileContent : draftContent, mainViewVirtualizer, restoreMainCodeScroll)
+            renderShikiFileView(selectedFile, draftContent, mainViewVirtualizer, restoreMainCodeScroll)
           ) : (
             <div
               className={cn('relative h-full', shouldMaskEditorForPendingNavigation && 'overflow-hidden')}
@@ -4218,7 +4144,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
   const hasTree = Boolean(root && childrenByDir[root]);
   const rootLoadError = root ? loadErrorsByDir[root] : null;
 
-  const treePanel = (
+  const treePanel = treeEnabled ? (
     <section className={cn(
       "flex min-h-0 flex-col overflow-hidden",
       isMobile ? "h-full w-full bg-background" : "h-full rounded-xl border border-border/60 bg-background/70"
@@ -4343,7 +4269,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
         </ul>
       </ScrollableOverlay>
     </section>
-  );
+  ) : null;
 
   // Fullscreen file viewer overlay
   const fullscreenViewer = mode === 'full' && isFullscreen && selectedFile && (
@@ -4458,7 +4384,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full' }) => {
               )}
             </div>
           ) : canUseShikiFileView && textViewMode === 'view' ? (
-            renderShikiFileView(selectedFile, isLargeFile ? fileContent : draftContent, fullscreenViewVirtualizer, restoreFullscreenCodeScroll)
+            renderShikiFileView(selectedFile, draftContent, fullscreenViewVirtualizer, restoreFullscreenCodeScroll)
           ) : (
             <div className={cn('relative h-full', shouldMaskEditorForPendingNavigation && 'overflow-hidden')}>
               <div className={cn('h-full', shouldMaskEditorForPendingNavigation && 'invisible')}>

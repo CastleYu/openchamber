@@ -35,7 +35,10 @@ const OPENCODE_AUTH_ALIASES = ['anthropic', 'claude'];
 
 const claudeConfigDirectory = () => {
   const override = asNonEmptyString(process.env.CLAUDE_CONFIG_DIR);
-  return override ? path.resolve(override) : path.join(os.homedir(), '.claude');
+  const home = process.platform === 'win32'
+    ? os.homedir()
+    : (asNonEmptyString(process.env.HOME) || os.homedir());
+  return override ? path.resolve(override) : path.join(home, '.claude');
 };
 
 /**

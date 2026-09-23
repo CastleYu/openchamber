@@ -5,13 +5,24 @@ import { useI18n } from '@/lib/i18n';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { SimpleMarkdownRenderer } from '@/components/chat/MarkdownRenderer';
 import { SettingsPageLayout } from '../shared/SettingsPageLayout';
-import { SettingsSection, SettingsFieldRow, SettingsChipGroup } from '../shared/SettingsSection';
+import { SettingsSection, SettingsControlGroup, SettingsFieldRow, SettingsChipGroup } from '../shared/SettingsSection';
 import {
   HISTORY_GROUPS, HistoryOrigin, HistorySurface, UPDATE_HISTORY_ANCHOR, parseUpdateHistory,
 } from '@/lib/settings/updateHistory';
+import type { UpdateHistoryEntry } from '@/lib/settings/updateHistory';
 
 const entries = parseUpdateHistory(history);
 const chineseEntries = parseUpdateHistory(chineseHistory);
+
+function groupByCategory(items: UpdateHistoryEntry[]) {
+  const grouped = new Map<string | undefined, UpdateHistoryEntry[]>();
+  for (const entry of items) {
+    const group = grouped.get(entry.category) ?? [];
+    group.push(entry);
+    grouped.set(entry.category, group);
+  }
+  return grouped;
+}
 
 export function UpdateHistoryPage() {
   const { t, locale } = useI18n();
@@ -37,9 +48,11 @@ export function UpdateHistoryPage() {
       </SettingsFieldRow>
     </SettingsSection>
     {HISTORY_GROUPS.map(group => {
-      const content = selected.filter(entry => entry.group === group.value).map(entry => entry.markdown).join('\n');
-      return content ? <SettingsSection key={group.value} title={t(group.label)}>
-        <SimpleMarkdownRenderer content={content} enableFileReferences={false} />
+      const grouped = groupByCategory(selected.filter(entry => entry.group === group.value));
+      return grouped.size ? <SettingsSection key={group.value} title={t(group.label)} contentClassName="space-y-6">
+        {[...grouped].map(([category, categoryEntries]) => <SettingsControlGroup key={category ?? group.value} title={category}>
+          <SimpleMarkdownRenderer content={categoryEntries.map(entry => entry.markdown).join('\n')} enableFileReferences={false} />
+        </SettingsControlGroup>)}
       </SettingsSection> : null;
     })}
   </SettingsPageLayout>;

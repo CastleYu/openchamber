@@ -101,8 +101,9 @@ test('download cleanup covers begin failure, cancellation, length mismatch and f
     const outside = await loadAsset('C:/outside/video.mp4', {
       directory: 'C:/workspace', allowOutsideWorkspace: true, outsideFileGrant: 'expired-grant',
     }, true);
-    expect(grants).toBe(1);
-    expect(new URL(lastUrl).searchParams.get('outsideFileGrant')).toBe('renewed-grant');
+    expect(grants).toBe(0);
+    expect(new URL(lastUrl).searchParams.get('allowOutsideWorkspace')).toBe('true');
+    expect(new URL(lastUrl).searchParams.has('outsideFileGrant')).toBe(false);
     outside.dispose();
   } finally {
     globalThis.fetch = originalFetch;

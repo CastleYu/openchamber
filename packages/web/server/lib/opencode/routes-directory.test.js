@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import path from 'node:path';
 import { registerOpenCodeRoutes } from './routes.js';
 
 const createApp = (overrides = {}) => {
@@ -27,7 +28,8 @@ describe('OpenCode project directory route', () => {
       .send({ path: '/projects/testing-one', create: true })
       .expect(200);
 
-    expect(dependencies.fsPromises.mkdir).toHaveBeenCalledWith('/projects/testing-one', { recursive: true });
+    const target = path.resolve('/projects/testing-one');
+    expect(dependencies.fsPromises.mkdir).toHaveBeenCalledWith(target, { recursive: true });
     expect(dependencies.validateDirectoryPath).toHaveBeenCalledWith('/projects/testing-one');
     expect(response.body).toMatchObject({ success: true, path: '/projects/testing-one' });
   });

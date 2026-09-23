@@ -2,6 +2,10 @@
 
 This directory contains the non-entrypoint implementation for the OpenChamber CLI. `packages/web/bin/cli.js` should stay thin: it owns bootstrap, command wiring, top-level dispatch, signal/cancel handling, and compatibility exports. Domain logic belongs in these modules.
 
+Windows PID-file recovery verifies the recorded process command line through a
+hidden, bounded CIM query. An unavailable identity remains unknown and is not
+eligible for destructive recovery. The query result is not logged.
+
 ## Entrypoint Boundary
 
 - `../cli.js`

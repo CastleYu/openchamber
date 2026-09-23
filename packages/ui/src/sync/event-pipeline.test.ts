@@ -46,14 +46,14 @@ function statusEvent(type: "busy" | "retry"): Event {
   } as Event
 }
 
-function createSdk(events: Event[], streamFinished: () => void, interval = 0): OpencodeClient {
+function createSdk(events: Event[], streamFinished: () => void, onYield?: () => void): OpencodeClient {
   return {
     global: {
       event: async ({ signal }: { signal: AbortSignal }) => ({
         stream: (async function* () {
           for (const payload of events) {
             yield { directory: "/repo", payload }
-            if (interval) await new Promise((resolve) => setTimeout(resolve, interval))
+            onYield?.()
           }
           streamFinished()
           await new Promise<void>((resolve) => {
@@ -74,13 +74,37 @@ describe("createEventPipeline", () => {
     const run = async (focused: boolean) => {
       projectResources.update([{ id: 'repo', directories: ['/repo'], running: true, unread: false }], 'repo', true, true)
       if (focused) projectResources.sent('/repo')
+      let clock = 0
+      const timers = new Map<ReturnType<typeof setTimeout>, { at: number; callback: () => void }>()
+      const advance = (ms: number) => {
+        const target = clock + ms
+        while (true) {
+          const due = [...timers].filter(([, timer]) => timer.at <= target).sort((a, b) => a[1].at - b[1].at)[0]
+          if (!due) break
+          clock = due[1].at
+          timers.delete(due[0])
+          due[1].callback()
+        }
+        clock = target
+      }
       let finish!: () => void
       const finished = new Promise<void>((resolve) => { finish = resolve })
       let batches = 0
       let text = ''
       const pipeline = createEventPipeline({
-        sdk: createSdk(Array.from({ length: 60 }, () => deltaEvent('x')), finish, 4),
+        sdk: createSdk(Array.from({ length: 60 }, () => deltaEvent('x')), finish, () => advance(4)),
         transport: 'sse',
+        now: () => clock,
+        flushFrameMs: 0,
+        flushTimer: {
+          schedule: (callback, ms) => {
+            const handle = setTimeout(() => {}, 0)
+            clearTimeout(handle)
+            timers.set(handle, { at: clock + ms, callback })
+            return handle
+          },
+          cancel: (handle) => { timers.delete(handle) },
+        },
         heartbeatTimeoutMs: 1000,
         onEvents: (_directory, events) => {
           batches += 1
@@ -89,7 +113,7 @@ describe("createEventPipeline", () => {
       })
       try {
         await finished
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        advance(1000)
         expect(text).toBe('x'.repeat(60))
         return batches
       } finally {
@@ -100,7 +124,6 @@ describe("createEventPipeline", () => {
     const focused = await run(true)
     const background = await run(false)
     expect(background).toBeLessThan(focused)
-    console.log(JSON.stringify({ scenario: '60 deltas at 4ms', focusedBatches: focused, backgroundBatches: background }))
   })
   test("delivers one ordered batch per directory flush", async () => {
     let resolveStreamFinished!: () => void

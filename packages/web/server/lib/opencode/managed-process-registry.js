@@ -58,7 +58,7 @@ import { promisify } from 'node:util';
 const defaultExecFileAsync = promisify(execFile);
 
 const WINDOWS_PROCESS_QUERY = [
-  '$ErrorActionPreference = "Stop"',
+  '$ErrorActionPreference = "Stop";',
   'Get-CimInstance -ClassName Win32_Process',
   '| Select-Object ProcessId, ParentProcessId, Name, @{Name="CreationDate";Expression={$_.CreationDate.ToUniversalTime().ToString("o")}}, CommandLine',
   '| ConvertTo-Json -Compress',

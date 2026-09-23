@@ -73,6 +73,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'appearance.import-theme',
+    page: 'appearance',
+    titleKey: 'settings.themeImport.action',
+    descriptionKey: 'settings.themeImport.catalogHint',
+    keywords: ['theme', 'import', 'vscode', 'open vsx', 'openvsx', 'json', 'jsonc', 'syntax', 'palette'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
     id: 'appearance.dock-badge',
     page: 'appearance',
     titleKey: 'settings.openchamber.visual.field.dockBadge',
@@ -112,6 +120,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     descriptionKey: 'settings.openchamber.visual.field.mobileKeyboardModeHint',
     keywords: ['mobile', 'keyboard', 'resize'],
     isAvailable: (ctx) => ctx.isMobile && ctx.isWeb && !ctx.isDesktop && !ctx.isVSCode,
+  },
+  {
+    id: 'appearance.animated-activity-indicators',
+    page: 'appearance',
+    titleKey: 'settings.openchamber.visual.field.animatedActivityIndicators',
+    descriptionKey: 'settings.openchamber.visual.field.animatedActivityIndicatorsInfo',
+    keywords: ['spinner', 'animation', 'session', 'activity', 'motion', 'running', 'indicator'],
   },
   {
     id: 'appearance.interface-font-size',
@@ -407,6 +422,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.visual.field.enterToSend',
     descriptionKey: 'settings.openchamber.visual.field.enterToSendHint',
     keywords: ['enter', 'shift enter', 'ctrl enter', 'cmd enter', 'mod enter', 'send', 'newline'],
+    isAvailable: (ctx) => !ctx.isMobile,
   },
   {
     id: 'sessions.default-model',
@@ -452,6 +468,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.sessionRetention.field.enableAutoCleanup',
     descriptionKey: 'settings.openchamber.sessionRetention.tooltip',
     keywords: ['retention', 'archive', 'delete'],
+  },
+  {
+    id: 'sessions.retention-only-archived',
+    page: 'sessions',
+    titleKey: 'settings.openchamber.sessionRetention.field.onlyArchived',
+    descriptionKey: 'settings.openchamber.sessionRetention.field.onlyArchivedDescription',
+    keywords: ['archive', 'archived', 'only', 'delete', 'cleanup', 'retention'],
   },
   {
     id: 'sessions.retention-period',
@@ -559,6 +582,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'sessions.browser-provider',
+    page: 'general',
+    titleKey: 'settings.openchamber.tools.browserProvider.label',
+    descriptionKey: 'settings.openchamber.tools.browserProvider.info',
+    keywords: ['agent', 'browser', 'provider', 'extension', 'chrome', 'server', 'headless'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
     id: 'sessions.agent-memory-tool',
     page: 'general',
     titleKey: 'settings.openchamber.tools.field.agentMemoryTool',
@@ -567,6 +598,46 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     // Unreleased: searching for a setting that is not rendered would take the
     // user to an empty spot on the page.
     isAvailable: (ctx) => !ctx.isVSCode && useUIStore.getState().agentMemoryFeatureAvailable,
+  },
+  {
+    id: 'routing.token',
+    page: 'routing',
+    titleKey: 'settings.routing.token.label',
+    descriptionKey: 'settings.routing.token.info',
+    keywords: ['jev', 'typesafe', 'api key', 'token', 'routing'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+  },
+  {
+    id: 'routing.enabled',
+    page: 'routing',
+    titleKey: 'settings.routing.auto.enable',
+    descriptionKey: 'settings.routing.auto.enableInfo',
+    keywords: ['auto', 'routing', 'model', 'jev', 'automatic'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+  },
+  {
+    id: 'routing.fallback-model',
+    page: 'routing',
+    titleKey: 'settings.routing.auto.fallbackModel',
+    descriptionKey: 'settings.routing.auto.fallbackModelInfo',
+    keywords: ['fallback', 'default', 'model', 'routing'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+  },
+  {
+    id: 'routing.safety-enabled',
+    page: 'routing',
+    titleKey: 'settings.routing.safety.enable',
+    descriptionKey: 'settings.routing.safety.enableInfo',
+    keywords: ['safety net', 'auto-accept', 'permissions', 'destructive', 'hold'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+  },
+  {
+    id: 'routing.add-category',
+    page: 'routing',
+    titleKey: 'settings.routing.categories.title',
+    descriptionKey: 'settings.routing.categories.description',
+    keywords: ['category', 'categories', 'task type', 'routing'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
   },
   {
     id: 'git.identities',
@@ -624,6 +695,12 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     page: 'projects',
     titleKey: 'settings.projects.page.field.projectName',
     keywords: ['label', 'display name', 'project metadata'],
+  },
+  {
+    id: 'projects.default-agent',
+    page: 'projects',
+    titleKey: 'settings.projects.page.field.projectAgent',
+    keywords: ['agent', 'default', 'new chat', 'project metadata'],
   },
   {
     id: 'projects.default-model',
@@ -1105,6 +1182,37 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     descriptionKey: 'settings.integrations.linear.mapping.defaultProject.info',
     keywords: ['linear', 'project', 'team', 'map', 'workspace', 'directory'],
     isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'integrations.guests',
+    page: 'integrations',
+    titleKey: 'settings.integrations.guests.title',
+    descriptionKey: 'settings.integrations.guests.info',
+    keywords: ['guest', 'extension', 'oauth', 'clickup', 'gitlab', 'panel', 'connect'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'extensions.add',
+    page: 'extensions',
+    titleKey: 'settings.extensions.add.label',
+    descriptionKey: 'settings.extensions.add.info',
+    keywords: ['folder', 'path', 'zip', 'git', 'url', 'install', 'guest', 'panel'],
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.isMobile,
+  },
+  {
+    id: 'extensions.gitIdentity',
+    page: 'extensions',
+    titleKey: 'settings.extensions.identity.title',
+    descriptionKey: 'settings.extensions.add.info',
+    keywords: ['ssh', 'key', 'identity', 'git', 'private', 'clone', 'extension'],
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.isMobile,
+  },
+  {
+    id: 'extensions.updates.check',
+    page: 'extensions',
+    titleKey: 'settings.extensions.updates.check',
+    keywords: ['update', 'upgrade', 'version', 'git', 'extension', 'guest', 'refresh'],
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.isMobile,
   },
 ] as const;
 

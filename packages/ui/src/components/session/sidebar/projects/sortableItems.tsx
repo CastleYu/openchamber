@@ -17,8 +17,8 @@ import { Icon } from '@/components/icon/Icon';
 import { cn } from '@/lib/utils';
 import { PROJECT_COLOR_MAP, PROJECT_ICON_MAP, ProjectIconImage } from '@/lib/projectMeta';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
-import { useSessionDisplayStore } from '@/stores/useSessionDisplayStore';
 import { useI18n } from '@/lib/i18n';
+import { CrossfadeZoneHeader } from './CrossfadeZoneHeaders';
 
 export type SortableDragHandleProps = {
   listeners: ReturnType<typeof useSortable>['listeners'];
@@ -41,7 +41,7 @@ type ProjectHeaderIdentityProps = ProjectIdentityProps & {
 
 type ProjectPickerOption = ProjectIdentityProps & { projectDescription: string };
 
-export const ProjectHeaderIdentity: React.FC<ProjectHeaderIdentityProps> = ({
+const ProjectHeaderIdentity: React.FC<ProjectHeaderIdentityProps> = ({
   id,
   projectLabel,
   projectIcon,
@@ -110,9 +110,9 @@ export interface SortableProjectItemProps extends ProjectIdentityProps {
   projectDirectory?: string;
   isCollapsed: boolean;
   isRepo: boolean;
-  isDesktopShell: boolean;
   hideDirectoryControls: boolean;
   mobileVariant: boolean;
+  stickyZoneHeaders: boolean;
   alwaysShowActions: boolean;
   onToggle: () => void;
   onNewSession: () => void;
@@ -120,7 +120,6 @@ export interface SortableProjectItemProps extends ProjectIdentityProps {
   onManageWorktrees?: () => void;
   onRenameStart: () => void;
   onClose: () => void;
-  sentinelRef: (el: HTMLDivElement | null) => void;
   children?: React.ReactNode;
   showCreateButtons?: boolean;
   hideHeader?: boolean;
@@ -144,8 +143,8 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
   projectIconBackground,
   isCollapsed,
   isRepo,
-  isDesktopShell,
   hideDirectoryControls,
+  stickyZoneHeaders,
   alwaysShowActions,
   onToggle,
   onNewSession,
@@ -153,7 +152,6 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
   onManageWorktrees,
   onRenameStart,
   onClose,
-  sentinelRef,
   children,
   showCreateButtons = true,
   hideHeader = false,
@@ -165,7 +163,6 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
 }) => {
   const { t } = useI18n();
   const { files } = useRuntimeAPIs();
-  const stickyZoneHeaders = useSessionDisplayStore((state) => state.stickyZoneHeaders);
   const {
     attributes,
     listeners,
@@ -253,25 +250,15 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
     >
       {!hideHeader ? (
         <>
-          {isDesktopShell && (
-            <div
-              ref={sentinelRef}
-              data-project-id={id}
-              className="absolute top-0 h-px w-full pointer-events-none"
-              aria-hidden="true"
-            />
-          )}
-
           <ContextMenu open={isContextMenuOpen} onOpenChange={setIsContextMenuOpen}>
             <ContextMenuTrigger
               render={
-                // Sticky zone header: this trigger div is a direct child of
-                // the project wrapper (which spans header + sessions), so it
-                // can stick for the whole zone.
+                // Keep the live context-menu trigger when the shared zone
+                // header moves between the section and the pinned layer.
                 // Full-bleed band: pull past the list container's padding so
                 // the section band spans the entire sidebar width (ref: edge-
                 // to-edge section headers, not rounded pills).
-                <div
+                <CrossfadeZoneHeader
                   className={cn(
                     '-ml-2.5 -mr-2 text-left group/project select-none',
                     stickyZoneHeaders && 'sticky top-0 z-20 bg-sidebar',
@@ -296,7 +283,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                     <button
                       type="button"
                       className={cn(
-                        'flex min-w-0 flex-1 items-center gap-1.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-[padding]',
+                        'flex min-w-0 flex-1 items-center gap-1.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-[padding]',
                         // Reserve hover space for the absolute action buttons,
                         // matching the collapse-toggle branch below.
                         isRepo && !hideDirectoryControls
@@ -329,7 +316,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                       onClick={handleToggleClick}
                       {...listeners}
                       className={cn(
-                        'flex-1 min-w-0 flex items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-md cursor-grab active:cursor-grabbing transition-[padding]',
+                        'flex-1 min-w-0 flex items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md cursor-grab active:cursor-grabbing transition-[padding]',
                         isRepo && !hideDirectoryControls
                           ? (alwaysShowActions || isMenuOpen ? 'pr-20' : 'pr-0 group-hover/project:pr-20 group-focus-within/project:pr-20')
                           : (alwaysShowActions || isMenuOpen ? 'pr-14' : 'pr-0 group-hover/project:pr-14 group-focus-within/project:pr-14'),
@@ -370,7 +357,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                           onNewWorktreeSession();
                         }}
                         className={cn(
-                        'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:text-foreground transition-opacity',
+                        'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:text-foreground transition-opacity',
                           alwaysShowActions ? 'opacity-100' : 'opacity-0 pointer-events-none group-hover/project:opacity-100 group-hover/project:pointer-events-auto group-focus-within/project:opacity-100 group-focus-within/project:pointer-events-auto',
                         )}
                         aria-label={t('sessions.sidebar.project.actions.newWorktree')}
@@ -393,7 +380,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                       <button
                         type="button"
                         className={cn(
-                          'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:text-foreground',
+                          'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:text-foreground',
                           isMenuOpen
                             ? 'opacity-100 pointer-events-auto'
                             : alwaysShowActions
@@ -426,7 +413,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                           onNewSession();
                         }}
                         className={cn(
-                          'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-opacity',
+                          'inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-opacity',
                           alwaysShowActions ? 'opacity-100' : 'opacity-0 pointer-events-none group-hover/project:opacity-100 group-hover/project:pointer-events-auto group-focus-within/project:opacity-100 group-focus-within/project:pointer-events-auto',
                         )}
                         aria-label={isRepo

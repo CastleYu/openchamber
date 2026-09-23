@@ -22,3 +22,9 @@
 *.woff binary
 *.woff2 binary
 *.pdf binary
+
+# The SDK bundles embed upstream JIT source as template literals, including
+# indented blank lines. API.md also uses Markdown's two-space hard breaks.
+packages/sdk/API.md whitespace=-blank-at-eol
+packages/sdk/examples/**/panel/*.js whitespace=-blank-at-eol
+packages/sdk/examples/tools-only/mcp.js whitespace=-blank-at-eol

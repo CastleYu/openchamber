@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import path from 'node:path';
 
 const execFileSync = vi.fn();
 const files = new Map();
@@ -46,19 +47,21 @@ beforeEach(() => {
   execFileSync.mockReset();
   execFileSync.mockImplementation(() => { throw new Error('no keychain entry'); });
   openCodeAuth.mockReturnValue({});
-  delete process.env.CLAUDE_CONFIG_DIR;
-  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  vi.stubEnv('CLAUDE_CONFIG_DIR', undefined);
+  vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', undefined);
+  vi.stubEnv('HOME', path.resolve('/fixture-home'));
 });
 
 afterEach(() => {
-  delete process.env.CLAUDE_CONFIG_DIR;
-  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  vi.unstubAllEnvs();
 });
 
 describe('Claude credential discovery', () => {
   it('prefers the macOS Keychain over a stale credentials file', () => {
     execFileSync.mockReturnValue(claudeCodeBlob('keychain-token'));
-    files.set(`${process.env.HOME}/.claude/.credentials.json`, claudeCodeBlob('file-token'));
+    const credentialsPath = path.resolve('/tmp/claude-default/.credentials.json');
+    files.set(credentialsPath, claudeCodeBlob('file-token'));
+    process.env.CLAUDE_CONFIG_DIR = path.dirname(credentialsPath);
 
     const credential = withPlatform('darwin', loadClaudeCredential);
 
@@ -69,7 +72,7 @@ describe('Claude credential discovery', () => {
   });
 
   it('reads the credentials file on Linux, where there is no Keychain', () => {
-    files.set(`${process.env.HOME}/.claude/.credentials.json`, claudeCodeBlob('file-token'));
+    files.set(path.join(process.env.HOME, '.claude', '.credentials.json'), claudeCodeBlob('file-token'));
 
     const credential = withPlatform('linux', loadClaudeCredential);
 
@@ -80,7 +83,7 @@ describe('Claude credential discovery', () => {
 
   it('honours CLAUDE_CONFIG_DIR when locating the credentials file', () => {
     process.env.CLAUDE_CONFIG_DIR = '/tmp/claude-home';
-    files.set('/tmp/claude-home/.credentials.json', claudeCodeBlob('custom-dir-token'));
+    files.set(path.resolve('/tmp/claude-home/.credentials.json'), claudeCodeBlob('custom-dir-token'));
 
     expect(withPlatform('linux', loadClaudeCredential).accessToken).toBe('custom-dir-token');
   });

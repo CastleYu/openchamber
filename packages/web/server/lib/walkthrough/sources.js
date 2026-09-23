@@ -1,5 +1,6 @@
 import { getDiff, getRangeDiff, getCommitDiff, getUntrackedDiffs, listUntrackedPaths } from '../git/service.js';
 import { readOccupancyPolicy } from '../performance/occupancy-policy.js';
+import assert from 'node:assert/strict';
 
 // A walkthrough source resolves to one or more diff *sections*. A section is a
 // patch plus the scope its hunk ids live in; keeping staged and working-tree
@@ -46,6 +47,16 @@ export function parseSource(raw) {
     if (!Number.isInteger(number) || number <= 0) {
       throw new WalkthroughSourceError('pr sources require a positive number');
     }
+    if (raw.sourceRepo !== undefined) {
+      const { owner, repo } = raw.sourceRepo ?? {};
+      try {
+        assert.match(owner, /^[a-zA-Z0-9-]+$/);
+        assert.match(repo, /^[a-zA-Z0-9_.-]+$/);
+      } catch {
+        throw new WalkthroughSourceError('pr sources require a valid repository');
+      }
+      return { kind: 'pr', number, sourceRepo: { owner, repo } };
+    }
     return { kind: 'pr', number };
   }
 
@@ -72,7 +83,7 @@ export function sourceKey(source) {
   if (source.kind === 'working-tree') return `working-tree:${source.scope}`;
   if (source.kind === 'branch') return `branch:${source.baseRef}...${source.headRef}`;
   if (source.kind === 'commit') return `commit:${source.hash}`;
-  return `pr:${source.number}`;
+  return source.sourceRepo ? `pr:${source.sourceRepo.owner}/${source.sourceRepo.repo}:${source.number}` : `pr:${source.number}`;
 }
 
 // `git diff` never reports untracked files, so a brand-new file would be
@@ -139,7 +150,7 @@ export async function loadSourceSections(directory, source, { getPullRequestDiff
     throw new WalkthroughSourceError('Pull request diffs are unavailable', 500);
   }
 
-  const { patch, meta } = await getPullRequestDiff(directory, source.number);
+  const { patch, meta } = await getPullRequestDiff(directory, source.number, source.sourceRepo);
   return {
     sections: patch && patch.trim() ? [{ scope: `pr:${source.number}`, patch }] : [],
     meta: meta || {},

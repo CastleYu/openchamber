@@ -48,7 +48,7 @@ CI keeps its normal build flags.
 
 `.github/workflows/personal-portable.yml` runs on pushes to `codex/personal` or
 manual dispatch of that branch, only in `CastleYu/openchamber`. It uses the same
-local build script, pinned actions, Node 22 and Bun 1.3.14. The build job has
+local build script, pinned actions, Node 22 and Bun 1.4.2. The build job has
 read-only permissions and retains the portable EXE and metadata as Actions
 artifacts for 30 days; unpacked application files are excluded.
 

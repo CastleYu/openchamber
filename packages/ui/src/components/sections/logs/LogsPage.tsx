@@ -116,9 +116,6 @@ export const LogsPage: React.FC = () => {
     }
   }, [diagnostics, t]);
 
-  const currentFilePath = logDirectory && logsInfo?.current
-    ? `${logDirectory}${logDirectory.includes('\\') ? '\\' : '/'}${logsInfo.current}`
-    : null;
   const sortedFiles = React.useMemo(
     () => [...(logsInfo?.files ?? [])].sort((a, b) => b.modifiedAt - a.modifiedAt),
     [logsInfo],

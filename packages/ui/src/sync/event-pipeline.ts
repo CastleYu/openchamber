@@ -22,7 +22,13 @@ import { openRuntimeWebSocket } from "@/lib/relay/runtime-socket"
 import { syncDebug } from "./debug"
 import { countSyncPerformance } from "./performance-diagnostics"
 
-const FLUSH_FRAME_MS = 33
+// Paces a sustained event stream only: the first event after a quiet spell is
+// flushed at once, so a lone permission or status event is not delayed. Every
+// flush publishes the directory store and re-renders the streaming message,
+// while streamed text is shown at most every 100ms, so flushing faster than
+// that bought renders nobody sees. Measured at 300 characters per second,
+// 33ms cost six more points of renderer CPU for the same visible output.
+const FLUSH_FRAME_MS = 100
 const BACKPRESSURE_FLUSH_FRAME_MS = 200
 const BACKPRESSURE_MODE_MS = 10_000
 const STREAM_YIELD_MS = 8
@@ -50,9 +56,15 @@ type EventPipelineDelivery = {
 
 export type EventPipelineInput = {
   sdk: OpencodeClient
+  now?: () => number
+  flushFrameMs?: number
+  flushTimer?: {
+    schedule: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>
+    cancel: (timer: ReturnType<typeof setTimeout>) => void
+  }
   routeDirectory?: (directory: string, payload: Event) => string
   /** Called after stream reconnects (visibility restore or heartbeat timeout). */
-  onReconnect?: () => void
+  onReconnect?: (details: { replayReset: boolean }) => void
   /** Called when the stream disconnects (heartbeat timeout, network error, or transport failure). */
   onDisconnect?: (reason: string) => void
   /** Called when transport switches (e.g. WS timeout → SSE fallback) without actual disconnection. */
@@ -70,6 +82,7 @@ export type EventPipeline = {
 
 type MessageStreamWsFrame = {
   type: "ready" | "event" | "error" | "backpressure"
+  replayReset?: boolean
   payload?: unknown
   eventId?: string
   directory?: string
@@ -261,6 +274,8 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS,
     wsReadyTimeoutMs = DEFAULT_WS_READY_TIMEOUT_MS,
   } = input
+  const now = input.now ?? Date.now
+  const flushTimer = input.flushTimer ?? { schedule: setTimeout, cancel: clearTimeout }
   const abort = new AbortController()
   let disconnected = false
   let lastEventId: string | undefined
@@ -305,7 +320,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     const d = directories.get(directory)
     if (!d) return
     if (d.timer) {
-      clearTimeout(d.timer)
+      flushTimer.cancel(d.timer)
       d.timer = undefined
     }
     if (d.queue.length === 0) return
@@ -316,7 +331,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     d.queue.length = 0
     d.coalesced.clear()
 
-    d.last = Date.now()
+    d.last = now()
     syncDebug.pipeline.flush(events.length)
     for (let index = 0; index < events.length; index += 1) {
       countSyncPerformance("pipelineDeliveredEvents")
@@ -339,9 +354,9 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const scheduleDir = (directory: string) => {
     const d = getOrCreateDir(directory)
     if (d.timer) return
-    const elapsed = Date.now() - d.last
-    const flushFrameMs = Math.max(projectResources.frame(directory), Date.now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : FLUSH_FRAME_MS)
-    d.timer = setTimeout(() => flushDir(directory), Math.max(0, flushFrameMs - elapsed))
+    const elapsed = now() - d.last
+    const flushFrameMs = Math.max(projectResources.frame(directory), now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : (input.flushFrameMs ?? FLUSH_FRAME_MS))
+    d.timer = flushTimer.schedule(() => flushDir(directory), Math.max(0, flushFrameMs - elapsed))
   }
 
   const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
@@ -438,7 +453,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
 
   let streamErrorLogged = false
   let attempt: AbortController | undefined
-  let lastEventAt = Date.now()
+  let lastEventAt = now()
   let heartbeat: ReturnType<typeof setTimeout> | undefined
   let activeTransport: "ws" | "sse" = transport === "ws" ? "ws" : "sse"
   let attemptAbortReason: AttemptAbortReason = null
@@ -453,7 +468,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     onDisconnect?.(reason)
   }
 
-  const markConnected = () => {
+  const markConnected = (replayReset = false) => {
     disconnected = false
     consecutiveFailures = 0
     // Fire onReconnect on every successful connect — including the very
@@ -461,7 +476,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     // to be flipped positively; without this the send button throws
     // "Connection lost" until something else (HTTP health check) happens
     // to race a setState({isConnected: true}) through.
-    onReconnect?.()
+    onReconnect?.({ replayReset })
   }
 
   const enqueueEvent = (directory: string, payload: Event) => {
@@ -541,7 +556,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   }
 
   const resetHeartbeat = () => {
-    lastEventAt = Date.now()
+    lastEventAt = now()
     if (heartbeat) clearTimeout(heartbeat)
     heartbeat = setTimeout(() => {
       attemptAbortReason = `${activeTransport}_heartbeat_timeout`
@@ -575,7 +590,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
 
     markConnected()
 
-    let yielded = Date.now()
+    let yielded = now()
     resetHeartbeat()
 
     for await (const event of events.stream) {
@@ -589,8 +604,8 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       const directory = resolveEventDirectory(event, payload)
       enqueueEvent(directory, payload)
 
-      if (Date.now() - yielded < STREAM_YIELD_MS) continue
-      yielded = Date.now()
+      if (now() - yielded < STREAM_YIELD_MS) continue
+      yielded = now()
       await wait(0)
     }
   }
@@ -609,7 +624,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     } catch (error) {
       const wrapped = error instanceof Error ? error : new Error("Message stream WebSocket auth token unavailable")
       if (transport === "auto") {
-        wsFallbackUntil = Date.now() + WS_FALLBACK_WINDOW_MS
+        wsFallbackUntil = now() + WS_FALLBACK_WINDOW_MS
         ;(wrapped as Error & { code?: string }).code = "WS_FALLBACK"
       }
       ;(wrapped as Error & { reason?: string }).reason = "ws_auth_token_unavailable"
@@ -625,7 +640,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       const socket: RelayTunnelWebSocket = openGlobalEventSocket(lastEventId)
       const setFallbackCode = (error: Error, force = false) => {
         if ((force || !opened) && transport === "auto") {
-          wsFallbackUntil = Date.now() + WS_FALLBACK_WINDOW_MS
+          wsFallbackUntil = now() + WS_FALLBACK_WINDOW_MS
           ;(error as Error & { code?: string }).code = "WS_FALLBACK"
         }
       }
@@ -702,14 +717,17 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
         }
 
         if (frame.type === "ready") {
+          // The retained suffix no longer covers our cursor. The normal
+          // reconnect callback repairs authoritative state; retire that cursor.
+          if (frame.replayReset === true) lastEventId = undefined
           opened = true
-          readyAt = Date.now()
+          readyAt = now()
           if (readyTimer) {
             clearTimeout(readyTimer)
             readyTimer = undefined
           }
           streamErrorLogged = false
-          markConnected()
+          markConnected(frame.replayReset === true)
           return
         }
 
@@ -727,7 +745,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
         }
 
         if (frame.type === "backpressure") {
-          backpressureUntil = Date.now() + BACKPRESSURE_MODE_MS
+          backpressureUntil = now() + BACKPRESSURE_MODE_MS
           return
         }
 
@@ -776,7 +794,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
 
         // If the WS stream connects (ready) but then drops quickly, prefer SSE for a while.
         // This avoids tight reconnect loops with repeated console spam.
-        const livedMs = readyAt > 0 ? Date.now() - readyAt : 0
+        const livedMs = readyAt > 0 ? now() - readyAt : 0
         const unstableAfterReady = opened && livedMs > 0 && livedMs < 2_000
         setFallbackCode(error, unstableAfterReady)
         settleReject(error)
@@ -794,13 +812,13 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     if (transport === "sse") {
       return "sse"
     }
-    return wsFallbackUntil > Date.now() ? "sse" : "ws"
+    return wsFallbackUntil > now() ? "sse" : "ws"
   }
 
   void (async () => {
     while (!abort.signal.aborted) {
       attempt = new AbortController()
-      lastEventAt = Date.now()
+      lastEventAt = now()
       attemptAbortReason = null
       let retryDelayMs = reconnectDelayMs
       const currentTransport = resolveTransport()
@@ -888,7 +906,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const onVisibility = () => {
     if (typeof document === "undefined") return
     if (document.visibilityState !== "visible") return
-    if (Date.now() - lastEventAt < heartbeatTimeoutMs) return
+    if (now() - lastEventAt < heartbeatTimeoutMs) return
     attempt?.abort()
   }
 

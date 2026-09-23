@@ -30,7 +30,7 @@ const createService = (overrides = {}) => {
   };
   const service = createOpenChamberControlService({
     readSettingsFromDiskMigrated: vi.fn(async () => ({
-      projects: [{ id: 'project-1', path: '/repo', label: 'Repo' }],
+      projects: [{ id: 'project-1', path: path.resolve('/repo'), label: 'Repo' }],
       defaultModel: 'provider/model',
       favoriteModels: [],
       recentModels: [],
@@ -51,7 +51,7 @@ describe('OpenChamber control service', () => {
   it('serves project and model projections without an HTTP or CLI round trip', async () => {
     const { service } = createService();
     await expect(service.execute('projects.list')).resolves.toEqual({
-      projects: [{ id: 'project-1', path: '/repo', label: 'Repo' }],
+      projects: [{ id: 'project-1', path: path.resolve('/repo'), label: 'Repo' }],
     });
     await expect(service.execute('models.list')).resolves.toEqual(expect.objectContaining({
       defaultModel: 'provider/model',
@@ -314,5 +314,17 @@ describe('browser capture', () => {
     const { service, directory, request } = await createBrowserService({ base64: pixel, mime: 'image/png' });
     await service.execute('browser.capture', { label: 'before' }, directory);
     expect(request).toHaveBeenCalledWith('browser.capture', { label: 'before' }, expect.anything());
+  });
+
+  it('tells the browser which project and chat the action came from', async () => {
+    const { service, directory, request } = await createBrowserService({ base64: pixel, mime: 'image/png' });
+    await service.execute('browser.capture', {}, directory, { contextSessionId: 'ses_1' });
+    expect(request).toHaveBeenCalledWith('browser.capture', {}, expect.objectContaining({
+      context: { directory, sessionId: 'ses_1' },
+    }));
+    await service.execute('browser.capture', {}, directory);
+    expect(request).toHaveBeenLastCalledWith('browser.capture', {}, expect.objectContaining({
+      context: { directory, sessionId: null },
+    }));
   });
 });

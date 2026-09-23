@@ -105,7 +105,9 @@ describe('remote client auth runtime', () => {
     try {
       await runtime.createClient({ label: 'Laptop' });
       const stat = await fs.stat(path.join(dir, 'remote-clients.json'));
-      expect(stat.mode & 0o777).toBe(0o600);
+      if (process.platform !== 'win32') {
+        expect(stat.mode & 0o777).toBe(0o600);
+      }
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

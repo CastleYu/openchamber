@@ -257,7 +257,7 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
   // complete text, letting us assert full content on first paint.
   const SHORT_REASONING = 'Persisted reasoning text that is already fully available.';
 
-  const BUSY_INDICATOR = 'animate-busy-pulse';
+  const BUSY_INDICATOR = 'animate-busy-wave';
 
   const makeReasoningPart = (
     time: ReasoningPartFixture['time'],
@@ -395,6 +395,7 @@ describe('ReasoningTimelineBlock completion layout', () => {
     try {
       await act(async () => { root.render(renderBlock(true)); });
       expect(dom.container.querySelector('[data-scrollable="true"]')).toBeNull();
+
       await act(async () => { root.render(renderBlock(false)); });
       expect(dom.container.querySelector('[data-scrollable="true"]')).not.toBeNull();
       expect(dom.container.innerHTML).toContain('max-h-80');

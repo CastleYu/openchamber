@@ -34,6 +34,8 @@ const state: LifecycleState = {
   unsubscriptions: 0,
 };
 const childStores = {
+  children: new Map<string, unknown>(),
+  disposeDirectory: () => {},
   setBootstrapDemand: (owner: string, demands: Array<{ directory: string }>) => {
     state.demands.push({ owner, directories: demands.map((demand) => demand.directory) });
   },
@@ -107,6 +109,7 @@ describe('useSessionListSync', () => {
     globalSessions.archivedSessions = [];
     liveSessions = [];
     dom = installHookTestDom();
+    Object.assign(document, { hasFocus: () => true });
     root = createRoot(dom.container);
     useProjectsStore.setState({ projects, activeProjectId: 'project' });
     useDirectoryStore.setState({ currentDirectory: '/project' });
@@ -125,7 +128,7 @@ describe('useSessionListSync', () => {
 
     expect(state.globalRefreshes).toBe(0);
     expect(state.demands).toHaveLength(1);
-    expect(state.demands[0]?.directories).toEqual(['/project', '/worktree']);
+    expect(state.demands[0]?.directories).toEqual(['/project']);
     expect(state.directoryRefreshes).toEqual([['/project', '/worktree']]);
     expect(state.subscriptions).toBe(1);
     expect(state.cleanupInputs.at(-1)).toEqual({ enabled: true, hasAuthoritativeGlobalSessions: true, sessionCount: 0, sessions: [] });
@@ -157,7 +160,7 @@ describe('useSessionListSync', () => {
 
     act(() => root.render(<LifecycleProbe isVSCode={false} />));
 
-    expect(state.demands[0]?.directories).toEqual(['/project', '/session-owner']);
+    expect(state.demands[0]?.directories).toEqual(['/project']);
   });
 
   test('drops a collapsed project whose sessions are only historical', () => {
@@ -190,7 +193,7 @@ describe('useSessionListSync', () => {
 
     act(() => root.render(<LifecycleProbe isVSCode={false} />));
 
-    expect(state.demands[0]?.directories).toEqual(['/project', '/closed']);
+    expect(state.demands[0]?.directories).toEqual(['/project']);
   });
 
   test('keeps the active project when it is collapsed', () => {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useProjectResources } from '@/hooks/useProjectResources';
 import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { refreshGlobalSessions, refreshGlobalSessionsForDirectories, useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { useAllLiveSessions, useChildStoreManager } from '@/sync/sync-context';
@@ -12,7 +11,6 @@ import { useProjectsStore } from '@/stores/useProjectsStore';
 import { buildSessionBootstrapDemands } from './sessionBootstrapDemands';
 import { buildKnownSessionDirectories } from './sessionListDirectories';
 import { useAuthoritativeSessionCleanup } from './useAuthoritativeSessionCleanup';
-import { normalizePath } from '../utils';
 import { selectWorktreeDiscoveryProjects } from '../sessions/worktreeDiscoveryProjects';
 
 const EMPTY_WORKTREES_BY_PROJECT = new Map();
@@ -78,6 +76,11 @@ export const useSessionListSync = ({
   const clearKnownSessionDirectories = useKnownSessionDirectoriesStore((state) => state.clearDirectories);
   const bootstrapDemandOwner = `session-list-sync:${React.useId()}`;
 
+  // The only bootstrap demand owner. Known projects and worktrees are not
+  // demanded: their rows and sessions come from the global session list, so
+  // initializing them only created one OpenCode instance per directory at
+  // startup. Manual retry from a sidebar notice still requests bootstrap
+  // through the scheduler with `force`.
   React.useEffect(() => {
     setKnownSessionDirectories(knownDirectories);
     return clearKnownSessionDirectories;
@@ -85,16 +88,11 @@ export const useSessionListSync = ({
 
   React.useEffect(() => {
     childStores.setBootstrapDemand(bootstrapDemandOwner, buildSessionBootstrapDemands({
-      knownDirectories,
-      activeProjectDirectory: normalizePath(projects.find((project) => project.id === activeProjectId)?.path ?? null),
-      activeProjectId,
-      collapsedProjects: new Set(),
-      collapsedGroups: new Set(),
       currentDirectory,
       currentSessionDirectory,
     }));
     return () => childStores.clearBootstrapDemand(bootstrapDemandOwner);
-  }, [activeProjectId, bootstrapDemandOwner, childStores, currentDirectory, currentSessionDirectory, knownDirectories, projects]);
+  }, [bootstrapDemandOwner, childStores, currentDirectory, currentSessionDirectory]);
 
   const knownProjectSessionDirectoriesRef = React.useRef<Set<string> | null>(null);
   React.useEffect(() => {
@@ -143,3 +141,4 @@ export const useSessionListSync = ({
     sessions: cleanupSessions,
   });
 };
+import { useProjectResources } from '@/hooks/useProjectResources';

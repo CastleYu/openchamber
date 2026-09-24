@@ -1,116 +1,59 @@
-# DIJIANG 3.7 delivery
+# DIJIANG 3.7 交付记录
 
-## Scope and recovery
+## 范围与恢复
 
-The maintainer requested repaired existing tests, a documented DIJIANG regression
-suite and coverage review, completion of worthwhile uncommitted changes, and a
-Windows portable release containing current community main plus DIJIANG 3.7.
-Implementation, commits, push and release publication are authorized.
+维护者要求修复现有测试、记录 DIJIANG 回归测试套件并审查覆盖情况、完成有价值的未提交更改，并制作包含当前社区主线及 DIJIANG 3.7 的 Windows 便携版。已授权实施、提交、推送和发布。
 
-- Invoking and release branch: `codex/personal`.
-- Personal base: `a81e9c6658f41962298644d07fa40f33566a674a`.
-- Community main fetched again on 2026-09-24: `0af1eb00c` (the latest
-  upstream tip at the second fetch). The first integration base was
-  `83ec4fbde25a9d141785716bebe0371925f895b5`.
-- Fork `origin/codex/personal` matched the personal base at fetch.
-- Backup: `codex/backup-dijiang-3.7-20260922`.
-- Original five tracked edits and four untracked maintenance documents are saved
-  in stash `84e0c878f9532ccc829f27c671e65c64caf50634`. The initial index was empty.
-- `.codex-temp/`, `.playwright-mcp/` and `Temp/` remain local and untouched.
-  They contain generated evidence, profiles and caches, not release source.
-- Publish only to `CastleYu/openchamber`, through `origin/codex/personal`.
+- 调用分支和发布分支：`codex/personal`。
+- 个人分支基线：`a81e9c6658f41962298644d07fa40f33566a674a`。
+- 2026-09-24 再次获取的社区主线：`0af1eb00c`（第二次获取时的最新上游提交）。首次整合基线为 `83ec4fbde25a9d141785716bebe0371925f895b5`。
+- 获取时，分支 `origin/codex/personal` 与个人分支基线一致。
+- 备份分支：`codex/backup-dijiang-3.7-20260922`。
+- 原有五处已跟踪文件修改和四份未跟踪维护文档保存在 stash `84e0c878f9532ccc829f27c671e65c64caf50634` 中。初始暂存区为空。
+- `.codex-temp/`、`.playwright-mcp/` 和 `Temp/` 保留在本地，未作改动。它们包含生成的证据、配置档案和缓存，不属于发布源码。
+- 仅通过 `origin/codex/personal` 发布到 `CastleYu/openchamber`。
 
-## Execution plan
+## 执行计划
 
-1. Merge the pinned upstream into the invoking branch and account for every
-   conflicting personal contract. Restore the exact saved edits and documents.
-2. Run the repository test entrypoints, classify failures by behavior and runner,
-   and repair them without weakening assertions or skipping supported behavior.
-3. Map personal feature contracts to executable tests. Add missing success,
-   failure, cleanup and cross-runtime cases at their owning modules. Record
-   automated coverage separately from native and external-service acceptance.
-4. Complete the pending update-history grouping and bilingual history. Review
-   the maintenance plans as plans, without treating future proposals as features.
-5. Run workspace checks, required dead-code/anti-slop checks, the full test
-   suite, portable packaging and isolated runtime acceptance. Resolve in-scope
-   failures before publication.
-6. Commit explicit reviewed paths using Chinese descriptions. Verify ancestry,
-   push the personal branch, inspect build/publication and verify release assets.
+1. 将固定版本的上游合并到调用分支，逐项处理与个人分支契约冲突的内容，并恢复原样保存的修改和文档。
+2. 运行仓库测试入口，按行为和运行器归类失败；修复问题时不降低断言要求，也不跳过受支持的行为。
+3. 将个人功能契约对应到可执行测试。在所属模块中补充缺失的成功、失败、清理和跨运行时用例。自动化覆盖与原生及外部服务验收分开记录。
+4. 完成待处理的更新历史分类和双语内容。维护计划仍按计划审阅，不将未来提案视作已实现功能。
+5. 运行工作区检查、所需的死代码和 anti-slop 检查、完整测试套件、便携版打包及隔离环境运行验收。发布前解决范围内的失败。
+6. 仅提交明确列出且已审阅的路径，并使用中文提交说明。核实提交祖先关系，推送个人分支，检查构建和发布状态，并核验发行文件。
 
-## Acceptance status
+## 验收状态
 
-The complete root `bun run test` gate passed on the second upstream merge:
-scripts 9/9 files, SDK 15/15, UI 583/583, VS Code 50/50, Electron 33/33,
-and Web 262 passed/7 skipped files (3,768 passed/141 skipped tests).
-`bun install --frozen-lockfile` and `bun run changelog:check` also passed.
-Windows skips five POSIX-shell-only OpenCode installer fixtures; portable
-packaging checks the bundled Windows executable separately. Instrumented line
-coverage is unavailable in the repository, so `DIJIANG-TESTING.md` reviews
-feature contracts and their runtime boundaries instead of claiming a percent.
-The local build completed with the task-local Spectre workaround described
-below. The packaged `win-unpacked` app launched from an isolated profile,
-reported `1.24.2-DIJIANG.3.7`, reached the main interface after managed
-OpenCode 2.0.15 connected, and exited with code 0 and an empty managed-process
-registry. Its Update history page rendered the current official and personal
-entries; changing to Simplified Chinese while Personal was selected translated
-the entry body and retained that selected filter. The portable wrapper reached
-an Electron renderer once, but a complete wrapper lifecycle was not established
-locally. Public CI asset verification and publication are still pending.
+第二次上游合并后，根目录的完整 `bun run test` 检查通过：scripts 为 9/9 个文件，SDK 为 15/15，UI 为 583/583，VS Code 为 50/50，Electron 为 33/33，Web 有 262 个文件通过、7 个跳过（3,768 项测试通过、141 项跳过）。`bun install --frozen-lockfile` 和 `bun run changelog:check` 也通过了。
 
-The local VS2022 toolset lacks Spectre libraries, so the first native rebuild
-failed with MSB8040. For QA only, the installed `node-pty` dependency's
-`binding.gyp` was backed up and its Spectre setting removed. The normal
-`electron:build` then produced the portable EXE; the original dependency file
-was restored and hash-checked immediately afterward. This task-local change
-is excluded from Git and the CI source. The first portable QA extraction left
-about 1.97 GB in its isolated temporary profile; that task-owned directory
-was verified inactive and removed after an `ENOSPC` failure. The public
-Release must be built afresh by CI from the committed tree.
+Windows 会跳过五个仅适用于 POSIX shell 的 OpenCode 安装器测试夹具；便携版打包会单独检查捆绑的 Windows 可执行文件。仓库不支持插桩行覆盖率，因此 `DIJIANG-TESTING.md` 审查功能契约及其运行时边界，不报告覆盖率百分比。本地构建使用下文所述的任务专用 Spectre 临时规避方法完成。
 
-## Runtime preservation decisions
+打包后的 `win-unpacked` 应用从隔离配置档案启动，报告版本 `1.24.2-DIJIANG.3.7`，在托管的 OpenCode 2.0.15 连接后进入主界面，并以代码 0 退出，托管进程注册表也为空。其 Update history 页面显示了当前官方和个人条目；在选中 Personal 时切换到简体中文，条目正文随之翻译，且仍保留已选筛选项。便携版包装器曾成功进入一次 Electron 渲染进程，但本地尚未验证完整的包装器生命周期。
 
-- Web, desktop, hosted mobile and Capacitor share authenticated file reads.
-  Accept upstream's explicit `allowOutsideWorkspace` policy and OS permission
-  checks. Native file copies retain cancellation, length checks and window-owned
-  cleanup. Legacy token renewal is replaced by the new server read contract.
-- VS Code retains extension-host file access and its native bridge.
-- Desktop registers the personal file protocol in the new early entrypoint;
-  the main handler retains packaged recovery while the upstream splash owns
-  protocol installation.
-- Web and desktop managed OpenCode retain the DIJIANG MCP plugin. External
-  OpenCode and the VS Code lifecycle do not receive it. Registry ownership starts
-  at spawn, including startup failure, and keeps injectable teardown operations.
+GitHub Actions 运行 `35900576152` 的构建和发布任务均已通过。公开 Release [v1.24.2-DIJIANG.3.7](https://github.com/CastleYu/openchamber/releases/tag/v1.24.2-DIJIANG.3.7) 已发布并核验五个预期文件：EXE、`build-info.json`、`SHA256SUMS.txt`、英文历史和中文历史。EXE 的 SHA-256 为 `8b818e04558cc28da4ebca8bd3779bd414667c7fdf8df2e3274178a51b30d630`。标签和分支均指向 `698f8a4b1`；`build-info.json` 确认源码提交、x64 便携版目标和仅通知更新策略。
 
-## Command environment notes
+本地 VS2022 工具集缺少 Spectre 库，因此首次原生重建因 MSB8040 失败。仅为 QA，先备份已安装依赖 `node-pty` 的 `binding.gyp`，再移除其中的 Spectre 设置。随后通过常规 `electron:build` 生成便携版 EXE；紧接着恢复原依赖文件并核对哈希。此任务专用修改未纳入 Git 和 CI 源码。首次提取便携版进行 QA 后，隔离临时配置档案占用了约 1.97 GB；发生 `ENOSPC` 失败后，确认该任务目录已不活动并将其删除。公开 Release 已由 CI 根据已提交的代码构建。
 
-- The guessed `packages/web/vitest.config.js` did not exist. Discover the
-  package's actual configuration before invoking Vitest.
-- The upstream manifest now pins Bun 1.4.2; the installed default is 1.3.14.
-  Resolve a task-local pinned runtime before regenerating dependencies.
-- A combined patch failed on a missing documentation anchor and made no changes.
-  Reapply the source changes separately and append command notes at an existing
-  section. Optional `small-model/auth.js` and guessed CLI helper paths did not
-  exist; locate auth through imports and use `rg --files` before reading.
+## 运行时保留决策
 
-## Verified fixes so far
+- Web、桌面端、托管移动端和 Capacitor 共用经过身份验证的文件读取。遵循上游明确的 `allowOutsideWorkspace` 策略和操作系统权限检查。原生文件复制保留取消、长度检查和由窗口负责的清理。旧版令牌续期机制由新的服务器读取契约取代。
+- VS Code 保留扩展宿主的文件访问能力及其原生桥接。
+- 桌面端在新的早期入口点注册个人文件协议；主处理器保留打包后的恢复能力，上游启动画面负责安装协议。
+- Web 和桌面端托管的 OpenCode 保留 DIJIANG MCP 插件。外部 OpenCode 和 VS Code 生命周期不加载该插件。注册表从进程启动时起接管所有权，包括启动失败的情况，并保留可注入的清理操作。
 
-- The second upstream intake migrates to OpenCode 2.x. Managed MCP injection
-  now materializes a plugin directory and uses the 2.x config, session and MCP
-  client methods. Missing configuration leaves released connections retryable.
-- Session resource scheduling retains DIJIANG's focused/background frame
-  budgets alongside the upstream event pipeline. A deterministic 60-delta
-  test checks lossless background flushing.
-- File preview keeps DIJIANG's native media/ZIP path alongside upstream
-  artifact preview modes. UI fixtures use the 2.x provider and session models.
+## 命令环境记录
 
-- The Windows registry query missed a PowerShell statement separator. Real
-  lifecycle tests caught retained records that mocked queries had not detected.
-  Registration cleanup is awaited by both child exit and explicit close.
-- CLI PID-file recovery can now verify a Windows process command line through
-  a bounded hidden query, while unavailable identity still remains unknown.
-- Four native Node test files were incorrectly collected by Vitest. The web
-  test script now runs them with Node before Vitest. Vitest workers are bounded
-  to four to avoid overwhelming real-process fixtures.
-- Tests isolate Windows home directories, use platform-correct path fixtures,
-  and exercise personal install denial separately from community installer
-  behavior. Production defaults remain notification-only.
+- 推测的 `packages/web/vitest.config.js` 并不存在。运行 Vitest 前，应先找到该包实际使用的配置。
+- 上游清单现在固定使用 Bun 1.4.2；本机默认安装的是 1.3.14。重新生成依赖前，应先确定任务专用的固定版本运行时。
+- 一次组合补丁因找不到文档锚点而失败，没有产生更改。应分别重新应用源码修改，并在现有章节中追加命令记录。可选路径 `small-model/auth.js` 和推测的 CLI 辅助文件路径均不存在；应通过导入关系定位身份验证代码，并在读取前使用 `rg --files` 查找文件。
+
+## 已验证的修复
+
+- 第二次纳入上游更新后迁移到 OpenCode 2.x。托管 MCP 注入现在会生成插件目录，并使用 2.x 的配置、会话和 MCP 客户端方法。配置缺失时，已释放的连接仍可重试。
+- 会话资源调度在采用上游事件管线的同时，保留 DIJIANG 的前台和后台帧预算。一项确定性的 60 个增量测试会检查后台刷新是否无损。
+- 文件预览在采用上游制品预览模式的同时，保留 DIJIANG 原生媒体和 ZIP 处理路径。UI 测试夹具使用 2.x 的提供程序和会话模型。
+
+- Windows 注册表查询遗漏了 PowerShell 语句分隔符。真实生命周期测试发现了模拟查询未能发现的残留记录。无论子进程退出还是显式关闭，都会等待注册清理完成。
+- CLI 的 PID 文件恢复现在可以通过有时限的隐藏查询验证 Windows 进程命令行；无法确认进程身份时，仍将其标记为未知。
+- 四个原生 Node 测试文件曾被 Vitest 错误收集。Web 测试脚本现在会先用 Node 运行这些文件，再运行 Vitest。Vitest 工作线程限制为四个，避免真实进程测试夹具不堪负荷。
+- 测试会隔离 Windows 用户主目录，使用符合平台的路径夹具，并分别检查个人安装被拒绝和社区安装器行为。生产环境默认仍仅发送通知。

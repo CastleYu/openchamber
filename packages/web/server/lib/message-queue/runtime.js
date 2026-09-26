@@ -13,6 +13,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { readDescendantActivity } from '../opencode/descendant-activity.js';
 
 const QUEUE_FILE_NAME = 'message-queue.json';
 const QUEUE_FILE_VERSION = 1;
@@ -175,6 +176,14 @@ const toPublicItem = (item) => {
 };
 
 const extractSessionStatus = (payload) => {
+  if (payload.type === 'session.idle' || payload.type === 'session.execution.completed') {
+    const sessionId = asNonEmptyString(asRecord(payload.properties)?.sessionID);
+    return sessionId ? { sessionId, type: 'idle' } : null;
+  }
+  if (payload.type === 'session.execution.started') {
+    const sessionId = asNonEmptyString(asRecord(payload.properties)?.sessionID);
+    return sessionId ? { sessionId, type: 'busy' } : null;
+  }
   if (payload.type !== 'session.status') return null;
   const properties = asRecord(payload.properties) ?? {};
   const status = asRecord(properties.status) ?? {};
@@ -198,6 +207,13 @@ const extractAssistantMessageUpdate = (payload) => {
   };
 };
 
+const extractAbortedSessionId = (payload) => {
+  if (payload.type !== 'session.idle' && payload.type !== 'session.execution.interrupted') return null;
+  const properties = asRecord(payload.properties) ?? {};
+  if (payload.type === 'session.idle' && properties.aborted !== true) return null;
+  return asNonEmptyString(properties.sessionID);
+};
+
 const extractDeletedSessionId = (payload) => {
   if (payload.type !== 'session.deleted') return null;
   const properties = asRecord(payload.properties) ?? {};
@@ -206,6 +222,7 @@ const extractDeletedSessionId = (payload) => {
 
 export function createMessageQueueRuntime({
   globalEventHub,
+  kernelOperations = null,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   sessionKnowledgeRuntime = null,
@@ -390,6 +407,26 @@ export function createMessageQueueRuntime({
    * idle: a fetch failure re-arms instead of sending into a running turn.
    */
   const isSessionIdle = async (sessionId, directory) => {
+    if (kernelOperations) {
+      let statuses;
+      let page;
+      const identity = kernelOperations.captureIdentity();
+      try {
+        statuses = (await kernelOperations.listActiveStatuses({ directory })).data;
+        page = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: MESSAGE_TAIL_LIMIT })).data;
+      } catch {
+        return null;
+      }
+      if (statuses[sessionId]?.type === 'busy' || statuses[sessionId]?.type === 'retry') return false;
+      const descendantBusy = await readDescendantActivity(kernelOperations, sessionId, directory, statuses, identity);
+      if (descendantBusy === null) return null;
+      if (descendantBusy) return 'descendant-busy';
+      const last = page.order === 'asc' ? page.items.at(-1) : page.items[0];
+      if (last?.role === 'assistant' && last.completed === undefined) {
+        if (last.created === undefined || last.created >= runtimeStartedAt) return false;
+      }
+      return true;
+    }
     const statuses = asRecord(await openCodeFetch('/session/status', { directory }).catch(() => null));
     if (!statuses) return null;
     const type = asRecord(statuses[sessionId])?.type;
@@ -420,7 +457,9 @@ export function createMessageQueueRuntime({
     const [head, ...tail] = text.split(' ');
     const name = head.slice(1);
     if (!name) return null;
-    const commands = asList(await openCodeFetch('/command', { directory })) ?? [];
+    const commands = kernelOperations
+      ? (await kernelOperations.listCommands({ directory })).data
+      : asList(await openCodeFetch('/command', { directory })) ?? [];
     const match = commands.map(asRecord).find((command) => command?.name === name);
     if (!match) return null;
     return {
@@ -473,6 +512,7 @@ export function createMessageQueueRuntime({
   };
 
   const sendItem = async (sessionId, directory, item) => {
+    const identity = kernelOperations?.captureIdentity();
     const { providerID, modelID, agent, variant } = item.sendConfig;
     const fileParts = item.attachments.map(toFilePart);
     const contextParts = item.context.flatMap(toContextParts);
@@ -482,13 +522,38 @@ export function createMessageQueueRuntime({
     // prompt route carries the expanded template (or the skill invocation as an
     // explicit instruction) together with the context.
     const command = await resolveSlashCommand(item.text, directory);
-    if (command && contextParts.length === 0) {
+    if (command && (contextParts.length === 0 || identity?.generation === 'oc2')) {
       const body = { command: command.name, arguments: command.arguments, model: `${providerID}/${modelID}` };
       if (agent) body.agent = agent;
       if (variant) body.variant = variant;
       if (fileParts.length > 0) body.parts = fileParts;
       await resolvePromptBody?.(body, { sessionId, directory });
-      await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/command`, { directory, method: 'POST', body });
+      if (kernelOperations) {
+        const knowledge = identity.generation === 'oc2' && sessionKnowledgeRuntime
+          ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionId, directory)
+            .catch(() => ({ text: '', signature: '' }))
+          : { text: '', signature: '' };
+        const model = { id: body.model.split('/').slice(1).join('/'), providerID: body.model.split('/')[0] };
+        if (body.variant) model.variant = body.variant;
+        const synthetics = contextParts.filter((part) => part.type === 'text').map((part) => {
+          const synthetic = { text: part.text, resume: false };
+          if (part.metadata) synthetic.metadata = part.metadata;
+          return synthetic;
+        });
+        if (knowledge.text) synthetics.push({ text: knowledge.text, resume: false });
+        const commandBody = { name: command.name, text: command.arguments };
+        if (fileParts.length) commandBody.files = fileParts.map((part) => ({ uri: part.url, name: part.filename }));
+        const request = identity.generation === 'oc1'
+          ? { ...identity, body }
+          : { ...identity, model, synthetics, body: commandBody };
+        if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+        await kernelOperations.sendCommand({ sessionID: sessionId, directory, request });
+        if (knowledge.text && sessionKnowledgeRuntime) {
+          await sessionKnowledgeRuntime.recordDelivered(sessionId, directory, knowledge.signature).catch(() => undefined);
+        }
+      } else {
+        await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/command`, { directory, method: 'POST', body });
+      }
       return;
     }
     let text = item.text;
@@ -523,7 +588,27 @@ export function createMessageQueueRuntime({
     if (variant) body.variant = variant;
     body.parts = parts;
     await resolvePromptBody?.(body, { sessionId, directory });
-    await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/prompt_async`, { directory, method: 'POST', body });
+    if (kernelOperations) {
+      const model = { id: body.model.modelID, providerID: body.model.providerID };
+      if (body.variant) model.variant = body.variant;
+      const synthetics = body.parts.filter((part) => part.type === 'text' && part.synthetic).map((part) => {
+        const synthetic = { text: part.text, resume: false };
+        if (part.metadata) synthetic.metadata = part.metadata;
+        return synthetic;
+      });
+      const promptBody = {
+        text: body.parts.filter((part) => part.type === 'text' && !part.synthetic).map((part) => part.text).join('\n'),
+        files: body.parts.filter((part) => part.type === 'file').map((part) => ({ uri: part.url, name: part.filename })),
+      };
+      if (item.agentMention) promptBody.agents = [{ name: item.agentMention }];
+      const request = identity.generation === 'oc1'
+        ? { ...identity, body }
+        : { ...identity, model, synthetics, body: promptBody };
+      if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+      await kernelOperations.sendPrompt({ sessionID: sessionId, directory, request });
+    } else {
+      await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/prompt_async`, { directory, method: 'POST', body });
+    }
     if (knowledge.text && sessionKnowledgeRuntime) {
       // After the prompt is accepted, so a rejected dispatch carries it again.
       await sessionKnowledgeRuntime.recordDelivered(sessionId, directory, knowledge.signature).catch(() => undefined);
@@ -582,6 +667,10 @@ export function createMessageQueueRuntime({
 
     const idle = await isSessionIdle(sessionId, queue.directory);
     if (idle === null) {
+      armDispatch(sessionId, retryDelayMs(1));
+      return;
+    }
+    if (idle === 'descendant-busy') {
       armDispatch(sessionId, retryDelayMs(1));
       return;
     }
@@ -764,6 +853,8 @@ export function createMessageQueueRuntime({
     }
 
     const status = extractSessionStatus(payload);
+    const abortedSessionId = extractAbortedSessionId(payload);
+    if (abortedSessionId && queues.has(abortedSessionId)) abortedAt.set(abortedSessionId, now());
     if (status) {
       if (!queues.has(status.sessionId)) return;
       if (status.type === 'idle') armDispatch(status.sessionId);
@@ -781,6 +872,10 @@ export function createMessageQueueRuntime({
   };
 
   const processEvent = (event) => {
+    if (event?.translated) {
+      for (const payload of event.translated()) processPayload(payload);
+      return;
+    }
     const raw = asRecord(asRecord(event)?.payload);
     processPayload(asRecord(raw?.payload) ?? raw);
   };

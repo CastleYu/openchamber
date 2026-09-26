@@ -1,10 +1,16 @@
 import express from 'express';
-import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { createWorktree, getWorktreeBootstrapStatus, resolvePrimaryWorktreeRoot } from '../git/index.js';
 import { expandSnippets } from '../opencode/snippets.js';
 import { expandCommandGoalObjective, parseScheduledCommandPrompt } from '../scheduled-tasks/runtime.js';
 import { buildGoalIntroText, createSessionGoal } from '../session-goal/create.js';
 import { OpenChamberControlError, asControlError } from '../openchamber-control/error.js';
+import { createArchiveStore } from './archive-store.js';
+import { createOpenCodeSessionMetadata, createSessionMetadataStore } from './session-metadata-store.js';
+import { defaultV2Selection, validateV2Selection } from './selection-v2.js';
+import { createSessionStorageScopes } from './storage-scope.js';
+import { applyForkInheritance, forkGoalID } from './fork-inheritance.js';
+import { readObjectiveForFork, writeObjective, removeObjectiveForFork } from '../session-goal/objectives.js';
+import { isAutoModel } from '../routing/defaults.js';
 
 const asNonEmptyString = (value) => {
   if (typeof value !== 'string') return null;
@@ -95,43 +101,13 @@ const resolveProjectDefaults = (settings, directory, projectId) => {
   };
 };
 
-const buildDirectoryHeaders = (directory) => ({
-  // OpenCode rejects non-ASCII header values; the official SDK sends this
-  // header percent-encoded, so match that wire format (non-ASCII checkout
-  // paths such as "Masaüstü" otherwise fail every dispatched prompt).
-  ...(directory ? { 'x-opencode-directory': encodeURIComponent(directory) } : {}),
-});
-
-const fetchJson = async (url, authHeaders, fallback, directory) => {
-  const response = await fetch(url.toString(), {
-    headers: { ...authHeaders, ...buildDirectoryHeaders(directory), accept: 'application/json' },
-  });
-  if (!response.ok) return fallback;
-  return response.json().catch(() => fallback);
-};
-
-const fetchSelectionInputs = async ({ buildOpenCodeUrl, authHeaders, directory, readSettingsFromDiskMigrated }) => {
+const fetchSelectionInputs = async ({ kernelOperations, directory, readSettingsFromDiskMigrated }) => {
   const settings = await readSettingsFromDiskMigrated();
-  const providersUrl = new URL(buildOpenCodeUrl('/config/providers', ''));
-  providersUrl.searchParams.set('directory', directory);
-  const agentsUrl = new URL(buildOpenCodeUrl('/agent', ''));
-  agentsUrl.searchParams.set('directory', directory);
-  const configUrl = new URL(buildOpenCodeUrl('/config', ''));
-  configUrl.searchParams.set('directory', directory);
-
-  const [providersBody, agentsBody, configBody] = await Promise.all([
-    fetchJson(providersUrl, authHeaders, { providers: [] }, directory),
-    fetchJson(agentsUrl, authHeaders, [], directory),
-    fetchJson(configUrl, authHeaders, {}, directory),
-  ]);
-
-  return {
-    settings,
-    providers: Array.isArray(providersBody?.providers) ? providersBody.providers : [],
-    agents: Array.isArray(agentsBody) ? agentsBody : [],
-    opencodeDefaultAgent: asNonEmptyString(configBody?.default_agent) || asNonEmptyString(configBody?.defaultAgent),
-    opencodeDefaultModel: asNonEmptyString(configBody?.model),
-  };
+  const catalog = (await kernelOperations.getSelectionCatalog({ directory })).data;
+  if (catalog.generation === 'oc2') return { settings, catalog };
+  return { settings, catalog, providers: catalog.providers, agents: catalog.agents,
+    opencodeDefaultAgent: asNonEmptyString(catalog.config?.default_agent) || asNonEmptyString(catalog.config?.defaultAgent),
+    opencodeDefaultModel: asNonEmptyString(catalog.config?.model) };
 };
 
 const resolveDefaultSelection = ({ agents, providers, settings, projectDefaults, opencodeDefaultAgent, opencodeDefaultModel }) => {
@@ -197,79 +173,18 @@ const resolveDefaultSelection = ({ agents, providers, settings, projectDefaults,
   };
 };
 
-const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, directory, payload }) => {
-  const promptUrl = new URL(`${baseUrl}/session/${encodeURIComponent(sessionID)}/prompt_async`);
-  promptUrl.searchParams.set('directory', directory);
-  const response = await fetch(promptUrl.toString(), {
-    method: 'POST',
-    headers: {
-      ...authHeaders,
-      ...buildDirectoryHeaders(directory),
-      'content-type': 'application/json',
-      accept: 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`prompt_async failed (${response.status})${body ? `: ${body}` : ''}`);
-  }
-};
-
-const createSession = async ({ baseUrl, authHeaders, directory, title }) => {
-  const sessionUrl = new URL(`${baseUrl}/session`);
-  sessionUrl.searchParams.set('directory', directory);
-  const response = await fetch(sessionUrl.toString(), {
-    method: 'POST',
-    headers: {
-      ...authHeaders,
-      ...buildDirectoryHeaders(directory),
-      'content-type': 'application/json',
-      accept: 'application/json',
-    },
-    body: JSON.stringify({ directory, ...(title ? { title } : {}) }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`session create failed (${response.status})${body ? `: ${body}` : ''}`);
-  }
-
-  const body = await response.json().catch(() => null);
-  const sessionID = body?.id || body?.data?.id;
-  if (!sessionID) {
-    throw new Error('failed to create session');
-  }
-  return sessionID;
-};
-
-const forkSession = async ({ client, sessionID, directory, messageID }) => {
-  const response = await client.session.fork({
-    sessionID,
-    directory,
-    ...(messageID ? { messageID } : {}),
-  });
-  const session = response?.data;
-  if (!session?.id) {
-    throw new Error('failed to fork session');
-  }
-  return session;
-};
-
-const latestCompletedAssistantMessageID = async ({ client, sessionID, directory }) => {
+const latestCompletedAssistantMessageID = async ({ kernelOperations, sessionID, directory }) => {
   let response;
   try {
-    response = await client.session.messages({ sessionID, directory, limit: 100 });
+    response = await kernelOperations.listMessages({ sessionID, directory, limit: 100 });
   } catch {
     return null;
   }
-  const messages = Array.isArray(response?.data) ? response.data : [];
+  const messages = response.data.items;
   let latest = null;
   for (const message of messages) {
-    const info = message?.info;
-    if (info?.role !== 'assistant' || !Number.isFinite(info?.time?.completed)) continue;
-    if (!latest || (info.time.created || 0) >= (latest.time?.created || 0)) latest = info;
+    if (message.role !== 'assistant' || !Number.isFinite(message.completed)) continue;
+    if (!latest || (message.created || 0) >= (latest.created || 0)) latest = message;
   }
   return asNonEmptyString(latest?.id);
 };
@@ -364,19 +279,18 @@ const waitForWorktreeBootstrapReady = async ({ directory }) => {
   }
 };
 
-const latestUserMessageID = async ({ client, sessionID, directory }) => {
+const latestUserMessageID = async ({ kernelOperations, sessionID, directory }) => {
   let response;
   try {
-    response = await client.session.messages({ sessionID, directory, limit: 100 });
+    response = await kernelOperations.listMessages({ sessionID, directory, limit: 100 });
   } catch {
     return { ok: false, messageID: null };
   }
-  const messages = Array.isArray(response?.data) ? response.data : [];
+  const messages = response.data.items;
   let latest = null;
   for (const message of messages) {
-    const info = message?.info;
-    if (info?.role !== 'user') continue;
-    if (!latest || (info.time?.created || 0) >= (latest.time?.created || 0)) latest = info;
+    if (message.role !== 'user') continue;
+    if (!latest || (message.created || 0) >= (latest.created || 0)) latest = message;
   }
   return { ok: true, messageID: asNonEmptyString(latest?.id) };
 };
@@ -384,10 +298,10 @@ const latestUserMessageID = async ({ client, sessionID, directory }) => {
 // `prompt_async` answers 204 as soon as OpenCode forks the run, and every later
 // failure is reported only on the session event stream. Confirm the prompt was
 // actually recorded so `promptDispatched` never claims a dispatch that vanished.
-const waitForPromptLanded = async ({ client, sessionID, directory, baselineUserMessageID }) => {
+const waitForPromptLanded = async ({ kernelOperations, sessionID, directory, baselineUserMessageID }) => {
   const deadline = Date.now() + PROMPT_LANDED_TIMEOUT_MS;
   for (;;) {
-    const latest = await latestUserMessageID({ client, sessionID, directory });
+    const latest = await latestUserMessageID({ kernelOperations, sessionID, directory });
     // A failed lookup is not authoritative evidence that the prompt was lost.
     if (!latest.ok) return true;
     if (latest.messageID && latest.messageID !== baselineUserMessageID) return true;
@@ -413,6 +327,10 @@ const resolveWorktreeInput = (payload) => {
 
 export const createOpenChamberSessionService = (dependencies) => {
   const {
+    kernelOperations,
+    dataDir,
+    getStorageScope,
+    broadcastGlobalUiEvent,
     readSettingsFromDiskMigrated,
     sanitizeProjects,
     validateDirectoryPath,
@@ -428,14 +346,100 @@ export const createOpenChamberSessionService = (dependencies) => {
     resolvePromptBody = null,
   } = dependencies;
 
+  if (!kernelOperations) throw new Error('kernelOperations is required for session routes');
+  const current = (identity) => {
+    const now = kernelOperations.captureIdentity();
+    if (now.generation !== identity.generation || now.endpoint !== identity.endpoint || now.epoch !== identity.epoch) {
+      throw new OpenChamberControlError('OpenCode runtime changed during session operation', 409);
+    }
+  };
+  const oc2 = () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') throw new OpenChamberControlError('This route requires OpenCode 2.x', 404);
+    return identity;
+  };
+  const scopes = dataDir ? createSessionStorageScopes({ dataDir }) : null;
+  const stores = new Map();
+  const storageScope = (identity) => {
+    current(identity);
+    const scope = getStorageScope ? getStorageScope() : 'managed';
+    if (!asNonEmptyString(scope)) throw new Error('OC2 storage scope is unavailable');
+    return scope;
+  };
+  const storesFor = async (identity) => {
+    const scope = storageScope(identity);
+    if (dependencies.archiveStore || dependencies.sessionMetadataStore) {
+      return { archiveStore: dependencies.archiveStore, sessionMetadataStore: dependencies.sessionMetadataStore };
+    }
+    if (!scopes) throw new Error('OC2 session storage is unavailable');
+    let entry = stores.get(scope);
+    if (!entry) {
+      const dir = await scopes.directory(scope);
+      current(identity);
+      // Another first request may have installed the shared transaction owner
+      // while scope resolution was pending. Never create a second writer.
+      entry = stores.get(scope);
+      if (!entry) {
+        entry = {
+          archiveStore: createArchiveStore({ dataDir: dir }),
+          sessionMetadataStore: createSessionMetadataStore({ dataDir: dir,
+            openCode: createOpenCodeSessionMetadata({ kernelOperations }) }),
+        };
+        stores.set(scope, entry);
+      }
+    }
+    current(identity);
+    return entry;
+  };
+  const broadcastArchived = (sessionID, archivedAt) => broadcastGlobalUiEvent?.({
+    type: 'openchamber:session-archived', properties: { sessionID, archivedAt },
+  });
+  const getArchivedSessions = async () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') return null;
+    const { archiveStore } = await storesFor(identity);
+    const result = await archiveStore.getAll();
+    current(identity);
+    return result;
+  };
+  const getStoredSessionMetadata = async () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') return null;
+    const { sessionMetadataStore } = await storesFor(identity);
+    const result = await sessionMetadataStore.listUnmigrated();
+    current(identity);
+    return result;
+  };
+  const prepareSessionMetadata = async ({ sessionID, directory = '', identity }) => {
+    if (identity.generation !== 'oc2') return;
+    current(identity);
+    const { sessionMetadataStore } = await storesFor(identity);
+    await sessionMetadataStore.ensureMigrated(sessionID, { directory, expectedIdentity: identity });
+    current(identity);
+  };
+  const migrateStoredSessionMetadata = async () => {
+    const identity = oc2();
+    const { sessionMetadataStore } = await storesFor(identity);
+    const pending = await sessionMetadataStore.migrateLegacy();
+    current(identity);
+    return pending;
+  };
+
   // Last user message of an existing session, as a selection to reuse. Returns
   // null when the session has no user message carrying a model.
-  const fetchLastUserSelection = async ({ client, sessionID, directory }) => {
+  const fetchLastUserSelection = async ({ sessionID, directory }) => {
     try {
-      const response = await client.session.messages({ sessionID, directory, limit: 20 });
-      const records = Array.isArray(response?.data) ? response.data : [];
+      if (kernelOperations.captureIdentity().generation === 'oc2') {
+        const session = (await kernelOperations.getSession({ sessionID, directory })).data;
+        const providerID = asNonEmptyString(session.raw?.model?.providerID);
+        const modelID = asNonEmptyString(session.raw?.model?.id);
+        return { model: providerID && modelID ? { providerID, modelID } : null,
+          agent: asNonEmptyString(session.raw?.agent), variant: asNonEmptyString(session.raw?.model?.variant) };
+      }
+      const response = await kernelOperations.listMessages({ sessionID, directory, limit: 20 });
+      const records = response.data.items;
       for (let index = records.length - 1; index >= 0; index -= 1) {
-        const info = records[index]?.info;
+        const info = records[index]?.raw?.info;
         if (info?.role !== 'user') continue;
         const providerID = asNonEmptyString(info.model?.providerID);
         const modelID = asNonEmptyString(info.model?.modelID);
@@ -456,13 +460,17 @@ export const createOpenChamberSessionService = (dependencies) => {
   // Reject them before any session, worktree, or goal side effect happens.
   const validateRequestedSelection = async ({ directory, requestedModel, requestedAgent, requestedVariant }) => {
     if (!requestedModel && !requestedAgent && !requestedVariant) return;
-    const authHeaders = getOpenCodeAuthHeaders();
-    const { providers, agents } = await fetchSelectionInputs({
-      buildOpenCodeUrl,
-      authHeaders,
+    const inputs = await fetchSelectionInputs({
+      kernelOperations,
       directory,
       readSettingsFromDiskMigrated,
     });
+    if (inputs.catalog.generation === 'oc2') {
+      validateV2Selection({ catalog: inputs.catalog, model: requestedModel, agent: requestedAgent,
+        variant: requestedVariant, directory });
+      return;
+    }
+    const { providers, agents } = inputs;
 
     // An empty list means the lookup failed or returned nothing authoritative;
     // it must not turn a valid selection into a rejection.
@@ -494,9 +502,9 @@ export const createOpenChamberSessionService = (dependencies) => {
   };
 
   const dispatchPrompt = async ({
-    client,
     baseUrl,
     authHeaders,
+    identity,
     sessionID,
     directory,
     projectId,
@@ -511,7 +519,7 @@ export const createOpenChamberSessionService = (dependencies) => {
     let agent = requestedAgent;
     let variant = requestedVariant;
     if (reuseSessionSelection && (!model || !agent)) {
-      const previous = await fetchLastUserSelection({ client, sessionID, directory });
+      const previous = await fetchLastUserSelection({ sessionID, directory });
       if (previous) {
         if (!model && previous.model) {
           model = previous.model;
@@ -522,15 +530,14 @@ export const createOpenChamberSessionService = (dependencies) => {
     }
     if (!model || !agent) {
       const inputs = await fetchSelectionInputs({
-        buildOpenCodeUrl,
-        authHeaders,
+        kernelOperations,
         directory,
         readSettingsFromDiskMigrated,
       });
-      const defaults = resolveDefaultSelection({
-        ...inputs,
-        projectDefaults: resolveProjectDefaults(inputs.settings, directory, projectId),
-      });
+      const projectDefaults = resolveProjectDefaults(inputs.settings, directory, projectId);
+      const defaults = inputs.catalog.generation === 'oc2'
+        ? defaultV2Selection({ catalog: inputs.catalog, settings: inputs.settings, projectDefaults })
+        : resolveDefaultSelection({ ...inputs, projectDefaults });
       if (!model) {
         model = defaults.model;
         if (variant == null) variant = defaults.variant;
@@ -544,19 +551,28 @@ export const createOpenChamberSessionService = (dependencies) => {
     }
 
     const expandedPrompt = expandSnippets(prompt, directory);
+    if (identity.generation === 'oc2' && isAutoModel(model)) {
+      if (!resolvePromptBody) throw new OpenChamberControlError('Auto routing is unavailable on this server', 400);
+      const routed = { model, agent, variant, parts: [{ type: 'text', text: expandedPrompt }] };
+      await resolvePromptBody(routed, { sessionId: sessionID, directory });
+      model = routed.model;
+      agent = routed.agent || agent;
+      variant = routed.variant;
+      if (isAutoModel(model)) throw new OpenChamberControlError('Auto routing returned no concrete model', 500);
+    }
     const parsedCommand = parseScheduledCommandPrompt(prompt);
     let resolvedCommand = null;
     if (parsedCommand) {
       try {
-        const response = await client.command.list({ directory });
-        const commands = Array.isArray(response?.data) ? response.data : [];
+        const response = await kernelOperations.listCommands({ directory });
+        const commands = response.data;
         const command = commands.find((candidate) => candidate?.name === parsedCommand.command);
         if (command) resolvedCommand = { ...parsedCommand, template: command.template };
       } catch {
       }
     }
     if (goalInput.enabled) {
-      const commandObjective = resolvedCommand
+      const commandObjective = identity.generation === 'oc1' && resolvedCommand
         ? expandCommandGoalObjective(resolvedCommand.template, resolvedCommand.arguments)
         : null;
       await (createSessionGoalOverride || createSessionGoal)({
@@ -569,6 +585,8 @@ export const createOpenChamberSessionService = (dependencies) => {
         providerID: model.providerID,
         modelID: model.modelID,
         onWarning: (message, error) => console.warn(`[OpenChamberSessions] ${message}:`, error?.message || error),
+        kernelOperations,
+        expectedIdentity: identity,
       });
     }
 
@@ -577,29 +595,37 @@ export const createOpenChamberSessionService = (dependencies) => {
       return error;
     };
 
+    const knowledge = sessionKnowledgeRuntime
+      ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, directory)
+        .catch(() => ({ text: '', signature: '' }))
+      : { text: '', signature: '' };
+    const recordKnowledge = async () => {
+      if (knowledge.text && sessionKnowledgeRuntime) {
+        await sessionKnowledgeRuntime.recordDelivered(sessionID, directory, knowledge.signature)
+          .catch(() => undefined);
+      }
+    };
+
     if (resolvedCommand) {
       try {
-        await client.session.command({
-          sessionID,
-          directory,
-          command: resolvedCommand.command,
-          arguments: resolvedCommand.arguments,
-          ...(agent ? { agent } : {}),
-          model: `${model.providerID}/${model.modelID}`,
-          ...(variant ? { variant } : {}),
-        });
+        current(identity);
+        await kernelOperations.sendCommand({ sessionID, directory, request: identity.generation === 'oc1'
+          ? { ...identity, body: { command: resolvedCommand.command, arguments: resolvedCommand.arguments,
+            ...(agent ? { agent } : {}), model: `${model.providerID}/${model.modelID}`,
+            ...(variant ? { variant } : {}) } }
+          : { ...identity, body: { name: resolvedCommand.command, text: resolvedCommand.arguments || '' },
+            model: { id: model.modelID, providerID: model.providerID, ...(variant ? { variant } : {}) },
+            agent, synthetics: knowledge.text ? [{ text: knowledge.text, resume: false }] : [] } });
       } catch (error) {
         throw markGoalPartial(error);
       }
+      if (identity.generation === 'oc2') await recordKnowledge();
     } else {
-      const baseline = await latestUserMessageID({ client, sessionID, directory });
+      const baseline = identity.generation === 'oc1'
+        ? await latestUserMessageID({ kernelOperations, sessionID, directory }) : { messageID: null };
       // A session the agent dispatched has no UI to attach the project's
       // standing context, so it is asked for here. Never fails the dispatch:
       // a session that runs without its background beats one that never runs.
-      const knowledge = sessionKnowledgeRuntime
-        ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, directory)
-          .catch(() => ({ text: '', signature: '' }))
-        : { text: '', signature: '' };
       const payload = {
         model,
         ...(agent ? { agent } : {}),
@@ -612,19 +638,28 @@ export const createOpenChamberSessionService = (dependencies) => {
             : []),
         ],
       };
-      await resolvePromptBody?.(payload, { sessionId: sessionID, directory });
+      if (identity.generation === 'oc1') await resolvePromptBody?.(payload, { sessionId: sessionID, directory });
       try {
-        await runPromptAsync({ baseUrl, authHeaders, sessionID, directory, payload });
+        current(identity);
+        const sent = await kernelOperations.sendPrompt({ sessionID, directory, request: identity.generation === 'oc1'
+          ? { ...identity, body: payload }
+          : { ...identity, body: { text: expandedPrompt },
+            model: { id: model.modelID, providerID: model.providerID, ...(variant ? { variant } : {}) },
+            agent,
+            synthetics: knowledge.text ? [{ text: knowledge.text, resume: false }] : [],
+            postSynthetics: goalInput.enabled
+              ? [{ text: buildGoalIntroText(goalInput.tokenBudget), resume: false }] : [] } });
+        if (identity.generation === 'oc2' && !asNonEmptyString(sent.data?.id)) {
+          return { model, agent, variant, promptDispatched: false, dispatchedAsCommand: false,
+            promptError: 'OpenCode accepted the prompt but returned no queued message' };
+        }
       } catch (error) {
         throw markGoalPartial(error);
       }
-      if (knowledge.text && sessionKnowledgeRuntime) {
-        // After the prompt is accepted, so a rejected dispatch carries it again.
-        await sessionKnowledgeRuntime.recordDelivered(sessionID, directory, knowledge.signature)
-          .catch(() => undefined);
-      }
-      const landed = await waitForPromptLanded({
-        client,
+      // After the prompt is accepted, so a rejected dispatch carries it again.
+      await recordKnowledge();
+      const landed = identity.generation === 'oc2' || await waitForPromptLanded({
+        kernelOperations,
         sessionID,
         directory,
         baselineUserMessageID: baseline.messageID,
@@ -665,6 +700,15 @@ export const createOpenChamberSessionService = (dependencies) => {
       throw new OpenChamberControlError(parsed.error, 400);
     }
 
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation === 'oc2') {
+      const { archiveStore } = await storesFor(identity);
+      current(identity);
+      const { archived, failedIds } = await archiveStore.archive(parsed.ids, parsed.archivedAt, () => current(identity));
+      for (const entry of archived) broadcastArchived(entry.id, entry.archivedAt);
+      return { archived, failedIds };
+    }
+
     const resolvedDirectory = await resolveRequestedDirectory({
       payload,
       readSettingsFromDiskMigrated,
@@ -678,22 +722,18 @@ export const createOpenChamberSessionService = (dependencies) => {
     if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
 
     const directory = resolvedDirectory.directory;
-    const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
-    const client = createOpencodeClient({ baseUrl, headers: getOpenCodeAuthHeaders() });
-
     const archived = [];
     const failedIds = [];
     for (const sessionID of parsed.ids) {
       try {
-        const response = await client.session.update({
-          sessionID,
-          directory,
-          time: { archived: parsed.archivedAt },
-        });
-        const session = response?.data;
+        current(identity);
+        const response = await kernelOperations.updateSession({ sessionID, directory,
+          time: { archived: parsed.archivedAt }, expectedIdentity: identity });
+        const session = response.data;
         if (session?.id) archived.push(session);
         else failedIds.push(sessionID);
       } catch (error) {
+        if (error?.code === 'runtime-changed' || error?.statusCode === 409) throw error;
         console.warn('[OpenChamberSessions] failed to archive session', sessionID, error);
         failedIds.push(sessionID);
       }
@@ -702,7 +742,46 @@ export const createOpenChamberSessionService = (dependencies) => {
     return { directory, archived, failedIds };
   };
 
+  const unarchive = async (payload = {}) => {
+    const identity = oc2();
+    const parsed = parseArchiveRequest(payload);
+    if (!parsed.ok) throw new OpenChamberControlError(parsed.error, 400);
+    const { archiveStore } = await storesFor(identity);
+    current(identity);
+    const { restored, failedIds } = await archiveStore.unarchive(parsed.ids, () => current(identity));
+    for (const entry of restored) broadcastArchived(entry.id, null);
+    return { restored, failedIds };
+  };
+
+  const setMetadata = async (sessionID, payload = {}) => {
+    const identity = oc2();
+    const id = asNonEmptyString(sessionID);
+    if (!id) throw new OpenChamberControlError('a session id is required', 400);
+    const patch = payload.patch;
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw new OpenChamberControlError('patch must be an object', 400);
+    }
+    const { sessionMetadataStore } = await storesFor(identity);
+    current(identity);
+    const metadata = await sessionMetadataStore.setSessionMetadata(id, patch,
+      { directory: asNonEmptyString(payload.directory) || '' });
+    current(identity);
+    broadcastGlobalUiEvent?.({ type: 'openchamber:session-metadata', properties: { sessionID: id, metadata } });
+    return { metadata };
+  };
+
+  const getMetadata = async (sessionID, directory = '') => {
+    const identity = oc2();
+    const id = asNonEmptyString(sessionID);
+    if (!id) throw new OpenChamberControlError('a session id is required', 400);
+    const { sessionMetadataStore } = await storesFor(identity);
+    const metadata = await sessionMetadataStore.get(id, { directory });
+    current(identity);
+    return { metadata };
+  };
+
   const create = async (payload = {}) => {
+    const identity = kernelOperations.captureIdentity();
     const title = asNonEmptyString(payload.title);
     const prompt = asNonEmptyString(payload.prompt);
     const goalInput = resolveGoalInput(payload, prompt);
@@ -747,23 +826,18 @@ export const createOpenChamberSessionService = (dependencies) => {
       await waitForWorktreeBootstrapReady({ directory: sessionDirectory });
     }
 
+    current(identity);
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const authHeaders = getOpenCodeAuthHeaders();
-    const client = createOpencodeClient({ baseUrl, headers: authHeaders });
-    const sessionID = await createSession({
-      client,
-      baseUrl,
-      authHeaders,
-      directory: sessionDirectory,
-      ...(title ? { title } : {}),
-    });
+    const sessionID = (await kernelOperations.createSession({ directory: sessionDirectory,
+      ...(title ? { title } : {}), expectedIdentity: identity })).data.id;
 
     let dispatch = { model, agent, variant, promptDispatched: false, dispatchedAsCommand: false };
     if (prompt) {
       dispatch = await dispatchPrompt({
-        client,
         baseUrl,
         authHeaders,
+        identity,
         sessionID,
         directory: sessionDirectory,
         projectId: resolvedDirectory.projectId,
@@ -814,6 +888,7 @@ export const createOpenChamberSessionService = (dependencies) => {
   };
 
   const runExisting = async (action, sourceSessionId, payload = {}) => {
+    const identity = kernelOperations.captureIdentity();
     const sourceSessionID = asNonEmptyString(sourceSessionId);
     const prompt = asNonEmptyString(payload.prompt);
     if (!sourceSessionID) throw new OpenChamberControlError('sessionId is required', 400);
@@ -847,27 +922,58 @@ export const createOpenChamberSessionService = (dependencies) => {
 
       const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
       const authHeaders = getOpenCodeAuthHeaders();
-      const client = createOpencodeClient({ baseUrl, headers: authHeaders });
       if (action === 'fork') {
-        targetSession = await forkSession({
-          client,
-          sessionID: sourceSessionID,
-          directory,
-          messageID: asNonEmptyString(payload.messageId) || undefined,
-        });
+        current(identity);
+        targetSession = (await kernelOperations.forkSession({ sessionID: sourceSessionID, directory,
+          messageID: asNonEmptyString(payload.messageId) || undefined, expectedIdentity: identity })).data;
         targetSessionID = targetSession.id;
+        if (identity.generation === 'oc2') {
+          try {
+            await applyForkInheritance({
+              sourceSessionID, fork: targetSession,
+              readObjective: readObjectiveForFork,
+              readGoalID: async (sessionID) => {
+                const session = (await kernelOperations.getSession({ sessionID, directory })).data;
+                current(identity);
+                return forkGoalID(session.metadata);
+              },
+              writeObjective, removeObjective: removeObjectiveForFork,
+              writeMetadata: (sessionID, metadata) => kernelOperations.updateSession({
+                sessionID, directory, metadata, expectedIdentity: identity,
+              }),
+              assertCurrent: () => current(identity),
+            });
+            current(identity);
+          } catch (error) {
+            // Only the new fork is eligible for rollback, and only on its
+            // captured kernel. A failed/ambiguous delete stays partial.
+            current(identity);
+            try {
+              const removed = await kernelOperations.removeSession({
+                sessionID: targetSessionID, directory, expectedIdentity: identity,
+              });
+              current(identity);
+              if (removed.data !== true) throw new Error('Fork rollback was not acknowledged');
+            } catch (rollbackError) {
+              throw new AggregateError([error, rollbackError], 'Fork inheritance failed and the new fork could not be removed');
+            }
+            targetSessionID = sourceSessionID;
+            targetSession = null;
+            throw error;
+          }
+        }
       }
 
       const baselineAssistantMessageId = await latestCompletedAssistantMessageID({
-        client,
+        kernelOperations,
         sessionID: targetSessionID,
         directory,
       });
 
       const dispatch = await dispatchPrompt({
-        client,
         baseUrl,
         authHeaders,
+        identity,
         sessionID: targetSessionID,
         directory,
         projectId: resolvedDirectory.projectId,
@@ -939,6 +1045,13 @@ export const createOpenChamberSessionService = (dependencies) => {
   return {
     create,
     archive,
+    unarchive,
+    getMetadata,
+    setMetadata,
+    getArchivedSessions,
+    getStoredSessionMetadata,
+    prepareSessionMetadata,
+    migrateStoredSessionMetadata,
     send: (sessionID, payload) => runExisting('send', sessionID, payload),
     fork: (sessionID, payload) => runExisting('fork', sessionID, payload),
   };
@@ -975,6 +1088,34 @@ export const registerOpenChamberSessionRoutes = (app, dependencies) => {
     } catch (error) {
       console.error('[OpenChamberSessions] failed to archive sessions:', error);
       return sendServiceError(res, error, 'Failed to archive sessions');
+    }
+  });
+
+  app.post('/api/openchamber/sessions/unarchive', express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      return res.json(await service.unarchive(req.body && typeof req.body === 'object' ? req.body : {}));
+    } catch (error) {
+      console.error('[OpenChamberSessions] failed to unarchive sessions:', error);
+      return sendServiceError(res, error, 'Failed to unarchive sessions');
+    }
+  });
+
+  app.get('/api/openchamber/sessions/:sessionId/metadata', async (req, res) => {
+    try {
+      return res.json(await service.getMetadata(req.params.sessionId, asNonEmptyString(req.query?.directory) || ''));
+    } catch (error) {
+      console.error('[OpenChamberSessions] failed to read session metadata:', error);
+      return sendServiceError(res, error, 'Failed to read session metadata');
+    }
+  });
+
+  app.post('/api/openchamber/sessions/:sessionId/metadata', express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      return res.json(await service.setMetadata(req.params.sessionId,
+        req.body && typeof req.body === 'object' ? req.body : {}));
+    } catch (error) {
+      console.error('[OpenChamberSessions] failed to store session metadata:', error);
+      return sendServiceError(res, error, 'Failed to store session metadata');
     }
   });
 

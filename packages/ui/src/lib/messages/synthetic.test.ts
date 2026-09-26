@@ -1,19 +1,20 @@
 import { describe, expect, test } from "bun:test"
-import type { Part } from "@opencode-ai/sdk/v2"
+import type { FilePart, Part, TextPart } from "@/lib/opencode/model"
 import { isSyntheticPart, isFullySyntheticMessage, filterSyntheticParts } from "./synthetic"
 
-function createTextPart(id: string, text: string, synthetic?: boolean): Part {
-  return {
+function createTextPart(id: string, text: string, synthetic?: boolean): TextPart {
+  const part: TextPart = {
     id,
     sessionID: "session-1",
     messageID: "message-1",
     type: "text",
     text,
-    ...(synthetic !== undefined ? { synthetic } : {}),
-  } as Part
+  }
+  if (synthetic !== undefined) part.synthetic = synthetic
+  return part
 }
 
-function createFilePart(id: string, url: string): Part {
+function createFilePart(id: string, url: string): FilePart {
   return {
     id,
     sessionID: "session-1",
@@ -21,7 +22,7 @@ function createFilePart(id: string, url: string): Part {
     type: "file",
     mime: "text/plain",
     url,
-  } as Part
+  }
 }
 
 describe("isSyntheticPart", () => {

@@ -1,7 +1,7 @@
 import { ensureChatsRootDirectory } from '@/lib/chatDirectories';
 import { opencodeClient } from '@/lib/opencode/client';
 import { describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import type { Event } from '@opencode-ai/sdk/v2/client';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

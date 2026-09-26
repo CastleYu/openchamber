@@ -1,25 +1,16 @@
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Metadata, Session } from '@/lib/opencode/model';
+import { z } from 'zod';
 
-export type SessionMetadataRecord = Record<string, unknown>;
+export type SessionMetadataRecord = Metadata;
 
-type OpenChamberMetadata = {
-  kind?: 'review';
-  originalSessionID?: string;
-  reviewSessionID?: string;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === 'object' && !Array.isArray(value));
+const metadataSchema = z.record(z.string(), z.json());
 
 export const getSessionMetadata = (session: Session | null | undefined): SessionMetadataRecord => {
-  const metadata = (session as (Session & { metadata?: unknown }) | null | undefined)?.metadata;
-  return isRecord(metadata) ? metadata : {};
+  return session?.metadata ?? {};
 };
 
-const getOpenChamberMetadata = (metadata: SessionMetadataRecord): OpenChamberMetadata => {
-  const value = metadata.openchamber;
-  return isRecord(value) ? value as OpenChamberMetadata : {};
-};
+const getOpenChamberMetadata = (metadata: SessionMetadataRecord): Metadata =>
+  metadataSchema.safeParse(metadata.openchamber).data ?? {};
 
 export const getReviewSessionID = (session: Session | null | undefined): string | null => {
   const value = getOpenChamberMetadata(getSessionMetadata(session)).reviewSessionID;

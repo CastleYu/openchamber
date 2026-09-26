@@ -1,6 +1,7 @@
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import type { I18nKey } from '@/lib/i18n';
 import { toast } from '@/components/ui';
+import { opencodeClient } from '@/lib/opencode/client';
 import { checkIsGitRepository, getGitStatus } from '@/lib/gitApi';
 import { normalizePath } from '@/lib/pathNormalization';
 import { createQuickWorktree, resolveProjectRef } from '@/lib/worktreeSessionCreator';
@@ -441,7 +442,7 @@ export const confirmSessionTreeMove = (moveChanges: boolean): void => {
   const { intent } = confirmation;
   setSessionMoveConfirmation(null);
   setSessionMoveRequesting(intent.root.id, false);
-  executeSessionTreeMove(intent, moveChanges);
+  executeSessionTreeMove(intent, opencodeClient.getBoundRuntime()?.generation === 'oc2' ? false : moveChanges);
 };
 
 export const requestSessionTreeMove = (intent: SessionTreeMoveIntent): void => {
@@ -450,6 +451,13 @@ export const requestSessionTreeMove = (intent: SessionTreeMoveIntent): void => {
   if (state.pendingSessionIds.has(intent.root.id) || state.requestingSessionIds.has(intent.root.id)) return;
 
   setSessionMoveRequesting(intent.root.id, true);
+
+  // The pinned OC2 session.move route has no change-transfer option.
+  if (opencodeClient.getBoundRuntime()?.generation === 'oc2') {
+    setSessionMoveRequesting(intent.root.id, false);
+    executeSessionTreeMove(intent, false);
+    return;
+  }
 
   void (async () => {
     try {

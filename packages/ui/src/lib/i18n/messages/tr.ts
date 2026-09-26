@@ -1,9 +1,12 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import { settingsDict } from './tr.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict = {
   'fileOpening.loading': "Dosya yükleniyor…",
@@ -62,6 +65,22 @@ export const dict = {
   'chat.liveActivity.usedSubagent': '{count} alt agent kullanıldı',
   'chat.liveActivity.usedSubagents': '{count} alt agent kullanıldı',
   'sessions.sidebar.projectAction.active': 'Proje eylemi çalışıyor',
+  'sidebarFilesTree.menu.uploadFiles': 'Dosya yükle',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'Dosya yükle',
+  'chat.permissionCard.summary.externalDirectory': "Proje dışındaki dosyalara erişim",
+  'chat.permissionCard.summary.read': "Dosya oku",
+  'chat.permissionCard.summary.edit': "Dosyaları düzenle",
+  'chat.permissionCard.summary.shell': "Komut çalıştır",
+  'chat.permissionCard.summary.glob': "Dosya bul",
+  'chat.permissionCard.summary.grep': "Dosya içeriklerinde ara",
+  'chat.permissionCard.summary.webfetch': "Web sayfası aç",
+  'chat.permissionCard.summary.websearch': "Web'de ara",
+  'chat.permissionCard.summary.skill': "Skill yükle",
+  'chat.permissionCard.summary.tool': "{tool} kullan",
+  'chat.permissionCard.summary.inPath': "konum: {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Her zaman: {patterns}',
+  ...fileArtifactsI18n.tr,
+  ...webSearchI18n.tr,
   ...settingsDict,
   'updateDialog.personalNotice': 'Kişisel derlemeler yalnızca güncelleme bildirir. Özelliklerinizi korumak için kaynak kodunu eşitleyip yeniden derleyin.',
   ...linearIssuePickerI18n.tr,
@@ -69,6 +88,7 @@ export const dict = {
   ...routingI18n.tr,
   ...pluginPanelI18n.tr,
   ...surfacePanelI18n.tr,
+  ...usageStatsI18n.tr,
   'terminalView.actions.attachSelection': 'Seçili çıktıyı ekle',
   'terminalView.actions.copySelection': 'Seçili çıktıyı kopyala',
   'terminalView.toast.selectionCopied': 'Çıktı kopyalandı',
@@ -2410,6 +2430,9 @@ export const dict = {
   'snippets.source.global': 'genel',
   'snippets.source.project': 'proje',
   'chat.chatInput.toast.compactFailed': 'Session sıkıştırılamadı',
+  'chat.chatInput.toast.forkFailed': 'Session çatallanamadı',
+  'chat.chatInput.toast.forkNothingToFork': 'Henüz çatallanacak bir şey yok: bu session\'da tamamlanmış bir yanıt yok',
+  'chat.chatInput.toast.forkSendFailed': 'Çatallandı ama mesaj gönderilmedi. Mesaj yeniden yazma alanında.',
   'chat.chatInput.toast.summaryFailed': 'Özet oluşturulamadı',
   'chat.messageBody.actions.sendReviewFeedback': 'İnceleme geri bildirimini uygulayan agent\'a gönder',
   'chat.messageBody.actions.sendImplementationResponse': 'Uygulama yanıtını inceleyen agent\'a gönder',
@@ -2474,6 +2497,9 @@ export const dict = {
   'chat.toolPart.error': 'Hata:',
   'chat.toolPart.awaitingResponse': 'Yanıt bekleniyor...',
   'chat.toolPart.noOutputProduced': 'Çıktı üretilmedi',
+  'chat.toolPart.script': 'Betik',
+  'chat.toolPart.scriptCalls': 'Araç çağrıları',
+  'chat.toolPart.outputTruncated': 'Çıktı kısaltıldı',
   'chat.toolPart.output': 'Çıktı',
   'chat.toolPart.showRawJson': 'Ham JSON göster',
   'chat.toolPart.showFormattedJson': 'Biçimlendirilmiş JSON göster',
@@ -2591,6 +2617,11 @@ export const dict = {
   'chat.messageBody.subtask.hidePrompt': 'Prompt\'u gizle',
   'chat.messageBody.subtask.showPrompt': 'Prompt\'u göster',
   'chat.messageBody.subtask.openSession': 'Alt görev session\'ını aç',
+  'chat.compaction.running': 'Sohbet sıkıştırılıyor…',
+  'chat.compaction.completed': 'Sohbet sıkıştırıldı',
+  'chat.compaction.failed': 'Sıkıştırma başarısız oldu',
+  'chat.compaction.showSummary': 'Özeti göster',
+  'chat.compaction.hideSummary': 'Özeti gizle',
   'chat.messageBody.shellCommand.title': 'Shell komutu',
   'chat.messageBody.shellCommand.hideOutput': 'Çıktıyı gizle',
   'chat.messageBody.shellCommand.showOutput': 'Çıktıyı göster',
@@ -3384,6 +3415,7 @@ export const dict = {
   'chat.appLink.confirm.open': 'Bir kez aç',
   'chat.appLink.confirm.trustAndOpen': 'Güven ve aç',
   'chat.commandAutocomplete.command.btwDescription': 'Bu sohbeti saptırmadan geçici bir alt session\'da yan soru sorun.',
+  'chat.commandAutocomplete.command.forkDescription': 'Bu sohbeti son tamamlanan yanıttan çatallayıp orada devam edin; /fork sonrasındaki metin çatala gönderilir.',
   'chat.btw.destroyAria': 'Bu btw session\'ını yok et',
   'chat.btw.titleFallback': 'btw session',
   'chat.btw.mainComposerPlaceholder': 'Bu btw session\'da sor…',
@@ -3458,4 +3490,17 @@ export const dict = {
   'memoryDebugPanel.requests.percentileChartLabel': 'Zaman içinde devam eden request yaş yüzdelikleri (p50, p90, p99, maks)',
   'chat.workStatus.cost.breakdown': 'Session {session} · Subagent\'ler {subagents}',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Giriş gerekli',
+  'chat.formCard.fromSubagent': 'bir alt ajandan',
+  'chat.formCard.required': 'Zorunlu',
+  'chat.formCard.openLink': 'Bağlantıyı aç',
+  'chat.formCard.yes': 'Evet',
+  'chat.formCard.other': 'Diğer',
+  'chat.formCard.yourAnswer': 'Yanıtınız',
+  'chat.formCard.submit': 'Gönder',
+  'chat.formCard.cancel': 'İptal',
+  'chat.formCard.missingRequired': 'Önce zorunlu alanları doldurun.',
+  'chat.formCard.submitFailed': 'Yanıt gönderilemedi',
+  'chat.formCard.cancelFailed': 'İstek iptal edilemedi',
+  'chat.formCard.tryAgain': 'Tekrar deneyin.',
 };

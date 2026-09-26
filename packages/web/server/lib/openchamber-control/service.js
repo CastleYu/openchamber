@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenChamberControlError, asControlError } from './error.js';
-import { OPENCHAMBER_ALL_ACTIONS } from './actions.js';
+import { OPENCHAMBER_ALL_ACTIONS, OPENCHAMBER_OC2_ACTIONS } from './actions.js';
 import { writeScreenshot } from './screenshots.js';
 
 const DEFAULT_WAIT_TIMEOUT_SECONDS = 600;
@@ -145,6 +145,9 @@ export const createOpenChamberControlService = (dependencies) => {
     scheduledTaskService,
     browserControl = null,
     agentMemoryActions = null,
+    notifyUser = null,
+    fileOpen = null,
+    kernelOperations = null,
     createClient = createOpencodeClient,
     sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
     now = Date.now,
@@ -171,6 +174,7 @@ export const createOpenChamberControlService = (dependencies) => {
 
   const getClient = async () => {
     if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
+    if (kernelOperations) return null;
     return createClient({
       baseUrl: buildOpenCodeUrl('/', '').replace(/\/$/, ''),
       headers: getOpenCodeAuthHeaders(),
@@ -198,6 +202,7 @@ export const createOpenChamberControlService = (dependencies) => {
   };
 
   const sessionStatus = async (client, sessionID, directory) => {
+    if (kernelOperations) return (await kernelOperations.getSessionStatus({ sessionID, directory })).data;
     const response = await client.session.status({ directory });
     const statuses = response?.data;
     if (!statuses || typeof statuses !== 'object' || Array.isArray(statuses)) {
@@ -207,6 +212,27 @@ export const createOpenChamberControlService = (dependencies) => {
   };
 
   const sessionMessages = async (client, sessionID, directory, role, limit) => {
+    if (kernelOperations) {
+      const messages = [];
+      const seen = new Set();
+      let cursor;
+      do {
+        const page = (await kernelOperations.listMessages({ sessionID, directory, limit: 100, cursor })).data;
+        for (const item of page.items) {
+          if ((item.role !== 'user' && item.role !== 'assistant') || (role !== 'all' && role !== item.role) || !item.text?.trim()) continue;
+          messages.push({ id: item.id, role: item.role, createdAt: item.created ?? null,
+            completedAt: item.completed ?? null,
+            model: item.model?.providerID && (item.model?.id || item.model?.modelID)
+              ? `${item.model.providerID}/${item.model.id ?? item.model.modelID}` : null, text: item.text.trim() });
+        }
+        cursor = page.cursor?.next ?? undefined;
+        if (cursor && seen.has(cursor)) throw new Error('Session message pagination made no progress');
+        if (cursor) seen.add(cursor);
+        if (limit !== undefined && messages.length >= limit) break;
+      } while (cursor);
+      messages.sort((left, right) => (left.createdAt || 0) - (right.createdAt || 0));
+      return limit === undefined ? messages : messages.slice(-limit);
+    }
     const fetchLimit = limit === undefined ? undefined : Math.max(100, limit * 4);
     let response = await client.session.messages({ sessionID, directory, ...(fetchLimit ? { limit: fetchLimit } : {}) });
     let raw = Array.isArray(response?.data) ? response.data : [];
@@ -251,6 +277,16 @@ export const createOpenChamberControlService = (dependencies) => {
   // session list when the caller did not scope explicitly.
   const resolveSessionDirectory = async (sessionID) => {
     try {
+      if (kernelOperations) {
+        let cursor;
+        do {
+          const page = (await kernelOperations.listSessions({ limit: 100, cursor })).data;
+          const match = page.items.find((item) => item.id === sessionID);
+          if (match) return match.directory;
+          cursor = page.cursor?.next ?? undefined;
+        } while (cursor);
+        return null;
+      }
       const client = await getClient();
       const response = await client.experimental?.session?.list?.({});
       const sessions = Array.isArray(response?.data) ? response.data : [];
@@ -465,6 +501,9 @@ export const createOpenChamberControlService = (dependencies) => {
       if (!CONTROL_ACTIONS.has(action)) {
         throw new OpenChamberControlError(`Unsupported OpenChamber action: ${action || 'missing'}`, 400);
       }
+      if (OPENCHAMBER_OC2_ACTIONS.includes(action) && kernelOperations?.captureIdentity().generation !== 'oc2') {
+        throw new OpenChamberControlError(`${action} requires OpenCode 2`, 501);
+      }
       if (action.startsWith('memory.')) {
         if (!agentMemoryActions) {
           throw new OpenChamberControlError('Agent memory is not available on this server', 503);
@@ -476,6 +515,26 @@ export const createOpenChamberControlService = (dependencies) => {
           throw new OpenChamberControlError('The in-app browser is not available on this server', 503);
         }
         return browserAction(action, input, options.signal, contextDirectory, options.contextSessionId);
+      }
+      if (action === 'notify.send') {
+        if (!notifyUser) throw new OpenChamberControlError('Notifications are not available on this server', 503);
+        const result = await notifyUser({
+          title: input.title,
+          body: input.body,
+          showWhenFocused: input.showWhenFocused,
+          sessionId: asNonEmptyString(options.contextSessionId) || undefined,
+          directory: asNonEmptyString(contextDirectory) || undefined,
+        });
+        if (result.status !== 200) throw new OpenChamberControlError(result.body.error, result.status);
+        return result.body;
+      }
+      if (action === 'file.open') {
+        if (!fileOpen) throw new OpenChamberControlError('The file viewer is not available on this server', 503);
+        return fileOpen.request({
+          path: asNonEmptyString(input.path),
+          directory: asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory),
+          sessionId: asNonEmptyString(options.contextSessionId),
+        });
       }
       if (action === 'projects.list') return { projects: await projects() };
       if (action === 'models.list') return models();
@@ -523,8 +582,10 @@ export const createOpenChamberControlService = (dependencies) => {
         const client = await getClient();
         if (action === 'session.list') {
           const limit = positiveInteger(input.limit, 10, 'limit');
-          const response = await client.session.list(directory ? { directory } : {});
-          let sessions = Array.isArray(response?.data) ? response.data : [];
+          const response = kernelOperations
+            ? await kernelOperations.listSessions({ directory, limit })
+            : await client.session.list(directory ? { directory } : {});
+          let sessions = kernelOperations ? response.data.items : Array.isArray(response?.data) ? response.data : [];
           if (input.all !== true) sessions = sessions.filter((session) => !session?.time?.archived);
           sessions = sessions.slice(0, limit);
           if (input.withStatus === true) {
@@ -533,7 +594,9 @@ export const createOpenChamberControlService = (dependencies) => {
               const sessionDirectory = asNonEmptyString(session?.directory);
               if (!sessionDirectory) return { ...session, status: { type: 'unknown' } };
               if (!cache.has(sessionDirectory)) {
-                const statusRequest = client.session.status({ directory: sessionDirectory }).catch(() => null);
+                const statusRequest = (kernelOperations
+                  ? kernelOperations.listActiveStatuses({ directory: sessionDirectory })
+                  : client.session.status({ directory: sessionDirectory })).catch(() => null);
                 cache.set(sessionDirectory, statusRequest);
               }
               const statusResponse = await cache.get(sessionDirectory);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { ChildStoreManager } from '@/sync/child-store';
 import { setSyncRefs } from '@/sync/sync-refs';
 import {
@@ -34,15 +34,13 @@ const setSyncedDirectories = (...directories: string[]): ChildStoreManager => {
   const manager = new ChildStoreManager();
   managers.push(manager);
   for (const directory of directories) manager.ensureChild(directory, { bootstrap: false });
-  // SAFETY: `setSyncRefs` only stores the SDK for other readers; nothing here calls it.
-  setSyncRefs({} as never, manager, directories[0] ?? '');
+  setSyncRefs({}, manager, directories[0] ?? '');
   return manager;
 };
 
 afterEach(() => {
   for (const manager of managers.splice(0)) manager.disposeAll();
-  // SAFETY: same unused SDK slot; drops the refs this file installed.
-  setSyncRefs({} as never, new ChildStoreManager(), '');
+  setSyncRefs({}, new ChildStoreManager(), '');
 });
 
 describe('collectTrayStatusPollTargets', () => {

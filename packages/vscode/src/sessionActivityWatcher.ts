@@ -1,5 +1,9 @@
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import type { OpenCodeEvent } from '@opencode/client';
+import { z } from 'zod';
 import type { OpenCodeManager } from './opencode';
+import { resolveKernelRequest } from './kernelRequest';
+import { waitForApiUrl } from './opencode-ready';
 
 // Session activity tracking (mirrors web server and desktop behavior)
 type ActivityPhase = 'idle' | 'busy' | 'cooldown';
@@ -40,13 +44,9 @@ const unwrapGlobalEventPayload = (eventData: unknown): Record<string, unknown> |
 };
 
 const reconcileSessionActivityFromStatus = async (manager: OpenCodeManager): Promise<void> => {
-  const baseUrl = manager.getApiUrl();
-  if (!baseUrl) {
-    return;
-  }
-
-  const url = new URL('/session/status', baseUrl);
-  const response = await fetch(url.toString(), {
+  const selected = await resolveKernelRequest(manager, '/session/status');
+  if (selected.descriptor.generation !== 'oc1') throw new Error('OpenCode 1 status requires OpenCode 1');
+  const response = await fetch(selected.url, {
     headers: manager.getOpenCodeAuthHeaders(),
   });
 
@@ -54,12 +54,12 @@ const reconcileSessionActivityFromStatus = async (manager: OpenCodeManager): Pro
     throw new Error(`session status fetch failed (${response.status})`);
   }
 
-  const statuses = await response.json() as Record<string, { type?: string }>;
-  const knownSessionIds = new Set(Object.keys(statuses || {}));
+  const statuses = z.record(z.string(), z.object({ type: z.string() })).parse(await response.json());
+  selected.assertCurrent();
+  const knownSessionIds = new Set(Object.keys(statuses));
 
-  for (const [sessionId, data] of Object.entries(statuses || {})) {
-    const type = typeof data?.type === 'string' ? data.type : 'idle';
-    const phase: ActivityPhase = type === 'busy' || type === 'retry' ? 'busy' : 'idle';
+  for (const [sessionId, data] of Object.entries(statuses)) {
+    const phase: ActivityPhase = data.type === 'busy' || data.type === 'retry' ? 'busy' : 'idle';
     setSessionActivityPhase(sessionId, phase);
   }
 
@@ -68,6 +68,22 @@ const reconcileSessionActivityFromStatus = async (manager: OpenCodeManager): Pro
     if (!knownSessionIds.has(sessionId)) {
       setSessionActivityPhase(sessionId, 'idle');
     }
+  }
+};
+
+const reconcileActiveSessions = async (manager: OpenCodeManager): Promise<void> => {
+  const selected = await resolveKernelRequest(manager, '/session/active');
+  if (selected.descriptor.generation !== 'oc2') throw new Error('OpenCode 2 active sessions require OpenCode 2');
+  const { OpenCode } = await import('@opencode/client');
+  const baseUrl = manager.getApiUrl();
+  if (!baseUrl) throw new Error('OpenCode API URL not available');
+  const client = OpenCode.make({ baseUrl, headers: manager.getOpenCodeAuthHeaders() });
+  const active = await client.session.active({ signal: AbortSignal.timeout(8_000) });
+  selected.assertCurrent();
+  const activeIds = new Set(Object.keys(active));
+  for (const sessionId of activeIds) setSessionActivityPhase(sessionId, 'busy');
+  for (const sessionId of sessionActivityPhases.keys()) {
+    if (!activeIds.has(sessionId)) setSessionActivityPhase(sessionId, 'idle');
   }
 };
 
@@ -160,23 +176,21 @@ const deriveSessionActivity = (payload: Record<string, unknown>): SessionActivit
   return null;
 };
 
-const waitForOpenCodePort = async (manager: OpenCodeManager, timeoutMs = 30000): Promise<number | null> => {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const apiUrl = manager.getApiUrl();
-    if (apiUrl) {
-      try {
-        const url = new URL(apiUrl);
-        if (url.port) {
-          return parseInt(url.port, 10);
-        }
-      } catch {
-        // ignore
-      }
-    }
-    await new Promise(r => setTimeout(r, 500));
+const deriveV2Activity = (event: OpenCodeEvent): SessionActivity | null => {
+  switch (event.type) {
+    case 'session.status':
+      return { sessionId: event.data.sessionID, phase: event.data.status.type === 'busy' || event.data.status.type === 'retry' ? 'busy' : 'idle' };
+    case 'session.execution.started':
+      return { sessionId: event.data.sessionID, phase: 'busy' };
+    case 'session.execution.succeeded':
+      return { sessionId: event.data.sessionID, phase: 'cooldown' };
+    case 'session.execution.failed':
+    case 'session.execution.interrupted':
+    case 'session.idle':
+      return { sessionId: event.data.sessionID, phase: 'idle' };
+    default:
+      return null;
   }
-  return null;
 };
 
 export const startGlobalEventWatcher = async (
@@ -191,12 +205,12 @@ export const startGlobalEventWatcher = async (
   clearGlobalEventWatcherRetry();
   chatViewProvider = provider;
 
-  const port = await waitForOpenCodePort(manager);
+  const apiUrl = await waitForApiUrl(manager);
   if (startToken !== globalEventWatcherStartToken) {
     return;
   }
-  if (!port) {
-    console.warn('[VSCode:Activity] OpenCode port unavailable; will retry');
+  if (!apiUrl) {
+    console.warn('[VSCode:Activity] OpenCode API unavailable; will retry');
     globalEventWatcherRetryTimer = setTimeout(() => {
       globalEventWatcherRetryTimer = null;
       if (startToken === globalEventWatcherStartToken) {
@@ -210,6 +224,7 @@ export const startGlobalEventWatcher = async (
   const signal = globalEventWatcherAbortController.signal;
 
   let attempt = 0;
+  let activeIdentity = '';
 
   const run = async (): Promise<void> => {
     while (!signal.aborted) {
@@ -221,36 +236,43 @@ export const startGlobalEventWatcher = async (
           throw new Error('OpenCode API URL not available');
         }
 
-        const client = createOpencodeClient({
-          baseUrl,
-          headers: manager.getOpenCodeAuthHeaders(),
-        });
+        const selected = await resolveKernelRequest(manager, '/event');
+        const identity = `${selected.descriptor.generation}:${selected.descriptor.endpoint}:${selected.descriptor.epoch}`;
+        if (identity !== activeIdentity) {
+          for (const sessionId of sessionActivityPhases.keys()) setSessionActivityPhase(sessionId, 'idle');
+          activeIdentity = identity;
+        }
         try {
-          await reconcileSessionActivityFromStatus(manager);
+          if (selected.descriptor.generation === 'oc2') await reconcileActiveSessions(manager);
+          else await reconcileSessionActivityFromStatus(manager);
         } catch (error) {
           console.warn(
             '[VSCode:Activity] session status reconcile failed',
             error instanceof Error ? error.message : error,
           );
         }
-        const result = await client.global.event({
-          signal,
-          sseMaxRetryAttempts: 0,
-        });
-
-        console.log('[VSCode:Activity] connected');
-
-        for await (const event of result.stream) {
-          const payload = unwrapGlobalEventPayload((event as { payload?: unknown }).payload ?? event);
-          if (payload) {
-            const activity = deriveSessionActivity(payload);
-            if (activity) {
-              setSessionActivityPhase(activity.sessionId, activity.phase);
-            }
+        if (selected.descriptor.generation === 'oc2') {
+          const { OpenCode } = await import('@opencode/client');
+          const client = OpenCode.make({ baseUrl, headers: manager.getOpenCodeAuthHeaders() });
+          let connected = false;
+          for await (const event of client.event.subscribe({ signal })) {
+            selected.assertCurrent();
+            if (!connected) { connected = true; attempt = 0; console.log('[VSCode:Activity] connected'); }
+            const activity = deriveV2Activity(event);
+            if (activity) setSessionActivityPhase(activity.sessionId, activity.phase);
+            if (signal.aborted) break;
           }
-
-          if (signal.aborted) {
-            break;
+        } else {
+          const client = createOpencodeClient({ baseUrl, headers: manager.getOpenCodeAuthHeaders() });
+          const result = await client.global.event({ signal, sseMaxRetryAttempts: 0 });
+          console.log('[VSCode:Activity] connected');
+          attempt = 0;
+          for await (const event of result.stream) {
+            selected.assertCurrent();
+            const payload = unwrapGlobalEventPayload((event as { payload?: unknown }).payload ?? event);
+            const activity = payload ? deriveSessionActivity(payload) : null;
+            if (activity) setSessionActivityPhase(activity.sessionId, activity.phase);
+            if (signal.aborted) break;
           }
         }
       } catch (error) {

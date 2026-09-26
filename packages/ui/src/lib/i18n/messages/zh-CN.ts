@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './zh-CN.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "正在加载文件…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': '使用了 {count} 个子代理',
   'chat.liveActivity.usedSubagents': '使用了 {count} 个子代理',
   'sessions.sidebar.projectAction.active': '项目操作正在运行',
+  'sidebarFilesTree.menu.uploadFiles': '上传文件',
+  'sidebarFilesTree.actions.uploadFilesTitle': '上传文件',
+  'chat.permissionCard.summary.externalDirectory': "访问项目外的文件",
+  'chat.permissionCard.summary.read': "读取文件",
+  'chat.permissionCard.summary.edit': "编辑文件",
+  'chat.permissionCard.summary.shell': "运行命令",
+  'chat.permissionCard.summary.glob': "查找文件",
+  'chat.permissionCard.summary.grep': "搜索文件内容",
+  'chat.permissionCard.summary.webfetch': "打开网页",
+  'chat.permissionCard.summary.websearch': "搜索网络",
+  'chat.permissionCard.summary.skill': "加载技能",
+  'chat.permissionCard.summary.tool': "使用 {tool}",
+  'chat.permissionCard.summary.inPath': "位于 {path}",
+  'chat.permissionCard.alwaysAllowPatterns': '始终：{patterns}',
+  ...fileArtifactsI18n['zh-CN'],
+  ...webSearchI18n['zh-CN'],
   ...settingsDict,
   'updateDialog.personalNotice': '个人版仅提示更新。请同步源码后重新打包，以保留个人功能。',
   ...linearIssuePickerI18n['zh-CN'],
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n['zh-CN'],
   ...pluginPanelI18n['zh-CN'],
   ...surfacePanelI18n['zh-CN'],
+  ...usageStatsI18n['zh-CN'],
   'terminalView.actions.attachSelection': '附加所选输出',
   'terminalView.actions.copySelection': '复制所选输出',
   'terminalView.toast.selectionCopied': '已复制输出',
@@ -2266,6 +2286,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.commandAutocomplete.command.debugDescription': '在提出修复方案前，引导式地排查 bug 的根本原因。',
   'chat.commandAutocomplete.command.weighDescription': '在动手前，权衡 2-3 种方案的利弊并给出推荐。',
   'chat.commandAutocomplete.command.btwDescription': '在临时子会话中提问，不打断当前对话',
+  'chat.commandAutocomplete.command.forkDescription': '从最后一个已完成的回复分叉此对话并在新会话中继续；/fork 后的文本会发送到分叉会话。',
   'chat.commandAutocomplete.command.exploreDescription': '快速熟悉这个代码库：对架构和主要部分的概览。',
   'chat.commandAutocomplete.badge.skill': '技能',
   'chat.commandAutocomplete.badge.command': '命令',
@@ -2440,6 +2461,9 @@ export const dict: Record<I18nKey, string> = {
   'snippets.source.global': '全局',
   'snippets.source.project': '项目',
   'chat.chatInput.toast.compactFailed': '压缩会话失败',
+  'chat.chatInput.toast.forkFailed': '无法分叉会话',
+  'chat.chatInput.toast.forkNothingToFork': '暂无可分叉内容：此会话中还没有已完成的回复',
+  'chat.chatInput.toast.forkSendFailed': '已分叉，但消息未发送，已放回输入框。',
   'chat.chatInput.toast.summaryFailed': '生成总结失败',
   'chat.messageBody.actions.sendReviewFeedback': '将审查反馈发送给实现更改的代理',
   'chat.messageBody.actions.sendImplementationResponse': '将实现回应发送给审查代理',
@@ -2505,6 +2529,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.error': '错误：',
   'chat.toolPart.awaitingResponse': '等待响应...',
   'chat.toolPart.noOutputProduced': '未产生输出',
+  'chat.toolPart.script': '脚本',
+  'chat.toolPart.scriptCalls': '工具调用',
+  'chat.toolPart.outputTruncated': '输出已截断',
   'chat.toolPart.output': '输出',
   'chat.toolPart.showRawJson': '显示原始 JSON',
   'chat.toolPart.showFormattedJson': '显示格式化 JSON',
@@ -2623,6 +2650,11 @@ export const dict: Record<I18nKey, string> = {
   'chat.messageBody.subtask.hidePrompt': '隐藏提示',
   'chat.messageBody.subtask.showPrompt': '显示提示',
   'chat.messageBody.subtask.openSession': '打开子任务会话',
+  'chat.compaction.running': '正在压缩对话…',
+  'chat.compaction.completed': '对话已压缩',
+  'chat.compaction.failed': '压缩失败',
+  'chat.compaction.showSummary': '显示摘要',
+  'chat.compaction.hideSummary': '隐藏摘要',
   'chat.messageBody.shellCommand.title': 'Shell 命令',
   'chat.messageBody.shellCommand.hideOutput': '隐藏输出',
   'chat.messageBody.shellCommand.showOutput': '显示输出',
@@ -3461,4 +3493,17 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': '在本机运行。粘贴完整命令后会按每行一个参数拆分。',
   'settings.mcp.page.connection.hintLink': '连接到他人托管的服务器。粘贴其 https 地址。',
   'mcpDropdown.status.failedWithCause': "{cause}：{error}",
+  'chat.formCard.inputNeeded': '需要输入',
+  'chat.formCard.fromSubagent': '来自子代理',
+  'chat.formCard.required': '必填',
+  'chat.formCard.openLink': '打开链接',
+  'chat.formCard.yes': '是',
+  'chat.formCard.other': '其他',
+  'chat.formCard.yourAnswer': '你的答案',
+  'chat.formCard.submit': '提交',
+  'chat.formCard.cancel': '取消',
+  'chat.formCard.missingRequired': '请先填写必填项。',
+  'chat.formCard.submitFailed': '无法提交答案',
+  'chat.formCard.cancelFailed': '无法取消请求',
+  'chat.formCard.tryAgain': '请重试。',
 };

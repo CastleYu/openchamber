@@ -1,6 +1,7 @@
 import type { I18nKey } from '@/lib/i18n/store';
 import { UPDATE_HISTORY_PAGE, UPDATE_HISTORY_ANCHOR } from './updateHistory';
 import { useUIStore } from '@/stores/useUIStore';
+import { opencodeClient } from '@/lib/opencode/client';
 import type { SettingsPageSlug, SettingsRuntimeContext } from './metadata';
 import { getSettingsPageMeta } from './metadata';
 
@@ -33,6 +34,19 @@ interface SettingsSearchAvailabilityContext extends SettingsRuntimeContext {
 }
 
 const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
+  {
+    id: 'web-search.provider',
+    page: 'web-search',
+    titleKey: 'settings.webSearch.section.provider',
+    descriptionKey: 'settings.webSearch.section.providerInfo',
+    keywords: ['web search', 'websearch', 'internet', 'provider', 'random'],
+  },
+  {
+    id: 'web-search.keys',
+    page: 'web-search',
+    titleKey: 'settings.webSearch.section.keys',
+    keywords: ['api key', 'exa', 'tavily', 'firecrawl', 'credentials'],
+  },
   {
     id: 'chat.activity-default',
     page: 'chat',
@@ -580,6 +594,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     descriptionKey: 'settings.openchamber.tools.field.agentWebToolInfo',
     keywords: ['agent', 'tool', 'web', 'browser', 'page', 'preview', 'openchamber'],
     isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'sessions.agent-notify-tool',
+    page: 'general',
+    titleKey: 'settings.openchamber.tools.field.agentNotifyTool',
+    descriptionKey: 'settings.openchamber.tools.field.agentNotifyToolInfo',
+    keywords: ['agent', 'notify', 'notification', 'tool'],
+    isAvailable: (ctx) => !ctx.isVSCode && opencodeClient.getBoundRuntime()?.generation === 'oc2',
   },
   {
     id: 'sessions.browser-provider',

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { createStore } from "zustand/vanilla"
-import type { PermissionRequest, QuestionRequest, Session } from "@opencode-ai/sdk/v2/client"
+import type { PermissionRequest, QuestionRequest, Session as LegacySession } from "@opencode-ai/sdk/v2/client"
+import { projectLegacySession } from "@/lib/opencode/v1/projection"
 import { INITIAL_STATE, type State } from "./types"
 import {
   readDirectoryPermissionSnapshot,
@@ -21,10 +22,11 @@ const deferred = <T>() => {
 const source = (initial: Partial<State> = {}) => createStore<State>(() => ({ ...INITIAL_STATE, ...initial }))
 const permission: PermissionRequest = { id: "permission", sessionID: "session", permission: "read", patterns: ["*"], metadata: {}, always: [] }
 const question: QuestionRequest = { id: "question", sessionID: "session", questions: [] }
-const session: Session = {
+const legacySession: LegacySession = {
   id: "session", projectID: "project", slug: "session", directory: "/repo",
   title: "Session", version: "1", time: { created: 1, updated: 1 },
 }
+const session = projectLegacySession(legacySession)
 
 describe("directory recovery snapshots", () => {
   test("the event pipeline preserves repeated busy events without publishing a redundant store update", async () => {
@@ -67,7 +69,7 @@ describe("directory recovery snapshots", () => {
     try {
       handleEvent("/repo", {
         id: "old-archive", type: "session.updated",
-        properties: { sessionID: session.id, info: { ...session, time: { created: 1, updated: 10, archived: 10 } } },
+        properties: { sessionID: session.id, info: { ...legacySession, time: { created: 1, updated: 10, archived: 10 } } },
       }, manager, createEventRoutingIndex(), getRuntimeKey(), true, undefined, undefined, true)
       response.resolve([permission])
       expect(await snapshot).toEqual({ session: [permission] })
@@ -139,7 +141,7 @@ describe("directory recovery snapshots", () => {
     const statuses = readDirectoryStatusSnapshot(store, () => statusResponse.promise)
     const permissions = readDirectoryPermissionSnapshot(store, () => permissionResponse.promise)
     const questions = readDirectoryQuestionSnapshot(store, () => questionResponse.promise)
-    recordDirectoryRecoveryEvent(store, { id: "event-deleted", type: "session.deleted", properties: { sessionID: session.id, info: session } })
+    recordDirectoryRecoveryEvent(store, { id: "event-deleted", type: "session.deleted", properties: { sessionID: session.id, info: legacySession } })
     statusResponse.resolve({ session: { type: "busy" } })
     permissionResponse.resolve([permission])
     questionResponse.resolve([question])

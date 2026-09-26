@@ -1,9 +1,12 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import { settingsDict } from './fr.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict = {
   'fileOpening.loading': "Chargement du fichier…",
@@ -62,6 +65,22 @@ export const dict = {
   'chat.liveActivity.usedSubagent': '{count} sous-agent utilisé',
   'chat.liveActivity.usedSubagents': '{count} sous-agents utilisés',
   'sessions.sidebar.projectAction.active': 'Action du projet en cours',
+  'sidebarFilesTree.menu.uploadFiles': 'Téléverser des fichiers',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'Téléverser des fichiers',
+  'chat.permissionCard.summary.externalDirectory': "Accéder à des fichiers hors du projet",
+  'chat.permissionCard.summary.read': "Lire un fichier",
+  'chat.permissionCard.summary.edit': "Modifier des fichiers",
+  'chat.permissionCard.summary.shell': "Exécuter une commande",
+  'chat.permissionCard.summary.glob': "Trouver des fichiers",
+  'chat.permissionCard.summary.grep': "Rechercher dans le contenu des fichiers",
+  'chat.permissionCard.summary.webfetch': "Ouvrir une page web",
+  'chat.permissionCard.summary.websearch': "Rechercher sur le web",
+  'chat.permissionCard.summary.skill': "Charger un skill",
+  'chat.permissionCard.summary.tool': "Utiliser {tool}",
+  'chat.permissionCard.summary.inPath': "dans {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Toujours : {patterns}',
+  ...fileArtifactsI18n.fr,
+  ...webSearchI18n.fr,
   ...settingsDict,
   'updateDialog.personalNotice': 'Les versions personnelles signalent uniquement les mises à jour. Synchronisez les sources et recompilez pour conserver vos fonctions.',
   ...linearIssuePickerI18n.fr,
@@ -69,6 +88,7 @@ export const dict = {
   ...routingI18n.fr,
   ...pluginPanelI18n.fr,
   ...surfacePanelI18n.fr,
+  ...usageStatsI18n.fr,
   'terminalView.actions.attachSelection': 'Joindre la sortie sélectionnée',
   'terminalView.actions.copySelection': 'Copier la sortie sélectionnée',
   'terminalView.toast.selectionCopied': 'Sortie copiée',
@@ -2186,6 +2206,9 @@ export const dict = {
   'snippets.source.global': 'mondial',
   'snippets.source.project': 'projet',
   'chat.chatInput.toast.compactFailed': 'Échec du compactage de la session',
+  'chat.chatInput.toast.forkFailed': 'Impossible de dupliquer la session',
+  'chat.chatInput.toast.forkNothingToFork': 'Rien à dupliquer pour l\'instant : aucune réponse n\'est terminée dans cette session',
+  'chat.chatInput.toast.forkSendFailed': 'Session dupliquée, mais le message n\'a pas été envoyé. Il est de retour dans la zone de saisie.',
   'chat.chatInput.toast.summaryFailed': 'Échec de la génération du résumé',
   'chat.chatInput.toast.reviewFailed': 'Échec de l\'examen des modifications',
   'chat.chatInput.toast.attachmentsTooLarge': 'Les pièces jointes sont trop volumineuses pour être envoyées. Veuillez essayer de réduire le nombre ou la taille des images.',
@@ -2243,6 +2266,9 @@ export const dict = {
   'chat.toolPart.error': 'Erreur:',
   'chat.toolPart.awaitingResponse': 'En attente de réponse...',
   'chat.toolPart.noOutputProduced': 'Aucune sortie produite',
+  'chat.toolPart.script': 'Script',
+  'chat.toolPart.scriptCalls': 'Appels d’outils',
+  'chat.toolPart.outputTruncated': 'La sortie a été tronquée',
   'chat.toolPart.output': 'Sortie',
   'chat.toolPart.openSubtask': 'Ouvrir la sous-tâche {type}',
   'chat.todo.total': 'Total',
@@ -2352,6 +2378,11 @@ export const dict = {
   'chat.messageBody.subtask.hidePrompt': 'Masquer le prompt',
   'chat.messageBody.subtask.showPrompt': 'Afficher le prompt',
   'chat.messageBody.subtask.openSession': 'Ouvrir une session de sous-tâche',
+  'chat.compaction.running': 'Compaction de la conversation…',
+  'chat.compaction.completed': 'Conversation compactée',
+  'chat.compaction.failed': 'La compaction a échoué',
+  'chat.compaction.showSummary': 'Afficher le résumé',
+  'chat.compaction.hideSummary': 'Masquer le résumé',
   'chat.messageBody.shellCommand.title': 'Commande Shell',
   'chat.messageBody.shellCommand.hideOutput': 'Masquer la sortie',
   'chat.messageBody.shellCommand.showOutput': 'Afficher la sortie',
@@ -3293,6 +3324,7 @@ export const dict = {
   'chat.commandAutocomplete.command.debugDescription': 'Investigation guidée de la cause racine d’un bug avant de proposer une correction.',
   'chat.commandAutocomplete.command.weighDescription': 'Comparer 2 à 3 approches avec compromis et recommandation avant de vous engager.',
   'chat.commandAutocomplete.command.btwDescription': 'Posez une question annexe dans une session enfant temporaire sans interrompre cette conversation.',
+  'chat.commandAutocomplete.command.forkDescription': 'Dupliquer cette conversation à partir de la dernière réponse terminée et continuer là-bas ; le texte après /fork est envoyé à la copie.',
   'chat.commandAutocomplete.command.exploreDescription': 'Vous orienter dans ce codebase : tour d’ensemble de l’architecture et des parties principales.',
   'chat.questionCard.submitFailed': 'Impossible d’envoyer la réponse',
   'chat.questionCard.dismissFailed': 'Impossible d’ignorer la question',
@@ -3458,4 +3490,17 @@ export const dict = {
   'settings.mcp.page.connection.hintCommand': 'S’exécute sur cette machine. Collez une commande entière : elle est découpée en un argument par ligne.',
   'settings.mcp.page.connection.hintLink': 'Se connecte à un serveur hébergé par quelqu’un d’autre. Collez son adresse https.',
   'mcpDropdown.status.failedWithCause': "{cause} : {error}",
+  'chat.formCard.inputNeeded': 'Réponse requise',
+  'chat.formCard.fromSubagent': 'd’un sous-agent',
+  'chat.formCard.required': 'Obligatoire',
+  'chat.formCard.openLink': 'Ouvrir le lien',
+  'chat.formCard.yes': 'Oui',
+  'chat.formCard.other': 'Autre',
+  'chat.formCard.yourAnswer': 'Votre réponse',
+  'chat.formCard.submit': 'Envoyer',
+  'chat.formCard.cancel': 'Annuler',
+  'chat.formCard.missingRequired': 'Remplissez d’abord les champs obligatoires.',
+  'chat.formCard.submitFailed': 'Impossible d’envoyer la réponse',
+  'chat.formCard.cancelFailed': 'Impossible d’annuler la demande',
+  'chat.formCard.tryAgain': 'Réessayez.',
 } as const;

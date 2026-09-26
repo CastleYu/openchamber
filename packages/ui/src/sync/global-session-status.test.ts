@@ -7,6 +7,10 @@ import {
   getDirectoryOwnedSessionIds,
   useGlobalSessionStatusStore,
   replaceGlobalSessionStatusById,
+  setSessionParentResolver,
+  hasActiveSubagent,
+  isSessionTurnActive,
+  applyGlobalDomainStatusEvents,
 } from "./global-session-status"
 import { resetSessionOrdering, useSessionOrderingStore } from "./session-ordering"
 import { resetSessionActivityTiming, useSessionActivityTimingStore } from "./session-activity-timing"
@@ -15,6 +19,7 @@ beforeEach(() => {
   replaceGlobalSessionStatusById(new Map())
   resetSessionOrdering()
   resetSessionActivityTiming()
+  setSessionParentResolver(() => undefined)
 })
 
 describe("global session status index", () => {
@@ -179,6 +184,26 @@ describe("global session status index", () => {
     replaceGlobalSessionStatusById(new Map())
 
     expect(activeSessionIds()?.size).toBe(0)
+  })
+
+  test("an idle parent stays active while a nested child works, then settles", () => {
+    const parents = new Map([['child', 'parent'], ['grandchild', 'child']])
+    setSessionParentResolver((id) => parents.get(id))
+    applyGlobalDomainStatusEvents('/repo', [
+      { type: 'status', sessionID: 'parent', status: { type: 'busy' }, directory: '/repo', eventID: 'parent-busy' },
+      { type: 'status', sessionID: 'grandchild', status: { type: 'busy' }, directory: '/repo', eventID: 'child-busy' },
+    ])
+    applyGlobalDomainStatusEvents('/repo', [
+      { type: 'status', sessionID: 'parent', status: { type: 'idle' }, outcome: 'completed', directory: '/repo', eventID: 'parent-idle' },
+    ])
+    expect(hasActiveSubagent('parent', activeSessionIds())).toBe(true)
+    expect(isSessionTurnActive('parent')).toBe(true)
+    applyGlobalDomainStatusEvents('/repo', [
+      { type: 'status', sessionID: 'grandchild', status: { type: 'idle' }, outcome: 'completed', directory: '/repo', eventID: 'child-idle' },
+    ])
+    expect(isSessionTurnActive('parent')).toBe(false)
+    replaceGlobalSessionStatusById(new Map())
+    expect(isSessionTurnActive('parent')).toBe(false)
   })
 
   test("clears an explicitly idle known session when directory aliases differ", () => {

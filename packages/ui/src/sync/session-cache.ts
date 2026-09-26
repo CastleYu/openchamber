@@ -1,11 +1,5 @@
-import type {
-  Message,
-  Part,
-  PermissionRequest,
-  QuestionRequest,
-  SessionStatus,
-  Todo,
-} from "@opencode-ai/sdk/v2/client"
+import type { PermissionRequest, QuestionRequest, Todo } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, SessionStatus } from "@/lib/opencode/model"
 import type { FileDiff } from "./types"
 
 type SessionCache = {

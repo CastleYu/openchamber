@@ -6,7 +6,7 @@ import { useProjectsStore } from './useProjectsStore';
 import { deleteSessionInDirectory } from '@/sync/session-actions';
 import { listGlobalSessionPages } from './globalSessions';
 import type { WorktreeMetadata } from '@/types/worktree';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { buildAgentGroups, type AgentGroup, type AgentGroupSession } from '@/lib/multirun/groups';
 import { getMultiRunIdentity } from '@/lib/multirun/identity';
 import { getRuntimeKey } from '@/lib/runtime-switch';
@@ -129,7 +129,7 @@ export const useAgentGroupsStore = create<Store>()(
         }
 
         // 2. Fetch sessions for each worktree directory (parallel, max 5)
-        const api = opencodeClient.getApiClient();
+        const api = opencodeClient;
         const allSessions: Session[] = [];
         const failedDirectories = new Set<string>();
 
@@ -254,7 +254,7 @@ export const useAgentGroupsStore = create<Store>()(
           if (normalize(projectRef.path) === path) continue;
 
           try {
-            const remaining = await listGlobalSessionPages(opencodeClient.getSdkClient(), {
+            const remaining = await listGlobalSessionPages(opencodeClient, {
               directory: path, archived: true, narrowToArchived: false, pageSize: 500,
             });
             assertCurrent();

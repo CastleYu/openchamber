@@ -8,7 +8,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createAgentToolRuntime } from './runtime.js';
-import { OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS, OPENCHAMBER_CONTROL_ACTION_DEFINITIONS } from '../openchamber-control/actions.js';
+import { OPENCHAMBER_LEGACY_AGENT_TOOL_ACTION_DEFINITIONS as OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS, OPENCHAMBER_CONTROL_ACTION_DEFINITIONS } from '../openchamber-control/actions.js';
 
 const temporaryDirectories = [];
 
@@ -97,6 +97,8 @@ describe('managed agent tool runtime', () => {
       expect(source).toContain(JSON.stringify({ const: action, description }));
     }
     expect(source).not.toContain('"schedule.status"');
+    expect(source).not.toContain('"file.open"');
+    expect(source).not.toContain('"notify.send"');
     const pluginModule = await import(`${pathToFileURL(pluginPath).href}?schema=${Date.now()}`);
     const hooks = await pluginModule.OpenChamberPlugin();
     expect(hooks.tool.openchamber.description).toContain('Session dispatches return immediately by default');

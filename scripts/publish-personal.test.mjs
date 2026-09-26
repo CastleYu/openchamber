@@ -18,6 +18,11 @@ function fixture(t, options = {}) {
   fs.mkdirSync(directory);
   const commit = 'a'.repeat(40);
   const version = '1.23.0-DIJIANG.3.2';
+  if (Object.hasOwn(options, 'versionNotes')) {
+    const notesPath = path.join(root, 'docs/maintenance/releases', `${version}.md`);
+    fs.mkdirSync(path.dirname(notesPath), { recursive: true });
+    fs.writeFileSync(notesPath, options.versionNotes);
+  }
   const executable = `OpenChamber-${version}-win-x64.exe`;
   fs.writeFileSync(path.join(directory, executable), 'fixture portable bytes');
   fs.writeFileSync(path.join(directory, 'build-info.json'), JSON.stringify({
@@ -48,7 +53,12 @@ function fixture(t, options = {}) {
     }
     return '';
   };
-  return { calls, run: () => publishPersonal({ directory, commit, version, repository: 'CastleYu/openchamber', sourceRoot: root, gh }) };
+  return {
+    calls,
+    commit,
+    run: () => publishPersonal({ directory, commit, version, repository: 'CastleYu/openchamber', sourceRoot: root, gh }),
+    releaseNotes: () => fs.readFileSync(path.join(directory, 'release-notes.md'), 'utf8'),
+  };
 }
 
 test('uploads all artifacts, verifies digests, then publishes', t => {
@@ -58,6 +68,24 @@ test('uploads all artifacts, verifies digests, then publishes', t => {
   assert.equal(upload.slice(3, upload.indexOf('--repo')).length, 5);
   assert(upload.some(file => file.endsWith('update-history.zh-CN.md')));
   assert.equal(f.calls.filter(args => args.includes('PATCH')).length, 1);
+  assert.match(f.releaseNotes(), /Read update history/);
+  assert.match(f.releaseNotes(), new RegExp(`Source: ${f.commit}\\. Upstream updates remain notification-only\\.`));
+});
+test('prefers version-specific personal notes over the unreleased changelog', t => {
+  const f = fixture(t, {
+    versionNotes: '---\ntitle: Dual kernel\n---\n\nDIJIANG 4.0 release notes.\n\n## App\n\n### New\n- Add dual-kernel support.\n',
+  });
+  assert.equal(f.run().status, 'published');
+  assert.match(f.releaseNotes(), /DIJIANG 4.0 release notes/);
+  assert.match(f.releaseNotes(), /Add dual-kernel support/);
+  assert.doesNotMatch(f.releaseNotes(), /Read update history/);
+  assert.match(f.releaseNotes(), new RegExp(`Source: ${f.commit}\\. Upstream updates remain notification-only\\.`));
+});
+test('rejects an empty version-specific note instead of falling back', t => {
+  const f = fixture(t, { versionNotes: '' });
+  assert.throws(f.run, /Personal release notes are empty: docs[\\/]maintenance[\\/]releases/);
+  assert(!f.calls.some(args => args.includes('POST')));
+  assert(!f.calls.some(args => args[1] === 'upload'));
 });
 test('uses the created draft identity even while release listings are stale', t => {
   const f = fixture(t, { staleList: true });

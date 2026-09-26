@@ -1,8 +1,11 @@
 import React from 'react';
-import type { Part } from '@opencode-ai/sdk/v2';
+import type { Part } from '@/lib/opencode/model';
 import { LegendList, type LegendListRef } from '@legendapp/list/react';
 
 import ChatMessage from './ChatMessage';
+import { TimelineNotice } from './message/TimelineNotice';
+import { isSkippedTimelineRole, isTimelineNoticeRole } from './lib/timelineRoles';
+import { attachSyntheticContext } from './lib/attachSyntheticContext';
 import { filterVisibleParts, isEmptyTextPart } from './message/partUtils';
 import { areOptionalRenderRelevantMessagesEqual, areRelevantTurnGroupingContextsEqual, areRenderRelevantMessagesEqual } from './message/renderCompare';
 import TurnItem from './components/TurnItem';
@@ -379,6 +382,9 @@ const MessageRow = React.memo<MessageRowProps>(({
     scrollToBottom,
     reviewTransferDirection,
 }) => {
+    const role = message.info.role;
+    if (isSkippedTimelineRole(role)) return null;
+    if (isTimelineNoticeRole(role)) return <TimelineNotice message={message.info} />;
     return (
         <ChatMessage
             message={message}
@@ -1277,7 +1283,7 @@ const MessageList = React.forwardRef<MessageListHandle, MessageListProps>(({
             output.push(currentWithRole);
         }
 
-        return output;
+        return attachSyntheticContext(output);
     }), [messages]);
 
     // The list owns the scroll container. The DOM fallback covers the window

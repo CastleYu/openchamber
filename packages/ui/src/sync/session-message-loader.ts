@@ -1,4 +1,6 @@
-import type { Message, OpencodeClient, Part } from "@opencode-ai/sdk/v2/client"
+import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part } from "@/lib/opencode/model"
+import { projectLegacyMessages } from "@/lib/opencode/v1/projection"
 import type { ChildStoreManager, DirectoryStore } from "./child-store"
 import { retry } from "./retry"
 import { mergeOptimisticPage, type OptimisticItem } from "./optimistic"
@@ -19,6 +21,7 @@ import { startSessionLoadPerformanceEvent } from "./session-load-performance"
 import { dropSessionCaches } from "./session-cache"
 import { SessionCacheRetention } from "./session-cache-retention"
 import { SESSION_CACHE_LIMIT } from "./types"
+import type { SyncSource } from "./source"
 
 const SKIP_PARTS = new Set(["patch", "step-start", "step-finish"])
 // One agent turn can span well over a hundred tool steps, so the first
@@ -80,10 +83,7 @@ type LoadPerformanceDetails = {
   recordCount: number
 }
 
-type LoaderConfiguration = {
-  sdk: OpencodeClient
-  runtimeKey: string
-}
+type LoaderConfiguration = { source: SyncSource; runtimeKey: string } | { sdk: OpencodeClient; runtimeKey: string }
 
 const isConstrainedRuntime = () => isVSCodeRuntime() || isMobileSurfaceRuntime()
 const getInitialPageSize = () => isConstrainedRuntime()
@@ -149,7 +149,8 @@ const createDefaultState = (generation = 0): SessionMessageLoadState => ({
 export const EMPTY_SESSION_MESSAGE_LOAD_STATE = createDefaultState()
 
 export class SessionMessageLoader {
-  private sdk: OpencodeClient
+  private sdk: OpencodeClient | undefined
+  private source: SyncSource | undefined
   private runtimeKey: string
   private sdkEpoch = 0
   private disposed = false
@@ -163,15 +164,19 @@ export class SessionMessageLoader {
     private readonly childStores: ChildStoreManager,
     configuration: LoaderConfiguration,
   ) {
-    this.sdk = configuration.sdk
+    this.sdk = "sdk" in configuration ? configuration.sdk : undefined
+    this.source = "source" in configuration ? configuration.source : undefined
     this.runtimeKey = configuration.runtimeKey
   }
 
   configure(configuration: LoaderConfiguration): void {
-    if (this.sdk === configuration.sdk && this.runtimeKey === configuration.runtimeKey) return
+    const sdk = "sdk" in configuration ? configuration.sdk : undefined
+    const source = "source" in configuration ? configuration.source : undefined
+    if (this.sdk === sdk && this.source === source && this.runtimeKey === configuration.runtimeKey) return
     const runtimeChanged = this.runtimeKey !== configuration.runtimeKey
     const previousRuntimeKey = this.runtimeKey
-    this.sdk = configuration.sdk
+    this.sdk = sdk
+    this.source = source
     this.runtimeKey = configuration.runtimeKey
     this.sdkEpoch += 1
     for (const entry of this.entries.values()) {
@@ -755,6 +760,11 @@ export class SessionMessageLoader {
     try {
       const result = await retry(async () => {
         attempts += 1
+        if (this.source) {
+          const page = await this.source.messagePage(target.sessionID, target.directory, limit, before)
+          return { data: page.items, cursor: page.cursor }
+        }
+        if (!this.sdk) throw new Error("Session message source is not configured")
         const response = await this.sdk.session.messages({
           sessionID: target.sessionID,
           directory: target.directory,
@@ -768,19 +778,19 @@ export class SessionMessageLoader {
           error.status = 503
           throw error
         }
-        return { data, response: response.response }
+        return { data: projectLegacyMessages(data), cursor: response.response?.headers?.get?.("x-next-cursor") ?? undefined }
       })
-      const records = result.data.filter((record: { info?: { id?: string } }) => Boolean(record?.info?.id))
+      const records = result.data.filter((record) => Boolean(record?.info?.id))
       recordCount = records.length
       if (performance) performance.recordCount += recordCount
       const session = sortMessagesChronologically(
-        records.map((record: { info: Message }) => stripMessageDiffSnapshots(record.info)),
+        records.map((record) => stripMessageDiffSnapshots(record.info)),
       )
       const partsByMessageID = new Map<string, Part[]>()
-      for (const record of records as Array<{ info: { id: string }; parts?: Part[] }>) {
+      for (const record of records) {
         partsByMessageID.set(record.info.id, filterIdentifiedParts(record.parts ?? []))
       }
-      const cursor = result.response?.headers?.get?.("x-next-cursor") ?? undefined
+      const cursor = result.cursor
       finishPagePerformance("complete", { retryCount: Math.max(0, attempts - 1), recordCount })
       return { session, partsByMessageID, cursor, complete: !cursor }
     } catch (error) {

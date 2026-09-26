@@ -15,6 +15,11 @@ describe('getToolOutput', () => {
         expect(getToolOutput('bash', '\u001B[32mFinal output\u001B[0m', 'partial output', 'completed')).toBe('Final output');
     });
 
+    test('treats an OC2 shell result as terminal output', () => {
+        expect(getToolOutput('shell', '\u001B[32mDone\u001B[0m', undefined, 'completed')).toBe('Done');
+        expect(getToolOutput('shell', undefined, 'Progress\r\u001B[2KReady', 'completed')).toBe('Ready');
+    });
+
     test('falls back to metadata.output for bash tools without state output', () => {
         expect(getToolOutput('bash', undefined, 'partial output', 'completed')).toBe('partial output');
     });

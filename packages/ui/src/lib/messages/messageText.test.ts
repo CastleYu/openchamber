@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { Part } from '@opencode-ai/sdk/v2';
+import type { Part, TextPart } from '@/lib/opencode/model';
 import { flattenAssistantTextParts, flattenUserTextParts } from './messageText';
 
 // Regression tests for https://github.com/openchamber/openchamber/issues/2867
@@ -12,7 +12,12 @@ import { flattenAssistantTextParts, flattenUserTextParts } from './messageText';
 // `copyMarkdownToClipboard`, which writes it to `text/plain`, `text/markdown`
 // and its markdown-rendered HTML into `text/html`.
 
-const basePart = (overrides: Record<string, unknown>): Part =>
+type TextFixture = TextPart & {
+  content?: string;
+  shellAction?: { output?: string; command?: string };
+};
+
+const basePart = (overrides: Partial<TextFixture>): TextFixture =>
   ({
     id: 'p1',
     sessionID: 's',
@@ -20,14 +25,14 @@ const basePart = (overrides: Record<string, unknown>): Part =>
     type: 'text',
     text: '',
     ...overrides,
-  }) as Part;
+  });
 
-const makeParts = (texts: string[]): Part[] =>
+const makeParts = (texts: string[]): TextFixture[] =>
   texts.map((text, index) => basePart({ id: `p${index}`, text }));
 
 const makeUserParts = (
-  entries: Array<{ text?: string; shellAction?: { output?: unknown; command?: unknown } }>,
-): Part[] =>
+  entries: Array<{ text?: string; shellAction?: { output?: string; command?: string } }>,
+): TextFixture[] =>
   entries.map((entry, index) =>
     basePart({ id: `u${index}`, text: entry.text ?? '', shellAction: entry.shellAction }),
   );
@@ -84,7 +89,7 @@ describe('flattenAssistantTextParts', () => {
   test('non-text parts are ignored', () => {
     const partsWithTool: Part[] = [
       ...makeParts(['before']),
-      { id: 't1', sessionID: 's', messageID: 'm', type: 'tool', tool: 'bash' } as Part,
+      { id: 't1', sessionID: 's', messageID: 'm', type: 'snapshot', snapshot: 'snapshot' },
       ...makeParts(['after']),
     ];
     expect(flattenAssistantTextParts(partsWithTool)).toBe('before\n\nafter');

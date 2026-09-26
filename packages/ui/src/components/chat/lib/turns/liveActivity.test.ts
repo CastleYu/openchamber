@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AssistantMessage, Part, ToolPart, ToolStateCompleted } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Part, ToolPart, ToolStateCompleted } from '@/lib/opencode/model';
 import { getLiveFinalMessage, getTurnsWithLaterAssistant, hasLiveActivity } from './liveActivity';
 import { projectTurnRecords } from './projectTurnRecords';
 import { summarizeLiveActivity } from './liveActivitySummary';
@@ -92,6 +92,15 @@ describe('live turn boundaries', () => {
 });
 
 describe('live activity report', () => {
+    test('counts OC2 shell, subagent, and patch results', () => {
+        const result = summarizeLiveActivity([assistant('a', [
+            tool('shell', 'shell', { input: { command: 'bun test' } }),
+            tool('subagent', 'subagent', { metadata: { sessionID: 'child-2' } }),
+            tool('patch', 'patch', { metadata: { files: [{ file: '/project/a.ts', patch: diff }] } }),
+        ])]);
+        expect(result).toMatchObject({ commands: 1, subagents: 1, files: 1, additions: 2, deletions: 1 });
+    });
+
     test('groups exploration and web calls without pretending their counts are file counts', () => {
         const result = summarizeLiveActivity([assistant('a', [
             ...['read', 'list', 'glob', 'grep', 'lsp', 'skill', 'webfetch', 'websearch', 'codesearch', 'perplexity'].map((name) => tool(name, name)),

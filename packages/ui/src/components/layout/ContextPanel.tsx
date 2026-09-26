@@ -36,6 +36,7 @@ import { ContextPanelContent } from './ContextSidebarTab';
 import { BrowserPane } from '@/components/browser/BrowserPane';
 import { browserUrlLabel } from '@/lib/browser/url';
 import { registerBrowserOpener } from '@/lib/browser/controlClient';
+import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { getRuntimeBearerTokenSync, getRuntimeExtraHeadersSync } from '@/lib/runtime-auth';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@/lib/runtime-switch';
 import { getActiveRelayDescriptor } from '@/lib/relay/runtime-tunnel';
@@ -514,6 +515,12 @@ export const ContextPanel: React.FC = () => {
     return registerBrowserOpener((url) => openContextBrowser(effectiveDirectory, url));
   }, [effectiveDirectory, openContextBrowser]);
   const reorderContextPanelTabs = useUIStore((state) => state.reorderContextPanelTabs);
+  const openContextFile = useUIStore((state) => state.openContextFile);
+  React.useEffect(() => subscribeOpenchamberEvents((event) => {
+    if (event.type !== 'file-open-request') return;
+    const directory = event.directory ?? effectiveDirectory;
+    if (directory) openContextFile(directory, event.path);
+  }), [effectiveDirectory, openContextFile]);
   const setSelectedFilePath = useFilesViewTabsStore((state) => state.setSelectedPath);
   const contextEditorTreeVisible = useUIStore((state) => state.contextEditorTreeVisible);
   const contextEditorTreeWidth = useUIStore((state) => state.contextEditorTreeWidth);

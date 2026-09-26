@@ -6,7 +6,7 @@
  * completes the assistant message as aborted and finalizes orphaned parts.
  */
 import { describe, expect, test } from "bun:test"
-import type { Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part } from "@/lib/opencode/model"
 import { interruptedTurnToolParts } from "../sync-context"
 import type { DirectoryStore } from "../child-store"
 import { INITIAL_STATE } from "../types"

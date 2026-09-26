@@ -1,9 +1,12 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import { settingsDict } from './en.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict = {
   'fileOpening.loading': "Loading file…",
@@ -63,12 +66,29 @@ export const dict = {
   'chat.liveActivity.usedSubagent': 'Used {count} subagent',
   'chat.liveActivity.usedSubagents': 'Used {count} subagents',
   'sessions.sidebar.projectAction.active': 'Project action active',
+  'sidebarFilesTree.menu.uploadFiles': 'Upload Files',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'Upload files',
+  'chat.permissionCard.summary.externalDirectory': "Access files outside the project",
+  'chat.permissionCard.summary.read': "Read a file",
+  'chat.permissionCard.summary.edit': "Edit files",
+  'chat.permissionCard.summary.shell': "Run a command",
+  'chat.permissionCard.summary.glob': "Find files",
+  'chat.permissionCard.summary.grep': "Search file contents",
+  'chat.permissionCard.summary.webfetch': "Open a web page",
+  'chat.permissionCard.summary.websearch': "Search the web",
+  'chat.permissionCard.summary.skill': "Load a skill",
+  'chat.permissionCard.summary.tool': "Use {tool}",
+  'chat.permissionCard.summary.inPath': "in {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Always: {patterns}',
+  ...fileArtifactsI18n.en,
+  ...webSearchI18n.en,
   ...settingsDict,
   ...linearIssuePickerI18n.en,
   ...linearPanelI18n.en,
   ...routingI18n.en,
   ...pluginPanelI18n.en,
   ...surfacePanelI18n.en,
+  ...usageStatsI18n.en,
   'terminalView.actions.attachSelection': 'Attach selected output',
   'terminalView.actions.copySelection': 'Copy selected output',
   'terminalView.toast.selectionCopied': 'Output copied',
@@ -2301,6 +2321,7 @@ export const dict = {
   'chat.commandAutocomplete.command.weighDescription': 'Weigh 2-3 approaches with trade-offs and a recommendation before you commit.',
   'chat.commandAutocomplete.command.exploreDescription': 'Get oriented in this codebase: a high-level tour of the architecture and main parts.',
   'chat.commandAutocomplete.command.btwDescription': 'Ask a side question in a temporary child session without derailing this chat.',
+  'chat.commandAutocomplete.command.forkDescription': 'Fork this chat from the last finished reply and continue there; text after /fork is sent to the fork.',
   'chat.commandAutocomplete.badge.skill': 'skill',
   'chat.commandAutocomplete.badge.command': 'command',
   'chat.commandAutocomplete.badge.system': 'system',
@@ -2474,6 +2495,9 @@ export const dict = {
   'snippets.source.global': 'global',
   'snippets.source.project': 'project',
   'chat.chatInput.toast.compactFailed': 'Failed to compact session',
+  'chat.chatInput.toast.forkFailed': 'Couldn\'t fork the session',
+  'chat.chatInput.toast.forkNothingToFork': 'Nothing to fork yet: no reply has finished in this session',
+  'chat.chatInput.toast.forkSendFailed': 'Forked, but the message wasn\'t sent. It\'s back in the composer.',
   'chat.chatInput.toast.summaryFailed': 'Failed to generate summary',
   'chat.messageBody.actions.sendReviewFeedback': 'Send review feedback to implementing agent',
   'chat.messageBody.actions.sendImplementationResponse': 'Send implementation response to reviewing agent',
@@ -2539,6 +2563,9 @@ export const dict = {
   'chat.toolPart.error': 'Error:',
   'chat.toolPart.awaitingResponse': 'Awaiting response...',
   'chat.toolPart.noOutputProduced': 'No output produced',
+  'chat.toolPart.script': 'Script',
+  'chat.toolPart.scriptCalls': 'Tool calls',
+  'chat.toolPart.outputTruncated': 'Output was truncated',
   'chat.toolPart.output': 'Output',
   'chat.toolPart.showRawJson': 'Show raw JSON',
    'chat.toolPart.showFormattedJson': 'Show formatted JSON',
@@ -2657,6 +2684,11 @@ export const dict = {
   'chat.messageBody.subtask.hidePrompt': 'Hide prompt',
   'chat.messageBody.subtask.showPrompt': 'Show prompt',
   'chat.messageBody.subtask.openSession': 'Open subtask session',
+  'chat.compaction.running': 'Compacting the conversation…',
+  'chat.compaction.completed': 'Conversation compacted',
+  'chat.compaction.failed': 'Compaction failed',
+  'chat.compaction.showSummary': 'Show summary',
+  'chat.compaction.hideSummary': 'Hide summary',
   'chat.messageBody.shellCommand.title': 'Shell command',
   'chat.messageBody.shellCommand.hideOutput': 'Hide output',
   'chat.messageBody.shellCommand.showOutput': 'Show output',
@@ -3460,6 +3492,19 @@ export const dict = {
   'settings.mcp.page.connection.hintCommand': 'Runs on this machine. Paste a whole command and it is split into one argument per line.',
   'settings.mcp.page.connection.hintLink': 'Connects to a server someone else hosts. Paste its https address.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Input needed',
+  'chat.formCard.fromSubagent': 'from a subagent',
+  'chat.formCard.required': 'Required',
+  'chat.formCard.openLink': 'Open link',
+  'chat.formCard.yes': 'Yes',
+  'chat.formCard.other': 'Other',
+  'chat.formCard.yourAnswer': 'Your answer',
+  'chat.formCard.submit': 'Submit',
+  'chat.formCard.cancel': 'Cancel',
+  'chat.formCard.missingRequired': 'Fill in the required fields first.',
+  'chat.formCard.submitFailed': 'Could not submit the answer',
+  'chat.formCard.cancelFailed': 'Could not cancel the request',
+  'chat.formCard.tryAgain': 'Try again.',
 } as const;
 
 export type I18nKey = keyof typeof dict;

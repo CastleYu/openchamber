@@ -117,11 +117,21 @@
 - 2026-09-21 diagram follow-up QA: switching Mermaid style replaces its DOM asynchronously; wait for original SVG identity to change before capturing a screenshot. A screenshot attempted during replacement detached and produced no file. Base UI package inspection must use the resolved node_modules/@base-ui/react path, not a wildcard store path.
 - 2026-09-21 theme follow-up: optional theme/types.ts and Base UI internals/types.d.ts paths were absent. Inspect the existing local module imports or discovered package files instead of guessing type-file locations.
 - 2026-09-21 3.5 release: the UI-only repack invoked package.mjs from the repository root, so electron-builder could not resolve the package-local Electron installation. Web asset staging completed. Re-run only packaging from packages/electron with the same explicit portable/x64/version/output arguments.
-- 2026-09-22 version audit: the locally unfetched v1.23.0-DIJIANG.3.5 tag could not be read with git show. Verified the release target through gh release view and inspected the exact existing commit a81e9c665 instead; no fetch or branch mutation was needed.
+- 2026-09-22 版本核查：本地尚未获取 `v1.23.0-DIJIANG.3.5` 标签，`git show` 无法读取。改用 `gh release view` 核对发布目标，并检查已有的准确提交 `a81e9c665`；无需获取远端对象或修改分支。
 - 2026-09-22 Astra migration planning: rg received the literal Windows path packages/*/package.json and reported OS error 123. Search an existing directory with -g package.json instead. packages/ui/README.md is absent; discover documentation with rg --files before reading. The web reader rejected the official migration Markdown URL with unsupported content-type; the official HTML model guide returned the migration section successfully.
-- 2026-09-22 DIJIANG 3.7: a patch failed because a guessed Markdown anchor did not exist; it made no changes. Apply the source patch separately using verified context.
-- 2026-09-22 DIJIANG 3.7: guessed small-model/auth.js, web/vitest.config.js and CLI lifecycle wildcard paths were absent. Discover files first; the real owners are opencode/auth.js, web/vitest.config.ts and bin/lib/cli-lifecycle.js.
-- 2026-09-22 DIJIANG 3.7: npx with a pinned Bun command did not keep that version in every Node-spawned test worker. Two UI runners used global Bun 1.3.14 and hung in web-update.test.ts. Verified their exact PIDs, parent PIDs and executable paths before stopping only those test children. Prefix PATH only in the task process with the resolved Bun 1.4.2 bin directory; do not modify user/global PATH.
-- 2026-09-22 DIJIANG 3.7: `bun run -e` prints usage; inline evaluation uses `bun -e`. Direct pinned test execution confirmed all eight web-update cases pass.
-- 2026-09-24 DIJIANG 3.7: the full web test command under the restricted Windows shell could not spawn Node's test workers (`spawn EPERM`). Re-run that exact test command with scoped elevated execution; keep the Bun 1.4.2 bin path confined to that process.
-- 2026-09-24 DIJIANG 3.7: adding the reviewed tracked-path manifest returned Git's ignored-path warning for `packages/ui/src/components/sections/logs`, because the new upstream ignore rule matches the directory name. The tracked edit was staged successfully; verify each staged path with `git status` before continuing and add new files by explicit path.
+- 2026-09-22 DIJIANG 3.7：补丁所猜测的 Markdown 锚点不存在，应用失败且未改动文件。应先核实上下文，再单独应用源码补丁。
+- 2026-09-22 DIJIANG 3.7：猜测的 `small-model/auth.js`、`web/vitest.config.js` 和 CLI 生命周期通配路径均不存在。应先查找文件；实际位置分别为 `opencode/auth.js`、`web/vitest.config.ts` 和 `bin/lib/cli-lifecycle.js`。
+- 2026-09-22 DIJIANG 3.7：通过 `npx` 指定 Bun 版本，未能让每个由 Node 启动的测试工作进程都使用该版本。两个 UI 测试进程用了全局 Bun 1.3.14，并卡在 `web-update.test.ts`。核实各自 PID、父 PID 和可执行文件路径后，只停止了这两个测试子进程。应仅在任务进程内将已定位的 Bun 1.4.2 目录置于 `PATH` 前端，不修改用户或全局 `PATH`。
+- 2026-09-22 DIJIANG 3.7：`bun run -e` 只打印用法；内联执行应使用 `bun -e`。直接使用指定版本运行测试后，八个 Web 更新用例全部通过。
+- 2026-09-24 DIJIANG 3.7：完整 Web 测试在受限 Windows shell 下无法启动 Node 测试工作进程（`spawn EPERM`）。应仅对同一测试命令使用限定范围的提权执行，并将 Bun 1.4.2 的目录限制在该进程的 `PATH` 中。
+- 2026-09-24 DIJIANG 3.7：暂存已审查的跟踪文件清单时，Git 对 `packages/ui/src/components/sections/logs` 发出忽略路径警告，因为新的上游忽略规则命中了目录名。跟踪文件的改动实际已暂存；继续前用 `git status` 逐项核实，新文件则按准确路径添加。
+- 2026-09-24 DIJIANG 3.7：在受限 shell 中用 `git checkout --theirs` 解决上游所属的 `changelog/unreleased.md` 冲突时，无法创建 `.git/index.lock`。应对原命令使用限定范围的提权执行；按仓库发布说明规则保留上游正文。
+- 2026-09-24 DIJIANG 3.7：向 `rg` 传入字面路径 `packages/ui/src/lib/i18n/messages/*.ts` 时，Windows 将通配符判为非法路径。应直接搜索现有目录，或使用 `rg -g '*.ts'`，不要依赖 shell 展开该通配符。
+- 2026-09-24 DIJIANG 3.7：从 `packages/ui` 使用 `../../../.codex-temp` 作为 UI 类型检查日志路径，会解析到仓库外；PowerShell 无法创建，因而该次退出结果不能算有效检查。应改用 `../../.codex-temp` 或工作区绝对路径并重跑。
+- 2026-09-24 DIJIANG 3.7：自动审批拒绝了动态收集全部未暂存跟踪路径的 `git add` 命令。应先核对准确的改动路径，再以明确列出的文件逐项暂存，保留无关及未跟踪文件。
+- 2026-09-24 DIJIANG 3.7：受限沙箱中的 `bunx vitest` 无法访问 Bun 临时目录（`EPERM`），工作区级 Bun 脚本也无法启动子进程。只对同一聚焦验证使用限定范围的提权执行，不修改全局 Bun 设置。
+- 2026-09-24 DIJIANG 3.7：Node 原生 `--test` 起初在受限沙箱中无法启动；限定提权后又无法解析 VS Code 测试中的无扩展名 TypeScript 导入。应以该包的独立 Bun 测试命令为准，不能把原生 Node 尝试判作产品失败。
+- 2026-09-24 DIJIANG 3.7：本机 VS2022 工具集缺少带 Spectre 缓解的库；Web 资源暂存及 OpenCode CLI 验证已成功，但 `node-pty` 原生重建仍以 MSB8040 失败。仅用于本地便携包验收时，备份已安装的 `node_modules` 绑定配置文件并移除其中的 Spectre 属性；打包后恢复。已提交源码及 GitHub CI 配置保持不变。
+- 2026-09-24 DIJIANG 3.7：便携包构建期间，可选的 CIM 进程命令行查询返回“拒绝访问”。应改用构建日志、限定范围的进程状态和退出码，不再扩大进程检查范围。
+- 2026-09-24 DIJIANG 3.7：首次便携包 CDP 探测遇到目标页面导航，第二次封装程序启动在解包前退出。应重试连接稳定的渲染进程，并分别检查封装程序启动与解包后应用运行；只停止任务隔离配置目录下的进程。
+- 2026-09-24 DIJIANG 3.7：长时间 QA 探测无法保存截图，因为 H: 空间耗尽。首次便携运行留下了任务自己的 1.97 GB 解包目录；确认没有进程使用且解析后的路径位于 `.codex-temp` 内，才仅删除该目录。之后磁盘约有 2 GB 可用空间。避免在空间受限的工作区反复完整解包便携程序。

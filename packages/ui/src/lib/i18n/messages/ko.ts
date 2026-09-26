@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './ko.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "파일 불러오는 중…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': '하위 에이전트 {count}개 사용',
   'chat.liveActivity.usedSubagents': '하위 에이전트 {count}개 사용',
   'sessions.sidebar.projectAction.active': '프로젝트 작업 실행 중',
+  'sidebarFilesTree.menu.uploadFiles': '파일 업로드',
+  'sidebarFilesTree.actions.uploadFilesTitle': '파일 업로드',
+  'chat.permissionCard.summary.externalDirectory': "프로젝트 외부 파일에 접근",
+  'chat.permissionCard.summary.read': "파일 읽기",
+  'chat.permissionCard.summary.edit': "파일 편집",
+  'chat.permissionCard.summary.shell': "명령 실행",
+  'chat.permissionCard.summary.glob': "파일 찾기",
+  'chat.permissionCard.summary.grep': "파일 내용 검색",
+  'chat.permissionCard.summary.webfetch': "웹 페이지 열기",
+  'chat.permissionCard.summary.websearch': "웹 검색",
+  'chat.permissionCard.summary.skill': "스킬 불러오기",
+  'chat.permissionCard.summary.tool': "{tool} 사용",
+  'chat.permissionCard.summary.inPath': "위치: {path}",
+  'chat.permissionCard.alwaysAllowPatterns': '항상: {patterns}',
+  ...fileArtifactsI18n.ko,
+  ...webSearchI18n.ko,
   ...settingsDict,
   'updateDialog.personalNotice': '개인 빌드는 업데이트 알림만 표시합니다. 개인 기능을 유지하려면 소스를 동기화하고 다시 빌드하세요.',
   ...linearIssuePickerI18n.ko,
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n.ko,
   ...pluginPanelI18n.ko,
   ...surfacePanelI18n.ko,
+  ...usageStatsI18n.ko,
   'terminalView.actions.attachSelection': '선택한 출력 첨부',
   'terminalView.actions.copySelection': '선택한 출력 복사',
   'terminalView.toast.selectionCopied': '출력을 복사했습니다',
@@ -2302,6 +2322,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.commandAutocomplete.command.debugDescription': '수정안을 제시하기 전에 버그의 근본 원인을 단계적으로 조사합니다.',
   'chat.commandAutocomplete.command.weighDescription': '결정하기 전에 2~3가지 접근 방식을 장단점과 함께 비교하고 추천을 제시합니다.',
   'chat.commandAutocomplete.command.btwDescription': '이 채팅을 방해하지 않고 임시 하위 세션에서 별도 질문하기',
+  'chat.commandAutocomplete.command.forkDescription': '마지막으로 완료된 응답에서 이 채팅을 포크하여 이어갑니다. /fork 뒤의 텍스트는 포크된 세션으로 전송됩니다.',
   'chat.commandAutocomplete.command.exploreDescription': '코드베이스에 대한 방향을 잡습니다: 아키텍처와 주요 부분을 한눈에 살펴봅니다.',
   'chat.commandAutocomplete.badge.skill': '스킬',
   'chat.commandAutocomplete.badge.command': '명령',
@@ -2474,6 +2495,9 @@ export const dict: Record<I18nKey, string> = {
   'snippets.source.global': '전역',
   'snippets.source.project': '프로젝트',
   'chat.chatInput.toast.compactFailed': '세션 압축 실패',
+  'chat.chatInput.toast.forkFailed': '세션을 포크하지 못했습니다',
+  'chat.chatInput.toast.forkNothingToFork': '아직 포크할 내용이 없습니다: 이 세션에 완료된 응답이 없습니다',
+  'chat.chatInput.toast.forkSendFailed': '포크했지만 메시지를 보내지 못했습니다. 입력창에 다시 넣었습니다.',
   'chat.chatInput.toast.summaryFailed': '요약 생성 실패',
   'chat.messageBody.actions.sendReviewFeedback': '리뷰 피드백을 변경 구현 에이전트에게 보내기',
   'chat.messageBody.actions.sendImplementationResponse': '구현 응답을 리뷰 에이전트에게 보내기',
@@ -2539,6 +2563,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.error': '오류:',
   'chat.toolPart.awaitingResponse': '응답 대기 중…',
   'chat.toolPart.noOutputProduced': '출력 없음',
+  'chat.toolPart.script': '스크립트',
+  'chat.toolPart.scriptCalls': '도구 호출',
+  'chat.toolPart.outputTruncated': '출력이 잘렸습니다',
   'chat.toolPart.output': '출력',
   'chat.toolPart.showRawJson': '원시 JSON 표시',
   'chat.toolPart.showFormattedJson': '형식화된 JSON 표시',
@@ -2657,6 +2684,11 @@ export const dict: Record<I18nKey, string> = {
   'chat.messageBody.subtask.hidePrompt': '숨기기 프롬프트',
   'chat.messageBody.subtask.showPrompt': '표시 프롬프트',
   'chat.messageBody.subtask.openSession': '하위 작업 세션 열기',
+  'chat.compaction.running': '대화를 압축하는 중…',
+  'chat.compaction.completed': '대화가 압축되었습니다',
+  'chat.compaction.failed': '압축에 실패했습니다',
+  'chat.compaction.showSummary': '요약 보기',
+  'chat.compaction.hideSummary': '요약 숨기기',
   'chat.messageBody.shellCommand.title': 'Shell 명령',
   'chat.messageBody.shellCommand.hideOutput': '숨기기 출력',
   'chat.messageBody.shellCommand.showOutput': '표시 출력',
@@ -3460,4 +3492,17 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': '이 컴퓨터에서 실행됩니다. 명령 전체를 붙여넣으면 한 줄에 인수 하나씩 나뉩니다.',
   'settings.mcp.page.connection.hintLink': '다른 곳에서 호스팅하는 서버에 연결합니다. https 주소를 붙여넣으세요.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': '입력이 필요합니다',
+  'chat.formCard.fromSubagent': '하위 에이전트에서',
+  'chat.formCard.required': '필수',
+  'chat.formCard.openLink': '링크 열기',
+  'chat.formCard.yes': '예',
+  'chat.formCard.other': '기타',
+  'chat.formCard.yourAnswer': '내 답변',
+  'chat.formCard.submit': '제출',
+  'chat.formCard.cancel': '취소',
+  'chat.formCard.missingRequired': '먼저 필수 항목을 입력하세요.',
+  'chat.formCard.submitFailed': '답변을 제출할 수 없습니다',
+  'chat.formCard.cancelFailed': '요청을 취소할 수 없습니다',
+  'chat.formCard.tryAgain': '다시 시도하세요.',
 };

@@ -1,5 +1,5 @@
-import type { SessionStatus } from '@opencode-ai/sdk/v2/client'
-import type { Session } from '@opencode-ai/sdk/v2'
+import type { SessionStatus } from '@/lib/opencode/model'
+import type { Session } from '@/lib/opencode/model'
 import type { State } from './types'
 import { countSyncPerformance } from './performance-diagnostics'
 

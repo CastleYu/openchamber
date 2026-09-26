@@ -7,6 +7,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useTodosPersistStore } from '@/stores/useTodosPersistStore';
 import { I18nProvider } from '@/lib/i18n';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { getSyncChildStores } from '@/sync/sync-refs';
 
 let WorkStatusTasksSection: typeof import('./WorkStatusTasksSection').WorkStatusTasksSection;
@@ -23,7 +24,7 @@ describe('collapsible work-status tasks', () => {
   const sdk = createOpencodeClient({ baseUrl: 'http://tasks.test', fetch: () => new Promise<Response>(() => undefined) });
   const render = async (visible = true, selectedSession = sessionId, selectedDirectory = directory) => {
     await act(async () => root.render(
-      <SyncProvider sdk={sdk} directory={directory}>
+      <SyncProvider source={sourceFromSdk(sdk)} directory={directory}>
         <I18nProvider>{visible ? <WorkStatusTasksSection sessionId={selectedSession} directory={selectedDirectory} /> : null}</I18nProvider>
       </SyncProvider>,
     ));

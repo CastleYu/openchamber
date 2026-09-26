@@ -10,6 +10,9 @@ import { resolveWorkingDirectoryChange } from './workingDirectoryChange';
 import { reapOrphanedProcesses } from './opencodeProcessRegistry';
 import { applyProviderEnvAliases } from './provider-env-aliases';
 import { spawnManagedOpenCodeProcess } from './managed-opencode-process';
+import { createKernelRuntime } from '../../web/server/lib/opencode/kernel-runtime.js';
+import { runOpenCodeCliUpgrade } from '../../web/server/lib/opencode/cli-upgrade.js';
+import { detectOpenCodeGeneration, type OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
 
 const t = vscode.l10n.t;
 
@@ -66,9 +69,12 @@ export interface OpenCodeManager {
   start(workdir?: string): Promise<void>;
   stop(): Promise<void>;
   restart(): Promise<void>;
+  upgradeCli(): Promise<void>;
   setWorkingDirectory(path: string): Promise<SetWorkingDirectoryResult>;
   getStatus(): ConnectionStatus;
   getApiUrl(): string | null;
+  getKernelRuntime(): Readonly<OpenCodeGenerationDescriptor>;
+  refreshKernelRuntime(): Promise<Readonly<OpenCodeGenerationDescriptor>>;
   getOpenCodeAuthHeaders(): Record<string, string>;
   getWorkingDirectory(): string;
   isCliAvailable(): boolean;
@@ -637,27 +643,17 @@ async function waitForReady(
       const abort = () => controller.abort();
       signal?.addEventListener('abort', abort, { once: true });
       try {
-        // OpenCode readiness check. Use /global/health for OpenCode 1.15.x compatibility.
-        const url = new URL(`${baseUrl}/global/health`);
-        const res = await fetch(url.toString(), {
-          method: 'GET',
-          headers: { Accept: 'application/json', ...authHeaders },
+        const descriptor = await detectOpenCodeGeneration({
+          endpoint: baseUrl,
+          epoch: 0,
+          headers: authHeaders,
           signal: controller.signal,
         });
-
-        let body: { healthy?: boolean, version?: string } | null = null;
-        try {
-          body = (await res.json()) as { healthy?: boolean, version?: string };
-        } catch {
-          body = null;
-        }
-
         getManagerOutputChannel().appendLine(
-          `Health check to ${url.toString()} returned ${res.status} with body: ${JSON.stringify(body)}`
+          `OpenCode readiness: ${descriptor.generation}`
         );
-
-        if (res.ok && body?.healthy === true) {
-          return { ok: true, baseUrl, elapsedMs: Date.now() - start, attempts, version: body?.version ?? null };
+        if (descriptor.generation === 'oc1' || descriptor.generation === 'oc2') {
+          return { ok: true, baseUrl, elapsedMs: Date.now() - start, attempts, version: descriptor.version };
         }
       } catch {
         // ignore
@@ -801,11 +797,17 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     return { Authorization: buildOpenCodeAuthHeader(password) };
   };
 
+  const kernelRuntime = createKernelRuntime({
+    getEndpoint: () => status === 'disconnected' || status === 'error' ? null : getApiUrl(),
+    getHeaders: getOpenCodeAuthHeaders,
+  });
+
   const setManagedPasswordState = (
     password: string,
     source: 'user-env' | 'generated' | 'rotated'
   ): string => {
     const normalized = password.trim();
+    if (managedPassword !== normalized) kernelRuntime.invalidate();
     managedPassword = normalized;
     managedPasswordSource = source;
     process.env.OPENCODE_SERVER_PASSWORD = normalized;
@@ -968,6 +970,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
   }
 
   async function stopInternal(): Promise<void> {
+    kernelRuntime.invalidate();
     if (server) {
       await server.close();
       server = null;
@@ -976,6 +979,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     managedApiUrlOverride = null;
     detectedPort = null;
     version = null;
+    kernelRuntime.invalidate();
     setStatus('disconnected');
   }
 
@@ -1051,9 +1055,20 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     start,
     stop,
     restart,
+    upgradeCli: () => enqueueOperation(async () => {
+      if (useConfiguredUrl) throw new Error('External OpenCode cannot be upgraded by OpenChamber.');
+      const binary = cliPath || resolveOpencodeCliPath();
+      if (!binary) throw new Error('OpenCode CLI could not be found.');
+      await runOpenCodeCliUpgrade(resolveWindowsLaunchSpec(binary, []), {
+        cwd: workingDirectory,
+        env: process.env,
+      });
+    }),
     setWorkingDirectory,
     getStatus: () => status,
     getApiUrl,
+    getKernelRuntime: kernelRuntime.get,
+    refreshKernelRuntime: kernelRuntime.refresh,
     getOpenCodeAuthHeaders,
     getWorkingDirectory: () => workingDirectory,
     isCliAvailable: () => !cliMissing || Boolean(cliPath || resolveOpencodeCliPath()),

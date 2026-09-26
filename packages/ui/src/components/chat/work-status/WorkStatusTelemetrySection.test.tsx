@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { createOpencodeClient, type AssistantMessage, type Session, type UserMessage } from '@opencode-ai/sdk/v2';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Session, UserMessage } from '@/lib/opencode/model';
 import { useUIStore } from '@/stores/useUIStore';
 import { I18nProvider } from '@/lib/i18n';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { getSyncChildStores } from '@/sync/sync-refs';
 import { getSyncPerformanceDiagnostics, resetSyncPerformanceDiagnostics, setSyncPerformanceDiagnosticsEnabled } from '@/sync/performance-diagnostics';
 let WorkStatusTelemetrySection: typeof import('./WorkStatusTelemetrySection').WorkStatusTelemetrySection;
@@ -55,7 +57,7 @@ describe('mounted turn telemetry with live sync stores', () => {
   } });
   const render = async (visible = true, selectedDirectory = directory, selectedSession = sessionId) => {
     await act(async () => root.render(
-      <SyncProvider sdk={sdk} directory={selectedDirectory}>
+      <SyncProvider source={sourceFromSdk(sdk)} directory={selectedDirectory}>
         <I18nProvider>{visible ? <WorkStatusTelemetrySection sessionId={selectedSession} directory={selectedDirectory} /> : null}</I18nProvider>
       </SyncProvider>,
     ));
@@ -161,7 +163,7 @@ describe('mounted turn telemetry with live sync stores', () => {
     expect(dom.container.textContent).not.toContain('Whole turn');
     await act(async () => store().setState({ message: { [sessionId]: [user, assistant] } }));
     expect(dom.container.textContent).toContain('~6 tok/s');
-    const corrected = { ...assistant, tokens: { ...assistant.tokens, output: 90 } };
+    const corrected = { ...assistant, tokens: { input: 100, output: 90, reasoning: 10, cache: { read: 40, write: 0 } } };
     await act(async () => store().setState({ message: { [sessionId]: [user, corrected] } }));
     expect(dom.container.textContent).toContain('~20 tok/s');
     await act(async () => store().setState({ session: [{ ...session, revert: { messageID: user.id } }] }));

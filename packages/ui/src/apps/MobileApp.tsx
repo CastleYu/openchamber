@@ -11,6 +11,8 @@ import { AppStartupOverlay } from '@/components/ui/AppStartupOverlay';
 import { ChatView } from '@/components/views/ChatView';
 import { PlanView } from '@/components/views/PlanView';
 import { SettingsView } from '@/components/views/SettingsView';
+import { UsageStatsView } from '@/components/views/usage/UsageStatsView';
+import { useUsageStatsAvailable } from '@/components/views/usage/useUsageStatsAvailability';
 import { AppLinkConfirmDialog } from '@/components/chat/AppLinkConfirmDialog';
 import { SharedTrustConfirmDialog } from '@/components/projects/SharedTrustConfirmDialog';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -55,6 +57,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { useOpenCodeSource } from './useOpenCodeSource';
 
 import { SyncAppEffects } from './AppEffects';
 import { BusyDots } from '@/components/chat/message/parts/BusyDots';
@@ -82,6 +85,7 @@ import {
 } from './ipadSidebarResize';
 
 const MOBILE_SETTINGS_PAGES = [
+  'web-search',
   'general',
   'appearance',
   'chat',
@@ -117,7 +121,7 @@ const NATIVE_RESUME_SYNC_EVENT_THROTTLE_MS = 1_000;
     footer. Exactly one can be open at a time — opening another replaces it,
     closing returns to the chat. The sessions drawer and the workspace drawer
     (Changes / Files / Terminal / Notes / MCP) are separate layers. */
-type MobileSurface = 'instances' | 'settings' | 'update';
+type MobileSurface = 'instances' | 'settings' | 'usage' | 'update';
 
 const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onActiveConnectionDeleted }) => {
   const { t } = useI18n();
@@ -127,6 +131,10 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
   useTerminalSessionKeepalive();
   const [sessionsSheetOpen, setSessionsSheetOpen] = React.useState(false);
   const [activeSurface, setActiveSurface] = React.useState<MobileSurface | null>(null);
+  const statsAvailable = useUsageStatsAvailable();
+  React.useEffect(() => {
+    if (!statsAvailable && activeSurface === 'usage') setActiveSurface(null);
+  }, [activeSurface, statsAvailable]);
   // Phone right drawer with the workspace tabs; the tab persists across
   // open/close so the right-edge swipe reopens where the user left off.
   const [workspaceOpen, setWorkspaceOpen] = React.useState(false);
@@ -194,6 +202,14 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
     setWorkspaceTab('files');
     setWorkspaceOpen(true);
   }, []);
+
+  React.useEffect(() => subscribeOpenchamberEvents((event) => {
+    if (event.type !== 'file-open-request') return;
+    const directory = event.directory ?? useDirectoryStore.getState().currentDirectory;
+    if (!directory) return;
+    useUIStore.getState().openContextFile(directory, event.path);
+    openFilesSurface();
+  }), [openFilesSurface]);
 
   const openChangesSurface = React.useCallback((diff: { path: string; staged: boolean } | null = null) => {
     setPendingChangesDiff(diff);
@@ -363,9 +379,10 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
       instanceLabel: showCapacitorOnlyFeatures ? getAutoConnectTargetLabel() : null,
       onOpenInstances: showCapacitorOnlyFeatures ? () => openSurface('instances') : undefined,
       onOpenSettings: () => openSettingsSurface('nav'),
+      onOpenUsage: statsAvailable ? () => openSurface('usage') : undefined,
       onOpenUpdate: showUpdateItem ? () => openSurface('update') : undefined,
     }),
-    [openSettingsSurface, openSurface, showCapacitorOnlyFeatures, showUpdateItem],
+    [openSettingsSurface, openSurface, showCapacitorOnlyFeatures, showUpdateItem, statsAvailable],
   );
 
   const openMcpCreateSettings = React.useCallback(() => {
@@ -613,6 +630,19 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
           </MobileFullscreenSurface>
         ) : null}
 
+        {activeSurface === 'usage' && statsAvailable ? (
+          <MobileFullscreenSurface
+            open
+            variant={surfaceVariant}
+            dialogAlign="app"
+            onClose={closeSurface}
+            ariaLabel={t('usageStats.title')}
+            title={t('usageStats.title')}
+          >
+            <ErrorBoundary><UsageStatsView /></ErrorBoundary>
+          </MobileFullscreenSurface>
+        ) : null}
+
         {activeSurface === 'update' ? (
           <MobileFullscreenSurface
             open
@@ -635,6 +665,7 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
 };
 
 export function MobileApp({ apis }: MobileAppProps) {
+  const syncSource = useOpenCodeSource();
   const { t } = useI18n();
   const initializeApp = useConfigStore((state) => state.initializeApp);
   const isInitialized = useConfigStore((state) => state.isInitialized);
@@ -1297,7 +1328,7 @@ export function MobileApp({ apis }: MobileAppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+      <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <TooltipProvider delayDuration={300} skipDelayDuration={150}>
             <div className="h-full bg-background text-foreground">

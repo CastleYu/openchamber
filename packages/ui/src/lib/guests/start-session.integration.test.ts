@@ -1,5 +1,5 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test';
-import { createOpencodeClient, type Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { opencodeClient } from '@/lib/opencode/client';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -12,7 +12,7 @@ import * as worktreeBootstrap from '@/lib/worktrees/worktreeBootstrap';
 import * as projectConfig from '@/lib/openchamberConfig';
 import * as sharedTrust from '@/lib/sharedTrustConfirmation';
 
-const created: Session = { id: 'background-session', directory: '/project-b', title: 'Task', slug: 'task', projectID: 'b', version: '1', time: { created: 1, updated: 1 } };
+const created: Session = { id: 'background-session', directory: '/project-b', title: 'Task', slug: 'task', projectID: 'b', time: { created: 1, updated: 1 } };
 afterEach(() => mock.restore());
 const setup = () => {
   const create = spyOn(opencodeClient, 'createSession').mockImplementation(async (_input, directory) => ({ ...created, directory: directory ?? created.directory }));
@@ -68,16 +68,22 @@ test('existing worktrees create sessions in their directory without creating or 
   expect(useSessionUIStore.getState().currentSessionId).toBe('existing-chat');
 });
 
-test('a replaced SDK client cannot publish a late creation even when the runtime key is unchanged', async () => {
+test('a replaced runtime binding cannot publish a late creation when the runtime key is unchanged', async () => {
   const create = setup();
-  let client = createOpencodeClient();
-  spyOn(opencodeClient, 'getSdkClient').mockImplementation(() => client);
+  const previousRuntime = opencodeClient.getBoundRuntime();
+  const initialRuntime = { generation: 'oc1' as const, endpoint: 'http://runtime-a.test', epoch: 1, version: '1.18.32' };
+  opencodeClient.bindRuntime(initialRuntime);
   create.mockImplementation(async () => {
-    client = createOpencodeClient();
+    opencodeClient.bindRuntime({ ...initialRuntime, epoch: 2 });
     return { ...created, id: 'late-session' };
   });
-  const result = await sessionActions.createSession('Late', '/project-b', null, undefined, undefined, 'preserve');
-  expect(result).toBeNull();
-  expect(useGlobalSessionsStore.getState().entityById.has('late-session')).toBe(false);
-  expect(useSessionUIStore.getState().currentSessionId).toBe('existing-chat');
+  try {
+    const result = await sessionActions.createSession('Late', '/project-b', null, undefined, undefined, 'preserve');
+    expect(result).toBeNull();
+    expect(useGlobalSessionsStore.getState().entityById.has('late-session')).toBe(false);
+    expect(useSessionUIStore.getState().currentSessionId).toBe('existing-chat');
+  } finally {
+    if (previousRuntime) opencodeClient.bindRuntime(previousRuntime);
+    else opencodeClient.reconnectToRuntimeBaseUrl();
+  }
 });

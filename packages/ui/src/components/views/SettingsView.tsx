@@ -33,6 +33,8 @@ import { ProjectsPage } from '@/components/sections/projects/ProjectsPage';
 import { RemoteInstancesPage } from '@/components/sections/remote-instances/RemoteInstancesPage';
 import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSidebar';
 import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
+import { WebSearchPage } from '@/components/sections/websearch/WebSearchPage';
+import { opencodeClient } from '@/lib/opencode/client';
 import { UsageSidebar } from '@/components/sections/usage/UsageSidebar';
 import { UsagePage } from '@/components/sections/usage/UsagePage';
 import { MagicPromptsSidebar } from '@/components/sections/magic-prompts/MagicPromptsSidebar';
@@ -123,6 +125,7 @@ const pageOrder: SettingsPageSlug[] = [
   'git',
   // 'opencode' group — OpenCode
   'providers',
+  'web-search',
   'agents',
   'behavior',
   'commands',
@@ -255,7 +258,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
   // keep platform check available for future window chrome tweaks
 
   const routingAvailable = useUIStore((state) => state.routingFeatureAvailable);
-  const runtimeCtx = React.useMemo(() => buildRuntimeContext(isDesktopApp, isMobile, routingAvailable), [isDesktopApp, isMobile, routingAvailable]);
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  const runtimeCtx = React.useMemo(() => ({ ...buildRuntimeContext(isDesktopApp, isMobile, routingAvailable), generation }), [isDesktopApp, isMobile, routingAvailable, generation]);
 
   const visiblePages = React.useMemo(() => {
     const allowedPages = visiblePageSlugs ? new Set<SettingsPageSlug>(visiblePageSlugs) : null;
@@ -351,6 +359,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.remoteInstances.title');
       case 'providers':
         return t('settings.page.providers.title');
+      case 'web-search':
+        return t('settings.page.webSearch.title');
       case 'usage':
         return t('settings.page.usage.title');
       case 'agents':
@@ -668,6 +678,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <SkillsPage view="catalog" />;
       case 'providers':
         return <ProvidersPage />;
+      case 'web-search':
+        return <WebSearchPage />;
       case 'usage':
         return <UsagePage />;
       case 'logs':

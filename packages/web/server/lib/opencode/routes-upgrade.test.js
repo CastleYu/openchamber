@@ -35,6 +35,20 @@ const createApp = (overrides = {}) => {
 };
 
 describe('OpenCode upgrade routes', () => {
+  it('uses the managed CLI for OC2 without the removed HTTP upgrade endpoint', async () => {
+    globalThis.fetch = vi.fn(async () => { throw new Error('Unexpected HTTP request'); });
+    const upgradeOpenCodeCli = vi.fn(async () => {});
+    const { app, dependencies } = createApp({
+      kernelRuntime: { get: () => ({ generation: 'oc2', epoch: 1 }) },
+      getOpenCodeUpgradeCapability: () => supportedCapability,
+      upgradeOpenCodeCli,
+    });
+    await request(app).post('/api/opencode/upgrade').send({}).expect(200, { success: true, restarted: true });
+    expect(upgradeOpenCodeCli).toHaveBeenCalledOnce();
+    expect(dependencies.refreshOpenCodeAfterConfigChange).toHaveBeenCalledOnce();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it('fails closed without contacting the bundled OpenCode updater', async () => {
     globalThis.fetch = vi.fn();
     const { app } = createApp();

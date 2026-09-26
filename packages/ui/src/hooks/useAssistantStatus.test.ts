@@ -1,7 +1,20 @@
 import { describe, expect, test } from 'bun:test';
-import type { Message } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Message } from '@/lib/opencode/model';
 
 import { getActiveAssistantContext } from './useAssistantStatus';
+
+test('OC2 reads the answered model without a parent ID and uses the session for the next turn', () => {
+    const answer: AssistantMessage = { id: 'a', role: 'assistant', sessionID: 's', agent: 'build',
+        providerID: 'provider', modelID: 'first', time: { created: 1 } };
+    const next: Message = { id: 'u', role: 'user', sessionID: 's', time: { created: 3 } };
+    expect(getActiveAssistantContext([answer], 'oc2').model).toEqual({ providerId: 'provider', modelId: 'first' });
+    expect(getActiveAssistantContext([answer, next], 'oc2', { providerID: 'provider', id: 'next' }).model)
+        .toEqual({ providerId: 'provider', modelId: 'first' });
+    const completed = { ...answer, time: { created: 1, completed: 2 } };
+    expect(getActiveAssistantContext([completed, next], 'oc2', { providerID: 'provider', id: 'next' }).model)
+        .toEqual({ providerId: 'provider', modelId: 'next' });
+    expect(getActiveAssistantContext([completed, next], 'oc2').model).toBeNull();
+});
 
 const userMessage = (id: string, providerID: string, modelID: string): Message => ({
     id,

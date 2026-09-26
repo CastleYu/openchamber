@@ -8,7 +8,8 @@ This module contains the OpenChamber message-stream WebSocket protocol and runti
 - `packages/web/server/lib/event-stream/global-hub.js`: shared global upstream SSE hub for server-side subscribers and browser WS fan-out.
 - `packages/web/server/lib/event-stream/delta-coalescer.js`: merges consecutive `message.part.delta` events before replay and fan-out. Pure, with injectable clock and timers.
 - `packages/web/server/lib/event-stream/global-ws-bridge.js`: browser-facing global WS bridge that subscribes clients to the shared global hub.
-- `packages/web/server/lib/event-stream/directory-ws-bridge.js`: browser-facing per-directory WS bridge that owns one scoped upstream reader per connection.
+- `packages/web/server/lib/event-stream/directory-ws-bridge.js`: browser-facing directory WS bridge. OC1 owns one scoped upstream reader per connection; OC2 filters the shared global hub.
+- `packages/web/server/lib/event-stream/translate-v2.js`: translates OC2 wire events into the existing server consumer vocabulary. Browser frames retain the original wire payload.
 - `packages/web/server/lib/event-stream/protocol.js`: path constants, SSE envelope parsing, and WebSocket frame serialization helpers.
 - `packages/web/server/lib/event-stream/upstream-reader.js`: reusable upstream SSE reader with event-id tracking, stall recovery, and reconnect handling.
 - `packages/web/server/lib/event-stream/runtime.js`: thin WebSocket server runtime for upgrade handling and path dispatch to the global/directory bridges.
@@ -28,7 +29,7 @@ This module contains the OpenChamber message-stream WebSocket protocol and runti
 - `serializeMessageStreamWsEvent(payload, options)` and `sendSerializedMessageStreamWsFrame(socket, frame)` separate encoding from per-socket delivery. Delivery retains ready-state and backpressure checks.
 
 ### Runtime helpers
-- `createGlobalMessageStreamHub(...)`: creates a shared `/global/event` upstream SSE hub with event/status subscribers and bounded event-id replay.
+- `createGlobalMessageStreamHub(...)`: creates a shared OC1 `/global/event` or OC2 `/api/event` upstream SSE hub with event/status subscribers and bounded event-id replay. Internal subscribers call `event.translated()`; browser clients receive `event.payload` unchanged.
 - `createGlobalUiEventBroadcaster({ sseClients, wsClients, writeSseEvent })`: returns a broadcaster that fans out the same synthetic UI event to SSE and WS clients.
 - `createMessageStreamWsRuntime(...)`: mounts the message-stream WS server, upgrade handler, and SSE-to-WS bridge onto the web HTTP server.
 
@@ -47,7 +48,8 @@ This module contains the OpenChamber message-stream WebSocket protocol and runti
 - The global hub keeps a bounded replay buffer keyed by SSE `eventId` so reconnecting browser clients can receive buffered events after their requested `Last-Event-ID`.
 - Replay retains at most 2,048 events and 8 MiB of UTF-8 wire frames. It stores encoded frames rather than retaining parsed payloads as well. Encoding is shared with live WS fanout. An oversized event still reaches live clients in full, but clears the retained suffix so replay cannot cross its gap. A missing replay cursor returns `null`, distinct from a complete empty tail; the bridge sends `ready` with `replayReset: true` and no partial replay. The client retires its cursor and requests authoritative repair, including during the early-boot reconnect grace period. A stopped hub retains its bounded suffix for clients reconnecting after the last socket closed.
 - The hub numbers every event that arrives without an SSE id (`oc-<process>-<sequence>`). OpenCode 1.18 sends no ids at all, and an event without an id used to skip the replay buffer, so reconnecting clients had no cursor and lost whatever fell into the gap. The process prefix makes a cursor from before a server restart miss, which reports `replayReset`, instead of matching an unrelated sequence number.
-- Directory WS clients still attach one upstream `/event?directory=...` SSE reader per connection because directory streams are scoped.
+- OC1 directory WS clients attach one upstream `/event?directory=...` reader per connection. OC2 directory clients filter the shared `/api/event` hub by wire `location.directory` and do not create duplicate upstream subscriptions.
+- Reader cursors are valid only for one endpoint identity. On kernel generation, endpoint, or epoch change, the reader drops `Last-Event-ID`, the hub clears incompatible replay, and ready browser sockets receive `replayReset: true` for authoritative repair.
 - If an upstream SSE stream stalls after the browser WS is already ready, the reader aborts that upstream fetch and reconnects upstream with `Last-Event-ID`, keeping the browser WS alive when recovery is fast.
 - When the shared global upstream reconnects after it was previously ready, the global WS bridge sends a fresh `ready` frame to already-ready browser clients. The browser treats this as a reconnect edge and can run scoped state repair without requiring the browser WS to close.
 - Health checks are reserved for initial upstream connect failures and explicit upstream-unavailable responses, not for ordinary stall recovery on an already-established stream.
@@ -68,7 +70,7 @@ Merging is lossless because of three rules. Change one only with the randomized 
 
 Pending text is bounded by time (the 50ms window), by size (64 KiB), and by part fields (64). Reaching a bound emits early. Nothing is dropped. The first delta after a quiet spell is emitted at once, so time to first text does not grow.
 
-The hub commits pending text when it stops, so it reaches the retained replay suffix, and the global bridge commits it before it marks a socket ready. A client readied later therefore receives exactly the events that arrived after it was ready, as it did before coalescing, and a reconnecting client receives the committed text through replay.
+The hub commits pending text when it stops within the same kernel identity, so it reaches the retained replay suffix, and the global bridge commits it before it marks a socket ready. A retired epoch's pending text is discarded at commit and cannot reach subscribers or replay. A client readied later therefore receives exactly the events that arrived after it was ready, as it did before coalescing, and a reconnecting client receives the committed text through replay.
 
 Verified against a live server by dropping the socket every 150ms to 3s during a stream and resuming from the cursor: the reconstructed text matched byte for byte with no duplicate ids. Server-side hub subscribers receive merged events as well. None of them reads individual deltas.
 

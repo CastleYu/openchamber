@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { McpStatus } from '@opencode-ai/sdk/v2';
-import type { McpStatusMap } from './useMcpStore';
+import type { McpCatalog } from '@/lib/opencode/operations';
 
 type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void };
 const deferred = <T>(): Deferred<T> => {
@@ -9,25 +9,12 @@ const deferred = <T>(): Deferred<T> => {
   return { promise, resolve };
 };
 
-type McpStatusResult = Awaited<ReturnType<ReturnType<typeof opencodeModule.opencodeClient.getApiClient>['mcp']['status']>>;
+type McpStatusResult = McpCatalog;
 let mcpStatusResponse: Deferred<McpStatusResult> = deferred();
 const opencodeModule = await import('@/lib/opencode/client');
-// Derived from the real client rather than spread from it: the client is a
-// class instance, so a spread drops every prototype method the other modules
-// loaded in this process call at import time.
-// SAFETY: `Object.create` returns `any`; the object delegates to the real
-// client for everything the two overrides below do not define.
-const opencodeClientStub = Object.create(opencodeModule.opencodeClient) as typeof opencodeModule.opencodeClient;
-// The SDK client is derived the same way, so only `mcp.status` is replaced and
-// every other endpoint keeps its real implementation and type.
-type McpApiClient = ReturnType<typeof opencodeModule.opencodeClient.getApiClient>;
-const realApiClient = opencodeModule.opencodeClient.getApiClient();
-const mcpApiStub: McpApiClient = Object.create(realApiClient, {
-  mcp: { value: { ...realApiClient.mcp, status: () => mcpStatusResponse.promise } },
-});
-opencodeClientStub.getApiClient = () => mcpApiStub;
-opencodeClientStub.getScopedApiClient = () => mcpApiStub;
-mock.module('@/lib/opencode/client', () => ({ ...opencodeModule, opencodeClient: opencodeClientStub }));
+const catalogSpy = spyOn(opencodeModule.opencodeClient, 'getMcpCatalog')
+  .mockImplementation(() => mcpStatusResponse.promise);
+afterAll(() => catalogSpy.mockRestore());
 
 let skillsResponse: Deferred<Response> = deferred();
 const runtimeFetchModule = await import('@/lib/runtime-fetch');
@@ -39,16 +26,12 @@ mock.module('@/lib/runtime-fetch', () => ({
 const { useMcpStore } = await import('./useMcpStore');
 const { useSkillsStore } = await import('./useSkillsStore');
 
-const mcpStatusResult = (data: McpStatusMap): McpStatusResult => ({
-  data,
-  request: new Request('http://localhost/mcp'),
-  response: new Response(),
+const mcpStatusResult = (data: Record<string, McpStatus>): McpStatusResult => ({
+  generation: 'oc1', value: data,
 });
 
-const connectedServer = (name: string): McpStatusMap => ({
-  // SAFETY: the store only reads `status` off each entry; the SDK type carries
-  // fields no consumer in this test path touches.
-  [name]: { status: 'connected' } as McpStatus,
+const connectedServer = (name: string): Record<string, McpStatus> => ({
+  [name]: { status: 'connected' },
 });
 
 describe('instance-scoped stores reject responses from the previous instance', () => {

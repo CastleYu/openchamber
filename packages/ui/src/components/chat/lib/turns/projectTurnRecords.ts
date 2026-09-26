@@ -250,14 +250,21 @@ export const projectTurnRecords = (
         groupedMessageIds.add(message.info.id);
     });
 
+    let currentTurn: TurnRecord | undefined;
     messages.forEach((message, index) => {
         const role = resolveMessageRole(message);
+        if (role === 'user') {
+            currentTurn = turnByUserId.get(message.info.id);
+            return;
+        }
         if (role !== 'assistant') {
             return;
         }
 
         const parentId = getMessageParentId(message);
-        const targetTurn = parentId ? turnByUserId.get(parentId) : undefined;
+        // OC1 names the user message. OC2 omits parentID and its ordered
+        // message stream makes the most recent user turn authoritative.
+        const targetTurn = parentId ? turnByUserId.get(parentId) : currentTurn;
         if (!targetTurn) {
             return;
         }

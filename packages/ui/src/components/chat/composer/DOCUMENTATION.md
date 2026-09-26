@@ -241,7 +241,7 @@ and the send path reading the same grammar.
   name as their badge, and the language highlights them as known `/tokens`.
 - Local slash commands are planned by `submit/slashCommands.ts` before any
   attached context is consumed. Commands that act on session or UI state
-  (`/undo`, `/redo`, `/compact`, `/timeline`, `/handoff-review`) take only
+  (`/undo`, `/redo`, `/compact`, `/timeline`, `/handoff-review`, and OC2 `/fork`) take only
   their command text and leave comments, files, and linked context attached;
    magic prompt commands send that
   context with the prompt they produce. Session actions are planned only when
@@ -249,6 +249,12 @@ and the send path reading the same grammar.
   send path. A local command is never queued as text: queueing runs it
   instead. A failed prompt command restores everything it consumed: text,
   confirmed mentions, files, comment drafts, and pending synthetic context.
+  `/fork [text]` chooses the last finished assistant turn, leaves a running
+  source turn alone, and opens the fork with an empty composer. With text it
+  sends the text in the fork; a send failure restores it in that fork's
+  composer. OC1 keeps its previous user-message fork path and does not run
+  this new local command. A runtime rebind stops the command before another
+  send or draft restoration.
 - `state/useComposerDraft.ts` — a draft belongs to a (runtime, directory,
   session) identity. Writes are debounced while typing but forced at every edge
   where the page may stop running, because a pending timer is not a saved

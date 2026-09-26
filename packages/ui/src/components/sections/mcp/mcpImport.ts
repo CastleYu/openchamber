@@ -1,4 +1,13 @@
-import type { McpDraft } from '@/stores/useMcpConfigStore';
+import { MCP_PROTOCOLS, codemodeChoiceOf, type McpDraft, type McpCodemodeChoice, type McpProtocol, type McpV2OAuth } from '@/stores/useMcpConfigStore';
+import { z } from 'zod';
+
+const oauthImportSchema = z.object({
+  client_id: z.string().optional(), clientId: z.string().optional(),
+  client_secret: z.string().optional(), clientSecret: z.string().optional(),
+  scope: z.string().optional(), redirect_uri: z.string().optional(), redirectUri: z.string().optional(),
+  callback_port: z.number().int().positive().optional(),
+  auth_server_metadata_url: z.string().optional(),
+});
 
 export interface ImportedMcpResult {
   readonly ok: true;
@@ -13,7 +22,13 @@ export interface ImportedMcpResult {
   readonly oauthClientSecret: string;
   readonly oauthScope: string;
   readonly oauthRedirectUri: string;
+  readonly oauthRaw?: McpV2OAuth | false;
   readonly timeout: string;
+  readonly timeoutStartup: string;
+  readonly timeoutCatalog: string;
+  readonly timeoutExecution: string;
+  readonly codemode: McpCodemodeChoice;
+  readonly protocol: McpProtocol;
   readonly enabled: boolean;
 }
 
@@ -49,20 +64,33 @@ function buildResult(
   const headers = buildEnv(raw, 'headers');
 
   const oauthEnabled = buildOAuthEnabled(raw);
-  const oauthClientId = typeof raw.oauth === 'object' && raw.oauth !== null
-    ? String((raw.oauth as Record<string, unknown>).clientId ?? '').trim()
-    : '';
-  const oauthClientSecret = typeof raw.oauth === 'object' && raw.oauth !== null
-    ? String((raw.oauth as Record<string, unknown>).clientSecret ?? '').trim()
-    : '';
-  const oauthScope = typeof raw.oauth === 'object' && raw.oauth !== null
-    ? String((raw.oauth as Record<string, unknown>).scope ?? '').trim()
-    : '';
-  const oauthRedirectUri = typeof raw.oauth === 'object' && raw.oauth !== null
-    ? String((raw.oauth as Record<string, unknown>).redirectUri ?? '').trim()
-    : '';
+  const parsedOAuth = oauthImportSchema.safeParse(raw.oauth);
+  const oauth = parsedOAuth.success ? parsedOAuth.data : null;
+  let oauthRaw: McpV2OAuth | false | undefined;
+  if (raw.oauth === false) oauthRaw = false;
+  else if (oauth) {
+    const value: McpV2OAuth = {};
+    const clientID = oauth.client_id ?? oauth.clientId;
+    const clientSecret = oauth.client_secret ?? oauth.clientSecret;
+    const redirectURI = oauth.redirect_uri ?? oauth.redirectUri;
+    if (clientID) value.client_id = clientID;
+    if (clientSecret) value.client_secret = clientSecret;
+    if (oauth.scope) value.scope = oauth.scope;
+    if (redirectURI) value.redirect_uri = redirectURI;
+    if (oauth.callback_port) value.callback_port = oauth.callback_port;
+    if (oauth.auth_server_metadata_url) value.auth_server_metadata_url = oauth.auth_server_metadata_url;
+    oauthRaw = value;
+  }
+  const oauthClientId = String(oauth?.client_id ?? oauth?.clientId ?? '').trim();
+  const oauthClientSecret = String(oauth?.client_secret ?? oauth?.clientSecret ?? '').trim();
+  const oauthScope = String(oauth?.scope ?? '').trim();
+  const oauthRedirectUri = String(oauth?.redirect_uri ?? oauth?.redirectUri ?? '').trim();
 
   const timeout = buildTimeout(raw);
+  const split = isObject(raw.timeout) ? raw.timeout : null;
+  const timeoutStartup = split ? buildTimeout({ timeout: split.startup }) : '';
+  const timeoutCatalog = split ? buildTimeout({ timeout: split.catalog }) : timeout;
+  const timeoutExecution = split ? buildTimeout({ timeout: split.execution }) : timeout;
 
   const enabled = buildEnabled(raw);
 
@@ -79,7 +107,13 @@ function buildResult(
     oauthClientSecret,
     oauthScope,
     oauthRedirectUri,
+    oauthRaw,
     timeout,
+    timeoutStartup,
+    timeoutCatalog,
+    timeoutExecution,
+    codemode: codemodeChoiceOf(raw.codemode === true ? true : raw.codemode === false ? false : undefined),
+    protocol: MCP_PROTOCOLS.find((option) => option === raw.protocol) ?? 'legacy',
     enabled,
   };
 }
@@ -127,19 +161,11 @@ function buildEnv(
 }
 
 function buildOAuthEnabled(raw: Record<string, unknown>): boolean {
-  if (raw.oauth === false || raw.oauth === null || raw.oauth === undefined) {
-    return false;
-  }
-  if (!isObject(raw.oauth)) {
-    return false;
-  }
-  const oauth = raw.oauth as Record<string, unknown>;
-  return !!(
-    (typeof oauth.clientId === 'string' && oauth.clientId.trim()) ||
-    (typeof oauth.clientSecret === 'string' && oauth.clientSecret.trim()) ||
-    (typeof oauth.scope === 'string' && oauth.scope.trim()) ||
-    (typeof oauth.redirectUri === 'string' && oauth.redirectUri.trim())
-  );
+  const parsed = oauthImportSchema.safeParse(raw.oauth);
+  if (!parsed.success) return false;
+  const oauth = parsed.data;
+  return Boolean(oauth.client_id || oauth.clientId || oauth.client_secret || oauth.clientSecret
+    || oauth.scope || oauth.redirect_uri || oauth.redirectUri || oauth.callback_port || oauth.auth_server_metadata_url);
 }
 
 function buildTimeout(raw: Record<string, unknown>): string {
@@ -274,6 +300,16 @@ export function parseImportedMcpSnippet(
   // Detect OpenCode config shape { "mcp": { "name": { ... } } }
   const mcp = obj.mcp;
   if (isObject(mcp)) {
+    if (isObject(mcp.servers)) {
+      const names = Object.keys(mcp.servers);
+      if (names.length !== 1) {
+        return buildError(`Paste one server at a time. Found ${names.length} servers in mcp.servers`, parsed);
+      }
+      const name = names[0];
+      const entry = mcp.servers[name];
+      if (!isObject(entry)) return buildError('Server entry in mcp.servers is not a valid object', parsed);
+      return buildResult(name, inferType(entry), entry);
+    }
     const keys = Object.keys(mcp);
     if (keys.length === 0) {
       return buildError('mcp object is empty', parsed);
@@ -355,7 +391,13 @@ export function applyImportedMcpToDraft(
     oauthClientSecret: result.type === 'remote' ? result.oauthClientSecret : '',
     oauthScope: result.type === 'remote' ? result.oauthScope : '',
     oauthRedirectUri: result.type === 'remote' ? result.oauthRedirectUri : '',
+    oauthRaw: result.type === 'remote' ? result.oauthRaw : undefined,
     timeout: result.type === 'remote' ? result.timeout : '',
+    timeoutStartup: result.type === 'local' ? result.timeoutStartup : '',
+    timeoutCatalog: result.timeoutCatalog,
+    timeoutExecution: result.timeoutExecution,
+    codemode: result.codemode,
+    protocol: result.protocol,
     enabled: result.enabled,
   };
 

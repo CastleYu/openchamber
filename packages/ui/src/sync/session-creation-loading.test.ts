@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { createOpencodeClient, type Session } from "@opencode-ai/sdk/v2/client"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { opencodeClient } from "@/lib/opencode/client"
 import { getRuntimeKey } from "@/lib/runtime-switch"
 import { ChildStoreManager } from "./child-store"
@@ -73,7 +74,7 @@ describe("confirmed session creation", () => {
       time: { created: 2 },
       agent: "build",
       model: { providerID: "test", modelID: "test" },
-    } satisfies import("@opencode-ai/sdk/v2/client").UserMessage
+    } satisfies import("@/lib/opencode/model").UserMessage
     opencodeClient.createSession = async () => {
       store.setState({ session: [newerSession], message: { [session.id]: [record] } })
       return session

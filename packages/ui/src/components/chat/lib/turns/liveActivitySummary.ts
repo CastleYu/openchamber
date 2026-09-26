@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getRelativeFilePath, normalizeFilePath, toAbsoluteFilePath } from '@/lib/path-utils';
 import type { ChatMessageEntry } from './types';
+import { isFileChangeTool, isSubagentTool } from '../../message/toolKinds';
 
 const patchTextSchema = z.string().regex(/\S/);
 const patchSchema = z.union([patchTextSchema, z.object({ patch: patchTextSchema }).transform((value) => value.patch)]);
@@ -26,6 +27,7 @@ const metadataSchema = z.object({
     patch: patchSchema.optional().catch(undefined),
     diff: patchSchema.optional().catch(undefined),
     sessionId: optionalText,
+    sessionID: optionalText,
     exit: z.number().optional().catch(undefined),
 });
 const inputSchema = z.object({
@@ -34,7 +36,6 @@ const inputSchema = z.object({
     path: optionalText,
 });
 
-const changeTools = new Set(['edit', 'multiedit', 'write', 'apply_patch']);
 const explorationTools = new Set(['read', 'list', 'grep', 'glob', 'lsp', 'skill']);
 const webTools = new Set(['websearch', 'perplexity', 'codesearch', 'webfetch']);
 const commandTools = new Set(['bash', 'shell', 'cmd', 'terminal']);
@@ -141,8 +142,11 @@ export function summarizeLiveActivity(messages: readonly ChatMessageEntry[]): Li
             if (state.status !== 'completed') continue;
             summary.explored ||= explorationTools.has(tool);
             summary.researched ||= webTools.has(tool);
-            if (tool === 'task' && metadata?.sessionId) subagents.add(metadata.sessionId);
-            if (!changeTools.has(tool)) continue;
+            if (isSubagentTool(tool)) {
+                const childSession = metadata?.sessionID ?? metadata?.sessionId;
+                if (childSession) subagents.add(childSession);
+            }
+            if (!isFileChangeTool(tool)) continue;
 
             const input = inputSchema.safeParse(state.input).data;
             if (metadata?.files?.some((file) => file === null)) summary.hasCompleteDiff = false;

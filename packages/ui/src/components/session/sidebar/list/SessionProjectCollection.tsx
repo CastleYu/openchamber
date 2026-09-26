@@ -1,6 +1,6 @@
 import { SidebarTerminalActivity } from './SidebarTerminalActivity';
 import React from 'react';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { usePrefetchSessionMessages } from '@/sync/use-sync';
 import { useGitHubAuthStore } from '@/stores/useGitHubAuthStore';

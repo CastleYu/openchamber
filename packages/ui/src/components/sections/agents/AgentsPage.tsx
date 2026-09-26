@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
@@ -32,6 +32,8 @@ import {
 } from '@/components/ui/select';
 import { Icon } from '@/components/icon/Icon';
 import { AgentPermissionsEditor } from './AgentPermissionsEditor';
+import { AgentsPageV2 } from './AgentsPageV2';
+import { opencodeClient } from '@/lib/opencode/client';
 
 type AgentVariantProvider = {
   id: string;
@@ -54,9 +56,9 @@ const getVariantOptionsForModel = (
   const model = provider?.models?.find((item) => item.id === parsedModel.modelId);
   return model?.variants ? Object.keys(model.variants) : [];
 };
-export const AgentsPage: React.FC = () => {
+const AgentsPageV1: React.FC = () => {
   const { t } = useI18n();
-  const providers = useConfigStore((state) => state.providers) as AgentVariantProvider[];
+  const providers = useConfigStore((state) => state.providers).filter((provider) => provider.generation === 'oc1');
   const {
     selectedAgentName,
     getAgentByName,
@@ -77,7 +79,8 @@ export const AgentsPage: React.FC = () => {
   // stays where it is.
   const settingsDirectory = useSettingsDirectory();
   const agents = useAgentsStore((state) => selectAgentsForDirectory(state, settingsDirectory));
-  const selectedAgent = selectedAgentName ? getAgentByName(selectedAgentName, settingsDirectory) : null;
+  const candidate = selectedAgentName ? getAgentByName(selectedAgentName, settingsDirectory) : null;
+  const selectedAgent = candidate?.generation === 'oc1' ? candidate : null;
   const isNewAgent = Boolean(agentDraft && agentDraft.name === selectedAgentName && !selectedAgent);
 
   const [draftName, setDraftName] = React.useState('');
@@ -536,4 +539,14 @@ export const AgentsPage: React.FC = () => {
       </div>
     </SettingsPageLayout>
   );
+};
+
+export const AgentsPage: React.FC = () => {
+  const generation = useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+  );
+  if (generation === 'oc2') return <AgentsPageV2 />;
+  if (generation === 'oc1') return <AgentsPageV1 />;
+  return null;
 };

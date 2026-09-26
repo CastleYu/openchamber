@@ -16,6 +16,7 @@ import {
 import { SettingsInfoHint } from '@/components/sections/shared/SettingsInfoHint';
 import { loadDesktopSettings, updateDesktopSettings } from '@/lib/persistence';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { agentModelId } from '@/components/chat/agentSelectionView';
 import { useUIStore } from '@/stores/useUIStore';
 import { useSelectionStore } from '@/sync/selection-store';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -60,7 +61,7 @@ export const DefaultsSettings: React.FC = () => {
   const pickedAgentPinsModel = useConfigStore((state) => {
     if (state.agentSelectionSource !== 'manual') return false;
     const agent = state.agents.find((candidate) => candidate.name === state.currentAgentName);
-    return Boolean(agent?.model?.providerID && agent.model.modelID);
+    return Boolean(agent?.model?.providerID && agentModelId(agent));
   });
   const chatHasOwnModel = Boolean(
     pickedAgentPinsModel

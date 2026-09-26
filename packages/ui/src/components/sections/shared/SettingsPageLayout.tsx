@@ -28,6 +28,7 @@ interface SettingsPageLayoutProps {
   className?: string;
   /** Additional className for the outer ScrollableOverlay */
   outerClassName?: string;
+  onBlurCapture?: React.FocusEventHandler<HTMLDivElement>;
 }
 
 /**
@@ -44,6 +45,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
   description,
   headerEnd,
   showSaveStatus = false,
+  onBlurCapture,
 }) => {
   const hasHeader = title != null || description != null || headerEnd != null || showSaveStatus;
   const isPlainTitle = typeof title === 'string' || typeof title === 'number';
@@ -55,6 +57,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
       className="w-full @container"
     >
       <div
+        onBlurCapture={onBlurCapture}
         className={cn(
           'mx-auto max-w-[840px] space-y-0 px-6 py-6 @3xl:px-12 @3xl:py-8',
           // The first visible section never needs the top divider, no matter

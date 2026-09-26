@@ -29,10 +29,11 @@ import { getEditModeColors } from '@/lib/permissions/editModeColors';
 import { cn } from '@/lib/utils';
 import { matchesRankQuery, rankByQuery } from '@/lib/search/fuzzySearch';
 import { useContextStore } from '@/stores/contextStore';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getSelectableModelId, getSelectableModelVariants, useConfigStore } from '@/stores/useConfigStore';
+import { agentModelId, agentVariant, agentPrompt, agentTemperature, agentTopP, agentPermission } from './agentSelectionView';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { useSelectionStore } from '@/sync/selection-store';
-import { useSessionMessages, useSessionRenderable } from '@/sync/sync-context';
+import { useSession, useSessionMessages, useSessionRenderable } from '@/sync/sync-context';
 import { useSync } from '@/sync/use-sync';
 import { useUIStore } from '@/stores/useUIStore';
 import { useModelLists } from '@/hooks/useModelLists';
@@ -53,10 +54,9 @@ import type { BtwSelection } from '@/stores/useBtwStore';
 
 type IconComponent = IconName;
 
-type ProviderModel = Record<string, unknown> & { id?: string; name?: string };
+type ProviderModel = ModelPickerEntry['model'];
+type PermissionSummary = { mode: EditPermissionMode; label: string };
 
-type PermissionAction = 'allow' | 'ask' | 'deny';
-type PermissionRule = { permission: string; pattern: string; action: PermissionAction };
 type MobileVariantTarget = { providerId: string; modelId: string };
 
 const buildModelRefKey = (providerID: string, modelID: string) => `${providerID}:${modelID}`;
@@ -82,50 +82,6 @@ const AgentDescriptionTooltip: React.FC<{
             </TooltipContent>
         </Tooltip>
     );
-};
-
-const asPermissionRuleset = (value: unknown): PermissionRule[] | null => {
-    if (!Array.isArray(value)) {
-        return null;
-    }
-    const rules: PermissionRule[] = [];
-    for (const entry of value) {
-        if (!entry || typeof entry !== 'object') {
-            continue;
-        }
-        const candidate = entry as Partial<PermissionRule>;
-        if (typeof candidate.permission !== 'string' || typeof candidate.pattern !== 'string' || typeof candidate.action !== 'string') {
-            continue;
-        }
-        if (candidate.action !== 'allow' && candidate.action !== 'ask' && candidate.action !== 'deny') {
-            continue;
-        }
-        rules.push({ permission: candidate.permission, pattern: candidate.pattern, action: candidate.action });
-    }
-    return rules;
-};
-
-const resolveWildcardPermissionAction = (ruleset: unknown, permission: string): PermissionAction | undefined => {
-    const rules = asPermissionRuleset(ruleset);
-    if (!rules || rules.length === 0) {
-        return undefined;
-    }
-
-    for (let i = rules.length - 1; i >= 0; i -= 1) {
-        const rule = rules[i];
-        if (rule.permission === permission && rule.pattern === '*') {
-            return rule.action;
-        }
-    }
-
-    for (let i = rules.length - 1; i >= 0; i -= 1) {
-        const rule = rules[i];
-        if (rule.permission === '*' && rule.pattern === '*') {
-            return rule.action;
-        }
-    }
-
-    return undefined;
 };
 
 interface CapabilityDefinition {
@@ -594,17 +550,17 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     const models = Array.isArray(currentProvider?.models) ? currentProvider.models : [];
 
     const visibleProviders = React.useMemo(() => {
-        const result: typeof providers = [];
+        const result: Array<{ id: string; name: string; models: Array<ProviderModel & { id: string }> }> = [];
         for (const provider of providers) {
             const providerModels = Array.isArray(provider.models) ? provider.models : [];
-            const visibleModels = providerModels.filter((model: ProviderModel) => {
-                const modelId = typeof model?.id === 'string' ? model.id : '';
+            const visibleModels = providerModels.filter((model) => {
+                const modelId = getSelectableModelId(model);
                 return !hiddenModels.some(
                     (item) => item.providerID === String(provider.id) && item.modelID === modelId
                 );
             });
             if (visibleModels.length > 0) {
-                result.push({ ...provider, models: visibleModels });
+                result.push({ id: provider.id, name: provider.name, models: visibleModels.map((model) => ({ ...model, id: getSelectableModelId(model) })) });
             }
         }
         return result;
@@ -616,7 +572,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     );
 
     const currentModelForMetadata = currentModelId
-        ? models.find((model: ProviderModel) => model.id === currentModelId)
+        ? models.find((model) => getSelectableModelId(model) === currentModelId)
         : undefined;
     const currentMetadata = currentProviderId && currentModelId && currentModelForMetadata
         ? mergeModelMetadataWithLiveModel(currentProviderId, currentModelForMetadata, getModelMetadata(currentProviderId, currentModelId))
@@ -650,7 +606,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     // Compute from current model each render to avoid stale variants
     // in draft/session transitions.
     const availableVariants = selection
-        ? Object.keys(currentProvider?.models.find((model) => model.id === currentModelId)?.variants ?? {})
+        ? (currentModelForMetadata ? getSelectableModelVariants(currentModelForMetadata) : [])
         : getCurrentModelVariants();
     const hasVariants = availableVariants.length > 0;
 
@@ -676,15 +632,30 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
         currentSessionDirectory ?? undefined,
     );
     const currentSessionMessagesFromSync = useSessionMessages(currentSessionId ?? '', currentSessionDirectory ?? undefined);
+    const currentSessionRecord = useSession(currentSessionId ?? undefined, currentSessionDirectory ?? undefined);
+    // OC2 owns the next-prompt selection on the session. OC1 records have no
+    // model field and continue restoring their last user-message selection.
+    const sessionRecordChoice = React.useMemo(() => {
+        const model = currentSessionRecord?.model;
+        if (!currentSessionRecord || !model?.providerID || !model.id) return null;
+        return {
+            id: `session:${currentSessionRecord.id}`,
+            agent: currentSessionRecord.agent?.trim() || undefined,
+            providerID: model.providerID,
+            modelID: model.id,
+            variant: model.variant?.trim() || undefined,
+        };
+    }, [currentSessionRecord]);
     // Skip synthetic subagent-completion nudges — restoring from them resets a
     // manual model override back to the agent default (issue #2404).
     const latestLoadedUserChoice = React.useMemo(() => {
         if (selection) return null;
+        if (sessionRecordChoice) return sessionRecordChoice;
         return findLatestUserModelChoice(
             currentSessionMessagesFromSync,
             (messageId) => getSyncParts(messageId, currentSessionDirectory ?? undefined),
         );
-    }, [currentSessionDirectory, currentSessionMessagesFromSync, selection]);
+    }, [currentSessionDirectory, currentSessionMessagesFromSync, selection, sessionRecordChoice]);
 
     const tryApplyModelSelection = React.useCallback(
         (providerId: string, modelId: string, agentName?: string): ModelApplyResult => {
@@ -737,9 +708,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
     const getModelVariantOptions = React.useCallback((providerId: string, modelId: string) => {
         const provider = providers.find((entry) => entry.id === providerId);
-        const model = provider?.models.find((entry) => entry.id === modelId) as { variants?: Record<string, unknown> } | undefined;
-        const variants = model?.variants;
-        return variants ? Object.keys(variants) : [];
+        const model = provider?.models.find((entry) => getSelectableModelId(entry) === modelId);
+        return model ? getSelectableModelVariants(model) : [];
     }, [providers]);
 
     const resolveInheritedVariantForModel = React.useCallback((providerId: string, modelId: string, agentName?: string | null) => {
@@ -756,13 +726,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
         const effectiveAgentName = agentName ?? uiAgentName ?? currentAgentName;
         const agent = effectiveAgentName ? agents.find((candidate) => candidate.name === effectiveAgentName) : undefined;
-        const agentVariant = (
+        const inheritedAgentVariant = (
             agent?.model?.providerID === providerId
-            && agent.model.modelID === modelId
-        ) ? agent.variant : undefined;
+            && agentModelId(agent) === modelId
+        ) ? agentVariant(agent) : undefined;
         const candidates = currentSessionId
-            ? [agentVariant, settingsDefaultVariant, currentInherited]
-            : [currentInherited, agentVariant, settingsDefaultVariant];
+            ? [inheritedAgentVariant, settingsDefaultVariant, currentInherited]
+            : [currentInherited, inheritedAgentVariant, settingsDefaultVariant];
         return candidates.find((candidate) => candidate !== undefined && variantOptions.includes(candidate));
     }, [agents, currentAgentName, currentModelId, currentProviderId, currentSessionId, currentVariantSelection, effectiveCurrentVariant, getModelVariantOptions, settingsDefaultVariant, uiAgentName]);
 
@@ -887,7 +857,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             return;
         }
 
-        if (!contextHydrated || providers.length === 0 || !hasRenderableCurrentSessionSnapshot || !latestLoadedUserChoice?.providerID || !latestLoadedUserChoice.modelID) {
+        const snapshotReady = hasRenderableCurrentSessionSnapshot || Boolean(sessionRecordChoice);
+        if (!contextHydrated || providers.length === 0 || !snapshotReady || !latestLoadedUserChoice?.providerID || !latestLoadedUserChoice.modelID) {
             return;
         }
 
@@ -985,6 +956,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
         providers,
         hasRenderableCurrentSessionSnapshot,
         latestLoadedUserChoice,
+        sessionRecordChoice,
         autoReady,
         setAgent,
         applyModelSelectionWithVariant,
@@ -1037,7 +1009,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                     if (currentAgentName !== savedAgentName) {
                         setAgent(savedAgentName);
                     }
-                    if (savedAgent?.model?.providerID && savedAgent.model.modelID) {
+                    if (savedAgent?.model?.providerID && agentModelId(savedAgent)) {
                         return 'resolved';
                     }
                 }
@@ -1113,8 +1085,9 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                 setAgent(fallbackAgent.name);
             }
 
-            if (fallbackAgent.model?.providerID && fallbackAgent.model?.modelID) {
-                tryApplyModelSelection(fallbackAgent.model.providerID, fallbackAgent.model.modelID, fallbackAgent.name);
+            const fallbackModelId = agentModelId(fallbackAgent);
+            if (fallbackAgent.model?.providerID && fallbackModelId) {
+                tryApplyModelSelection(fallbackAgent.model.providerID, fallbackModelId, fallbackAgent.name);
             }
         };
 
@@ -1548,14 +1521,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     const renderMobileAgentTooltip = () => {
         if (!isCompact || mobileTooltipOpen !== 'agent' || !currentAgent) return null;
 
-        const hasCustomPrompt = Boolean(currentAgent.prompt && currentAgent.prompt.trim().length > 0);
-        const hasModelConfig = currentAgent.model?.providerID && currentAgent.model?.modelID;
-        const hasTemperatureOrTopP = currentAgent.temperature !== undefined || currentAgent.topP !== undefined;
+        const prompt = agentPrompt(currentAgent);
+        const hasCustomPrompt = Boolean(prompt?.trim());
+        const hasModelConfig = currentAgent.model?.providerID && agentModelId(currentAgent);
+        const hasTemperatureOrTopP = agentTemperature(currentAgent) !== undefined || agentTopP(currentAgent) !== undefined;
 
-        const summarizePermission = (permissionName: string): { mode: EditPermissionMode; label: string } => {
-            const rules = asPermissionRuleset(currentAgent.permission) ?? [];
-            const hasCustom = rules.some((rule) => rule.permission === permissionName && rule.pattern !== '*');
-            const action = resolveWildcardPermissionAction(rules, permissionName) ?? 'ask';
+        const summarizePermission = (permissionName: string): PermissionSummary => {
+            const { custom: hasCustom, effect: action } = agentPermission(currentAgent, permissionName);
 
             if (hasCustom) {
                 return { mode: 'ask', label: t('chat.modelControls.permissionLabel.custom') };
@@ -1604,21 +1576,21 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                             <div className="typography-micro text-muted-foreground mb-1">{t('chat.modelControls.model')}</div>
                             {hasModelConfig && (
                                 <div className="typography-meta text-foreground font-medium mb-1">
-                                    {currentAgent.model!.providerID} / {currentAgent.model!.modelID}
+                                    {currentAgent.model!.providerID} / {agentModelId(currentAgent)}
                                 </div>
                             )}
                             {hasTemperatureOrTopP && (
                                 <div className="flex flex-col gap-0.5">
-                                    {currentAgent.temperature !== undefined && (
+                                    {agentTemperature(currentAgent) !== undefined && (
                                         <div className="flex items-center justify-between">
                                             <span className="typography-meta text-muted-foreground/80">{t('chat.modelControls.temperature')}</span>
-                                            <span className="typography-meta font-medium text-foreground">{currentAgent.temperature}</span>
+                                            <span className="typography-meta font-medium text-foreground">{agentTemperature(currentAgent)}</span>
                                         </div>
                                     )}
-                                    {currentAgent.topP !== undefined && (
+                                    {agentTopP(currentAgent) !== undefined && (
                                         <div className="flex items-center justify-between">
                                             <span className="typography-meta text-muted-foreground/80">{t('chat.modelControls.topP')}</span>
-                                            <span className="typography-meta font-medium text-foreground">{currentAgent.topP}</span>
+                                            <span className="typography-meta font-medium text-foreground">{agentTopP(currentAgent)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -1708,9 +1680,9 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                 : matchesModelSearch(provider.name, normalizedQuery) || matchesModelSearch(provider.id, normalizedQuery);
             const matchingModels = normalizedQuery.length === 0
                 ? providerModels
-                : providerModels.filter((model: ProviderModel) => {
+                : providerModels.filter((model) => {
                     const name = getModelDisplayName(model);
-                    const id = typeof model.id === 'string' ? model.id : '';
+                    const id = model.id ?? '';
                     return matchesModelSearch(name, normalizedQuery) || matchesModelSearch(id, normalizedQuery);
                 });
             const resolvedModels = matchesProvider && normalizedQuery.length > 0 ? providerModels : matchingModels;
@@ -2051,8 +2023,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                                     <div className="flex flex-col border-t border-border/30">
                                         {providerModels.map((model: ProviderModel) => renderMobileModelRow({
                                             model,
-                                            providerId: provider.id as string,
-                                            modelId: model.id as string,
+                                            providerId: provider.id,
+                                            modelId: model.id ?? '',
                                             showProviderLogo: false,
                                         }))}
                                     </div>
@@ -2303,8 +2275,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
             const { providerID, modelID } = selectedItem;
             const canonicalProvider = useConfigStore.getState().providers.find((provider) => provider.id === providerID);
-            const canonicalModel = canonicalProvider?.models.find((model) => model.id === modelID) as { variants?: Record<string, unknown> } | undefined;
-            const variantKeys = canonicalModel?.variants ? Object.keys(canonicalModel.variants) : getModelVariantOptions(providerID, modelID);
+            const canonicalModel = canonicalProvider?.models.find((model) => getSelectableModelId(model) === modelID);
+            const variantKeys = canonicalModel ? getSelectableModelVariants(canonicalModel) : getModelVariantOptions(providerID, modelID);
             if (variantKeys.length === 0) return false;
 
             e.preventDefault();
@@ -2604,14 +2576,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             );
         }
 
-        const hasCustomPrompt = Boolean(currentAgent.prompt && currentAgent.prompt.trim().length > 0);
-        const hasModelConfig = currentAgent.model?.providerID && currentAgent.model?.modelID;
-        const hasTemperatureOrTopP = currentAgent.temperature !== undefined || currentAgent.topP !== undefined;
+        const prompt = agentPrompt(currentAgent);
+        const hasCustomPrompt = Boolean(prompt?.trim());
+        const hasModelConfig = currentAgent.model?.providerID && agentModelId(currentAgent);
+        const hasTemperatureOrTopP = agentTemperature(currentAgent) !== undefined || agentTopP(currentAgent) !== undefined;
 
-        const summarizePermission = (permissionName: string): { mode: EditPermissionMode; label: string } => {
-            const rules = asPermissionRuleset(currentAgent.permission) ?? [];
-            const hasCustom = rules.some((rule) => rule.permission === permissionName && rule.pattern !== '*');
-            const action = resolveWildcardPermissionAction(rules, permissionName) ?? 'ask';
+        const summarizePermission = (permissionName: string): PermissionSummary => {
+            const { custom: hasCustom, effect: action } = agentPermission(currentAgent, permissionName);
 
             if (hasCustom) {
                                 return { mode: 'ask', label: t('chat.modelControls.permissionLabel.custom') };
@@ -2656,23 +2627,23 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                             <span className="typography-meta font-semibold uppercase tracking-wide text-muted-foreground/90">{t('chat.modelControls.model')}</span>
                             {hasModelConfig ? (
                                 <span className="typography-meta text-foreground">
-                                    {currentAgent.model!.providerID} / {currentAgent.model!.modelID}
+                                    {currentAgent.model!.providerID} / {agentModelId(currentAgent)}
                                 </span>
                             ) : (
                                 <span className="typography-meta text-muted-foreground">{t('chat.modelControls.modeValue.none')}</span>
                             )}
                             {hasTemperatureOrTopP && (
                                 <div className="flex flex-col gap-0.5 mt-0.5">
-                                    {currentAgent.temperature !== undefined && (
+                                    {agentTemperature(currentAgent) !== undefined && (
                                         <div className="flex items-center justify-between gap-3">
                                             <span className="typography-meta text-muted-foreground/80">{t('chat.modelControls.temperature')}</span>
-                                            <span className="typography-meta font-medium text-foreground">{currentAgent.temperature}</span>
+                                            <span className="typography-meta font-medium text-foreground">{agentTemperature(currentAgent)}</span>
                                         </div>
                                     )}
-                                    {currentAgent.topP !== undefined && (
+                                    {agentTopP(currentAgent) !== undefined && (
                                         <div className="flex items-center justify-between gap-3">
                                             <span className="typography-meta text-muted-foreground/80">{t('chat.modelControls.topP')}</span>
-                                            <span className="typography-meta font-medium text-foreground">{currentAgent.topP}</span>
+                                            <span className="typography-meta font-medium text-foreground">{agentTopP(currentAgent)}</span>
                                         </div>
                                     )}
                                 </div>

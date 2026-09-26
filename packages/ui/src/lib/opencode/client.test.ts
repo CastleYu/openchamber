@@ -91,6 +91,7 @@ mock.module('@/lib/startupTrace', () => ({
 const { opencodeClient } = await import(`./client?cache-test=${Date.now()}`);
 
 beforeEach(() => {
+  opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'https://client.test', epoch: 1, version: '1.18.32' });
   runtimeKey = 'test-runtime';
   promptAsyncCalls.length = 0;
   promptAsyncResults.length = 0;
@@ -105,6 +106,7 @@ test('same-URL reconnect isolates provider requests and old completion cannot de
   const oldClient = opencodeClient.getSdkClient();
   const oldRequest = opencodeClient.getProvidersForConfig('/same/path');
   opencodeClient.reconnectToRuntimeBaseUrl();
+  opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'https://client.test', epoch: 2, version: '1.18.32' });
   expect(opencodeClient.getSdkClient()).not.toBe(oldClient);
   const newRequest = opencodeClient.getProvidersForConfig('/same/path');
   expect(providerResolvers).toHaveLength(2);

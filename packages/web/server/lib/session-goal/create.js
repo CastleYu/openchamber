@@ -47,6 +47,8 @@ const fitObjective = async ({ objective, directory, sessionID, providerID, model
 };
 
 export const createSessionGoal = async ({
+  kernelOperations = null,
+  expectedIdentity,
   baseUrl,
   authHeaders,
   sessionID,
@@ -57,6 +59,15 @@ export const createSessionGoal = async ({
   modelID,
   onWarning,
 }) => {
+  const identity = expectedIdentity ?? kernelOperations?.captureIdentity();
+  const checkCurrent = () => {
+    if (!identity) return;
+    const current = kernelOperations.captureIdentity();
+    if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+      throw new Error('OpenCode runtime changed while preparing the goal');
+    }
+  };
+  checkCurrent();
   const warn = (message, error) => {
     if (typeof onWarning === 'function') {
       onWarning(message, error);
@@ -73,6 +84,7 @@ export const createSessionGoal = async ({
     warn,
   });
   if (!objectiveText) throw new Error('goal objective is required');
+  checkCurrent();
 
   let objectiveFile = false;
   try {
@@ -81,6 +93,7 @@ export const createSessionGoal = async ({
   } catch (error) {
     warn('goal objective file write failed, falling back to inline', error);
   }
+  checkCurrent();
 
   const now = Date.now();
   const goal = {
@@ -98,6 +111,12 @@ export const createSessionGoal = async ({
     createdAt: now,
     updatedAt: now,
   };
+  if (kernelOperations) {
+    await kernelOperations.updateSession({ sessionID, directory, expectedIdentity: identity,
+      metadata: { openchamber: { goal } },
+    });
+    return goal;
+  }
   const url = new URL(`${baseUrl}/session/${encodeURIComponent(sessionID)}`);
   url.searchParams.set('directory', directory);
   const response = await fetch(url.toString(), {

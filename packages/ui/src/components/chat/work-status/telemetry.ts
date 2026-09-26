@@ -1,4 +1,4 @@
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { Message, Part } from '@/lib/opencode/model';
 import { computeCacheHitRate } from '@/stores/utils/tokenUtils';
 
 type SessionMessageRecord = {

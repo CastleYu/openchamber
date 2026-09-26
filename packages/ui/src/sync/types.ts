@@ -1,20 +1,7 @@
-import type {
-  Agent,
-  Config,
-  LspStatus,
-  Message,
-  Part,
-  Path,
-  PermissionRequest,
-  Project,
-  ProviderAuthResponse,
-  ProviderListResponse,
-  QuestionRequest,
-  Session,
-  SessionStatus,
-  Todo,
-  VcsInfo,
-} from "@opencode-ai/sdk/v2/client"
+import type { Agent, Config, LspStatus, Path, PermissionRequest, Project, ProviderAuthResponse, ProviderListResponse, QuestionRequest, Todo, VcsInfo } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, Session, SessionStatus } from "@/lib/opencode/model"
+import type { BootstrapPath, PendingInput, PendingPermission, ProviderCatalog, TaggedConfig } from "@/lib/opencode/operations"
+import type { TaggedAgents } from "./source"
 
 export type FileDiff = {
   file?: string
@@ -52,6 +39,8 @@ export type State = {
   sessionRevision?: number
   sessionEventRevision?: Record<string, number>
   sessionDeletedRevision?: Record<string, number>
+  /** Last committed OC2 durable sequence per session aggregate. */
+  eventSequence?: Record<string, number>
   session_status: Record<string, SessionStatus>
   /** A successful status snapshot makes omitted sessions authoritatively idle. */
   sessionStatusReady?: boolean
@@ -59,7 +48,15 @@ export type State = {
   todo: Record<string, Todo[]>
   permission: Record<string, PermissionRequest[]>
   question: Record<string, QuestionRequest[]>
+  /** OC2 blocking requests retain their generation and form/permission kind. */
+  pendingPermission: Record<string, PendingPermission[]>
+  pendingInput: Record<string, PendingInput[]>
+  configTagged?: TaggedConfig
+  providerCatalog?: ProviderCatalog
+  agentCatalog?: TaggedAgents
+  pathInfo?: BootstrapPath
   lsp: LspStatus[]
+  lspAvailability?: "supported" | "unsupported"
   vcs: VcsInfo | undefined
   limit: number
   message: Record<string, Message[]>
@@ -73,8 +70,11 @@ export type GlobalState = {
   path: Path
   projects: Project[]
   providers: ProviderListResponse
+  providerCatalog?: ProviderCatalog
   providerAuth: ProviderAuthResponse
   config: Config
+  configTagged?: TaggedConfig
+  pathInfo?: BootstrapPath
   reload: undefined | "pending" | "complete"
   sessionTodo: Record<string, Todo[]>
 }
@@ -139,11 +139,14 @@ export const INITIAL_STATE: State = {
   sessionRevision: 0,
   sessionEventRevision: {},
   sessionDeletedRevision: {},
+  eventSequence: {},
   session_status: {},
   session_diff: {},
   todo: {},
   permission: {},
   question: {},
+  pendingPermission: {},
+  pendingInput: {},
   lsp: [],
   vcs: undefined,
   limit: 5,

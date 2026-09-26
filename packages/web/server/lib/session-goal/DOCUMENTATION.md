@@ -1,5 +1,10 @@
 # Session Goal
 
+With `kernelOperations` injected, goal ticks use generation-specific session,
+status, child and message operations. OC2 child sessions come from paged
+session lists. Goal metadata writes retain other metadata keys, and a
+continuation carries the epoch captured at the start of its tick.
+
 Server-side control loop that keeps a session working toward a user-defined
 objective stored under `metadata.openchamber.goal`, with the small model as
 an independent progress auditor. Built on OpenChamber's backend-driven
@@ -54,7 +59,10 @@ become a file-read vector (`objectives.js` also validates the id shape
 before touching the filesystem). Rationale: metadata rides every
 `session.updated`, so multi-KB objectives must not live there.
 
-- `objectives.js` — write/read/delete, 5000-char clamp.
+- `objectives.js` — write/read/delete, 5000-char clamp. Fork repair has a
+  separate strict read that treats only a missing file as absent, plus strict
+  cleanup after a failed metadata repair. Ordinary goal display and tick
+  retain their previous best-effort reads.
 - `routes.js` — `PUT/GET/DELETE /api/goals/objective/:sessionId`
   (OpenChamber-owned, registered before the generic proxy; JSON parsing via
   the `/api/goals` family in core-routes). The UI writes the file BEFORE
@@ -82,8 +90,8 @@ before touching the filesystem). Rationale: metadata rides every
 3. On fire (`tick`), gated by the `sessionGoalEnabled` setting:
    - fetch session (skip sub-agent sessions), require an `active` goal;
    - authoritative live-activity check after the quiet window: re-read the
-     session status map, bail if the parent resumed, then list direct child
-     sessions and bail while any child is `busy`/`retry`. A background
+     session status map, bail if the parent resumed, then check descendants
+     and bail while any child is `busy`/`retry`. A background
      subagent leaves its parent idle, then injects its result into the parent
      when done; that parent `busy` → `idle` cycle re-arms the loop without
      polling. Status/children fetch failure is unknown, not empty, so it skips

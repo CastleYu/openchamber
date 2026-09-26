@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 
 import {
   isGlobalSessionRecencyOnlyUpdate,
@@ -8,18 +8,25 @@ import {
   useGlobalSessionsStore,
 } from './useGlobalSessionsStore';
 
-type SessionExtra = Partial<Session> & {
+type SessionExtra = Omit<Partial<Session>, 'directory'> & {
   directory?: string | null;
   project?: { worktree?: string | null } | null;
 };
 
-const buildSession = (shareUrl: string, extra: SessionExtra = {}): Session => ({
-  id: 'ses_1',
-  title: 'Shared session',
-  time: { created: 1, updated: 2 },
-  share: { url: shareUrl },
-  ...extra,
-} as Session);
+const buildSession = (shareUrl: string, extra: SessionExtra = {}): Session => {
+  const { directory, project, ...fields } = extra;
+  const value: Session = {
+    id: 'ses_1',
+    projectID: 'project',
+    title: 'Shared session',
+    time: { created: 1, updated: 2 },
+    share: { url: shareUrl },
+    ...fields,
+    directory: directory ?? '',
+  };
+  if (project !== undefined) Object.assign(value, { project });
+  return value;
+};
 
 describe('useGlobalSessionsStore', () => {
   beforeEach(() => {
@@ -79,7 +86,7 @@ describe('useGlobalSessionsStore', () => {
       time: { created: 1, updated: 3 },
     }));
 
-    const session = useGlobalSessionsStore.getState().activeSessions[0] as Session & { directory?: string | null };
+    const session = useGlobalSessionsStore.getState().activeSessions[0];
     expect(session.directory).toBe('/repo/app');
     expect(resolveGlobalSessionDirectory(session)).toBe('/repo/app');
   });

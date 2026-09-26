@@ -86,6 +86,7 @@ import { runGuestCommand } from '@/lib/guests/run-command';
 import { useGuestsStore } from '@/lib/guests/store';
 import { isGuestActive } from '@/lib/guests/capabilities';
 import { routeGuestSlashCommand } from './composer/submit/guestCommands';
+import { runForkCommand } from './composer/submit/forkCommand';
 import { pluginModeFromId } from '@/lib/surfaces/modes';
 import { opencodeClient } from '@/lib/opencode/client';
 import { useGitStore } from '@/stores/useGitStore';
@@ -763,15 +764,21 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     // matching /tokens in the composer, the same way confirmed @files are.
     const availableCommands = useCommandsStore((s) => selectCommandsForDirectory(s, currentDirectory));
     const availableSkills = useSkillsStore((s) => selectSkillsForDirectory(s, currentDirectory));
+    const kernelGeneration = React.useSyncExternalStore(
+        (listener) => opencodeClient.subscribeRuntime(listener),
+        () => opencodeClient.getBoundRuntime()?.generation,
+        () => undefined,
+    );
     const knownSlashNames = React.useMemo(() => {
         const names = new Set<string>([
             'init', 'review', 'undo', 'redo', 'timeline', 'compact', 'btw', 'summary', 'workspace-review', 'plan-feature', 'craft-goal', 'schedule-task', 'catch-up', 'debug', 'weigh', 'explore',
         ]);
+        if (kernelGeneration === 'oc2') names.add('fork');
         if (!isMobile && !isVSCodeRuntime()) names.add('handoff-review');
         for (const command of availableCommands) names.add(command.name.toLowerCase());
         for (const skill of availableSkills) names.add(skill.name.toLowerCase());
         return names;
-    }, [availableCommands, availableSkills, isMobile]);
+    }, [availableCommands, availableSkills, isMobile, kernelGeneration]);
 
     // Extension slash commands. Built-ins, OpenCode commands, and skills are
     // reserved: an extension command with one of those names is ignored.
@@ -1522,6 +1529,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
             if (!commandIsAvailable) commandPlan = null;
         }
         if (commandPlan?.command.name === 'handoff-review' && (isMobile || isVSCodeRuntime())) commandPlan = null;
+        if (commandPlan?.command.name === 'fork' && kernelGeneration !== 'oc2') commandPlan = null;
 
         // Enter BTW before sending so the question uses its isolated selections.
         // A bare command waits for input; an argument requests one immediate send.
@@ -1619,14 +1627,15 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
             // Supersede blocking prompts throughout the session subtree before
             // delivering the follow-up. Dismissal clears the cards immediately
             // and rejects the requests on the backend.
-            const [deniedPermissions, dismissedQuestions] = await Promise.all([
+            const [deniedPermissions, dismissedQuestions, dismissedForms] = await Promise.all([
                 sessionActions.dismissOpenPermissionsForSession(currentSessionId),
                 sessionActions.dismissOpenQuestionsForSession(currentSessionId),
+                sessionActions.dismissOpenFormsForSession(currentSessionId),
             ]);
             // Explicit Steer keeps the direct-send path; other sends retain
             // the queue fallback after dismissal. Here delivery selects the
             // local path: SDK 1.18.31 does not serialize it on prompt_async.
-            if ((deniedPermissions || dismissedQuestions) && delivery !== 'steer') {
+            if ((deniedPermissions || dismissedQuestions || dismissedForms) && delivery !== 'steer') {
                 void handleQueueMessage();
                 return;
             }
@@ -1654,6 +1663,27 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                     setTimelineDialogOpen(true);
                 } else if (actionName === 'handoff-review') {
                     setReviewDialogOpen(true);
+                } else if (actionName === 'fork') {
+                    const runtime = opencodeClient.getBoundRuntime();
+                    const runtimeKey = getRuntimeKey();
+                    const outcome = await runForkCommand(currentSessionId, commandPlan.command.argument, {
+                        providerID: capturedSendConfig?.providerID ?? currentProviderId,
+                        modelID: capturedSendConfig?.modelID ?? currentModelId,
+                        agent: capturedSendConfig?.agent ?? currentAgentName,
+                        variant: capturedSendConfig?.variant ?? currentVariant ?? undefined,
+                    }, {
+                        fork: sessionActions.forkFromLastCompletedTurn,
+                        directoryFor: (session) => useSessionUIStore.getState().getDirectoryForSession(session.id) || session.directory || null,
+                        send: (text, selection, target) => useSessionUIStore.getState().sendMessage(
+                            text, selection.providerID, selection.modelID, selection.agent,
+                            undefined, undefined, undefined, selection.variant, 'normal', target,
+                        ),
+                        draftIdentity: (directory, id) => createChatDraftIdentity(runtimeKey, directory, id),
+                        restoreText: (target, text) => useInputStore.setState({ pendingComposerRestore: { target, text, files: [] } }),
+                        isCurrent: () => getRuntimeKey() === runtimeKey && opencodeClient.getBoundRuntime() === runtime,
+                    });
+                    if (outcome === 'send-failed') toast.error(t('chat.chatInput.toast.forkSendFailed'));
+                    if (outcome === 'stale') restoreComposerText();
                 } else if (actionName === 'compact') {
                     await sessionActions.waitForConnectionOrThrow();
                     const compactDirectory = useSessionUIStore.getState().getDirectoryForSession(currentSessionId) || currentDirectory || undefined;
@@ -1661,6 +1691,12 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                 }
             } catch (error) {
                 restoreComposerText();
+                if (actionName === 'fork') {
+                    toast.error(error instanceof sessionActions.NothingToForkError
+                        ? t('chat.chatInput.toast.forkNothingToFork')
+                        : getSubmitErrorMessage(error, t('chat.chatInput.toast.forkFailed')));
+                    return;
+                }
                 if (actionName !== 'compact') throw error;
                 toast.error(getSubmitErrorMessage(error, t('chat.chatInput.toast.compactFailed')));
             }

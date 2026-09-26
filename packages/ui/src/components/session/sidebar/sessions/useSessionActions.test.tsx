@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { I18nProvider } from '@/lib/i18n';
 import type { DeleteSessionConfirmState } from '../shell/ConfirmDialogs';

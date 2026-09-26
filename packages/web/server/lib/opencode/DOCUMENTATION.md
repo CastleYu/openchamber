@@ -6,6 +6,56 @@ Personal-build OpenChamber update checks include `notifyOnly`. The install route
 This module provides OpenCode server integration utilities for the web server runtime, including configuration management and provider authentication.
 
 ## Entrypoints and structure
+- `managed-generation.js` probes the selected CLI through its resolved launch
+  specification before managed configuration or plugin writes. Lifecycle spawning
+  reuses that specification. An unknown generation stops startup before writing.
+- OC1 keeps its existing file-URL plugins, configuration merge and `auth.json`
+  ownership. OC2 uses `managed-config-file.js` for watched `OPENCODE_CONFIG` and
+  directory plugins; a user-owned config path retains the environment-based
+  fallback. Only managed OC2 settings changes refresh this managed file.
+- Configuration entity/provider routes select their writers from the current
+  backend descriptor. OC2 credential inspection uses the read-only database view
+  in `auth-v2.js`; credential deletion belongs to OpenCode's credential API.
+  Unknown generations and provider requests spanning a connection change cannot
+  fall through to OC1 configuration or credential writes.
+- `websearch-config.js` owns OC2 `GET/PUT /api/config/websearch`. The GET
+  returns `{ projectPath }`, the project config whose `websearch` key overrides
+  the Settings write, or `null`. The PUT accepts `{ selection: false | null |
+  string }`; `null` removes the key. It writes through `shared-v2.js` to
+  `OPENCODE_CONFIG` when set, otherwise the OC2 user config. The route checks
+  the selected kernel before reading or writing and rechecks its epoch after
+  directory resolution. Invalid or unreadable config returns an error, not an
+  empty source; OC1 cannot read or write this OC2 setting. The VS Code bridge
+  forwards the same GET/PUT contract through `api:config/websearch`.
+- `compatibility.js` resolves OC1/OC2 from authoritative HTTP health/info responses.
+- `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Unknown
+  startup endpoints are not probed. Credential changes and managed restarts retire
+  old request identities, including discovery performed while the old process is
+  closing. `/api/opencode/runtime` exposes the descriptor through the authenticated
+  OpenChamber route with no-store caching.
+- `kernel-operations.js` selects server-side session/message/send operations from
+  that descriptor. Deferred sends carry their captured identity and reject after
+  a connection switch. Prompt acceptance does not imply response completion.
+  It also owns generation-specific permission list/reply, single-message reads,
+  OC2 synthetic insertion, and OC2 session model/agent switches for the web
+  autonomy runtimes. Callers capture identity before multi-step work and pass
+  it to writes so an old completion cannot mutate a new connection. OC2
+  selection catalog reads first call `integration.list`, whose pinned 2.0.16
+  handler awaits plugin activation; direct model and agent lists can otherwise
+  return an empty cold registry. The runtime epoch is checked after that wait.
+  OC2 fork inheritance rollback uses `removeSession` with the captured identity;
+  it rejects OC1 and checks the epoch before sending a DELETE to OpenCode.
+- `proxy.js` uses that descriptor to route OC1 requests without `/api` and OC2
+  requests with `/api`, including SSE. Unknown generations remain behind the
+  readiness gate. OC1 retains Windows session merging and sanitization; OC2
+  preserves cursor envelopes and overlays app-owned archive or pending legacy
+  metadata when the owner supplies those getters. The encoded OC2 directory
+  header remains intact during upstream forwarding, while the worktree gate
+  decodes a local copy for its readiness lookup. A configured archive or metadata
+  reader failure makes the OC2 session read fail with 503 rather than returning
+  an apparently complete upstream snapshot. Direct SSE responses capture the
+  full kernel identity and close on retirement so clients reconnect to the
+  selected endpoint.
 - `packages/web/server/lib/opencode/index.js`: public entrypoint (currently baseline placeholder).
 - `packages/web/server/lib/opencode/auth.js`: provider authentication file operations.
 - `packages/web/server/lib/opencode/auth-state-runtime.js`: managed OpenCode server auth password/header runtime.
@@ -467,6 +517,7 @@ within a ten-minute overall deadline.
 ## Public exports (pwa-manifest-routes.js)
 - `registerPwaManifestRoute(app, dependencies)`: registers PWA manifest endpoint with dynamic app-name resolution and recent-session shortcuts:
   - `GET /manifest.webmanifest`
+  - Recent sessions use the selected kernel operation, including OC2 cursor pages. The cache is keyed by kernel generation, endpoint and epoch. A failed read leaves the Settings shortcut available and is not cached as an authoritative empty session list.
 
 ## Public exports (project-icon-routes.js)
 - `registerProjectIconRoutes(app, dependencies)`: registers project icon routes and owns icon storage/discovery flow:
@@ -480,6 +531,7 @@ within a ten-minute overall deadline.
   - Skills config CRUD and metadata under `/api/config/skills*`
   - Skill rename via `PATCH /api/config/skills/:name` with `{ renameTo }` (directory rename preserves `SKILL.md` body and supporting files; restricted to managed skill roots under `.opencode/skills|skill`, `.claude/skills`, and `.agents/skills`)
   - Skill list responses include authoritative `renamable` derived from the same managed-root policy used by rename
+  - Discovery calls OC1 `app.skills` or OC2 `skill.list` according to the bound kernel. OC2 responses use the official `location/data` envelope and `path` field. The list keeps local filesystem skills and marks `partial: { source: 'opencode', reason: 'discovery-unavailable' }` when the generation is not ready or OC2 discovery fails; a changed kernel epoch rejects the stale read.
   - Skills catalog listing/source pagination, scan, and install routes
   - Supporting skill file read/write/delete routes
   - Directory resolution prefers an explicit request directory, then soft-falls
@@ -489,6 +541,9 @@ within a ten-minute overall deadline.
 
 ## Public exports (proxy.js)
 - `registerOpenCodeProxy(app, dependencies)`: registers OpenCode proxy routes and middleware.
+- `retireOpenCodeDirectSseStreams()`: aborts and closes direct OpenCode SSE
+  responses when the kernel runtime identity changes; the server lifecycle
+  calls it before rebinding WS readers.
 - Owns:
   - SSE forwarders: `GET /api/global/event`, `GET /api/event`
     - Downstream heartbeats keep clients and intermediaries alive, while a separate upstream-only stall watchdog closes the downstream response when OpenCode stops producing bytes so clients reconnect instead of trusting synthetic heartbeats indefinitely. Each watchdog reset uses the current load-aware timeout, matching the shared event transport.

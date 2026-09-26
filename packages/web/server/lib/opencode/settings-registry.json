@@ -120,6 +120,9 @@
     "agentWebToolEnabled": {
       "scope": "instance"
     },
+    "agentNotifyToolEnabled": {
+      "scope": "instance"
+    },
     "browserProvider": {
       "scope": "instance"
     },

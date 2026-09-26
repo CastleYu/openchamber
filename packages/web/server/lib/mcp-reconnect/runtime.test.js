@@ -78,6 +78,8 @@ describe('managed MCP reconnect runtime', () => {
     const config = JSON.parse(prepared.OPENCODE_CONFIG_CONTENT);
     expect(config.model).toBe('test/model');
     expect(config.plugin).toEqual(['file:///existing.js', pathToFileURL(pluginPath).href]);
+    const manifest = JSON.parse(await fs.readFile(path.join(path.dirname(pluginPath), 'package.json'), 'utf8'));
+    expect(manifest.exports['.']).toBe('./openchamber-mcp-reconnect-plugin.js');
   });
 
   it('reconnects only servers in the failed state', async () => {

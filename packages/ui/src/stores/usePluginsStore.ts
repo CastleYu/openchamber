@@ -7,6 +7,8 @@ import { useProjectsStore } from '@/stores/useProjectsStore';
 import { opencodeClient } from '@/lib/opencode/client';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { noteDeferredRestartFromPayload } from '@/lib/opencode/deferredRestart';
+import { checkPluginUpdates, listPluginRuntime, updatePluginPackage, type PluginRuntimeInfo } from '@/lib/opencode/plugins';
+import { getRuntimeKey } from '@/lib/runtime-switch';
 
 export type PluginScope = 'user' | 'project';
 type PluginParsedKind = 'npm' | 'path';
@@ -18,13 +20,15 @@ export interface PluginEntry {
   scope: PluginScope;
   kind: 'config';
   parsedKind: PluginParsedKind;
+  sourcePath?: string;
 }
 
 export interface PluginFile {
   id: string;
   fileName: string;
   scope: PluginScope;
-  kind: 'file';
+  kind: 'file' | 'package';
+  absolutePath?: string;
 }
 
 export interface PluginDraft {
@@ -55,20 +59,34 @@ export type RegistryResult =
   | { kind: 'path-missing'; spec: string; absolutePath: string }
   | { kind: 'path-unreadable'; spec: string; absolutePath: string };
 
+export type PluginRuntimeSnapshot =
+  | { kind: 'idle' }
+  | { kind: 'ready'; scope: string; plugins: PluginRuntimeInfo[] }
+  | { kind: 'failed'; scope: string };
+
+export type PluginPackageUpdate = { kind: 'running' } | { kind: 'failed'; error: string };
+
 export interface PluginsStore {
   entries: PluginEntry[];
   files: PluginFile[];
+  loadedScope: string | null;
   selectedId: string | null;
   isLoading: boolean;
   registryInfo: Record<string, RegistryResult>;
   isLoadingRegistry: boolean;
   draft: PluginDraft | null;
+  runtime: PluginRuntimeSnapshot;
+  isCheckingUpdates: boolean;
+  packageUpdates: Record<string, PluginPackageUpdate>;
 
   setSelected: (id: string | null) => void;
   setDraft: (draft: PluginDraft | null) => void;
   loadPlugins: (options?: { force?: boolean }) => Promise<boolean>;
   loadRegistryInfo: (opts?: { specs?: string[]; force?: boolean }) => Promise<boolean>;
   updateToLatest: (id: string) => Promise<PluginMutationResult>;
+  loadRuntime: () => Promise<boolean>;
+  checkUpdates: () => Promise<boolean>;
+  updatePackage: (target: string) => Promise<boolean>;
   createEntry: (input: { spec: string; options?: Record<string, unknown>; scope: PluginScope }) => Promise<PluginMutationResult>;
   updateEntry: (id: string, input: { spec?: string; options?: Record<string, unknown> }) => Promise<PluginMutationResult>;
   deleteEntry: (id: string) => Promise<PluginMutationResult>;
@@ -107,7 +125,7 @@ type PluginFileContent = {
   content: string;
 };
 
-const getConfigDirectory = (): string | null => {
+export const getPluginsConfigDirectory = (): string | null => {
   try {
     const projectsStore = useProjectsStore.getState();
     const activeProject = projectsStore.getActiveProject?.();
@@ -132,9 +150,17 @@ const pluginsLastLoadedAt = new Map<string, number>();
 const pluginsLoadInFlight = new Map<string, Promise<boolean>>();
 const REGISTRY_SPECS_CHUNK_LIMIT = 1500;
 
-const getPluginCacheKey = (directory: string | null): string => {
-  return directory?.trim() || DEFAULT_PLUGINS_CACHE_KEY;
+export const getPluginsScopeKey = (directory: string | null): string => {
+  const runtime = opencodeClient.getBoundRuntime();
+  return JSON.stringify([
+    getRuntimeKey(), runtime?.endpoint, runtime?.epoch, runtime?.generation,
+    directory?.trim() || DEFAULT_PLUGINS_CACHE_KEY,
+  ]);
 };
+
+const getPluginCacheKey = getPluginsScopeKey;
+export const getPluginUpdateKey = (scope: string, target: string): string => JSON.stringify([scope, target]);
+let runtimeReadGeneration = 0;
 
 const invalidatePluginCache = (directory: string | null) => {
   pluginsLastLoadedAt.delete(getPluginCacheKey(directory));
@@ -146,22 +172,26 @@ export const usePluginsStore = create<PluginsStore>()(
       (set, get) => ({
         entries: [],
         files: [],
+        loadedScope: null,
         selectedId: null,
         isLoading: false,
         registryInfo: {},
         isLoadingRegistry: false,
         draft: null,
+        runtime: { kind: 'idle' },
+        isCheckingUpdates: false,
+        packageUpdates: {},
 
         setSelected: (id) => set({ selectedId: id }),
 
         setDraft: (draft) => set({ draft }),
 
         loadPlugins: async (options) => {
-          const configDirectory = getConfigDirectory();
+          const configDirectory = getPluginsConfigDirectory();
           const cacheKey = getPluginCacheKey(configDirectory);
           const now = Date.now();
           const loadedAt = pluginsLastLoadedAt.get(cacheKey) ?? 0;
-          const hasCachedPlugins = get().entries.length > 0 || get().files.length > 0;
+          const hasCachedPlugins = get().loadedScope === cacheKey;
 
           if (!options?.force && hasCachedPlugins && now - loadedAt < PLUGINS_LOAD_CACHE_TTL_MS) {
             return true;
@@ -172,6 +202,10 @@ export const usePluginsStore = create<PluginsStore>()(
             return inFlight;
           }
 
+          if (get().loadedScope !== cacheKey) {
+            set({ entries: [], files: [], registryInfo: {}, loadedScope: null, runtime: { kind: 'idle' }, isCheckingUpdates: false, packageUpdates: {} });
+          }
+          if (opencodeClient.getBoundRuntime()?.generation === 'oc2') void get().loadRuntime();
           const request = (async () => {
             set({ isLoading: true });
             try {
@@ -182,13 +216,15 @@ export const usePluginsStore = create<PluginsStore>()(
                 throw new Error('Failed to load plugins');
               }
               const data = await readJson<PluginsListResponse>(response);
-              set({ entries: data.entries ?? [], files: data.files ?? [], isLoading: false });
+              if (getPluginCacheKey(getPluginsConfigDirectory()) !== cacheKey) return false;
+              set({ entries: data.entries ?? [], files: data.files ?? [], loadedScope: cacheKey, isLoading: false });
               pluginsLastLoadedAt.set(cacheKey, Date.now());
               if (!options?.force) {
                 void get().loadRegistryInfo();
               }
               return true;
             } catch (error) {
+              if (getPluginCacheKey(getPluginsConfigDirectory()) !== cacheKey) return false;
               console.error('[PluginsStore] Failed to load plugins:', error);
               set({ isLoading: false });
               return false;
@@ -199,7 +235,7 @@ export const usePluginsStore = create<PluginsStore>()(
           try {
             return await request;
           } finally {
-            pluginsLoadInFlight.delete(cacheKey);
+            if (pluginsLoadInFlight.get(cacheKey) === request) pluginsLoadInFlight.delete(cacheKey);
           }
         },
 
@@ -210,9 +246,10 @@ export const usePluginsStore = create<PluginsStore>()(
             return true;
           }
 
+          const configDirectory = getPluginsConfigDirectory();
+          const scope = getPluginsScopeKey(configDirectory);
           set({ isLoadingRegistry: true });
           try {
-            const configDirectory = getConfigDirectory();
             const nextRegistryInfo: Record<string, RegistryResult> = { ...get().registryInfo };
             for (const chunk of chunkSpecs(specs)) {
               const response = await runtimeFetch(buildRegistryUrl(chunk, opts?.force === true, configDirectory), {
@@ -226,11 +263,78 @@ export const usePluginsStore = create<PluginsStore>()(
                 nextRegistryInfo[result.spec] = result;
               }
             }
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
             set({ registryInfo: nextRegistryInfo, isLoadingRegistry: false });
             return true;
           } catch (error) {
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
             console.error('[PluginsStore] Failed to load plugin registry info:', error);
             set({ isLoadingRegistry: false });
+            return false;
+          }
+        },
+
+        loadRuntime: async () => {
+          if (opencodeClient.getBoundRuntime()?.generation !== 'oc2') {
+            set({ runtime: { kind: 'idle' } });
+            return false;
+          }
+          const directory = getPluginsConfigDirectory();
+          const scope = getPluginsScopeKey(directory);
+          const generation = ++runtimeReadGeneration;
+          try {
+            const plugins = await listPluginRuntime(directory);
+            if (generation !== runtimeReadGeneration || getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            set({ runtime: { kind: 'ready', scope, plugins } });
+            return true;
+          } catch (error) {
+            if (generation !== runtimeReadGeneration || getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            console.error('[PluginsStore] Failed to read plugin runtime:', error);
+            set({ runtime: { kind: 'failed', scope } });
+            return false;
+          }
+        },
+
+        checkUpdates: async () => {
+          if (opencodeClient.getBoundRuntime()?.generation !== 'oc2') return false;
+          const directory = getPluginsConfigDirectory();
+          const scope = getPluginsScopeKey(directory);
+          set({ isCheckingUpdates: true });
+          try {
+            const plugins = await checkPluginUpdates(directory);
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            runtimeReadGeneration += 1;
+            set({ runtime: { kind: 'ready', scope, plugins } });
+            return true;
+          } catch (error) {
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            console.error('[PluginsStore] Failed to check plugin updates:', error);
+            return false;
+          } finally {
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) === scope) set({ isCheckingUpdates: false });
+          }
+        },
+
+        updatePackage: async (target) => {
+          if (opencodeClient.getBoundRuntime()?.generation !== 'oc2') return false;
+          const directory = getPluginsConfigDirectory();
+          const scope = getPluginsScopeKey(directory);
+          const key = getPluginUpdateKey(scope, target);
+          if (get().packageUpdates[key]?.kind === 'running') return false;
+          set({ packageUpdates: { ...get().packageUpdates, [key]: { kind: 'running' } } });
+          try {
+            await updatePluginPackage(directory, target);
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            await get().loadRuntime();
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            const next = { ...get().packageUpdates };
+            delete next[key];
+            set({ packageUpdates: next });
+            return true;
+          } catch (error) {
+            if (getPluginsScopeKey(getPluginsConfigDirectory()) !== scope) return false;
+            const message = error instanceof Error ? error.message : String(error);
+            set({ packageUpdates: { ...get().packageUpdates, [key]: { kind: 'failed', error: message } } });
             return false;
           }
         },
@@ -300,7 +404,7 @@ export const usePluginsStore = create<PluginsStore>()(
 
         readFile: async (id) => {
           try {
-            const configDirectory = getConfigDirectory();
+            const configDirectory = getPluginsConfigDirectory();
             const response = await runtimeFetch(buildPluginsUrl(`/api/config/plugins/file/${encodeURIComponent(id)}`, configDirectory), {
               headers: buildDirectoryHeaders(configDirectory),
             });
@@ -433,7 +537,7 @@ async function runPluginMutation(
   options?: { restartId?: string },
 ): Promise<PluginMutationResult> {
   try {
-    const configDirectory = getConfigDirectory();
+    const configDirectory = getPluginsConfigDirectory();
     const response = await request(configDirectory);
     const payload = await readJson<PluginMutationPayload | null>(response).catch(() => null);
 

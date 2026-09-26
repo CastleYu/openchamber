@@ -7,7 +7,7 @@ import { I18nProvider } from '@/lib/i18n';
 import { useSessionFoldersStore } from '@/stores/useSessionFoldersStore';
 import { useUIStore } from '@/stores/useUIStore';
 import type { SessionFolder } from '@/stores/useSessionFoldersStore';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import type { SessionGroupSectionProps } from './SessionGroupSection';
 import { installHookTestDom } from '../test-utils/testDom';
 

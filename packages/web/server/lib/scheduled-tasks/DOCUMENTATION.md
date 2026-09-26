@@ -1,5 +1,11 @@
 # Scheduled Tasks module
 
+The server injects `kernelOperations` for OpenCode session creation, command
+lookup and dispatch. OC1 keeps its prompt body. OC2 selects model and agent
+on the session, admits non-resuming context before the prompt or command, and
+sends the authored text through the OC2 request body. Each run captures an
+epoch before creating its session; a later kernel switch rejects dispatch.
+
 Server-owned scheduled task runtime and routes for OpenChamber-only automation.
 
 ## Scope

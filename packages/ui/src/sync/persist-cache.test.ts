@@ -1,7 +1,7 @@
 import { opencodeClient } from '@/lib/opencode/client';
 import { ensureChatsRootDirectory } from '@/lib/chatDirectories';
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { switchRuntimeEndpoint } from "@/lib/runtime-switch"
 import { persistManagedChatSessions, persistSessions, readDirCache, readManagedChatSessions } from "./persist-cache"
 import { getSyncPerformanceDiagnostics, setSyncPerformanceDiagnosticsEnabled } from "./performance-diagnostics"

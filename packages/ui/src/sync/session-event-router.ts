@@ -1,4 +1,6 @@
-import type { Event, Session } from "@opencode-ai/sdk/v2/client"
+import type { Event } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
+import { projectLegacySession } from "@/lib/opencode/v1/projection"
 import {
   isGlobalSessionRecencyOnlyUpdate,
   mergeSessionDirectoryMetadata,
@@ -24,7 +26,7 @@ const scheduleGlobalSessionUpdate = (session: Session): void => {
 subscribeRuntimeEndpointWillChange(clearPendingGlobalSessionUpdates)
 
 const getSessionInfoFromPayload = (event: Event): Session | null => {
-  if (event.type !== "session.created" && event.type !== "session.updated" && event.type !== "session.deleted") {
+  if (event.type !== "session.created" && event.type !== "session.updated") {
     return null
   }
 
@@ -43,7 +45,7 @@ const getSessionInfoFromPayload = (event: Event): Session | null => {
     return null
   }
 
-  return stripSessionDiffSnapshots(session as Session)
+  return stripSessionDiffSnapshots(projectLegacySession(event.properties.info))
 }
 
 export const applySessionEventsToGlobalSessions = (payloads: readonly Event[]): void => {

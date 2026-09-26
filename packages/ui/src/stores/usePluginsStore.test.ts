@@ -3,8 +3,12 @@ import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 const originalFetch = globalThis.fetch;
 
 import type { PluginEntry, PluginFile, RegistryResult } from './usePluginsStore';
+import type { OpenCodeRuntime } from '@/lib/opencode/runtime';
 
 const activeProjectPath = '/workspace/project';
+let boundRuntime: OpenCodeRuntime = {
+  generation: 'oc1', endpoint: 'https://plugins.test', epoch: 1, version: '1.18.32',
+};
 
 const refreshAfterOpenCodeRestartMock = mock(async () => undefined);
 const startConfigUpdateMock = mock(() => undefined);
@@ -21,6 +25,8 @@ mock.module('@/stores/useProjectsStore', () => ({
 mock.module('@/lib/opencode/client', () => ({
   opencodeClient: {
     getDirectory: () => '/fallback/project',
+    getBoundRuntime: () => boundRuntime,
+    getBaseUrl: () => 'https://plugins.test',
   },
 }));
 
@@ -43,7 +49,7 @@ mock.module('@/lib/runtime-fetch', () => ({
   runtimeFetch: (input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init),
 }));
 
-const { usePluginsStore } = await import('./usePluginsStore');
+const { getPluginsScopeKey, usePluginsStore } = await import('./usePluginsStore');
 
 const entry: PluginEntry = {
   id: 'config:user:plugin-a',
@@ -96,9 +102,11 @@ type FetchCall = {
 
 const fetchCalls: FetchCall[] = [];
 let queuedResponses: Response[] = [];
+let pendingResponse: Promise<Response> | null = null;
 
 const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   fetchCalls.push({ input, init });
+  if (pendingResponse) return pendingResponse;
   return queuedResponses.shift() ?? jsonResponse(pluginListPayload);
 });
 
@@ -110,11 +118,15 @@ const resetStore = () => {
   usePluginsStore.setState({
     entries: [],
     files: [],
+    loadedScope: null,
     selectedId: null,
     isLoading: false,
     registryInfo: {},
     isLoadingRegistry: false,
     draft: null,
+    runtime: { kind: 'idle' },
+    isCheckingUpdates: false,
+    packageUpdates: {},
   });
 };
 
@@ -135,11 +147,58 @@ describe('usePluginsStore', () => {
     resetStore();
     fetchCalls.length = 0;
     queuedResponses = [];
+    pendingResponse = null;
+    boundRuntime = { generation: 'oc1', endpoint: 'https://plugins.test', epoch: 1, version: '1.18.32' };
     globalThis.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterAll(() => {
     globalThis.fetch = originalFetch;
+  });
+
+  test('OC2 runtime failure is unknown, while a successful empty inventory is authoritative', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'https://plugins.test', epoch: 2, version: '2.0.16' };
+    queueFetchResponses([jsonResponse({ error: 'unavailable' }, { status: 503 })]);
+    expect(await usePluginsStore.getState().loadRuntime()).toBe(false);
+    expect(usePluginsStore.getState().runtime).toEqual({ kind: 'failed', scope: getPluginsScopeKey(activeProjectPath) });
+
+    queueFetchResponses([jsonResponse({ data: [] })]);
+    expect(await usePluginsStore.getState().loadRuntime()).toBe(true);
+    expect(usePluginsStore.getState().runtime).toEqual({ kind: 'ready', scope: getPluginsScopeKey(activeProjectPath), plugins: [] });
+  });
+
+  test('a same endpoint kernel epoch change rejects an old inventory response', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'https://plugins.test', epoch: 3, version: '2.0.16' };
+    const oldScope = getPluginsScopeKey(activeProjectPath);
+    let finish: (response: Response) => void = () => undefined;
+    pendingResponse = new Promise<Response>((resolve) => { finish = resolve; });
+    const pending = usePluginsStore.getState().loadRuntime();
+    boundRuntime = { generation: 'oc2', endpoint: 'https://plugins.test', epoch: 4, version: '2.0.16' };
+    expect(getPluginsScopeKey(activeProjectPath)).not.toBe(oldScope);
+    finish(jsonResponse({ data: [{ source: { type: 'package', target: 'foo', version: '1.0.0' }, state: { status: 'active' } }] }));
+    expect(await pending).toBe(false);
+    expect(usePluginsStore.getState().runtime).toEqual({ kind: 'idle' });
+  });
+
+  test('a failed OC2 update check leaves the loaded inventory visible', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'https://plugins.test', epoch: 5, version: '2.0.16' };
+    queueFetchResponses([jsonResponse({ data: [{ source: { type: 'package', target: 'foo', version: '1.0.0' }, state: { status: 'active' } }] })]);
+    expect(await usePluginsStore.getState().loadRuntime()).toBe(true);
+    const snapshot = usePluginsStore.getState().runtime;
+    queueFetchResponses([jsonResponse({ error: 'unavailable' }, { status: 503 })]);
+    expect(await usePluginsStore.getState().checkUpdates()).toBe(false);
+    expect(usePluginsStore.getState().runtime).toEqual(snapshot);
+    expect(usePluginsStore.getState().isCheckingUpdates).toBe(false);
+  });
+
+  test('an OC2 package update uses one exact target and clears its running state after reload', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'https://plugins.test', epoch: 6, version: '2.0.16' };
+    queueFetchResponses([new Response(null, { status: 204 }), jsonResponse({ data: [] })]);
+    expect(await usePluginsStore.getState().updatePackage('foo@^2')).toBe(true);
+    expect(usePluginsStore.getState().packageUpdates).toEqual({});
+    expect(new URL(new Request(fetchCalls[0]?.input, fetchCalls[0]?.init).url).pathname).toBe('/api/plugin/update');
+    expect(requestBody(0)).toEqual({ targets: ['foo@^2'] });
+    expect(usePluginsStore.getState().runtime).toEqual({ kind: 'ready', scope: getPluginsScopeKey(activeProjectPath), plugins: [] });
   });
 
   test('loadPlugins calls config plugins endpoint once and populates entries/files', async () => {

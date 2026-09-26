@@ -1,3 +1,5 @@
+import type { OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
+
 type UpgradeCapability = {
   supported: boolean;
   manager: 'opencode' | 'external' | 'openchamber' | null;
@@ -9,6 +11,8 @@ export type OpenCodeUpgradeManager = {
   getOpenCodeAuthHeaders(): Record<string, string>;
   getDebugInfo(): { mode: 'managed' | 'external' };
   restart(): Promise<void>;
+  refreshKernelRuntime(): Promise<Readonly<OpenCodeGenerationDescriptor>>;
+  upgradeCli(): Promise<void>;
 };
 
 type UpgradeResult = { status: number; body: Record<string, unknown> };
@@ -95,16 +99,14 @@ export const getOpenCodeUpgradeStatus = async (manager?: OpenCodeUpgradeManager)
   const apiUrl = getApiUrl(manager);
   if (!upgrade.supported || !apiUrl || !manager) return { available: false, currentVersion: null, latestVersion: null, upgrade };
   try {
-    const [healthResponse, latestVersion] = await Promise.all([
-      fetch(new URL('global/health', apiUrl).toString(), { method: 'GET', headers: { Accept: 'application/json', ...manager.getOpenCodeAuthHeaders() } }),
+    const [runtime, latestVersion] = await Promise.all([
+      manager.refreshKernelRuntime(),
       fetchLatestVersion(),
     ]);
-    const health = await healthResponse.json().catch(() => null) as { version?: unknown; error?: unknown } | null;
-    if (!healthResponse.ok) {
-      const error = typeof health?.error === 'string' ? health.error : healthResponse.statusText || 'Failed to read OpenCode version';
-      return { available: null, error, upgrade };
+    if (runtime.generation !== 'oc1' && runtime.generation !== 'oc2') {
+      return { available: null, error: 'OpenCode kernel is not ready', upgrade };
     }
-    const currentVersion = typeof health?.version === 'string' && health.version.trim() ? health.version.trim().replace(/^v/, '') : null;
+    const currentVersion = runtime.version;
     return { available: currentVersion ? compareVersions(latestVersion, currentVersion) > 0 : null, currentVersion, latestVersion, upgrade };
   } catch (error) {
     return { available: null, error: error instanceof Error ? error.message : String(error), upgrade };
@@ -122,6 +124,19 @@ export const upgradeManagedOpenCode = async (manager: OpenCodeUpgradeManager | u
   }
   const requestedTarget = typeof target === 'string' ? target.trim() : '';
   const operation = (async (): Promise<UpgradeResult> => {
+    const runtime = await manager.refreshKernelRuntime();
+    if (runtime.generation === 'oc2') {
+      try {
+        await manager.upgradeCli();
+        await manager.restart();
+        return { status: 200, body: { success: true, restarted: true } };
+      } catch (error) {
+        return { status: 500, body: { success: false, error: error instanceof Error ? error.message : 'OpenCode CLI upgrade failed' } };
+      }
+    }
+    if (runtime.generation !== 'oc1') {
+      return { status: 503, body: { success: false, error: 'OpenCode kernel is not ready' } };
+    }
     // The lookup runs inside the operation so the in-flight lock above already
     // holds while the release version is resolved.
     let targetVersion = requestedTarget;

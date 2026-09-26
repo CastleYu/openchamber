@@ -6,6 +6,8 @@ const { openSseProxy } = await import('./sseProxy');
 const createManager = () => ({
   getStatus: () => 'connected',
   getApiUrl: () => 'http://127.0.0.1:4096/',
+  getKernelRuntime: () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32' }),
+  refreshKernelRuntime: async () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32' }),
   getWorkingDirectory: () => '/repo',
   getOpenCodeAuthHeaders: () => ({ Authorization: 'Bearer test-token' }),
   onStatusChange: () => ({ dispose() {} }),
@@ -27,6 +29,39 @@ const createSseResponse = (chunks) => {
 };
 
 describe('VS Code SSE proxy', () => {
+  it('forwards OC2 wire frames through its API event route without an OC1 directory default', async () => {
+    const manager = createManager();
+    const descriptor = { generation: 'oc2', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '2.0.16' };
+    manager.getKernelRuntime = () => descriptor;
+    manager.refreshKernelRuntime = async () => descriptor;
+    const chunks = [];
+    let target;
+    const wire = 'id: evt_2\ndata: {"id":"evt_2","type":"session.updated","data":{"id":"ses_1"}}\n\n';
+    globalThis.fetch = mock(async (url) => {
+      target = String(url);
+      return createSseResponse([wire]);
+    });
+    const proxy = await openSseProxy({ manager, path: '/global/event', signal: new AbortController().signal, onChunk: (chunk) => chunks.push(chunk) });
+    await proxy.run;
+    expect(target).toBe('http://127.0.0.1:4096/api/event');
+    expect(chunks.join('')).toBe(wire);
+  });
+
+  it('does not deliver an old stream chunk after a same-generation epoch change', async () => {
+    const manager = createManager();
+    let epoch = 1;
+    manager.getKernelRuntime = () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:4096', epoch, version: '2.0.16' });
+    let upstream;
+    const body = new ReadableStream({ start(controller) { upstream = controller; } });
+    globalThis.fetch = mock(async () => new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
+    const chunks = [];
+    const proxy = await openSseProxy({ manager, path: '/event', signal: new AbortController().signal, onChunk: (chunk) => chunks.push(chunk) });
+    epoch = 2;
+    upstream.enqueue(new TextEncoder().encode('data: old\n\n'));
+    await expect(proxy.run).rejects.toThrow('connection changed');
+    expect(chunks).toEqual([]);
+  });
+
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });

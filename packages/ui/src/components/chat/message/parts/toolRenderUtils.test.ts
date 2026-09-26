@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { isExpandableTool, isStaticTool } from './toolRenderUtils';
+import { isExpandableTool, isStandaloneTool, isStaticTool } from './toolRenderUtils';
 
 describe('tool rendering classification', () => {
     test('keeps navigation tools compact', () => {
@@ -15,6 +15,11 @@ describe('tool rendering classification', () => {
         expect(isExpandableTool('webfetch')).toBe(true);
         expect(isExpandableTool('todowrite')).toBe(true);
         expect(isExpandableTool('plan_exit')).toBe(true);
+    });
+
+    test('keeps both generations of subagent calls as standalone rows', () => {
+        expect(isStandaloneTool('task')).toBe(true);
+        expect(isStandaloneTool('subagent')).toBe(true);
     });
 
     test('expands custom and MCP tools', () => {

@@ -35,9 +35,13 @@ import { getNpmInfo, clearCache as clearNpmCache } from './npm-registry.js';
 import { parseNpmSpec, parsePathSpec, isExactSemver } from './plugin-spec.js';
 import { registerOpenCodeRoutes } from './routes.js';
 import { getProviderSources, removeProviderConfig, upsertProviderConfig } from './providers.js';
+import * as providersV2 from './providers-v2.js';
 import { getAgentSources, getAgentConfig, createAgent, updateAgent, deleteAgent } from './agents.js';
+import * as agentsV2 from './agents-v2.js';
 import { getCommandSources, createCommand, updateCommand, deleteCommand } from './commands.js';
+import * as commandsV2 from './commands-v2.js';
 import { listMcpConfigs, getMcpConfig, createMcpConfig, updateMcpConfig, deleteMcpConfig } from './mcp.js';
+import * as mcpV2 from './mcp-v2.js';
 import { listSnippets, getSnippet, createSnippet, updateSnippet, deleteSnippet, expandSnippets } from './snippets.js';
 import {
   listPluginEntries,
@@ -52,6 +56,7 @@ import {
   encodePluginId,
   decodePluginId,
 } from './plugins.js';
+import * as pluginsV2 from './plugins-v2.js';
 import { SKILL_DIR, SKILL_SCOPE, readSkillSupportingFile, writeSkillSupportingFile, deleteSkillSupportingFile } from './shared.js';
 import { getSkillSources, discoverSkills, mergeDiscoveredSkills, createSkill, updateSkill, deleteSkill, renameSkill, isManagedSkillPath } from './skills.js';
 import { getCuratedSkillsSources } from '../skills-catalog/curated-sources.js';
@@ -122,6 +127,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       refreshOpenCodeAfterConfigChange,
       getOpenCodeResolutionSnapshot,
       getOpenCodeUpgradeCapability,
+      upgradeOpenCodeCli,
       formatSettingsResponse,
       readSettingsFromDisk,
       readSettingsFromDiskMigrated,
@@ -132,6 +138,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       buildOpenCodeUrl,
       getOpenCodeAuthHeaders,
       getOpenCodePort,
+      kernelRuntime,
       getOwnPorts,
       devServerScanner,
       buildAugmentedPath,
@@ -169,10 +176,12 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerRoutingPromptRewrite(app, routingRuntime);
 
     registerOpenCodeRoutes(app, {
+      kernelRuntime,
       crypto,
       clientReloadDelayMs,
       getOpenCodeResolutionSnapshot,
       getOpenCodeUpgradeCapability,
+      upgradeOpenCodeCli,
       formatSettingsResponse,
       readSettingsFromDisk,
       readSettingsFromDiskMigrated,
@@ -180,9 +189,24 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       sanitizeProjects,
       validateDirectoryPath,
       resolveProjectDirectory,
-      getProviderSources,
-      removeProviderConfig,
-      upsertProviderConfig,
+      getProviderSources: (...args) => {
+        const active = kernelRuntime.get().generation;
+        if (active === 'oc1') return getProviderSources(...args);
+        if (active === 'oc2') return providersV2.getProviderSources(...args);
+        throw new Error('OpenCode generation is not ready for provider configuration');
+      },
+      removeProviderConfig: (...args) => {
+        const active = kernelRuntime.get().generation;
+        if (active === 'oc1') return removeProviderConfig(...args);
+        if (active === 'oc2') return providersV2.removeProviderConfig(...args);
+        throw new Error('OpenCode generation is not ready for provider configuration');
+      },
+      upsertProviderConfig: (...args) => {
+        const active = kernelRuntime.get().generation;
+        if (active === 'oc1') return upsertProviderConfig(...args);
+        if (active === 'oc2') return providersV2.upsertProviderConfig(...args);
+        throw new Error('OpenCode generation is not ready for provider configuration');
+      },
       refreshOpenCodeAfterConfigChange,
       buildOpenCodeUrl,
       getOpenCodeAuthHeaders,
@@ -234,25 +258,41 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       getOpenCodeAuthHeaders,
     });
 
+    const generation = () => kernelRuntime.get().generation;
+    const choose = (legacy, current) => (...args) => {
+      const active = generation();
+      if (active === 'oc1') return legacy(...args);
+      if (active === 'oc2') return current(...args);
+      throw new Error('OpenCode generation is not ready for configuration access');
+    };
+    for (const segment of ['agents', 'commands', 'mcp']) {
+      app.use(`/api/config/${segment}`, (_req, res, next) => {
+        if (generation() !== 'oc1' && generation() !== 'oc2') return res.status(503).json({ error: 'OpenCode generation is not ready' });
+        return next();
+      });
+    }
     registerConfigEntityRoutes(app, {
+      getGeneration: generation,
       resolveProjectDirectory,
       resolveOptionalProjectDirectory,
       refreshOpenCodeAfterConfigChange,
       clientReloadDelayMs,
-      getAgentSources,
-      getAgentConfig,
-      createAgent,
-      updateAgent,
-      deleteAgent,
-      getCommandSources,
-      createCommand,
-      updateCommand,
-      deleteCommand,
-      listMcpConfigs,
-      getMcpConfig,
-      createMcpConfig,
-      updateMcpConfig,
-      deleteMcpConfig,
+      getAgentSources: choose(getAgentSources, agentsV2.getAgentSources),
+      getAgentConfig: choose(getAgentConfig, agentsV2.getAgentConfig),
+      getAgentPermissions: agentsV2.getAgentPermissions,
+      createAgent: choose(createAgent, agentsV2.createAgent),
+      updateAgent: choose(updateAgent, agentsV2.updateAgent),
+      deleteAgent: choose(deleteAgent, agentsV2.deleteAgent),
+      getCommandSources: choose(getCommandSources, commandsV2.getCommandSources),
+      getCommandConfig: commandsV2.getCommandConfig,
+      createCommand: choose(createCommand, commandsV2.createCommand),
+      updateCommand: choose(updateCommand, commandsV2.updateCommand),
+      deleteCommand: choose(deleteCommand, commandsV2.deleteCommand),
+      listMcpConfigs: choose(listMcpConfigs, mcpV2.listMcpConfigs),
+      getMcpConfig: choose(getMcpConfig, mcpV2.getMcpConfig),
+      createMcpConfig: choose(createMcpConfig, mcpV2.createMcpConfig),
+      updateMcpConfig: choose(updateMcpConfig, mcpV2.updateMcpConfig),
+      deleteMcpConfig: choose(deleteMcpConfig, mcpV2.deleteMcpConfig),
       listSnippets,
       getSnippet,
       createSnippet,
@@ -261,19 +301,26 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       expandSnippets,
     });
 
+    const selectPluginOperation = (legacy, current) => (...args) => {
+      const generation = kernelRuntime.get().generation;
+      if (generation === 'oc1') return legacy(...args);
+      if (generation === 'oc2') return current(...args);
+      throw Object.assign(new Error('OpenCode generation is not ready for plugin configuration'), { statusCode: 503 });
+    };
     registerPluginRoutes(app, {
+      getKernelRuntime: () => kernelRuntime.get(),
       resolveOptionalProjectDirectory,
       refreshOpenCodeAfterConfigChange,
       clientReloadDelayMs,
-      listPluginEntries,
-      getPluginEntry,
-      createPluginEntry,
-      updatePluginEntry,
-      deletePluginEntry,
-      listPluginDirFiles,
-      readPluginDirFile,
-      writePluginDirFile,
-      deletePluginDirFile,
+      listPluginEntries: selectPluginOperation(listPluginEntries, pluginsV2.listPluginEntries),
+      getPluginEntry: selectPluginOperation(getPluginEntry, pluginsV2.getPluginEntry),
+      createPluginEntry: selectPluginOperation(createPluginEntry, pluginsV2.createPluginEntry),
+      updatePluginEntry: selectPluginOperation(updatePluginEntry, pluginsV2.updatePluginEntry),
+      deletePluginEntry: selectPluginOperation(deletePluginEntry, pluginsV2.deletePluginEntry),
+      listPluginDirFiles: selectPluginOperation(listPluginDirFiles, pluginsV2.listPluginDirFiles),
+      readPluginDirFile: selectPluginOperation(readPluginDirFile, pluginsV2.readPluginDirFile),
+      writePluginDirFile: selectPluginOperation(writePluginDirFile, pluginsV2.writePluginDirFile),
+      deletePluginDirFile: selectPluginOperation(deletePluginDirFile, pluginsV2.deletePluginDirFile),
       encodePluginId,
       decodePluginId,
       getNpmInfo,
@@ -285,6 +332,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     const { getProfiles, getProfile } = await import('../git/index.js');
 
     registerSkillRoutes(app, {
+      kernelRuntime,
       fs,
       path,
       os,

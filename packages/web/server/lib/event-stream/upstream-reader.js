@@ -47,6 +47,7 @@ async function cancelResponseBody(response) {
 
 export function createUpstreamSseReader({
   buildUrl,
+  getConnectionKey,
   getHeaders = () => ({}),
   fetchImpl = fetch,
   parseBlock = parseSseEventEnvelope,
@@ -63,6 +64,7 @@ export function createUpstreamSseReader({
   let stopped = false;
   let activeController = null;
   let lastEventId = typeof initialLastEventId === 'string' ? initialLastEventId : '';
+  let connectionKey;
   let stopListenerAttached = false;
 
   function detachStopListener() {
@@ -122,6 +124,9 @@ export function createUpstreamSseReader({
 
         try {
           const url = buildUrl();
+          const nextKey = getConnectionKey?.() ?? url.toString();
+          if (connectionKey !== undefined && connectionKey !== nextKey) lastEventId = '';
+          connectionKey = nextKey;
           const headers = {
             Accept: 'text/event-stream',
             'Cache-Control': 'no-cache',

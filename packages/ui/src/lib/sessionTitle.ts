@@ -1,11 +1,11 @@
-import type { AssistantMessage, Message, Part } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Message, Part, SyntheticMessage } from '@/lib/opencode/model';
 import { z } from 'zod';
 import { readContextPart } from './messages/contextParts';
-import { excerptMarkdown, formatMessageText } from './messages/messageMarkdown';
+import { excerptMarkdown, formatContextMessage, formatMessageText } from './messages/messageMarkdown';
 import { runtimeFetch } from './runtime-fetch';
 
 type MessageRecord = { info: Message; parts: Part[] };
-type TitleTurn = { user: MessageRecord; assistant: { info: AssistantMessage; parts: Part[] } };
+type TitleTurn = { user: MessageRecord; context?: SyntheticMessage[]; assistant: { info: AssistantMessage; parts: Part[] } };
 
 // Adapted from OpenCode's agent/prompt/title.txt for recent completed turns.
 const TITLE_SYSTEM_PROMPT = [
@@ -22,27 +22,47 @@ const TITLE_SYSTEM_PROMPT = [
   'Examples: debug 500 errors in production → Debugging production 500 errors; add dark mode to App.tsx → Dark mode in App.',
 ].join('\n');
 
-/** Input is chronological. Parent IDs, not adjacency, associate final answers. */
+/** Explicit parent IDs win; parentless OC2 steps belong to the preceding user turn. */
 export function collectSessionTitleTurns(records: readonly MessageRecord[], revertMessageID?: string): TitleTurn[] {
   const boundary = revertMessageID ? records.findIndex((record) => record.info.id === revertMessageID) : -1;
   if (revertMessageID && boundary < 0) return [];
   const end = boundary < 0 ? records.length : boundary;
   const answers = new Map<string, TitleTurn['assistant']>();
+  const userByAssistant = new Map<string, string>();
+  const contextByUser = new Map<string, SyntheticMessage[]>();
+  let pendingContext: SyntheticMessage[] = [];
+  let userID: string | undefined;
+  for (let index = 0; index < end; index += 1) {
+    const info = records[index].info;
+    if (info.role === 'synthetic' && readContextPart(info)) pendingContext.push(info);
+    if (info.role === 'user') {
+      userID = info.id;
+      if (pendingContext.length) contextByUser.set(info.id, pendingContext);
+      pendingContext = [];
+    }
+    else if (info.role === 'assistant') {
+      const parent = info.parentID ?? userID;
+      if (parent) userByAssistant.set(info.id, parent);
+    }
+  }
   const turns: TitleTurn[] = [];
   for (let index = end - 1; index >= 0; index -= 1) {
     const { info, parts } = records[index];
     if (info.role === 'assistant') {
       // Only the latest assistant record for this user can finish its turn.
-      if (answers.has(info.parentID)) continue;
-      answers.set(info.parentID, { info, parts });
+      const parent = userByAssistant.get(info.id);
+      if (!parent || answers.has(parent)) continue;
+      answers.set(parent, { info, parts });
       continue;
     }
+    if (info.role !== 'user') continue;
     const answer = answers.get(info.id);
     if (!answer || answer.info.finish !== 'stop' || !answer.info.time.completed || answer.info.error || answer.info.summary) continue;
     const hasUserContent = parts.some((part) => part.type === 'text' && !part.ignored
       && ((!part.synthetic && part.text.trim()) || readContextPart(part)));
-    if (!hasUserContent || !answer.parts.some((part) => part.type === 'text' && !part.ignored && !part.synthetic && part.text.trim())) continue;
-    turns.push({ user: records[index], assistant: answer });
+    const context = contextByUser.get(info.id);
+    if ((!hasUserContent && !context?.length) || !answer.parts.some((part) => part.type === 'text' && !part.ignored && !part.synthetic && part.text.trim())) continue;
+    turns.push({ user: records[index], ...(context ? { context } : {}), assistant: answer });
     if (turns.length === 3) break;
   }
   return turns.reverse();
@@ -51,7 +71,10 @@ export function collectSessionTitleTurns(records: readonly MessageRecord[], reve
 export function formatSessionTitleContext(turns: readonly TitleTurn[]): string {
   return turns.map((turn) => [
     '**User**',
-    excerptMarkdown(formatMessageText(turn.user.parts, { user: true, excludeSynthetic: true, fieldLimit: 2000 }), 4000),
+    excerptMarkdown([
+      ...(turn.context ?? []).map((message) => formatContextMessage(message, 2000)),
+      formatMessageText(turn.user.parts, { user: true, excludeSynthetic: true, fieldLimit: 2000 }),
+    ].filter(Boolean).join('\n\n'), 4000),
     '**Assistant final response**',
     excerptMarkdown(formatMessageText(turn.assistant.parts, { excludeSynthetic: true, fieldLimit: 4000 }), 4000),
   ].join('\n\n')).join('\n\n---\n\n');

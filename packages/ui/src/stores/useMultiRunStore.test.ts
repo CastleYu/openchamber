@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createOpencodeClient, type Session } from '@opencode-ai/sdk/v2';
-import { z } from 'zod';
+import type { Session } from '@/lib/opencode/model';
+import type { OpenCodeRuntime } from '@/lib/opencode/runtime';
 
 const upsertedSessions: Session[] = [];
 const registeredDirectories: Array<{ sessionID: string; directory: string }> = [];
@@ -14,6 +14,7 @@ const deletedSessionIds: string[] = [];
 let createdCount = 0;
 let rejectNextMembership = false;
 let onCreate = () => {};
+let onUpdate = () => {};
 let isGitRepository = false;
 let waitForWorktreeSetup = false;
 const createWorktreeWithDefaultsMock = mock((project: { id?: string; path: string }, args: Record<string, unknown>, options: unknown) => {
@@ -36,36 +37,33 @@ const childState = {
   sessionTotal: 0,
   limit: 5,
 };
-const requestSchema = z.object({ title: z.string().optional(), metadata: z.record(z.string(), z.unknown()).optional() });
 let storedSession: Session;
-const sdkClient = createOpencodeClient({
-  baseUrl: 'http://multirun.test',
-  fetch: async (request) => {
-    const req = new Request(request);
-    const directory = new URL(req.url).searchParams.get('directory') ?? '/repo';
-    if (req.method === 'POST') {
-      const body = requestSchema.parse(await req.json());
-      operationOrder.push(`createSession:${directory}`);
-      createdCount += 1;
-      storedSession = { id: createdCount === 1 ? 'ses_multirun' : `ses_multirun_${createdCount}`, slug: 'multirun', projectID: 'p', version: '1',
-        title: body.title ?? '', directory, metadata: body.metadata, time: { created: 1, updated: 1 } };
-      onCreate();
-    }
-    if (req.method === 'PATCH') {
-      if (rejectNextMembership) {
-        rejectNextMembership = false;
-        return Response.json({ error: 'membership write failed' }, { status: 500 });
-      }
-      storedSession = { ...storedSession, ...requestSchema.parse(await req.json()) };
-    }
-    if (req.method === 'DELETE') {
-      deletedSessionIds.push(storedSession.id);
-      return Response.json(true);
-    }
-    return Response.json(storedSession);
+let binding: OpenCodeRuntime = { generation: 'oc1', endpoint: 'http://multirun.test', epoch: 'first', version: '1.18.32' };
+const api = {
+  getBoundRuntime: () => binding,
+  async createSession(input: { title?: string; metadata?: Session['metadata']; model?: Session['model']; agent?: string } = {}, directory = '/repo') {
+    operationOrder.push(`createSession:${directory}`);
+    createdCount += 1;
+    storedSession = { id: createdCount === 1 ? 'ses_multirun' : `ses_multirun_${createdCount}`, slug: 'multirun', projectID: 'p', version: '1',
+      title: input.title ?? '', directory, metadata: input.metadata, model: input.model, agent: input.agent, time: { created: 1, updated: 1 } };
+    onCreate();
+    return storedSession;
   },
-});
-let activeClient = sdkClient;
+  async getSession() { return storedSession; },
+  async updateSession(_id: string, patch: { metadata?: Session['metadata'] }) {
+    if (rejectNextMembership) {
+      rejectNextMembership = false;
+      throw new Error('membership write failed');
+    }
+    storedSession = { ...storedSession, metadata: patch.metadata };
+    onUpdate();
+    return storedSession;
+  },
+  async deleteSession(id: string) {
+    deletedSessionIds.push(id);
+    return true;
+  },
+};
 
 mock.module('@/sync/session-ui-store', () => ({
   routeMessage: async ({ sessionId }: { sessionId: string }) => { dispatchedSessionIds.push(sessionId); },
@@ -80,9 +78,7 @@ mock.module('@/sync/session-ui-store', () => ({
 }));
 
 mock.module('@/lib/opencode/client', () => ({
-  opencodeClient: {
-    getSdkClient: () => activeClient,
-  },
+  opencodeClient: api,
 }));
 
 mock.module('@/lib/gitApi', () => ({
@@ -179,8 +175,9 @@ describe('useMultiRunStore', () => {
     deletedSessionIds.length = 0;
     createdCount = 0;
     rejectNextMembership = false;
-    activeClient = sdkClient;
+    binding = { generation: 'oc1', endpoint: 'http://multirun.test', epoch: 'first', version: '1.18.32' };
     onCreate = () => {};
+    onUpdate = () => {};
     isGitRepository = false;
     waitForWorktreeSetup = false;
     childState.session = [];
@@ -206,6 +203,19 @@ describe('useMultiRunStore', () => {
     expect(childState.session.map((session) => session.id)).toEqual(['ses_multirun']);
   });
 
+  test('OC2 pins model and agent on the created session before dispatch', async () => {
+    binding = { generation: 'oc2', endpoint: 'http://multirun.test', epoch: 'second', version: '2.0.1' };
+    const result = await useMultiRunStore.getState().createMultiRun({
+      name: 'OC2 run', isolateRuns: false, agent: 'build',
+      groups: [{ prompt: 'Fix it', models: [{ providerID: 'anthropic', modelID: 'claude-sonnet', variant: 'high' }] }],
+    });
+    await Promise.resolve();
+    expect(result?.sessionIds).toEqual(['ses_multirun']);
+    expect(storedSession.model).toEqual({ providerID: 'anthropic', id: 'claude-sonnet', variant: 'high' });
+    expect(storedSession.agent).toBe('build');
+    expect(dispatchedSessionIds).toEqual(['ses_multirun']);
+  });
+
   test('membership failure does not dispatch that session or discard a successful sibling', async () => {
     rejectNextMembership = true;
     const result = await useMultiRunStore.getState().createMultiRun({
@@ -225,7 +235,7 @@ describe('useMultiRunStore', () => {
 
   test('changing runtime while creating stops dispatch and registration', async () => {
     onCreate = () => {
-      activeClient = createOpencodeClient({ baseUrl: 'http://other-runtime.test' });
+      binding = { generation: 'oc2', endpoint: 'http://other-runtime.test', epoch: 'second', version: '2.0.1' };
       useMultiRunStore.getState().resetForRuntimeSwitch();
     };
     const result = await useMultiRunStore.getState().createMultiRun({
@@ -237,6 +247,21 @@ describe('useMultiRunStore', () => {
     expect(upsertedSessions).toEqual([]);
     expect(deletedSessionIds).toEqual([]);
     expect(useMultiRunStore.getState().isLoading).toBe(false);
+  });
+
+  test('changing runtime after metadata write skips cleanup on the new runtime', async () => {
+    onUpdate = () => {
+      binding = { generation: 'oc2', endpoint: 'http://other-runtime.test', epoch: 'second', version: '2.0.1' };
+      useMultiRunStore.getState().resetForRuntimeSwitch();
+    };
+    const result = await useMultiRunStore.getState().createMultiRun({
+      name: 'runtime', isolateRuns: false,
+      groups: [{ prompt: 'question', models: [{ providerID: 'openrouter', modelID: 'vendor/model' }] }],
+    });
+    expect(result).toBeNull();
+    expect(deletedSessionIds).toEqual([]);
+    expect(dispatchedSessionIds).toEqual([]);
+    expect(upsertedSessions).toEqual([]);
   });
 
   test('uses fast background worktree creation for isolated runs', async () => {

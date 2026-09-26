@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { selectNewChildSessions } from "./child-session-discovery"
 
 const session = (id: string, parentID?: string): Session => {

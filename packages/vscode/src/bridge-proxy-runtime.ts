@@ -1,5 +1,7 @@
 import type { BridgeContext, BridgeResponse } from './bridge';
 import { waitForApiUrl } from './opencode-ready';
+import { resolveKernelRequest } from './kernelRequest';
+import { isSessionRecordPath, overlaySessionResponseBody, parseJson, type SessionStateStore } from './openchamberSessionState';
 
 type BridgeMessageInput = {
   id: string;
@@ -57,10 +59,27 @@ const isSseProxyPath = (requestPath: string): boolean => {
 
 type ProxyRuntimeDeps = {
   tryHandleLocalFsProxy: (method: string, requestPath: string) => Promise<ApiProxyResponsePayload | null>;
+  sessionState?: Pick<SessionStateStore, 'readArchived' | 'readMetadata'>;
   buildUnavailableApiResponse: () => ApiProxyResponsePayload;
   sanitizeForwardHeaders: (input: Record<string, string> | undefined) => Record<string, string>;
   collectHeaders: (headers: Headers) => Record<string, string>;
   base64EncodeUtf8: (text: string) => string;
+};
+
+const overlayOwnedSessionState = async (
+  generation: string,
+  method: string,
+  requestPath: string,
+  data: ApiProxyResponsePayload,
+  sessionState: ProxyRuntimeDeps['sessionState'],
+): Promise<ApiProxyResponsePayload> => {
+  if (generation !== 'oc2' || !sessionState || method !== 'GET' || data.status !== 200 || !data.bodyText) return data;
+  const pathname = new URL(requestPath, 'https://openchamber.invalid').pathname;
+  if (!isSessionRecordPath(pathname)) return data;
+  const body = parseJson(data.bodyText);
+  if (body === null) return data;
+  const [archived, metadata] = await Promise.all([sessionState.readArchived(), sessionState.readMetadata()]);
+  return { ...data, bodyText: JSON.stringify(overlaySessionResponseBody(body, archived, metadata)) };
 };
 
 const proxyAbortControllers = new Map<string, AbortController>();
@@ -164,8 +183,9 @@ export async function handleProxyBridgeMessage(
         return { id, type, success: true, data };
       }
 
-      const base = `${apiUrl.replace(/\/+$/, '')}/`;
-      const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+      if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      const targetUrl = selected.url;
       const requestHeaders: Record<string, string> = {
         ...deps.sanitizeForwardHeaders(headers),
         ...ctx?.manager?.getOpenCodeAuthHeaders(),
@@ -181,12 +201,17 @@ export async function handleProxyBridgeMessage(
       // AbortController (api:proxy:abort can't cancel these reads), so one
       // caller aborting can't strand the others.
       const coalesceKey =
-        normalizedMethod === 'GET' && COALESCE_READ_PATH.test(normalizedPath) ? `GET ${targetUrl}` : null;
+        normalizedMethod === 'GET' && COALESCE_READ_PATH.test(normalizedPath)
+          ? `${selected.descriptor.generation}:${selected.descriptor.epoch} GET ${targetUrl}` : null;
       if (coalesceKey) {
         const existing = READ_COALESCE.get(coalesceKey);
         if (existing) {
           const shared = await existing;
-          return { id, type, success: true, data: { ...shared, headers: { ...shared.headers } } };
+          selected.assertCurrent();
+          const data = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath,
+            { ...shared, headers: { ...shared.headers } }, deps.sessionState);
+          selected.assertCurrent();
+          return { id, type, success: true, data };
         }
         const pending = performApiProxyFetch(targetUrl, 'GET', requestHeaders, undefined, undefined, deps);
         READ_COALESCE.set(coalesceKey, pending);
@@ -195,7 +220,10 @@ export async function handleProxyBridgeMessage(
           () => READ_COALESCE.delete(coalesceKey),
         );
         const data = await pending;
-        return { id, type, success: true, data };
+        selected.assertCurrent();
+        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        selected.assertCurrent();
+        return { id, type, success: true, data: projected };
       }
 
       const abortController = new AbortController();
@@ -210,7 +238,10 @@ export async function handleProxyBridgeMessage(
           abortController.signal,
           deps,
         );
-        return { id, type, success: true, data };
+        selected.assertCurrent();
+        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        selected.assertCurrent();
+        return { id, type, success: true, data: projected };
       } finally {
         proxyAbortControllers.delete(id);
       }
@@ -241,8 +272,12 @@ export async function handleProxyBridgeMessage(
         return { id, type, success: true, data };
       }
 
-      const base = `${apiUrl.replace(/\/+$/, '')}/`;
-      const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+      if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      if (selected.descriptor.generation !== 'oc1') {
+        return { id, type, success: false, error: 'Legacy message forwarding requires OpenCode 1' };
+      }
+      const targetUrl = selected.url;
       const requestHeaders: Record<string, string> = {
         ...deps.sanitizeForwardHeaders(headers),
         ...ctx?.manager?.getOpenCodeAuthHeaders(),

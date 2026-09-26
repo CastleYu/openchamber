@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import type { SessionNodeItemProps } from './SessionNodeItem';
 import type { SessionTreeItemProps } from './SessionTreeItem';
 import { installHookTestDom } from '../test-utils/testDom';

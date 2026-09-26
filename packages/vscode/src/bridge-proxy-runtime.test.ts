@@ -21,6 +21,8 @@ const ctx = {
   manager: {
     getStatus: () => 'connected',
     getApiUrl: () => 'http://127.0.0.1:3902',
+    getKernelRuntime: () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '1.18.32' }),
+    refreshKernelRuntime: async () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '1.18.32' }),
     getOpenCodeAuthHeaders: () => ({}),
     onStatusChange: (cb: (status: string) => void) => {
       cb('connected');
@@ -60,6 +62,51 @@ describe('VS Code API proxy aborts', () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+});
+
+describe('VS Code OC2 session overlay', () => {
+  test('adds scoped archive and legacy metadata only to OC2 session reads', async () => {
+    const originalFetch = globalThis.fetch;
+    const current = {
+      manager: {
+        getStatus: () => 'connected', getApiUrl: () => 'http://127.0.0.1:3902',
+        getKernelRuntime: () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '2.0.16' }),
+        refreshKernelRuntime: async () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '2.0.16' }),
+        getOpenCodeAuthHeaders: () => ({}),
+        onStatusChange: () => ({ dispose: () => {} }),
+      },
+    } as unknown as BridgeContext;
+    try {
+      globalThis.fetch = async () => new Response(JSON.stringify({ data: [{ id: 'ses_1', location: { directory: '/repo' } }] }),
+        { status: 200, headers: { 'content-type': 'application/json' } });
+      const response = await handleProxyBridgeMessage({ id: 'overlay', type: 'api:proxy',
+        payload: { method: 'GET', path: '/api/session' } }, current,
+      { ...deps, sessionState: { readArchived: async () => ({ ses_1: 42 }), readMetadata: async () => ({ ses_1: { openchamber: { old: true } } }) } });
+      assert.equal(response?.success, true);
+      assert.deepEqual(JSON.parse((response?.data as { bodyText: string }).bodyText).data[0],
+        { id: 'ses_1', location: { directory: '/repo' }, time: { archived: 42 }, metadata: { openchamber: { old: true } } });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test('does not treat a failed archive read as an empty OC2 overlay', async () => {
+    const originalFetch = globalThis.fetch;
+    const current = { manager: {
+      getStatus: () => 'connected', getApiUrl: () => 'http://127.0.0.1:3902',
+      getKernelRuntime: () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '2.0.16' }),
+      refreshKernelRuntime: async () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '2.0.16' }),
+      getOpenCodeAuthHeaders: () => ({}), onStatusChange: () => ({ dispose: () => {} }),
+    } } as unknown as BridgeContext;
+    try {
+      globalThis.fetch = async () => new Response(JSON.stringify({ data: [{ id: 'ses_1' }] }),
+        { status: 200, headers: { 'content-type': 'application/json' } });
+      await assert.rejects(handleProxyBridgeMessage({ id: 'failed-overlay', type: 'api:proxy',
+        payload: { method: 'GET', path: '/api/session' } }, current,
+      { ...deps, sessionState: { readArchived: async () => { throw new Error('archive unavailable'); }, readMetadata: async () => ({}) } }),
+      /archive unavailable/);
+    } finally { globalThis.fetch = originalFetch; }
   });
 });
 

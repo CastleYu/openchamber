@@ -19,6 +19,7 @@ import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useGitStore } from '@/stores/useGitStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider, useSessions } from '@/sync/sync-context';
+import { useOpenCodeSource } from './useOpenCodeSource';
 import { useSync } from '@/sync/use-sync';
 import { SyncRuntimeEffects } from './AppEffects';
 import { useAppFontEffects } from './useAppFontEffects';
@@ -70,7 +71,6 @@ const MiniChatBootstrap: React.FC<{ config: MiniChatConfig }> = ({ config }) => 
   });
   const setCurrentSession = useSessionUIStore((state) => state.setCurrentSession);
   const openNewSessionDraft = useSessionUIStore((state) => state.openNewSessionDraft);
-  const initializeApp = useConfigStore((state) => state.initializeApp);
   const isInitialized = useConfigStore((state) => state.isInitialized);
   const isConnected = useConfigStore((state) => state.isConnected);
   const loadProviders = useConfigStore((state) => state.loadProviders);
@@ -78,31 +78,6 @@ const MiniChatBootstrap: React.FC<{ config: MiniChatConfig }> = ({ config }) => 
   const providersCount = useConfigStore((state) => state.providers.length);
   const agentsCount = useConfigStore((state) => state.agents.length);
   const sync = useSync();
-
-  React.useEffect(() => {
-    void initializeApp();
-  }, [initializeApp]);
-
-  React.useEffect(() => {
-    if (isInitialized) return;
-    let active = true;
-    let retryCount = 0;
-    const id = window.setInterval(() => {
-      if (!active) return;
-      retryCount += 1;
-      if (retryCount > 10) {
-        window.clearInterval(id);
-        return;
-      }
-      if (!useConfigStore.getState().isInitialized) {
-        void useConfigStore.getState().initializeApp();
-      }
-    }, 1000);
-    return () => {
-      active = false;
-      window.clearInterval(id);
-    };
-  }, [isInitialized]);
 
   const directoryBootstrappedRef = React.useRef(false);
   React.useEffect(() => {
@@ -323,6 +298,8 @@ const useSessionUnavailable = (config: MiniChatConfig): boolean => {
 };
 
 export function ElectronMiniChatApp({ apis }: ElectronMiniChatAppProps) {
+  const syncSource = useOpenCodeSource();
+  const isInitialized = useConfigStore((state) => state.isInitialized);
   const config = React.useMemo(() => readMiniChatConfig(), []);
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
 
@@ -332,8 +309,22 @@ export function ElectronMiniChatApp({ apis }: ElectronMiniChatAppProps) {
 
   React.useEffect(() => {
     registerRuntimeAPIs(apis);
+    void useConfigStore.getState().initializeApp();
     return () => registerRuntimeAPIs(null);
   }, [apis]);
+
+  React.useEffect(() => {
+    if (isInitialized) return;
+    let retries = 0;
+    const timer = window.setInterval(() => {
+      if (++retries > 10 || useConfigStore.getState().isInitialized) {
+        window.clearInterval(timer);
+        return;
+      }
+      void useConfigStore.getState().initializeApp();
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isInitialized]);
 
   useAppFontEffects();
   useMiniChatKeyboardShortcuts();
@@ -344,7 +335,7 @@ export function ElectronMiniChatApp({ apis }: ElectronMiniChatAppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || config.directory || ''}>
+      <SyncProvider source={syncSource} directory={currentDirectory || config.directory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <TooltipProvider delayDuration={300} skipDelayDuration={150}>
             <div className="h-full text-foreground bg-background">

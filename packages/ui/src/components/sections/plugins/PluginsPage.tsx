@@ -9,7 +9,13 @@ import { cn } from '@/lib/utils';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
 import { SettingsSection } from '@/components/sections/shared/SettingsSection';
 import { RegistryBanner } from './RegistryBanner';
+import { PluginStatusBanner } from './PluginStatusBanner';
+import { configEntryRuntimeTarget, pluginFileRuntimeTarget } from './pluginLoadState';
+import { opencodeClient } from '@/lib/opencode/client';
+import { useProjectsStore } from '@/stores/useProjectsStore';
 import {
+  getPluginsConfigDirectory,
+  getPluginsScopeKey,
   usePluginsStore,
   type PluginDraft,
   type PluginEntry,
@@ -84,6 +90,13 @@ const ScopeBadge: React.FC<{ scope: PluginScope; label: string }> = ({ scope, la
 
 export const PluginsPage: React.FC = () => {
   const { t } = useI18n();
+  useProjectsStore((state) => state.getActiveProject()?.path);
+  const scope = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => getPluginsScopeKey(getPluginsConfigDirectory()),
+  );
+  const isV2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const catalogIsCurrent = usePluginsStore((s) => s.loadedScope === scope);
 
   const selectedId = usePluginsStore((s) => s.selectedId);
   const entries = usePluginsStore((s) => s.entries);
@@ -95,12 +108,20 @@ export const PluginsPage: React.FC = () => {
   const readFile = usePluginsStore((s) => s.readFile);
 
   const selectedEntry = React.useMemo(
-    () => (selectedId ? entries.find((e) => e.id === selectedId) ?? null : null),
-    [entries, selectedId],
+    () => (catalogIsCurrent && selectedId ? entries.find((e) => e.id === selectedId) ?? null : null),
+    [catalogIsCurrent, entries, selectedId],
   );
   const selectedFile = React.useMemo(
-    () => (selectedId ? files.find((f) => f.id === selectedId) ?? null : null),
-    [files, selectedId],
+    () => (catalogIsCurrent && selectedId ? files.find((f) => f.id === selectedId && f.kind === 'file') ?? null : null),
+    [catalogIsCurrent, files, selectedId],
+  );
+  const selectedEntryTarget = React.useMemo(
+    () => selectedEntry ? configEntryRuntimeTarget(selectedEntry.spec, selectedEntry.sourcePath) : null,
+    [selectedEntry],
+  );
+  const selectedFileTarget = React.useMemo(
+    () => selectedFile ? pluginFileRuntimeTarget(selectedFile.absolutePath) : null,
+    [selectedFile],
   );
 
   const [isSaving, setIsSaving] = React.useState(false);
@@ -212,6 +233,7 @@ export const PluginsPage: React.FC = () => {
         showSaveStatus={false}
       >
         <SettingsSection divider={false}>
+          {isV2 ? <PluginStatusBanner target={selectedEntryTarget} name={selectedEntry.spec} /> : null}
           <RegistryBanner entryId={selectedEntry.id} spec={selectedEntry.spec} />
         </SettingsSection>
 
@@ -340,6 +362,7 @@ export const PluginsPage: React.FC = () => {
         )}
         showSaveStatus={false}
       >
+        {isV2 ? <SettingsSection divider={false}><PluginStatusBanner target={selectedFileTarget} name={selectedFile.fileName} /></SettingsSection> : null}
         <SettingsSection
           title={t('settings.plugins.page.field.content')}
           divider={false}

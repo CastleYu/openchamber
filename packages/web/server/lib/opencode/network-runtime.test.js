@@ -40,6 +40,19 @@ describe('OpenCode network runtime', () => {
     expect(runtime.buildOpenCodeUrl('/provider')).toBe('http://127.0.0.1:4096/provider');
   });
 
+  it.each(['oc1', 'oc2'])('recognizes %s readiness from its authoritative endpoint', async (generation) => {
+    globalThis.fetch = vi.fn(async (url) => {
+      if (generation === 'oc1' && url.endsWith('/global/health')) {
+        return Response.json({ healthy: true, version: '1.18.32' });
+      }
+      if (generation === 'oc2' && url.endsWith('/api/info')) {
+        return Response.json({ version: '2.0.16' });
+      }
+      return new Response('<html>not an API</html>');
+    });
+    await expect(createRuntime().waitForReady('http://127.0.0.1:4096', 1000)).resolves.toBe(true);
+  });
+
   it('keeps external OpenCode base URLs authoritative', () => {
     const runtime = createRuntime({
       state: { openCodeBaseUrl: 'http://remote.example:4096' },

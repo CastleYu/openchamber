@@ -1,14 +1,22 @@
 import type { ContextPartMetadata } from '@/lib/messages/contextParts';
 import { createOpencodeClient, OpencodeClient } from "@opencode-ai/sdk/v2";
+import { isPermissionNotFoundError, type FormAnswer, type OpenCodeClient, type PermissionRequest as V2PermissionRequest, type SessionRevert as V2SessionRevert } from '@opencode/client';
 import type { PermissionV2Request, PermissionV2Effect, PermissionV2Source } from "@opencode-ai/sdk/v2/client";
 import { z } from "zod";
 import { OpencodeRequestError, toUpstreamErrorDetail, upstreamErrorPayloadSchema } from "./upstreamError";
+import { OPEN_CODE_GENERATION, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntime } from './runtime';
+import { V1SessionOperations } from './v1/sessions';
+import { projectLegacyMessage, projectLegacyPart, projectLegacySession } from './v1/projection';
+import type { Message as DomainMessage, Metadata, ModelRef, Part as DomainPart, Project as DomainProject, Session as DomainSession, Vcs as DomainVcs } from './model';
+import { V2SessionOperations } from './v2/sessions';
+import { V2CatalogOperations } from './v2/catalog';
+import type { BootstrapPath, McpCatalog, PendingInput, PendingPermission, ProviderCatalog, TaggedConfig } from './operations';
+import { createV2RuntimeClient } from './v2/client';
+import { createOpenCodeFetch, createTimeoutSignal } from './transport';
+import { createV1SyncSource, createV2SyncSource, type SyncSource } from '@/sync/source';
 import type { FilesAPI } from "../api/types";
 import { getDesktopHomeDirectory } from "../desktop";
 import type {
-  Session,
-  Message,
-  Part,
   Provider,
   Config,
   Agent,
@@ -27,7 +35,7 @@ import type { QuestionRequest } from "@/types/question";
  * pre-v1.17.12 server without the V2 endpoint).
  */
 export type FetchPermissionResult =
-  | { state: "ok"; permission: PermissionV2Request }
+  | { state: "ok"; permission: PermissionV2Request | V2PermissionRequest }
   | { state: "resolved" }
   | { state: "unknown" };
 import { getRuntimeUrlResolver } from "@/lib/runtime-url";
@@ -74,6 +82,7 @@ type SdkResult<T> = {
 };
 
 type DirectoryAvailability = "available" | "missing" | "unknown";
+type SessionArchivePayload = { ids: string[]; directory?: string; archivedAt?: number };
 const directoryProbeErrorSchema = z.object({ reason: z.string().optional(), isDirectory: z.boolean().optional() });
 
 
@@ -175,119 +184,19 @@ const resolveRuntimeBaseUrl = (): string | null => {
   }
 };
 
-type AbortSignalConstructorWithTimeout = typeof AbortSignal & {
-  timeout?: (milliseconds: number) => AbortSignal;
-};
-
-const createTimeoutSignal = (timeoutMs: number): { signal: AbortSignal; cleanup: () => void } => {
-  const abortSignal = typeof AbortSignal !== 'undefined'
-    ? AbortSignal as AbortSignalConstructorWithTimeout
-    : undefined;
-  if (typeof abortSignal?.timeout === 'function') {
-    return { signal: abortSignal.timeout(timeoutMs), cleanup: () => undefined };
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  return {
-    signal: controller.signal,
-    cleanup: () => clearTimeout(timeoutId),
-  };
-};
-
-/**
- * Upper bound for non-streaming OpenCode read requests. Without it, a socket
- * that neither resolves nor rejects (the half-open state described in #2470)
- * keeps the bootstrap concurrency slot busy forever and the UI stays on
- * "loading sessions". Long-lived streams (POST prompts, the /event SSE) are
- * explicitly excluded in {@link createRuntimeOpencodeClient}.
- */
-const OPENCODE_REQUEST_TIMEOUT_MS = 30_000;
-
-const isEventStreamUrl = (input: string | URL | Request): boolean => {
-  const url = typeof input === 'string'
-    ? input
-    : input instanceof URL
-      ? input.toString()
-      : input.url;
-  return url.includes('/event');
-};
-
 type RuntimeOpencodeClientConfig = {
   baseUrl: string;
   directory?: string;
+  assertProtocol?: () => void;
   /** Read-request timeout in ms. Overridable so tests can use short value. */
   requestTimeoutMs?: number;
 };
 
 export const createRuntimeOpencodeClient = (config: RuntimeOpencodeClientConfig): OpencodeClient => {
-  const requestTimeoutMs = config.requestTimeoutMs ?? OPENCODE_REQUEST_TIMEOUT_MS;
+  const { assertProtocol, requestTimeoutMs, ...sdkConfig } = config;
   return createOpencodeClient({
-    ...config,
-    fetch: async (input: string | URL | Request, init?: RequestInit) => {
-      const method = String(
-        init?.method ?? (input instanceof Request ? input.method : 'GET'),
-      ).toUpperCase();
-      if (isEventStreamUrl(input) || method === 'POST') {
-        return runtimeFetch(input, init);
-      }
-      const timeout = createTimeoutSignal(requestTimeoutMs);
-      const callerSignal = init?.signal !== undefined
-        ? init.signal
-        : input instanceof Request ? input.signal : undefined;
-      const supportsAny = typeof AbortSignal !== 'undefined'
-        && typeof (AbortSignal as { any?: unknown }).any === 'function';
-      let signal: AbortSignal;
-      let detachFallback: (() => void) | null = null;
-      if (callerSignal && supportsAny) {
-        signal = (AbortSignal as typeof AbortSignal & { any: (signals: AbortSignal[]) => AbortSignal })
-          .any([callerSignal, timeout.signal]);
-      } else if (callerSignal) {
-        // No AbortSignal.any: compose manually. Silently dropping the timeout
-        // here would disable the fix on exactly the bootstrap reads it
-        // targets, since those carry a cancellation signal.
-        const controller = new AbortController();
-        const abortFromCaller = () => controller.abort(callerSignal.reason);
-        const abortFromTimeout = () => controller.abort(timeout.signal.reason);
-        if (callerSignal.aborted) {
-          abortFromCaller();
-        } else if (timeout.signal.aborted) {
-          abortFromTimeout();
-        } else {
-          callerSignal.addEventListener('abort', abortFromCaller, { once: true });
-          timeout.signal.addEventListener('abort', abortFromTimeout, { once: true });
-          detachFallback = () => {
-            callerSignal.removeEventListener('abort', abortFromCaller);
-            timeout.signal.removeEventListener('abort', abortFromTimeout);
-          };
-        }
-        signal = controller.signal;
-      } else {
-        signal = timeout.signal;
-      }
-      const cleanup = () => {
-        detachFallback?.();
-        timeout.cleanup();
-      };
-      let responseHasBody = false;
-      try {
-        const response = await runtimeFetch(input, { ...init, signal });
-        responseHasBody = response.body !== null;
-        return response;
-      } catch (error) {
-        if (timeout.signal.aborted && !callerSignal?.aborted) {
-          throw new Error(`OpenCode request timed out after ${requestTimeoutMs}ms`);
-        }
-        throw error;
-      } finally {
-        // The SDK consumes JSON after fetch resolves. Keep cancellation and the
-        // deadline alive through body delivery, including on older WebViews
-        // using the manual signal composition. Retention is bounded by the
-        // request deadline, just like native AbortSignal.timeout.
-        if (!responseHasBody || signal.aborted) cleanup();
-        else signal.addEventListener('abort', cleanup, { once: true });
-      }
-    },
+    ...sdkConfig,
+    fetch: createOpenCodeFetch({ assertProtocol, requestTimeoutMs }),
   });
 };
 
@@ -359,10 +268,27 @@ const fsHomeResponseSchema = z.object({
   canonicalLegacyChatsRoot: fsAbsolutePathSchema.optional(),
 });
 
+const runtimeDescriptorSchema = z.object({
+  generation: z.enum(OPEN_CODE_GENERATION),
+  endpoint: z.string().min(1).nullable(),
+  epoch: z.union([z.string().min(1), z.number().finite()]),
+  version: z.string().nullable(),
+});
+
 class OpencodeService {
+  private readonly runtimeBinding = new OpenCodeRuntimeBinding();
+  private connectionRevision = 0;
+  private discovery: Promise<OpenCodeRuntime> | null = null;
+  private readonly runtimeListeners = new Set<() => void>();
+  private syncSource: SyncSource | null = null;
   private client: OpencodeClient;
+  private sessions: V1SessionOperations;
+  private v2Client: OpenCodeClient;
+  private readonly v2Sessions: V2SessionOperations;
+  private readonly v2Catalog: V2CatalogOperations;
   private baseUrl: string;
   private scopedClients: Map<string, OpencodeClient> = new Map();
+  private v2ScopedClients: Map<string, OpenCodeClient> = new Map();
   private currentDirectory: string | undefined = undefined;
   private directoryContextQueue: Promise<void> = Promise.resolve();
   private listDirectoryInFlight: Map<string, Promise<FilesystemEntry[]>> = new Map();
@@ -377,7 +303,11 @@ class OpencodeService {
     const runtimeBase = resolveRuntimeBaseUrl();
     const requestedBaseUrl = runtimeBase || baseUrl;
     this.baseUrl = ensureAbsoluteBaseUrl(requestedBaseUrl);
-    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl });
+    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc1', 'SDK request') });
+    this.sessions = new V1SessionOperations(this.client);
+    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc2', 'SDK request') });
+    this.v2Sessions = new V2SessionOperations((directory) => this.v2ClientFor(directory), this.runtimeBinding);
+    this.v2Catalog = new V2CatalogOperations((directory) => this.v2ClientFor(directory), this.runtimeBinding);
   }
 
   private assertRuntimeUnchanged(runtimeKey?: string): void {
@@ -390,24 +320,172 @@ class OpencodeService {
     return this.baseUrl;
   }
 
-  reconnectToRuntimeBaseUrl(): void {
+  /** Called only after the server/host has selected an endpoint and epoch. */
+  bindRuntime(runtime: OpenCodeRuntime): void {
+    const current = this.runtimeBinding.get();
+    if (current?.endpoint === runtime.endpoint
+      && current.epoch === runtime.epoch
+      && current.generation === runtime.generation
+      && current.version === runtime.version) return;
+    this.runtimeBinding.set(runtime);
+    this.reconnectToRuntimeBaseUrl(true);
+  }
+
+  getBoundRuntime(): OpenCodeRuntime | null {
+    return this.runtimeBinding.get();
+  }
+
+  subscribeRuntime(listener: () => void): () => void {
+    this.runtimeListeners.add(listener);
+    return () => { this.runtimeListeners.delete(listener); };
+  }
+
+  private notifyRuntime(): void {
+    for (const listener of this.runtimeListeners) listener();
+  }
+
+  /** The owning server selects the kernel; the browser never guesses its protocol. */
+  discoverRuntime(): Promise<OpenCodeRuntime> {
+    if (this.discovery) return this.discovery;
+    const revision = this.connectionRevision;
+    const runtimeKey = getRuntimeKey();
+    const timeout = createTimeoutSignal(OPENCODE_HEALTH_TIMEOUT_MS);
+    const request = (async () => {
+      try {
+        const response = await runtimeFetch('/api/opencode/runtime', { signal: timeout.signal, cache: 'no-store' });
+        if (!response.ok) throw new Error(`OpenCode runtime discovery failed (${response.status})`);
+        const runtime = runtimeDescriptorSchema.parse(await response.json());
+        if (revision !== this.connectionRevision || runtimeKey !== getRuntimeKey()) {
+          throw new OpenCodeRuntimeChangedError();
+        }
+        if (runtime.endpoint && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2)) {
+          this.bindRuntime(runtime);
+        } else {
+          this.runtimeBinding.clear();
+          this.syncSource = null;
+          this.notifyRuntime();
+        }
+        return runtime;
+      } catch (error) {
+        if (revision === this.connectionRevision && runtimeKey === getRuntimeKey()) {
+          this.runtimeBinding.clear();
+          this.syncSource = null;
+          this.notifyRuntime();
+        }
+        throw error;
+      } finally {
+        timeout.cleanup();
+      }
+    })();
+    this.discovery = request;
+    void request.finally(() => {
+      if (this.discovery === request) this.discovery = null;
+    }).catch(() => {});
+    return request;
+  }
+
+  private isV2(): boolean {
+    return this.runtimeBinding.get()?.generation === 'oc2';
+  }
+
+  private scope(directory?: string | null, signal?: AbortSignal) {
+    return { directory: directory === null ? null : this.normalizeCandidatePath(directory) ?? this.currentDirectory, signal };
+  }
+
+  /** Stable for one selected connection; bootstrap must bind before requesting it. */
+  getSyncSource(): SyncSource {
+    if (this.syncSource) return this.syncSource;
+    const runtime = this.runtimeBinding.get();
+    const bootstrap = {
+      listSyncSessions: (directory: string, input: { archived: boolean; roots?: boolean; pageSize: number; signal?: AbortSignal }) => this.listSyncSessions(directory, input),
+      getBootstrapPath: (directory?: string | null, signal?: AbortSignal) => this.getBootstrapPath(directory, signal),
+      getCurrentProject: (directory?: string | null, signal?: AbortSignal) => this.getCurrentProject(directory, signal),
+      getVcs: (directory?: string | null, signal?: AbortSignal) => this.getVcs(directory, signal),
+      getLspStatus: (directory?: string | null, signal?: AbortSignal) => this.getLspStatus(directory, signal),
+      getTaggedConfig: (directory?: string | null, signal?: AbortSignal) => this.getTaggedConfig(directory, signal),
+      getProviderCatalog: (directory?: string | null, signal?: AbortSignal) => this.getProviderCatalog(directory, signal),
+      listTaggedAgents: (directory?: string | null) => this.listTaggedAgents(directory),
+    };
+    if (runtime?.generation === 'oc1') {
+      this.syncSource = createV1SyncSource(this.client, this.runtimeBinding, bootstrap);
+    } else if (runtime?.generation === 'oc2') {
+      const client = this.v2Client;
+      const baseUrl = this.baseUrl;
+      this.syncSource = createV2SyncSource({
+        sessions: this.v2Sessions,
+        status: async (_directory, signal) => {
+          const active = await client.session.active({ signal });
+          return Object.fromEntries(Object.keys(active).map((id) => [id, { type: 'busy' as const }]));
+        },
+        permissions: async (directory, signal) => {
+          const result = await client.permission.request.list({ location: directory ? { directory } : undefined }, { signal });
+          return result.data.map((value) => ({ generation: 'oc2' as const, value }));
+        },
+        forms: async (directory, signal) => {
+          const result = await client.form.list({ location: directory ? { directory } : undefined }, { signal });
+          return result.data.map((value) => ({ generation: 'oc2' as const, kind: 'form' as const, value }));
+        },
+        events: (signal, lastEventID) => {
+          const events = lastEventID ? createV2RuntimeClient({
+            baseUrl, lastEventID,
+            assertProtocol: () => this.runtimeBinding.assert('oc2', 'event stream'),
+          }) : client;
+          return events.event.subscribe({ signal });
+        },
+      }, this.runtimeBinding, bootstrap);
+    } else {
+      throw new OpenCodeRuntimeError(runtime?.generation ?? 'unknown', 'sync bootstrap');
+    }
+    return this.syncSource;
+  }
+
+  reconnectToRuntimeBaseUrl(preserveBinding = false): void {
+    this.connectionRevision += 1;
+    this.discovery = null;
+    this.syncSource = null;
+    if (!preserveBinding) this.runtimeBinding.clear();
     const runtimeBase = resolveRuntimeBaseUrl();
     const nextBaseUrl = ensureAbsoluteBaseUrl(runtimeBase || DEFAULT_BASE_URL);
     // An explicit reconnect can change the instance or transport behind the
     // same URL. Its SDK client and in-flight directory requests are obsolete.
     this.baseUrl = nextBaseUrl;
-    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl });
+    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc1', 'SDK request') });
+    this.sessions = new V1SessionOperations(this.client);
+    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc2', 'SDK request') });
     this.scopedClients.clear();
+    this.v2ScopedClients.clear();
     this.listDirectoryInFlight.clear();
     this.configProvidersInFlight.clear();
     this.listAgentsInFlight.clear();
     this.clearConfigCache();
     this.listDirectoryCache.clear();
+    this.notifyRuntime();
   }
 
   /** Expose the raw SDK client for direct use (e.g., SyncProvider) */
   getSdkClient(): OpencodeClient {
     return this.client;
+  }
+
+  /** Internal OC2 protocol source; consumers must project before store ingress. */
+  getV2Sessions(): V2SessionOperations {
+    const runtime = this.runtimeBinding.get();
+    if (runtime?.generation !== 'oc2') throw new OpenCodeRuntimeError(runtime?.generation ?? 'unknown', 'OC2 sessions');
+    return this.v2Sessions;
+  }
+
+  private v2ClientFor(directory?: string | null): OpenCodeClient {
+    const normalized = this.normalizeCandidatePath(directory);
+    if (!normalized) return this.v2Client;
+    const existing = this.v2ScopedClients.get(normalized);
+    if (existing) return existing;
+    const scoped = createV2RuntimeClient({
+      baseUrl: this.baseUrl,
+      directory: normalized,
+      assertProtocol: () => this.runtimeBinding.assert('oc2', 'scoped SDK request'),
+    });
+    this.v2ScopedClients.set(normalized, scoped);
+    return scoped;
   }
 
   /** Get a scoped SDK client for a specific directory */
@@ -426,7 +504,11 @@ class OpencodeService {
     if (existing) {
       return existing;
     }
-    const scoped = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, directory: normalized });
+    const scoped = createRuntimeOpencodeClient({
+      baseUrl: this.baseUrl,
+      directory: normalized,
+      assertProtocol: () => this.runtimeBinding.assert('oc1', 'scoped SDK request'),
+    });
     this.scopedClients.set(key, scoped);
     return scoped;
   }
@@ -631,72 +713,318 @@ class OpencodeService {
   }
 
   // Session Management
-  async listSessions(): Promise<Session[]> {
-    const response = await this.client.session.list(
-      this.currentDirectory ? { directory: this.currentDirectory } : undefined
-    );
-    return Array.isArray(response.data) ? response.data : [];
+  async listSessions(): Promise<DomainSession[]> {
+    if (this.isV2()) return this.listSyncSessions(this.currentDirectory, { archived: true, pageSize: 100 });
+    return this.runtimeBinding.run('oc1', 'session.list', () => this.sessions.list({ directory: this.currentDirectory }));
   }
 
-  async createSession(params?: { parentID?: string; title?: string; metadata?: Record<string, unknown> }, directory?: string | null): Promise<Session> {
-    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
-    const response = await this.client.session.create({
-      ...(requestDirectory ? { directory: requestDirectory } : {}),
-      parentID: params?.parentID,
-      title: params?.title,
-      metadata: params?.metadata,
+  async shareSession(id: string, directory?: string | null): Promise<DomainSession> {
+    return this.runtimeBinding.run('oc1', 'session.share', async () => {
+      const result = await this.client.session.share({ sessionID: id, directory: this.scope(directory).directory ?? undefined });
+      return projectLegacySession(unwrapSdkData(result, 'session.share'));
     });
-    return unwrapSdkData(response, 'session.create');
   }
 
-  async getSession(id: string, directory?: string | null): Promise<Session> {
-    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
-    const response = await this.client.session.get({
-      sessionID: id,
-      ...(requestDirectory ? { directory: requestDirectory } : {})
+  async unshareSession(id: string, directory?: string | null): Promise<DomainSession> {
+    return this.runtimeBinding.run('oc1', 'session.unshare', async () => {
+      const result = await this.client.session.unshare({ sessionID: id, directory: this.scope(directory).directory ?? undefined });
+      const session = projectLegacySession(unwrapSdkData(result, 'session.unshare'));
+      delete session.share;
+      return session;
     });
-    return unwrapSdkData(response, 'session.get');
+  }
+
+  async createSession(params?: { id?: string; parentID?: string; title?: string; metadata?: Metadata; agent?: string; model?: ModelRef }, directory?: string | null): Promise<DomainSession> {
+    if (this.isV2()) return this.v2Sessions.create(params, this.scope(directory));
+    if (params?.id !== undefined || params?.agent !== undefined || params?.model !== undefined) {
+      throw new OpenCodeRuntimeError('oc1', 'OC2 session creation options');
+    }
+    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
+    return this.runtimeBinding.run('oc1', 'session.create', () => this.sessions.create(params, { directory: requestDirectory }));
+  }
+
+  async getSession(id: string, directory?: string | null): Promise<DomainSession> {
+    if (this.isV2()) return this.v2Sessions.get(id, this.scope(directory));
+    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
+    return this.runtimeBinding.run('oc1', 'session.get', () => this.sessions.get(id, { directory: requestDirectory }));
   }
 
   async deleteSession(id: string, directory?: string | null): Promise<boolean> {
+    if (this.isV2()) return this.v2Sessions.remove(id, this.scope(directory));
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
-    const response = await this.client.session.delete({
-      sessionID: id,
-      ...(requestDirectory ? { directory: requestDirectory } : {}),
-    });
-    return unwrapSdkOptional(response, 'session.delete') === true;
+    return this.runtimeBinding.run('oc1', 'session.delete', () => this.sessions.remove(id, { directory: requestDirectory }));
   }
 
   async updateSession(
     id: string,
-    patch: { title?: string; metadata?: Record<string, unknown>; time?: { archived?: number | null } },
+    patch: { title?: string; metadata?: Metadata; time?: { archived?: number | null } },
     directory?: string | null,
-  ): Promise<Session> {
+  ): Promise<DomainSession> {
+    if (this.isV2()) {
+      const requestDirectory = this.scope(directory).directory;
+      if (patch.metadata !== undefined) {
+        const response = await runtimeFetch(`/api/openchamber/sessions/${encodeURIComponent(id)}/metadata`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patch: patch.metadata, directory: requestDirectory }),
+        });
+        if (!response.ok) throw new Error(`session metadata update failed (${response.status})`);
+        z.object({ metadata: z.record(z.string(), z.json()) }).parse(await response.json());
+      }
+      if (patch.title !== undefined) {
+        await this.v2Sessions.update(id, { title: patch.title }, this.scope(directory));
+      }
+      const archivedAt = patch.time?.archived;
+      if (archivedAt !== undefined && archivedAt !== null) {
+        const route = archivedAt > 0 ? '/api/openchamber/sessions/archive' : '/api/openchamber/sessions/unarchive';
+        const payload: SessionArchivePayload = { ids: [id] };
+        if (requestDirectory) payload.directory = requestDirectory;
+        if (archivedAt > 0) payload.archivedAt = archivedAt;
+        const response = await runtimeFetch(route, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(`session archive failed (${response.status})`);
+      }
+      return this.v2Sessions.get(id, this.scope(directory));
+    }
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
-    const sdkPatch = {
-      ...(patch.title !== undefined ? { title: patch.title } : {}),
-      ...(patch.metadata !== undefined ? { metadata: patch.metadata } : {}),
-      ...(patch.time?.archived !== undefined && patch.time.archived !== null ? { time: { archived: patch.time.archived } } : {}),
-    };
-    const response = await this.client.session.update({
-      sessionID: id,
-      ...(requestDirectory ? { directory: requestDirectory } : {}),
-      ...sdkPatch,
-    });
-    return unwrapSdkData(response, 'session.update');
+    return this.runtimeBinding.run('oc1', 'session.update', () => this.sessions.update(id, patch, { directory: requestDirectory }));
   }
 
-  async getSessionMessages(id: string, limit?: number, directory?: string | null): Promise<{ info: Message; parts: Part[] }[]> {
+  async getSessionMessages(id: string, limit?: number, directory?: string | null): Promise<{ info: DomainMessage; parts: DomainPart[] }[]> {
+    if (this.isV2()) return (await this.v2Sessions.messages(id, { limit }, this.scope(directory))).items;
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
-    const response = await this.client.session.messages({
-      sessionID: id,
-      ...(requestDirectory ? { directory: requestDirectory } : {}),
-      ...(typeof limit === 'number' ? { limit } : {}),
+    return this.runtimeBinding.run('oc1', 'session.messages', () => this.sessions.messages(id, limit, { directory: requestDirectory }));
+  }
+
+  /** One protocol-native page; cursor is an opaque string at this boundary. */
+  async listSessionsPage(options: {
+    global?: boolean; directory?: string | null; archived?: boolean; roots?: boolean;
+    limit?: number; cursor?: string; order?: 'asc' | 'desc'; search?: string; parentID?: string | null; signal?: AbortSignal;
+  } = {}): Promise<{ sessions: DomainSession[]; cursor: { next?: string } }> {
+    const directory = options.global ? null : this.normalizeCandidatePath(options.directory) ?? this.currentDirectory;
+    if (this.isV2()) {
+      const page = await this.v2Sessions.listPage({
+        limit: options.limit, cursor: options.cursor, order: options.order, search: options.search,
+        parentID: options.roots === true ? null : options.parentID,
+      }, { directory, signal: options.signal });
+      return { sessions: page.sessions, cursor: { next: page.cursor.next } };
+    }
+    if (options.search !== undefined || options.order !== undefined || options.parentID !== undefined) {
+      throw new OpenCodeRuntimeError('oc1', 'filtered session listing');
+    }
+    const numericCursor = options.cursor === undefined ? undefined : Number(options.cursor);
+    if (options.cursor !== undefined && !Number.isFinite(numericCursor)) throw new Error('Invalid OC1 session cursor');
+    const request: Parameters<OpencodeClient['experimental']['session']['list']>[0] = {
+      archived: options.archived ?? false, limit: options.limit ?? 100,
+    };
+    if (directory) request.directory = directory;
+    if (options.roots !== undefined) request.roots = options.roots;
+    if (numericCursor !== undefined) request.cursor = numericCursor;
+    const result = await this.runtimeBinding.run('oc1', 'experimental.session.list', () =>
+      this.client.experimental.session.list(request, { signal: options.signal }));
+    const rows = unwrapSdkData(result, 'experimental.session.list');
+    if (!Array.isArray(rows)) throw new Error('experimental.session.list returned invalid data');
+    const sessions = rows.map(projectLegacySession);
+    const limit = options.limit ?? 100;
+    if (rows.length < limit) return { sessions, cursor: {} };
+    const header = result.response?.headers?.get('x-next-cursor');
+    const parsed = header ? Number(header) : undefined;
+    const next = parsed !== undefined && Number.isFinite(parsed) ? parsed : rows[rows.length - 1]?.time.updated;
+    return { sessions, cursor: next !== undefined && (numericCursor === undefined || next < numericCursor) ? { next: String(next) } : {} };
+  }
+
+  /** Complete paged snapshot for sync; a failed page rejects the whole load. */
+  async listSyncSessions(
+    directory: string | null | undefined,
+    options: { archived: boolean; roots?: boolean; pageSize: number; signal?: AbortSignal },
+  ): Promise<DomainSession[]> {
+    const all: DomainSession[] = [];
+    const seen = new Set<string>();
+    const target = this.normalizeCandidatePath(directory);
+    if (this.isV2()) {
+      let cursor: string | undefined;
+      while (true) {
+        const page = await this.v2Sessions.listPage({
+          limit: options.pageSize,
+          parentID: options.roots === true ? null : undefined,
+          cursor,
+        }, { directory: target, signal: options.signal });
+        let added = 0;
+        for (const session of page.sessions) {
+          if (seen.has(session.id)) continue;
+          seen.add(session.id);
+          added += 1;
+          if (options.archived || !session.time.archived) all.push(session);
+        }
+        const next = page.cursor.next;
+        if (!next || next === cursor || added === 0) break;
+        cursor = next;
+      }
+      return all;
+    }
+    let cursor: number | undefined;
+    while (true) {
+      const request: Parameters<OpencodeClient['experimental']['session']['list']>[0] = {
+        archived: options.archived, limit: options.pageSize,
+      };
+      if (target) request.directory = target;
+      if (options.roots !== undefined) request.roots = options.roots;
+      if (cursor !== undefined) request.cursor = cursor;
+      const result = await this.runtimeBinding.run('oc1', 'experimental.session.list', () =>
+        this.client.experimental.session.list(request, { signal: options.signal }));
+      const rows = unwrapSdkData(result, 'experimental.session.list');
+      if (!Array.isArray(rows)) throw new Error('experimental.session.list returned invalid data');
+      let added = 0;
+      for (const row of rows) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        added += 1;
+        const session = projectLegacySession(row);
+        all.push(session);
+      }
+      if (rows.length < options.pageSize || added === 0) break;
+      const header = result.response?.headers?.get('x-next-cursor');
+      const parsed = header ? Number(header) : undefined;
+      const next = parsed !== undefined && Number.isFinite(parsed) ? parsed : rows[rows.length - 1]?.time.updated;
+      if (next === undefined || (cursor !== undefined && next >= cursor)) break;
+      cursor = next;
+    }
+    return all;
+  }
+
+  async getSessionMessage(id: string, messageID: string, directory?: string | null) {
+    if (this.isV2()) return this.v2Sessions.message(id, messageID, this.scope(directory));
+    return this.runtimeBinding.run('oc1', 'session.message', async () => {
+      const requestDirectory = this.scope(directory).directory;
+      const client = requestDirectory ? this.getScopedApiClient(requestDirectory) : this.client;
+      const result = unwrapSdkData(await client.session.message({ sessionID: id, messageID }), 'session.message');
+      return { info: projectLegacyMessage(result.info), parts: result.parts.map(projectLegacyPart) };
     });
-    return unwrapSdkData(response, 'session.messages');
+  }
+
+  async renameSession(id: string, title: string, directory?: string | null): Promise<void> {
+    if (this.isV2()) {
+      await this.v2Sessions.update(id, { title }, this.scope(directory));
+      return;
+    }
+    await this.updateSession(id, { title }, directory);
+  }
+
+  async moveSession(id: string, toDirectory: string, options?: { delivery?: 'steer' | 'queue' }): Promise<void> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'session.move');
+    await this.runtimeBinding.run('oc2', 'session.move', () => this.v2Client.session.move({
+      sessionID: id, directory: toDirectory, delivery: options?.delivery,
+    }));
+  }
+
+  async switchSessionModel(id: string, model: ModelRef, directory?: string | null): Promise<void> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'session.switchModel');
+    await this.runtimeBinding.run('oc2', 'session.switchModel', () => this.v2ClientFor(directory).session.switchModel({ sessionID: id, model }));
+  }
+
+  async switchSessionAgent(id: string, agent: string, directory?: string | null): Promise<void> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'session.switchAgent');
+    await this.runtimeBinding.run('oc2', 'session.switchAgent', () => this.v2ClientFor(directory).session.switchAgent({ sessionID: id, agent }));
+  }
+
+  async getSessionInbox(id: string, directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'session.inbox.list', () =>
+      this.v2ClientFor(directory).session.inbox.list({ sessionID: id }));
+  }
+
+  async cancelSessionInbox(id: string, inboxID: string, directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'session.inbox.cancel', () =>
+      this.v2ClientFor(directory).session.inbox.cancel({ sessionID: id, inboxID }));
+  }
+
+  async generateSessionText(id: string, prompt: string, directory?: string | null): Promise<string> {
+    return (await this.runtimeBinding.run('oc2', 'session.generate', () =>
+      this.v2ClientFor(directory).session.generate({ sessionID: id, prompt }))).text;
+  }
+
+  async getSessionTurnDiff(id: string, options?: { from?: string; to?: string; context?: number; directory?: string | null }) {
+    return this.runtimeBinding.run('oc2', 'session.diff', () =>
+      this.v2ClientFor(options?.directory).session.diff({ sessionID: id, from: options?.from, to: options?.to, context: options?.context }));
+  }
+
+  async generateText(prompt: string, options?: { model?: ModelRef; directory?: string | null }): Promise<string> {
+    return (await this.runtimeBinding.run('oc2', 'generate.text', () =>
+      this.v2ClientFor(options?.directory).generate.text({ prompt, model: options?.model }))).text;
+  }
+
+  async getBootstrapPath(directory?: string | null, signal?: AbortSignal): Promise<BootstrapPath> {
+    if (this.isV2()) {
+      const location = await this.v2Catalog.location(this.scope(directory, signal));
+      return { directory: location.directory, projectID: location.project.id, worktree: location.project.canonical };
+    }
+    return this.runtimeBinding.run('oc1', 'path.get', async () => {
+      const result = await this.getScopedApiClient(this.scope(directory).directory ?? '').path.get(undefined, { signal });
+      return unwrapSdkData(result, 'path.get');
+    });
+  }
+
+  async getLocation(directory?: string | null, signal?: AbortSignal) {
+    if (this.isV2()) return this.v2Catalog.location(this.scope(directory, signal));
+    throw new OpenCodeRuntimeError('oc1', 'location.get');
+  }
+
+  async listProjects(): Promise<DomainProject[]> {
+    if (this.isV2()) return this.v2Catalog.projects();
+    return this.runtimeBinding.run('oc1', 'project.list', async () => unwrapSdkData(await this.client.project.list(), 'project.list'));
+  }
+
+  async getCurrentProject(directory?: string | null, signal?: AbortSignal): Promise<DomainProject> {
+    if (this.isV2()) {
+      const location = await this.v2Catalog.location(this.scope(directory, signal));
+      const projects = await this.v2Catalog.projects(this.scope(directory, signal));
+      const project = projects.find((item) => item.id === location.project.id);
+      if (!project) throw new Error(`Current project ${location.project.id} was not found in project.list`);
+      return project;
+    }
+    return this.runtimeBinding.run('oc1', 'project.current', async () =>
+      unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').project.current(undefined, { signal }), 'project.current'));
+  }
+
+  async getVcs(directory?: string | null, signal?: AbortSignal): Promise<DomainVcs> {
+    if (this.isV2()) return this.v2Catalog.vcs(this.scope(directory, signal));
+    return this.runtimeBinding.run('oc1', 'vcs.get', async () => {
+      const value = unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').vcs.get(undefined, { signal }), 'vcs.get');
+      return { branch: value.branch, defaultBranch: value.default_branch };
+    });
+  }
+
+  async getLspStatus(directory?: string | null, signal?: AbortSignal) {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'LSP status');
+    return this.runtimeBinding.run('oc1', 'lsp.status', async () =>
+      unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').lsp.status(undefined, { signal }), 'lsp.status'));
+  }
+
+  async getTaggedConfig(directory?: string | null, signal?: AbortSignal): Promise<TaggedConfig> {
+    if (this.isV2()) return { generation: 'oc2', value: await this.v2Catalog.config(this.scope(directory, signal)) };
+    if (directory === null) {
+      const value = await this.runtimeBinding.run('oc1', 'global.config.get', async () =>
+        unwrapSdkData(await this.client.config.get(undefined, { signal }), 'global.config.get'));
+      return { generation: 'oc1', value };
+    }
+    return { generation: 'oc1', value: await this.getConfig(directory) };
+  }
+
+  async getConfigSources(directory?: string | null, signal?: AbortSignal) {
+    return this.runtimeBinding.run('oc2', 'config.get sources', () =>
+      this.v2ClientFor(directory).config.get(undefined, { signal }));
+  }
+
+  async getProviderCatalog(directory?: string | null, signal?: AbortSignal): Promise<ProviderCatalog> {
+    if (this.isV2()) return this.v2Catalog.catalog(this.scope(directory, signal));
+    const value = await this.getProvidersForConfig(directory);
+    return { generation: 'oc1', ...value };
   }
 
   async getSessionTodos(sessionId: string): Promise<Array<{ id: string; content: string; status: string; priority: string }>> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'session.todo');
     try {
       const response = await this.client.session.todo({
         sessionID: sessionId,
@@ -861,6 +1189,29 @@ class OpencodeService {
     };
   }
 
+  private async v2Files(files?: Array<FileInputLite>) {
+    return Promise.all((files ?? []).map(async (file) => {
+      const normalized = await this.normalizeFilePart(file);
+      return { uri: normalized.url, name: normalized.filename };
+    }));
+  }
+
+  private async v2Selection(sessionID: string, providerID: string, modelID: string, variant?: string, agent?: string, directory?: string | null) {
+    const client = this.v2ClientFor(directory);
+    await this.runtimeBinding.run('oc2', 'session.switchModel', () => client.session.switchModel({
+      sessionID, model: { providerID, id: modelID, variant },
+    }));
+    if (agent) await this.runtimeBinding.run('oc2', 'session.switchAgent', () => client.session.switchAgent({ sessionID, agent }));
+  }
+
+  private async v2Synthetic(sessionID: string, text: string, directory?: string | null, metadata?: ContextPartMetadata, delivery?: 'steer') {
+    if (!text.trim()) return;
+    await this.runtimeBinding.run('oc2', 'session.synthetic', () => this.v2ClientFor(directory).session.synthetic({
+      sessionID, text, metadata: metadata ? z.record(z.string(), z.json()).parse(metadata) : undefined,
+      delivery, resume: false,
+    }));
+  }
+
   async sendMessage(params: {
     runtimeKey?: string;
     id: string;
@@ -890,6 +1241,45 @@ class OpencodeService {
     directory?: string | null;
   }): Promise<string> {
     this.assertRuntimeUnchanged(params.runtimeKey);
+
+    if (this.isV2()) {
+      if (params.format) throw new OpenCodeRuntimeError('oc2', 'prompt JSON schema');
+      const directory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
+      const messageId = params.messageId ?? ascendingId('msg');
+      const files = [
+        ...await this.v2Files(params.files),
+        ...((await Promise.all((params.additionalParts ?? []).map((item) => this.v2Files(item.files)))).flat()),
+      ];
+      const textParts = [params.prefaceTextSynthetic === false ? params.prefaceText : undefined, params.text,
+        ...(params.additionalParts ?? []).filter((item) => !item.synthetic).map((item) => item.text)].filter((text): text is string => !!text?.trim());
+      const text = textParts.join('\n\n');
+      if (!text && files.length === 0 && !params.prefaceText?.trim() && !(params.additionalParts ?? []).some((item) => item.text.trim())) {
+        throw new Error('Message must have at least one part (text or file)');
+      }
+      assertProviderCircuitClosed(params.providerID);
+      try {
+        this.assertRuntimeUnchanged(params.runtimeKey);
+        await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory);
+        if (params.prefaceTextSynthetic !== false) await this.v2Synthetic(params.id, params.prefaceText ?? '', directory, undefined, params.delivery);
+        for (const item of params.additionalParts ?? []) {
+          if (item.synthetic) await this.v2Synthetic(params.id, item.text, directory, item.metadata, params.delivery);
+        }
+        this.assertRuntimeUnchanged(params.runtimeKey);
+        await this.v2Sessions.prompt({
+          sessionID: params.id, id: messageId, text, files: files.length ? files : undefined,
+          agents: params.agentMentions?.filter((item) => !!item.name).map((item) => ({
+            name: item.name,
+            mention: item.source ? { start: item.source.start, end: item.source.end, text: item.source.value } : undefined,
+          })),
+          delivery: params.delivery,
+        }, this.scope(directory));
+        recordProviderSuccess(params.providerID);
+        return messageId;
+      } catch (error) {
+        recordProviderError(params.providerID);
+        throw error;
+      }
+    }
 
     // Use the optimistic/client-generated ID as the real user message ID so SSE
     // can reconcile the echoed server message in-place.
@@ -1051,8 +1441,17 @@ class OpencodeService {
     files?: Array<FileInputLite>;
     messageId?: string;
     directory?: string | null;
-  }): Promise<string> {
+  }): Promise<string | undefined> {
     this.assertRuntimeUnchanged(params.runtimeKey);
+
+    if (this.isV2()) {
+      const directory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
+      const files = await this.v2Files(params.files);
+      await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory);
+      this.assertRuntimeUnchanged(params.runtimeKey);
+      await this.v2Sessions.command({ sessionID: params.id, name: params.command, text: params.arguments ?? '', files: files.length ? files : undefined }, this.scope(directory));
+      return undefined;
+    }
 
     const tempMessageId = params.messageId ?? ascendingId("msg");
 
@@ -1082,11 +1481,13 @@ class OpencodeService {
     return tempMessageId;
   }
 
-  async abortSession(id: string): Promise<boolean> {
+  async abortSession(id: string, directory?: string | null): Promise<boolean> {
+    if (this.isV2()) return (await this.v2Sessions.interrupt(id, this.scope(directory))).interrupted;
+    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.abort(
       {
         sessionID: id,
-        ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
+        ...(requestDirectory ? { directory: requestDirectory } : {})
       },
       { throwOnError: true }
     );
@@ -1101,8 +1502,17 @@ class OpencodeService {
     model: { providerID: string; modelID: string };
     messageId?: string;
     directory?: string | null;
-  }): Promise<{ info: Message; parts: Part[] }> {
+  }): Promise<{ info: DomainMessage; parts: DomainPart[] } | undefined> {
     this.assertRuntimeUnchanged(params.runtimeKey);
+    if (this.isV2()) {
+      const directory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
+      await this.v2Selection(params.sessionId, params.model.providerID, params.model.modelID, undefined, params.agent, directory);
+      this.assertRuntimeUnchanged(params.runtimeKey);
+      await this.runtimeBinding.run('oc2', 'session.shell', () => this.v2ClientFor(directory).session.shell({
+        sessionID: params.sessionId, id: params.messageId, command: params.command,
+      }));
+      return undefined;
+    }
     const requestDirectory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
     const response = await this.client.session.shell({
       sessionID: params.sessionId,
@@ -1112,10 +1522,17 @@ class OpencodeService {
       model: params.model,
       command: params.command,
     });
-    return unwrapSdkData(response, 'session.shell') as { info: Message; parts: Part[] };
+    const result = unwrapSdkData(response, 'session.shell');
+    return { info: projectLegacyMessage(result.info), parts: result.parts.map(projectLegacyPart) };
   }
 
-  async revertSession(sessionId: string, messageId: string, partId?: string, directory?: string | null): Promise<Session> {
+  async revertSession(sessionId: string, messageId: string, partId?: string, directory?: string | null): Promise<DomainSession> {
+    if (this.isV2()) {
+      if (partId) throw new OpenCodeRuntimeError('oc2', 'part-level revert');
+      await this.v2Sessions.stageRevert({ sessionID: sessionId, messageID: messageId }, this.scope(directory));
+      await this.v2Sessions.commitRevert(sessionId, this.scope(directory));
+      return this.v2Sessions.get(sessionId, this.scope(directory));
+    }
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.revert({
       sessionID: sessionId,
@@ -1123,10 +1540,15 @@ class OpencodeService {
       messageID: messageId,
       partID: partId,
     });
-    return unwrapSdkData(response, 'session.revert');
+    return projectLegacySession(unwrapSdkData(response, 'session.revert'));
   }
 
   async summarizeSession(sessionId: string, providerId: string, modelId: string, directory?: string | null): Promise<boolean> {
+    if (this.isV2()) {
+      await this.v2Selection(sessionId, providerId, modelId, undefined, undefined, directory);
+      await this.v2Sessions.compact({ sessionID: sessionId }, this.scope(directory));
+      return true;
+    }
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.summarize({
       sessionID: sessionId,
@@ -1137,22 +1559,40 @@ class OpencodeService {
     return unwrapSdkOptional(response, 'session.summarize') === true;
   }
 
-  async unrevertSession(sessionId: string): Promise<Session> {
+  async unrevertSession(sessionId: string, directory?: string | null): Promise<DomainSession> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy unrevert after commit');
+    const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.unrevert({
       sessionID: sessionId,
-      ...(this.currentDirectory ? { directory: this.currentDirectory } : {})
+      ...(requestDirectory ? { directory: requestDirectory } : {})
     });
-    return unwrapSdkData(response, 'session.unrevert');
+    return projectLegacySession(unwrapSdkData(response, 'session.unrevert'));
   }
 
-  async forkSession(sessionId: string, messageId?: string, directory?: string | null): Promise<Session> {
+  async forkSession(sessionId: string, messageId?: string, directory?: string | null): Promise<DomainSession> {
+    if (this.isV2()) return this.v2Sessions.fork(sessionId, messageId, this.scope(directory));
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.fork({
       sessionID: sessionId,
       ...(requestDirectory ? { directory: requestDirectory } : {}),
       messageID: messageId,
     });
-    return unwrapSdkData(response, 'session.fork');
+    return projectLegacySession(unwrapSdkData(response, 'session.fork'));
+  }
+
+  stageRevert(sessionId: string, messageId: string, options?: { files?: boolean; directory?: string | null }): Promise<V2SessionRevert> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'staged revert');
+    return this.v2Sessions.stageRevert({ sessionID: sessionId, messageID: messageId, files: options?.files }, this.scope(options?.directory));
+  }
+
+  commitRevert(sessionId: string, directory?: string | null): Promise<void> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'revert commit');
+    return this.v2Sessions.commitRevert(sessionId, this.scope(directory));
+  }
+
+  clearRevert(sessionId: string, directory?: string | null): Promise<void> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'revert clear');
+    return this.v2Sessions.clearRevert(sessionId, this.scope(directory));
   }
 
   async getSessionStatus(): Promise<
@@ -1172,6 +1612,14 @@ class OpencodeService {
   async getSessionStatusForDirectory(
     directory: string | null | undefined
   ): Promise<Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }> | null> {
+    if (this.isV2()) {
+      try {
+        const active = await this.runtimeBinding.run('oc2', 'session.active', () => this.v2Client.session.active());
+        return Object.fromEntries(Object.keys(active).map((id) => [id, { type: 'busy' as const }]));
+      } catch {
+        return null;
+      }
+    }
     try {
       const trimmedDirectory = this.normalizeCandidatePath(directory);
       const result = await this.client.session.status(trimmedDirectory ? { directory: trimmedDirectory } : undefined);
@@ -1246,6 +1694,7 @@ class OpencodeService {
 
   // Tools
   async listToolIds(options?: { directory?: string | null }): Promise<string[]> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'tool.ids');
     try {
       const directory = typeof options?.directory === 'string'
         ? options.directory.trim()
@@ -1263,15 +1712,28 @@ class OpencodeService {
   async replyToPermission(
     requestId: string,
     reply: 'once' | 'always' | 'reject',
-    options?: { message?: string; directory?: string | null }
+    options?: { message?: string; directory?: string | null; sessionID?: string }
   ): Promise<boolean> {
+    if (this.isV2()) {
+      let sessionID = options?.sessionID;
+      if (!sessionID) {
+        const pending = await this.listTaggedPermissions({ directories: [options?.directory] });
+        const request = pending.find((item) => item.generation === 'oc2' && item.value.id === requestId);
+        if (request?.generation === 'oc2') sessionID = request.value.sessionID;
+      }
+      if (!sessionID) throw new Error(`Permission ${requestId} is no longer pending`);
+      await this.runtimeBinding.run('oc2', 'permission.reply', () => this.v2ClientFor(options?.directory).permission.reply({
+        sessionID, requestID: requestId, decision: reply, message: options?.message,
+      }));
+      return true;
+    }
     const requestDirectory = this.normalizeCandidatePath(options?.directory ?? null) ?? this.currentDirectory;
-    const response = await this.client.permission.reply({
+    const response = await this.runtimeBinding.run('oc1', 'permission.reply', () => this.client.permission.reply({
       requestID: requestId,
       ...(requestDirectory ? { directory: requestDirectory } : {}),
       reply,
       ...(options?.message ? { message: options.message } : {}),
-    });
+    }));
     return unwrapSdkOptional(response, 'permission.reply') === true;
   }
 
@@ -1302,6 +1764,18 @@ class OpencodeService {
       agent?: string;
     }
   ): Promise<{ id: string; effect: PermissionV2Effect } | null> {
+    if (this.isV2()) {
+      try {
+        return await this.runtimeBinding.run('oc2', 'permission.create', () => this.v2Client.permission.create({
+          sessionID, action, resources, id: options?.id, save: options?.save,
+          metadata: options?.metadata ? z.record(z.string(), z.json()).parse(options.metadata) : undefined,
+          source: options?.source?.type === 'tool' ? { type: 'tool', messageID: options.source.messageID, id: options.source.callID } : undefined,
+          agent: options?.agent,
+        }));
+      } catch {
+        return null;
+      }
+    }
     try {
       const response = await this.client.v2.session.permission.create({
         sessionID,
@@ -1338,6 +1812,17 @@ class OpencodeService {
     requestID: string,
     directory?: string,
   ): Promise<FetchPermissionResult> {
+    if (this.isV2()) {
+      try {
+        const permission = await this.runtimeBinding.run('oc2', 'permission.get', () =>
+          this.v2ClientFor(directory).permission.get({ sessionID, requestID }));
+        return { state: 'ok', permission };
+      } catch (error) {
+        if (isPermissionNotFoundError(error)) return { state: 'resolved' };
+        if (error instanceof Error && 'status' in error && error.status === 404) return { state: 'resolved' };
+        return { state: 'unknown' };
+      }
+    }
     try {
       // The V2 endpoint does not accept a directory parameter. Callers that
       // reconcile a known project must therefore select its scoped SDK client.
@@ -1381,6 +1866,7 @@ class OpencodeService {
    * "server returned no pending permissions".
    */
   async listPendingPermissions(options?: { directories?: Array<string | null | undefined> }): Promise<PermissionRequest[]> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy permission list');
     const fetches: Array<Promise<PermissionRequest[]>> = [];
 
     const fetchForDirectory = async (directory?: string | null): Promise<PermissionRequest[]> => {
@@ -1425,8 +1911,23 @@ class OpencodeService {
     return merged;
   }
 
+  async listTaggedPermissions(options?: { directories?: Array<string | null | undefined> }): Promise<PendingPermission[]> {
+    if (!this.isV2()) return (await this.listPendingPermissions(options)).map((value) => ({ generation: 'oc1', value }));
+    const directories = [null, ...new Set((options?.directories ?? []).map((value) => this.normalizeCandidatePath(value)).filter((value): value is string => !!value))];
+    const lists = await Promise.all(directories.map(async (directory) =>
+      (await this.runtimeBinding.run('oc2', 'permission.request.list', () =>
+        this.v2ClientFor(directory).permission.request.list())).data));
+    const seen = new Set<string>();
+    return lists.flat().filter((value) => {
+      if (seen.has(value.id)) return false;
+      seen.add(value.id);
+      return true;
+    }).map((value) => ({ generation: 'oc2', value }));
+  }
+
   // Questions ("ask" tool)
   async replyToQuestion(requestId: string, answers: string[] | string[][], directory?: string | null): Promise<boolean> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy question reply');
     const normalizedAnswers: string[][] = (() => {
       if (!Array.isArray(answers) || answers.length === 0) {
         return [];
@@ -1446,12 +1947,14 @@ class OpencodeService {
     return unwrapSdkOptional(response, 'question.reply') === true;
   }
 
-  async rejectQuestion(requestId: string): Promise<boolean> {
-    const result = await this.client.question.reject({
-      requestID: requestId,
-      ...(this.currentDirectory ? { directory: this.currentDirectory } : {}),
+  async rejectQuestion(requestId: string, directory?: string | null): Promise<boolean> {
+    return this.runtimeBinding.run('oc1', 'question.reject', async () => {
+      const result = await this.client.question.reject({
+        requestID: requestId,
+        directory: this.scope(directory).directory ?? undefined,
+      });
+      return unwrapSdkOptional(result, 'question.reject') === true;
     });
-    return unwrapSdkOptional(result, 'question.reject') === true;
   }
 
   /**
@@ -1460,6 +1963,7 @@ class OpencodeService {
    * instead of conflating failure with an empty server response.
    */
   async listPendingQuestions(options?: { directories?: Array<string | null | undefined> }): Promise<QuestionRequest[]> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy question list');
     const fetches: Array<Promise<QuestionRequest[]>> = [];
 
     const fetchForDirectory = async (directory?: string | null): Promise<QuestionRequest[]> => {
@@ -1504,6 +2008,36 @@ class OpencodeService {
     return merged;
   }
 
+  async listTaggedInputs(options?: { directories?: Array<string | null | undefined> }): Promise<PendingInput[]> {
+    if (!this.isV2()) return (await this.listPendingQuestions(options)).map((value) => ({ generation: 'oc1', kind: 'question', value }));
+    const directories = [null, ...new Set((options?.directories ?? []).map((value) => this.normalizeCandidatePath(value)).filter((value): value is string => !!value))];
+    const lists = await Promise.all(directories.map(async (directory) =>
+      (await this.runtimeBinding.run('oc2', 'form.list', () => this.v2ClientFor(directory).form.list())).data));
+    const seen = new Set<string>();
+    return lists.flat().filter((value) => {
+      if (seen.has(value.id)) return false;
+      seen.add(value.id);
+      return true;
+    }).map((value) => ({ generation: 'oc2', kind: 'form', value }));
+  }
+
+  async replyToForm(sessionID: string, formID: string, answer: FormAnswer, directory?: string | null): Promise<boolean> {
+    await this.runtimeBinding.run('oc2', 'session.form.reply', () =>
+      this.v2ClientFor(directory).session.form.reply({ sessionID, formID, answer }));
+    return true;
+  }
+
+  async cancelForm(sessionID: string, formID: string, directory?: string | null): Promise<boolean> {
+    await this.runtimeBinding.run('oc2', 'session.form.cancel', () =>
+      this.v2ClientFor(directory).session.form.cancel({ sessionID, formID }));
+    return true;
+  }
+
+  async getForm(sessionID: string, formID: string, directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'session.form.get', () =>
+      this.v2ClientFor(directory).session.form.get({ sessionID, formID }));
+  }
+
   // Configuration
   clearConfigCache(): void {
     this.configCacheGeneration += 1;
@@ -1512,6 +2046,7 @@ class OpencodeService {
   }
 
   async getConfig(directory?: string | null): Promise<Config> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy config.get; use getTaggedConfig');
     const effectiveDirectory = this.normalizeCandidatePath(directory) ?? directory ?? this.currentDirectory ?? undefined;
     const key = effectiveDirectory ?? '';
     const cached = this.configCache.get(key);
@@ -1555,6 +2090,7 @@ class OpencodeService {
   }
 
   async updateConfig(config: Record<string, unknown>): Promise<Config> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy config.update');
     // IMPORTANT: Do NOT pass directory parameter for config updates
     // The config should be global, not directory-specific
     const response = await this.client.config.update({ config: config as Config });
@@ -1591,6 +2127,7 @@ class OpencodeService {
     providers: Provider[];
     default: { [key: string]: string };
   }> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy config.providers; use getProviderCatalog');
     const effectiveDirectory = this.normalizeCandidatePath(directory) ?? directory ?? this.currentDirectory ?? undefined;
     const key = effectiveDirectory ?? '';
 
@@ -1616,6 +2153,7 @@ class OpencodeService {
 
   // App Management - using config endpoint since /app doesn't exist in this version
   async getApp(): Promise<App> {
+    if (this.isV2()) return this.runtimeBinding.run('oc2', 'server.info', () => this.v2Client.server.info());
     // Return basic app info from config
     const config = await this.getConfig();
     return {
@@ -1640,6 +2178,7 @@ class OpencodeService {
    * empty list would defeat retries and clear the cached agent list.
    */
   async listAgents(directory?: string | null): Promise<Agent[]> {
+    if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy agent list');
     // Pass the directory explicitly so we don't depend on (and serialize behind)
     // withDirectory's shared context queue. Concurrent callers for the same
     // directory (e.g. config store + agents store at startup) share one request.
@@ -1685,11 +2224,17 @@ class OpencodeService {
     }
   }
 
+  async listTaggedAgents(directory?: string | null) {
+    if (this.isV2()) return { generation: 'oc2' as const, value: await this.v2Catalog.agents(this.scope(directory)) };
+    return { generation: 'oc1' as const, value: await this.listAgents(directory) };
+  }
+
   // SSE infrastructure removed — EventPipeline in sync/event-pipeline.ts handles
   // all SSE event ingestion via the SDK's global.event() async iterator.
 
   // Command Management
   async listCommandsWithDetails(directory?: string | null, signal?: AbortSignal): Promise<Array<{ name: string; description?: string; agent?: string; model?: string; source?: string; template?: string }>> {
+    if (this.isV2()) return this.v2Catalog.commands(this.scope(directory, signal));
     const requestDirectory = this.normalizeCandidatePath(directory ?? null) ?? this.currentDirectory;
     const response = await this.client.command.list(
       requestDirectory ? { directory: requestDirectory } : undefined,
@@ -1707,25 +2252,87 @@ class OpencodeService {
     }));
   }
 
+  async listCommands(directory?: string | null, signal?: AbortSignal) {
+    if (this.isV2()) return this.v2Catalog.commands(this.scope(directory, signal));
+    return this.listCommandsWithDetails(directory, signal);
+  }
+
+  async listSkills(directory?: string | null) {
+    if (this.isV2()) return this.v2Catalog.skills(this.scope(directory));
+    return this.runtimeBinding.run('oc1', 'app.skills', async () =>
+      unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').app.skills(), 'app.skills'));
+  }
+
+  async listMcpServers(directory?: string | null) {
+    if (this.isV2()) return this.v2Catalog.mcp(this.scope(directory));
+    return this.runtimeBinding.run('oc1', 'mcp.status', async () =>
+      unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').mcp.status(), 'mcp.status'));
+  }
+
+  async getMcpCatalog(directory?: string | null): Promise<McpCatalog> {
+    if (this.isV2()) return { generation: 'oc2', value: await this.v2Catalog.mcp(this.scope(directory)) };
+    const value = await this.runtimeBinding.run('oc1', 'mcp.status', async () =>
+      unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').mcp.status(), 'mcp.status'));
+    return { generation: 'oc1', value };
+  }
+
+  async connectMcpServer(server: string, directory?: string | null): Promise<void> {
+    if (this.isV2()) return this.v2Catalog.connectMcp(server, this.scope(directory));
+    await this.runtimeBinding.run('oc1', 'mcp.connect', async () =>
+      unwrapSdkOptional(await this.getScopedApiClient(this.scope(directory).directory ?? '').mcp.connect({ name: server }), 'mcp.connect'));
+  }
+
+  async disconnectMcpServer(server: string, directory?: string | null): Promise<void> {
+    if (this.isV2()) return this.v2Catalog.disconnectMcp(server, this.scope(directory));
+    await this.runtimeBinding.run('oc1', 'mcp.disconnect', async () =>
+      unwrapSdkOptional(await this.getScopedApiClient(this.scope(directory).directory ?? '').mcp.disconnect({ name: server }), 'mcp.disconnect'));
+  }
+
+  async listMcpResources(directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'mcp.resource.catalog', () =>
+      this.v2ClientFor(directory).mcp.resource.catalog());
+  }
+
+  async listIntegrations(directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'integration.list', () =>
+      this.v2ClientFor(directory).integration.list());
+  }
+
+  async connectIntegrationKey(input: Parameters<OpenCodeClient['integration']['connect']['key']>[0], directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'integration.connect.key', () =>
+      this.v2ClientFor(directory).integration.connect.key(input));
+  }
+
+  async startIntegrationOAuth(input: Parameters<OpenCodeClient['integration']['oauth']['connect']>[0], directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'integration.oauth.connect', () =>
+      this.v2ClientFor(directory).integration.oauth.connect(input));
+  }
+
+  async getIntegrationOAuthStatus(input: Parameters<OpenCodeClient['integration']['oauth']['status']>[0], directory?: string | null) {
+    return this.runtimeBinding.run('oc2', 'integration.oauth.status', () =>
+      this.v2ClientFor(directory).integration.oauth.status(input));
+  }
+
+  async completeIntegrationOAuth(input: Parameters<OpenCodeClient['integration']['oauth']['complete']>[0], directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'integration.oauth.complete', () =>
+      this.v2ClientFor(directory).integration.oauth.complete(input));
+  }
+
+  async cancelIntegrationOAuth(input: Parameters<OpenCodeClient['integration']['oauth']['cancel']>[0], directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'integration.oauth.cancel', () =>
+      this.v2ClientFor(directory).integration.oauth.cancel(input));
+  }
+
+  async removeCredential(credentialID: string, directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'credential.remove', () =>
+      this.v2ClientFor(directory).credential.remove({ credentialID }));
+  }
+
   // Lightweight readiness check. Full diagnostics still live at /health.
   async checkHealth(): Promise<boolean> {
     try {
-      const normalizedBase = this.baseUrl.endsWith('/') ? this.baseUrl.replace(/\/+$/, '') : this.baseUrl;
-      const healthUrl = normalizedBase === '/api' || normalizedBase.endsWith('/api')
-        ? '/api/opencode/health'
-        : `${normalizedBase}/opencode/health`;
-      markStartupTrace('opencodeClient.checkHealth:url', { baseUrl: this.baseUrl, healthUrl });
-      const timeout = createTimeoutSignal(OPENCODE_HEALTH_TIMEOUT_MS);
-      const response = await runtimeFetch(healthUrl, { signal: timeout.signal }).finally(timeout.cleanup);
-      markStartupTrace('opencodeClient.checkHealth:response', { status: response.status });
-      if (!response.ok) {
-        return false;
-      }
-
-      const healthData = await response.json();
-      markStartupTrace('opencodeClient.checkHealth:result', { healthy: healthData?.healthy });
-
-      return healthData?.healthy === true;
+      const runtime = await this.discoverRuntime();
+      return Boolean(runtime.endpoint) && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2);
     } catch {
       return false;
     }
@@ -1903,18 +2510,25 @@ class OpencodeService {
       ? options.directory.trim()
       : this.currentDirectory;
     const normalizedDirectory = directory ? normalizeFsPath(directory) : null;
-    const scopedClient = directory ? this.getScopedApiClient(directory) : this.client;
 
     try {
-      const response = await scopedClient.find.files({
-        query,
-        limit: typeof options?.limit === 'number' && Number.isFinite(options.limit) ? options.limit : undefined,
-        dirs: options?.dirs === false || options?.type === 'file' ? 'false' : 'true',
-        type: options?.type,
-      });
-
-      const items = Array.isArray(response?.data) ? response.data : [];
-      return items.map<ProjectFileSearchHit>((item) => {
+      const limit = options?.limit !== undefined && Number.isFinite(options.limit) ? options.limit : undefined;
+      let paths: string[];
+      if (this.isV2()) {
+        const result = await this.runtimeBinding.run('oc2', 'file.find', () => this.v2ClientFor(directory).file.find({
+          query, limit, type: options?.type ?? (options?.dirs === false ? 'file' : undefined),
+          location: directory ? { directory } : undefined,
+        }));
+        paths = z.array(z.object({ path: z.string().min(1), type: z.enum(['file', 'directory']) }))
+          .parse(result.data).map((item) => item.path);
+      } else {
+        const scopedClient = directory ? this.getScopedApiClient(directory) : this.client;
+        const response = await scopedClient.find.files({
+          query, limit, dirs: options?.dirs === false || options?.type === 'file' ? 'false' : 'true', type: options?.type,
+        });
+        paths = z.array(z.string()).parse(unwrapSdkData(response, 'find.files'));
+      }
+      return paths.map<ProjectFileSearchHit>((item) => {
         const normalizedRelativePath = normalizeFsPath(item);
         const name = normalizedRelativePath.split('/').filter(Boolean).pop() || normalizedRelativePath;
         const normalizedPath = normalizedDirectory

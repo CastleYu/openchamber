@@ -15,6 +15,10 @@ Use this doc when you ask an agent to change tool/header/description behavior.
 ## High-level flow
 
 - Message parts are rendered from `MessageBody.tsx`.
+- The timeline consumes the shared OpenCode domain `Message` and `Part` types. OC1 assistant replies use `parentID`; OC2 replies omit it and follow the latest user turn in message order. An explicit OC1 parent always wins.
+- `MessageList` folds OC2 synthetic context carrying OpenChamber metadata into the following user bubble. It hides other prompt plumbing and renders OC2 compaction and shell records as small notices. The BTW panel uses the same role handling.
+- `message/toolKinds.ts` maps the two generations' built-in shell (`bash`/`shell`), subagent (`task`/`subagent`), and patch (`apply_patch`/`patch`) names onto their existing presentation paths. Tool result metadata keeps its actual `sessionId` or `sessionID` field; the UI does not invent a child session.
+- The session error notice reads the last user or assistant message, so a later OC2 plumbing record cannot hide a failed or unanswered conversation turn.
 - There are two tool rendering paths:
   - **Static grouped tools** -> `StaticToolRow` in `ProgressiveGroup.tsx`
   - **Expandable tools** -> `ToolPart.tsx`
@@ -183,6 +187,8 @@ tool patch is parsed while the turn streams.
   message and the real file is inside OpenCode's dedicated temporary directory.
 - `read` and `skill` are **static navigation tools** and render via `StaticToolRow`.
 - Every other tool, including search/fetch, OpenCode built-ins, custom tools, plugins, and MCP tools, is **expandable** and renders through `ToolPart`.
+- On an OC2 runtime, the built-in `execute` tool renders `input.code` as a JavaScript script, then the ordered `metadata.toolCalls` names, statuses and compact arguments. A malformed or nameless call does not hide the other calls. `metadata.truncated` adds the output warning and shows `outputPath` as plain text. OC1 tools named `execute` keep the generic renderer. `lib/opencode/tools.ts` owns this wire parsing; the UI does not infer calls from output text.
+- On an OC2 runtime, a completed built-in `websearch` result uses `WebSearchResults` when `lib/opencode/websearch.ts` recognizes the official heading/snippet format. Unknown output keeps the raw tool renderer. OC1 websearch rows keep their existing generic presentation.
 - The managed `openchamber` plugin tool uses the expandable path and hides its broad protocol input. The plugin supplies the selected action's human description as the native tool title; the UI renders that metadata without owning an action map. The full versioned result envelope renders through the same neutral JSON summary/tree/raw views as other tools, without a tool-specific output card.
 - Selecting a JSON summary, tree, or raw view saves that mode in the persisted UI settings. New and refreshed JSON tool outputs read the saved mode across sessions; missing or invalid preferences use Summary.
 - `ToolPart` defers expanded content after a user toggle, preventing large tool input/output payloads from mounting during the initial chat render.

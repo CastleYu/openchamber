@@ -1,9 +1,10 @@
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { Message, Part } from '@/lib/opencode/model';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import { getCurrentIntlLocale } from '@/lib/i18n';
 import { isVSCodeRuntime, openDesktopPath, revealDesktopPath, saveDesktopMarkdownFile } from '@/lib/desktop';
 import { getRevealLabelKey } from '@/lib/utils';
-import { formatMessageText } from '@/lib/messages/messageMarkdown';
+import { formatContextMessage, formatMessageText } from '@/lib/messages/messageMarkdown';
+import { readContextPart } from '@/lib/messages/contextParts';
 
 export type SessionMessageRecord = { info: Message; parts: Part[] };
 
@@ -34,7 +35,7 @@ function formatTimestamp(timestamp: number | undefined): string {
 }
 
 function formatAssistantModel(record: SessionMessageRecord): string {
-  if (record.info.role === 'user') {
+  if (record.info.role !== 'assistant') {
     return '';
   }
 
@@ -49,7 +50,7 @@ function formatAssistantModel(record: SessionMessageRecord): string {
 }
 
 function formatMessageHeader(record: SessionMessageRecord): string {
-  const label = record.info.role === 'user' ? 'User' : 'Assistant';
+  const label = record.info.role === 'user' ? 'User' : record.info.role === 'synthetic' ? 'Context' : 'Assistant';
   const timestamp = formatTimestamp(record.info.time?.created);
   const assistantModel = formatAssistantModel(record);
   const details = timestamp && assistantModel
@@ -69,6 +70,12 @@ export function formatMessageRecordText(record: SessionMessageRecord): string {
 }
 
 function formatMessageAsMarkdown(record: SessionMessageRecord): string {
+  if (record.info.role === 'synthetic') {
+    if (!readContextPart(record.info)) return '';
+    const context = formatContextMessage(record.info).trim();
+    return context ? `${formatMessageHeader(record)}\n\n${context}` : '';
+  }
+  if (record.info.role !== 'user' && record.info.role !== 'assistant') return '';
   const role = formatMessageHeader(record);
   const text = formatMessageRecordText(record);
 

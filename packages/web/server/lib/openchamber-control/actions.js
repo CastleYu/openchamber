@@ -16,6 +16,7 @@ export const OPENCHAMBER_CONTROL_ACTION_DEFINITIONS = Object.freeze([
   { action: 'session.fork', title: 'Fork a session', description: 'Fork sessionId; messageId selects the boundary; prompt is optional' },
   { action: 'session.status', title: 'Check session status', description: 'Check sessionId status; directory defaults to the current session' },
   { action: 'session.messages', title: 'Read session messages', description: 'Read text-only messages and current sessionStatus for sessionId; directory and limit 10 are defaults' },
+  { action: 'file.open', title: 'Show a file to the user', description: 'Open path in the file panel so the user can see a result. The path may be absolute or relative to the session directory' },
   { action: 'schedule.status', title: 'Check scheduler status', description: 'Check scheduler status; no parameters', agentExposed: false },
   { action: 'schedule.list', title: 'List scheduled tasks', description: 'List tasks and scheduler status; scope with projectId or directory' },
   { action: 'schedule.create', title: 'Create a scheduled task', description: 'Create task; requires name, prompt, model, and one schedule selector' },
@@ -30,6 +31,15 @@ const OPENCHAMBER_CONTROL_ACTIONS = Object.freeze(
 
 export const OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS = Object.freeze(
   OPENCHAMBER_CONTROL_ACTION_DEFINITIONS.filter(({ agentExposed }) => agentExposed !== false),
+);
+
+export const OPENCHAMBER_OC2_ACTIONS = Object.freeze(['file.open', 'notify.send']);
+
+export const OPENCHAMBER_LEGACY_AGENT_TOOL_ACTION_DEFINITIONS = Object.freeze(
+  OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS.filter(({ action }) => !OPENCHAMBER_OC2_ACTIONS.includes(action)),
+);
+export const OPENCHAMBER_LEGACY_AGENT_TOOL_ACTIONS = Object.freeze(
+  OPENCHAMBER_LEGACY_AGENT_TOOL_ACTION_DEFINITIONS.map(({ action }) => action),
 );
 
 export const OPENCHAMBER_AGENT_TOOL_ACTIONS = Object.freeze(
@@ -75,6 +85,14 @@ export const OPENCHAMBER_MEMORY_ACTIONS = Object.freeze(
   OPENCHAMBER_MEMORY_ACTION_DEFINITIONS.map(({ action }) => action),
 );
 
+export const OPENCHAMBER_NOTIFY_ACTION_DEFINITIONS = Object.freeze([
+  { action: 'notify.send', title: 'Notify the user', description: 'Send the user a notification; requires title, body is optional. By default it appears only while the user is away from OpenChamber; set showWhenFocused only when it cannot wait' },
+]);
+
+export const OPENCHAMBER_NOTIFY_ACTIONS = Object.freeze(
+  OPENCHAMBER_NOTIFY_ACTION_DEFINITIONS.map(({ action }) => action),
+);
+
 /**
  * Which actions each managed tool may ask for.
  *
@@ -89,6 +107,7 @@ const ACTIONS_BY_TOOL = Object.freeze({
   openchamber: OPENCHAMBER_AGENT_TOOL_ACTIONS,
   openchamber_web: OPENCHAMBER_WEB_ACTIONS,
   openchamber_memory: OPENCHAMBER_MEMORY_ACTIONS,
+  openchamber_notify: OPENCHAMBER_NOTIFY_ACTIONS,
 });
 
 const bareName = (action) => {
@@ -135,4 +154,5 @@ export const OPENCHAMBER_ALL_ACTIONS = Object.freeze([
   ...OPENCHAMBER_CONTROL_ACTIONS,
   ...OPENCHAMBER_WEB_ACTIONS,
   ...OPENCHAMBER_MEMORY_ACTIONS,
+  ...OPENCHAMBER_NOTIFY_ACTIONS,
 ]);

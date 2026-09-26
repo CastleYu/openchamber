@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AssistantMessage, Message, Part, Session, TextPart } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Message, Part, Session, TextPart } from '@/lib/opencode/model';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { collectSessionTitleTurns, formatSessionTitleContext, generatedSessionTitleSchema, generateSessionTitle } from './sessionTitle';
 import { configureRuntimeUrlResolver } from './runtime-url';

@@ -14,6 +14,14 @@ import {
   serializePreferencesDocument,
 } from './settings-files.js';
 
+const MANAGED_PLUGIN_SETTINGS_KEYS = new Set([
+  'agentControlToolEnabled',
+  'agentWebToolEnabled',
+  'agentMemoryToolEnabled',
+  'agentNotifyToolEnabled',
+  'optimizeSystemPrompt',
+]);
+
 const DEFAULT_NOTIFICATION_TEMPLATES = {
   completion: { title: '{agent_name} is ready', message: '{model_name} completed the task' },
   error: { title: 'Tool error', message: '{last_message}' },
@@ -58,6 +66,7 @@ export const createSettingsRuntime = (deps) => {
     normalizeManagedRemoteTunnelPresetTokens,
     syncManagedRemoteTunnelConfigWithPresets,
     upsertManagedRemoteTunnelToken,
+    onManagedPluginSettingsChanged = async () => {},
   } = deps;
 
   let persistSettingsLock = Promise.resolve();
@@ -1110,7 +1119,13 @@ export const createSettingsRuntime = (deps) => {
         }
       }
 
-      await writeSettingsToDisk(next, { surface, changedKeys: Object.keys(sanitized) });
+      const changedKeys = Object.keys(sanitized);
+      await writeSettingsToDisk(next, { surface, changedKeys });
+      if (changedKeys.some((key) => MANAGED_PLUGIN_SETTINGS_KEYS.has(key))) {
+        await Promise.resolve(onManagedPluginSettingsChanged(next)).catch((error) => {
+          console.warn('Failed to refresh the managed OpenCode config:', error?.message ?? error);
+        });
+      }
       return formatSettingsResponse(next);
     });
 

@@ -605,3 +605,62 @@ describe('session goal live activity gate', () => {
     runtime.stop();
   });
 });
+
+describe('session goal kernel operations', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const setup = (generation, generate) => {
+    const active = { ...session, metadata: { openchamber: { goal: { ...goal } } } };
+    let identity = { generation, endpoint: 'http://opencode.test', epoch: 1 };
+    const raw = generation === 'oc1'
+      ? { info: { id: 'msg_answer', role: 'assistant', sessionID: SESSION_ID, providerID: 'provider', modelID: 'model', agent: 'review', variant: 'high', finish: 'stop', time: { created: 2, completed: 2 }, tokens: { input: 1, output: 1, cache: { read: 0 } } }, parts: [{ type: 'text', text: 'Progress' }] }
+      : { id: 'msg_answer', type: 'assistant', agent: 'review', model: { providerID: 'provider', id: 'model', variant: 'high' }, finish: 'stop', time: { created: 2, completed: 2 }, tokens: { input: 1, output: 1, cache: { read: 0 } }, content: [{ type: 'text', text: 'Progress' }] };
+    const item = { id: 'msg_answer', role: 'assistant', created: 2, completed: 2, finish: 'stop', tokens: { input: 1, output: 1, cache: { read: 0 } }, model: generation === 'oc1' ? { providerID: 'provider', modelID: 'model' } : raw.model, raw };
+    const ops = {
+      captureIdentity: () => identity,
+      getSession: vi.fn(async () => ({ data: active })),
+      listActiveStatuses: vi.fn(async () => ({ data: {} })),
+      listChildren: vi.fn(async () => ({ data: [] })),
+      listMessages: vi.fn(async () => ({ data: { order: 'desc', items: [item] } })),
+      updateSession: vi.fn(async ({ metadata, expectedIdentity }) => {
+        if (expectedIdentity?.epoch !== identity.epoch) throw new Error('stale goal write');
+        active.metadata = metadata;
+        return { data: active };
+      }),
+      sendPrompt: vi.fn(async () => ({ accepted: true })),
+    };
+    const notify = vi.fn();
+    const runtime = createSessionGoalRuntime({ kernelOperations: ops,
+      buildOpenCodeUrl: (pathname) => `http://opencode.test${pathname}`,
+      getOpenCodeAuthHeaders: () => ({}),
+      getSmallModelService: async () => ({ generateSmallModelText: generate }),
+      emitGoalNotification: notify, isEnabled: () => true, idleQuietMs: 10 });
+    return { runtime, ops, notify, switchEpoch: () => { identity = { ...identity, epoch: 2 }; } };
+  };
+
+  it.each(['oc1', 'oc2'])('keeps the %s agent, model and variant for continuation', async (generation) => {
+    const { runtime, ops } = setup(generation, async () => ({ text: '{"verdict":"continue","note":"More work"}', providerID: 'provider', modelID: 'model' }));
+    await runIdleTick(runtime);
+    expect(ops.sendPrompt).toHaveBeenCalledTimes(1);
+    const request = ops.sendPrompt.mock.calls[0][0].request;
+    if (generation === 'oc1') expect(request.body).toMatchObject({ agent: 'review', variant: 'high', model: { providerID: 'provider', modelID: 'model' } });
+    else expect(request).toMatchObject({ agent: 'review', model: { providerID: 'provider', id: 'model', variant: 'high' } });
+    runtime.stop();
+  });
+
+  it('drops a deferred audit after an epoch switch without writing or notifying', async () => {
+    let release;
+    const pending = new Promise((resolve) => { release = resolve; });
+    const { runtime, ops, notify, switchEpoch } = setup('oc2', () => pending);
+    runtime.processPayload({ type: 'session.status', properties: { sessionID: SESSION_ID, status: { type: 'idle' }, directory: DIRECTORY } });
+    await vi.advanceTimersByTimeAsync(11);
+    switchEpoch();
+    release({ text: '{"verdict":"complete","note":"Done"}', providerID: 'provider', modelID: 'model' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ops.updateSession).not.toHaveBeenCalled();
+    expect(ops.sendPrompt).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+    runtime.stop();
+  });
+});

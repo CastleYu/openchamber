@@ -15,11 +15,33 @@ const createManager = (mode: 'managed' | 'external' = 'managed') => {
     getOpenCodeAuthHeaders: () => ({ Authorization: 'Basic test' }),
     getDebugInfo: () => ({ mode }),
     restart: async () => { restartCount += 1; },
+    refreshKernelRuntime: async () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.8' }),
+    upgradeCli: async () => {},
   };
   return { manager, getRestartCount: () => restartCount };
 };
 
 describe('VS Code OpenCode upgrades', () => {
+  test('OC2 upgrades through the managed CLI and never uses the removed HTTP endpoint', async () => {
+    const { manager, getRestartCount } = createManager();
+    manager.refreshKernelRuntime = async () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '2.0.16' });
+    let cliCalls = 0;
+    manager.upgradeCli = async () => { cliCalls += 1; };
+    globalThis.fetch = async () => { throw new Error('Unexpected HTTP upgrade request'); };
+    assert.deepEqual(await upgradeManagedOpenCode(manager), { status: 200, body: { success: true, restarted: true } });
+    assert.equal(cliCalls, 1);
+    assert.equal(getRestartCount(), 1);
+  });
+
+  test('an unknown kernel never starts either updater', async () => {
+    const { manager, getRestartCount } = createManager();
+    manager.refreshKernelRuntime = async () => ({ generation: 'unknown', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: null });
+    manager.upgradeCli = async () => { throw new Error('Unexpected CLI upgrade'); };
+    globalThis.fetch = async () => { throw new Error('Unexpected HTTP upgrade'); };
+    assert.equal((await upgradeManagedOpenCode(manager)).status, 503);
+    assert.equal(getRestartCount(), 0);
+  });
+
   test('reports an available update for a managed OpenCode process', async () => {
     const { manager } = createManager();
     globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {

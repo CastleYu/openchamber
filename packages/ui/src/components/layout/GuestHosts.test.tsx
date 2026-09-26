@@ -18,6 +18,7 @@ import { useGuestDialogStore } from '@/lib/guests/dialog-store';
 import { useGuestItemStore } from '@/lib/guests/item-store';
 import { useGuestBadgeStore } from '@/lib/guests/badge-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { useUIStore } from '@/stores/useUIStore';
 import { GuestHosts } from './GuestHosts';
@@ -85,7 +86,7 @@ test(`${variant.name}: actions and commands use the execution entry and clean up
   let restoreCommandPost = () => {};
   try {
     await act(async () => root.render(<React.StrictMode><I18nProvider><ThemeSystemContext.Provider value={themeContext}>
-      <SyncProvider sdk={sdk} directory="/visible"><GuestHosts /></SyncProvider>
+      <SyncProvider source={sourceFromSdk(sdk)} directory="/visible"><GuestHosts /></SyncProvider>
     </ThemeSystemContext.Provider></I18nProvider></React.StrictMode>));
     await act(async () => {
       done = runGuestAction(entry, { kind: 'message', action: 'count', sessionId: 'target', sessionTitle: 'Target', directory: '/target', messageId: 'm1', role: 'assistant', text: 'Hello' }, (key) => key);
@@ -138,7 +139,7 @@ test(`${variant.name}: actions and commands use the execution entry and clean up
     expect(error.mock.calls.length).toBe(0);
     if (variant.entry && variant.backgroundEntry) {
       await act(async () => root.render(<React.StrictMode><I18nProvider><ThemeSystemContext.Provider value={themeContext}>
-        <SyncProvider sdk={sdk} directory="/visible"><GuestHosts /><PluginPane mode="plugin:counter" /></SyncProvider>
+        <SyncProvider source={sourceFromSdk(sdk)} directory="/visible"><GuestHosts /><PluginPane mode="plugin:counter" /></SyncProvider>
       </ThemeSystemContext.Provider></I18nProvider></React.StrictMode>));
       const visibleFrame = container.querySelector('iframe');
       if (!visibleFrame) throw new Error('Visible panel missing');

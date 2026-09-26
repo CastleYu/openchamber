@@ -600,6 +600,9 @@ export const createSettingsHelpers = (dependencies) => {
     if (typeof candidate.agentWebToolEnabled === 'boolean') {
       result.agentWebToolEnabled = candidate.agentWebToolEnabled;
     }
+    if (typeof candidate.agentNotifyToolEnabled === 'boolean') {
+      result.agentNotifyToolEnabled = candidate.agentNotifyToolEnabled;
+    }
     if (typeof candidate.browserProvider === 'string' && candidate.browserProvider.trim()) {
       result.browserProvider = candidate.browserProvider.trim();
     }

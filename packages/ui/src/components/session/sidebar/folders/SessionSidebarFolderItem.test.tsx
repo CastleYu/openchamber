@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { expect, test } from 'bun:test';
 import { Window } from 'happy-dom';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { I18nProvider } from '@/lib/i18n';
 import { replaceGlobalSessionStatusById } from '@/sync/global-session-status';
 import { useNotificationStore } from '@/sync/notification-store';

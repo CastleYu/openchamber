@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Metadata, Session } from '@/lib/opencode/model';
 import {
   getBtwBoundaryMessageID,
   getBtwOriginalSessionID,
@@ -12,7 +12,10 @@ import {
   withoutBtwSessionMarker,
 } from './sessionBtwMetadata';
 
-const sessionWith = (metadata: unknown): Session => ({ id: 's', metadata }) as unknown as Session;
+const sessionWith = (metadata?: Metadata): Session => ({
+  id: 's', projectID: 'project', directory: '/project', title: 'Session',
+  time: { created: 1, updated: 1 }, metadata,
+});
 
 describe('parent link', () => {
   test('withBtwSessionLink preserves unrelated openchamber metadata', () => {

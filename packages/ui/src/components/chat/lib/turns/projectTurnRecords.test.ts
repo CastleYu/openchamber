@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { Message, Part } from '@/lib/opencode/model';
 import { projectTurnRecords } from './projectTurnRecords';
 import type { ChatMessageEntry } from './types';
 
@@ -36,6 +36,29 @@ describe('projectTurnRecords', () => {
         expect(projection.turns[0]?.turnId).toBe('u1');
         expect(projection.turns[0]?.assistantMessageIds).toEqual(['a1']);
         expect(projection.ungroupedMessageIds.size).toBe(0);
+    });
+
+    test('groups OC2 replies without parentID by message order', () => {
+        const user1 = createMessageEntry({ id: 'u1', role: 'user', createdAt: 1 });
+        const assistant1 = createMessageEntry({ id: 'a1', role: 'assistant', createdAt: 2 });
+        const user2 = createMessageEntry({ id: 'u2', role: 'user', createdAt: 3 });
+        const assistant2 = createMessageEntry({ id: 'a2', role: 'assistant', createdAt: 4 });
+
+        const projection = projectTurnRecords([user1, assistant1, user2, assistant2]);
+
+        expect(projection.turns.map((turn) => turn.assistantMessageIds)).toEqual([['a1'], ['a2']]);
+        expect(projection.indexes.messageToTurnId.get('a2')).toBe('u2');
+    });
+
+    test('explicit OC1 parentID wins over the latest user turn', () => {
+        const user1 = createMessageEntry({ id: 'u1', role: 'user', createdAt: 1 });
+        const user2 = createMessageEntry({ id: 'u2', role: 'user', createdAt: 2 });
+        const assistant = createMessageEntry({ id: 'a1', role: 'assistant', parentID: 'u1', createdAt: 3 });
+
+        const projection = projectTurnRecords([user1, user2, assistant]);
+
+        expect(projection.turns[0]?.assistantMessageIds).toEqual(['a1']);
+        expect(projection.turns[1]?.assistantMessageIds).toEqual([]);
     });
 
     test('keeps out-of-order assistant replies attached to their parent user turn', () => {

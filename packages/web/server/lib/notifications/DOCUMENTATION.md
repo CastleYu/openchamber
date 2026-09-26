@@ -1,5 +1,9 @@
 # Notifications Module Documentation
 
+The server injects `kernelOperations` for OpenCode session and message
+lookups used by notification text, parent suppression and goal state. The
+message page's declared order decides which assistant reply is newest.
+
 ## Purpose
 This module provides notification message preparation utilities for the web server runtime, including text truncation and plain-text normalization for system notifications.
 
@@ -9,6 +13,12 @@ This module provides notification message preparation utilities for the web serv
 - `packages/web/server/lib/notifications/push-runtime.js`: push subscription persistence, VAPID initialization, and UI visibility runtime.
 - `packages/web/server/lib/notifications/apns-runtime.js`: native iOS APNs device-token persistence + delivery. Two modes: **relay** (default — sign + POST tokens + generic text to the central Cloudflare relay `https://api.openchamber.dev/v1/push/send`, which holds the single project APNs key) and **direct** (fallback — sign ES256 JWT with Node crypto + HTTP/2, when `OPENCHAMBER_PUSH_RELAY_DISABLED=true`). Each server has an auto-generated ECDSA P-256 keypair (`getOrCreateRelayKeypair`, persisted in settings); it binds tokens on the relay (`/v1/push/register-token`) and signs every relay request, so the relay only delivers to tokens bound to that server. APNs is the native app's sole notification channel (no local notifications) and is NOT gated on UI visibility — iOS suppresses the foreground banner instead. Mobile push carries only generic text (scenario title + session name) — see `APNS.md`.
 - `packages/web/server/lib/notifications/emitter-runtime.js`: desktop/stdout + UI SSE notification emission runtime.
+- `packages/web/server/lib/notifications/emit-route.js`: validates and rate-limits
+  plugin and agent notices, then uses the existing desktop and UI emitters.
+  `createPluginNotificationEmitter({ readSettingsFromDiskMigrated,
+  emitDesktopNotification, broadcastUiNotification })` returns `emit(input)`
+  for the control service on both kernels. `registerNotificationEmitRoutes`
+  provides authenticated plugin and ordinary API handlers for the same emitter.
 - `packages/web/server/lib/notifications/runtime.js`: trigger runtime for OpenCode event-driven notification fanout.
 - `packages/web/server/lib/notifications/template-runtime.js`: notification template variables and session text/title enrichment runtime. Zen-model helpers are retained as compatibility stubs only.
 - `packages/web/server/lib/notifications/message.js`: helper implementation module.

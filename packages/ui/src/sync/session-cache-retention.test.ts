@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { createOpencodeClient, type Message, type Part } from "@opencode-ai/sdk/v2/client"
+import { createOpencodeClient, type Message as LegacyMessage, type Part } from "@opencode-ai/sdk/v2/client"
+import type { Message } from "@/lib/opencode/model"
+import { projectLegacyMessage } from "@/lib/opencode/v1/projection"
 import { ChildStoreManager } from "./child-store"
 import { SessionMessageLoader, type SessionMessageTarget } from "./session-message-loader"
 import { SessionCacheRetention } from "./session-cache-retention"
@@ -11,13 +13,13 @@ const IDLE_TTL_MS = 40
 const waitIdle = async () => { await new Promise((resolve) => setTimeout(resolve, IDLE_TTL_MS * 2)); await flush() }
 
 function transcript(sessionID: string, turns = 8, steps = 12) {
-  const records: Array<{ info: Message; parts: Part[] }> = []
+  const records: Array<{ info: LegacyMessage; parts: Part[] }> = []
   for (let turn = 0; turn < turns; turn += 1) {
     const parentID = `msg_${sessionID}_${turn}_user`
     for (let step = 0; step <= steps; step += 1) {
       const created = turn * (steps + 1) + step
       const id = step === 0 ? parentID : `msg_${sessionID}_${turn}_${step}`
-      const info: Message = step === 0
+      const info: LegacyMessage = step === 0
         ? { id, sessionID, role: "user", time: { created }, agent: "build", model: { providerID: "test", modelID: "test" } }
         : {
           id, sessionID, role: "assistant", time: { created, completed: created + 0.5 }, parentID,
@@ -36,7 +38,7 @@ function transcript(sessionID: string, turns = 8, steps = 12) {
   return records
 }
 
-function setup(surface: "desktop" | "mobile" | "vscode" = "desktop", recordsFor = transcript) {
+function setup(surface: "desktop" | "mobile" | "vscode" = "desktop", recordsFor = transcript, idleTtlMs = IDLE_TTL_MS) {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window")
   Object.defineProperty(globalThis, "window", { configurable: true, value: {
     __OPENCHAMBER_SURFACE__: surface === "mobile" ? "mobile" : "desktop",
@@ -82,7 +84,7 @@ function setup(surface: "desktop" | "mobile" | "vscode" = "desktop", recordsFor 
   const releases: SessionMessageTarget[] = []
   const active = new Set<string>()
   loader.startCacheRetention({
-    idleTtlMs: IDLE_TTL_MS,
+    idleTtlMs,
     isCurrent: () => current,
     isViewed: (target) => target.directory === viewed.directory && target.sessionID === viewed.sessionID,
     isActive: (target) => target.directory === "/repo" && active.has(target.sessionID),
@@ -139,7 +141,9 @@ describe("session cache retention", () => {
     })
 
     test(`${surface}: count limit evicts the least recently visited session first`, async () => {
-      const env = setup(surface)
+      // Count eviction is independent of the idle grace. Twenty sequential
+      // desktop loads can exceed the tiny 40 ms expiry used by the TTL tests.
+      const env = setup(surface, transcript, 5_000)
       const limit = surface === "desktop" ? 20 : 6
       for (let index = 0; index < limit; index += 1) await env.select(`s${index}`)
       expect(Object.keys(env.childStores.getChild("/repo")!.getState().message)).toHaveLength(limit)
@@ -253,7 +257,7 @@ describe("session cache retention", () => {
   test("part-only streaming performs no retention passes and structural publications coalesce", async () => {
     const stores = new ChildStoreManager()
     const store = stores.ensureChild("/repo", { bootstrap: false })
-    store.setState({ message: { a: transcript("a", 1).map(({ info }) => info) } })
+    store.setState({ message: { a: transcript("a", 1).map(({ info }) => projectLegacyMessage(info)) } })
     let evictions = 0
     const retention = new SessionCacheRetention(stores, {
       limit: 0, isCurrent: () => true, isViewed: () => false, isProtected: () => false,

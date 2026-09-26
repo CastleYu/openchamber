@@ -4,6 +4,13 @@ import { isVSCodeRuntime } from './desktop';
 import { messageQueueUpdatedEventSchema, type MessageQueueUpdatedEvent } from '@/stores/messageQueueStore';
 import { z } from 'zod';
 
+const fileOpenRequestSchema = z.object({
+  path: z.string().min(1),
+  directory: z.string().min(1).nullable(),
+  sessionId: z.string().min(1).nullable(),
+});
+type FileOpenRequestEvent = { type: 'file-open-request' } & z.infer<typeof fileOpenRequestSchema>;
+
 type ScheduledTaskRanEvent = {
   type: 'scheduled-task-ran';
   projectId: string;
@@ -107,6 +114,7 @@ type RoutingPermissionHeldEvent = { type: 'routing-permission-held' } & z.infer<
 type RoutingSafetySkippedEvent = { type: 'routing-safety-skipped' } & z.infer<typeof routingSafetySkippedSchema>;
 
 type OpenChamberEvent =
+  | FileOpenRequestEvent
   | { type: 'event-stream-ready' }
   | RoutingUpdatedEvent
   | RoutingDecisionEvent
@@ -262,6 +270,12 @@ const dispatchFromEnvelope = (envelope: { type: string; properties: unknown }) =
     for (const listener of listeners) {
       listener(nextEvent);
     }
+    return;
+  }
+
+  if (envelope.type === 'openchamber:file-open-request') {
+    const parsed = fileOpenRequestSchema.safeParse(envelope.properties);
+    if (parsed.success) for (const listener of listeners) listener({ type: 'file-open-request', ...parsed.data });
     return;
   }
 

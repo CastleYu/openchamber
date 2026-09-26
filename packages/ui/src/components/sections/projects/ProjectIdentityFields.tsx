@@ -11,7 +11,7 @@ import {
   SETTINGS_SELECT_ROW_TRIGGER_CLASS,
   SETTINGS_SELECT_SIZE,
 } from '@/components/sections/shared/SettingsSection';
-import { selectProvidersForDirectory, useConfigStore } from '@/stores/useConfigStore';
+import { getSelectableModelId, selectProvidersForDirectory, useConfigStore } from '@/stores/useConfigStore';
 import { modelVariantNames } from '@/lib/modelVariants';
 import { PROJECT_COLORS, PROJECT_ICONS, PROJECT_COLOR_MAP as COLOR_MAP, ProjectIconImage } from '@/lib/projectMeta';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
@@ -78,7 +78,7 @@ export const ProjectIdentityFields: React.FC<ProjectIdentityFieldsProps> = ({ fo
     if (!providerId || !modelId) return [];
     const model = providers
       .find((provider) => provider.id === providerId)
-      ?.models.find((entry) => entry.id === modelId);
+      ?.models.find((entry) => getSelectableModelId(entry) === modelId);
     return modelVariantNames(model);
   }, [parsedDefaultModel, providers]);
 

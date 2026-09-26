@@ -1,5 +1,18 @@
 # OpenChamber Control Service
 
+The server injects `kernelOperations` for session listing, status and message
+reads. A failed status lookup leaves that session `unknown`. Message output
+follows the page's declared order and sorts by creation time before applying
+`last` or `limit`.
+
+`notify.send` delegates to the injected `notifyUser` service. `file.open`
+delegates to `createFileOpenRequester`: it resolves a path from the session
+directory, checks that a file exists, broadcasts
+`openchamber:file-open-request`, and reports 503 when no client can show it.
+These new agent actions require OC2 under the initial adoption policy. OC1 keeps
+its existing notification delivery and file viewer. The control service enforces
+this gate for direct HTTP callers as well as generated tool schemas.
+
 ## Purpose
 
 This module owns the typed control contract shared by the OpenChamber CLI and

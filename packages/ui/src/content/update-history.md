@@ -2,9 +2,9 @@
 title: File previews and project controls
 ---
 
-Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-22. This is a retrospective summary, not a claim that every historical item is new in the next release.
+Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-26. This is a retrospective summary, not a claim that every historical item is new in the next release.
 
-Official entries identify the community release or main-branch follow-up that introduced the behavior. Personal entries describe the cumulative fork changes. This integration includes official 1.24.2 and main through `83ec4fbde`; the separate v2 preview remains marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.24.2-DIJIANG.3.7.
+Official entries identify the community release or main-branch follow-up that introduced the behavior. Personal entries describe the cumulative fork changes. This integration uses official 1.24.2 as its product baseline and OpenChamber v2.0.1 as the reference for selected dual-kernel changes. It preserves the OC1 path and adopts specific OC2 behavior; it does not claim the complete v2.0.1 product. The separate v2 preview remains marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.24.2-DIJIANG.4.0.
 
 Two differences matter when reading this history. Official 1.23.1 removed automatic MCP reconnection, while this personal build retains managed reconnection with idle-release safeguards. Official desktop update improvements describe community builds; the personal build keeps notification-only updates. Portable refers to the executable, while settings and session data still use the established user directories.
 
@@ -18,6 +18,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
+- Personal 4.0 / OpenCode: Keep the existing OC1 conversation path while adding generation-specific OpenCode 2 protocol support for core conversations. The feature is based on OpenChamber 1.24.2 and selected changes from v2.0.1, not the full v2.0.1 product.
 - Official main after 1.24.2 / Sidebar: Switch between Grouped and Timeline session views, and optionally show session activity spinners.
 - Official main after 1.24.2 / Permissions: Preview the file patch when an agent requests permission to edit a file.
 - Personal / Testing: DIJIANG regression coverage now documents its feature contracts and runners, with Windows process, file, update-policy and bilingual-history checks.

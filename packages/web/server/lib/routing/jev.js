@@ -11,7 +11,14 @@ import {
   ROUTING_INSTRUCTIONS,
   SAFETY_INSTRUCTIONS,
   SAFETY_KINDS,
+  ZEN_CLIENT_ID,
+  ZEN_JEV_API_URL,
+  ZEN_JEV_MODEL,
 } from './defaults.js';
+
+export const jevEndpoint = (token) => token
+  ? { url: JEV_API_ORIGIN + JEV_API_PATH, model: JEV_MODEL, headers: { authorization: `Bearer ${token}` }, source: 'typesafe' }
+  : { url: ZEN_JEV_API_URL, model: ZEN_JEV_MODEL, headers: { 'x-opencode-client': ZEN_CLIENT_ID }, source: 'zen-free' };
 
 export const buildRoutingRequest = ({ categories, history, request }) => {
   const criteria = {};
@@ -75,10 +82,11 @@ export const createJevClient = ({ fetchImpl = fetch, timeoutMs = JEV_TIMEOUT_MS 
     const timer = setTimeout(() => abort.abort(), timeoutMs);
     const started = Date.now();
     try {
-      const response = await fetchImpl(JEV_API_ORIGIN + JEV_API_PATH, {
+      const endpoint = jevEndpoint(token);
+      const response = await fetchImpl(endpoint.url, {
         method: 'POST',
-        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-        body: JSON.stringify(request),
+        headers: { ...endpoint.headers, 'content-type': 'application/json' },
+        body: JSON.stringify({ ...request, model: endpoint.model }),
         signal: abort.signal,
       });
       const text = await response.text();

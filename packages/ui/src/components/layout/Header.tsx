@@ -17,6 +17,7 @@ import {
 import { useUIStore, type ContextPanelMode } from '@/stores/useUIStore';
 import { useContextWindowLimits } from '@/hooks/useContextWindowLimits';
 import { useSessionUIStore } from '@/sync/session-ui-store';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useSessionWorktreeStore } from '@/sync/session-worktree-store';
 import { formatSessionWorktreeBadge } from '@/sync/session-worktree-contract';
 import { useGlobalSessionStatus, useSessionMessagesResolved } from '@/sync/sync-context';
@@ -824,6 +825,7 @@ export const Header: React.FC = () => {
 
   const shareSessionFor = React.useCallback(async (sessionId: string) => {
     if (!sessionId) return;
+    if (opencodeClient.getBoundRuntime()?.generation !== 'oc1') return;
     const result = await shareSession(sessionId);
     if (result?.share?.url) {
       const copied = await copyTextToClipboard(result.share.url);
@@ -848,6 +850,7 @@ export const Header: React.FC = () => {
 
   const unshareSessionFor = React.useCallback(async (sessionId: string) => {
     if (!sessionId) return;
+    if (opencodeClient.getBoundRuntime()?.generation !== 'oc1') return;
     const result = await unshareSession(sessionId);
     toast[result ? 'success' : 'error'](t(result
       ? 'sessions.sidebar.session.unshare.success'
@@ -960,6 +963,7 @@ export const Header: React.FC = () => {
   const guestPage = useGuestsStore((state) => state.guests.find((guest) => guest.id === openGuestPageId));
   const isScheduledSurfaceOpen = useUIStore((state) => state.isScheduledTasksDialogOpen);
   const isArchiveSurfaceOpen = useUIStore((state) => state.isArchivePageOpen);
+  const isUsageStatsSurfaceOpen = useUIStore((state) => state.isUsageStatsPageOpen);
   const worktreesSurfaceProjectId = useUIStore((state) => state.worktreesPageProjectId);
   const isMultiRunSurfaceOpen = useUIStore((state) => state.isMultiRunLauncherOpen);
   const worktreesSurfaceProjectLabel = useProjectsStore((state) => {
@@ -975,6 +979,9 @@ export const Header: React.FC = () => {
     if (isArchiveSurfaceOpen) {
       return { title: t('sessions.archivePage.title'), subtitle: null };
     }
+    if (isUsageStatsSurfaceOpen) {
+      return { title: t('usageStats.title'), subtitle: null };
+    }
     if (worktreesSurfaceProjectId) {
       return {
         title: t('sessions.worktreesPage.title', { project: worktreesSurfaceProjectLabel ?? '' }),
@@ -985,7 +992,7 @@ export const Header: React.FC = () => {
       return { title: t('sessions.sidebar.header.actions.newMultiRun'), subtitle: null };
     }
     return null;
-  }, [guestPage, isArchiveSurfaceOpen, isMultiRunSurfaceOpen, isScheduledSurfaceOpen, t, worktreesSurfaceProjectId, worktreesSurfaceProjectLabel]);
+  }, [guestPage, isArchiveSurfaceOpen, isMultiRunSurfaceOpen, isScheduledSurfaceOpen, isUsageStatsSurfaceOpen, t, worktreesSurfaceProjectId, worktreesSurfaceProjectLabel]);
 
 
   const actionDirectory = React.useMemo(() => {
@@ -1318,7 +1325,7 @@ export const Header: React.FC = () => {
           <Icon name="file-copy" className="mr-1 size-4" />{t('sessions.sidebar.session.menu.copyId')}
         </Item>
         <Separator />
-        {shareUrl ? (
+        {opencodeClient.getBoundRuntime()?.generation !== 'oc1' ? null : shareUrl ? (
           <>
             <Item onClick={() => copySessionShareUrl(shareUrl)}>
               <Icon name="file-copy" className="mr-1 size-4" />{t('sessions.sidebar.session.menu.copyLink')}
@@ -1538,7 +1545,7 @@ export const Header: React.FC = () => {
                     <SessionAiRenameMenuItem sessionID={currentSessionId} directory={sessionDirectory} open={isHeaderSessionMenuOpen} Item={DropdownMenuItem} />
                     <DropdownMenuItem onClick={() => currentSessionId && copySessionIdFor(currentSessionId)}><Icon name="file-copy" className="mr-1 size-4" />{t('sessions.sidebar.session.menu.copyId')}</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {currentSession?.shareUrl ? (
+                    {opencodeClient.getBoundRuntime()?.generation !== 'oc1' ? null : currentSession?.shareUrl ? (
                       <>
                         <DropdownMenuItem onClick={() => copySessionShareUrl(currentSession?.shareUrl)}><Icon name="file-copy" className="mr-1 size-4" />{t('sessions.sidebar.session.menu.copyLink')}</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { if (currentSessionId) void unshareSessionFor(currentSessionId); }}><Icon name="link-unlink-m" className="mr-1 size-4" />{t('sessions.sidebar.session.menu.unshare')}</DropdownMenuItem>

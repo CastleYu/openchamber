@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part } from "@opencode-ai/sdk/v2"
+import type { AssistantMessage, Part, TextPart } from "@/lib/opencode/model"
 import {
   buildSessionContextUsage,
   computeCacheHitRate,
@@ -11,10 +11,31 @@ import {
   type ContextFillMessage,
 } from "./tokenUtils"
 
-const assistantMessage = (tokens: unknown): { info: Message; parts: Part[] } => ({
-  info: { tokens } as unknown as Message,
-  parts: [],
+const messageInfo = (): AssistantMessage => ({
+  id: 'assistant',
+  sessionID: 'session',
+  role: 'assistant',
+  time: { created: 1 },
+  agent: 'build',
+  providerID: 'provider',
+  modelID: 'model',
 })
+
+type TokenFixture = number | {
+  total?: number
+  input?: number
+  output?: number
+  reasoning?: number
+  cache?: { read?: number; write?: number }
+}
+
+type AssistantMessageRecord = { info: AssistantMessage; parts: Part[] }
+
+const assistantMessage = (tokens: TokenFixture): AssistantMessageRecord => {
+  const info = messageInfo()
+  Object.defineProperty(info, 'tokens', { value: tokens, enumerable: true })
+  return { info, parts: [] }
+}
 
 describe("computeCacheHitRate", () => {
   test("returns zero and hasInput=false for null input", () => {
@@ -163,15 +184,14 @@ describe("extractTokensFromMessage", () => {
   })
 
   test("prefers the reported total when tokens live on a part", () => {
-    const message: { info: Message; parts: Part[] } = {
-      info: {} as Message,
-      parts: [{ tokens: { total: 500, input: 2_000 } } as unknown as Part],
-    }
+    const part: TextPart = { id: 'part', sessionID: 'session', messageID: 'assistant', type: 'text', text: 'hello' }
+    Object.defineProperty(part, 'tokens', { value: { total: 500, input: 2_000 } })
+    const message = { info: messageInfo(), parts: [part] }
     expect(extractTokensFromMessage(message)).toBe(500)
   })
 
   test("returns 0 when neither info nor parts carry tokens", () => {
-    expect(extractTokensFromMessage({ info: {} as Message, parts: [] })).toBe(0)
+    expect(extractTokensFromMessage({ info: messageInfo(), parts: [] })).toBe(0)
   })
 })
 

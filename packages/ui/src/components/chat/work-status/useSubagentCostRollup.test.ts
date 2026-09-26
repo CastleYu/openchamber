@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { computeRollup } from './useSubagentCostRollup';
 
 function makeSession(id: string, cost: number, parentID?: string): Session {

@@ -1,5 +1,10 @@
 # Session Knowledge
 
+The server injects `kernelOperations` for session reads and metadata writes.
+An unreadable session fails the pending-context lookup; callers can send the
+user's message without standing context and retry that context later. A failed
+read never becomes an authoritative empty set of pins.
+
 What a session must be told about the project — that session's pinned notes and
 plans, and the index of what the agent has remembered — and whether it has been
 told yet.

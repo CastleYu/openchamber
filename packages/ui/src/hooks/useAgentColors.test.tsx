@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { expect, test } from 'bun:test';
 import { Window } from 'happy-dom';
-import type { Agent } from '@opencode-ai/sdk/v2';
+import type { AgentWithExtras } from '@/stores/useAgentsStore';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { ThemeSystemProvider } from '@/contexts/ThemeSystemContext';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
@@ -20,7 +20,7 @@ test('consumers share allocations and update together on roster and theme change
     originals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
     Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
   }
-  const agent = (name: string): Agent => ({ name, mode: 'primary', native: false, options: {}, permission: [] });
+  const agent = (name: string): AgentWithExtras => ({ generation: 'oc1', name, mode: 'primary', native: false, options: {}, permission: [] });
   const agents = ['architect', 'build', 'plan', 'simplifier'].map(agent);
   useConfigStore.setState({ agents });
   const { createRoot } = await import('react-dom/client');

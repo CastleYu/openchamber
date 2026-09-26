@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import type { OpenCodeManager } from './opencode';
+import { resolveKernelRequest } from './kernelRequest';
 import * as gitService from './gitService';
 import { chooseBridgeGitGenerationModel, type BridgeGitGenerationPayloadModel } from './bridge-git-generation-model';
 import type { BridgeContext, BridgeResponse } from './bridge';
@@ -24,6 +26,7 @@ const BRIDGE_GIT_MODEL_CATALOG_CACHE_TTL_MS = 30 * 1000;
 
 let bridgeGitModelCatalogCache: Set<string> | null = null;
 let bridgeGitModelCatalogCacheAt = 0;
+let bridgeGitModelCatalogIdentity = '';
 
 const sleep = (ms: number) => new Promise<void>((resolve) => {
   setTimeout(resolve, ms);
@@ -72,50 +75,51 @@ const createBridgeGitClient = (apiUrl: string, authHeaders?: Record<string, stri
 });
 
 const fetchBridgeGitModelCatalog = async (
-  apiUrl: string,
-  authHeaders?: Record<string, string>
+  manager: OpenCodeManager,
 ): Promise<Set<string>> => {
+  const selected = await resolveKernelRequest(manager, '/model');
+  const identity = `${selected.descriptor.generation}:${selected.descriptor.endpoint}:${selected.descriptor.epoch}`;
   const now = Date.now();
-  if (bridgeGitModelCatalogCache && now - bridgeGitModelCatalogCacheAt < BRIDGE_GIT_MODEL_CATALOG_CACHE_TTL_MS) {
+  if (bridgeGitModelCatalogCache && identity === bridgeGitModelCatalogIdentity && now - bridgeGitModelCatalogCacheAt < BRIDGE_GIT_MODEL_CATALOG_CACHE_TTL_MS) {
     return bridgeGitModelCatalogCache;
   }
 
-  const client = createBridgeGitClient(apiUrl, authHeaders);
-  const payload = unwrapBridgeSdkData(
-    await client.v2.model.list(undefined, { signal: AbortSignal.timeout(8_000) }),
-    'model.list'
-  );
+  let payload: Array<{ providerID: string; id: string }>;
+  if (selected.descriptor.generation === 'oc2') {
+    const { OpenCode } = await import('@opencode/client');
+    const apiUrl = manager.getApiUrl();
+    if (!apiUrl) throw new Error('OpenCode API unavailable');
+    const result = await OpenCode.make({ baseUrl: apiUrl, headers: manager.getOpenCodeAuthHeaders() }).model.list(undefined, { signal: AbortSignal.timeout(8_000) });
+    payload = result.data;
+  } else {
+    const apiUrl = manager.getApiUrl();
+    if (!apiUrl) throw new Error('OpenCode API unavailable');
+    payload = unwrapBridgeSdkData(await createBridgeGitClient(apiUrl, manager.getOpenCodeAuthHeaders()).v2.model.list(undefined, { signal: AbortSignal.timeout(8_000) }), 'model.list').data;
+  }
+  selected.assertCurrent();
   const refs = new Set<string>();
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      if (!item || typeof item !== 'object') {
-        continue;
-      }
-      const record = item as Record<string, unknown>;
-      const providerID = typeof record.providerID === 'string' ? record.providerID.trim() : '';
-      const modelID = typeof record.id === 'string'
-        ? record.id.trim()
-        : (typeof record.modelID === 'string' ? record.modelID.trim() : '');
-      if (providerID && modelID) {
-        refs.add(`${providerID}/${modelID}`);
-      }
+  for (const item of payload) {
+    const providerID = item.providerID.trim();
+    const modelID = item.id.trim();
+    if (providerID && modelID) {
+      refs.add(`${providerID}/${modelID}`);
     }
   }
 
   bridgeGitModelCatalogCache = refs;
   bridgeGitModelCatalogCacheAt = now;
+  bridgeGitModelCatalogIdentity = identity;
   return refs;
 };
 
 const resolveBridgeGitGenerationModel = async (
   payloadModel: BridgeGitGenerationPayloadModel,
   settings: Record<string, unknown>,
-  apiUrl: string,
-  authHeaders?: Record<string, string>
+  manager: OpenCodeManager,
 ): Promise<{ providerID: string; modelID: string }> => {
   let catalog: Set<string> | null = null;
   try {
-    catalog = await fetchBridgeGitModelCatalog(apiUrl, authHeaders);
+    catalog = await fetchBridgeGitModelCatalog(manager);
   } catch {
     catalog = null;
   }
@@ -155,6 +159,7 @@ const generateBridgeTextWithSessionFlow = async ({
   providerID,
   modelID,
   authHeaders,
+  check,
 }: {
   apiUrl: string;
   directory: string;
@@ -162,6 +167,7 @@ const generateBridgeTextWithSessionFlow = async ({
   providerID: string;
   modelID: string;
   authHeaders?: Record<string, string>;
+  check: () => void;
 }): Promise<string> => {
   const client = createBridgeGitClient(apiUrl, authHeaders);
   const deadlineAt = Date.now() + BRIDGE_GIT_GENERATION_TIMEOUT_MS;
@@ -169,6 +175,7 @@ const generateBridgeTextWithSessionFlow = async ({
   let sessionId: string | null = null;
 
   try {
+    check();
     const session = unwrapBridgeSdkData(
       await client.session.create({
         ...(directory ? { directory } : {}),
@@ -176,6 +183,7 @@ const generateBridgeTextWithSessionFlow = async ({
       }, { signal: AbortSignal.timeout(remainingMs()) }),
       'session.create'
     );
+    check();
     const sessionObj = session && typeof session === 'object' ? session as Record<string, unknown> : null;
     const createdSessionId = sessionObj && typeof sessionObj.id === 'string' ? sessionObj.id : '';
     if (!createdSessionId) {
@@ -195,15 +203,18 @@ const generateBridgeTextWithSessionFlow = async ({
       }, { signal: AbortSignal.timeout(remainingMs()) }),
       'session.promptAsync'
     );
+    check();
 
     while (Date.now() < deadlineAt) {
       await sleep(BRIDGE_GIT_GENERATION_POLL_INTERVAL_MS);
+      check();
 
       const messagesResponse = await client.session.messages({
         sessionID: sessionId,
         ...(directory ? { directory } : {}),
         limit: 10,
       }, { signal: AbortSignal.timeout(remainingMs()) });
+      check();
 
       if (messagesResponse.error) {
         continue;
@@ -235,12 +246,27 @@ const generateBridgeTextWithSessionFlow = async ({
   } finally {
     if (sessionId) {
       try {
+        check();
         await client.session.delete({ sessionID: sessionId }, { signal: AbortSignal.timeout(5_000) });
       } catch {
         // ignore cleanup failures
       }
     }
   }
+};
+
+const generateV2Text = async (manager: OpenCodeManager, prompt: string, providerID: string, modelID: string): Promise<string> => {
+  const selected = await resolveKernelRequest(manager, '/experimental/generate');
+  if (selected.descriptor.generation !== 'oc2') throw new Error('OpenCode 2 is not active');
+  const apiUrl = manager.getApiUrl();
+  if (!apiUrl) throw new Error('OpenCode API unavailable');
+  const { OpenCode } = await import('@opencode/client');
+  const result = await OpenCode.make({ baseUrl: apiUrl, headers: manager.getOpenCodeAuthHeaders() }).generate.text(
+    { prompt, model: { id: modelID, providerID } },
+    { signal: AbortSignal.timeout(BRIDGE_GIT_GENERATION_TIMEOUT_MS) },
+  );
+  selected.assertCurrent();
+  return result.text.trim();
 };
 
 const parseJsonObjectSafe = (value: string): Record<string, unknown> | null => {
@@ -309,26 +335,25 @@ export async function handleSpecialGitBridgeMessage(
       const prompt = `You are drafting a GitHub Pull Request title + description. Respond in JSON of the shape {"title": string, "body": string} (ONLY JSON in response, no markdown fences) with these rules:\n- title: concise, sentence case, <= 80 chars, no trailing punctuation, no commit-style prefixes (no "feat:", "fix:")\n- body: GitHub-flavored markdown with these sections in this order: Summary, Testing, Notes\n- Summary: 3-6 bullet points describing user-visible changes; avoid internal helper function names\n- Testing: bullet list ("- Not tested" allowed)\n- Notes: bullet list; include breaking/rollout notes only when relevant\n\nContext:\n- base branch: ${base}\n- head branch: ${head}${context?.trim() ? `\n- Additional context: ${context.trim()}` : ''}\n\nDiff summary:\n${diffSummaries}`;
 
       try {
-        const apiUrl = ctx?.manager?.getApiUrl();
-        if (!apiUrl) {
+        const manager = ctx?.manager;
+        const apiUrl = manager?.getApiUrl();
+        if (!apiUrl || !manager) {
           return { id, type, success: false, error: 'OpenCode API unavailable' };
         }
+
+        const selected = await resolveKernelRequest(manager, '/model');
 
         const settings = deps.readSettings(ctx) as Record<string, unknown>;
         const { providerID, modelID } = await resolveBridgeGitGenerationModel(
           { providerId, modelId, zenModel: payloadZenModel },
           settings,
-          apiUrl,
-          ctx?.manager?.getOpenCodeAuthHeaders()
+          manager,
         );
-        const raw = await generateBridgeTextWithSessionFlow({
-          apiUrl,
-          directory,
-          prompt,
-          providerID,
-          modelID,
-          authHeaders: ctx?.manager?.getOpenCodeAuthHeaders(),
-        });
+        selected.assertCurrent();
+        const raw = selected.descriptor.generation === 'oc2'
+          ? await generateV2Text(manager, prompt, providerID, modelID)
+          : await generateBridgeTextWithSessionFlow({ apiUrl, directory, prompt, providerID, modelID, authHeaders: manager.getOpenCodeAuthHeaders(), check: selected.assertCurrent });
+        selected.assertCurrent();
         if (!raw) {
           return { id, type, success: false, error: 'No PR description returned by generator' };
         }

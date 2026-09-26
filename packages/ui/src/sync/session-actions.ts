@@ -3,13 +3,21 @@
  * Replaces the action methods from the old useSessionStore.
  */
 
-import type { FilePart, OpencodeClient, Session, Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { FormAnswer } from "@opencode/client"
+import type { SyncSource } from "./source"
+import type { FilePart, Session, Message, Part, Metadata } from "@/lib/opencode/model"
 import { Binary } from "./binary"
 import { useSessionUIStore } from "./session-ui-store"
 import { useInputStore } from "./input-store"
 import type { ChildStoreManager } from "./child-store"
 import { computeSubtreeIds } from "./scoped-blocking-requests"
 import { opencodeClient } from "@/lib/opencode/client"
+import { OpenCodeRuntimeError, type OpenCodeRuntime } from '@/lib/opencode/runtime'
+import { assistantForkBoundary, findLastCompletedTurnMessageId } from './assistant-fork'
+import { applyForkInheritance } from '@/lib/sessionForkLinks'
+import { readGoalObjectiveForFork, removeGoalObjectiveForFork, writeGoalObjectiveFile } from '@/lib/goalObjectiveFiles'
+import { getSessionGoal } from '@/lib/sessionGoalMetadata'
 import { mergeSessionDirectoryMetadata, resolveGlobalSessionDirectory, useGlobalSessionsStore } from "@/stores/useGlobalSessionsStore"
 import { useConfigStore } from "@/stores/useConfigStore"
 import { registerSessionDirectory } from "./sync-refs"
@@ -65,8 +73,7 @@ const MESSAGE_REFETCH_SKIP_PARTS = new Set(["patch", "step-start", "step-finish"
 const UNREVERT_REFETCH_ATTEMPTS = 3
 const UNREVERT_REFETCH_RETRY_MS = 150
 
-// Reference set by SyncProvider — allows actions to access SDK and stores
-let _sdk: OpencodeClient | null = null
+// References set by SyncProvider for directory routing and local state.
 let _childStores: ChildStoreManager | null = null
 let _getDirectory: () => string = () => ""
 // Optional ref into the sync layer's session-tail materialization queue. Used
@@ -169,21 +176,12 @@ function assertSdkSuccess<T>(result: SdkResult<T>, operation: string): T | undef
   throw isAmbiguousSendFailure(result.error) ? markAmbiguousTransportFailure(error) : error
 }
 
-function assertSdkData<T>(result: SdkResult<T>, operation: string): T {
-  const data = assertSdkSuccess(result, operation)
-  if (data === undefined || data === null) {
-    throw new Error(`${operation} failed: empty response`)
-  }
-  return data
-}
-
 export function setActionRefs(
-  sdk: OpencodeClient,
+  _source: OpencodeClient | SyncSource,
   childStores: ChildStoreManager,
   getDirectory: () => string,
   enqueueSessionMaterialization?: (directory: string, sessionID: string, messageID: string) => void,
 ) {
-  _sdk = sdk
   _childStores = childStores
   _getDirectory = getDirectory
   _enqueueSessionMaterialization = enqueueSessionMaterialization ?? null
@@ -197,11 +195,6 @@ export function setOptimisticRefs(
   _optimisticAdd = add
   _optimisticRemove = remove
   _optimisticConfirm = confirm ?? null
-}
-
-function sdk() {
-  if (!_sdk) throw new Error("SDK not initialized — is SyncProvider mounted?")
-  return _sdk
 }
 
 function dirStore() {
@@ -379,12 +372,16 @@ export async function moveSessionToDirectory(
   moveChanges = true,
   expectedRuntimeKey?: string,
 ): Promise<void> {
-  const result = await opencodeClient.getSdkClient().experimental.controlPlane.moveSession({
-    sessionID: session.id,
-    destination: { directory: destinationDirectory },
-    moveChanges,
-  })
-  assertSdkSuccess(result, "Move session")
+  if (opencodeClient.getBoundRuntime()?.generation === "oc2") {
+    await opencodeClient.moveSession(session.id, destinationDirectory)
+  } else {
+    const result = await opencodeClient.getSdkClient().experimental.controlPlane.moveSession({
+      sessionID: session.id,
+      destination: { directory: destinationDirectory },
+      moveChanges,
+    })
+    assertSdkSuccess(result, "Move session")
+  }
 
   // If the runtime changed during the control-plane request, the server move
   // already happened, but we must not publish stale local state to the UI/stores.
@@ -500,7 +497,7 @@ export function isSessionBusyNow(sessionId: string): boolean {
 async function abortDescendantIfBusy(sessionId: string, directory: string): Promise<void> {
   if (!isSessionBusyNow(sessionId)) return
   try {
-    await sdk().session.abort({ sessionID: sessionId, directory })
+    await opencodeClient.abortSession(sessionId, directory)
   } catch {
     // ignore abort errors
   }
@@ -570,8 +567,7 @@ async function cascadeUnrevertToDescendants(rootId: string): Promise<void> {
       // Same reason as the revert cascade: a running descendant keeps writing
       // messages that the unrevert would race against.
       await abortDescendantIfBusy(session.id, directory)
-      const result = await sdk().session.unrevert({ sessionID: session.id, directory })
-      mirrorSessionIntoLiveStores(assertSdkData(result, "session.unrevert"), directory)
+      mirrorSessionIntoLiveStores(await opencodeClient.unrevertSession(session.id, directory), directory)
     } catch (error) {
       console.error(`[session-actions] Failed to cascade unrevert to descendant ${session.id}:`, error)
     }
@@ -617,16 +613,6 @@ function findSessionDirectoryInChildStores(sessionId: string): string | null {
   }
 
   return null
-}
-
-function getSessionReplyClient(sessionId?: string): OpencodeClient {
-  const directory = sessionId
-    ? useSessionUIStore.getState().getDirectoryForSession(sessionId)
-    : null
-  if (directory) {
-    return opencodeClient.getScopedSdkClient(directory)
-  }
-  return sdk()
 }
 
 function restoreFilePartsToInput(fileParts: Array<Record<string, unknown>>): void {
@@ -703,9 +689,11 @@ function resolveDirectoryForBlockingRequest(
   for (const [directory, store] of stores.children) {
     const state = store.getState()
     const requestMap = type === "permission" ? state.permission : state.question
-    for (const requests of Object.values(requestMap) as Array<Array<{ id: string; sessionID?: string }> | undefined>) {
-      const request = requests?.find((candidate) => candidate.id === requestId)
-      if (!request) continue
+    const tagged = type === "permission"
+      ? Object.values(state.pendingPermission).flat().find((candidate) => candidate.value.id === requestId)
+      : undefined
+    const request = tagged?.value ?? Object.values(requestMap).flat().find((candidate) => candidate.id === requestId)
+    if (request) {
 
       // Ownership beats containment. The request belongs to one specific
       // session, and the reply must reach the instance that actually tracks
@@ -749,6 +737,56 @@ function resolveDirectoryForBlockingRequest(
   return null
 }
 
+function resolveFormDirectory(sessionId: string, formId: string): string | undefined {
+  for (const [directory, store] of _childStores?.children ?? []) {
+    const state = store.getState()
+    for (const requests of Object.values(state.pendingInput)) {
+      const form = requests.find((request) => request.generation === "oc2" && request.value.id === formId)
+      if (!form) continue
+      const owner = state.session.find((session) => session.id === form.value.sessionID)
+      return owner ? resolveSessionOwnedDirectory(owner) ?? directory : directory
+    }
+  }
+  return getSessionDirectory(sessionId) || dir()
+}
+
+function clearPendingForm(sessionId: string, formId: string): void {
+  for (const [, store] of _childStores?.children ?? []) {
+    const current = store.getState().pendingInput
+    let next: typeof current | undefined
+    for (const id of new Set([sessionId, ...Object.keys(current)])) {
+      const requests = current[id]
+      if (!requests) continue
+      const filtered = requests.filter((request) => request.generation !== "oc2" || request.value.id !== formId)
+      if (filtered.length === requests.length) continue
+      next ??= { ...current }
+      if (filtered.length) next[id] = filtered
+      else delete next[id]
+    }
+    if (next) store.setState({ pendingInput: next })
+  }
+}
+
+function clearPendingPermission(sessionId: string, requestId: string): void {
+  for (const [, store] of _childStores?.children ?? []) {
+    const current = store.getState().pendingPermission
+    let next: typeof current | undefined
+    for (const id of new Set([sessionId, ...Object.keys(current)])) {
+      const requests = current[id]
+      if (!requests) continue
+      const filtered = requests.filter((request) => request.value.id !== requestId)
+      if (filtered.length === requests.length) continue
+      next ??= { ...current }
+      if (filtered.length) next[id] = filtered
+      else delete next[id]
+    }
+    if (next) store.setState({ pendingPermission: next })
+  }
+}
+
+const formNotFound = (error: Error): boolean => getErrorStatus(error) === 404
+  || /Form(?:\.)?NotFoundError|Form request not found/i.test(error.message)
+
 export function isQuestionRequestNotFoundError(error: unknown): boolean {
   if (error && typeof error === "object") {
     const status = (error as { status?: unknown }).status
@@ -786,6 +824,7 @@ function recoverStaleBlockingRequest(sessionId: string): void {
       && !Object.prototype.hasOwnProperty.call(state.message, sessionId)
       && !Object.prototype.hasOwnProperty.call(state.session_status ?? {}, sessionId)
       && !Object.prototype.hasOwnProperty.call(state.question ?? {}, sessionId)
+      && !Object.prototype.hasOwnProperty.call(state.pendingInput, sessionId)
     ) {
       continue
     }
@@ -881,18 +920,6 @@ function removePermissionRequestFromChildStores(sessionId: string, requestId: st
   return removed
 }
 
-function getRequestReplyClient(
-  type: "permission" | "question",
-  sessionId: string,
-  requestId: string,
-): OpencodeClient {
-  const requestDirectory = resolveDirectoryForBlockingRequest(type, sessionId, requestId)
-  if (requestDirectory) {
-    return opencodeClient.getScopedSdkClient(requestDirectory)
-  }
-  return getSessionReplyClient(sessionId)
-}
-
 // ---------------------------------------------------------------------------
 // Session CRUD
 // ---------------------------------------------------------------------------
@@ -901,12 +928,12 @@ export async function createSession(
   title?: string,
   directoryOverride?: string | null,
   parentID?: string | null,
-  metadata?: Record<string, unknown>,
+  metadata?: Metadata,
   selectionTransition?: "submitted-draft",
   navigation: "open" | "preserve" = "open",
 ): Promise<Session | null> {
   const runtimeKey = getRuntimeKey()
-  const runtimeClient = opencodeClient.getSdkClient()
+  const runtimeBinding = opencodeClient.getBoundRuntime()
   try {
     // Capture the effective directory used for session creation so we can fall
     // back to it when the server response omits the `directory` field.
@@ -920,7 +947,7 @@ export async function createSession(
       metadata,
     }, effectiveDirectory)
 
-    if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== runtimeClient) return null
+    if (getRuntimeKey() !== runtimeKey || opencodeClient.getBoundRuntime() !== runtimeBinding) return null
     const sessionDirectory = (session as { directory?: string | null }).directory ?? effectiveDirectory ?? null
     // Pre-populate routing index so SSE events arriving before session.created
     // can be routed to the correct child store
@@ -972,14 +999,17 @@ export async function patchSessionMetadata(
   directory: string | null | undefined,
   updater: (metadata: SessionMetadataRecord) => SessionMetadataRecord,
   expectedRuntimeKey?: string,
+  expectedRuntime?: OpenCodeRuntime,
 ): Promise<Session> {
-  if (isStaleRuntime(expectedRuntimeKey)) throw new Error("runtime changed")
+  const changed = () => isStaleRuntime(expectedRuntimeKey)
+    || (expectedRuntime !== undefined && opencodeClient.getBoundRuntime() !== expectedRuntime)
+  if (changed()) throw new Error("runtime changed")
   const targetDirectory = directory ?? getSessionDirectory(sessionId)
   const current = await opencodeClient.getSession(sessionId, targetDirectory)
-  if (isStaleRuntime(expectedRuntimeKey)) throw new Error("runtime changed")
+  if (changed()) throw new Error("runtime changed")
   const nextMetadata = updater(getSessionMetadata(current))
   const updated = await opencodeClient.updateSession(sessionId, { metadata: nextMetadata }, targetDirectory)
-  if (isStaleRuntime(expectedRuntimeKey)) throw new Error("runtime changed")
+  if (changed()) throw new Error("runtime changed")
   useGlobalSessionsStore.getState().upsertSession(updated)
   const sessionDirectory = (updated as { directory?: string | null }).directory ?? targetDirectory
   if (sessionDirectory) registerSessionDirectory(updated.id, sessionDirectory)
@@ -1051,6 +1081,8 @@ async function cleanupReviewMetadataBeforeDelete(
   if (btwSessionID) {
     try {
       if (isStaleRuntime(expectedRuntimeKey)) return
+      const linked = await opencodeClient.getSession(btwSessionID, directory ?? getSessionDirectory(sessionId))
+      if (isStaleRuntime(expectedRuntimeKey) || getBtwOriginalSessionID(linked) !== sessionId) return
       await deleteSession(btwSessionID, { expectedRuntimeKey })
     } catch (error) {
       console.warn("[session-actions] failed to delete btw fork before parent delete", error)
@@ -1650,8 +1682,7 @@ export async function updateSessionTitle(
 
 export async function shareSession(sessionId: string): Promise<Session | null> {
   const sessionDirectory = getSessionDirectory(sessionId)
-  const result = await sdk().session.share({ sessionID: sessionId, directory: sessionDirectory })
-  const session = stripSessionDiffSnapshots(assertSdkData(result, "session.share"))
+  const session = stripSessionDiffSnapshots(await opencodeClient.shareSession(sessionId, sessionDirectory))
   useGlobalSessionsStore.getState().upsertSession(session)
   updateLiveSession(session, sessionDirectory)
   return session
@@ -1659,12 +1690,11 @@ export async function shareSession(sessionId: string): Promise<Session | null> {
 
 export async function unshareSession(sessionId: string): Promise<Session | null> {
   const sessionDirectory = getSessionDirectory(sessionId)
-  const result = await sdk().session.unshare({ sessionID: sessionId, directory: sessionDirectory })
   // A successful unshare is authoritative even when the upstream response
   // echoes the pre-mutation session with its old share URL. Normalize that
   // stale field at the action boundary before publishing to either store.
   const session = {
-    ...stripSessionDiffSnapshots(assertSdkData(result, "session.unshare")),
+    ...stripSessionDiffSnapshots(await opencodeClient.unshareSession(sessionId, sessionDirectory)),
     share: undefined,
   }
   useGlobalSessionsStore.getState().upsertSession(session)
@@ -1925,13 +1955,8 @@ async function fetchRecentSendConfirmationRecords(
   for (let attempt = 0; attempt < SEND_CONFIRMATION_REFETCH_ATTEMPTS; attempt += 1) {
     if (attempt > 0) await wait(SEND_CONFIRMATION_REFETCH_BASE_RETRY_MS * 2 ** (attempt - 1))
     try {
-      const result = await sdk().session.messages({
-        sessionID: sessionId,
-        directory: directory ?? undefined,
-        limit: SEND_CONFIRMATION_REFETCH_LIMIT,
-      })
-      const records = (assertSdkSuccess(result, "session.messages") ?? [])
-        .filter((record: { info?: { id?: string } }) => !!record?.info?.id) as Array<{ info: Message; parts?: Part[] }>
+      const records = (await opencodeClient.getSessionMessages(sessionId, SEND_CONFIRMATION_REFETCH_LIMIT, directory))
+        .filter((record) => Boolean(record.info?.id))
       if (records.some((record) => record.info.id === messageID)) {
         return records
       }
@@ -1983,7 +2008,7 @@ export async function abortCurrentOperation(sessionId: string): Promise<void> {
   // worktree than the UI's current directory could never be aborted).
   const { directory } = dirStoreForSession(sessionId)
   try {
-    await sdk().session.abort({ sessionID: sessionId, directory })
+    await opencodeClient.abortSession(sessionId, directory)
   } catch (error) {
     console.error("[session-actions] abort failed", error)
   }
@@ -1999,44 +2024,38 @@ export async function respondToPermission(
   response: "once" | "always" | "reject",
   directoryOverride?: string,
 ): Promise<void> {
+  const binding = opencodeClient.getBoundRuntime()
   await waitForConnectionOrThrow()
+  if (opencodeClient.getBoundRuntime() !== binding) throw new Error("OpenCode runtime changed before permission reply")
   const directory = directoryOverride
     || resolveDirectoryForBlockingRequest("permission", sessionId, requestId)
     || getSessionDirectory(sessionId)
     || dir()
-  const client = directoryOverride
-    ? opencodeClient.getScopedSdkClient(directoryOverride)
-    : getRequestReplyClient("permission", sessionId, requestId)
-  const result = await client.permission.reply({
-    requestID: requestId,
-    reply: response,
-    ...(directory ? { directory } : {}),
-  })
-  if (assertSdkData(result, "permission.reply") !== true) {
+  if (!await opencodeClient.replyToPermission(requestId, response, { directory, sessionID: sessionId })) {
     throw new Error("Permission reply failed")
   }
+  if (opencodeClient.getBoundRuntime() !== binding) throw new Error("OpenCode runtime changed during permission reply")
+  clearPendingPermission(sessionId, requestId)
 }
 
 export async function dismissPermission(
   sessionId: string,
   requestId: string,
+  directoryOverride?: string,
 ): Promise<void> {
   await waitForConnectionOrThrow()
-  const directory = resolveDirectoryForBlockingRequest("permission", sessionId, requestId)
+  const directory = directoryOverride || resolveDirectoryForBlockingRequest("permission", sessionId, requestId)
     || getSessionDirectory(sessionId)
     || dir()
   try {
-    const result = await getRequestReplyClient("permission", sessionId, requestId).permission.reply({
-      requestID: requestId,
-      reply: "reject",
-      ...(directory ? { directory } : {}),
-    })
-    if (assertSdkData(result, "permission.reply") !== true) {
+    if (!await opencodeClient.replyToPermission(requestId, "reject", { directory, sessionID: sessionId })) {
       throw new Error("Permission dismissal failed")
     }
+    clearPendingPermission(sessionId, requestId)
   } catch (error) {
     if (isPermissionRequestNotFoundError(error)) {
       removePermissionRequestFromChildStores(sessionId, requestId)
+      clearPendingPermission(sessionId, requestId)
     }
     throw error
   }
@@ -2068,7 +2087,8 @@ export async function dismissOpenPermissionsForSession(sessionId: string): Promi
   const stores = _childStores
   if (!stores) return false
 
-  const toDismiss: Array<{ sessionId: string; requestId: string }> = []
+  const toDismiss: Array<{ sessionId: string; requestId: string; directory?: string }> = []
+  const seen = new Set<string>()
   for (const [, store] of stores.children) {
     const state = store.getState()
     const scopedIds = computeSubtreeIds(state.session, sessionId)
@@ -2076,9 +2096,13 @@ export async function dismissOpenPermissionsForSession(sessionId: string): Promi
     const permissionsBySession = state.permission ?? {}
     for (const scopedId of scopedIds) {
       const requests = permissionsBySession[scopedId]
-      if (!requests) continue
-      for (const request of requests) {
-        toDismiss.push({ sessionId: scopedId, requestId: request.id })
+      for (const request of [...(requests ?? []), ...(state.pendingPermission[scopedId] ?? []).map((tagged) => tagged.value)]) {
+        if (seen.has(request.id)) continue
+        seen.add(request.id)
+        toDismiss.push({
+          sessionId: scopedId, requestId: request.id,
+          directory: resolveDirectoryForBlockingRequest("permission", scopedId, request.id) ?? undefined,
+        })
       }
     }
   }
@@ -2089,12 +2113,13 @@ export async function dismissOpenPermissionsForSession(sessionId: string): Promi
   // disappears immediately, before the reject round-trip.
   for (const { sessionId: scopedSessionId, requestId } of toDismiss) {
     removePermissionRequestFromChildStores(scopedSessionId, requestId)
+    clearPendingPermission(scopedSessionId, requestId)
   }
 
   await Promise.all(
-    toDismiss.map(async ({ sessionId: scopedSessionId, requestId }) => {
+    toDismiss.map(async ({ sessionId: scopedSessionId, requestId, directory }) => {
       try {
-        await dismissPermission(scopedSessionId, requestId)
+        await dismissPermission(scopedSessionId, requestId, directory)
       } catch (error) {
         if (isPermissionRequestNotFoundError(error)) return
         // Swallow: a failed dismissal must not block the send. The next
@@ -2125,12 +2150,7 @@ export async function respondToQuestion(
       : Array.isArray(answers[0])
         ? answers as string[][]
         : [answers as string[]]
-    const result = await getRequestReplyClient("question", sessionId, requestId).question.reply({
-      requestID: requestId,
-      answers: normalizedAnswers,
-      ...(directory ? { directory } : {}),
-    })
-    if (assertSdkData(result, "question.reply") !== true) {
+    if (!await opencodeClient.replyToQuestion(requestId, normalizedAnswers, directory)) {
       throw new Error("Question reply failed")
     }
     // A successful reply is authoritative: the backend resolved the question,
@@ -2159,11 +2179,7 @@ export async function rejectQuestion(
     || getSessionDirectory(sessionId)
     || dir()
   try {
-    const result = await getRequestReplyClient("question", sessionId, requestId).question.reject({
-      requestID: requestId,
-      ...(directory ? { directory } : {}),
-    })
-    if (assertSdkData(result, "question.reject") !== true) {
+    if (!await opencodeClient.rejectQuestion(requestId, directory)) {
       throw new Error("Question rejection failed")
     }
     // A successful rejection is authoritative: the backend resolved the
@@ -2178,6 +2194,62 @@ export async function rejectQuestion(
     }
     throw error
   }
+}
+
+/** Reply with the typed OC2 form answer; keep the request when the write fails. */
+export async function replyToForm(sessionId: string, formId: string, answer: FormAnswer): Promise<void> {
+  await waitForConnectionOrThrow()
+  const directory = resolveFormDirectory(sessionId, formId)
+  try {
+    if (!await opencodeClient.replyToForm(sessionId, formId, answer, directory)) throw new Error("Form reply failed")
+    clearPendingForm(sessionId, formId)
+  } catch (error) {
+    if (error instanceof Error && formNotFound(error)) {
+      clearPendingForm(sessionId, formId)
+      recoverStaleBlockingRequest(sessionId)
+    }
+    throw error
+  }
+}
+
+/** Cancel an OC2 form while preserving local state on transport failure. */
+export async function cancelForm(sessionId: string, formId: string): Promise<void> {
+  await waitForConnectionOrThrow()
+  const directory = resolveFormDirectory(sessionId, formId)
+  try {
+    if (!await opencodeClient.cancelForm(sessionId, formId, directory)) throw new Error("Form cancellation failed")
+    clearPendingForm(sessionId, formId)
+  } catch (error) {
+    if (error instanceof Error && formNotFound(error)) {
+      clearPendingForm(sessionId, formId)
+      recoverStaleBlockingRequest(sessionId)
+    }
+    throw error
+  }
+}
+
+/** Resolve OC2 forms before a new prompt; a failed cancel keeps them pending. */
+export async function dismissOpenFormsForSession(sessionId: string): Promise<boolean> {
+  if (!sessionId || !_childStores) return false
+  const pending = new Map<string, { sessionID: string; formID: string }>()
+  for (const [, store] of _childStores.children) {
+    const state = store.getState()
+    const scopedIds = computeSubtreeIds(state.session, sessionId)
+    for (const id of scopedIds) {
+      for (const input of state.pendingInput[id] ?? []) {
+        if (input.generation === "oc2") pending.set(input.value.id, { sessionID: input.value.sessionID, formID: input.value.id })
+      }
+    }
+  }
+  if (pending.size === 0) return false
+  await Promise.all([...pending.values()].map(async ({ sessionID, formID }) => {
+    try {
+      await cancelForm(sessionID, formID)
+    } catch (error) {
+      if (!(error instanceof Error && formNotFound(error))) throw error
+    }
+  }))
+  return true
 }
 
 /**
@@ -2274,7 +2346,7 @@ export async function revertToMessage(sessionId: string, messageId: string): Pro
   const status = state.session_status[sessionId]
   if (status && status.type !== "idle") {
     try {
-      await sdk().session.abort({ sessionID: sessionId, directory })
+      await opencodeClient.abortSession(sessionId, directory)
     } catch {
       // ignore abort errors
     }
@@ -2400,9 +2472,8 @@ export async function refetchSessionMessages(sessionId: string): Promise<void> {
 
   // Actions can run in isolated tests before SyncProvider binds the shared
   // loader. The application runtime always takes the shared path above.
-  const result = await sdk().session.messages({ sessionID: sessionId, directory, limit: MESSAGE_REFETCH_LIMIT })
-  const records = (assertSdkSuccess(result, "session.messages") ?? [])
-    .filter((record: { info?: { id?: string } }) => !!record?.info?.id)
+  const records = (await opencodeClient.getSessionMessages(sessionId, MESSAGE_REFETCH_LIMIT, directory))
+    .filter((record) => Boolean(record.info?.id))
   if (records.length === 0) return
 
   store.setState((state) => {
@@ -2432,7 +2503,7 @@ export async function unrevertSession(sessionId: string): Promise<void> {
   const status = state.session_status[sessionId]
   if (status && status.type !== "idle") {
     try {
-      await sdk().session.abort({ sessionID: sessionId, directory })
+      await opencodeClient.abortSession(sessionId, directory)
     } catch {
       // ignore
     }
@@ -2441,8 +2512,7 @@ export async function unrevertSession(sessionId: string): Promise<void> {
   // Descendants go first because unrevert can also restore shared file state.
   // Applying the parent last leaves the working tree at the parent's snapshot.
   await cascadeUnrevertToDescendants(sessionId)
-  const result = await sdk().session.unrevert({ sessionID: sessionId, directory })
-  const unrevertedSession = assertSdkData(result, "session.unrevert")
+  const unrevertedSession = await opencodeClient.unrevertSession(sessionId, directory)
   const current = store.getState()
   const sessions = [...current.session]
   const idx = sessions.findIndex((s) => s.id === sessionId)
@@ -2459,13 +2529,72 @@ export async function unrevertSession(sessionId: string): Promise<void> {
 }
 
 /**
- * Fork from a user message.
- *
- * 1. Extract text from the message for input restoration
- * 2. Call the runtime fork endpoint
- * 3. Insert the new session into the child store (so sidebar updates immediately)
- * 4. Switch to the new session and stage its composer replay
+ * Keep an OC2 assistant turn by cutting before the following user prompt.
+ * Open the fork with an empty composer, preserving the source draft.
  */
+export async function forkAfterMessage(sessionId: string, messageId: string): Promise<Session | null> {
+  const runtime = opencodeClient.getBoundRuntime()
+  if (runtime?.generation !== 'oc2') throw new OpenCodeRuntimeError(runtime?.generation ?? 'unknown', 'fork after answer')
+  const expectedRuntimeKey = getRuntimeKey()
+  const { store, directory } = dirStoreForSession(sessionId)
+  const before = assistantForkBoundary(store.getState().message[sessionId] ?? [], messageId)
+  let fork = await opencodeClient.forkSession(sessionId, before, directory)
+  if (isStaleRuntime(expectedRuntimeKey) || opencodeClient.getBoundRuntime() !== runtime) return null
+  const assertRuntime = () => {
+    if (isStaleRuntime(expectedRuntimeKey) || opencodeClient.getBoundRuntime() !== runtime) throw new Error('runtime changed')
+  }
+  try {
+    fork = await applyForkInheritance(sessionId, fork, {
+      readObjective: async (id) => { assertRuntime(); const content = await readGoalObjectiveForFork(id); assertRuntime(); return content },
+      readGoalId: async (id) => { assertRuntime(); const current = await opencodeClient.getSession(id, directory); assertRuntime(); return getSessionGoal(current)?.id ?? null },
+      writeObjective: async (id, content) => { assertRuntime(); const written = await writeGoalObjectiveFile(id, content); assertRuntime(); return written },
+      removeObjective: async (id) => { assertRuntime(); await removeGoalObjectiveForFork(id); assertRuntime() },
+      patchMetadata: (id, update) => patchSessionMetadata(id, directory, update, expectedRuntimeKey, runtime),
+    })
+  } catch (error) {
+    if (isStaleRuntime(expectedRuntimeKey) || opencodeClient.getBoundRuntime() !== runtime) throw error
+    // A failed repair must not leave a fork carrying the source's links.
+    try {
+      if (!await opencodeClient.deleteSession(fork.id, directory)) throw new Error('Fork rollback was not acknowledged')
+    } catch (rollbackError) {
+      throw new AggregateError([error, rollbackError], 'Fork repair failed and the new fork could not be removed')
+    }
+    throw error
+  }
+  if (isStaleRuntime(expectedRuntimeKey) || opencodeClient.getBoundRuntime() !== runtime) return null
+  const target = createChatDraftIdentity(expectedRuntimeKey, resolveSessionOwnedDirectory(fork) ?? directory, fork.id)
+  if (!target) throw new Error('Forked session has no composer directory')
+  const sessions = [...store.getState().session]
+  const found = Binary.search(sessions, fork.id, session => session.id)
+  if (!found.found) {
+    sessions.splice(found.index, 0, fork)
+    store.setState({ session: sessions })
+  }
+  useGlobalSessionsStore.getState().upsertSession(fork)
+  registerSessionDirectory(fork.id, target.directory)
+  useSessionUIStore.getState().setCurrentSession(fork.id, target.directory)
+  useInputStore.setState({ pendingComposerRestore: { target, text: '', files: [] } })
+  return fork
+}
+
+export class NothingToForkError extends Error {
+  constructor() { super('No completed turn to fork from'); this.name = 'NothingToForkError' }
+}
+
+/** Fork from the last settled assistant answer, leaving a running source turn alone. */
+export async function forkFromLastCompletedTurn(sessionId: string): Promise<Session | null> {
+  const runtime = opencodeClient.getBoundRuntime()
+  if (runtime?.generation !== 'oc2') throw new OpenCodeRuntimeError(runtime?.generation ?? 'unknown', '/fork')
+  const { store } = dirStoreForSession(sessionId)
+  const state = store.getState()
+  const status = state.session_status?.[sessionId]
+  const turnRunning = status !== undefined && status.type !== 'idle'
+  const messageId = findLastCompletedTurnMessageId(state.message[sessionId] ?? [], turnRunning)
+  if (!messageId) throw new NothingToForkError()
+  return forkAfterMessage(sessionId, messageId)
+}
+
+/** Fork before a user prompt and stage that prompt for editing in the fork. */
 export async function forkFromMessage(sessionId: string, messageId: string): Promise<void> {
   const expectedRuntimeKey = getRuntimeKey()
   const { store, directory } = dirStoreForSession(sessionId)

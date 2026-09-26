@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { Message, Part } from '@/lib/opencode/model';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 
@@ -34,9 +34,8 @@ export const usePlanDetection = (sessionId: string, messageRecords: SessionMessa
       if (message.info.role !== 'assistant') continue;
 
       for (const part of message.parts) {
-        const record = part as { type?: string; text?: string };
-        if (record.type !== 'text') continue;
-        const text = record.text || '';
+        if (part.type !== 'text') continue;
+        const text = part.text;
 
         // Check for plan file reference in synthetic messages
         if (text.includes('The plan at ') || text.includes('User has requested to enter plan mode')) {

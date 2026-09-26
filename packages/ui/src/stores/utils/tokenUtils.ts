@@ -1,4 +1,4 @@
-import type { AssistantMessage, Message, Part, UserMessage } from "@opencode-ai/sdk/v2";
+import type { AssistantMessage, Message, Part, UserMessage } from '@/lib/opencode/model';
 import type { SessionContextUsage } from "../types/sessionTypes";
 
 type TokenBreakdown = {
@@ -57,7 +57,9 @@ export type ContextFillMessage = {
     role?: string;
     tokens?: TokenBreakdown;
     /** `true` on the assistant record of a compaction. User messages carry their diff summary here. */
-    summary?: AssistantMessage['summary'] | UserMessage['summary'];
+    summary?: AssistantMessage['summary'] | UserMessage['summary'] | string;
+    /** OC2 compaction lifecycle; unrelated message roles may carry their own status. */
+    status?: string;
     finish?: AssistantMessage['finish'];
     error?: AssistantMessage['error'];
 };
@@ -85,6 +87,10 @@ type LatestContextFill =
 export const findLatestContextFill = (messages: readonly ContextFillMessage[]): LatestContextFill | null => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
         const message = messages[index];
+        if (message?.role === 'compaction') {
+            if (message.status === 'completed' && !message.error) return { state: 'compacted', index };
+            continue;
+        }
         if (message?.role !== 'assistant') continue;
 
         if (message.summary === true) {

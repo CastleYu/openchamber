@@ -1,3 +1,5 @@
+import { isShellTool } from '../toolKinds';
+
 const MAX_SYNTHETIC_TERMINAL_CELLS = 100_000;
 
 interface TerminalRenderBudget {
@@ -139,7 +141,7 @@ export const getToolOutput = (
     metadataOutput: unknown,
     status?: string,
 ): string | undefined => {
-    const isBash = tool === 'bash';
+    const isBash = isShellTool(tool);
     const shouldNormalize = isBash && status !== 'running';
 
     if (typeof stateOutput === 'string') {

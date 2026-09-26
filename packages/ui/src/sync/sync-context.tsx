@@ -1,10 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useRef, useCallback, useMemo } from "react"
-import type { Event, Message, Part } from "@opencode-ai/sdk/v2/client"
-import type { Session } from "@opencode-ai/sdk/v2"
+import type { Event } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part } from "@/lib/opencode/model"
+import type { Session } from "@/lib/opencode/model"
 import type { StoreApi } from "zustand"
 import { useStore } from "zustand"
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { SyncSource } from "./source"
+import type { CatalogKind, DomainEvent } from "@/lib/opencode/events"
+import { refreshStoresForCatalogKind } from "@/stores/catalogRefresh"
+import type { PendingInput, PendingPermission } from "@/lib/opencode/operations"
+import { projectLegacyPart } from "@/lib/opencode/v1/projection"
+import { applyDomainEvent } from "./event-reducer"
+import { DomainEventAuthority } from "./domain-event-authority"
 import { createEventPipeline } from "./event-pipeline"
 import { isVSCodeRuntime } from "@/lib/desktop"
 import { isSurfaceAttended } from "@/lib/surfaceAttention"
@@ -34,7 +42,7 @@ import { retry } from "./retry"
 import { touchStreamingSession, updateChangedStreamingSessions, updateStreamingState } from "./streaming"
 import { countSyncPerformance } from "./performance-diagnostics"
 import { runBackgroundNetworkTask } from "@/lib/background-network"
-import { recordDirectoryRecoveryEvent } from "./directory-recovery-snapshots"
+import { recordDirectoryRecoveryEvent, recordDomainRecoveryEvent } from "./directory-recovery-snapshots"
 import { setActionRefs } from "./session-actions"
 import { setSyncRefs, getAllSyncSessions } from "./sync-refs"
 import { useSessionUIStore } from "./session-ui-store"
@@ -64,17 +72,21 @@ import { useTodosPersistStore } from "@/stores/useTodosPersistStore"
 import { cleanupPersistedSessionState } from "./session-deletion-cleanup"
 import { toast } from "@/components/ui"
 import { appendNotification } from "./notification-store"
-import { recordSessionError, summarizeOpenCodeError, type OpenCodeSessionErrorPayload } from "./session-error-log"
+import { recordSessionError, summarizeOpenCodeError, type OpenCodeErrorSummary, type OpenCodeSessionErrorPayload } from "./session-error-log"
 import {
   applyGlobalSessionStatusEvent,
   applyGlobalSessionStatusEvents,
   applyGlobalSessionStatusSnapshot,
+  applyGlobalDomainStatusEvents,
   getDirectoryOwnedSessionIds,
+  hasActiveSubagent,
+  forEachAncestorId,
+  setSessionParentResolver,
   useGlobalSessionStatusStore,
 } from "./global-session-status"
-import { applyGlobalBlockingRequestEvents } from "./global-blocking-requests"
+import { applyGlobalBlockingRequestEvents, applyGlobalDomainBlockingEvents } from "./global-blocking-requests"
 import type { State } from "./types"
-import type { SessionStatus } from "@opencode-ai/sdk/v2/client"
+import type { SessionStatus } from "@/lib/opencode/model"
 import type { PermissionRequest } from "@/types/permission"
 import type { QuestionRequest } from "@/types/question"
 import {
@@ -92,8 +104,7 @@ import { getRegisteredRuntimeAPIs } from "@/contexts/runtimeAPIRegistry"
 import { isFilesystemError } from "@/lib/api/files-errors"
 import { formatMessage, useI18nStore } from "@/lib/i18n"
 import { sessionEvents } from "@/lib/sessionEvents"
-import { listGlobalSessionPages } from "@/stores/globalSessions"
-import { areRequestArraysReferentiallyEqual, collectScopedBlockingRequests } from "./scoped-blocking-requests"
+import { areRequestArraysReferentiallyEqual, collectScopedRequests } from "./scoped-blocking-requests"
 import { EMPTY_USER_MESSAGE_HISTORY_SNAPSHOT, buildUserMessageHistorySnapshot, type TranscriptPrompt, type UserMessageHistorySnapshot } from "./user-message-history"
 import {
   EMPTY_SESSION_MESSAGE_LOAD_STATE,
@@ -123,7 +134,7 @@ type SyncRuntime = {
   childStores: ChildStoreManager
   messageLoader: SessionMessageLoader
   runtimeKey: string
-  sdk: OpencodeClient
+  source: SyncSource
   currentDirectory: CurrentDirectorySource
 }
 
@@ -143,6 +154,29 @@ const SyncContext = syncGlobal[SYNC_CONTEXT_GLOBAL_KEY] ?? createContext<SyncSys
 syncGlobal[SYNC_CONTEXT_GLOBAL_KEY] = SyncContext
 const SyncRuntimeContext = syncGlobal[SYNC_RUNTIME_CONTEXT_GLOBAL_KEY] ?? createContext<SyncRuntime | null>(null)
 syncGlobal[SYNC_RUNTIME_CONTEXT_GLOBAL_KEY] = SyncRuntimeContext
+
+setSessionParentResolver((sessionId) => useGlobalSessionsStore.getState().entityById.get(sessionId)?.parentID)
+
+type DeferredTurnNotifications = Map<string, { runtimeKey: string; directory: string; outcome: 'completed' | 'failed'; error?: OpenCodeErrorSummary }>
+const deferredBySource = new WeakMap<Pick<SyncSource, 'getSession'>, DeferredTurnNotifications>()
+
+const appendTurnNotification = (sessionID: string, directory: string, outcome: 'completed' | 'failed', error?: OpenCodeErrorSummary): void => {
+  appendNotification({ directory, session: sessionID, time: Date.now(), viewed: isViewedInCurrentSession(directory, sessionID),
+    ...(outcome === 'failed' ? { type: 'error' as const, error } : { type: 'turn-complete' as const }) })
+}
+
+const settleDeferredTurnNotifications = (sessionID: string, runtimeKey: string, deferredTurnNotifications: DeferredTurnNotifications): void => {
+  forEachAncestorId(sessionID, (ancestor) => {
+    const pending = deferredTurnNotifications.get(ancestor)
+    if (!pending) return
+    if (pending.runtimeKey !== runtimeKey) { deferredTurnNotifications.delete(ancestor); return }
+    const active = useGlobalSessionStatusStore.getState().activeSessionIds
+    if (active.has(ancestor)) { deferredTurnNotifications.delete(ancestor); return }
+    if (hasActiveSubagent(ancestor, active)) return
+    deferredTurnNotifications.delete(ancestor)
+    appendTurnNotification(ancestor, pending.directory, pending.outcome, pending.error)
+  })
+}
 
 type SdkResult<T> = {
   data?: T
@@ -1563,22 +1597,17 @@ async function resyncDirectoryAfterReconnect(
   await resyncDirectorySessionStatuses(directory, store, candidateSessionIds, "authoritative", isStale)
   if (isStale()) return
 
-  const scopedClient = opencodeClient.getScopedSdkClient(directory)
+  const source = opencodeClient.getSyncSource()
   await Promise.all(candidateSessionIds.map(async (sessionId) => {
     syncDebug.recovery.materializing({ reason, directory, sessionID: sessionId })
     const loader = getImperativeSessionMessageLoader()
-    const [sessionResponse] = await Promise.all([
-      retry(async () => {
-        const response = await scopedClient.session.get({ sessionID: sessionId })
-        assertSdkSuccess(response, "session.get")
-        return response
-      }).catch(() => null),
+    const [session] = await Promise.all([
+      retry(() => source.getSession(sessionId, directory)).catch(() => null),
       loader?.refreshTail({ directory, sessionID: sessionId }, RECONNECT_MESSAGE_LIMIT) ?? Promise.resolve(),
     ])
     if (isStale()) return
     await recoverInterruptedTurnAfterMessageLoad(directory, store, sessionId, isStale)
     if (isStale()) return
-    const session = sessionResponse?.data
     if (!session) return
 
     const nextSession = stripSessionDiffSnapshots(session)
@@ -1685,15 +1714,7 @@ const recordTurnOutcomeNotification = (
     recordSessionError({ sessionId: sessionID, directory, ...errorSummary })
   }
   if (isSubtaskSession(sessionID, directory, childStores, batch)) return
-  appendNotification({
-    directory,
-    session: sessionID,
-    time: Date.now(),
-    viewed: isViewedInCurrentSession(directory, sessionID),
-    ...(errorSummary
-      ? { type: "error" as const, error: errorSummary }
-      : { type: "turn-complete" as const }),
-  })
+  appendTurnNotification(sessionID, directory, errorSummary ? 'failed' : 'completed', errorSummary ?? undefined)
 }
 
 export function handleEvent(
@@ -2006,7 +2027,7 @@ export function handleEvent(
   }
 
   if (reducerChanged && updatedPart) {
-    sessionEvents.requestGitRefreshForToolTransition(resolvedDirectory, previousPart, updatedPart)
+    sessionEvents.requestGitRefreshForToolTransition(resolvedDirectory, previousPart, projectLegacyPart(updatedPart))
   }
 
   if (reducerChanged) {
@@ -2130,6 +2151,161 @@ export function handleEvent(
   }
 
   updateRoutingIndexFromEvent(routingIndex, resolvedDirectory, payload)
+}
+
+function domainSessionID(event: DomainEvent): string | undefined {
+  if ("sessionID" in event) return event.sessionID
+  if ("session" in event) return event.session.id
+  if ("message" in event) return event.message.sessionID
+  if ("part" in event) return event.part.sessionID
+  if ("request" in event) return event.request.value.sessionID
+  return undefined
+}
+
+export function applyDomainBatch(
+  rawDirectory: string,
+  events: readonly DomainEvent[],
+  source: Pick<SyncSource, "getSession">,
+  childStores: ChildStoreManager,
+  routingIndex: EventRoutingIndex,
+  messageLoader: Pick<SessionMessageLoader, "invalidateSession" | "refreshTail">,
+  expectedRuntimeKey: string,
+): void {
+  if (expectedRuntimeKey !== getRuntimeKey()) return
+  const authority = DomainEventAuthority.for(source)
+  let deferredTurnNotifications = deferredBySource.get(source)
+  if (!deferredTurnNotifications) {
+    deferredTurnNotifications = new Map()
+    deferredBySource.set(source, deferredTurnNotifications)
+  }
+  const catalogs = new Set<CatalogKind>()
+  const groups = new Map<string, DomainEvent[]>()
+  for (const event of events) {
+    const sessionID = domainSessionID(event)
+    const directory = normalizeEventDirectory(event.directory || rawDirectory)
+    const target = directory && directory !== "global" ? directory
+      : sessionID ? routingIndex.sessionDirectoryById.get(sessionID) ?? resolveCachedSessionDirectory(sessionID) ?? "global"
+      : "global"
+    const group = groups.get(target)
+    if (group) group.push(event)
+    else groups.set(target, [event])
+  }
+
+  for (const [directory, candidates] of groups) {
+    const store = directory === "global" ? undefined : childStores.getChild(directory)
+    const current = store?.getState()
+    const batch = candidates.filter((event) => {
+      const sessionID = domainSessionID(event)
+      return authority.accept(event, sessionID, sessionID ? current?.eventSequence?.[sessionID] : undefined)
+    })
+    if (batch.length === 0) continue
+    if (directory !== "global") {
+      applyGlobalDomainStatusEvents(directory, batch)
+      applyGlobalDomainBlockingEvents(directory, batch)
+    }
+    const draft: State | undefined = current ? { ...current } : undefined
+    if (draft) {
+      const types = new Set(batch.map((event) => event.type))
+      if (types.has("message-upsert") || types.has("session-delete")) draft.message = { ...current?.message }
+      if (types.has("part-upsert") || types.has("part-remove") || types.has("part-delta") || types.has("session-delete")) draft.part = { ...current?.part }
+      if (types.has("status") || types.has("session-delete")) draft.session_status = { ...current?.session_status }
+      if (types.has("permission-asked") || types.has("permission-replied") || types.has("session-delete")) draft.pendingPermission = { ...current?.pendingPermission }
+      if (types.has("input-created") || types.has("form-closed") || types.has("session-delete")) draft.pendingInput = { ...current?.pendingInput }
+      if (types.has("session-delete")) {
+        draft.todo = { ...current?.todo }
+        draft.session_diff = { ...current?.session_diff }
+        draft.permission = { ...current?.permission }
+        draft.question = { ...current?.question }
+      }
+    }
+
+    const refreshSessions = new Set<string>()
+    const refreshTranscripts = new Set<string>()
+    let changed = false
+    for (const event of batch) {
+      if (event.type === 'refresh' && event.catalog) catalogs.add(event.catalog)
+      const sessionID = domainSessionID(event)
+      if (store && (event.type === "status" || event.type === "permission-asked" || event.type === "permission-replied"
+        || event.type === "input-created" || event.type === "form-closed" || event.type === "session-delete")) {
+        recordDomainRecoveryEvent(store, event)
+      }
+      if (event.type === "session-delete") {
+        refreshSessions.delete(event.sessionID)
+        refreshTranscripts.delete(event.sessionID)
+        if (directory !== "global") {
+          cleanupPersistedSessionState({ runtimeKey: expectedRuntimeKey, directory, sessionId: event.sessionID })
+          messageLoader.invalidateSession({ directory, sessionID: event.sessionID })
+        }
+        useGlobalSessionsStore.getState().removeSessions([event.sessionID])
+        removeIndexedSession(routingIndex, event.sessionID)
+      }
+      if (event.type === 'status' && event.status.type !== 'idle') deferredTurnNotifications.delete(event.sessionID)
+      if (event.type === "status" && event.status.type === "idle" && directory !== "global") {
+        if ((event.outcome === 'completed' || event.outcome === 'failed') && !isSubtaskSession(event.sessionID, directory, childStores)) {
+          const error = event.error ? { name: event.error.type, message: event.error.message } : undefined
+          if (hasActiveSubagent(event.sessionID, useGlobalSessionStatusStore.getState().activeSessionIds)) {
+            deferredTurnNotifications.set(event.sessionID, { runtimeKey: expectedRuntimeKey, directory, outcome: event.outcome, error })
+          } else {
+            deferredTurnNotifications.delete(event.sessionID)
+            appendTurnNotification(event.sessionID, directory, event.outcome, error)
+          }
+        }
+        settleDeferredTurnNotifications(event.sessionID, expectedRuntimeKey, deferredTurnNotifications)
+      }
+      if (event.type === "session-upsert") {
+        useGlobalSessionsStore.getState().upsertSession(event.session)
+        if (directory !== "global") setIndexedSessionDirectory(routingIndex, event.session.id, directory)
+      }
+      if (event.type === "message-upsert" && directory !== "global") setIndexedMessage(routingIndex, event.message.sessionID, event.message.id, directory)
+      if (draft) {
+        const result = applyDomainEvent(draft, event)
+        changed ||= result.changed
+        if (result.refresh?.type === "session" && result.refresh.sessionID) refreshSessions.add(result.refresh.sessionID)
+        if ((result.refresh?.type === "message" || result.refresh?.type === "transcript") && result.refresh.sessionID) refreshTranscripts.add(result.refresh.sessionID)
+        if (result.refresh?.type === "global") useGlobalSyncStore.setState({ reload: "pending" })
+        if (result.refresh?.type === "directory") childStores.requestBootstrap({ directory, priority: "background", reason: "server-connected", force: true })
+      } else {
+        if (event.type === "session-refresh") refreshSessions.add(event.sessionID)
+        if (event.type === "message-refresh" || event.type === "transcript-refresh") refreshTranscripts.add(event.sessionID)
+        if (event.type === "refresh") useGlobalSyncStore.setState({ reload: "pending" })
+      }
+      if (sessionID && directory !== "global" && event.type === "part-delta" && directory === _activeDirectory) touchStreamingSession(sessionID)
+    }
+    if (store && draft && (changed || draft.eventSequence !== current?.eventSequence)) store.setState(draft)
+    if (isVSCodeRuntime()) {
+      for (const event of batch) {
+        if (event.type !== "permission-asked") continue
+        void processVSCodePermissionAutoAccept(event.request.value, directory === "global" ? undefined : directory)
+          .catch(() => undefined)
+      }
+    }
+    if (directory === "global") continue
+    for (const sessionID of refreshSessions) {
+      const revision = authority.revision(sessionID)
+      const eventRevision = store?.getState().sessionEventRevision?.[sessionID]
+      const deletedRevision = store?.getState().sessionDeletedRevision?.[sessionID]
+      void source.getSession(sessionID, directory).then((session) => {
+        if (getRuntimeKey() !== expectedRuntimeKey || childStores.getChild(directory) !== store) return
+        if (authority.revision(sessionID) !== revision
+          || store?.getState().sessionEventRevision?.[sessionID] !== eventRevision
+          || store?.getState().sessionDeletedRevision?.[sessionID] !== deletedRevision) return
+        if (!store) {
+          useGlobalSessionsStore.getState().upsertSession(session)
+          return
+        }
+        const next = { ...store.getState() }
+        if (applyDomainEvent(next, { type: "session-upsert", session, directory, eventID: `http:${session.id}:${session.time.updated}` }).changed) {
+          store.setState(next)
+          useGlobalSessionsStore.getState().upsertSession(session)
+        }
+      }).catch(() => undefined)
+    }
+    for (const sessionID of refreshTranscripts) {
+      if (!store) continue
+      void messageLoader.refreshTail({ directory, sessionID }, RECONNECT_MESSAGE_LIMIT).catch(() => undefined)
+    }
+  }
+  for (const kind of catalogs) void refreshStoresForCatalogKind(kind)
 }
 
 // ---------------------------------------------------------------------------
@@ -2307,7 +2483,16 @@ const dispatchOpenCodeUpdateAvailable = (payload: { version: string }) => {
 }
 
 export function SyncProvider(props: {
-  sdk: OpencodeClient
+  source?: SyncSource
+  directory: string
+  children: React.ReactNode
+}) {
+  if (!props.source) return null
+  return <BoundSyncProvider source={props.source} directory={props.directory}>{props.children}</BoundSyncProvider>
+}
+
+function BoundSyncProvider(props: {
+  source: SyncSource
   directory: string
   children: React.ReactNode
 }) {
@@ -2325,13 +2510,13 @@ export function SyncProvider(props: {
   const messageLoaderRef = useRef<SessionMessageLoader | null>(null)
   if (!messageLoaderRef.current) {
     messageLoaderRef.current = new SessionMessageLoader(childStores, {
-      sdk: props.sdk,
+      source: props.source,
       runtimeKey,
     })
   }
   const messageLoader = messageLoaderRef.current
   const messageLoaderDisposalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  messageLoader.configure({ sdk: props.sdk, runtimeKey })
+  messageLoader.configure({ source: props.source, runtimeKey })
   const routingIndexRef = useRef<EventRoutingIndex | null>(null)
   if (!routingIndexRef.current) routingIndexRef.current = createEventRoutingIndex()
   const routingIndex = routingIndexRef.current
@@ -2361,8 +2546,8 @@ export function SyncProvider(props: {
   const pipelineDisconnectedBeforeFirstConnectRef = useRef(false)
 
   const runtime = useMemo<SyncRuntime>(
-    () => ({ childStores, messageLoader, runtimeKey, sdk: props.sdk, currentDirectory: currentDirectorySource }),
-    [childStores, currentDirectorySource, messageLoader, props.sdk, runtimeKey],
+    () => ({ childStores, messageLoader, runtimeKey, source: props.source, currentDirectory: currentDirectorySource }),
+    [childStores, currentDirectorySource, messageLoader, props.source, runtimeKey],
   )
   const system = useMemo<SyncSystem>(
     () => ({ ...runtime, directory: props.directory }),
@@ -2412,7 +2597,7 @@ export function SyncProvider(props: {
   useEffect(() => {
     void usePermissionStore.getState().hydrate().catch(() => undefined)
     void useMessageQueueStore.getState().hydrate().catch(() => undefined)
-  }, [props.sdk])
+  }, [props.source])
 
   useEffect(() => {
     const expectedRuntimeKey = getRuntimeKey()
@@ -2448,11 +2633,16 @@ export function SyncProvider(props: {
           const globalState = useGlobalSyncStore.getState()
           const bootstrap = bootstrapDirectory({
             directory,
-            sdk: props.sdk,
+            sdk: props.source,
             store,
             set: (patch) => {
               if (!isCurrent()) return
               store.setState(patch)
+              if (patch.pendingPermission && isVSCodeRuntime()) {
+                for (const request of Object.values(patch.pendingPermission).flat()) {
+                  void processVSCodeReconciledPermissionAutoAccept(request.value, directory).catch(() => undefined)
+                }
+              }
               if (patch.session_status) {
                 applyGlobalSessionStatusSnapshot(directory, patch.session_status, getDirectoryOwnedSessionIds(directory, store.getState().session))
               }
@@ -2470,8 +2660,7 @@ export function SyncProvider(props: {
             loadSessions: async (dir) => {
               if (!isCurrent()) return
               const baselineRevision = store.getState().sessionRevision ?? 0
-              const rootSessions = (await listGlobalSessionPages(props.sdk, {
-                directory: dir,
+              const rootSessions = (await props.source.bootstrap.listSyncSessions(dir, {
                 archived: false,
                 roots: true,
                 pageSize: 500,
@@ -2483,8 +2672,7 @@ export function SyncProvider(props: {
               // so pending questions can scope to them immediately after restart.
               let allSessions: typeof rootSessions | null = null
               try {
-                allSessions = await listGlobalSessionPages(props.sdk, {
-                  directory: dir,
+                allSessions = await props.source.bootstrap.listSyncSessions(dir, {
                   archived: false,
                   roots: false,
                   pageSize: 500,
@@ -2565,7 +2753,7 @@ export function SyncProvider(props: {
       },
       isLoadingSessions: () => false,
     })
-  }, [childStores, messageLoader, props.sdk, routingIndex])
+  }, [childStores, messageLoader, props.source, routingIndex])
 
   // Bootstrap global state — set bootingRoot/bootedAt to suppress
   // redundant refresh events during startup
@@ -2573,7 +2761,7 @@ export function SyncProvider(props: {
     const generation = ++globalBootstrapGeneration
     bootingRoot = true
     const globalActions = useGlobalSyncStore.getState().actions
-    bootstrapGlobal(props.sdk, (patch) => {
+    bootstrapGlobal(props.source, (patch) => {
       if (globalBootstrapGeneration === generation) {
         globalActions.set(patch)
       }
@@ -2593,7 +2781,7 @@ export function SyncProvider(props: {
         bootingRoot = false
       }
     }
-  }, [props.sdk])
+  }, [props.source])
 
   // Event pipeline — created once per mount. No class, no start/stop.
   // Abort controller owned by the pipeline closure. Cleanup aborts + flushes.
@@ -2603,7 +2791,7 @@ export function SyncProvider(props: {
       for (const dir of childStores.children.keys()) triggerDirectoryResync(dir, reason)
     }
     const pipeline = createEventPipeline({
-      sdk: props.sdk,
+      source: props.source,
       transport: messageStreamTransport,
       routeDirectory: (directory, payload) => {
         return resolveDirectoryFromRoutingIndex(routingIndex, directory, payload, childStores)
@@ -2633,6 +2821,10 @@ export function SyncProvider(props: {
         } finally {
           publishDirectoryEventBatch(batch)
         }
+      },
+      onDomainEvents: (directory, payloads) => {
+        lastStreamActivityAtRef.current = Date.now()
+        applyDomainBatch(directory, payloads, props.source, childStores, routingIndex, messageLoader, runtimeKey)
       },
       onReconnect: ({ replayReset }) => {
         // Queue recovery is independent of the directory-bootstrap debounce.
@@ -2683,7 +2875,7 @@ export function SyncProvider(props: {
       pipeline.cleanup()
       unsubscribeQueueEvents()
     }
-  }, [props.sdk, childStores, routingIndex, messageStreamTransport, runtimeKey, triggerDirectoryResync])
+  }, [props.source, childStores, routingIndex, messageStreamTransport, runtimeKey, triggerDirectoryResync])
 
   useEffect(() => {
     let stopped = false
@@ -2701,8 +2893,7 @@ export function SyncProvider(props: {
         // Paginated so directories with > pageSize sessions are fully
         // discovered; a single 200-record page silently truncated the list and
         // left subagent children beyond it undiscovered.
-        const allSessions = await listGlobalSessionPages(props.sdk, {
-          directory,
+        const allSessions = await props.source.bootstrap.listSyncSessions(directory, {
           archived: false,
           roots: false,
           pageSize: 200,
@@ -2815,7 +3006,7 @@ export function SyncProvider(props: {
       stopped = true
       clearInterval(interval)
     }
-  }, [childStores, props.sdk, triggerDirectoryResync])
+  }, [childStores, props.source, triggerDirectoryResync])
 
   // Ensure current directory's child store exists
   useEffect(() => {
@@ -2872,11 +3063,11 @@ export function SyncProvider(props: {
 
   useEffect(() => {
     setImperativeSessionMessageLoader(messageLoader)
-    setSyncRefs(props.sdk, childStores, props.directory, (sessionID, dir) => {
+    setSyncRefs(props.source, childStores, props.directory, (sessionID, dir) => {
       setIndexedSessionDirectory(routingIndex, sessionID, dir)
     })
     setActionRefs(
-      props.sdk,
+      props.source,
       childStores,
       () => opencodeClient.getDirectory() || props.directory,
       (directory, sessionID, messageID) => {
@@ -2891,7 +3082,7 @@ export function SyncProvider(props: {
         setImperativeSessionMessageLoader(null)
       }
     }
-  }, [props.sdk, props.directory, childStores, messageLoader, routingIndex])
+  }, [props.source, props.directory, childStores, messageLoader, routingIndex])
 
   useEffect(() => {
     if (messageLoaderDisposalTimerRef.current) {
@@ -3107,6 +3298,16 @@ export function useSessionPermissions(sessionID: string, directory?: string, opt
   return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
+/** Read this session's tagged requests without bootstrapping a sidebar row. */
+export function useSessionPendingPermissions(sessionID: string, directory?: string, options?: { bootstrap?: boolean }): PendingPermission[] {
+  const store = useDirectoryStore(directory, options)
+  const getSnapshot = useCallback(() => store.getState().pendingPermission[sessionID] ?? EMPTY_PENDING_PERMISSIONS, [sessionID, store])
+  const subscribe = useCallback((notify: () => void) => store.subscribe((state, previous) => {
+    if (state.pendingPermission[sessionID] !== previous.pendingPermission[sessionID]) notify()
+  }), [sessionID, store])
+  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+}
+
 /** Get questions for a specific session */
 export function useSessionQuestions(sessionID: string, directory?: string) {
   return useDirectorySync(
@@ -3143,14 +3344,21 @@ export function useSessionQuestionCount(scopes: readonly { directory: string; se
     let count = 0
     for (const { sessionIDs, store } of scopedStores) {
       const questions = store.getState().question
-      for (const sessionID of sessionIDs) count += questions[sessionID]?.length ?? 0
+      const inputs = store.getState().pendingInput
+      for (const sessionID of sessionIDs) {
+        count += questions[sessionID]?.length ?? 0
+        count += inputs[sessionID]?.filter((input) => input.generation === "oc2").length ?? 0
+      }
     }
     return count
   }, [scopedStores])
   const subscribe = React.useCallback((notify: () => void) => {
-    const unsubscribers = scopedStores.map(({ sessionIDs, store }) => (
-      subscribeDirectoryQuestions(store, sessionIDs, notify)
-    ))
+    const unsubscribers = scopedStores.flatMap(({ sessionIDs, store }) => [
+      subscribeDirectoryQuestions(store, sessionIDs, notify),
+      store.subscribe((state, previous) => {
+        if (sessionIDs.some((id) => state.pendingInput[id] !== previous.pendingInput[id])) notify()
+      }),
+    ])
     return () => {
       for (const unsubscribe of unsubscribers) unsubscribe()
     }
@@ -3169,18 +3377,19 @@ export function useSessions(directory?: string) {
 const selectPermissionRequestsBySession = (state: State) => state.permission
 const selectQuestionRequestsBySession = (state: State) => state.question
 
-type ScopedBlockingRequestCache<T extends { id: string }> = {
+type ScopedBlockingRequestCache<T> = {
   sessionID: string | null
   sessions: Session[] | null
   requestsBySession: Record<string, T[] | undefined> | null
   result: T[]
 }
 
-function useScopedBlockingRequests<T extends { id: string }>(
+function useScopedBlockingRequests<T>(
   sessionID: string | null,
   directory: string | undefined,
   selectRequestsBySession: (state: State) => Record<string, T[] | undefined>,
   empty: T[],
+  getID: (request: T) => string,
 ): T[] {
   const cacheRef = useRef<ScopedBlockingRequestCache<T>>({
     sessionID: null,
@@ -3201,7 +3410,7 @@ function useScopedBlockingRequests<T extends { id: string }>(
         return cache.result
       }
 
-      const next = collectScopedBlockingRequests(state.session, requestsBySession, sessionID, empty)
+      const next = collectScopedRequests(state.session, requestsBySession, sessionID, empty, getID)
       const result = areRequestArraysReferentiallyEqual(cache.result, next) ? cache.result : next
       cacheRef.current = {
         sessionID,
@@ -3210,17 +3419,32 @@ function useScopedBlockingRequests<T extends { id: string }>(
         result,
       }
       return result
-    }, [empty, selectRequestsBySession, sessionID]),
+    }, [empty, getID, selectRequestsBySession, sessionID]),
     directory,
   )
 }
 
 export function useScopedBlockingPermissions(sessionID: string | null, directory?: string): PermissionRequest[] {
-  return useScopedBlockingRequests(sessionID, directory, selectPermissionRequestsBySession, EMPTY_PERMISSION_REQUESTS)
+  return useScopedBlockingRequests(sessionID, directory, selectPermissionRequestsBySession, EMPTY_PERMISSION_REQUESTS, legacyRequestID)
 }
 
 export function useScopedBlockingQuestions(sessionID: string | null, directory?: string): QuestionRequest[] {
-  return useScopedBlockingRequests(sessionID, directory, selectQuestionRequestsBySession, EMPTY_QUESTION_REQUESTS)
+  return useScopedBlockingRequests(sessionID, directory, selectQuestionRequestsBySession, EMPTY_QUESTION_REQUESTS, legacyRequestID)
+}
+
+const legacyRequestID = (request: { id: string }) => request.id
+const taggedRequestID = (request: PendingPermission | PendingInput) => request.value.id
+const selectTaggedPermissions = (state: State) => state.pendingPermission
+const selectTaggedInputs = (state: State) => state.pendingInput
+
+/** Pending permissions retain their OC1 or OC2 request shape. */
+export function useScopedPendingPermissions(sessionID: string | null, directory?: string): PendingPermission[] {
+  return useScopedBlockingRequests(sessionID, directory, selectTaggedPermissions, EMPTY_PENDING_PERMISSIONS, taggedRequestID)
+}
+
+/** OC1 questions and OC2 forms remain distinct tagged requests. */
+export function useScopedPendingInputs(sessionID: string | null, directory?: string): PendingInput[] {
+  return useScopedBlockingRequests(sessionID, directory, selectTaggedInputs, EMPTY_PENDING_INPUTS, taggedRequestID)
 }
 
 const sessionsByIdCache = new WeakMap<State["session"], Map<string, Session>>()
@@ -3278,9 +3502,9 @@ export function useSessionDirectory(sessionID?: string | null, directory?: strin
   return (session as (typeof session & { directory?: string | null }) | undefined)?.directory ?? undefined
 }
 
-/** Get the SDK client */
-export function useSyncSDK() {
-  return useSyncRuntime().sdk
+/** Get the bound sync operations for this runtime epoch. */
+export function useSyncSource(): SyncSource {
+  return useSyncRuntime().source
 }
 
 /** Get the current directory */
@@ -3827,3 +4051,5 @@ const EMPTY_MESSAGES: Message[] = []
 const EMPTY_PARTS: Part[] = []
 const EMPTY_PERMISSION_REQUESTS: PermissionRequest[] = []
 const EMPTY_QUESTION_REQUESTS: QuestionRequest[] = []
+const EMPTY_PENDING_PERMISSIONS: PendingPermission[] = []
+const EMPTY_PENDING_INPUTS: PendingInput[] = []

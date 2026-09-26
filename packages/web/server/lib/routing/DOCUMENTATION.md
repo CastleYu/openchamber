@@ -30,6 +30,16 @@ Code has no OpenChamber server and never offers Auto.
   plus tail. The new request is never cut.
 - `runtime.js` — `createRoutingRuntime`: `describe`, `resolvePromptBody`,
   `evaluatePermission`, config and token writes, event broadcasts.
+
+The dual-kernel runtime also exposes `noteModelSelection`, `isAutoSession`,
+`resolveAutoSelection`, and `routeSend` for OC2. The OC2 sentinel is held in
+server memory by session and runtime identity. A routed send chooses a model
+from Jev and switches the OC2 session model and agent before the prompt goes
+upstream. OC1 still rewrites the prompt body. A runtime switch invalidates
+the server mark and rejects a late selection write. Server restart loses the
+OC2 mark, so callers must send the sentinel again when resuming Auto.
+OC2 uses the Zen-hosted free Jev model when no TypeSafe key is saved; a saved
+key keeps the TypeSafe endpoint. OC1 retains its flag and key requirements.
 - `routes.js` — `/api/routing` (GET, PUT), `/api/routing/token` (PUT, DELETE)
   and `registerRoutingPromptRewrite`.
 
@@ -42,6 +52,10 @@ Code has no OpenChamber server and never offers Auto.
   dispatch (`openchamber-sessions/routes.js`), which posts to OpenCode directly
   and can pick Auto up from Session Defaults. Without a fallback model it
   throws 400 rather than forwarding.
+- On OC2, the proxy-front middleware consumes an Auto model switch, stores the
+  session mark for the current runtime identity, and routes each following
+  prompt or command before forwarding it. It also drops an Auto model from
+  session creation so the first send can select a real model.
 - Every failure keeps the user's own behaviour. A Jev error, timeout, unknown
   category or low confidence routes to the fallback model; the decision carries
   the reason. A safety-net failure accepts the permission exactly as auto-accept

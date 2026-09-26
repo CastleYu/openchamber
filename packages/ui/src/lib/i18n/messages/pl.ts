@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './pl.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "Wczytywanie pliku…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': 'Użyto {count} subagenta',
   'chat.liveActivity.usedSubagents': 'Użyci subagenci: {count}',
   'sessions.sidebar.projectAction.active': 'Trwa wykonywanie akcji projektu',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'Prześlij pliki',
+  'sidebarFilesTree.menu.uploadFiles': 'Prześlij pliki',
+  'chat.permissionCard.summary.externalDirectory': "Dostęp do plików poza projektem",
+  'chat.permissionCard.summary.read': "Odczytaj plik",
+  'chat.permissionCard.summary.edit': "Edytuj pliki",
+  'chat.permissionCard.summary.shell': "Uruchom polecenie",
+  'chat.permissionCard.summary.glob': "Znajdź pliki",
+  'chat.permissionCard.summary.grep': "Przeszukaj zawartość plików",
+  'chat.permissionCard.summary.webfetch': "Otwórz stronę internetową",
+  'chat.permissionCard.summary.websearch': "Szukaj w internecie",
+  'chat.permissionCard.summary.skill': "Wczytaj skill",
+  'chat.permissionCard.summary.tool': "Użyj {tool}",
+  'chat.permissionCard.summary.inPath': "w {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Zawsze: {patterns}',
+  ...fileArtifactsI18n.pl,
+  ...webSearchI18n.pl,
   ...settingsDict,
   'updateDialog.personalNotice': 'Wersje osobiste tylko powiadamiają o aktualizacjach. Zsynchronizuj źródła i zbuduj ponownie, aby zachować swoje funkcje.',
   ...linearIssuePickerI18n.pl,
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n.pl,
   ...pluginPanelI18n.pl,
   ...surfacePanelI18n.pl,
+  ...usageStatsI18n.pl,
   'terminalView.actions.attachSelection': 'Dołącz zaznaczone dane wyjściowe',
   'terminalView.actions.copySelection': 'Kopiuj zaznaczone dane wyjściowe',
   'terminalView.toast.selectionCopied': 'Skopiowano dane wyjściowe',
@@ -929,6 +949,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.commandAutocomplete.command.debugDescription': 'Prowadzone badanie pierwotnej przyczyny błędu przed zaproponowaniem poprawki.',
   'chat.commandAutocomplete.command.weighDescription': 'Rozważ 2-3 podejścia z kompromisami i rekomendacją, zanim się zdecydujesz.',
   'chat.commandAutocomplete.command.btwDescription': 'Zadaj pytanie poboczne w tymczasowej sesji potomnej, nie przerywając tego czatu.',
+  'chat.commandAutocomplete.command.forkDescription': 'Rozgałęź ten czat od ostatniej zakończonej odpowiedzi i kontynuuj tam; tekst po /fork zostanie wysłany do nowej sesji.',
   'chat.commandAutocomplete.command.exploreDescription': 'Zorientuj się w bazie kodu: ogólny przegląd architektury i głównych części.',
   'chat.commandAutocomplete.badge.skill': 'skill',
   'chat.commandAutocomplete.badge.command': 'polecenie',
@@ -1407,6 +1428,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.chatInput.toast.largeTextPaste.attach': 'Dołącz jako plik',
   'chat.chatInput.toast.largeTextPaste.inline': 'Wklej w treści',
   'chat.chatInput.toast.compactFailed': 'Nie udało się skompaktować sesji',
+  'chat.chatInput.toast.forkFailed': 'Nie udało się rozgałęzić sesji',
+  'chat.chatInput.toast.forkNothingToFork': 'Nie ma jeszcze czego rozgałęzić: w tej sesji nie zakończyła się żadna odpowiedź',
+  'chat.chatInput.toast.forkSendFailed': 'Rozgałęziono, ale wiadomość nie została wysłana. Wróciła do pola wpisywania.',
   'chat.chatInput.toast.messageSendFailed': 'Nie udało się wysłać wiadomości. Załączniki zostały przywrócone.',
   'chat.chatInput.toast.noModelSelected': 'Wybierz dostawcę i model przed wysłaniem.',
   'chat.chatInput.toast.openSessionFirst': 'Najpierw otwórz sesję',
@@ -1430,6 +1454,11 @@ export const dict: Record<I18nKey, string> = {
   'chat.messageBody.shellCommand.copyOutput': 'Kopiuj wynik',
   'chat.messageBody.shellCommand.hideOutput': 'Ukryj wynik',
   'chat.messageBody.shellCommand.showOutput': 'Pokaż wynik',
+  'chat.compaction.running': 'Kompaktowanie rozmowy…',
+  'chat.compaction.completed': 'Rozmowa została skompaktowana',
+  'chat.compaction.failed': 'Kompaktowanie nie powiodło się',
+  'chat.compaction.showSummary': 'Pokaż podsumowanie',
+  'chat.compaction.hideSummary': 'Ukryj podsumowanie',
   'chat.messageBody.shellCommand.title': 'Polecenie powłoki',
   'chat.messageBody.subtask.hidePrompt': 'Ukryj prompt',
   'chat.messageBody.subtask.openSession': 'Otwórz sesję podzadania',
@@ -1560,6 +1589,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.moreErrors': '+{count} kolejnych błędów',
   'chat.toolPart.moreRows': '+{count} kolejnych wierszy',
   'chat.toolPart.noOutputProduced': 'Brak wygenerowanego wyniku',
+  'chat.toolPart.script': 'Skrypt',
+  'chat.toolPart.scriptCalls': 'Wywołania narzędzi',
+  'chat.toolPart.outputTruncated': 'Wynik został skrócony',
   'chat.toolPart.openSubtask': 'Otwórz podzadanie typu {type}',
   'chat.toolPart.output': 'Wyjście',
   'chat.toolPart.showRawJson': 'Pokaż surowy JSON',
@@ -3477,4 +3509,17 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': 'Działa na tym komputerze. Wklej całe polecenie — zostanie podzielone na jeden argument w wierszu.',
   'settings.mcp.page.connection.hintLink': 'Łączy się z serwerem hostowanym przez kogoś innego. Wklej jego adres https.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Wymagana odpowiedź',
+  'chat.formCard.fromSubagent': 'od podagenta',
+  'chat.formCard.required': 'Wymagane',
+  'chat.formCard.openLink': 'Otwórz link',
+  'chat.formCard.yes': 'Tak',
+  'chat.formCard.other': 'Inne',
+  'chat.formCard.yourAnswer': 'Twoja odpowiedź',
+  'chat.formCard.submit': 'Wyślij',
+  'chat.formCard.cancel': 'Anuluj',
+  'chat.formCard.missingRequired': 'Najpierw wypełnij wymagane pola.',
+  'chat.formCard.submitFailed': 'Nie udało się wysłać odpowiedzi',
+  'chat.formCard.cancelFailed': 'Nie udało się anulować żądania',
+  'chat.formCard.tryAgain': 'Spróbuj ponownie.',
 } as const;

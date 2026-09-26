@@ -5,6 +5,7 @@ import { Window } from 'happy-dom'
 import { createOpencodeClient, type Session } from '@opencode-ai/sdk/v2'
 import { SyncProvider, setActiveSession } from '../sync-context'
 import { getSyncChildStores } from '../sync-refs'
+import { sourceFromSdk } from './source-fixture'
 
 /**
  * Regression guard for silent child-session truncation in the watchdog's
@@ -214,7 +215,7 @@ describe('SyncProvider child-session discovery pagination', () => {
 
       const root = createRoot(dom.container)
       await act(async () => root.render(
-        <SyncProvider sdk={sdk} directory={DIRECTORY}>
+        <SyncProvider source={sourceFromSdk(sdk)} directory={DIRECTORY}>
           <div />
         </SyncProvider>,
       ))

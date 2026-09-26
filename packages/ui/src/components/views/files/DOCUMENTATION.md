@@ -1,5 +1,17 @@
 # File tree loading and visibility
 
+CSV and TSV files default to a table preview and retain the source editor via
+the toolbar toggle. The mode is remembered per path. The parser handles quoted
+delimiters, newlines and escaped quotes, retains at most 2,000 data rows, and
+reports the full row count and truncation. The preview uses the current draft;
+switching modes does not replace file content.
+
+TTF, OTF, WOFF and WOFF2 fonts use the existing runtime asset loader and remain
+binary, so they cannot enter autosave. The font specimen registers a temporary
+FontFace, removes it on source change or unmount, and reports load failures.
+These file previews use OpenChamber file APIs and do not depend on the OpenCode
+API generation.
+
 `FilesView` and `SidebarFilesTree` keep directory snapshots in component state.
 `DirectoryRequests` owns shared in-flight reads and supersession. Repeated
 same-path callers await the same request; an explicit mutation refresh can
@@ -40,3 +52,9 @@ the meta line height, the icon minimum and vertical padding, so remembered
 offscreen dimensions cannot retain an old font size. Expanded child lists
 sit outside each row's containment, so expansion, scrolling, focus and menus keep
 their existing DOM structure. Reopening still refreshes directory contents.
+
+Agent `file.open` requests use the OpenChamber control event stream and are
+validated in `openchamberEvents.ts`. The desktop context panel and mobile files
+drawer route the accepted path through the existing `openContextFile` action.
+The server reports no delivery when no control-stream client is connected;
+delivery is not proof that the user has inspected the file.

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { createOpencodeClient, type Session } from '@opencode-ai/sdk/v2';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -11,7 +12,7 @@ import { applyGlobalSessionStatusEvent, replaceGlobalSessionStatusById } from '@
 import { readGuestWorkspace, observeGuestWorkspace } from './workspace';
 import { guestMay } from './capabilities';
 
-const session = (id: string, directory: string): Session => ({ id, directory, title: id, slug: id, projectID: 'upstream', version: '1', time: { created: 1, updated: 1 } });
+const session = (id: string, directory: string): Session => ({ id, directory, title: id, slug: id, projectID: 'upstream', time: { created: 1, updated: 1 } });
 let manager: ChildStoreManager;
 beforeEach(() => {
   manager = new ChildStoreManager();

@@ -3,7 +3,8 @@ import { describe, expect, mock, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { I18nProvider } from '@/lib/i18n';
-import type { Session } from '@opencode-ai/sdk/v2';
+import { opencodeClient } from '@/lib/opencode/client';
+import type { Session } from '@/lib/opencode/model';
 import type {
   SessionTreeMoveIntent,
   SessionTreeMoveMessages,
@@ -61,6 +62,26 @@ const makeExistingIntent = (): SessionTreeMoveIntent => ({
 });
 
 describe('SessionWorktreeMoveConfirmDialog', () => {
+  test('does not offer change transfer for OC2', () => {
+    const original = Object.getOwnPropertyDescriptor(opencodeClient, 'getBoundRuntime');
+    Object.defineProperty(opencodeClient, 'getBoundRuntime', { configurable: true, value: () => ({ generation: 'oc2' }) });
+    try {
+      const markup = renderToStaticMarkup(
+        <I18nProvider>
+          <SessionWorktreeMoveConfirmDialog
+            value={{ intent: makeExistingIntent(), dirtyFileCount: 2, stagedFileCount: 0 }}
+            onMoveSessionOnly={() => {}} onMoveAllChanges={() => {}} onCancel={() => {}}
+          />
+        </I18nProvider>,
+      );
+      expect(markup).not.toContain('data-session-worktree-move-action="all-changes"');
+      expect(markup).toContain('data-session-worktree-move-action="session-only"');
+      expect(markup).toContain('data-session-worktree-move-action="cancel"');
+    } finally {
+      if (original) Object.defineProperty(opencodeClient, 'getBoundRuntime', original);
+      else Reflect.deleteProperty(opencodeClient, 'getBoundRuntime');
+    }
+  });
   test('renders stable semantic hooks, dirty file count, and the staged warning', () => {
     const markup = renderToStaticMarkup(
       <I18nProvider>

@@ -1,5 +1,6 @@
 export const createNotificationTriggerRuntime = (deps) => {
   const {
+    kernelOperations = null,
     readSettingsFromDisk,
     prepareNotificationLastMessage,
     buildTemplateVariables,
@@ -137,7 +138,10 @@ export const createNotificationTriggerRuntime = (deps) => {
     return `/?session=${encodeURIComponent(sessionId)}`;
   };
 
-  const getSessionParentCacheKey = (sessionId, directory) => `${directory || ''}\0${sessionId}`;
+  const getSessionParentCacheKey = (sessionId, directory) => {
+    const identity = kernelOperations?.captureIdentity();
+    return `${identity?.endpoint ?? ''}\0${identity?.epoch ?? ''}\0${directory || ''}\0${sessionId}`;
+  };
 
   const getCachedSessionParentId = (sessionId, directory) => {
     const cacheKey = getSessionParentCacheKey(sessionId, directory);
@@ -177,6 +181,12 @@ export const createNotificationTriggerRuntime = (deps) => {
     if (cached !== undefined) return cached;
 
     try {
+      if (kernelOperations) {
+        const session = (await kernelOperations.getSession({ sessionID: sessionId, directory })).data;
+        const parentID = session.parentID ?? null;
+        setCachedSessionParentId(sessionId, directory, parentID);
+        return parentID;
+      }
       const base = buildOpenCodeUrl(`/session/${encodeURIComponent(sessionId)}`, '');
       const url = directory ? `${base}?directory=${encodeURIComponent(directory)}` : base;
       const response = await fetch(url, {
@@ -284,6 +294,10 @@ export const createNotificationTriggerRuntime = (deps) => {
   const hasActiveSessionGoal = async (sessionId, directory) => {
     if (!sessionId) return false;
     try {
+      if (kernelOperations) {
+        const session = (await kernelOperations.getSession({ sessionID: sessionId, directory })).data;
+        return session.metadata?.openchamber?.goal?.status === 'active';
+      }
       const base = buildOpenCodeUrl(`/session/${encodeURIComponent(sessionId)}`, '');
       const url = directory ? `${base}?directory=${encodeURIComponent(directory)}` : base;
       const response = await fetch(url, {
@@ -713,6 +727,10 @@ export const createNotificationTriggerRuntime = (deps) => {
   const sendGoalSettlePush = async ({ sessionId, directory, status, title, body }) => {
     let sessionName = '';
     try {
+      if (kernelOperations) {
+        const session = (await kernelOperations.getSession({ sessionID: sessionId, directory })).data;
+        sessionName = session.title?.trim?.() ?? '';
+      } else {
       const base = buildOpenCodeUrl(`/session/${encodeURIComponent(sessionId)}`, '');
       const url = directory ? `${base}?directory=${encodeURIComponent(directory)}` : base;
       const response = await fetch(url, {
@@ -723,6 +741,7 @@ export const createNotificationTriggerRuntime = (deps) => {
       if (response.ok) {
         const session = await response.json().catch(() => null);
         if (typeof session?.title === 'string') sessionName = session.title.trim();
+      }
       }
     } catch {
       // Session name is presentation sugar for the mobile push — never block on it.

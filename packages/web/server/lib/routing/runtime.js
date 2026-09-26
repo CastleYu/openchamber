@@ -8,10 +8,10 @@
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { z } from 'zod';
 import { isRoutingFeatureAvailable } from './feature-flag.js';
-import { BUILTIN_CATEGORIES, isAutoModel } from './defaults.js';
+import { AUTO_MODEL_REF, BUILTIN_CATEGORIES, isAutoModel } from './defaults.js';
 import { createRoutingStore, parseEffectiveConfig } from './store.js';
-import { buildPermissionRequest, buildRoutingRequest, createJevClient, decidePermission, decideRouting } from './jev.js';
-import { loadRoutingHistory } from './history.js';
+import { buildPermissionRequest, buildRoutingRequest, createJevClient, decidePermission, decideRouting, jevEndpoint } from './jev.js';
+import { loadRoutingHistory, turnsToHistory } from './history.js';
 
 const HISTORY_TIMEOUT_MS = 2500;
 /** A held permission is remembered so reconnect reconciliation does not re-ask Jev. */
@@ -21,15 +21,20 @@ const errorMessage = (error) => (error instanceof Error ? error.message : String
 
 const textPartSchema = z.object({ type: z.literal('text'), text: z.string(), synthetic: z.boolean().optional() });
 const commandBodySchema = z.object({ command: z.string(), arguments: z.string().optional() });
+const currentCommandBodySchema = z.object({ name: z.string().trim().min(1), text: z.string().nullish() });
 const promptBodySchema = z.object({ parts: z.array(z.unknown()).optional() });
 
 /** The user's words for this send: text parts the composer authored, or the slash command. */
 export const requestTextOf = (body) => {
+  const currentCommand = currentCommandBodySchema.safeParse(body);
+  if (currentCommand.success) return `/${currentCommand.data.name}${currentCommand.data.text?.trim() ? ` ${currentCommand.data.text.trim()}` : ''}`;
   const command = commandBodySchema.safeParse(body);
   if (command.success) {
     const args = command.data.arguments?.trim();
     return `/${command.data.command}${args ? ` ${args}` : ''}`;
   }
+  const currentPrompt = z.object({ text: z.string() }).safeParse(body);
+  if (currentPrompt.success) return currentPrompt.data.text.trim();
   const prompt = promptBodySchema.safeParse(body);
   const parts = prompt.success ? prompt.data.parts ?? [] : [];
   return parts
@@ -44,6 +49,7 @@ export function createRoutingRuntime({
   dataDir,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
+  kernelOperations = null,
   broadcastGlobalUiEvent,
   fetchImpl = fetch,
   store = createRoutingStore({ dataDir }),
@@ -51,6 +57,15 @@ export function createRoutingRuntime({
   now = Date.now,
 }) {
   const permissionDecisions = new Map();
+  const autoSessions = new Map();
+  const identityKey = (identity) => `${identity.generation}\0${identity.endpoint}\0${identity.epoch}`;
+  const currentIdentity = () => kernelOperations?.captureIdentity() ?? null;
+  const generation = () => currentIdentity()?.generation ?? 'oc1';
+  const assertIdentity = (expected) => {
+    if (!expected) return;
+    const current = currentIdentity();
+    if (identityKey(current) !== identityKey(expected)) throw new Error('OpenCode runtime changed during routing');
+  };
 
   const broadcast = (type, properties) => {
     try {
@@ -64,13 +79,16 @@ export function createRoutingRuntime({
 
   /** What the client needs to decide whether to offer Auto and what the settings page shows. */
   const describe = async () => {
-    const available = isRoutingFeatureAvailable();
+    const current = generation() === 'oc2';
+    const available = current || isRoutingFeatureAvailable();
     if (!available) return { available: false, autoReady: false, tokenPresent: false, config: null, builtins: [] };
     const [config, token] = await Promise.all([store.readConfig(), store.readToken()]);
     const tokenPresent = Boolean(token);
-    const autoReady = config.enabled && tokenPresent && Boolean(config.fallback) && enabledCategories(config).length >= 2;
+    const autoReady = config.enabled && (current || tokenPresent) && Boolean(config.fallback) && enabledCategories(config).length >= 2;
     // Built-in text travels with the config so "Reset" in Settings restores the shipped wording.
-    return { available, autoReady, tokenPresent, config, builtins: BUILTIN_CATEGORIES };
+    const result = { available, autoReady, tokenPresent, config, builtins: BUILTIN_CATEGORIES };
+    if (current) result.jevSource = jevEndpoint(token).source;
+    return result;
   };
 
   const publishUpdated = async () => {
@@ -80,6 +98,21 @@ export function createRoutingRuntime({
   };
 
   const readHistory = async ({ sessionId, directory }) => {
+    if (currentIdentity()?.generation === 'oc2') {
+      const page = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: 50, order: 'desc' })).data;
+      const messages = page.items.toReversed();
+      const turns = [];
+      let turn = null;
+      for (const message of messages) {
+        if (message.role === 'user' && message.text) {
+          turn = { user: { text: message.text }, assistant: null };
+          turns.push(turn);
+        } else if (message.role === 'assistant' && turn && message.text && message.completed && !message.error) {
+          turn.assistant = { text: message.text };
+        }
+      }
+      return turnsToHistory(turns.filter((item) => item.assistant));
+    }
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const client = createOpencodeClient({ baseUrl, headers: getOpenCodeAuthHeaders(), throwOnError: true });
     const signal = AbortSignal.timeout(HISTORY_TIMEOUT_MS);
@@ -103,6 +136,83 @@ export function createRoutingRuntime({
     else delete body.variant;
     if (choice?.agent) body.agent = choice.agent;
     return { providerID: model.providerID, modelID: model.modelID, variant: variant ?? null, agent: choice?.agent ?? null };
+  };
+
+  const chooseCurrent = (config, choice, composerAgent) => {
+    const own = Boolean(choice?.model);
+    const model = own ? choice.model : config.fallback.model;
+    const variant = own ? choice.variant : config.fallback.variant;
+    const ref = { providerID: model.providerID, id: model.modelID };
+    if (variant) ref.variant = variant;
+    return {
+      model: ref,
+      agent: choice?.agent || composerAgent || null,
+      decision: { providerID: model.providerID, modelID: model.modelID, variant: variant ?? null, agent: choice?.agent ?? null },
+    };
+  };
+
+  const noteModelSelection = (sessionId, model, directory) => {
+    if (!sessionId) return false;
+    const identity = currentIdentity();
+    autoSessions.delete(sessionId);
+    if (!isAutoModel(model)) return false;
+    autoSessions.set(sessionId, { directory, key: identity ? identityKey(identity) : '' });
+    while (autoSessions.size > 1000) autoSessions.delete(autoSessions.keys().next().value);
+    return true;
+  };
+
+  const isAutoSession = (sessionId) => {
+    const entry = autoSessions.get(sessionId);
+    const identity = currentIdentity();
+    return Boolean(entry && identity && entry.key === identityKey(identity));
+  };
+
+  const resolveAutoSelection = async ({ sessionId, directory, model, agent, requestText }) => {
+    if (!isAutoModel(model)) return null;
+    const identity = currentIdentity();
+    const state = await describe();
+    assertIdentity(identity);
+    const config = state.config;
+    if (!config?.fallback) throw Object.assign(new Error('Auto routing is selected but no fallback model is configured'), { status: 400 });
+    const decision = { sessionId, at: now(), category: null, confidence: 0, reason: 'not-ready', ms: 0 };
+    let selection = chooseCurrent(config, null, agent);
+    if (state.autoReady) {
+      let history = [];
+      try { history = await readHistory({ sessionId, directory }); }
+      catch (error) { console.warn('[routing] history unavailable, routing on the request alone:', errorMessage(error)); }
+      assertIdentity(identity);
+      try {
+        const token = await store.readToken();
+        const { answers, ms } = await jev.ask(buildRoutingRequest({ categories: enabledCategories(config), history, request: (requestText ?? '').trim() }), token);
+        assertIdentity(identity);
+        const result = decideRouting(answers.category, { categories: enabledCategories(config), minConfidence: config.minConfidence });
+        decision.category = result.category?.id ?? null;
+        decision.confidence = result.confidence;
+        decision.reason = result.reason;
+        decision.ms = ms;
+        selection = chooseCurrent(config, result.category, agent);
+      } catch (error) {
+        assertIdentity(identity);
+        decision.reason = 'error';
+        decision.error = errorMessage(error);
+      }
+    }
+    Object.assign(decision, selection.decision);
+    broadcast('openchamber:routing.decision', decision);
+    return { model: selection.model, agent: selection.agent, decision };
+  };
+
+  const routeSend = async ({ sessionId, directory, body }) => {
+    if (!isAutoSession(sessionId)) return null;
+    const identity = currentIdentity();
+    const resolved = await resolveAutoSelection({ sessionId, directory, model: AUTO_MODEL_REF,
+      agent: z.string().safeParse(body?.agent).success ? body.agent : null,
+      requestText: requestTextOf(body), });
+    assertIdentity(identity);
+    await kernelOperations.switchSessionSelection({ sessionID: sessionId, directory,
+      model: resolved.model, agent: resolved.agent, expectedIdentity: identity });
+    assertIdentity(identity);
+    return resolved.decision;
   };
 
   /**
@@ -213,5 +323,6 @@ export function createRoutingRuntime({
     return held;
   };
 
-  return { describe, resolvePromptBody, evaluatePermission, forgetPermission, heldPermissions, updateConfig, setToken, clearToken };
+  return { generation, describe, resolvePromptBody, noteModelSelection, isAutoSession, resolveAutoSelection, routeSend,
+    evaluatePermission, forgetPermission, heldPermissions, updateConfig, setToken, clearToken };
 }

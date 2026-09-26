@@ -46,6 +46,7 @@ import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-sw
 import { useAutoReviewStore } from '@/stores/useAutoReviewStore';
 import { resumeAutoReviewRun } from '@/lib/reviewFlow';
 import { SyncProvider } from '@/sync/sync-context';
+import { useOpenCodeSource } from '@/apps/useOpenCodeSource';
 import { useSync } from '@/sync/use-sync';
 import { ConfigUpdateOverlay } from '@/components/ui/ConfigUpdateOverlay';
 import { AboutDialog } from '@/components/ui/AboutDialog';
@@ -266,6 +267,7 @@ const EmbeddedSessionChatContent: React.FC<{
 };
 
 function App({ apis }: AppProps) {
+  const syncSource = useOpenCodeSource();
   React.useEffect(() => {
     markStartupTrace('App:mounted');
     if (startupTraceEnabled()) {
@@ -939,7 +941,7 @@ function App({ apis }: AppProps) {
   if (embeddedSessionChat) {
     return (
       <ErrorBoundary>
-        <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+        <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
           <RuntimeAPIProvider apis={apis}>
             <TooltipProvider delayDuration={300} skipDelayDuration={150}>
               <div className="h-full text-foreground bg-background">
@@ -985,7 +987,7 @@ function App({ apis }: AppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+      <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <FireworksProvider>
               <TooltipProvider delayDuration={300} skipDelayDuration={150}>

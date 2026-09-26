@@ -1,11 +1,12 @@
 import React from 'react';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { toast } from '@/components/ui';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { useI18n } from '@/lib/i18n';
 import { useUIStore } from '@/stores/useUIStore';
 import { streamPerfMark } from '@/stores/utils/streamDebug';
 import { useSessionUIStore } from '@/sync/session-ui-store';
+import { opencodeClient } from '@/lib/opencode/client';
 import { collectSessionSubtreeIds, runSessionSubtreeAction } from './sessionSubtreeActions';
 import { describeSessionActionError } from './sessionActionError';
 
@@ -164,6 +165,7 @@ export const useSessionActions = (args: Args) => {
   }, [setCopiedSessionId]);
 
   const handleShareSession = React.useCallback(async (session: Session) => {
+    if (opencodeClient.getBoundRuntime()?.generation !== 'oc1') return;
     const result = await shareSession(session.id);
     if (!result?.share?.url) {
       toast.error(t('sessions.sidebar.session.share.error'));
@@ -196,6 +198,7 @@ export const useSessionActions = (args: Args) => {
   }, [t]);
 
   const handleUnshareSession = React.useCallback(async (sessionId: string) => {
+    if (opencodeClient.getBoundRuntime()?.generation !== 'oc1') return;
     const result = await unshareSession(sessionId);
     if (result) {
       toast.success(t('sessions.sidebar.session.unshare.success'));

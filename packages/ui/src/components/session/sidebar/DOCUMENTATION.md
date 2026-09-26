@@ -1,5 +1,10 @@
 # Session Sidebar
 
+The footer opens historical Stats only for a bound OC2 runtime. OC1 keeps its
+live token, context and quota indicators without this new page. The same Stats
+view is available from hosted and Capacitor mobile session drawers; the VS Code
+sidebar has no Stats entry.
+
 Sidebar code is organized by the business object it owns. Shared contracts are
 kept at this root in `types.ts` and `utils.tsx`.
 
@@ -8,7 +13,7 @@ kept at this root in `types.ts` and `utils.tsx`.
   layout-owned synchronization, authoritative cleanup, and nearby-session prefetch.
 - `projects/` owns project zones, grouping, ordering, scroller behavior, project
   view state, repository state, and worktree presentation.
-- `sessions/` owns session rows, row actions, expansion, ownership, and activity indicators. A collapsed group or folder shows one indicator for its hidden sessions: a pending permission (shield) outranks a pending question, which outranks a running turn, which outranks unread. Pending requests are read from the cross-directory `global-blocking-requests` index, so a project never opened in this launch still shows them; running and unread come from the global status index and the notification store.
+- `sessions/` owns session rows, row actions, expansion, ownership, and activity indicators. A collapsed group or folder shows one indicator for its hidden sessions: a pending permission (shield) outranks pending input, which outranks a running turn, which outranks unread. OC1 questions and OC2 forms keep their tagged request shapes. Pending requests are read from the cross-directory `global-blocking-requests` index, so a project never opened in this launch still shows them; running and unread come from the global status index and the notification store.
 - `recent/` owns Recent and managed Chats activity projections.
 - `folders/` owns folder DnD, bulk actions, archived folders, and folder UI.
 - `sessionSidebarRowModel.ts` owns the ordered, mode-neutral projection for
@@ -29,6 +34,9 @@ kept at this root in `types.ts` and `utils.tsx`.
   changes and roll back session-only if a later descendant fails. The root moves
   last and carries source changes once, which prevents rollback from replaying the
   transferred patch into the source.
+  OC2 uses its `session.move` route without a change-transfer parameter. It
+  skips the dirty-source choice. OC1 keeps the existing session-only and
+  all-changes choices.
 - Failure cleanup: a worktree created for the move is removed only after a
   definite failure. When the change-carrying request fails without confirming
   its outcome, that worktree is KEPT (it may hold the only copy of the user's

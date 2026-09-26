@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { OpencodeClient, Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { opencodeClient } from '@/lib/opencode/client';
-import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived } from '@/stores/globalSessions';
+import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived, type SessionPager } from '@/stores/globalSessions';
 import { getReviewTransferDirection, type ReviewTransferDirection } from '@/lib/reviewFlow';
 import { getOriginalSessionID, getReviewSessionID } from '@/lib/sessionReviewMetadata';
 import { normalizePath } from '@/lib/pathNormalization';
@@ -228,7 +228,7 @@ type DirectoryPageResult = {
 };
 
 const fetchDirectoryPages = async (
-  sdk: OpencodeClient,
+  sdk: SessionPager,
   directories: Set<string>,
 ): Promise<DirectoryPageResult> => {
   const currentDirectory = normalizePath(opencodeClient.getDirectory());
@@ -696,7 +696,7 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
         rootsReady = true;
         get().rehydrateManagedChatSessions();
         set((state) => (state.status === 'loading' ? state : { status: 'loading' }));
-        const sdk = opencodeClient.getSdkClient();
+        const sdk = opencodeClient;
         // One inclusive fetch, split client-side. The server's
         // `time_archived IS NULL` active filter would exclude restored
         // sessions (`time.archived` falsy-but-present), so an
@@ -791,7 +791,7 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
       return { activeSessions: state.activeSessions, archivedSessions: state.archivedSessions };
     }
     get().rehydrateManagedChatSessions();
-    const sdk = opencodeClient.getSdkClient();
+    const sdk = opencodeClient;
     const fetched = await fetchDirectoryPages(sdk, directorySet);
 
     if (generation !== loadGeneration) {

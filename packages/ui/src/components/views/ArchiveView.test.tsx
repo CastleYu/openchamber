@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, expect, test } from 'bun:test';
 import React, { act } from 'react';
 import type { Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 const browser = new Window({ url: 'http://localhost' });
 let root: Root;
 const descriptors = new Map<string, PropertyDescriptor | undefined>();

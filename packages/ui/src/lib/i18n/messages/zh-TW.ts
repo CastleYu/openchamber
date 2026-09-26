@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './zh-TW.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "正在載入檔案…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': '使用了 {count} 個子代理',
   'chat.liveActivity.usedSubagents': '使用了 {count} 個子代理',
   'sessions.sidebar.projectAction.active': '專案操作正在執行',
+  'sidebarFilesTree.menu.uploadFiles': '上傳檔案',
+  'sidebarFilesTree.actions.uploadFilesTitle': '上傳檔案',
+  'chat.permissionCard.summary.externalDirectory': "存取專案外的檔案",
+  'chat.permissionCard.summary.read': "讀取檔案",
+  'chat.permissionCard.summary.edit': "編輯檔案",
+  'chat.permissionCard.summary.shell': "執行命令",
+  'chat.permissionCard.summary.glob': "尋找檔案",
+  'chat.permissionCard.summary.grep': "搜尋檔案內容",
+  'chat.permissionCard.summary.webfetch': "開啟網頁",
+  'chat.permissionCard.summary.websearch': "搜尋網路",
+  'chat.permissionCard.summary.skill': "載入技能",
+  'chat.permissionCard.summary.tool': "使用 {tool}",
+  'chat.permissionCard.summary.inPath': "位於 {path}",
+  'chat.permissionCard.alwaysAllowPatterns': '一律：{patterns}',
+  ...fileArtifactsI18n['zh-TW'],
+  ...webSearchI18n['zh-TW'],
   ...settingsDict,
   'updateDialog.personalNotice': '個人版僅提示更新。請同步原始碼後重新打包，以保留個人功能。',
   ...linearIssuePickerI18n['zh-TW'],
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n['zh-TW'],
   ...pluginPanelI18n['zh-TW'],
   ...surfacePanelI18n['zh-TW'],
+  ...usageStatsI18n['zh-TW'],
   'terminalView.actions.attachSelection': '附加所選輸出',
   'terminalView.actions.copySelection': '複製所選輸出',
   'terminalView.toast.selectionCopied': '已複製輸出',
@@ -2270,6 +2290,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.commandAutocomplete.command.debugDescription': '在提出修復方案前，引導式地排查 bug 的根本原因。',
   'chat.commandAutocomplete.command.weighDescription': '在動手前，權衡 2-3 種方案的利弊並給出推薦。',
   'chat.commandAutocomplete.command.btwDescription': '在臨時子工作階段中提問，不打斷目前對話',
+  'chat.commandAutocomplete.command.forkDescription': '從最後一個已完成的回覆分叉此對話並在新工作階段中繼續；/fork 後的文字會傳送到分叉工作階段。',
   'chat.commandAutocomplete.command.exploreDescription': '快速熟悉這個程式碼庫：對架構和主要部分的概覽。',
   'chat.commandAutocomplete.badge.skill': 'Skills',
   'chat.commandAutocomplete.badge.command': '命令',
@@ -2444,6 +2465,9 @@ export const dict: Record<I18nKey, string> = {
   'snippets.source.global': '全局',
   'snippets.source.project': '項目',
   'chat.chatInput.toast.compactFailed': '壓縮會話失敗',
+  'chat.chatInput.toast.forkFailed': '無法分叉工作階段',
+  'chat.chatInput.toast.forkNothingToFork': '尚無可分叉內容：此工作階段中還沒有已完成的回覆',
+  'chat.chatInput.toast.forkSendFailed': '已分叉，但訊息未送出，已放回輸入框。',
   'chat.chatInput.toast.summaryFailed': '生成總結失敗',
   'chat.messageBody.actions.sendReviewFeedback': '將審查回饋傳送給實作變更的代理',
   'chat.messageBody.actions.sendImplementationResponse': '將實作回應傳送給審查代理',
@@ -2509,6 +2533,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.error': '錯誤：',
   'chat.toolPart.awaitingResponse': '等待回應...',
   'chat.toolPart.noOutputProduced': '未產生輸出',
+  'chat.toolPart.script': '腳本',
+  'chat.toolPart.scriptCalls': '工具呼叫',
+  'chat.toolPart.outputTruncated': '輸出已截斷',
   'chat.toolPart.output': '輸出',
   'chat.toolPart.showRawJson': '顯示原始 JSON',
   'chat.toolPart.showFormattedJson': '顯示格式化 JSON',
@@ -2627,6 +2654,11 @@ export const dict: Record<I18nKey, string> = {
   'chat.messageBody.subtask.hidePrompt': '隱藏提示',
   'chat.messageBody.subtask.showPrompt': '顯示提示',
   'chat.messageBody.subtask.openSession': '開啟子任務會話',
+  'chat.compaction.running': '正在壓縮對話…',
+  'chat.compaction.completed': '對話已壓縮',
+  'chat.compaction.failed': '壓縮失敗',
+  'chat.compaction.showSummary': '顯示摘要',
+  'chat.compaction.hideSummary': '隱藏摘要',
   'chat.messageBody.shellCommand.title': 'Shell 命令',
   'chat.messageBody.shellCommand.hideOutput': '隱藏輸出',
   'chat.messageBody.shellCommand.showOutput': '顯示輸出',
@@ -3460,4 +3492,17 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': '在本機執行。貼上完整指令後會依每行一個參數拆分。',
   'settings.mcp.page.connection.hintLink': '連線到他人代管的伺服器。貼上其 https 位址。',
   'mcpDropdown.status.failedWithCause': "{cause}：{error}",
+  'chat.formCard.inputNeeded': '需要輸入',
+  'chat.formCard.fromSubagent': '來自子代理',
+  'chat.formCard.required': '必填',
+  'chat.formCard.openLink': '開啟連結',
+  'chat.formCard.yes': '是',
+  'chat.formCard.other': '其他',
+  'chat.formCard.yourAnswer': '你的答案',
+  'chat.formCard.submit': '送出',
+  'chat.formCard.cancel': '取消',
+  'chat.formCard.missingRequired': '請先填寫必填欄位。',
+  'chat.formCard.submitFailed': '無法送出答案',
+  'chat.formCard.cancelFailed': '無法取消請求',
+  'chat.formCard.tryAgain': '請再試一次。',
 };

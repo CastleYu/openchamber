@@ -1,14 +1,7 @@
-import type {
-  Event,
-  Message,
-  Part,
-  PermissionRequest,
-  Project,
-  QuestionRequest,
-  Session,
-  SessionStatus,
-  Todo,
-} from "@opencode-ai/sdk/v2/client"
+import type { Event, PermissionRequest, Project, QuestionRequest, Todo } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, SessionStatus } from "@/lib/opencode/model"
+import { projectLegacyMessage, projectLegacyPart, projectLegacySession } from "@/lib/opencode/v1/projection"
+import type { DomainEvent } from "@/lib/opencode/events"
 import { Binary } from "./binary"
 import type { FileDiff, GlobalState, State } from "./types"
 import { dropSessionCaches } from "./session-cache"
@@ -245,7 +238,7 @@ export function applyDirectoryEvent(
     }
 
     case "session.created": {
-      const info = stripSessionDiffSnapshots((event.properties as { info: Session }).info)
+      const info = stripSessionDiffSnapshots(projectLegacySession(event.properties.info))
       const sessions = draft.session
       const result = Binary.search(sessions, info.id, (s) => s.id)
       if (result.found && shouldSkipStaleSessionEvent(sessions[result.index], info)) {
@@ -263,7 +256,7 @@ export function applyDirectoryEvent(
     }
 
     case "session.updated": {
-      const info = stripSessionDiffSnapshots((event.properties as { info: Session }).info)
+      const info = stripSessionDiffSnapshots(projectLegacySession(event.properties.info))
       const sessions = draft.session
       const result = Binary.search(sessions, info.id, (s) => s.id)
       // Keep the freshness check ahead of the archive branch: direct archive
@@ -294,11 +287,11 @@ export function applyDirectoryEvent(
 
     case "session.deleted": {
       const sessions = draft.session
-      const props = event.properties as { info?: Session; sessionID?: string }
+      const props = event.properties
       const sessionID = props.info?.id ?? props.sessionID
       if (!sessionID) return false
       const result = Binary.search(sessions, sessionID, (s) => s.id)
-      const info = props.info ?? (result.found ? sessions[result.index] : undefined)
+      const info = props.info ? projectLegacySession(props.info) : (result.found ? sessions[result.index] : undefined)
       if (result.found) sessions.splice(result.index, 1)
       cleanupSessionCaches(draft, sessionID, callbacks?.onSetSessionTodo)
       if (!info?.parentID) draft.sessionTotal = Math.max(0, draft.sessionTotal - 1)
@@ -352,7 +345,7 @@ export function applyDirectoryEvent(
     }
 
     case "message.updated": {
-      const info = (event.properties as { info: Message }).info
+      const info = projectLegacyMessage(event.properties.info)
       const messages = draft.message[info.sessionID]
       if (!messages) {
         draft.message[info.sessionID] = [info]
@@ -399,8 +392,8 @@ export function applyDirectoryEvent(
     }
 
     case "message.part.updated": {
-      const props = event.properties as { sessionID?: string; part: Part }
-      const part = props.part
+      const props = event.properties
+      const part = projectLegacyPart(props.part)
       if (SKIP_PARTS.has(part.type)) {
         syncDebug.reducer.partSkipped((part as { messageID: string }).messageID, part.id, part.type)
         return false
@@ -618,4 +611,148 @@ function cleanupSessionCaches(
   if (!sessionID) return
   setSessionTodo?.(sessionID, undefined)
   dropSessionCaches(draft, [sessionID])
+}
+
+export type DomainEventResult = {
+  changed: boolean
+  refresh?: { type: "global" | "directory" | "session" | "message" | "transcript"; sessionID?: string; messageID?: string }
+}
+
+/** OC2 reducer. Partial stream facts request an authoritative HTTP record instead of inventing one. */
+export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventResult {
+  const sessionID = "sessionID" in event ? event.sessionID
+    : "session" in event ? event.session.id
+    : "message" in event ? event.message.sessionID
+    : "part" in event ? event.part.sessionID
+    : "request" in event ? event.request.value.sessionID
+    : undefined
+  if (sessionID && "sequence" in event && event.sequence !== undefined) {
+    const previous = draft.eventSequence?.[sessionID] ?? 0
+    if (event.sequence <= previous) return { changed: false }
+    draft.eventSequence = { ...draft.eventSequence, [sessionID]: event.sequence }
+  }
+
+  switch (event.type) {
+    case "session-upsert": {
+      const info = stripSessionDiffSnapshots(event.session)
+      const result = Binary.search(draft.session, info.id, (item) => item.id)
+      if (result.found && shouldSkipStaleSessionEvent(draft.session[result.index], info)) return { changed: false }
+      const next = [...draft.session]
+      if (result.found) next[result.index] = info
+      else next.splice(result.index, 0, info)
+      draft.session = next
+      draft.sessionListSource = "live"
+      draft.sessionRevision = (draft.sessionRevision ?? 0) + 1
+      draft.sessionEventRevision = { ...draft.sessionEventRevision, [info.id]: draft.sessionRevision }
+      return { changed: true }
+    }
+    case "session-delete": {
+      const result = Binary.search(draft.session, event.sessionID, (item) => item.id)
+      const next = [...draft.session]
+      if (result.found) next.splice(result.index, 1)
+      draft.session = next
+      cleanupSessionCaches(draft, event.sessionID)
+      delete draft.pendingPermission[event.sessionID]
+      delete draft.pendingInput[event.sessionID]
+      draft.sessionListSource = "live"
+      draft.sessionRevision = (draft.sessionRevision ?? 0) + 1
+      draft.sessionDeletedRevision = { ...draft.sessionDeletedRevision, [event.sessionID]: draft.sessionRevision }
+      return { changed: true }
+    }
+    case "message-upsert": {
+      const info = event.message
+      const previous = draft.message[info.sessionID] ?? []
+      const index = findMessageIndex(previous, info.id)
+      if (index >= 0 && areMessageUpdateFieldsEqual(previous[index], info)) return { changed: false }
+      const next = [...previous]
+      if (index >= 0) next.splice(index, 1)
+      insertMessageChronologically(next, info)
+      draft.message[info.sessionID] = next
+      return { changed: true }
+    }
+    case "part-upsert": {
+      if (SKIP_PARTS.has(event.part.type)) return { changed: false }
+      const parts = draft.part[event.part.messageID] ?? []
+      const index = parts.findIndex((item) => item.id === event.part.id)
+      if (index >= 0 && areJsonEquivalent(parts[index], event.part)) return { changed: false }
+      const next = [...parts]
+      if (index >= 0) {
+        if (shouldPreserveExistingPart(next[index], event.part)) return { changed: false }
+        next[index] = event.part
+      } else next.push(event.part)
+      draft.part[event.part.messageID] = next
+      return { changed: true }
+    }
+    case "part-remove": {
+      const parts = draft.part[event.messageID]
+      if (!parts) return { changed: false }
+      const next = parts.filter((part) => part.id !== event.partID)
+      if (next.length === parts.length) return { changed: false }
+      if (next.length) draft.part[event.messageID] = next
+      else delete draft.part[event.messageID]
+      return { changed: true }
+    }
+    case "part-delta": {
+      const parts = draft.part[event.messageID]
+      const index = parts?.findIndex((part) => part.id === event.partID) ?? -1
+      if (!parts || index < 0) return { changed: false, refresh: { type: "message", sessionID: event.sessionID, messageID: event.messageID } }
+      const part = parts[index]
+      if (part.type !== "text" && part.type !== "reasoning") return { changed: false }
+      const next = [...parts]
+      next[index] = { ...part, text: part.text + event.delta }
+      if (next[index].text === part.text) return { changed: false }
+      draft.part[event.messageID] = next
+      return { changed: true }
+    }
+    case "status": {
+      if (areSessionStatusesEqual(draft.session_status[event.sessionID], event.status)) return { changed: false }
+      draft.session_status[event.sessionID] = event.status
+      return { changed: true }
+    }
+    case "permission-asked": {
+      const request = event.request
+      const previous = draft.pendingPermission[request.value.sessionID] ?? []
+      const index = previous.findIndex((item) => item.value.id === request.value.id)
+      const next = [...previous]
+      if (index >= 0) next[index] = request
+      else next.push(request)
+      draft.pendingPermission[request.value.sessionID] = next
+      return { changed: true }
+    }
+    case "permission-replied": {
+      const previous = draft.pendingPermission[event.sessionID]
+      if (!previous) return { changed: false }
+      const next = previous.filter((item) => item.value.id !== event.requestID)
+      if (next.length === previous.length) return { changed: false }
+      draft.pendingPermission[event.sessionID] = next
+      return { changed: true }
+    }
+    case "input-created": {
+      const request = event.request
+      const previous = draft.pendingInput[request.value.sessionID] ?? []
+      const index = previous.findIndex((item) => item.value.id === request.value.id)
+      const next = [...previous]
+      if (index >= 0) next[index] = request
+      else next.push(request)
+      draft.pendingInput[request.value.sessionID] = next
+      return { changed: true }
+    }
+    case "form-closed": {
+      const previous = draft.pendingInput[event.sessionID]
+      if (!previous) return { changed: false }
+      const next = previous.filter((item) => item.value.id !== event.requestID)
+      if (next.length === previous.length) return { changed: false }
+      draft.pendingInput[event.sessionID] = next
+      return { changed: true }
+    }
+    case "vcs-branch": {
+      if (draft.vcs?.branch === event.branch) return { changed: false }
+      draft.vcs = { ...draft.vcs, branch: event.branch }
+      return { changed: true }
+    }
+    case "session-refresh": return { changed: false, refresh: { type: "session", sessionID: event.sessionID } }
+    case "message-refresh": return { changed: false, refresh: { type: "message", sessionID: event.sessionID, messageID: event.messageID } }
+    case "transcript-refresh": return { changed: false, refresh: { type: "transcript", sessionID: event.sessionID } }
+    case "refresh": return { changed: false, refresh: { type: event.scope } }
+  }
 }

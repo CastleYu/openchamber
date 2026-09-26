@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { Window } from 'happy-dom';
 import React, { act } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { I18nProvider } from '@/lib/i18n';
 import { useSessionActions } from '../sessions/useSessionActions';
 import { createSessionOwnershipIndex } from '../sessions/sessionOwnership';

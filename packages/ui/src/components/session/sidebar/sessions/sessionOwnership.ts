@@ -1,4 +1,4 @@
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import type { Project as OpenCodeProject } from '@opencode-ai/sdk/v2/client';
 import { getNormalizedParentDirectory, normalizePath } from '@/lib/pathNormalization';
 

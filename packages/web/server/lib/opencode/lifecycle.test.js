@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createKernelRuntime } from './kernel-runtime.js';
 
 const spawnMock = vi.fn();
 const spawnSyncMock = vi.fn();
@@ -113,6 +114,7 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
     normalizeApiPrefix: vi.fn(() => ''),
     applyOpencodeBinaryFromSettings: vi.fn(async () => null),
     ensureOpencodeCliEnv: vi.fn(),
+    probeManagedOpenCodeGeneration: vi.fn(async () => ({ generation: 'oc1', version: '1.18.32' })),
     ensureLocalOpenCodeServerPassword: vi.fn(async () => 'password'),
     resolveManagedOpenCodeLaunchSpec: vi.fn((binary) => ({ binary, args: [], wrapperType: null })),
     setOpenCodePort: vi.fn((port) => {
@@ -137,6 +139,96 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
 };
 
 describe('OpenCode lifecycle', () => {
+  it('retires an identity refreshed while the old process is closing', async () => {
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => ({ generation: 'oc1', endpoint, epoch, version: '1.18.32' }),
+    });
+    spawnMock.mockImplementation(() => {
+      const child = createMockChild();
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    const runtime = createRuntime({ kernelRuntime, ensureOpencodeCliEnv: () => 'opencode' });
+    const first = await runtime.startOpenCode();
+    runtime.testState.openCodeProcess = first;
+    let release;
+    const closing = new Promise((resolve) => { release = resolve; });
+    const close = first.close.bind(first);
+    first.close = async () => { await closing; await close(); };
+    const restart = runtime.restartOpenCode();
+    const duringClose = await kernelRuntime.refresh();
+    release();
+    try {
+      await restart;
+      expect(kernelRuntime.get().endpoint).toBe(duringClose.endpoint);
+      expect(kernelRuntime.get().version).toBe(duringClose.version);
+      expect(kernelRuntime.get().epoch).toBeGreaterThan(duringClose.epoch);
+    } finally {
+      await runtime.testState.openCodeProcess.close();
+    }
+  });
+
+  it.each(['oc1', 'oc2'])('uses the selected %s descriptor for readiness', async (generation) => {
+    const descriptor = { generation, endpoint: 'http://127.0.0.1:45678', epoch: 1 };
+    const runtime = createRuntime({ kernelRuntime: { refresh: async () => descriptor } }, { openCodePort: 45678 });
+    await runtime.waitForOpenCodeReady(100, 1);
+    expect(runtime.testState.isOpenCodeReady).toBe(true);
+  });
+
+  it('does not mark an ambiguous connection ready', async () => {
+    const runtime = createRuntime({
+      kernelRuntime: { refresh: async () => ({ generation: 'unknown' }) },
+    }, { openCodePort: 45678 });
+    await expect(runtime.waitForOpenCodeReady(5, 1)).rejects.toThrow('OpenCode readiness: unknown');
+    expect(runtime.testState.isOpenCodeReady).toBe(false);
+  });
+
+  it.each(['oc1', 'oc2'])('waits for the %s agent catalog using its actual key', async (generation) => {
+    const descriptor = { generation };
+    const runtime = createRuntime({ kernelRuntime: { get: () => descriptor } }, { openCodePort: 45678 });
+    globalThis.fetch = vi.fn(async () => Response.json(generation === 'oc2'
+      ? { data: [{ id: 'build', name: 'Build' }] }
+      : [{ name: 'build' }]));
+    await runtime.waitForAgentPresence('build', 100, 1);
+    expect(globalThis.fetch.mock.calls[0][0]).toBe(`http://127.0.0.1:45678${generation === 'oc2' ? '/api/agent' : '/agent'}`);
+  });
+  it('rejects an unidentified CLI before configuration or process creation', async () => {
+    const getManagedOpenCodeEnv = vi.fn(async () => ({}));
+    const ensureLocalOpenCodeServerPassword = vi.fn(async () => 'password');
+    const runtime = createRuntime({
+      getManagedOpenCodeEnv,
+      ensureLocalOpenCodeServerPassword,
+      probeManagedOpenCodeGeneration: vi.fn(async () => { throw new Error('Unidentified CLI'); }),
+    });
+    await expect(runtime.startOpenCode()).rejects.toThrow('Unidentified CLI');
+    expect(getManagedOpenCodeEnv).not.toHaveBeenCalled();
+    expect(ensureLocalOpenCodeServerPassword).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it('uses the probed launch specification and config generation together', async () => {
+    const launchSpec = { binary: 'node', args: ['/selected/opencode.js'], wrapperType: 'node' };
+    const selection = { generation: 'oc2', version: '2.0.16', launchSpec };
+    const getManagedOpenCodeEnv = vi.fn(async () => ({}));
+    const probeManagedOpenCodeGeneration = vi.fn(async () => selection);
+    spawnMock.mockImplementation(() => {
+      const child = createMockChild();
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    const runtime = createRuntime({ getManagedOpenCodeEnv, probeManagedOpenCodeGeneration, ensureOpencodeCliEnv: () => '/selected/opencode.cmd' });
+    const child = await runtime.startOpenCode();
+    try {
+      expect(getManagedOpenCodeEnv).toHaveBeenCalledWith(selection);
+      expect(probeManagedOpenCodeGeneration.mock.calls[0][0].resolvedBinary).toBe('/selected/opencode.cmd');
+      expect(spawnMock.mock.calls[0][0]).toBe('node');
+      expect(spawnMock.mock.calls[0][1]).toEqual(['/selected/opencode.js', 'serve', '--hostname', '127.0.0.1', '--port', '45678']);
+    } finally {
+      await child.close();
+    }
+  });
+
   it('uses the resolved binary directly on startup and managed restart without an env override', async () => {
     delete process.env.OPENCODE_BINARY;
     const binaries = ['/bundle one/opencode-cli/opencode', '/bundle two/opencode-cli/opencode'];

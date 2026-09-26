@@ -1,38 +1,51 @@
-import type { OpencodeClient, Session } from '@opencode-ai/sdk/v2';
+import type { opencodeClient } from '@/lib/opencode/client';
+import type { ModelRef, Session } from '@/lib/opencode/model';
 import { getMultiRunMembership, withMultiRunMembership, type MultiRunIdentity } from './identity';
+
+export type MultiRunSessionApi = Pick<typeof opencodeClient, 'createSession' | 'getSession' | 'updateSession' | 'deleteSession'>;
+export type MultiRunGeneration = 'oc1' | 'oc2';
 
 /** Bind the server-assigned ID before dispatch. A fork inherits this ID and cannot join. */
 export async function createMultiRunSession(
-  client: OpencodeClient,
-  input: { title: string; directory: string; identity: Omit<MultiRunIdentity, 'key'> },
+  api: MultiRunSessionApi,
+  input: {
+    title: string;
+    directory: string;
+    generation: MultiRunGeneration;
+    identity: Omit<MultiRunIdentity, 'key'>;
+    selection?: { model?: ModelRef; agent?: string };
+  },
   assertCurrent: () => void,
 ): Promise<Session> {
   assertCurrent();
-  const membership = { ...input.identity, version: 1 as const, sessionID: null };
-  const created = await client.session.create({
-    directory: input.directory, title: input.title,
-    metadata: withMultiRunMembership({}, membership),
-  }, { throwOnError: true });
-  if (!created.data) throw new Error('Multi-run session creation returned no session');
-  const session = created.data;
+  const pending = { ...input.identity, version: 1 as const, sessionID: null };
+  const created = await api.createSession({
+    title: input.title,
+    metadata: withMultiRunMembership({}, pending),
+    ...(input.generation === 'oc2' ? input.selection : undefined),
+  }, input.directory);
+
   try {
     assertCurrent();
-    // Metadata updates replace the whole object. Preserve fields written since creation.
-    const current = await client.session.get({ sessionID: session.id, directory: input.directory }, { throwOnError: true });
-    if (!current.data) throw new Error('Multi-run session could not be read');
+    const bound = { ...pending, sessionID: created.id };
+    // OC1 replaces metadata, so read the new session and retain every field
+    // written since creation. OC2's metadata route applies a merge patch:
+    // send only the marker so concurrent fields stay under server ownership.
+    const metadata = input.generation === 'oc1'
+      ? withMultiRunMembership(await api.getSession(created.id, input.directory), bound)
+      : withMultiRunMembership({}, bound);
     assertCurrent();
-    const updated = await client.session.update({
-      sessionID: session.id, directory: input.directory,
-      metadata: withMultiRunMembership(current.data, { ...membership, sessionID: session.id }),
-    }, { throwOnError: true });
+    const updated = await api.updateSession(created.id, { metadata }, input.directory);
     assertCurrent();
-    if (!updated.data || !getMultiRunMembership(updated.data)) throw new Error('Multi-run membership was not saved');
-    return updated.data;
+    if (updated.id !== created.id || !getMultiRunMembership(updated)) {
+      throw new Error('Multi-run membership was not saved');
+    }
+    return updated;
   } catch (error) {
-    // Never delete through a switched runtime. The pending marker remains ineligible.
+    // A switched runtime must never receive cleanup for the old session.
     assertCurrent();
     try {
-      await client.session.delete({ sessionID: session.id, directory: input.directory }, { throwOnError: true });
+      await api.deleteSession(created.id, input.directory);
     } catch {
       console.warn('[MultiRun] Could not remove an undispatched session after membership failure');
     }

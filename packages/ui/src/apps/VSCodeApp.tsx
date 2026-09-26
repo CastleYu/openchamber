@@ -16,7 +16,6 @@ import { useGlobalSessionsPolling } from '@/hooks/useGlobalSessionsPolling';
 import { useRouter } from '@/hooks/useRouter';
 import { useWindowTitle } from '@/hooks/useWindowTitle';
 import { useRootScrollLock } from '@/hooks/useRootScrollLock';
-import { opencodeClient } from '@/lib/opencode/client';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
@@ -27,6 +26,8 @@ import { onHostSurfaceSeen } from '@/lib/surfaceAttention';
 import { markSessionViewed } from '@/sync/notification-store';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { useOpenCodeSource } from './useOpenCodeSource';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { SyncAppEffects } from './AppEffects';
 import { useAppFontEffects } from './useAppFontEffects';
 
@@ -43,6 +44,7 @@ type VSCodeAppProps = {
 };
 
 export function VSCodeApp({ apis }: VSCodeAppProps) {
+  const syncSource = useOpenCodeSource();
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
   const error = useSessionUIStore((state) => state.error);
   const clearError = useSessionUIStore((state) => state.clearError);
@@ -55,7 +57,17 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
 
   React.useEffect(() => {
     registerRuntimeAPIs(apis);
-    return () => registerRuntimeAPIs(null);
+    void useConfigStore.getState().initializeApp();
+    const onConnection = () => {
+      if (window.__OPENCHAMBER_CONNECTION__?.status === 'connected') {
+        void useConfigStore.getState().initializeApp();
+      }
+    };
+    window.addEventListener('openchamber:connection-status', onConnection);
+    return () => {
+      window.removeEventListener('openchamber:connection-status', onConnection);
+      registerRuntimeAPIs(null);
+    };
   }, [apis]);
 
   useAppFontEffects();
@@ -118,7 +130,7 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
   if (panelType === 'agentManager') {
     return (
       <ErrorBoundary>
-        <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+        <SyncProvider source={syncSource} directory={currentDirectory || ''}>
           <RuntimeAPIProvider apis={apis}>
             <TooltipProvider delayDuration={300} skipDelayDuration={150}>
               <div className="h-full text-foreground bg-background">
@@ -138,7 +150,7 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+      <SyncProvider source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <FireworksProvider>
             <TooltipProvider delayDuration={300} skipDelayDuration={150}>

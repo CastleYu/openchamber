@@ -7,6 +7,8 @@ import { McpIcon } from '@/components/icons/McpIcon';
 import { runBackgroundNetworkTask } from '@/lib/background-network';
 import { toast } from 'sonner';
 import { startMcpAuthorization } from '@/components/sections/mcp/startMcpAuthorization';
+import { McpOAuthDialog } from '@/components/sections/mcp/McpOAuthDialog';
+import { opencodeClient } from '@/lib/opencode/client';
 import { WorkStatusCollapsibleSection, WorkStatusRow, WorkStatusRowAction } from './WorkStatusPrimitives';
 import { useReportWorkStatusPresence } from './presenceContext';
 
@@ -22,6 +24,12 @@ const MCP_STATUS_MAX_AGE_MS = 60_000;
  */
 export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
   const { t } = useI18n();
+  const runtimeKey = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
+    () => '',
+  );
+  const generation = opencodeClient.getBoundRuntime()?.generation;
 
   const mcpStatus = useMcpStore(
     React.useCallback((state) => state.getStatusForDirectory(directory), [directory]),
@@ -31,6 +39,8 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
   const disconnect = useMcpStore((state) => state.disconnect);
   const isConnected = useConfigStore((state) => state.isConnected);
   const [busyServer, setBusyServer] = React.useState<string | null>(null);
+  const [authServer, setAuthServer] = React.useState<string | null>(null);
+  React.useEffect(() => { setAuthServer(null); }, [runtimeKey]);
 
   // The panel must not depend on the header dropdown having been mounted or
   // opened to know its MCP servers. Silent and background-gated, so it cannot
@@ -42,7 +52,7 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
   // hold the same project path — so the switch itself has to trigger the ask.
   React.useEffect(() => {
     void runBackgroundNetworkTask(() => ensureMcpFresh({ directory, silent: true, maxAgeMs: MCP_STATUS_MAX_AGE_MS }));
-  }, [directory, ensureMcpFresh, isConnected]);
+  }, [directory, ensureMcpFresh, isConnected, runtimeKey]);
 
   const mcpServers = React.useMemo(
     () => Object.entries(mcpStatus ?? {}).sort(([left], [right]) => left.localeCompare(right)),
@@ -57,6 +67,10 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
   // order: `connect` just repeats the attempt that produced `needs_auth`.
   // Authorising sends the user to the provider instead.
   const handleAuthorize = React.useCallback(async (name: string) => {
+    if (generation === 'oc2') {
+      setAuthServer(name);
+      return;
+    }
     setBusyServer(name);
     try {
       const { opened } = await startMcpAuthorization({
@@ -71,7 +85,7 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
     } finally {
       setBusyServer((current) => (current === name ? null : current));
     }
-  }, [directory, t]);
+  }, [directory, generation, t]);
 
   const handleToggle = React.useCallback(async (name: string, next: boolean) => {
     // Switching on a server that is waiting for sign-in cannot connect: it only
@@ -98,6 +112,7 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
   if (mcpServers.length === 0) return null;
 
   return (
+    <>
     <WorkStatusCollapsibleSection
       id="mcp"
       title={t('chat.workStatus.section.mcp')}
@@ -147,5 +162,7 @@ export const WorkStatusMcpSection: React.FC<Props> = ({ directory }) => {
         );
       })}
     </WorkStatusCollapsibleSection>
+    <McpOAuthDialog name={authServer} directory={directory} onClose={() => setAuthServer(null)} />
+    </>
   );
 };

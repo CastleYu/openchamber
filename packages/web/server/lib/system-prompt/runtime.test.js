@@ -13,6 +13,15 @@ afterEach(async () => {
 });
 
 describe('managed system prompt runtime', () => {
+  it('materializes an OpenCode 2 loadable plugin directory', async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'openchamber-system-prompt-'));
+    temporaryDirectories.push(dataDir);
+    const runtime = createSystemPromptRuntime({ fsPromises: fs, path, dataDir });
+    const directory = await runtime.materializePlugin();
+    const manifest = JSON.parse(await fs.readFile(path.join(directory, 'package.json'), 'utf8'));
+    expect(manifest.exports['.']).toBe('./openchamber-system-prompt-plugin.js');
+    expect((await fs.stat(path.join(directory, 'openchamber-system-prompt-plugin.js'))).isFile()).toBe(true);
+  });
   it.each(['build', 'plan'])('materializes the optimizer for the %s agent and preserves existing plugins', async (agent) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'openchamber-system-prompt-'));
     temporaryDirectories.push(dataDir);

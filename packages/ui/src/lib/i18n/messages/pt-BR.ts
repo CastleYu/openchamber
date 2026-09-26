@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './pt-BR.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "Carregando arquivo…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': '{count} subagente utilizado',
   'chat.liveActivity.usedSubagents': '{count} subagentes utilizados',
   'sessions.sidebar.projectAction.active': 'Ação do projeto em execução',
+  "sidebarFilesTree.menu.uploadFiles": "Enviar arquivos",
+  "sidebarFilesTree.actions.uploadFilesTitle": "Enviar arquivos",
+  'chat.permissionCard.summary.externalDirectory': "Acessar arquivos fora do projeto",
+  'chat.permissionCard.summary.read': "Ler um arquivo",
+  'chat.permissionCard.summary.edit': "Editar arquivos",
+  'chat.permissionCard.summary.shell': "Executar um comando",
+  'chat.permissionCard.summary.glob': "Encontrar arquivos",
+  'chat.permissionCard.summary.grep': "Pesquisar no conteúdo dos arquivos",
+  'chat.permissionCard.summary.webfetch': "Abrir uma página da web",
+  'chat.permissionCard.summary.websearch': "Pesquisar na web",
+  'chat.permissionCard.summary.skill': "Carregar uma skill",
+  'chat.permissionCard.summary.tool': "Usar {tool}",
+  'chat.permissionCard.summary.inPath': "em {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Sempre: {patterns}',
+  ...fileArtifactsI18n['pt-BR'],
+  ...webSearchI18n['pt-BR'],
   ...settingsDict,
   'updateDialog.personalNotice': 'Versões pessoais apenas notificam atualizações. Sincronize o código e compile novamente para manter seus recursos.',
   ...linearIssuePickerI18n['pt-BR'],
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n['pt-BR'],
   ...pluginPanelI18n['pt-BR'],
   ...surfacePanelI18n['pt-BR'],
+  ...usageStatsI18n['pt-BR'],
   'terminalView.actions.attachSelection': 'Anexar saída selecionada',
   'terminalView.actions.copySelection': 'Copiar saída selecionada',
   'terminalView.toast.selectionCopied': 'Saída copiada',
@@ -2278,6 +2298,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.commandAutocomplete.command.debugDescription": "Investigação guiada da causa raiz de um bug antes de propor uma correção.",
   "chat.commandAutocomplete.command.weighDescription": "Compare 2-3 abordagens com seus prós e contras e uma recomendação antes de decidir.",
   'chat.commandAutocomplete.command.btwDescription': 'Faça uma pergunta paralela em uma sessão filha temporária sem desviar este chat.',
+  'chat.commandAutocomplete.command.forkDescription': 'Bifurque este chat a partir da última resposta concluída e continue lá; o texto após /fork é enviado para a bifurcação.',
   "chat.commandAutocomplete.command.exploreDescription": "Oriente-se neste código: um tour geral pela arquitetura e pelas partes principais.",
   "chat.commandAutocomplete.badge.skill": "habilidade",
   "chat.commandAutocomplete.badge.command": "comando",
@@ -2440,6 +2461,9 @@ export const dict: Record<I18nKey, string> = {
   "snippets.source.global": "global",
   "snippets.source.project": "projeto",
   "chat.chatInput.toast.compactFailed": "Não foi possível comprimir a sessão",
+  'chat.chatInput.toast.forkFailed': 'Não foi possível bifurcar a sessão',
+  'chat.chatInput.toast.forkNothingToFork': 'Ainda não há o que bifurcar: nenhuma resposta foi concluída nesta sessão',
+  'chat.chatInput.toast.forkSendFailed': 'Bifurcada, mas a mensagem não foi enviada. Ela voltou para o editor.',
   "chat.chatInput.toast.summaryFailed": "Não foi possível gerar o resumo",
   "chat.messageBody.actions.sendReviewFeedback": "Enviar feedback da revisão ao agente que implementa as mudanças",
   "chat.messageBody.actions.sendImplementationResponse": "Enviar resposta da implementação ao agente revisor",
@@ -2505,6 +2529,9 @@ export const dict: Record<I18nKey, string> = {
   "chat.toolPart.error": "Erro:",
   "chat.toolPart.awaitingResponse": "Aguardando resposta...",
   "chat.toolPart.noOutputProduced": "Nenhuma saída produzida",
+  'chat.toolPart.script': 'Script',
+  "chat.toolPart.scriptCalls": 'Chamadas de ferramentas',
+  "chat.toolPart.outputTruncated": 'A saída foi truncada',
   "chat.toolPart.output": "Saída",
   "chat.toolPart.showRawJson": "Mostrar JSON bruto",
   "chat.toolPart.showFormattedJson": "Mostrar JSON formatado",
@@ -3461,4 +3488,22 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': 'Executa nesta máquina. Cole um comando inteiro e ele será dividido em um argumento por linha.',
   'settings.mcp.page.connection.hintLink': 'Conecta a um servidor hospedado por outra pessoa. Cole o endereço https dele.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Resposta necessária',
+  'chat.formCard.fromSubagent': 'de um subagente',
+  'chat.formCard.required': 'Obrigatório',
+  'chat.formCard.openLink': 'Abrir link',
+  'chat.formCard.yes': 'Sim',
+  'chat.formCard.other': 'Outro',
+  'chat.formCard.yourAnswer': 'Sua resposta',
+  'chat.formCard.submit': 'Enviar',
+  'chat.formCard.cancel': 'Cancelar',
+  'chat.formCard.missingRequired': 'Preencha primeiro os campos obrigatórios.',
+  'chat.formCard.submitFailed': 'Não foi possível enviar a resposta',
+  'chat.formCard.cancelFailed': 'Não foi possível cancelar a solicitação',
+  'chat.formCard.tryAgain': 'Tente novamente.',
+  'chat.compaction.running': 'Compactando a conversa…',
+  'chat.compaction.completed': 'Conversa compactada',
+  'chat.compaction.failed': 'Falha na compactação',
+  'chat.compaction.showSummary': 'Mostrar resumo',
+  'chat.compaction.hideSummary': 'Ocultar resumo',
 };

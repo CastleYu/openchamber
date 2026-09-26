@@ -60,6 +60,28 @@ function createTrackedSignal() {
 }
 
 describe('createUpstreamSseReader', () => {
+  it('drops the upstream cursor when the endpoint identity changes', async () => {
+    let key = 'oc1:one';
+    let attempt = 0;
+    const headers = [];
+    let reader;
+    reader = createUpstreamSseReader({
+      buildUrl: () => new URL(`http://127.0.0.1/${key}`),
+      getConnectionKey: () => key,
+      reconnectDelayMs: 0,
+      fetchImpl: async (_url, options) => {
+        headers.push(options.headers['Last-Event-ID'] ?? null);
+        attempt += 1;
+        return createSseResponse({ blocks: [`id: e${attempt}\ndata: {"type":"server.connected"}\n\n`] });
+      },
+      onEvent() {
+        if (attempt === 1) key = 'oc2:two';
+        if (attempt === 3) reader.stop();
+      },
+    });
+    await reader.start();
+    expect(headers).toEqual([null, null, 'e2']);
+  });
   it('emits parsed events and tracks the latest event id', async () => {
     const events = [];
     let reader;

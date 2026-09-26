@@ -2,6 +2,42 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createGlobalMessageStreamHub } from './global-hub.js';
 
+it('keeps OC2 browser wire events raw and resets replay across kernel identities', async () => {
+  let runtime = { generation: 'oc1', endpoint: 'http://one', epoch: 1 };
+  const urls = [];
+  const received = [];
+  const statuses = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (path) => `http://127.0.0.1${path}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    upstreamReconnectDelayMs: 60_000,
+    fetchImpl: async (url) => {
+      urls.push(url);
+      const wire = runtime.generation === 'oc2'
+        ? { id: 'v2-1', type: 'session.execution.started', location: { directory: '/work' }, data: { sessionID: 's1' } }
+        : { type: 'session.updated', properties: { info: { id: 's1' } } };
+      return createSseResponse({ blocks: [`id: ${runtime.generation}-event\ndata: ${JSON.stringify(wire)}\n\n`] });
+    },
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  hub.subscribeStatus((status) => statuses.push(status.type));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(received).toHaveLength(1));
+    expect(received[0].translated()).toEqual([received[0].payload]);
+    hub.stop();
+    runtime = { generation: 'oc2', endpoint: 'http://two', epoch: 2 };
+    hub.start();
+    await waitForAssertion(() => expect(received).toHaveLength(2));
+    expect(urls).toEqual(['http://127.0.0.1/global/event', 'http://127.0.0.1/api/event']);
+    expect(received[1].payload.type).toBe('session.execution.started');
+    expect(received[1].translated().some((event) => event.type === 'session.status')).toBe(true);
+    expect(hub.replayAfter('oc1-event')).toBeNull();
+    expect(statuses).toContain('identity-change');
+  } finally { hub.stop(); }
+});
+
 it('bounds a contiguous replay suffix by UTF-8 bytes and event count', async () => {
   const blocks = Array.from({ length: 8 }, (_, i) => `id: e${i}\ndata: ${JSON.stringify({ type: 'message', properties: { text: '界'.repeat(40) } })}\n\n`);
   const received = [];
@@ -66,6 +102,63 @@ const deltaBlock = (id, text, partID = 'prt_a') => `id: ${id}\ndata: ${JSON.stri
   id, type: 'message.part.delta',
   properties: { sessionID: 'ses_1', messageID: 'msg_1', partID, field: 'text', delta: text },
 })}\n\n`;
+
+it('does not commit a buffered OC1 delta after its kernel epoch retires', async () => {
+  let runtime = { generation: 'oc1', endpoint: 'http://one.test', epoch: 1 };
+  let upstream;
+  const received = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (pathname) => `${runtime.endpoint}${pathname}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    deltaCoalesceWindowMs: 1000,
+    fetchImpl: async () => new Response(new ReadableStream({ start(controller) { upstream = controller; } })),
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(upstream).toBeTruthy());
+    upstream.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'first' } })}\n\n`));
+    await waitForAssertion(() => expect(received.map((event) => event.payload.properties?.delta)).toEqual(['first']));
+    upstream.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'pending-old' } })}\n\n`));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    runtime = { ...runtime, epoch: 2 };
+    hub.stop();
+    expect(received.map((event) => event.payload.properties?.delta)).toEqual(['first']);
+    expect(hub.replayAfter(received[0].eventId)).toBeNull();
+  } finally {
+    hub.stop();
+    try { upstream?.close(); } catch { /* Stream may already be canceled. */ }
+  }
+});
+
+it('commits a buffered OC1 delta when stopping within the same kernel epoch', async () => {
+  const runtime = { generation: 'oc1', endpoint: 'http://one.test', epoch: 1 };
+  let upstream;
+  const received = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (pathname) => `${runtime.endpoint}${pathname}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    deltaCoalesceWindowMs: 1000,
+    fetchImpl: async () => new Response(new ReadableStream({ start(controller) { upstream = controller; } })),
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(upstream).toBeTruthy());
+    upstream.enqueue(new TextEncoder().encode(deltaBlock('first', 'first')));
+    await waitForAssertion(() => expect(received).toHaveLength(1));
+    upstream.enqueue(new TextEncoder().encode(deltaBlock('pending', 'pending')));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    hub.stop();
+    expect(received.map((event) => event.payload.properties.delta)).toEqual(['first', 'pending']);
+    expect(hub.replayAfter(received[0].eventId)).toHaveLength(1);
+  } finally {
+    hub.stop();
+    try { upstream?.close(); } catch { /* Stream may already be canceled. */ }
+  }
+});
 
 const createDeltaHub = ({ blocks, deltaCoalesceWindowMs }) => createGlobalMessageStreamHub({
   buildOpenCodeUrl: (pathname) => `http://127.0.0.1:4096${pathname}`,

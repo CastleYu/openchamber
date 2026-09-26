@@ -45,6 +45,13 @@ describe('event stream protocol helpers', () => {
     });
   });
 
+  it('keeps the OC2 wire event and reads its location directory', () => {
+    const wire = { id: 'wire-1', type: 'session.execution.started', location: { directory: '/work' }, data: { sessionID: 's1' } };
+    expect(parseSseEventEnvelope(`id: wire-1\ndata: ${JSON.stringify(wire)}\n`)).toEqual({
+      eventId: 'wire-1', directory: '/work', payload: wire,
+    });
+  });
+
   it('returns null for malformed SSE blocks', () => {
     expect(parseSseEventEnvelope('event: message\n')).toBeNull();
     expect(parseSseEventEnvelope('data: {oops}\n')).toBeNull();

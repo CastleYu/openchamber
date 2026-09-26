@@ -48,6 +48,37 @@ const createService = (overrides = {}) => {
 };
 
 describe('OpenChamber control service', () => {
+  const oc2 = { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://test', epoch: 1 }) };
+  it('delivers notifications through the injected OC2 runtime', async () => {
+    const notifyUser = vi.fn(async () => ({ status: 200, body: { delivered: true } }));
+    const { service } = createService({ notifyUser, kernelOperations: oc2 });
+    await expect(service.execute('notify.send', { title: 'Done' }, '/repo', { contextSessionId: 'ses_1' }))
+      .resolves.toEqual({ delivered: true });
+    expect(notifyUser).toHaveBeenCalledWith({ title: 'Done', body: undefined, showWhenFocused: undefined,
+      sessionId: 'ses_1', directory: '/repo' });
+  });
+
+  it('passes file.open to the connected viewer and reports unavailable viewers', async () => {
+    const request = vi.fn(async () => ({ path: '/repo/out.csv', size: 3, opened: true }));
+    const { service } = createService({ fileOpen: { request }, kernelOperations: oc2 });
+    await expect(service.execute('file.open', { path: 'out.csv' }, '/repo', { contextSessionId: 'ses_1' }))
+      .resolves.toEqual({ path: '/repo/out.csv', size: 3, opened: true });
+    expect(request).toHaveBeenCalledWith({ path: 'out.csv', directory: '/repo', sessionId: 'ses_1' });
+    await expect(createService({ kernelOperations: oc2 }).service.execute('file.open', { path: 'out.csv' }, '/repo'))
+      .rejects.toMatchObject({ statusCode: 503 });
+  });
+  it('rejects new agent actions before delivery on OC1', async () => {
+    const notifyUser = vi.fn();
+    const request = vi.fn();
+    const { service } = createService({ notifyUser, fileOpen: { request },
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc1', endpoint: 'http://test', epoch: 1 }) } });
+    for (const action of ['notify.send', 'file.open']) {
+      await expect(service.execute(action, { title: 'Done', path: 'out.csv' }, '/repo'))
+        .rejects.toMatchObject({ statusCode: 501 });
+    }
+    expect(notifyUser).not.toHaveBeenCalled();
+    expect(request).not.toHaveBeenCalled();
+  });
   it('serves project and model projections without an HTTP or CLI round trip', async () => {
     const { service } = createService();
     await expect(service.execute('projects.list')).resolves.toEqual({

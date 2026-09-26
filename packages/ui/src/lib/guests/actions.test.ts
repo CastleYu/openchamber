@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { GUEST_ITEM_MESSAGE_TEXT_MAX, GUEST_ITEM_SESSION_MAX } from '@openchamber/sdk';
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Message, TextPart, UserMessage } from '@/lib/opencode/model';
 
 import {
   buildGuestMessageItem,
@@ -9,16 +9,18 @@ import {
   guestMessageActionsFor,
   guestSessionActions,
 } from './actions.ts';
+import type { SessionMessageRecord } from '@/lib/exportSession';
 import type { InstalledGuest } from './types.ts';
 import { enabledGuestSurfaces } from './surfaces.ts';
 import { parseGuestCatalogJson } from './parse.ts';
 
-// SAFETY: the builders under test read only id, role, time.created, and the
-// text parts; the rest of an OpenCode message record never enters the item.
-const record = (id: string, role: 'user' | 'assistant', text: string, created = 1) => ({
-  info: { id, role, sessionID: 'ses-1', time: { created } } as Message,
-  parts: [{ id: `${id}-p`, sessionID: 'ses-1', messageID: id, type: 'text', text } as Part],
-});
+const record = (id: string, role: 'user' | 'assistant', text: string, created = 1): SessionMessageRecord => {
+  const info: Message = role === 'user'
+    ? { id, role, sessionID: 'ses-1', time: { created } } satisfies UserMessage
+    : { id, role, sessionID: 'ses-1', time: { created }, agent: 'build', providerID: 'provider', modelID: 'model' } satisfies AssistantMessage;
+  const part: TextPart = { id: `${id}-p`, sessionID: 'ses-1', messageID: id, type: 'text', text };
+  return { info, parts: [part] };
+};
 
 const session = { sessionId: 'ses-1', sessionTitle: '  Hello  ', directory: '/repo' };
 

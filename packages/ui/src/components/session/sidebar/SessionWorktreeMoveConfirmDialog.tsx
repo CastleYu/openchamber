@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
+import { opencodeClient } from '@/lib/opencode/client';
 import type { SessionTreeMoveConfirmation } from '@/lib/worktrees/sessionWorktreeMove';
 
 export type SessionWorktreeMoveConfirmDialogProps = {
@@ -41,7 +42,7 @@ export function SessionWorktreeMoveConfirmDialog(props: SessionWorktreeMoveConfi
         </DialogHeader>
         <div className="space-y-2 typography-ui-label text-muted-foreground">
           <p>{t('sessions.sidebar.session.moveToWorktree.confirm.sessionOnlyHelp')}</p>
-          <p>{t('sessions.sidebar.session.moveToWorktree.confirm.allChangesHelp')}</p>
+          {opencodeClient.getBoundRuntime()?.generation === 'oc2' ? null : <p>{t('sessions.sidebar.session.moveToWorktree.confirm.allChangesHelp')}</p>}
           {value && value.stagedFileCount > 0 ? (
             <p data-session-worktree-move-staged-warning="true">
               {t('sessions.sidebar.session.moveToWorktree.confirm.stagedWarning')}
@@ -58,14 +59,14 @@ export function SessionWorktreeMoveConfirmDialog(props: SessionWorktreeMoveConfi
           >
             {t('sessions.sidebar.session.moveToWorktree.confirm.cancel')}
           </Button>
-          <Button
+          {opencodeClient.getBoundRuntime()?.generation === 'oc2' ? null : <Button
             type="button"
             variant="outline"
             data-session-worktree-move-action="all-changes"
             onClick={onMoveAllChanges}
           >
             {t('sessions.sidebar.session.moveToWorktree.confirm.allChanges')}
-          </Button>
+          </Button>}
           <Button
             type="button"
             autoFocus

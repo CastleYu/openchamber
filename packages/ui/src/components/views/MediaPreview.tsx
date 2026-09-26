@@ -1,4 +1,5 @@
 import { ImagePreview } from './ImagePreview';
+import { FontArtifact } from './files/previews/FontArtifact';
 import React from 'react';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import { useI18n } from '@/lib/i18n';
@@ -53,6 +54,7 @@ export function MediaPreview({ path, options }: { path: string; options: FileTra
     <Button size="sm" variant="outline" onClick={retry}>{t('fileOpening.retry')}</Button>
   </div>;
   if (kind === 'image') return <ImagePreview src={state.url} name={path.replace(/\\/g, '/').split('/').pop() || path} />;
+  if (kind === 'font') return <FontArtifact src={state.url} name={path.replace(/\\/g, '/').split('/').pop() || path} sizeBytes={null} />;
   if (kind === 'pdf') return <iframe src={state.url} title={path} className="h-full min-h-96 w-full border-0" />;
   if (kind === 'zip') return <div className="p-3 overflow-auto h-full typography-ui">
     <p className="mb-3 text-muted-foreground">{t('fileOpening.archiveReadOnly')}</p>

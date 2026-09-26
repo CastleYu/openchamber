@@ -10,8 +10,15 @@ import {
   selectMcpServersForDirectory,
   useMcpConfigStore,
   envRecordToArray,
+  isMcpConfigEnabled,
+  MCP_PROTOCOLS,
+  MCP_CODEMODE_CHOICES,
+  codemodeChoiceOf,
   type McpDraft,
   type McpScope,
+  type McpProtocol,
+  type McpCodemodeChoice,
+  type McpV2OAuth,
 } from '@/stores/useMcpConfigStore';
 import { useShallow } from 'zustand/react/shallow';
 import {
@@ -20,6 +27,8 @@ import {
 } from './mcpImport';
 import { describeMcpFailure } from './mcpFailureHints';
 import { useMcpStore } from '@/stores/useMcpStore';
+import { opencodeClient } from '@/lib/opencode/client';
+import { McpOAuthSignIn } from './McpOAuthSignIn';
 import { usePendingOpenCodeRestartStore } from '@/stores/usePendingOpenCodeRestartStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
@@ -56,6 +65,18 @@ import {
 import { Icon } from "@/components/icon/Icon";
 import { SortableTabsStrip, type SortableTabsStripItem } from '@/components/ui/sortable-tabs-strip';
 import { useI18n, getCurrentIntlLocale } from '@/lib/i18n';
+
+const MCP_PROTOCOL_LABEL_KEYS = {
+  legacy: 'settings.mcp.page.advanced.protocolOption.legacy',
+  auto: 'settings.mcp.page.advanced.protocolOption.auto',
+  '2026-07-28': 'settings.mcp.page.advanced.protocolOption.revision20260728',
+} as const satisfies Record<McpProtocol, string>;
+
+const MCP_CODEMODE_LABEL_KEYS = {
+  default: 'settings.mcp.page.advanced.codemodeOption.default',
+  on: 'settings.mcp.page.advanced.codemodeOption.on',
+  off: 'settings.mcp.page.advanced.codemodeOption.off',
+} as const satisfies Record<McpCodemodeChoice, string>;
 
 // ─────────────────────────────────────────────────────────────
 // CommandTextarea  — one arg per line, paste-friendly
@@ -580,6 +601,13 @@ export const McpPage: React.FC = () => {
   // Settings browses whichever project its own selector points at; the app
   // stays where it is.
   const currentDirectory = useSettingsDirectory();
+  const runtimeKey = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
+    () => '',
+  );
+  const generation = opencodeClient.getBoundRuntime()?.generation;
+  const isV2 = generation === 'oc2';
   const isVSCodeAuthRuntime = React.useMemo(() => isVSCodeRuntime(), []);
   const mcpStatus = useMcpStore((state) => state.getStatusForDirectory(currentDirectory));
   const mcpDiagnostics = useMcpStore((state) => state.getDiagnosticForDirectory(currentDirectory));
@@ -610,6 +638,12 @@ export const McpPage: React.FC = () => {
   const [oauthScope, setOauthScope] = React.useState('');
   const [oauthRedirectUri, setOauthRedirectUri] = React.useState('');
   const [timeout, setTimeoutValue] = React.useState('');
+  const [timeoutStartup, setTimeoutStartup] = React.useState('');
+  const [timeoutCatalog, setTimeoutCatalog] = React.useState('');
+  const [timeoutExecution, setTimeoutExecution] = React.useState('');
+  const [codemode, setCodemode] = React.useState<McpCodemodeChoice>('default');
+  const [protocol, setProtocol] = React.useState<McpProtocol>('legacy');
+  const importedOAuthRef = React.useRef<McpV2OAuth | false | undefined>(undefined);
   const [enabled, setEnabled] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
@@ -646,6 +680,11 @@ export const McpPage: React.FC = () => {
     oauthScope: string;
     oauthRedirectUri: string;
     timeout: string;
+    timeoutStartup: string;
+    timeoutCatalog: string;
+    timeoutExecution: string;
+    codemode: McpCodemodeChoice;
+    protocol: McpProtocol;
     enabled: boolean;
   } | null>(null);
 
@@ -660,6 +699,11 @@ export const McpPage: React.FC = () => {
     setIsClearingAuth(false);
     authPollStartsFromNeedsAuthRef.current = false;
   }, []);
+
+  React.useEffect(() => {
+    resetTransientAuthState();
+    void useMcpConfigStore.getState().loadMcpConfigs({ directory: currentDirectory });
+  }, [currentDirectory, resetTransientAuthState, runtimeKey]);
 
   const handleOpenImportDialog = React.useCallback(() => {
     setImportJsonText('');
@@ -698,10 +742,16 @@ export const McpPage: React.FC = () => {
       oauthScope,
       oauthRedirectUri,
       timeout,
+      timeoutStartup,
+      timeoutCatalog,
+      timeoutExecution,
+      codemode,
+      protocol,
       enabled,
     };
 
     const next = applyImportedMcpToDraft(outcome, partial, { isNewServer });
+    importedOAuthRef.current = outcome.oauthRaw;
 
     setDraftName(next.name);
     setMcpType(next.type as 'local' | 'remote');
@@ -715,6 +765,11 @@ export const McpPage: React.FC = () => {
     setOauthScope(next.oauthScope ?? '');
     setOauthRedirectUri(next.oauthRedirectUri ?? '');
     setTimeoutValue(next.timeout ?? '');
+    setTimeoutStartup(next.timeoutStartup ?? '');
+    setTimeoutCatalog(next.timeoutCatalog ?? '');
+    setTimeoutExecution(next.timeoutExecution ?? '');
+    setCodemode(next.codemode ?? 'default');
+    setProtocol(next.protocol ?? 'legacy');
     setEnabled(next.enabled ?? true);
 
     setShowImportDialog(false);
@@ -737,6 +792,11 @@ export const McpPage: React.FC = () => {
     oauthScope,
     oauthRedirectUri,
     timeout,
+    timeoutStartup,
+    timeoutCatalog,
+    timeoutExecution,
+    codemode,
+    protocol,
     enabled,
     isNewServer,
     t,
@@ -744,6 +804,7 @@ export const McpPage: React.FC = () => {
 
   // Populate form when selection changes
   React.useEffect(() => {
+    importedOAuthRef.current = undefined;
     if (isNewServer && mcpDraft) {
       setDraftName(mcpDraft.name);
       setDraftScope(mcpDraft.scope || 'user');
@@ -758,6 +819,11 @@ export const McpPage: React.FC = () => {
       setOauthScope(mcpDraft.oauthScope);
       setOauthRedirectUri(mcpDraft.oauthRedirectUri);
       setTimeoutValue(mcpDraft.timeout);
+      setTimeoutStartup(mcpDraft.timeoutStartup ?? '');
+      setTimeoutCatalog(mcpDraft.timeoutCatalog ?? '');
+      setTimeoutExecution(mcpDraft.timeoutExecution ?? '');
+      setCodemode(mcpDraft.codemode ?? 'default');
+      setProtocol(mcpDraft.protocol ?? 'legacy');
       setEnabled(mcpDraft.enabled);
       setIsAdvancedRemoteOptionsOpen(false);
       initialRef.current = {
@@ -771,47 +837,50 @@ export const McpPage: React.FC = () => {
         oauthScope: mcpDraft.oauthScope,
         oauthRedirectUri: mcpDraft.oauthRedirectUri,
         timeout: mcpDraft.timeout,
+        timeoutStartup: mcpDraft.timeoutStartup ?? '',
+        timeoutCatalog: mcpDraft.timeoutCatalog ?? '',
+        timeoutExecution: mcpDraft.timeoutExecution ?? '',
+        codemode: mcpDraft.codemode ?? 'default',
+        protocol: mcpDraft.protocol ?? 'legacy',
         enabled: mcpDraft.enabled,
       };
       return;
     }
     if (selectedServer) {
       setDraftScope(selectedServer.scope === 'project' ? 'project' : 'user');
-      const envArr = envRecordToArray(selectedServer.environment);
-      const remoteServer = selectedServer.type === 'remote'
-        ? selectedServer as typeof selectedServer & {
-            headers?: Record<string, string>;
-            oauth?: {
-              clientId?: string;
-              clientSecret?: string;
-              scope?: string;
-              redirectUri?: string;
-            } | false;
-            timeout?: number;
-          }
-        : null;
+      const envArr = envRecordToArray(selectedServer.type === 'local' ? selectedServer.environment : selectedServer.generation === 'oc1' ? selectedServer.environment : undefined);
+      const remoteServer = selectedServer.type === 'remote' ? selectedServer : null;
       const headersArr = envRecordToArray(remoteServer?.headers);
       const oauth = remoteServer?.oauth;
-      const oauthConfig = oauth && typeof oauth === 'object' ? oauth : null;
+      const oauthConfig = oauth === false ? null : oauth ?? null;
       const nextOauthEnabled = oauth !== false;
       const serverType = selectedServer.type;
-      const cmd = serverType === 'local' ? ((selectedServer as { command?: string[] }).command ?? []) : [];
-      const u = serverType === 'remote' ? ((selectedServer as { url?: string }).url ?? '') : '';
-      const nextTimeout = typeof remoteServer?.timeout === 'number' && Number.isFinite(remoteServer.timeout)
-        ? String(remoteServer.timeout)
-        : '';
+      const cmd = selectedServer.type === 'local' ? selectedServer.command : [];
+      const u = selectedServer.type === 'remote' ? selectedServer.url : '';
+      const nextTimeout = remoteServer?.generation === 'oc1' && remoteServer.timeout !== undefined
+        ? String(remoteServer.timeout) : '';
+      const nextStartup = selectedServer.generation === 'oc2' ? String(selectedServer.timeout?.startup ?? '') : '';
+      const nextCatalog = selectedServer.generation === 'oc2' ? String(selectedServer.timeout?.catalog ?? '') : '';
+      const nextExecution = selectedServer.generation === 'oc2' ? String(selectedServer.timeout?.execution ?? '') : '';
+      const nextCodemode = selectedServer.generation === 'oc2' ? codemodeChoiceOf(selectedServer.codemode) : 'default';
+      const nextProtocol = selectedServer.generation === 'oc2' ? selectedServer.protocol ?? 'legacy' : 'legacy';
       setMcpType(serverType);
       setCommand(cmd);
       setUrl(u);
       setEnvEntries(envArr);
       setHeaderEntries(headersArr);
       setOauthEnabled(nextOauthEnabled);
-      setOauthClientId(nextOauthEnabled ? (oauthConfig?.clientId ?? '') : '');
-      setOauthClientSecret(nextOauthEnabled ? (oauthConfig?.clientSecret ?? '') : '');
+      setOauthClientId(nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.client_id ?? '' : '') : (oauthConfig && 'clientId' in oauthConfig ? oauthConfig.clientId ?? '' : '')) : '');
+      setOauthClientSecret(nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.client_secret ?? '' : '') : (oauthConfig && 'clientSecret' in oauthConfig ? oauthConfig.clientSecret ?? '' : '')) : '');
       setOauthScope(nextOauthEnabled ? (oauthConfig?.scope ?? '') : '');
-      setOauthRedirectUri(nextOauthEnabled ? (oauthConfig?.redirectUri ?? '') : '');
+      setOauthRedirectUri(nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.redirect_uri ?? '' : '') : (oauthConfig && 'redirectUri' in oauthConfig ? oauthConfig.redirectUri ?? '' : '')) : '');
       setTimeoutValue(nextTimeout);
-      setEnabled(selectedServer.enabled);
+      setTimeoutStartup(nextStartup);
+      setTimeoutCatalog(nextCatalog);
+      setTimeoutExecution(nextExecution);
+      setCodemode(nextCodemode);
+      setProtocol(nextProtocol);
+      setEnabled(isMcpConfigEnabled(selectedServer));
       setIsAdvancedRemoteOptionsOpen(false);
       initialRef.current = {
         mcpType: serverType,
@@ -820,12 +889,17 @@ export const McpPage: React.FC = () => {
         envEntries: envArr,
         headerEntries: headersArr,
         oauthEnabled: nextOauthEnabled,
-        oauthClientId: nextOauthEnabled ? (oauthConfig?.clientId ?? '') : '',
-        oauthClientSecret: nextOauthEnabled ? (oauthConfig?.clientSecret ?? '') : '',
+        oauthClientId: nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.client_id ?? '' : '') : (oauthConfig && 'clientId' in oauthConfig ? oauthConfig.clientId ?? '' : '')) : '',
+        oauthClientSecret: nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.client_secret ?? '' : '') : (oauthConfig && 'clientSecret' in oauthConfig ? oauthConfig.clientSecret ?? '' : '')) : '',
         oauthScope: nextOauthEnabled ? (oauthConfig?.scope ?? '') : '',
-        oauthRedirectUri: nextOauthEnabled ? (oauthConfig?.redirectUri ?? '') : '',
+        oauthRedirectUri: nextOauthEnabled ? (remoteServer?.generation === 'oc2' ? (remoteServer.oauth ? remoteServer.oauth.redirect_uri ?? '' : '') : (oauthConfig && 'redirectUri' in oauthConfig ? oauthConfig.redirectUri ?? '' : '')) : '',
         timeout: nextTimeout,
-        enabled: selectedServer.enabled,
+        timeoutStartup: nextStartup,
+        timeoutCatalog: nextCatalog,
+        timeoutExecution: nextExecution,
+        codemode: nextCodemode,
+        protocol: nextProtocol,
+        enabled: isMcpConfigEnabled(selectedServer),
       };
     }
   }, [selectedServer, isNewServer, mcpDraft]);
@@ -845,9 +919,14 @@ export const McpPage: React.FC = () => {
       oauthClientSecret !== init.oauthClientSecret ||
       oauthScope !== init.oauthScope ||
       oauthRedirectUri !== init.oauthRedirectUri ||
-      timeout !== init.timeout
+      timeout !== init.timeout ||
+      timeoutStartup !== init.timeoutStartup ||
+      timeoutCatalog !== init.timeoutCatalog ||
+      timeoutExecution !== init.timeoutExecution ||
+      codemode !== init.codemode ||
+      protocol !== init.protocol
     );
-  }, [mcpType, command, url, envEntries, headerEntries, oauthEnabled, oauthClientId, oauthClientSecret, oauthScope, oauthRedirectUri, timeout, enabled]);
+  }, [mcpType, command, url, envEntries, headerEntries, oauthEnabled, oauthClientId, oauthClientSecret, oauthScope, oauthRedirectUri, timeout, timeoutStartup, timeoutCatalog, timeoutExecution, codemode, protocol, enabled]);
 
   // What the user has is either a command they were given or a link. Which of
   // the two decides the transport, so the page reads it off the text instead of
@@ -911,10 +990,19 @@ export const McpPage: React.FC = () => {
       timeout,
       enabled,
     };
+    if (isV2) {
+      draft.timeoutStartup = timeoutStartup;
+      draft.timeoutCatalog = timeoutCatalog;
+      draft.timeoutExecution = timeoutExecution;
+      draft.codemode = codemode;
+      draft.protocol = protocol;
+      draft.oauthRaw = importedOAuthRef.current;
+    }
     setIsSaving(true);
     try {
       const result = isNewServer ? await createMcp(draft, currentDirectory) : await updateMcp(name, draft, currentDirectory);
       if (result.ok) {
+        importedOAuthRef.current = undefined;
         await clearPendingMcpAuthContext(authStateKey);
         resetTransientAuthState();
         if (isNewServer) { setMcpDraft(null); setSelectedMcp(name); }
@@ -991,6 +1079,19 @@ export const McpPage: React.FC = () => {
       toast.error(err instanceof Error ? err.message : t('settings.mcp.page.toast.connectionFailed'));
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleV2OAuthConnected = async () => {
+    if (!selectedMcpName) return;
+    try {
+      await connectMcp(selectedMcpName, currentDirectory);
+      await refreshStatus({ directory: currentDirectory, silent: true });
+      const status = useMcpStore.getState().getStatusForDirectory(currentDirectory)[selectedMcpName];
+      if (status?.status === 'connected') toast.success(t('settings.mcp.page.toast.authorizationCompleted'));
+      else toast.error(t('settings.mcp.page.toast.connectionTestFailed'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('settings.mcp.page.toast.connectionTestFailed'));
     }
   };
 
@@ -1314,7 +1415,7 @@ export const McpPage: React.FC = () => {
   // second construction of it. The page used to suggest a directory-bearing
   // address while the flow sent a directory-less one, so a provider enforcing
   // exact redirect matching rejected a registration copied from right here.
-  const suggestedRedirectUri = isVSCodeAuthRuntime || !selectedMcpName
+  const suggestedRedirectUri = isV2 || isVSCodeAuthRuntime || !selectedMcpName
     ? null
     : buildMcpAuthorizationRedirectUri(selectedMcpName);
 
@@ -1387,7 +1488,7 @@ export const McpPage: React.FC = () => {
           >
             {isConnecting ? t('settings.mcp.page.actions.working') : isConnected ? t('settings.mcp.page.actions.disconnect') : t('settings.mcp.page.actions.connect')}
           </Button>
-          {mcpType === 'remote' && (
+          {mcpType === 'remote' && !isV2 && (
             <>
               <Button
                 variant={needsAuthorization ? 'default' : 'outline'}
@@ -1486,6 +1587,14 @@ export const McpPage: React.FC = () => {
                   </p>
                 </div>
 
+                {isV2 && effectiveRuntimeStatus?.status === 'needs_auth' && selectedMcpName && (
+                  <McpOAuthSignIn
+                    serverName={selectedMcpName}
+                    directory={currentDirectory}
+                    onConnected={handleV2OAuthConnected}
+                  />
+                )}
+
                 <div className="flex flex-wrap items-center gap-2">
                   {!isConnected && (
                     <Button
@@ -1515,7 +1624,7 @@ export const McpPage: React.FC = () => {
                     needs them. Kept as a permanent four-field form, they made
                     the rarest case the most prominent thing on the page and
                     told nobody what to put there. */}
-                {effectiveRuntimeStatus?.status === 'needs_client_registration' && (
+                {!isV2 && effectiveRuntimeStatus?.status === 'needs_client_registration' && (
                   <div className="space-y-3 rounded-md border border-[var(--interactive-border)] bg-[var(--surface-background)] px-3 py-3">
                     <div>
                       <SettingsGroupTitle as="div">{t('settings.mcp.page.registration.title')}</SettingsGroupTitle>
@@ -1574,7 +1683,7 @@ export const McpPage: React.FC = () => {
                   </div>
                 )}
 
-                {authUrl && (
+                {!isV2 && authUrl && (
                   <div className="rounded-md border border-[var(--interactive-border)] bg-[var(--surface-background)] px-3 py-2">
                     <div className="space-y-2">
                       <div className="typography-micro text-muted-foreground">{t('settings.mcp.page.auth.authorizationUrl')}</div>
@@ -1597,7 +1706,7 @@ export const McpPage: React.FC = () => {
                     app on its own, so the paste box was a second, confusing way
                     to do what already happened. VS Code cannot receive that
                     redirect, so there it remains the only way to finish. */}
-                {isVSCodeAuthRuntime && mcpType === 'remote' && (needsAuthorization || isAuthPolling || authUrl) && (
+                {!isV2 && isVSCodeAuthRuntime && mcpType === 'remote' && (needsAuthorization || isAuthPolling || authUrl) && (
                   <div className="rounded-md border border-[var(--interactive-border)] bg-[var(--surface-background)] px-3 py-3">
                     <div className="space-y-2">
                       <div>
@@ -1760,6 +1869,60 @@ export const McpPage: React.FC = () => {
             </p>
         </SettingsSection>
 
+        {isV2 && (
+          <SettingsSection title={t('settings.mcp.page.advanced.title')} settingsItem="mcp.timeout">
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 @xl:flex-row @xl:items-center @xl:gap-8">
+                <div className="flex min-w-0 flex-row items-center gap-1 @xl:w-56 shrink-0">
+                  <span className={SETTINGS_FIELD_LABEL_CLASS}>{t('settings.mcp.page.advanced.protocol')}</span>
+                  <SettingsInfoHint>{t('settings.mcp.page.advanced.protocolHint')}</SettingsInfoHint>
+                </div>
+                <Select value={protocol} onValueChange={(value) => {
+                  const next = MCP_PROTOCOLS.find((option) => option === value);
+                  if (next) setProtocol(next);
+                }}>
+                  <SelectTrigger size={SETTINGS_SELECT_SIZE} className="!h-7 w-full max-w-[16rem] px-2" aria-label={t('settings.mcp.page.advanced.protocol')}>
+                    <span className="truncate">{t(MCP_PROTOCOL_LABEL_KEYS[protocol])}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MCP_PROTOCOLS.map((option) => <SelectItem key={option} value={option}>{t(MCP_PROTOCOL_LABEL_KEYS[option])}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2 @xl:flex-row @xl:items-center @xl:gap-8">
+                <div className="flex min-w-0 flex-row items-center gap-1 @xl:w-56 shrink-0">
+                  <span className={SETTINGS_FIELD_LABEL_CLASS}>{t('settings.mcp.page.advanced.codemode')}</span>
+                  <SettingsInfoHint>{t('settings.mcp.page.advanced.codemodeHint')} {' '}{t('settings.mcp.page.advanced.codemodeDefaultHint')}</SettingsInfoHint>
+                </div>
+                <Select value={codemode} onValueChange={(value) => {
+                  const next = MCP_CODEMODE_CHOICES.find((option) => option === value);
+                  if (next) setCodemode(next);
+                }}>
+                  <SelectTrigger size={SETTINGS_SELECT_SIZE} className="!h-7 w-full max-w-[16rem] px-2" aria-label={t('settings.mcp.page.advanced.codemode')}>
+                    <span className="truncate">{t(MCP_CODEMODE_LABEL_KEYS[codemode])}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MCP_CODEMODE_CHOICES.map((option) => <SelectItem key={option} value={option}>{t(MCP_CODEMODE_LABEL_KEYS[option])}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {([
+                ['startup', timeoutStartup, setTimeoutStartup, 'settings.mcp.page.advanced.timeoutStartupMs', 'settings.mcp.page.advanced.timeoutStartupHint'],
+                ['catalog', timeoutCatalog, setTimeoutCatalog, 'settings.mcp.page.advanced.timeoutCatalogMs', 'settings.mcp.page.advanced.timeoutCatalogHint'],
+                ['execution', timeoutExecution, setTimeoutExecution, 'settings.mcp.page.advanced.timeoutExecutionMs', 'settings.mcp.page.advanced.timeoutExecutionHint'],
+              ] as const).map(([key, value, setValue, label, hint]) => key === 'startup' && mcpType === 'remote' ? null : (
+                <div key={key} className="flex flex-col gap-2 @xl:flex-row @xl:items-center @xl:gap-8">
+                  <div className="flex min-w-0 flex-row items-center gap-1 @xl:w-56 shrink-0">
+                    <span className={SETTINGS_FIELD_LABEL_CLASS}>{t(label)}</span>
+                    <SettingsInfoHint>{t(hint)}</SettingsInfoHint>
+                  </div>
+                  <Input type="number" min="1" step="1" value={value} onChange={(event) => setValue(event.target.value)} className="h-7 w-32 font-mono px-2" />
+                </div>
+              ))}
+            </div>
+          </SettingsSection>
+        )}
+
         {mcpType === 'remote' && (
           <SettingsSection
             title={t('settings.mcp.page.advanced.title')}
@@ -1786,7 +1949,7 @@ export const McpPage: React.FC = () => {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2">
                   <div className="space-y-4">
-                    <div className="space-y-2">
+                    {!isV2 && <div className="space-y-2">
                       <div className="flex flex-col gap-2 @xl:flex-row @xl:items-center @xl:gap-8">
                         <div className="flex min-w-0 flex-row items-center gap-1 @xl:w-56 shrink-0">
                           <span className={SETTINGS_FIELD_LABEL_CLASS}>{t('settings.mcp.page.advanced.timeoutMs')}</span>
@@ -1806,7 +1969,7 @@ export const McpPage: React.FC = () => {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div>}
 
                     <div>
                       <SettingsGroupTitle as="div" className="mb-2">

@@ -6,11 +6,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { createOpencodeClient, type Part, type AssistantMessage } from '@opencode-ai/sdk/v2';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import type { Part, AssistantMessage } from '@/lib/opencode/model';
 import { I18nProvider, useI18nStore } from '@/lib/i18n';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { projectTurnRecords } from '../lib/turns/projectTurnRecords';
@@ -96,7 +98,7 @@ function Harness({ record, retired = false, changedFiles, isLatestTurn = true }:
         </div>
     );
     return <RuntimeAPIContext.Provider value={runtimeApis}>
-        <SyncProvider sdk={sdk} directory="/project">
+        <SyncProvider source={sourceFromSdk(sdk)} directory="/project">
             <I18nProvider>
                 <LiveTurnActivity turn={record} hasLaterAssistant={retired} expanded={expanded}
                     onToggle={() => setExpanded((value) => !value)} renderMessage={renderMessage} />

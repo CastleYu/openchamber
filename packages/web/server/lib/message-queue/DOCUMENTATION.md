@@ -1,5 +1,12 @@
 # Message Queue
 
+With `kernelOperations` injected, the server checks live status and the newest
+message through the selected OpenCode generation. Message pages state their
+order: OC1 is ascending, OC2 descending. For OC2, an idle parent with a busy descendant keeps its queue armed until the descendant settles. A failed read leaves the queue armed
+for retry. OC2 sends context as non-resuming synthetic messages, then sends the
+prompt or command with the captured model and agent. The send request carries
+the runtime epoch so a delayed dispatch cannot cross a kernel switch.
+
 ## Purpose
 
 Owns the messages a user queued while a session was busy, and sends them the

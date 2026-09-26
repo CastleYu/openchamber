@@ -11,7 +11,7 @@ import {
   RiEdit2Line,
   RiFolderAddLine,
 } from '@remixicon/react';
-import type { Session } from '@opencode-ai/sdk/v2/client';
+import type { Session } from '@/lib/opencode/model';
 import {
   DndContext,
   type DragEndEvent,
@@ -109,6 +109,7 @@ type MobileSessionsSheetProps = {
     instanceLabel: string | null;
     onOpenInstances?: () => void;
     onOpenSettings: () => void;
+    onOpenUsage?: () => void;
     /** Present only while a server update is available (hosted web). */
     onOpenUpdate?: () => void;
   };
@@ -1888,6 +1889,18 @@ export const MobileSessionsSheet: React.FC<MobileSessionsSheetProps> = ({ open, 
                   <span className="absolute right-2 top-2 inline-flex size-2 rounded-full bg-primary" aria-hidden />
                 </Button>
               ) : null}
+              {footer.onOpenUsage ? <Button
+                type="button"
+                variant="default"
+                size="lg"
+                className="w-10 px-0"
+                onClick={footer.onOpenUsage}
+                aria-label={t('usageStats.openAction')}
+                title={t('usageStats.openAction')}
+                style={{ touchAction: 'manipulation' }}
+              >
+                <Icon name="bar-chart-2" className="size-5" />
+              </Button> : null}
               <Button
                 type="button"
                 variant="default"

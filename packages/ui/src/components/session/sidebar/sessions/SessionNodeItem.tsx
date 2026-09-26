@@ -1,7 +1,8 @@
 import { DirectoryActionIndicator } from './DirectoryActionIndicator';
 import React from 'react';
+import { useSessionTurnActive } from '@/sync/global-session-status';
 import { SessionActivityIndicator } from '@/components/session/SessionActivityIndicator';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { ContextMenu } from '@base-ui/react/context-menu';
 import {
   DropdownMenu,
@@ -31,7 +32,8 @@ import { runGuestSessionAction } from '@/lib/guests/session-action';
 import { SessionAiRenameMenuItem } from '@/components/session/SessionAiRenameMenuItem';
 import { handleSessionRenameKeyDown } from '@/components/session/sessionRenameKeyboard';
 import { useIsSessionAiRenamePending } from '@/sync/use-session-ai-rename';
-import { useGlobalSessionStatus, useSessionPermissions, useSessionQuestionCount } from '@/sync/sync-context';
+import { useSessionPermissions, useSessionPendingPermissions, useSessionQuestionCount } from '@/sync/sync-context';
+import { opencodeClient } from '@/lib/opencode/client';
 import { usePrefetchSessionMessages, useSessionMessageRecordsForExport } from '@/sync/use-sync';
 import { getSyncSessionMaterializationStatus } from '@/sync/sync-refs';
 import { useViewportStore, viewportSessionKey } from '@/sync/viewport-store';
@@ -498,9 +500,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
   const isZombie = useViewportStore(
     React.useCallback((state) => Boolean(state.sessionMemoryState.get(viewportSessionKey(session.id))?.isZombie), [session.id]),
   );
-  const sessionStatus = useGlobalSessionStatus(session.id);
-  const statusType = sessionStatus?.type ?? 'idle';
-  const isStreaming = statusType === 'busy' || statusType === 'retry';
+  const isStreaming = useSessionTurnActive(session.id);
   // Read as a boolean, not as the value: the row must not re-render on every
   // tick of the counter it only decides to mount.
   const hasActivityDuration = useHasSessionActivityDuration(session.id, isStreaming);
@@ -514,6 +514,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
   const worktreeSubmenuOpenRef = React.useRef(false);
   const worktreeLoadSequenceRef = React.useRef(0);
   const sessionPermissions = useSessionPermissions(session.id, sessionDirectory ?? undefined, { bootstrap: false });
+  const taggedPermissions = useSessionPendingPermissions(session.id, sessionDirectory ?? undefined, { bootstrap: false });
   const sessionGoal = getSessionGoal(resolvedSession);
   const sessionGoalGlyph = sessionGoal ? (
     // SAFETY: sessionGoalStatusLabelKey contains an i18n key for every SessionGoalStatus.
@@ -826,7 +827,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
     );
   }
 
-  const pendingPermissionCount = sessionPermissions.length;
+  const pendingPermissionCount = sessionPermissions.length + taggedPermissions.filter((request) => request.generation === 'oc2').length;
   const pendingQuestionLabel = pendingQuestionCount === 1
     ? t('sessions.sidebar.session.status.questionPendingSingle')
     : t('sessions.sidebar.session.status.questionPendingMany', { count: pendingQuestionCount });
@@ -1118,7 +1119,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
         {isPinnedSession ? <Icon name="unpin" className="mr-1 h-4 w-4" /> : <Icon name="pushpin" className="mr-1 h-4 w-4" />}
         {isPinnedSession ? t('sessions.sidebar.session.menu.unpin') : t('sessions.sidebar.session.menu.pin')}
       </Item>
-      {!resolvedSession.share ? (
+      {opencodeClient.getBoundRuntime()?.generation !== 'oc1' ? null : !resolvedSession.share ? (
         <Item onClick={() => handleShareSession(resolvedSession)} className="[&>svg]:mr-1">
           <Icon name="share-2" className="mr-1 h-4 w-4" />
           {t('sessions.sidebar.session.menu.share')}

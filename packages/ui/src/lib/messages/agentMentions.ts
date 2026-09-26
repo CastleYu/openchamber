@@ -1,4 +1,4 @@
-import type { Agent } from "@opencode-ai/sdk/v2";
+import type { AgentWithExtras } from "@/stores/useAgentsStore";
 
 interface AgentMentionSource {
   value: string;
@@ -23,7 +23,7 @@ const isWordBoundaryChar = (char: string | null): boolean => {
   return /(\s|\(|\)|\[|\]|\{|\}|"|'|`|,|\.|;|:)/.test(char);
 };
 
-export const parseAgentMentions = (rawText: string, agents: Agent[]): ParsedAgentResult => {
+export const parseAgentMentions = (rawText: string, agents: readonly Pick<AgentWithExtras, 'name' | 'mode'>[]): ParsedAgentResult => {
   if (typeof rawText !== "string" || rawText.length === 0) {
     return { sanitizedText: rawText, mention: null };
   }

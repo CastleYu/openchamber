@@ -1,6 +1,13 @@
-import type { Part } from '@opencode-ai/sdk/v2';
+import type { Metadata, Part } from '@/lib/opencode/model';
 import { readContextPart, type ContextPartPayload } from './contextParts';
 import { extractTerminalContexts } from './terminalContext';
+
+/** OC2 stores an attached context item as its own synthetic message. */
+export function formatContextMessage(message: { text: string; metadata?: Metadata }, fieldLimit?: number): string {
+  const payload = readContextPart(message);
+  if (payload) return formatContext(payload, message.text, fieldLimit);
+  return fieldLimit ? excerptMarkdown(message.text, fieldLimit) : message.text;
+}
 
 /** Preserve both the source and the reply when a model context needs a limit. */
 export function excerptMarkdown(text: string, limit: number): string {

@@ -87,7 +87,6 @@ export function createGlobalMessageStreamWsBridge({
   };
 
   const unsubscribeEvent = globalHub.subscribeEvent((event) => {
-    const { payload } = event;
     for (const socket of Array.from(clients)) {
       if (!readyClients.has(socket)) {
         continue;
@@ -98,22 +97,26 @@ export function createGlobalMessageStreamWsBridge({
       }
     }
 
-    processForwardedEventPayload(payload, (syntheticPayload) => {
-      if (readyClients.size === 0) return;
-      const serializedFrame = serializeMessageStreamWsEvent(syntheticPayload, { directory: 'global' });
-      for (const socket of Array.from(clients)) {
-        if (!readyClients.has(socket)) {
-          continue;
+    for (const translated of event.translated()) {
+      processForwardedEventPayload(translated, (syntheticPayload) => {
+        if (readyClients.size === 0) return;
+        const serializedFrame = serializeMessageStreamWsEvent(syntheticPayload, { directory: 'global' });
+        for (const socket of Array.from(clients)) {
+          if (!readyClients.has(socket)) continue;
+          if (!sendSerializedMessageStreamWsFrame(socket, serializedFrame)) removeClient(socket);
         }
-        const sent = sendSerializedMessageStreamWsFrame(socket, serializedFrame);
-        if (!sent) {
-          removeClient(socket);
-        }
-      }
-    });
+      });
+    }
   });
 
   const unsubscribeStatus = globalHub.subscribeStatus((status) => {
+    if (status.type === 'identity-change') {
+      for (const socket of Array.from(readyClients)) {
+        clientLastEventIds.set(socket, '');
+        if (!sendMessageStreamWsFrame(socket, { type: 'ready', scope: 'global', replayReset: true })) removeClient(socket);
+      }
+      return;
+    }
     if (status.type === 'connect') {
       for (const socket of Array.from(clients)) {
         if (!readyClients.has(socket)) {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { createOpencodeClient, type Session } from "@opencode-ai/sdk/v2/client"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { ChildStoreManager } from "./child-store"
 import { getSessionLiveActivity, setActionRefs } from "./session-actions"
 import { useGlobalSessionsStore } from "../stores/useGlobalSessionsStore"

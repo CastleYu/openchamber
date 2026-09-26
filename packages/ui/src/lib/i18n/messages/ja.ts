@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './ja.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "ファイルを読み込み中…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': '{count} サブエージェントを使用',
   'chat.liveActivity.usedSubagents': '{count} サブエージェントを使用',
   'sessions.sidebar.projectAction.active': 'プロジェクトアクション実行中',
+  'sidebarFilesTree.menu.uploadFiles': 'ファイルをアップロード',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'ファイルをアップロード',
+  'chat.permissionCard.summary.externalDirectory': "プロジェクト外のファイルにアクセス",
+  'chat.permissionCard.summary.read': "ファイルを読み取る",
+  'chat.permissionCard.summary.edit': "ファイルを編集",
+  'chat.permissionCard.summary.shell': "コマンドを実行",
+  'chat.permissionCard.summary.glob': "ファイルを検索",
+  'chat.permissionCard.summary.grep': "ファイル内容を検索",
+  'chat.permissionCard.summary.webfetch': "Webページを開く",
+  'chat.permissionCard.summary.websearch': "Webを検索",
+  'chat.permissionCard.summary.skill': "スキルを読み込む",
+  'chat.permissionCard.summary.tool': "{tool} を使用",
+  'chat.permissionCard.summary.inPath': "場所: {path}",
+  'chat.permissionCard.alwaysAllowPatterns': '常に: {patterns}',
+  ...fileArtifactsI18n.ja,
+  ...webSearchI18n.ja,
   ...settingsDict,
   'updateDialog.personalNotice': '個人版では更新の通知のみ行います。独自機能を維持するには、ソースを同期して再ビルドしてください。',
   ...linearIssuePickerI18n.ja,
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n.ja,
   ...pluginPanelI18n.ja,
   ...surfacePanelI18n.ja,
+  ...usageStatsI18n.ja,
   'terminalView.actions.attachSelection': '選択した出力を添付',
   'terminalView.actions.copySelection': '選択した出力をコピー',
   'terminalView.toast.selectionCopied': '出力をコピーしました',
@@ -2296,6 +2316,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.commandAutocomplete.command.debugDescription': '修正を提案する前に、バグのガイド付き根本原因調査。',
   'chat.commandAutocomplete.command.weighDescription': 'トレードオフと推奨事項を含む2～3のアプローチを比較検討してからコミット。',
   'chat.commandAutocomplete.command.btwDescription': 'このチャットを乱さず、一時的な子セッションで脇の質問をする',
+  'chat.commandAutocomplete.command.forkDescription': '最後に完了した応答からこのチャットをフォークして続行します。/fork の後のテキストはフォーク先に送信されます。',
   'chat.commandAutocomplete.command.exploreDescription': 'このコードベースに慣れる: アーキテクチャと主要部分の概要ツアー。',
   'chat.commandAutocomplete.badge.skill': 'スキル',
   'chat.commandAutocomplete.badge.command': 'コマンド',
@@ -2470,6 +2491,9 @@ export const dict: Record<I18nKey, string> = {
   'snippets.source.global': 'グローバル',
   'snippets.source.project': 'プロジェクト',
   'chat.chatInput.toast.compactFailed': 'セッションの圧縮に失敗しました',
+  'chat.chatInput.toast.forkFailed': 'セッションをフォークできませんでした',
+  'chat.chatInput.toast.forkNothingToFork': 'まだフォークできません：このセッションで完了した応答がありません',
+  'chat.chatInput.toast.forkSendFailed': 'フォークしましたが、メッセージは送信されませんでした。入力欄に戻しました。',
   'chat.chatInput.toast.summaryFailed': '要約の生成に失敗しました',
   'chat.messageBody.actions.sendReviewFeedback': 'レビューフィードバックを実装エージェントに送信',
   'chat.messageBody.actions.sendImplementationResponse': '実装応答をレビューエージェントに送信',
@@ -2538,6 +2562,9 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.error': 'エラー:',
   'chat.toolPart.awaitingResponse': '応答を待機中...',
   'chat.toolPart.noOutputProduced': '出力は生成されませんでした',
+  'chat.toolPart.script': 'スクリプト',
+  'chat.toolPart.scriptCalls': 'ツール呼び出し',
+  'chat.toolPart.outputTruncated': '出力は切り詰められました',
   'chat.toolPart.output': '出力',
   'chat.toolPart.showRawJson': '生JSONを表示',
   'chat.toolPart.showFormattedJson': '整形JSONを表示',
@@ -2656,6 +2683,11 @@ export const dict: Record<I18nKey, string> = {
   'chat.messageBody.subtask.hidePrompt': 'プロンプトを非表示',
   'chat.messageBody.subtask.showPrompt': 'プロンプトを表示',
   'chat.messageBody.subtask.openSession': 'サブタスクセッションを開く',
+  'chat.compaction.running': '会話を圧縮しています…',
+  'chat.compaction.completed': '会話を圧縮しました',
+  'chat.compaction.failed': '圧縮に失敗しました',
+  'chat.compaction.showSummary': '要約を表示',
+  'chat.compaction.hideSummary': '要約を隠す',
   'chat.messageBody.shellCommand.title': 'シェルコマンド',
   'chat.messageBody.shellCommand.hideOutput': '出力を非表示',
   'chat.messageBody.shellCommand.showOutput': '出力を表示',
@@ -3460,4 +3492,17 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': 'このマシンで実行します。コマンド全体を貼り付けると、1 行に 1 引数へ分割されます。',
   'settings.mcp.page.connection.hintLink': '他者がホストするサーバーに接続します。その https アドレスを貼り付けてください。',
   'mcpDropdown.status.failedWithCause': "{cause}：{error}",
+  'chat.formCard.inputNeeded': '入力が必要です',
+  'chat.formCard.fromSubagent': 'サブエージェントから',
+  'chat.formCard.required': '必須',
+  'chat.formCard.openLink': 'リンクを開く',
+  'chat.formCard.yes': 'はい',
+  'chat.formCard.other': 'その他',
+  'chat.formCard.yourAnswer': 'あなたの回答',
+  'chat.formCard.submit': '送信',
+  'chat.formCard.cancel': 'キャンセル',
+  'chat.formCard.missingRequired': '先に必須項目を入力してください。',
+  'chat.formCard.submitFailed': '回答を送信できませんでした',
+  'chat.formCard.cancelFailed': 'リクエストをキャンセルできませんでした',
+  'chat.formCard.tryAgain': 'もう一度お試しください。',
 };

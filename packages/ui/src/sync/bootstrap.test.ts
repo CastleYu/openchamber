@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
+import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createStore } from "zustand/vanilla"
 import { bootstrapDirectory, bootstrapGlobal } from "./bootstrap"
 import { INITIAL_STATE, type GlobalState, type State } from "./types"
 import { getBackgroundNetworkState, runBackgroundNetworkTask } from "../lib/background-network"
+import type { SyncSource } from "./source"
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void
@@ -29,7 +31,7 @@ const createSdk = (respond?: (url: URL) => Response | Promise<Response> | undefi
   },
 })
 
-const inputFor = (sdk = createSdk(), state: Partial<State> = {}) => {
+const inputFor = (sdk: OpencodeClient | SyncSource = createSdk(), state: Partial<State> = {}) => {
   const store = createStore<State>(() => ({ ...INITIAL_STATE, ...state }))
   return {
     directory: "/repo", sdk, store,
@@ -55,6 +57,28 @@ describe("bootstrapGlobal", () => {
 })
 
 describe("bootstrapDirectory", () => {
+  test("OC2 cold bootstrap publishes its VCS branch to the tray state", async () => {
+    const unused = (): never => { throw new Error("Unexpected sync operation") }
+    const source: SyncSource = {
+      generation: "oc2",
+      identity: {},
+      bootstrap: {
+        getVcs: async () => ({ branch: "feature", defaultBranch: "main" }),
+        getCurrentProject: async () => ({ id: "project-a", worktree: "/repo", time: { created: 1, updated: 1 }, sandboxes: [] }),
+        getTaggedConfig: async () => ({ generation: "oc2", value: {} }),
+        getBootstrapPath: async () => ({ directory: "/repo", worktree: "/repo", home: "/home" }),
+        getLspStatus: async () => [],
+        listSyncSessions: unused, getProviderCatalog: unused, listTaggedAgents: unused,
+      },
+      status: async () => ({}), permissions: async () => [], inputs: async () => [],
+      listSessions: unused, getSession: unused, messagePage: unused, getMessage: unused,
+      events: unused,
+    }
+    const input = inputFor(source)
+    const bootstrap = bootstrapDirectory(input)
+    expect(await bootstrap.environment).toBe("complete")
+    expect(input.store.getState().vcs).toEqual({ branch: "feature", default_branch: "main" })
+  })
   test("metadata discovery does not activate MCP status or command prompts", async () => {
     const calls: string[] = []
     const input = inputFor(createSdk((url) => { calls.push(url.pathname); return undefined }))

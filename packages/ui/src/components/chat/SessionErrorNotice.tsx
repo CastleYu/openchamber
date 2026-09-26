@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '@/components/icon/Icon';
 import { useI18n } from '@/lib/i18n';
+import { getLastConversationMessage } from '@/lib/opencode/model';
 import { useLatestSessionError } from '@/sync/notification-store';
 import { useDirectoryStore, useSessionStatus } from '@/sync/sync-context';
 import { readLastMessageState, type LastMessageState } from './sessionErrorNoticeState';
@@ -22,8 +23,7 @@ const useLastMessageState = (sessionId: string, directory?: string): LastMessage
   const cacheRef = React.useRef<LastMessageState>(null);
   const getSnapshot = React.useCallback((): LastMessageState => {
     if (!sessionId) return null;
-    const messages = store.getState().message[sessionId];
-    const next = readLastMessageState(messages && messages.length > 0 ? messages[messages.length - 1] : null);
+    const next = readLastMessageState(getLastConversationMessage(store.getState().message[sessionId]));
     if (!next) {
       cacheRef.current = null;
       return null;

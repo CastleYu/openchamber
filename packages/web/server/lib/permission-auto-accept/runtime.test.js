@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPermissionAutoAcceptRuntime } from './runtime.js';
 
-const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermission, onPermissionReplied } = {}) => {
+const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermission, onPermissionReplied, kernelOperations } = {}) => {
   let settings = stored ?? { permissionAutoAccept: { sessions: {} } };
   let eventHandler;
   let statusHandler;
@@ -18,6 +18,7 @@ const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermiss
     retryDelaysMs,
     evaluatePermission,
     onPermissionReplied,
+    kernelOperations,
   });
   runtime.start();
   return {
@@ -33,6 +34,37 @@ const flush = async () => {
 };
 
 describe('permission auto-accept runtime', () => {
+  it('replies through OC2 kernel operations without calling old HTTP routes', async () => {
+    const identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
+    const kernelOperations = {
+      captureIdentity: () => identity,
+      listPendingPermissions: vi.fn(async () => ({ data: [] })),
+      getSession: vi.fn(async () => ({ data: { raw: { id: 'child', parentID: 'root', location: { directory: '/repo' } } } })),
+      replyPermission: vi.fn(async () => ({ data: true })),
+    };
+    const fetchImpl = vi.fn();
+    const { runtime } = createRuntime({ kernelOperations, fetchImpl,
+      stored: { permissionAutoAccept: { sessions: { root: true } } } });
+    await expect(runtime.processPermission({ id: 'perm_1', sessionID: 'child' }, '/repo')).resolves.toBe(true);
+    expect(kernelOperations.replyPermission).toHaveBeenCalledWith({
+      requestID: 'perm_1', sessionID: 'child', directory: '/repo', decision: 'once', expectedIdentity: identity,
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('does not reply after a generation switch during lineage lookup', async () => {
+    let epoch = 1;
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch }),
+      listPendingPermissions: async () => ({ data: [] }),
+      getSession: async () => { epoch = 2; return { data: { raw: { id: 'child', parentID: 'root' } } }; },
+      replyPermission: vi.fn(),
+    };
+    const { runtime } = createRuntime({ kernelOperations,
+      stored: { permissionAutoAccept: { sessions: { root: true } } } });
+    await expect(runtime.processPermission({ id: 'perm_1', sessionID: 'child' }, '/repo')).resolves.toBe(false);
+    expect(kernelOperations.replyPermission).not.toHaveBeenCalled();
+  });
   it('persists explicit session policies across runtime restarts', async () => {
     const first = createRuntime();
     await first.runtime.setSessionPolicy('root', true);

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { Message } from '@opencode-ai/sdk/v2/client';
+import type { AssistantMessage } from '@/lib/opencode/model';
 import { switchRuntimeEndpoint } from './runtime-switch';
 
 import {
@@ -40,8 +40,8 @@ describe('reviewFlow auto-review helpers', () => {
   });
 
   test('requires assistant parent to match the auto-sent user message when provided', () => {
-    const matching = { id: 'msg_assistant_1', parentID: 'msg_user_auto' } as Message;
-    const unrelated = { id: 'msg_assistant_2', parentID: 'msg_user_manual' } as Message;
+    const matching: AssistantMessage = { id: 'msg_assistant_1', parentID: 'msg_user_auto', sessionID: 'review', role: 'assistant', time: { created: 1 }, agent: 'reviewer', providerID: 'provider', modelID: 'model' };
+    const unrelated: AssistantMessage = { id: 'msg_assistant_2', parentID: 'msg_user_manual', sessionID: 'review', role: 'assistant', time: { created: 1 }, agent: 'reviewer', providerID: 'provider', modelID: 'model' };
 
     expect(isExpectedAutoReviewAssistantParent(matching, 'msg_user_auto')).toBe(true);
     expect(isExpectedAutoReviewAssistantParent(unrelated, 'msg_user_auto')).toBe(false);
@@ -70,7 +70,7 @@ describe('reviewFlow auto-review helpers', () => {
 
     const key = claimAutoReviewForward(run, 'msg_assistant_review');
 
-    expect(typeof key).toBe('string');
+    expect(key).not.toBeNull();
     expect(claimAutoReviewForward(run, 'msg_assistant_review')).toBeNull();
 
     releaseAutoReviewForward(key!);

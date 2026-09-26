@@ -1,3 +1,5 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './uk.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -5,6 +7,7 @@ import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'fileOpening.loading': "Завантаження файлу…",
@@ -63,6 +66,22 @@ export const dict: Record<I18nKey, string> = {
   'chat.liveActivity.usedSubagent': 'Залучено {count} сабагента',
   'chat.liveActivity.usedSubagents': 'Залучено сабагентів: {count}',
   'sessions.sidebar.projectAction.active': 'Виконується дія проєкту',
+  "sidebarFilesTree.menu.uploadFiles": "Завантажити файли",
+  "sidebarFilesTree.actions.uploadFilesTitle": "Завантажити файли",
+  'chat.permissionCard.summary.externalDirectory': "Доступ до файлів поза проєктом",
+  'chat.permissionCard.summary.read': "Прочитати файл",
+  'chat.permissionCard.summary.edit': "Змінити файли",
+  'chat.permissionCard.summary.shell': "Виконати команду",
+  'chat.permissionCard.summary.glob': "Знайти файли",
+  'chat.permissionCard.summary.grep': "Пошук у вмісті файлів",
+  'chat.permissionCard.summary.webfetch': "Відкрити вебсторінку",
+  'chat.permissionCard.summary.websearch': "Пошук в інтернеті",
+  'chat.permissionCard.summary.skill': "Завантажити скіл",
+  'chat.permissionCard.summary.tool': "Використати {tool}",
+  'chat.permissionCard.summary.inPath': "у {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Завжди: {patterns}',
+  ...fileArtifactsI18n.uk,
+  ...webSearchI18n.uk,
   ...settingsDict,
   'updateDialog.personalNotice': 'Особисті збірки лише сповіщають про оновлення. Синхронізуйте код і зберіть знову, щоб зберегти власні функції.',
   ...linearIssuePickerI18n.uk,
@@ -70,6 +89,7 @@ export const dict: Record<I18nKey, string> = {
   ...routingI18n.uk,
   ...pluginPanelI18n.uk,
   ...surfacePanelI18n.uk,
+  ...usageStatsI18n.uk,
   'terminalView.actions.attachSelection': 'Прикріпити вибраний вивід',
   'terminalView.actions.copySelection': 'Скопіювати вибраний вивід',
   'terminalView.toast.selectionCopied': 'Вивід скопійовано',
@@ -2278,6 +2298,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.commandAutocomplete.command.debugDescription": "Кероване дослідження першопричини бага перед тим, як пропонувати фікс.",
   "chat.commandAutocomplete.command.weighDescription": "Зважити 2-3 підходи з trade-offs і рекомендацією перш ніж братися до роботи.",
   'chat.commandAutocomplete.command.btwDescription': 'Поставте побічне питання в тимчасовій дочірній сесії, не відволікаючи цей чат.',
+  'chat.commandAutocomplete.command.forkDescription': 'Відгалузити цей чат від останньої завершеної відповіді й продовжити там; текст після /fork надсилається у відгалуження.',
   "chat.commandAutocomplete.command.exploreDescription": "Зорієнтуватись у кодовій базі: високорівневий тур архітектурою й основними частинами.",
   "chat.commandAutocomplete.badge.skill": "навичка",
   "chat.commandAutocomplete.badge.command": "команда",
@@ -2440,6 +2461,9 @@ export const dict: Record<I18nKey, string> = {
   "snippets.source.global": "глобальний",
   "snippets.source.project": "проєкт",
   "chat.chatInput.toast.compactFailed": "Не вдалося стиснути сесію",
+  'chat.chatInput.toast.forkFailed': 'Не вдалося відгалузити сесію',
+  'chat.chatInput.toast.forkNothingToFork': 'Поки нічого відгалужувати: у цій сесії ще немає завершеної відповіді',
+  'chat.chatInput.toast.forkSendFailed': 'Відгалужено, але повідомлення не надіслано. Воно повернулося в поле вводу.',
   "chat.chatInput.toast.summaryFailed": "Не вдалося створити підсумок",
   "chat.messageBody.actions.sendReviewFeedback": "Надіслати фідбек ревʼю агенту, який реалізує зміни",
   "chat.messageBody.actions.sendImplementationResponse": "Надіслати відповідь щодо реалізації агенту-ревʼюеру",
@@ -2505,6 +2529,9 @@ export const dict: Record<I18nKey, string> = {
   "chat.toolPart.error": "Помилка:",
   "chat.toolPart.awaitingResponse": "Очікування відповіді...",
   "chat.toolPart.noOutputProduced": "Вивід відсутній",
+  'chat.toolPart.script': 'Скрипт',
+  "chat.toolPart.scriptCalls": 'Виклики інструментів',
+  "chat.toolPart.outputTruncated": 'Вивід було скорочено',
   "chat.toolPart.output": "Вивід",
   "chat.toolPart.showRawJson": "Показати сирий JSON",
   "chat.toolPart.showFormattedJson": "Показати форматований JSON",
@@ -3461,4 +3488,22 @@ export const dict: Record<I18nKey, string> = {
   'settings.mcp.page.connection.hintCommand': 'Запускається на цьому комп’ютері. Вставте цілу команду — вона розділиться на один аргумент у рядку.',
   'settings.mcp.page.connection.hintLink': 'Під’єднується до сервера, який хостить хтось інший. Вставте його https-адресу.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Потрібна відповідь',
+  'chat.formCard.fromSubagent': 'від субагента',
+  'chat.formCard.required': 'Обовʼязково',
+  'chat.formCard.openLink': 'Відкрити посилання',
+  'chat.formCard.yes': 'Так',
+  'chat.formCard.other': 'Інше',
+  'chat.formCard.yourAnswer': 'Ваша відповідь',
+  'chat.formCard.submit': 'Надіслати',
+  'chat.formCard.cancel': 'Скасувати',
+  'chat.formCard.missingRequired': 'Спершу заповніть обовʼязкові поля.',
+  'chat.formCard.submitFailed': 'Не вдалося надіслати відповідь',
+  'chat.formCard.cancelFailed': 'Не вдалося скасувати запит',
+  'chat.formCard.tryAgain': 'Спробуйте ще раз.',
+  'chat.compaction.running': 'Стискаємо розмову…',
+  'chat.compaction.completed': 'Розмову стиснуто',
+  'chat.compaction.failed': 'Не вдалося стиснути',
+  'chat.compaction.showSummary': 'Показати підсумок',
+  'chat.compaction.hideSummary': 'Сховати підсумок',
 };

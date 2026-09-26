@@ -31,11 +31,23 @@ read. Skill loading is a required part of the task, not optional guidance.
 - `packages/sdk`: guest contract for third-party panels. Manifest parse, iframe envelope, `connectHost`. Host and guest import from here; do not copy these types into `packages/ui`.
 - `packages/extensions`: app-owned SDK extensions and their build registry, not a Bun workspace. See its `DOCUMENTATION.md` for trust, packaging, and migration rules.
 
-Shared UI calls official OpenCode APIs through `@opencode-ai/sdk/v2`. OpenChamber-owned capabilities use `RuntimeAPIs`, `runtimeFetch`, and shared browser/realtime transport helpers. Server-side upstream integrations may use their owning runtime modules.
+Shared UI calls OpenCode through `opencodeClient`. Its generation adapters use `@opencode-ai/sdk/v2` for OC1 and `@opencode/client` for OC2; wire shapes stay inside `packages/ui/src/lib/opencode/`. OpenChamber-owned capabilities use `RuntimeAPIs`, `runtimeFetch`, and shared browser/realtime transport helpers. Server-side upstream integrations use their owning kernel operation modules.
 
 Electron starts the OpenChamber backend in-process, never as a sidecar. Development may load loopback/HMR UI; packaged builds load staged assets through `openchamber-ui://` while the loopback server remains the API backend. Keep domain backends in web/runtime modules unless behavior is inherently native.
 
 Shared contracts must define intentional behavior for every applicable runtime: web, desktop, VS Code, hosted mobile, and Capacitor mobile.
+
+## OpenCode compatibility baseline
+
+One maintainer environment is fixed to OpenCode 1.2.27. Preserve that exact
+runtime as a compatibility requirement when planning OpenCode connection and
+adapter work. This branch retains the OpenChamber 1.x core and explicit OC1/OC2
+adapters. Existing OC1 features keep their original behavior; genuinely
+OC2-only features require an OC2 capability. For this initial delivery, the
+maintainer treats OC1 as one generation and authorizes validation with the
+currently installed OC1 runtime. Record the actual tested version; exact
+1.2.27 validation is deferred, not a release gate. Do not claim version-specific
+evidence or assume the restricted environment can upgrade its binary.
 
 ## Always-On Constraints
 

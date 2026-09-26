@@ -1,4 +1,6 @@
 import { MediaPreview } from './MediaPreview';
+import { TableArtifact } from './files/previews/TableArtifact';
+import { useFileTreeUpload } from './files/useFileTreeUpload';
 import { FileActions } from './FileActions';
 import { mediaKind } from '@/lib/fileKinds';
 import React from 'react';
@@ -317,6 +319,8 @@ interface FileRowProps {
   onSelect: (node: FileNode) => void;
   onToggle: (path: string) => void;
   onRevealPath: (path: string) => void;
+  onUpload: (path: string) => void;
+  canUpload: boolean;
   onOpenDialog: (type: 'createFile' | 'createFolder' | 'rename' | 'delete', data: { path: string; name?: string; type?: 'file' | 'directory' }) => void;
 }
 
@@ -339,6 +343,8 @@ const FileRow: React.FC<FileRowProps> = ({
   onSelect,
   onToggle,
   onRevealPath,
+  onUpload,
+  canUpload,
   onOpenDialog,
 }) => {
   const { t } = useI18n();
@@ -346,7 +352,7 @@ const FileRow: React.FC<FileRowProps> = ({
   const { canRename, canCreateFile, canCreateFolder, canDelete, canReveal } = permissions;
   const canDownload = !isDir && Boolean(downloadFile);
   const canRevealPath = canReveal && !isBrowserClient;
-  const hasMenuActions = canRename || canCreateFile || canCreateFolder || canDelete || canDownload || canRevealPath;
+  const hasMenuActions = canRename || canCreateFile || canCreateFolder || canDelete || canDownload || canRevealPath || (isDir && canUpload);
 
   const handleContextMenu = React.useCallback((event?: React.MouseEvent) => {
     if (!hasMenuActions) {
@@ -424,7 +430,7 @@ const FileRow: React.FC<FileRowProps> = ({
           <Icon name="folder-received" className="mr-2 size-4" /> {t(getRevealLabelKey())}
         </Item>
       )}
-      {isDir && (canCreateFile || canCreateFolder) && (
+      {isDir && (canCreateFile || canCreateFolder || canUpload) && (
         <>
           <Separator />
           {canCreateFile && (
@@ -435,6 +441,11 @@ const FileRow: React.FC<FileRowProps> = ({
           {canCreateFolder && (
             <Item onClick={(e: React.MouseEvent) => { e.stopPropagation(); onOpenDialog('createFolder', node); }}>
               <Icon name="folder-add" className="mr-2 size-4" /> {t('sidebarFilesTree.menu.newFolder')}
+            </Item>
+          )}
+          {canUpload && (
+            <Item onClick={(event: React.MouseEvent) => { event.stopPropagation(); onUpload(node.path); }}>
+              <Icon name="arrow-up" className="mr-2 size-4" /> {t('sidebarFilesTree.menu.uploadFiles')}
             </Item>
           )}
         </>
@@ -754,6 +765,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
   type PreviewViewMode = 'preview' | 'edit';
 
   const [textViewMode, setTextViewMode] = React.useState<TextViewMode>('edit');
+  const [tableViewMode, setTableViewMode] = React.useState<'table' | 'text'>('table');
+  const tableViewModeByPathRef = React.useRef<Record<string, 'table' | 'text'>>({});
   const [mdViewMode, setMdViewMode] = React.useState<PreviewViewMode>('edit');
   const [plantumlViewMode, setPlantumlViewMode] = React.useState<PreviewViewMode>('edit');
   const [jsonViewMode, setJsonViewMode] = React.useState<'tree' | 'text'>('tree');
@@ -1207,6 +1220,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
   }, [loadDirectory, refreshRoot]);
 
   const lastFileScopeRef = React.useRef<string>('');
+  const { canUpload, uploadingDirectory, pickFiles, uploadElements } = useFileTreeUpload({ root, refreshDirectory });
   const lastFilesViewTreeKeyRef = React.useRef<string>('');
 
   React.useEffect(() => {
@@ -2347,6 +2361,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
             onSelect={handleSelectFile}
             onToggle={toggleDirectory}
             onRevealPath={handleRevealPath}
+            onUpload={pickFiles}
+            canUpload={canUpload && uploadingDirectory === null}
             onOpenDialog={handleOpenDialog}
           />
           {isDir && isExpanded && (
@@ -2406,13 +2422,14 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
   const isJson = Boolean(selectedFile?.path && isJsonFile(selectedFile.path));
   const isHtml = Boolean(selectedFile?.path && isHtmlFile(selectedFile.path));
   const isDrawio = Boolean(selectedFile?.path && isDrawioFile(selectedFile.path));
+  const isTable = Boolean(selectedFile?.path && /\.(csv|tsv)$/i.test(selectedFile.path) && !isSelectedBinary);
   const isTextFile = Boolean(selectedFile && !isSelectedBinary && !isSelectedImage);
-  const canUseShikiFileView = isTextFile && !isMarkdown && !isPlantUml && !isDrawio && !(isHtml && htmlViewMode === 'preview');
+  const canUseShikiFileView = isTextFile && !isMarkdown && !isPlantUml && !isDrawio && !(isHtml && htmlViewMode === 'preview') && !(isTable && tableViewMode === 'table');
   const isEditingFile = (isMarkdown && mdViewMode === 'edit')
     || (isPlantUml && plantumlViewMode === 'edit')
     || (isHtml && htmlViewMode === 'edit')
     || (isJson && jsonViewMode === 'text')
-    || (!isMarkdown && !isPlantUml && !isHtml && !isJson && textViewMode === 'edit');
+    || (!isMarkdown && !isPlantUml && !isHtml && !isJson && (!isTable || tableViewMode === 'text') && textViewMode === 'edit');
   const staticLanguageExtension = React.useMemo(
     () => (selectedFilePath ? languageByExtension(selectedFilePath) : null),
     [selectedFilePath],
@@ -2457,6 +2474,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
     }
 
     setTextViewMode(textViewModeByPathRef.current[selectedPath] ?? 'edit');
+    setTableViewMode(tableViewModeByPathRef.current[selectedPath] ?? 'table');
 
     // Respect per-type localStorage preference when available,
     // falling back to the setting-derived default when nothing is stored.
@@ -3386,6 +3404,22 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
           </>
         )}
 
+        {isTable && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const mode = tableViewMode === 'table' ? 'text' : 'table';
+              if (selectedFile?.path) tableViewModeByPathRef.current[selectedFile.path] = mode;
+              setTableViewMode(mode);
+            }}
+            className="size-6 p-0 text-muted-foreground"
+            title={tableViewMode === 'table' ? t('filesView.artifact.table.showSource') : t('filesView.artifact.table.showTable')}
+            aria-label={tableViewMode === 'table' ? t('filesView.artifact.table.showSource') : t('filesView.artifact.table.showTable')}
+          >
+            <Icon name={tableViewMode === 'table' ? 'code-sslash' : 'file-text'} className="size-4" />
+          </Button>
+        )}
         {canUseShikiFileView && canEdit && !isJson && !isHtml && (
           <PreviewToggleButton
             currentMode={textViewMode === 'view' ? 'preview' : 'edit'}
@@ -3870,6 +3904,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
               <p>{fileError}</p>
               <Button size="sm" variant="outline" onClick={retryFile}>{t('fileOpening.retry')}</Button>
             </div>
+          ) : selectedFile && isTable && tableViewMode === 'table' ? (
+            <TableArtifact path={selectedFile.path} content={draftContent} sizeBytes={lastLoadedFileStatRef.current?.path === selectedFile.path ? lastLoadedFileStatRef.current.size : null} />
           ) : selectedFile && files.loadAsset && mediaKind(selectedFile.path) ? (
             <MediaPreview key={selectedFile.path} path={selectedFile.path} options={selectedFileReadOptions} />
           ) : isSelectedImage ? (
@@ -4174,6 +4210,15 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
               </button>
             )}
           </div>
+          {canUpload && (
+            <Button variant="ghost" size="sm" className="size-8 p-0 flex-shrink-0"
+              disabled={uploadingDirectory !== null || !currentDirectory}
+              onClick={() => pickFiles(currentDirectory)}
+              title={t('sidebarFilesTree.actions.uploadFilesTitle')}
+              aria-label={t('sidebarFilesTree.actions.uploadFilesTitle')}>
+              <Icon name="arrow-up" className="size-4" />
+            </Button>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex flex-shrink-0">
@@ -4294,6 +4339,8 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
               <p>{fileError}</p>
               <Button size="sm" variant="outline" onClick={retryFile}>{t('fileOpening.retry')}</Button>
             </div>
+          ) : selectedFile && isTable && tableViewMode === 'table' ? (
+            <TableArtifact path={selectedFile.path} content={draftContent} sizeBytes={lastLoadedFileStatRef.current?.path === selectedFile.path ? lastLoadedFileStatRef.current.size : null} />
           ) : selectedFile && mediaKind(selectedFile.path) ? (
             <MediaPreview key={selectedFile.path} path={selectedFile.path} options={selectedFileReadOptions} />
           ) : selectedFile && files.loadAsset && mediaKind(selectedFile.path) ? (
@@ -4427,6 +4474,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden bg-background relative">
+      {uploadElements}
       <Dialogs
         activeDialog={activeDialog}
         dialogData={dialogData}

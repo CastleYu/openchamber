@@ -3,10 +3,12 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { z } from 'zod';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { readMergedSettingsSync } from '../opencode/settings-files.js';
 import { loadAssistContext } from './context.js';
 import { buildAssistPrompt, buildAssistSystemPrompt } from './prompt.js';
+import { readDescendantActivity } from '../opencode/descendant-activity.js';
 
 const OPENCHAMBER_SETTINGS_FILE = path.join(
   process.env.OPENCHAMBER_DATA_DIR
@@ -51,6 +53,13 @@ const extractJsonObject = (value) => {
 };
 
 const extractSessionStatus = (payload) => {
+  if (payload?.type === 'session.idle' || payload?.type === 'session.execution.completed'
+    || payload?.type === 'session.execution.started') {
+    const properties = payload.properties ?? {};
+    return z.string().min(1).safeParse(properties.sessionID).success
+      ? { sessionId: properties.sessionID, type: payload.type === 'session.execution.started' ? 'busy' : 'idle', directory: properties.directory ?? '' }
+      : null;
+  }
   if (!payload || payload.type !== 'session.status') return null;
   const properties = payload.properties && typeof payload.properties === 'object' ? payload.properties : {};
   const status = properties.status && typeof properties.status === 'object' ? properties.status : {};
@@ -78,6 +87,7 @@ const extractUserMessage = (payload) => {
 };
 
 export const createSessionAssistRuntime = ({
+  kernelOperations = null,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   getSmallModelService,
@@ -106,21 +116,63 @@ export const createSessionAssistRuntime = ({
   const generateAssist = async (sessionId, directory, signal) => {
     const targets = getTargets();
     if (!targets.recap && !targets.suggestion) return;
+    const identity = kernelOperations?.captureIdentity();
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
-    const client = createOpencodeClient({ baseUrl, headers: getOpenCodeAuthHeaders(), throwOnError: true });
+    const client = kernelOperations ? null : createOpencodeClient({ baseUrl, headers: getOpenCodeAuthHeaders(), throwOnError: true });
     const requestOptions = () => ({ signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]) });
     const checkCurrent = () => {
       signal.throwIfAborted();
+      if (identity) {
+        const current = kernelOperations.captureIdentity();
+        if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+          throw new Error('Session assist runtime changed');
+        }
+      }
       if (buildOpenCodeUrl('/', '').replace(/\/$/, '') !== baseUrl) throw new Error('Session assist runtime changed');
     };
-    const { data: session } = await client.session.get({ sessionID: sessionId, directory }, requestOptions());
+    const treeIdle = async () => {
+      if (identity?.generation !== 'oc2') return true;
+      try {
+        const statuses = (await kernelOperations.listActiveStatuses({ directory, signal })).data;
+        const busy = statuses[sessionId]?.type === 'busy' || statuses[sessionId]?.type === 'retry'
+          ? true : await readDescendantActivity(kernelOperations, sessionId, directory, statuses, identity);
+        checkCurrent();
+        return busy === false;
+      } catch {
+        checkCurrent();
+        return false;
+      }
+    };
+    const { data: session } = kernelOperations
+      ? await kernelOperations.getSession({ sessionID: sessionId, directory, signal })
+      : await client.session.get({ sessionID: sessionId, directory }, requestOptions());
     checkCurrent();
     // Reverted history is not the active conversation. A new prompt clears
     // the revert boundary before its next idle event.
     if (session?.id !== sessionId || session.parentID || session.revert?.messageID || session.time?.archived) return;
+    if (!await treeIdle()) {
+      armTimer(sessionId, directory);
+      return;
+    }
     const context = await loadAssistContext({
       signal,
-      readPage: (page) => client.session.messages({ sessionID: sessionId, directory, ...page }, requestOptions()),
+      readPage: async (page) => {
+        if (!kernelOperations) return client.session.messages({ sessionID: sessionId, directory, ...page }, requestOptions());
+        const result = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: page.limit, cursor: page.before, signal })).data;
+        const ordered = (result.order === 'asc' ? result.items : [...result.items].reverse())
+          .filter((item) => item.role === 'user' || item.role === 'assistant');
+        return {
+          data: ordered.map((item) => ({
+            info: { ...item.raw, id: item.id, role: item.role, parentID: item.parentID,
+              providerID: item.model?.providerID ?? item.raw.providerID,
+              modelID: item.model?.id ?? item.model?.modelID ?? item.raw.modelID,
+              time: { created: item.created, completed: item.completed },
+              finish: item.finish, error: item.error, summary: item.summary },
+            parts: item.raw.parts ?? item.raw.content ?? (item.text ? [{ type: 'text', text: item.text }] : []),
+          })),
+          response: { headers: new Headers(result.cursor?.next ? { 'x-next-cursor': result.cursor.next } : {}) },
+        };
+      },
     });
     checkCurrent();
     if (!context) return;
@@ -160,21 +212,48 @@ export const createSessionAssistRuntime = ({
     if (recap && scriptMismatch(recap)) recap = '';
     if (suggestion && scriptMismatch(suggestion)) suggestion = '';
     if (!recap && !suggestion) return;
-    const { data: latest } = await client.session.messages({ sessionID: sessionId, directory, limit: 1 }, requestOptions());
+    const latestConversation = async () => {
+      let cursor;
+      const cursors = new Set();
+      for (let index = 0; index < 8; index += 1) {
+        const page = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: 50, cursor, signal })).data;
+        const ordered = page.order === 'asc' ? [...page.items].reverse() : page.items;
+        const latest = ordered.find((item) => item.role === 'user' || item.role === 'assistant');
+        if (latest) return latest;
+        cursor = page.cursor?.next;
+        if (!cursor) return null;
+        if (cursors.has(cursor)) throw new Error('Session message pagination made no progress');
+        cursors.add(cursor);
+      }
+      return null;
+    };
+    const latest = kernelOperations
+      ? await latestConversation()
+      : (await client.session.messages({ sessionID: sessionId, directory, limit: 1 }, requestOptions())).data?.at(-1);
     checkCurrent();
-    if (latest?.at(-1)?.info.id !== last.id) return;
+    if ((kernelOperations ? latest?.id : latest?.info?.id) !== last.id) return;
     // Never fall back to the pre-generation metadata snapshot after a failed
     // fresh read: doing so overwrites dismissals and unrelated metadata.
-    const { data: freshSession } = await client.session.get({ sessionID: sessionId, directory }, requestOptions());
+    const { data: freshSession } = kernelOperations
+      ? await kernelOperations.getSession({ sessionID: sessionId, directory, signal })
+      : await client.session.get({ sessionID: sessionId, directory }, requestOptions());
     checkCurrent();
     if (freshSession?.id !== sessionId || freshSession.revert?.messageID || freshSession.time?.archived || freshSession.directory !== session.directory) return;
+    if (!await treeIdle()) {
+      armTimer(sessionId, directory);
+      return;
+    }
     const enabled = getTargets();
     if (!enabled.recap) recap = '';
     if (!enabled.suggestion) suggestion = '';
     if (!recap && !suggestion) return;
     const currentMetadata = freshSession.metadata ?? {};
     const currentNamespace = currentMetadata.openchamber ?? {};
-    await client.session.update({
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: {
+      ...currentMetadata,
+      openchamber: { ...currentNamespace, assist: { recap, suggestion, forMessageID: last.id, generatedAt: Date.now() } },
+    }, signal });
+    else await client.session.update({
       sessionID: sessionId, directory,
       metadata: {
         ...currentMetadata,

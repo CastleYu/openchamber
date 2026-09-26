@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import type { Event, Session, SessionStatus } from '@opencode-ai/sdk/v2/client';
+import type { Event } from '@opencode-ai/sdk/v2/client'
+import type { DomainEvent } from '@/lib/opencode/events'
+import type { Session, SessionStatus } from '@/lib/opencode/model'
 import { normalizeProjectPath } from '@/lib/projectResolution';
 import {
   applySessionOrderingMutations,
@@ -42,6 +44,52 @@ const initialState: GlobalSessionStatusState = {
 
 export const useGlobalSessionStatusStore = create<GlobalSessionStatusState>(() => initialState);
 useGlobalSessionStatusStore.subscribe(() => countSyncPerformance('globalStatusPublications'));
+
+type SessionParentResolver = (sessionId: string) => string | undefined;
+let resolveSessionParentId: SessionParentResolver = () => undefined;
+export const setSessionParentResolver = (resolver: SessionParentResolver): void => {
+  resolveSessionParentId = resolver;
+};
+
+const MAX_SUBAGENT_DEPTH = 8;
+export const forEachAncestorId = (sessionId: string, visit: (ancestorId: string) => void): void => {
+  let current = resolveSessionParentId(sessionId);
+  const seen = new Set([sessionId]);
+  for (let depth = 0; current && depth < MAX_SUBAGENT_DEPTH && !seen.has(current); depth += 1) {
+    seen.add(current);
+    visit(current);
+    current = resolveSessionParentId(current);
+  }
+};
+
+export const hasActiveSubagent = (sessionId: string, activeSessionIds: ReadonlySet<string>): boolean => {
+  for (const activeId of activeSessionIds) {
+    if (activeId === sessionId) continue;
+    let found = false;
+    forEachAncestorId(activeId, (ancestorId) => { if (ancestorId === sessionId) found = true; });
+    if (found) return true;
+  }
+  return false;
+};
+
+export const isSessionTurnActive = (sessionId: string): boolean => {
+  const active = useGlobalSessionStatusStore.getState().activeSessionIds;
+  return active.has(sessionId) || hasActiveSubagent(sessionId, active);
+};
+
+export const useSessionTurnActive = (sessionId: string): boolean => useGlobalSessionStatusStore(
+  (state) => state.activeSessionIds.has(sessionId) || hasActiveSubagent(sessionId, state.activeSessionIds),
+);
+
+const withSubagentAncestors = (active: ReadonlySet<string>): ReadonlySet<string> => {
+  let extended: Set<string> | null = null;
+  for (const id of active) forEachAncestorId(id, (ancestor) => {
+    if (active.has(ancestor)) return;
+    extended ??= new Set(active);
+    extended.add(ancestor);
+  });
+  return extended ?? active;
+};
 
 /**
  * Replaces the status map wholesale and derives active membership from it.
@@ -121,13 +169,16 @@ export const applyGlobalSessionStatusEvents = (directory: string, payloads: read
   const currentStatuses = (): ReadonlyMap<string, GlobalSessionStatusEntry> => statusById ?? state.statusById;
   const draftStatuses = (): Map<string, GlobalSessionStatusEntry> => (statusById ??= new Map(state.statusById));
   const draftActiveIds = (): Set<string> => (activeSessionIds ??= new Set(state.activeSessionIds));
+  const currentActiveIds = (): ReadonlySet<string> => activeSessionIds ?? state.activeSessionIds;
+  const settledIds: string[] = [];
   const settle = (sessionId: string): void => {
     if (currentStatuses().has(sessionId)) {
       draftStatuses().delete(sessionId);
       draftActiveIds().delete(sessionId);
     }
     orderingMutations.push({ type: 'observe', sessionId, phase: 'settled' });
-    timingMutations.push({ type: 'observe', sessionId, phase: 'settled' });
+    settledIds.push(sessionId);
+    if (!hasActiveSubagent(sessionId, currentActiveIds())) timingMutations.push({ type: 'observe', sessionId, phase: 'settled' });
   };
 
   for (const payload of payloads) {
@@ -181,6 +232,12 @@ export const applyGlobalSessionStatusEvents = (directory: string, payloads: read
     }
   }
 
+  for (const settledId of settledIds) forEachAncestorId(settledId, (ancestor) => {
+    if (!currentActiveIds().has(ancestor) && !hasActiveSubagent(ancestor, currentActiveIds())) {
+      timingMutations.push({ type: 'observe', sessionId: ancestor, phase: 'settled' });
+    }
+  });
+
   if (statusById || observedById) {
     useGlobalSessionStatusStore.setState({
       statusById: statusById ?? state.statusById,
@@ -194,6 +251,52 @@ export const applyGlobalSessionStatusEvents = (directory: string, payloads: read
 
 export const applyGlobalSessionStatusEvent = (directory: string, payload: Event): void => {
   applyGlobalSessionStatusEvents(directory, [payload]);
+};
+
+/** OC2 status facts enter without an OC1 SDK Event envelope. */
+export const applyGlobalDomainStatusEvents = (directory: string, events: readonly DomainEvent[]): void => {
+  const statusEvents = events.filter((event): event is Extract<DomainEvent, { type: 'status' }> => event.type === 'status');
+  if (statusEvents.length === 0) return;
+  const scope = normalizeDirectory(directory);
+  const state = useGlobalSessionStatusStore.getState();
+  const statuses = new Map(state.statusById);
+  const active = new Set(state.activeSessionIds);
+  const observed = new Map(state.observedById);
+  const orderingMutations: SessionOrderingMutation[] = [];
+  const timingMutations: SessionActivityTimingMutation[] = [];
+  let changed = false;
+  const settledIds: string[] = [];
+  for (const event of statusEvents) {
+    const previous = statuses.get(event.sessionID);
+    if (event.status.type === 'idle') {
+      if (previous) changed = true;
+      statuses.delete(event.sessionID);
+      active.delete(event.sessionID);
+      const outcome = event.outcome === 'failed' ? 'failed' : event.outcome === 'completed' ? 'completed' : null;
+      if (observed.get(event.sessionID)?.outcome !== outcome) changed = true;
+      observed.set(event.sessionID, { directory: scope, outcome });
+      orderingMutations.push({ type: 'observe', sessionId: event.sessionID, phase: 'settled' });
+      if (!hasActiveSubagent(event.sessionID, active)) {
+        timingMutations.push({ type: 'observe', sessionId: event.sessionID, phase: 'settled' });
+      }
+      settledIds.push(event.sessionID);
+    } else {
+      if (!previous || previous.directory !== scope || !statusesEqual(previous.status, event.status)) changed = true;
+      statuses.set(event.sessionID, { directory: scope, status: event.status });
+      active.add(event.sessionID);
+      observed.set(event.sessionID, { directory: scope, outcome: null });
+      orderingMutations.push({ type: 'observe', sessionId: event.sessionID, phase: 'active' });
+      timingMutations.push({ type: 'observe', sessionId: event.sessionID, phase: 'active' });
+    }
+  }
+  for (const settledId of settledIds) forEachAncestorId(settledId, (ancestor) => {
+    if (!active.has(ancestor) && !hasActiveSubagent(ancestor, active)) {
+      timingMutations.push({ type: 'observe', sessionId: ancestor, phase: 'settled' });
+    }
+  });
+  if (changed) useGlobalSessionStatusStore.setState({ statusById: statuses, activeSessionIds: active, observedById: observed });
+  applySessionOrderingMutations(orderingMutations);
+  applySessionActivityTimingMutations(timingMutations);
 };
 
 // Polled path: an authoritative `/session/status?directory=X` snapshot. Entries
@@ -220,7 +323,7 @@ export const applyGlobalSessionStatusSnapshot = (
   // itself, and only the handful of sessions actually being timed need an
   // answer. Reuses the sets already built above, so this allocates nothing.
   reconcileSessionActivityTiming(
-    activeSessionIds,
+    withSubagentAncestors(activeSessionIds),
     (sessionId) => known.has(sessionId) || sessionId in raw,
   );
   useGlobalSessionStatusStore.setState((state) => {

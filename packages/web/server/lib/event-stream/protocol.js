@@ -52,7 +52,9 @@ export function parseSseEventEnvelope(block) {
     }
 
     const directory =
-      typeof parsed?.directory === 'string' && parsed.directory.length > 0
+      typeof parsed?.location?.directory === 'string' && parsed.location.directory.length > 0
+        ? parsed.location.directory
+        : typeof parsed?.directory === 'string' && parsed.directory.length > 0
         ? parsed.directory
         : typeof parsed?.properties?.directory === 'string' && parsed.properties.directory.length > 0
           ? parsed.properties.directory

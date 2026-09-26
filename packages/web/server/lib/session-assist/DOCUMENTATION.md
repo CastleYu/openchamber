@@ -1,5 +1,13 @@
 # Session assist
 
+The server injects `kernelOperations` for session and message reads and the
+metadata write. OC2 message pages are reversed into chronological order for
+context assembly. The runtime checks its captured kernel epoch before saving
+a recap, so a generation started on one server cannot write to another.
+For OC2, it waits while the parent or any descendant has a live active status.
+It checks again before saving, so a child starting during generation cannot
+publish a premature summary. A failed live read leaves the work pending.
+
 The server generates a short reminder of recent work and an optional next user
 message with Small Model. Results live in `metadata.openchamber.assist` with
 `recap`, `suggestion`, `forMessageID`, and `generatedAt`. The payload shape is

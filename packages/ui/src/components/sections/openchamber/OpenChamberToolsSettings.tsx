@@ -23,6 +23,7 @@ import { updateDesktopSettings } from '@/lib/persistence';
 import { useAgentMemoryStore } from '@/stores/useAgentMemoryStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
+import { opencodeClient } from '@/lib/opencode/client';
 
 /**
  * Which OpenChamber capabilities agents are given.
@@ -37,6 +38,18 @@ import { useI18n } from '@/lib/i18n';
  */
 export const OpenChamberToolsSettings: React.FC = () => {
   const { t } = useI18n();
+  const notifyAvailable = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation === 'oc2',
+    () => false,
+  );
+  const agentNotifyToolEnabled = useUIStore((state) => state.agentNotifyToolEnabled);
+  const setAgentNotifyToolEnabled = useUIStore((state) => state.setAgentNotifyToolEnabled);
+  const handleAgentNotifyToolChange = React.useCallback((enabled: boolean) => {
+    setAgentNotifyToolEnabled(enabled);
+    void updateDesktopSettings({ agentNotifyToolEnabled: enabled });
+    recordDeferredOpenCodeRestart('cli', { id: 'agent-notify-tool' });
+  }, [setAgentNotifyToolEnabled]);
   const agentControlToolEnabled = useUIStore((state) => state.agentControlToolEnabled);
   const setAgentControlToolEnabled = useUIStore((state) => state.setAgentControlToolEnabled);
   const agentWebToolEnabled = useUIStore((state) => state.agentWebToolEnabled);
@@ -101,6 +114,16 @@ export const OpenChamberToolsSettings: React.FC = () => {
   return (
     <SettingsSection title={t('settings.openchamber.tools.title')}>
       <div className={SETTINGS_OPTION_STACK_CLASS}>
+        {notifyAvailable ? (
+          <SettingsCheckboxRow
+            settingsItem="sessions.agent-notify-tool"
+            checked={agentNotifyToolEnabled}
+            onChange={handleAgentNotifyToolChange}
+            label={t('settings.openchamber.tools.field.agentNotifyTool')}
+            ariaLabel={t('settings.openchamber.tools.field.agentNotifyToolAria')}
+            info={t('settings.openchamber.tools.field.agentNotifyToolInfo')}
+          />
+        ) : null}
         <SettingsCheckboxRow
           settingsItem="sessions.agent-control-tool"
           checked={agentControlToolEnabled}

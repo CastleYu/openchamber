@@ -103,17 +103,18 @@ mock.module('@/stores/useProjectsStore', () => ({
 
 mock.module('@/lib/opencode/client', () => ({
   opencodeClient: {
+    getBoundRuntime: mock(() => null),
     setDirectory: mock(() => undefined),
     getDirectory: mock(() => DIRECTORY),
     checkHealth: mock(async () => true),
-    getProvidersForConfig: mock(async (directory?: string | null) => {
+    getProviderCatalog: mock(async (directory?: string | null) => {
       providerRequests.push(directory ?? null);
       const id = providerIdForDirectory(directory);
-      return { providers: [providerResponse(id)], default: { default: id } };
+      return { generation: 'oc1', providers: [providerResponse(id)], default: { default: id } };
     }),
-    listAgents: mock(async (directory?: string | null) => {
+    listTaggedAgents: mock(async (directory?: string | null) => {
       agentRequests.push(directory ?? null);
-      return [{ name: agentNameForDirectory(directory), mode: 'primary' }];
+      return { generation: 'oc1', value: [{ name: agentNameForDirectory(directory), mode: 'primary' }] };
     }),
     getConfig: mock(async () => ({})),
     clearConfigCache: mock(() => undefined),
@@ -133,6 +134,7 @@ mock.module('@/lib/runtime-fetch', () => ({
 mock.module('@/lib/persistence', () => ({
   loadDesktopSettings: mock(async () => ({})),
   updateDesktopSettings: mock(async () => undefined),
+  reportSettingsSaveState: mock(() => undefined),
 }));
 
 mock.module('@/lib/startupTrace', () => ({

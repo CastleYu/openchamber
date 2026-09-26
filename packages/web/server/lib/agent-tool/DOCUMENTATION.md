@@ -11,8 +11,9 @@ the user can want independently:
 - `openchamber_web` — looking at and interacting with the page in OpenChamber's
   browser panel. Enabled while `agentWebToolEnabled` is not `false`.
 
-Both default to on, are toggled in Settings → General → OpenCode CLI, and apply
-on the next managed OpenCode restart. Each tool carries only its own actions and
+Both default to on and are toggled in Settings → General → OpenCode CLI. OpenCode
+1 applies a change on the next managed restart; OpenCode 2 reloads the managed
+config file and plugin directory. Each tool carries only its own actions and
 only the parameters those actions use, so turning one off removes its inputs
 from the schema rather than leaving them visible. The plugin is injected only
 when OpenChamber launches and owns the OpenCode process, and not at all when
@@ -27,15 +28,18 @@ both settings are `false`.
 ## Runtime flow
 
 1. The OpenChamber HTTP listener binds and publishes its authoritative port.
-2. `prepareManagedOpenCodeEnv()` materializes the plugin under
-   `<openchamber-data-dir>/agent-tool/` and appends its `file://` URL to
-   `OPENCODE_CONFIG_CONTENT` without replacing existing plugin entries.
+2. OpenCode 1 uses `prepareManagedOpenCodeEnv()` to append a plugin `file://`
+   URL to `OPENCODE_CONFIG_CONTENT`. OpenCode 2 materializes a package directory
+   and lists it in OpenChamber's watched `OPENCODE_CONFIG` file. When the user
+   owns `OPENCODE_CONFIG`, the OpenCode 2 path appends the directory to
+   `OPENCODE_CONFIG_CONTENT` instead.
 3. A random per-child token and callback URL are added only to the managed
    OpenCode child environment. The URL points at loopback, except when the
    listener is bound to one concrete address (`--host <ip>`): that socket does
    not answer on loopback, so the URL uses the bound address instead.
-4. The plugin calls `POST /api/openchamber/agent-tool` with its typed input and
-   OpenCode's authoritative session directory.
+4. The plugin calls `POST /api/openchamber/agent-tool` with its typed input.
+   OpenCode 1 supplies the session directory to the plugin; for OpenCode 2 the
+   callback resolves it from the session id through the active kernel.
 5. The route delegates the fixed action allowlist directly to the shared
    OpenChamber control service. The CLI uses the same service through its
    authenticated HTTP adapter, so Goal Mode ordering, wait behavior,

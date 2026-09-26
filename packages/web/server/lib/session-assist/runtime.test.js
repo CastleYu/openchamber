@@ -62,6 +62,66 @@ afterEach(async () => {
 });
 
 describe('session assist runtime', () => {
+  const kernelFixture = (afterGenerate = () => {}) => {
+    const identity = { generation: 'oc2', endpoint: 'http://opencode.test', epoch: 1 };
+    const session = { id: 'session', directory: '/project', time: {}, metadata: { openchamber: {} } };
+    const user = { id: 'user', role: 'user', text: 'Fix this', created: 1, raw: { id: 'user', type: 'user', text: 'Fix this', time: { created: 1 } } };
+    const assistant = { id: 'answer', role: 'assistant', text: 'Fixed', created: 2, completed: 3, finish: 'stop',
+      model: { providerID: 'test-provider', id: 'test-model' }, raw: { id: 'answer', type: 'assistant', model: { providerID: 'test-provider', id: 'test-model' }, finish: 'stop', time: { created: 2, completed: 3 }, content: [{ type: 'text', text: 'Fixed' }] } };
+    const idle = { id: 'idle', role: 'idle', created: 4, raw: { id: 'idle', type: 'idle', time: { created: 4 } } };
+    const state = { items: [idle, assistant, user] };
+    const ops = {
+      captureIdentity: () => identity,
+      getSession: vi.fn(async () => ({ data: session })),
+      listActiveStatuses: vi.fn(async () => ({ data: {} })),
+      listChildren: vi.fn(async () => ({ data: [] })),
+      listMessages: vi.fn(async () => ({ data: { order: 'desc', items: state.items, cursor: { next: null } } })),
+      updateSession: vi.fn(async () => ({ data: session })),
+    };
+    const generate = vi.fn(async () => { afterGenerate(state); return { text: '{"recap":"Fixed","suggestion":""}' }; });
+    const runtime = createSessionAssistRuntime({ kernelOperations: ops,
+      buildOpenCodeUrl: () => identity.endpoint, getOpenCodeAuthHeaders: () => ({}),
+      getTargets: () => ({ recap: true, suggestion: false }), quietMs: 1,
+      getSmallModelService: async () => ({ describeSmallModel: async () => ({ inputCharBudget: 64_000 }), generateSmallModelText: generate }),
+    });
+    return { runtime, ops, generate };
+  };
+
+  it('accepts an OC2 assistant followed by idle', async () => {
+    const { runtime, ops, generate } = kernelFixture();
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(ops.updateSession.mock.calls[0][0].metadata.openchamber.assist.forMessageID).toBe('answer');
+    runtime.stop();
+  });
+
+  it('retries an unknown live status without treating it as idle', async () => {
+    const { runtime, ops, generate } = kernelFixture();
+    let reads = 0;
+    ops.listActiveStatuses.mockImplementation(async () => {
+      reads += 1;
+      if (reads === 1) throw new Error('status unavailable');
+      return { data: {} };
+    });
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    expect(reads).toBeGreaterThan(1);
+    expect(generate).toHaveBeenCalledTimes(1);
+    runtime.stop();
+  });
+
+  it('drops OC2 assistance when a newer user prompt appears after generation', async () => {
+    const { runtime, ops, generate } = kernelFixture((state) => {
+      state.items = [{ id: 'new-user', role: 'user', text: 'One more thing', created: 5,
+        raw: { id: 'new-user', type: 'user', text: 'One more thing', time: { created: 5 } } }, ...state.items];
+    });
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
+    await pause();
+    expect(ops.updateSession).not.toHaveBeenCalled();
+    runtime.stop();
+  });
   it('uses bounded authenticated SDK reads and preserves metadata with an empty suggestion', async () => {
     const { state, status } = await fixture(async (_args, current) => {
       current.session.metadata.openchamber.concurrent = 'new';

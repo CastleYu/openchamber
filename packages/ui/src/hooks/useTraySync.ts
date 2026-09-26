@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { canUseElectronDesktopIPC, invokeDesktop, isDesktopLocalOriginActive } from '@/lib/desktop';
 import { shouldIdlePoll } from '@/lib/performance/occupancyPolicy';
 import { getRuntimeApiBaseUrl } from '@/lib/runtime-switch';

@@ -19,10 +19,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
-import { selectAgentsForDirectory, useAgentsStore, isAgentBuiltIn, isAgentHidden, type AgentScope, type AgentDraft } from '@/stores/useAgentsStore';
+import { selectAgentsForDirectory, useAgentsStore, isAgentBuiltIn, isAgentHidden, type AgentScope, type AgentDraft, type Agent } from '@/stores/useAgentsStore';
+import { fetchAgentV2Entity, writeAgentV2 } from './agentV2Config';
 import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
-import type { Agent } from '@opencode-ai/sdk/v2';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { SettingsProjectSelector } from '@/components/sections/shared/SettingsProjectSelector';
 import { SidebarGroup } from '@/components/sections/shared/SidebarGroup';
@@ -187,7 +187,7 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
 
     setIsConfirmActionPending(true);
     try {
-      const result = await deleteAgent(confirmActionAgent.name, (confirmActionAgent as Agent & { scope?: AgentScope }).scope, settingsDirectory);
+      const result = await deleteAgent(confirmActionAgent.name, confirmActionAgent.scope, settingsDirectory);
 
       if (result.ok) {
         if (result.requiresManualRestart) {
@@ -231,14 +231,18 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
     }
 
     // Set draft with prefilled values from source agent
-    const extAgent = agent as Agent & { scope?: AgentScope };
+    if (agent.generation === 'oc2') {
+      setAgentDraft({ name: newName, scope: agent.scope || 'user', sourceAgentName: agent.name });
+      setSelectedAgent(newName);
+      onItemSelect?.();
+      return;
+    }
     const modelStr = agent.model?.providerID && agent.model?.modelID
       ? `${agent.model.providerID}/${agent.model.modelID}`
       : null;
-    const draftAgent = agent as Agent & { disable?: boolean };
     setAgentDraft({
       name: newName,
-      scope: extAgent.scope || 'user',
+      scope: agent.scope || 'user',
       description: agent.description,
       model: modelStr,
       variant: agent.variant,
@@ -247,7 +251,7 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
       prompt: agent.prompt,
       mode: agent.mode,
       permission: rulesetToPermissionConfig(agent.permission),
-      disable: draftAgent.disable,
+      disable: 'disable' in agent ? agent.disable === true : agent.options?.disable === true,
     });
     setSelectedAgent(newName);
     onItemSelect?.();
@@ -280,6 +284,25 @@ export const AgentsSidebar: React.FC<AgentsSidebarProps> = ({ onItemSelect }) =>
     }
 
     // Create new agent with new name and all existing config
+    if (renameDialogAgent.generation === 'oc2') {
+      try {
+        const envelope = await fetchAgentV2Entity(renameDialogAgent.name, settingsDirectory);
+        if (envelope.source === 'none') throw new Error('Agent has no stored definition to rename');
+        await writeAgentV2('POST', sanitizedName, {
+          ...envelope.config,
+          name: sanitizedName,
+          scope: renameDialogAgent.scope || 'user',
+        }, settingsDirectory);
+        const deleted = await deleteAgent(renameDialogAgent.name, renameDialogAgent.scope, settingsDirectory);
+        if (!deleted.ok) throw new Error(t('settings.agents.sidebar.toast.removeOldAfterRenameFailed'));
+        setSelectedAgent(sanitizedName);
+        toast.success(t('settings.agents.sidebar.toast.agentRenamed', { name: sanitizedName }));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('settings.agents.sidebar.toast.renameFailed'));
+      }
+      setRenameDialogAgent(null);
+      return;
+    }
     const renameModelStr = renameDialogAgent.model?.providerID && renameDialogAgent.model?.modelID
       ? `${renameDialogAgent.model.providerID}/${renameDialogAgent.model.modelID}`
       : null;

@@ -1,7 +1,8 @@
 import React from 'react';
-import type { Message, Part, Session } from '@opencode-ai/sdk/v2';
+import type { Message, Part, Session } from '@/lib/opencode/model';
 import type { PermissionRequest } from '@/types/permission';
 import type { QuestionRequest } from '@/types/question';
+import type { FormInfo, PermissionRequest as V2PermissionRequest } from '@opencode/client';
 
 import { ChatInput } from './ChatInput';
 import { ChatColumnSessionContext, type ChatColumnSession } from './chatColumnSession';
@@ -37,6 +38,8 @@ const TIMELINE_SETTLE_STABLE_FRAMES = 2;
 const TIMELINE_SETTLE_CAP_MS = 300;
 import { PermissionCard } from './PermissionCard';
 import { QuestionCard } from './QuestionCard';
+import { FormCard } from './FormCard';
+import { V2PermissionCard } from './V2PermissionCard';
 import { hasActiveQuestionToolInCurrentTurn, recoverPendingQuestionWithRetry } from '@/sync/question-recovery';
 import { StatusRowContainer } from './StatusRowContainer';
 import { SessionRecapNote } from '@/components/chat/SessionRecapSpacer';
@@ -70,6 +73,8 @@ import {
     useSessionStatus,
     useScopedBlockingPermissions,
     useScopedBlockingQuestions,
+    useScopedPendingPermissions,
+    useScopedPendingInputs,
     useParentSession,
     useSession,
 } from '@/sync/sync-context';
@@ -206,6 +211,8 @@ type ChatViewportProps = {
     revealGate: TimelineRevealGate;
     sessionQuestions: QuestionRequest[];
     sessionPermissions: PermissionRequest[];
+    v2Permissions: V2PermissionRequest[];
+    sessionForms: FormInfo[];
     isProgrammaticFollowActive: boolean;
     showLoadOlderButton: boolean;
     onLoadOlder: () => void;
@@ -243,6 +250,8 @@ const ChatViewport = React.memo(({
     revealGate,
     sessionQuestions,
     sessionPermissions,
+    v2Permissions,
+    sessionForms,
     isProgrammaticFollowActive,
     showLoadOlderButton,
     onLoadOlder,
@@ -377,7 +386,7 @@ const ChatViewport = React.memo(({
 
     const listFooter = React.useMemo(() => (
         <>
-            {(sessionQuestions.length > 0 || sessionPermissions.length > 0) && (
+            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || sessionForms.length > 0) && (
                 <div>
                     {sessionQuestions.map((question) => (
                         <QuestionCard key={question.id} question={question} />
@@ -385,6 +394,8 @@ const ChatViewport = React.memo(({
                     {sessionPermissions.map((permission) => (
                         <PermissionCard key={permission.id} permission={permission} />
                     ))}
+                    {sessionForms.map((form) => <FormCard key={form.id} form={form} />)}
+                    {v2Permissions.map((permission) => <V2PermissionCard key={permission.id} permission={permission} />)}
                 </div>
             )}
 
@@ -408,7 +419,7 @@ const ChatViewport = React.memo(({
                 aria-hidden="true"
             />
         </>
-    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions]);
+    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions]);
 
     // Opening a session paints the timeline as one finished picture: the root
     // stays invisible while any renderer holds a provisional first paint, then
@@ -574,6 +585,8 @@ const ChatViewport = React.memo(({
         && prev.revealGate === next.revealGate
         && prev.sessionQuestions === next.sessionQuestions
         && prev.sessionPermissions === next.sessionPermissions
+        && prev.v2Permissions === next.v2Permissions
+        && prev.sessionForms === next.sessionForms
         && prev.isProgrammaticFollowActive === next.isProgrammaticFollowActive
         && prev.showLoadOlderButton === next.showLoadOlderButton
         && prev.onLoadOlder === next.onLoadOlder
@@ -861,6 +874,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     // the directory.
     const sessionPermissions = useScopedBlockingPermissions(currentSessionId, effectiveSessionDirectory);
     const sessionQuestions = useScopedBlockingQuestions(currentSessionId, effectiveSessionDirectory);
+    const taggedPermissions = useScopedPendingPermissions(currentSessionId, effectiveSessionDirectory);
+    const taggedInputs = useScopedPendingInputs(currentSessionId, effectiveSessionDirectory);
+    const v2Permissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedPermissions]);
+    const sessionForms = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedInputs]);
 
     const hasUnreconciledQuestionTool = React.useMemo(
         () => !sessionQuestions.some((question) => question.sessionID === currentSessionId)
@@ -1617,6 +1634,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 revealGate={revealGate}
                 sessionQuestions={sessionQuestions}
                 sessionPermissions={sessionPermissions}
+                v2Permissions={v2Permissions}
+                sessionForms={sessionForms}
                 isProgrammaticFollowActive={isFollowingProgrammatically}
                 showLoadOlderButton={showLoadOlderButton}
                 onLoadOlder={handleLoadOlderClick}

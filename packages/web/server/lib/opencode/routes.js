@@ -4,16 +4,22 @@ import fs from 'fs';
 import path from 'path';
 import {
   buildDeferredRestartResponse,
+  buildAppliedResponse,
 } from './config-mutation-response.js';
 import { getClaudeCliAuthStatus } from './claude-cli-auth.js';
 import { OPENCODE_CONFIG_DIR } from './shared.js';
 import { settingsSurfaceOf } from './settings-files.js';
+import { OPENCODE_GENERATION } from './compatibility.js';
+import { parseWebSearchSelection } from './config-v2.js';
+import { getWebSearchSource, setWebSearchSelection } from './websearch-config.js';
 
 export const registerOpenCodeRoutes = (app, dependencies) => {
   const {
     crypto,
+    kernelRuntime,
     getOpenCodeResolutionSnapshot,
     getOpenCodeUpgradeCapability,
+    upgradeOpenCodeCli,
     formatSettingsResponse,
     readSettingsFromDisk,
     readSettingsFromDiskMigrated,
@@ -27,17 +33,50 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     refreshOpenCodeAfterConfigChange,
     buildOpenCodeUrl,
     getOpenCodeAuthHeaders,
+    webSearchConfig = { getWebSearchSource, setWebSearchSelection },
     fsPromises = fs.promises,
   } = dependencies;
 
-  let authLibrary = null;
+  const authLibraries = new Map();
+  const selectedKernel = () => {
+    const selected = kernelRuntime?.get() ?? { generation: OPENCODE_GENERATION.OC1 };
+    if (selected.generation !== OPENCODE_GENERATION.OC1 && selected.generation !== OPENCODE_GENERATION.OC2) {
+      throw Object.assign(new Error('OpenCode runtime is not ready for provider settings'), { statusCode: 503 });
+    }
+    return selected;
+  };
+  const assertSelectedKernel = (selected) => {
+    const current = selectedKernel();
+    if (current.generation !== selected.generation || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+      throw Object.assign(new Error('OpenCode runtime changed during provider settings request'), { statusCode: 409 });
+    }
+  };
+  const requireWebSearchKernel = () => {
+    const selected = selectedKernel();
+    if (selected.generation !== OPENCODE_GENERATION.OC2) {
+      throw Object.assign(new Error('Web search settings require OpenCode 2'), { statusCode: 409 });
+    }
+    return selected;
+  };
+  // OpenChamber-owned route: registered before the upstream API proxy.
+  app.get('/api/opencode/runtime', async (_req, res) => {
+    try {
+      const descriptor = await kernelRuntime.refresh();
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json(descriptor);
+    } catch {
+      return res.status(503).json({ error: 'OpenCode connection changed; retry discovery' });
+    }
+  });
   const pendingMcpAuthContextByState = new Map();
   const PENDING_MCP_AUTH_TTL_MS = 30 * 60 * 1000;
-  const getAuthLibrary = async () => {
-    if (!authLibrary) {
-      authLibrary = await import('./auth.js');
+  const getAuthLibrary = async (selected = selectedKernel()) => {
+    if (!authLibraries.has(selected.generation)) {
+      authLibraries.set(selected.generation, selected.generation === OPENCODE_GENERATION.OC2
+        ? await import('./auth-v2.js') : await import('./auth.js'));
     }
-    return authLibrary;
+    assertSelectedKernel(selected);
+    return authLibraries.get(selected.generation);
   };
 
   const normalizePendingString = (value) => {
@@ -90,6 +129,12 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 </html>`;
 
   const readOpenCodeCurrentVersion = async () => {
+    if (kernelRuntime) {
+      const descriptor = await kernelRuntime.refresh();
+      return descriptor.version
+        ? { ok: true, currentVersion: descriptor.version }
+        : { ok: false, status: 503, error: 'OpenCode version is unavailable' };
+    }
     const healthResponse = await fetch(buildOpenCodeUrl('/global/health', ''), {
       method: 'GET',
       headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
@@ -260,6 +305,17 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       // the in-flight lock is taken synchronously above, and a second click
       // cannot slip past while the release version is being resolved.
       const upgradeOperation = (async () => {
+        const selected = selectedKernel();
+        if (selected.generation === OPENCODE_GENERATION.OC2) {
+          if (!upgradeOpenCodeCli) return { status: 503, body: { success: false, error: 'Managed CLI upgrade is unavailable' } };
+          await upgradeOpenCodeCli();
+          try {
+            await refreshOpenCodeAfterConfigChange('OpenCode upgrade');
+          } catch {
+            return { status: 500, body: { success: false, upgraded: true, error: 'OpenCode upgraded, but restart failed' } };
+          }
+          return { status: 200, body: { success: true, restarted: true } };
+        }
         const targetResolution = await resolveOpenCodeUpgradeTarget(requestedTarget);
         if (!targetResolution.resolved) {
           return {
@@ -272,6 +328,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
           };
         }
 
+        assertSelectedKernel(selected);
         const response = await fetch(buildOpenCodeUrl('/global/upgrade', ''), {
           method: 'POST',
           headers: {
@@ -344,21 +401,17 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
         });
       }
 
-      const [healthResponse, latestVersion] = await Promise.all([
-        fetch(buildOpenCodeUrl('/global/health', ''), {
-          method: 'GET',
-          headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
-        }),
+      const [current, latestVersion] = await Promise.all([
+        readOpenCodeCurrentVersion(),
         fetchLatestOpenCodeVersion(),
       ]);
-      const health = await healthResponse.json().catch(() => null);
-      if (!healthResponse.ok) {
-        return res.status(healthResponse.status).json({
+      if (!current.ok) {
+        return res.status(current.status).json({
           available: null,
-          error: health?.error || healthResponse.statusText || 'Failed to read OpenCode version',
+          error: current.error || 'Failed to read OpenCode version',
         });
       }
-      const currentVersion = typeof health?.version === 'string' ? health.version.replace(/^v/, '') : null;
+      const currentVersion = current.currentVersion;
       if (!currentVersion || !latestVersion) {
         return res.json({ available: null, currentVersion, latestVersion: latestVersion || null });
       }
@@ -379,6 +432,12 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 
   app.get('/api/opencode/health', async (_req, res) => {
     try {
+      if (kernelRuntime) {
+        const descriptor = await kernelRuntime.refresh();
+        const healthy = descriptor.generation === OPENCODE_GENERATION.OC1
+          || descriptor.generation === OPENCODE_GENERATION.OC2;
+        return res.status(healthy ? 200 : 503).json({ healthy });
+      }
       const healthResponse = await fetch(buildOpenCodeUrl('/global/health', ''), {
         method: 'GET',
         headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
@@ -401,19 +460,14 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 
   app.get('/api/opencode/version', async (_req, res) => {
     try {
-      const healthResponse = await fetch(buildOpenCodeUrl('/global/health', ''), {
-        method: 'GET',
-        headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
-      });
-      const health = await healthResponse.json().catch(() => null);
-      if (!healthResponse.ok) {
-        return res.status(healthResponse.status).json({
+      const current = await readOpenCodeCurrentVersion();
+      if (!current.ok) {
+        return res.status(current.status).json({
           version: null,
-          error: health?.error || healthResponse.statusText || 'Failed to read OpenCode version',
+          error: current.error || 'Failed to read OpenCode version',
         });
       }
-      const version = typeof health?.version === 'string' ? health.version.replace(/^v/, '') : null;
-      return res.json({ version });
+      return res.json({ version: current.currentVersion });
     } catch (error) {
       return res.status(500).json({
         version: null,
@@ -597,6 +651,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 
   app.get('/api/provider/:providerId/source', async (req, res) => {
     try {
+      const selected = selectedKernel();
       const { providerId } = req.params;
       if (!providerId) {
         return res.status(400).json({ error: 'Provider ID is required' });
@@ -616,8 +671,8 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
         return res.status(400).json({ error: resolved.error });
       }
 
+      const { getProviderAuth } = await getAuthLibrary(selected);
       const sources = getProviderSources(providerId, directory);
-      const { getProviderAuth } = await getAuthLibrary();
       const auth = getProviderAuth(providerId);
       sources.sources.auth.exists = providerId === 'claude-code'
         ? getClaudeCliAuthStatus().connected
@@ -629,12 +684,13 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       });
     } catch (error) {
       console.error('Failed to get provider sources:', error);
-      return res.status(500).json({ error: error.message || 'Failed to get provider sources' });
+      return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to get provider sources' });
     }
   });
 
   app.put('/api/provider', async (req, res) => {
     try {
+      const selected = selectedKernel();
       const providerID = typeof req.body?.providerID === 'string'
         ? req.body.providerID.trim()
         : (typeof req.body?.providerId === 'string' ? req.body.providerId.trim() : '');
@@ -671,14 +727,14 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
         }
       }
 
-      const { getProviderAuth } = await getAuthLibrary();
+      const { getProviderAuth } = await getAuthLibrary(selected);
       const hasStoredAuth = Boolean(getProviderAuth(providerID));
       const upsertResult = upsertProviderConfig(providerID, config, directory, scope, { hasStoredAuth });
 
       return res.json({
-        ...buildDeferredRestartResponse(
-          `Provider ${providerID} saved. Restart OpenCode to apply.`,
-        ),
+        ...(selected.generation === OPENCODE_GENERATION.OC2
+          ? buildAppliedResponse(`Provider ${providerID} saved.`)
+          : buildDeferredRestartResponse(`Provider ${providerID} saved. Restart OpenCode to apply.`)),
         providerId: upsertResult.providerId,
         path: upsertResult.path,
         config: upsertResult.config,
@@ -690,8 +746,35 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
+  app.get('/api/config/websearch', async (req, res) => {
+    try {
+      const selected = requireWebSearchKernel();
+      const resolved = await resolveProjectDirectory(req);
+      assertSelectedKernel(selected);
+      const requestedDirectory = req.get?.('x-opencode-directory') || req.query?.directory;
+      if (requestedDirectory && !resolved.directory) return res.status(400).json({ error: resolved.error || 'Invalid directory' });
+      return res.json(webSearchConfig.getWebSearchSource(resolved.directory || null));
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to read web search settings' });
+    }
+  });
+
+  app.put('/api/config/websearch', (req, res) => {
+    try {
+      const selected = requireWebSearchKernel();
+      const selection = parseWebSearchSelection(req.body?.selection);
+      if (selection === undefined) return res.status(400).json({ error: 'Invalid web search selection' });
+      assertSelectedKernel(selected);
+      const result = webSearchConfig.setWebSearchSelection(selection);
+      return res.json({ success: true, changed: result.changed });
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to save web search settings' });
+    }
+  });
+
   app.delete('/api/provider/:providerId/auth', async (req, res) => {
     try {
+      const selected = selectedKernel();
       const { providerId } = req.params;
       if (!providerId) {
         return res.status(400).json({ error: 'Provider ID is required' });
@@ -719,14 +802,24 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       }
 
       let removed = false;
+      assertSelectedKernel(selected);
       if (scope === 'auth') {
-        const { removeProviderAuth } = await getAuthLibrary();
+        if (selected.generation === OPENCODE_GENERATION.OC2) {
+          return res.status(409).json({
+            error: 'OpenCode 2 owns provider credentials. Disconnect the provider through OpenCode credential settings.',
+            code: 'PROVIDER_CREDENTIAL_OWNED_BY_OPENCODE',
+          });
+        }
+        const { removeProviderAuth } = await getAuthLibrary(selected);
         removed = removeProviderAuth(providerId);
       } else if (scope === 'user' || scope === 'project' || scope === 'custom') {
         removed = removeProviderConfig(providerId, directory, scope);
       } else if (scope === 'all') {
-        const { removeProviderAuth } = await getAuthLibrary();
-        const authRemoved = removeProviderAuth(providerId);
+        let authRemoved = false;
+        if (selected.generation === OPENCODE_GENERATION.OC1) {
+          const { removeProviderAuth } = await getAuthLibrary(selected);
+          authRemoved = removeProviderAuth(providerId);
+        }
         const userRemoved = removeProviderConfig(providerId, directory, 'user');
         const projectRemoved = directory ? removeProviderConfig(providerId, directory, 'project') : false;
         const customRemoved = removeProviderConfig(providerId, directory, 'custom');
@@ -739,7 +832,9 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
         return res.json({
           success: true,
           removed,
-          ...buildDeferredRestartResponse('Provider disconnected successfully. Restart OpenCode to apply.'),
+          ...(selected.generation === OPENCODE_GENERATION.OC2
+            ? buildAppliedResponse('Provider configuration removed. Credentials are managed separately by OpenCode.', { credentialsRemoved: false })
+            : buildDeferredRestartResponse('Provider disconnected successfully. Restart OpenCode to apply.')),
         });
       }
 
@@ -751,7 +846,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       });
     } catch (error) {
       console.error('Failed to disconnect provider:', error);
-      return res.status(500).json({ error: error.message || 'Failed to disconnect provider' });
+      return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to disconnect provider' });
     }
   });
 

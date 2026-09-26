@@ -1,5 +1,5 @@
-import type { SessionStatus, Message, Part } from "@opencode-ai/sdk/v2/client"
-import type { Session } from "@opencode-ai/sdk/v2"
+import type { SessionStatus, Message, Part } from "@/lib/opencode/model"
+import type { Session } from "@/lib/opencode/model"
 import { getSessionMaterializationStatus } from "./materialization"
 
 type ReconnectMaterializationState = {

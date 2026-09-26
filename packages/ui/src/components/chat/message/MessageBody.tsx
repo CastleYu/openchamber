@@ -1,12 +1,13 @@
 import React from 'react';
-import type { Part } from '@opencode-ai/sdk/v2';
+import type { Part } from '@/lib/opencode/model';
 
 import UserTextPart from './parts/UserTextPart';
 import ToolPart from './parts/ToolPart';
 import AssistantTextPart from './parts/AssistantTextPart';
 import ReasoningPart from './parts/ReasoningPart';
 import { MessageFilesDisplay } from '../FileAttachment';
-import type { ToolPart as ToolPartType } from '@opencode-ai/sdk/v2';
+import type { ToolPart as ToolPartType } from '@/lib/opencode/model';
+import { isQuestionTool } from './toolKinds';
 import type { StreamPhase, ToolPopupContent, AgentMentionInfo } from './types';
 import type { TurnActivityGroup, TurnChangedFile, TurnGroupingContext } from '../lib/turns/types';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,8 @@ import { ArrowsMerge } from '@/components/icons/ArrowsMerge';
 
 import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 import { useSessionUIStore } from '@/sync/session-ui-store';
+import { forkAfterMessage } from '@/sync/session-actions';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useUIStore } from '@/stores/useUIStore';
 import { flattenAssistantTextParts, suggestPlanTitleFromText } from '@/lib/messages/messageText';
 import { MULTIRUN_EXECUTION_FORK_PROMPT_META_TEXT } from '@/lib/messages/executionMeta';
@@ -1455,6 +1458,23 @@ const AssistantMessageBody = React.memo(({
     const isMiniChatSurface = chatSurfaceMode === 'mini-chat';
     const canUseProjectPlanActions = !isVSCode && !isMiniChatSurface && !isMobile;
     const canShowMultiRunAction = !isVSCode && !isMiniChatSurface && !isMobile;
+    const canForkAnswer = React.useSyncExternalStore(
+        (listener) => opencodeClient.subscribeRuntime(listener),
+        () => opencodeClient.getBoundRuntime()?.generation === 'oc2',
+        () => false,
+    ) && !awaitingMessageCompletion;
+    const [isHistoryForking, setIsHistoryForking] = React.useState(false);
+    const handleForkAnswer = React.useCallback(async () => {
+        if (!sessionId || isHistoryForking) return;
+        setIsHistoryForking(true);
+        try {
+            await forkAfterMessage(sessionId, messageId);
+        } catch {
+            toast.error(t('rightSidebar.contextNotesTodo.toast.createSessionFailed'));
+        } finally {
+            setIsHistoryForking(false);
+        }
+    }, [isHistoryForking, messageId, sessionId, t]);
 
     const messagePreviewUrl = React.useMemo(() => {
         if (isVSCode || isMobile || isMiniChatSurface) {
@@ -1865,7 +1885,7 @@ const AssistantMessageBody = React.memo(({
     // question indefinitely (OPE-199). Render such messages' text inline,
     // matching OpenCode's display.
     const hasQuestionTool = React.useMemo(() => {
-        return toolParts.some((toolPart) => toolPart.tool === 'question');
+        return toolParts.some((toolPart) => isQuestionTool(toolPart.tool));
     }, [toolParts]);
 
     const shouldDeferSortedInlineText = isSortedRenderMode && !hasStopFinish && !hasQuestionTool;
@@ -2365,6 +2385,13 @@ const AssistantMessageBody = React.memo(({
             });
         }
         if (!isMiniChatSurface && !isReviewSessionView) {
+            if (canForkAnswer) actions.push({
+                id: 'fork-from-answer',
+                label: t('chat.messageBody.actions.fork'),
+                icon: <Icon name="git-branch" className="h-3.5 w-3.5" />,
+                disabled: isHistoryForking,
+                onSelect: () => { void handleForkAnswer(); },
+            });
             actions.push({
                 id: 'fork',
                 label: t('chat.messageBody.actions.startNewSession'),
@@ -2378,7 +2405,7 @@ const AssistantMessageBody = React.memo(({
             }
         }
         return actions;
-    }, [assistantPlanText, canUseProjectPlanActions, contextPinPending, contextPinned, currentProjectRef, extraActions, handleForkClick, handleSaveAsPlanClick, hasCopyableText, isFooterTTSPlaying, isMiniChatSurface, isReviewSessionView, onCopyMessage, onToggleContextPin, playFooterTTS, reviewTransferAction, shareMessageAsImage, showMessageTTSButtons, stopFooterTTS, t]);
+    }, [assistantPlanText, canForkAnswer, handleForkAnswer, isHistoryForking, canUseProjectPlanActions, contextPinPending, contextPinned, currentProjectRef, extraActions, handleForkClick, handleSaveAsPlanClick, hasCopyableText, isFooterTTSPlaying, isMiniChatSurface, isReviewSessionView, onCopyMessage, onToggleContextPin, playFooterTTS, reviewTransferAction, shareMessageAsImage, showMessageTTSButtons, stopFooterTTS, t]);
 
     const finalTurnActionButtons = (
         <>
@@ -2450,6 +2477,15 @@ const AssistantMessageBody = React.memo(({
                     </TooltipTrigger>
                     <TooltipContent sideOffset={6}>{t(contextPinned ? 'chat.messageBody.actions.unpinContext' : 'chat.messageBody.actions.pinContext')}</TooltipContent>
                 </Tooltip>
+            ) : null}
+            {canForkAnswer && !isMiniChatSurface && !isReviewSessionView ? (
+                <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground"
+                    disabled={isHistoryForking}
+                    title={t('chat.messageBody.actions.fork')}
+                    aria-label={t('chat.messageBody.actions.fork')}
+                    onClick={(event) => { event.stopPropagation(); void handleForkAnswer(); }}>
+                    <Icon name="git-branch" className="h-3 w-3" />
+                </Button>
             ) : null}
             {!isMiniChatSurface && !isReviewSessionView ? <Tooltip>
                 <TooltipTrigger asChild>

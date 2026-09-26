@@ -12,6 +12,43 @@ describe('context obligatory runtime', () => {
     vi.unstubAllGlobals();
   });
 
+  it('restores OC2 pins as a synthetic message and saves the cursor', async () => {
+    const identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
+    const operations = {
+      captureIdentity: () => identity,
+      getSession: vi.fn(async () => ({ data: { id: 'ses_2', metadata: { openchamber: {
+        context_obligatory_messages: [{ id: 'msg_1', role: 'user', createdAt: 10 }],
+      } } } })),
+      listMessages: vi.fn(async () => ({ data: { items: [{ id: 'cmp_1', role: 'compaction', completed: 20,
+        raw: { status: 'completed' } }] } })),
+      getMessage: vi.fn(async () => ({ data: { id: 'msg_1', type: 'user', text: 'Keep this' } })),
+      addSynthetic: vi.fn(async () => ({})),
+      updateSession: vi.fn(async () => ({})),
+    };
+    const runtime = createContextObligatoryRuntime({ kernelOperations: operations });
+    await runtime.processPayload({ type: 'session.compacted', properties: { sessionID: 'ses_2', directory: '/repo' } });
+    expect(operations.addSynthetic).toHaveBeenCalledWith(expect.objectContaining({
+      sessionID: 'ses_2', directory: '/repo', expectedIdentity: identity, resume: false,
+      text: expect.stringContaining('Keep this'),
+    }));
+    expect(operations.updateSession).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: { openchamber: { context_obligatory_last_compaction_message_id: 'cmp_1' } },
+    }));
+  });
+
+  it('rejects a late OC2 read before synthetic insertion', async () => {
+    let epoch = 1;
+    const operations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch }),
+      getSession: async () => { epoch = 2; return { data: { id: 'ses_2' } }; },
+      addSynthetic: vi.fn(), updateSession: vi.fn(),
+    };
+    const runtime = createContextObligatoryRuntime({ kernelOperations: operations });
+    await runtime.processPayload({ type: 'session.compacted', properties: { sessionID: 'ses_2', directory: '/repo' } });
+    expect(operations.addSynthetic).not.toHaveBeenCalled();
+    expect(operations.updateSession).not.toHaveBeenCalled();
+  });
+
   it('injects pinned text in chronological order after compaction and records the summary cursor', async () => {
     const requests = [];
     let sessionReads = 0;

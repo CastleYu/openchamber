@@ -7,7 +7,7 @@
  */
 import { beforeEach, describe, expect, mock, test } from "bun:test"
 import { create, type StoreApi } from "zustand"
-import type { Message, Part, SessionStatus } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, SessionStatus } from "@/lib/opencode/model"
 import { INITIAL_STATE } from "../types"
 import type { DirectoryStore } from "../child-store"
 

@@ -60,6 +60,16 @@ const coldState = () => ({ port: null, baseUrl: null });
 const agentsFromCalls = () => createProxyMiddlewareMock.mock.calls.map(([options]) => options.agent);
 
 describe('OpenCode API proxy agent wiring', () => {
+  it('uses the mounted OC1 path and restores /api for OC2', () => {
+    const state = managedState();
+    state.generation = 'oc1';
+    registerOpenCodeProxy(createStubApp(), { ...createStubDeps(state), getKernelRuntime: () => ({ generation: state.generation }) });
+    const [options] = createProxyMiddlewareMock.mock.calls[0];
+    expect(options.pathRewrite('/session?limit=10')).toBe('/session?limit=10');
+    state.generation = 'oc2';
+    expect(options.pathRewrite('/session?limit=10')).toBe('/api/session?limit=10');
+    expect(options.pathRewrite('/')).toBe('/api');
+  });
   beforeEach(() => {
     createProxyMiddlewareMock.mockReset();
     createProxyMiddlewareMock.mockImplementation(() => (_req, _res, next) => next?.());

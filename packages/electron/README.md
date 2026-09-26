@@ -202,7 +202,7 @@ The macOS menu bar item is enabled by default and can be disabled in General set
 
 ## Bundled OpenCode CLI
 
-Packaged Desktop builds include the official OpenCode CLI that matches the pinned `@opencode-ai/sdk` version in the root `package.json`. `prepare:opencode-cli` downloads the platform-specific release artifact, caches it under `packages/electron/.cache/opencode-cli`, stages `opencode` or `opencode.exe` into `resources/opencode-cli`, and verifies `opencode --version` before packaging. Re-running the step is fast when the staged binary already matches the pinned version.
+Packaged Desktop builds include the official OpenCode CLI pinned by `opencodeCli.version` in this package. The personal default remains OC1 `1.18.31`; `OPENCHAMBER_OPENCODE_CLI_VERSION` can select a supported OC2 release (at least `2.0.15`) for a specific build. Both preparation and verification use that same selection. OC1 archives come from GitHub releases, including the Windows ARM64 x64 fallback; OC2 platform tarballs come from npm. The scripts cache the archive under `packages/electron/.cache/opencode-cli`, stage `opencode` or `opencode.exe` into `resources/opencode-cli`, and accept both the bare OC1 and `opencode v2.x` version output. The selected binary does not decide live protocol handling; the running server's kernel descriptor does.
 
 Managed local Desktop startup prefers OpenCode binaries in this order:
 
@@ -225,7 +225,7 @@ Use an explicit override when testing a different OpenCode CLI build or when a u
 | `OPENCHAMBER_HMR_UI_PORT` | Preferred Vite UI port for desktop dev, default `5173` |
 | `OPENCHAMBER_HMR_API_PORT` | Preferred API port for desktop dev, default `3901` |
 | `OPENCHAMBER_RUNTIME=desktop` | Set by Electron before starting the web server |
-| `OPENCHAMBER_OPENCODE_CLI_VERSION` | Optional packaging override for the bundled OpenCode CLI version; defaults to the pinned root `@opencode-ai/sdk` version |
+| `OPENCHAMBER_OPENCODE_CLI_VERSION` | Optional packaging override for the bundled OpenCode CLI version; defaults to `opencodeCli.version` in this package |
 | `OPENCHAMBER_TARGET_ARCH` | Explicit desktop package architecture (`x64` or `arm64`); Linux requires it to match the native host |
 | `OPENCHAMBER_DESKTOP_NOTIFY=true` | Enables desktop notification flow in the web server |
 | `OPENCHAMBER_SKIP_API_COMPRESSION=true` | Defaulted by Desktop to reduce local CPU overhead |

@@ -113,6 +113,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
     resolveProjectId,
     isAgentMemoryEnabled,
     openCodeFetch = null,
+    kernelOperations = null,
   } = dependencies;
 
   /**
@@ -248,19 +249,21 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
   };
 
   const readSession = async (sessionId, directory) => (
-    openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory })
+    kernelOperations
+      ? (await kernelOperations.getSession({ sessionID: sessionId, directory })).data
+      : openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory })
   );
 
   /**
    * What this session still owes, read from its own stored signature.
    */
   const resolvePendingForSession = async (sessionId, directory) => {
-    const session = await readSession(sessionId, directory).catch(() => null);
+    const session = await readSession(sessionId, directory);
     return resolvePending(directory, readDeliveredSignature(session), readPins(session));
   };
 
   const collectSummaryForSession = async (sessionId, directory) => {
-    const session = await readSession(sessionId, directory).catch(() => null);
+    const session = await readSession(sessionId, directory);
     return collectSummary(directory, readPins(session));
   };
 
@@ -273,20 +276,16 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
     const next = new Set(pins[key]);
     if (pinned) next.add(id);
     else next.delete(id);
-    await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, {
-      directory,
-      method: 'PATCH',
-      body: {
-        metadata: {
+    const nextMetadata = {
           ...metadata,
           openchamber: {
             ...openchamber,
             [PINS_METADATA_KEY]: { ...pins, [key]: [...next] },
             [KNOWLEDGE_METADATA_KEY]: '',
           },
-        },
-      },
-    });
+        };
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
     return { ...pins, [key]: [...next] };
   };
 
@@ -303,16 +302,12 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
     const fresh = await readSession(sessionId, directory);
     const metadata = isRecord(fresh?.metadata) ? fresh.metadata : {};
     const openchamber = isRecord(metadata.openchamber) ? metadata.openchamber : {};
-    await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, {
-      directory,
-      method: 'PATCH',
-      body: {
-        metadata: {
+    const nextMetadata = {
           ...metadata,
           openchamber: { ...openchamber, [KNOWLEDGE_METADATA_KEY]: signature },
-        },
-      },
-    });
+        };
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
   };
 
   return {

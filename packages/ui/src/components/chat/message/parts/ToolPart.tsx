@@ -7,7 +7,11 @@ import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
 import { QuestionMarkdown } from '../../QuestionMarkdown';
 import { MessageFilesDisplay } from '../../FileAttachment';
 import { getToolMetadata } from '@/lib/toolHelpers';
-import type { ToolPart as ToolPartType, ToolState as ToolStateUnion, FilePart } from '@opencode-ai/sdk/v2';
+import type { ToolPart as ToolPartType, ToolState as ToolStateUnion, FilePart, Metadata, ToolInput } from '@/lib/opencode/model';
+import { opencodeClient } from '@/lib/opencode/client';
+import { executeDescription, executeOutputTruncation, executeScript, executeToolCalls, isExecuteTool } from '@/lib/opencode/tools';
+import { parseWebSearchOutput, webSearchProviderOf } from '@/lib/opencode/websearch';
+import { isFileChangeTool, isPatchTool, isQuestionTool, isShellTool, isSubagentTool } from '../toolKinds';
 import { toolDisplayStyles } from '@/lib/typography';
 import { WorkerHighlightedCode } from '@/components/code/WorkerHighlightedCode';
 import { useEffectiveDirectory } from '@/hooks/useEffectiveDirectory';
@@ -42,6 +46,7 @@ import { MinDurationShineText } from './MinDurationShineText';
 import { ToolRevealOnMount } from './ToolRevealOnMount';
 import { getToolIcon } from './toolPresentation';
 import { GuestToolTable } from './GuestToolTable';
+import { WebSearchResults } from './WebSearchResults';
 import type { JsonValue } from '@openchamber/sdk';
 import {
     guestToolTableRows,
@@ -86,7 +91,7 @@ const TOOL_ROW_TEXT_CLASS = '!text-[length:var(--text-meta)] !leading-5 sm:!lead
 const TOOL_ROW_TITLE_CLASS = cn('typography-meta font-medium', TOOL_ROW_TEXT_CLASS);
 const TOOL_ROW_DESCRIPTION_CLASS = cn('typography-meta', TOOL_ROW_TEXT_CLASS);
 
-type ToolStateWithMetadata = ToolStateUnion & { metadata?: Record<string, unknown>; input?: Record<string, unknown>; output?: string; error?: string; time?: { start: number; end?: number }; attachments?: Array<FilePart> };
+type ToolStateWithMetadata = ToolStateUnion & { metadata?: Metadata; input?: ToolInput; output?: string; error?: string; time?: { start: number; end?: number }; attachments?: Array<FilePart> };
 
 interface ToolPartProps {
     part: ToolPartType;
@@ -351,7 +356,7 @@ const getToolDiagnosticSection = (
     metadata: Record<string, unknown> | undefined,
     currentDirectory: string,
 ): ToolDiagnosticSection | null => {
-    if (!['edit', 'multiedit', 'write', 'apply_patch'].includes(toolName)) {
+    if (!isFileChangeTool(toolName)) {
         return null;
     }
 
@@ -412,10 +417,10 @@ const getToolDescriptionPath = (part: ToolPartType, state: ToolStateUnion, curre
     const metadata = stateWithData.metadata;
     const input = stateWithData.input;
 
-    if (part.tool === 'apply_patch') {
+    if (isPatchTool(part.tool)) {
         const files = Array.isArray(metadata?.files) ? metadata?.files : [];
-        const firstFile = files[0] as { relativePath?: string; filePath?: string } | undefined;
-        const filePath = firstFile?.relativePath || firstFile?.filePath;
+        const firstFile = files[0] as { file?: string; relativePath?: string; filePath?: string } | undefined;
+        const filePath = firstFile?.file || firstFile?.relativePath || firstFile?.filePath;
         if (files.length > 1) return null;
         if (typeof filePath === 'string') {
             return getRelativePath(filePath, currentDirectory);
@@ -487,17 +492,19 @@ const getLspToolDescription = (input: Record<string, unknown> | undefined, curre
     return displayPath ? `${operation} ${displayPath}${position}` : operation;
 };
 
-const getToolDescription = (part: ToolPartType, state: ToolStateUnion, currentDirectory: string): string => {
+const getToolDescription = (part: ToolPartType, state: ToolStateUnion, currentDirectory: string, isExecute = false): string => {
     const stateWithData = state as ToolStateWithMetadata;
     const metadata = stateWithData.metadata;
     const input = stateWithData.input;
+
+    if (isExecute) return executeDescription(input, metadata);
 
     const filePathLabel = getToolDescriptionPath(part, state, currentDirectory);
     if (filePathLabel) {
         return filePathLabel;
     }
 
-    if (part.tool === 'apply_patch') {
+    if (isPatchTool(part.tool)) {
         const files = Array.isArray(metadata?.files) ? metadata?.files : [];
         if (files.length > 1) {
             return `${files.length} files`;
@@ -506,17 +513,17 @@ const getToolDescription = (part: ToolPartType, state: ToolStateUnion, currentDi
     }
 
     // Question tool: show "Asked N question(s)"
-    if (part.tool === 'question' && input?.questions && Array.isArray(input.questions)) {
+    if (isQuestionTool(part.tool) && input?.questions && Array.isArray(input.questions)) {
         const count = input.questions.length;
         return `Asked ${count} question${count !== 1 ? 's' : ''}`;
     }
 
-    if (part.tool === 'bash' && input?.command && typeof input.command === 'string') {
+    if (isShellTool(part.tool) && input?.command && typeof input.command === 'string') {
         const firstLine = input.command.split('\n')[0];
         return firstLine.substring(0, 100);
     }
 
-    if (part.tool === 'task' && input?.description && typeof input.description === 'string') {
+    if (isSubagentTool(part.tool) && input?.description && typeof input.description === 'string') {
         return input.description.substring(0, 80);
     }
 
@@ -609,7 +616,7 @@ const getToolOutputLanguage = (
     metadata: Record<string, unknown> | undefined,
     input: Record<string, unknown> | undefined,
 ): string => {
-    if (part.tool === 'bash') {
+    if (isShellTool(part.tool)) {
         return 'bash';
     }
 
@@ -625,7 +632,7 @@ const getToolOutputText = (
     // so a single huge tool output can't trigger a V8 Zone-allocation OOM that
     // hard-crashes the renderer (issue #2265).
     const capped = capToolOutputText(output);
-    if (part.tool === 'bash') {
+    if (isShellTool(part.tool)) {
         return capped;
     }
 
@@ -790,7 +797,7 @@ const ToolScrollableTextOutput: React.FC<{
     const jsonResult = React.useMemo(() => tryParseJsonOutput(renderedOutput), [renderedOutput]);
     const forcedMode = presentation?.output && presentation.output !== 'auto' ? presentation.output : null;
 
-    if (part.tool === 'bash' && isStreaming) {
+    if (isShellTool(part.tool) && isStreaming) {
         return (
             <div className="typography-code text-muted-foreground/90">
                 <StreamingPlainTextOutput output={renderedOutput} />
@@ -834,7 +841,7 @@ const ToolScrollableTextOutput: React.FC<{
     }
 
     return (
-        <div className={part.tool === 'bash' ? 'typography-code text-muted-foreground/90' : undefined}>
+        <div className={isShellTool(part.tool) ? 'typography-code text-muted-foreground/90' : undefined}>
             <WorkerHighlightedCode
                 language={outputLanguage}
                 code={renderedOutput}
@@ -1283,6 +1290,8 @@ interface ToolExpandedContentProps {
     isExpanded: boolean;
     onShowPopup?: (content: ToolPopupContent) => void;
     presentation: GuestToolRule | null;
+    isExecute: boolean;
+    isWebSearch: boolean;
 }
 
 const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
@@ -1292,6 +1301,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
     isExpanded,
     onShowPopup,
     presentation,
+    isExecute,
+    isWebSearch,
 }) => {
     const { t } = useI18n();
     const runtime = React.useContext(RuntimeAPIContext);
@@ -1303,7 +1314,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
     const rawOutput = getToolOutput(part.tool, stateWithData.output, metadata?.output, state.status);
     const hasStringOutput = typeof rawOutput === 'string' && rawOutput.length > 0;
     const rawOutputString = typeof rawOutput === 'string' ? rawOutput : '';
-    const isStreamingBash = part.tool === 'bash' && state.status === 'running';
+    const isStreamingBash = isShellTool(part.tool) && state.status === 'running';
     const throttledOutputString = useStreamingTextThrottle({
         text: rawOutputString,
         isStreaming: isStreamingBash,
@@ -1318,12 +1329,20 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
         [currentDirectory, diffContent, metadata]
     );
     const hasVisualDiffEntry = diffEntries.some((entry) => entry.renderMode === 'diff');
+    const executeCode = React.useMemo(() => isExecute ? executeScript(input) : undefined, [input, isExecute]);
+    const executeCalls = React.useMemo(() => isExecute ? executeToolCalls(metadata) : [], [isExecute, metadata]);
+    const executeTruncation = React.useMemo(() => isExecute ? executeOutputTruncation(metadata) : null, [isExecute, metadata]);
+    const webSearchOutput = React.useMemo(
+        () => isWebSearch && state.status === 'completed' && hasStringOutput ? parseWebSearchOutput(outputString) : null,
+        [hasStringOutput, isWebSearch, outputString, state.status],
+    );
     const hideToolInputPreview = part.tool === 'openchamber'
         || part.tool === 'openchamber_web'
         || part.tool === 'openchamber_memory'
-        || part.tool === 'apply_patch'
+        || isPatchTool(part.tool)
         || part.tool === 'edit'
-        || part.tool === 'multiedit';
+        || part.tool === 'multiedit'
+        || isExecute;
     const diagnosticSection = React.useMemo(
         () => getToolDiagnosticSection(part.tool, input, metadata, currentDirectory),
         [currentDirectory, input, metadata, part.tool],
@@ -1334,7 +1353,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             return '';
         }
 
-        if ('command' in input && typeof input.command === 'string' && part.tool === 'bash') {
+        if ('command' in input && typeof input.command === 'string' && isShellTool(part.tool)) {
             return formatInputForDisplay(input, part.tool);
         }
 
@@ -1478,7 +1497,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
         }
 
         // Question tool: show parsed Q&A summary or question content from input
-        if (part.tool === 'question') {
+        if (isQuestionTool(part.tool)) {
             if (state.status === 'completed' && hasStringOutput) {
                 const parsedQA = parseQuestionOutput(outputString);
                 if (parsedQA && parsedQA.length > 0) {
@@ -1543,7 +1562,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             return <div className="typography-meta text-muted-foreground">{t('chat.toolPart.awaitingResponse')}</div>;
         }
 
-        if (part.tool === 'task' && hasStringOutput) {
+        if (isSubagentTool(part.tool) && hasStringOutput) {
             return renderScrollableBlock(
                 <div className="w-full min-w-0">
                     <SimpleMarkdownRenderer content={coerceToText(outputString)} variant="tool" onShowPopup={onShowPopup} />
@@ -1551,7 +1570,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             );
         }
 
-        if ((part.tool === 'edit' || part.tool === 'multiedit' || part.tool === 'apply_patch' || part.tool === 'write') && (diffEntries.length > 0 || !!diagnosticSection)) {
+        if ((part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && (diffEntries.length > 0 || !!diagnosticSection)) {
             return renderScrollableBlock(
                 <div className="space-y-3">
                     {diffEntries.map((entry) => (
@@ -1610,6 +1629,13 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             return null;
         }
 
+        if (webSearchOutput) {
+            return renderScrollableBlock(
+                <WebSearchResults output={webSearchOutput} providerId={webSearchProviderOf(metadata)} />,
+                { className: 'p-1', maxHeightClass: 'max-h-[50vh]' },
+            );
+        }
+
         if (hasStringOutput && outputString.trim()) {
             const output = (
                 <ToolScrollableTextOutput
@@ -1624,8 +1650,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             return renderScrollableBlock(
                 output,
                 {
-                    className: part.tool === 'bash' ? 'p-1 rounded-none' : 'p-1',
-                    maxHeightClass: part.tool === 'bash' ? 'max-h-[46vh]' : undefined,
+                    className: isShellTool(part.tool) ? 'p-1 rounded-none' : 'p-1',
+                    maxHeightClass: isShellTool(part.tool) ? 'max-h-[46vh]' : undefined,
                     followKey: isStreamingBash ? outputString : undefined,
                 }
             );
@@ -1639,7 +1665,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
     const hasVisibleOutput = outputString.trim().length > 0;
     const shouldRenderResult = (state.status === 'completed' && 'output' in state)
-        || (part.tool === 'bash' && hasVisibleOutput);
+        || (isShellTool(part.tool) && hasVisibleOutput);
 
     if (isTodoTool) {
         if (state.status === 'error' && 'error' in state) {
@@ -1688,14 +1714,48 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                 'relative pr-2 pb-2 pt-2 space-y-2 pl-4'
             )}
         >
-            {part.tool === 'question' ? (
+            {isQuestionTool(part.tool) ? (
                 renderResultContent()
             ) : (
                 <>
+                    {isExecute ? (
+                        <div className="my-1 space-y-2">
+                            {executeCode ? renderScrollableBlock(
+                                <WorkerHighlightedCode
+                                    language="javascript"
+                                    code={executeCode}
+                                    style={TOOL_COLLAPSED_CUSTOM_STYLE}
+                                    codeStyle={CODE_TAG_PROPS.style}
+                                    wrap
+                                />,
+                                { maxHeightClass: 'max-h-60', className: 'tool-input-surface' },
+                            ) : null}
+                            {executeCalls.length > 0 ? (
+                                <div>
+                                    <div className="typography-meta font-medium text-muted-foreground/80 mb-1">
+                                        {t('chat.toolPart.scriptCalls')}
+                                    </div>
+                                    <ul className="space-y-0.5">
+                                        {executeCalls.map((call, index) => (
+                                            <li key={`${call.tool}-${index}`} className="flex min-w-0 items-baseline gap-2">
+                                                <span className="typography-code flex-shrink-0" style={call.status === 'error' ? TOOL_ERROR_TITLE_STYLE : undefined}>
+                                                    {call.tool}
+                                                </span>
+                                                {call.status && call.status !== 'error' && call.status !== 'completed' ? (
+                                                    <span className="typography-micro flex-shrink-0 text-muted-foreground/70">{call.status}</span>
+                                                ) : null}
+                                                {call.input ? <span className="typography-meta truncate text-muted-foreground/70">{call.input}</span> : null}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
                     {hasInputText ? (
                         <div className="my-1">
                             {renderScrollableBlock(
-                                part.tool === 'bash' ? (
+                                isShellTool(part.tool) ? (
                                     <pre className="tool-input-text whitespace-pre-wrap break-words typography-code text-muted-foreground/90 m-0 p-0">
                                         {inputTextContent}
                                     </pre>
@@ -1711,7 +1771,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                                 ),
                                 {
                                     maxHeightClass: isWriteLikeTool && writeLikeInputPatch && isExpanded ? 'max-h-[50vh]' : 'max-h-60',
-                                    className: part.tool === 'bash' ? 'tool-input-surface p-0 rounded-none' : 'tool-input-surface',
+                                    className: isShellTool(part.tool) ? 'tool-input-surface p-0 rounded-none' : 'tool-input-surface',
                                 }
                             )}
                         </div>
@@ -1719,7 +1779,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
                     {shouldRenderResult && (
                         <div>
-                            {(part.tool === 'edit' || part.tool === 'multiedit' || part.tool === 'apply_patch' || part.tool === 'write') && hasVisualDiffEntry ? (
+                            {(part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && hasVisualDiffEntry ? (
                                 <div className="mb-1 flex items-center justify-end gap-2">
                                     <DiffViewToggle
                                         mode={diffViewMode}
@@ -1729,6 +1789,12 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                                 </div>
                             ) : null}
                             {renderResultContent()}
+                            {executeTruncation ? (
+                                <div className="typography-meta mt-1 text-muted-foreground/70">
+                                    {t('chat.toolPart.outputTruncated')}
+                                    {executeTruncation.outputPath ? ` \u2014 ${executeTruncation.outputPath}` : ''}
+                                </div>
+                            ) : null}
                         </div>
                     )}
 
@@ -1756,13 +1822,15 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
 ToolExpandedContent.displayName = 'ToolExpandedContent';
 
-const ToolPartContent: React.FC<ToolPartProps> = ({
+const ToolPartContent: React.FC<ToolPartProps & { isExecute: boolean; isWebSearch: boolean }> = ({
     part,
     isExpanded,
     onToggle,
     isMobile,
     onShowPopup,
     animateTailText = true,
+    isExecute,
+    isWebSearch,
 }) => {
     const { t } = useI18n();
     const state = part.state;
@@ -1773,7 +1841,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
     const currentDirectory = useEffectiveDirectory() ?? '';
 
     const normalizedPartTool = normalizeToolName(part.tool);
-    const isTaskTool = normalizedPartTool === 'task';
+    const isTaskTool = isSubagentTool(normalizedPartTool);
     // The registry sees the full name OpenCode reported (`mcp.jira.search`);
     // the built-in switches below keep the normalized one.
     const presentation = useGuestToolPresentation(part.tool);
@@ -1973,24 +2041,24 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         return metadataTaskSummaryEntries;
     }, [childSessionTaskSummaryEntries, metadataTaskSummaryEntries]);
     const diffStats = React.useMemo(() => {
-        return (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || normalizedPartTool === 'apply_patch')
+        return (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || isPatchTool(normalizedPartTool))
             ? parseDiffStats(metadata)
             : null;
     }, [metadata, normalizedPartTool]);
     const writeLineCount = React.useMemo(() => {
         return normalizedPartTool === 'write' ? parseWriteLineCount(input) : null;
     }, [input, normalizedPartTool]);
-    const isMultiFileApplyPatch = normalizedPartTool === 'apply_patch' && Array.isArray(metadata?.files) && (metadata?.files as []).length > 1;
+    const isMultiFileApplyPatch = isPatchTool(normalizedPartTool) && Array.isArray(metadata?.files) && (metadata?.files as []).length > 1;
     const normalizedPart = normalizedPartTool !== part.tool ? ({ ...part, tool: normalizedPartTool } as ToolPartType) : part;
     const descriptionPath = getToolDescriptionPath(normalizedPart, state, currentDirectory);
-    const builtInDescription = getToolDescription(normalizedPart, state, currentDirectory);
+    const builtInDescription = getToolDescription(normalizedPart, state, currentDirectory, isExecute);
     const stateOutput = typeof stateWithData.output === 'string' ? stateWithData.output : undefined;
     const guestHeader = React.useMemo(
         () => (presentation ? renderGuestToolHeader(presentation, { input, output: stateOutput, metadata }) : null),
         [input, metadata, presentation, stateOutput],
     );
     const description = guestHeader?.subtitle ?? builtInDescription;
-    const displayName = guestHeader?.title ?? getToolMetadata(normalizedPartTool || part.tool).displayName;
+    const displayName = guestHeader?.title ?? (isExecute ? t('chat.toolPart.script') : getToolMetadata(normalizedPartTool || part.tool).displayName);
     
     // Tool title/description — shown inline as context. A subtitle the
     // extension declared replaces it, since both land in the same slot.
@@ -1999,10 +2067,10 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         if (guestSubtitle) {
             return null;
         }
-        if (normalizedPartTool === 'bash') {
+        if (isShellTool(normalizedPartTool)) {
             return null;
         }
-        if (normalizedPartTool === 'apply_patch') {
+        if (isPatchTool(normalizedPartTool)) {
             return null;
         }
         if (normalizedPartTool === 'lsp') {
@@ -2010,7 +2078,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         }
         if (
             descriptionPath
-            && (normalizedPartTool === 'apply_patch' || normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || normalizedPartTool === 'write')
+            && (isPatchTool(normalizedPartTool) || normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || normalizedPartTool === 'write')
         ) {
             return null;
         }
@@ -2062,7 +2130,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                 toolDiff = getPrimaryDiffFromMetadata(normalizedPartTool, metadata, filePath);
                 targetLine = getFirstChangedLineFromMetadata(normalizedPartTool, metadata, filePath);
             }
-        } else if (normalizedPartTool === 'apply_patch') {
+        } else if (isPatchTool(normalizedPartTool)) {
             filePath = getPrimaryToolPath(normalizedPartTool, input, metadata);
             if (typeof filePath === 'string') {
                 toolDiff = getPrimaryDiffFromMetadata(normalizedPartTool, metadata, filePath);
@@ -2079,7 +2147,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         if (typeof filePath === 'string') {
             e.stopPropagation();
             const absolutePath = toAbsoluteFilePath(currentDirectory, filePath);
-            if (runtime.runtime.isVSCode && toolDiff && (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || normalizedPartTool === 'apply_patch')) {
+            if (runtime.runtime.isVSCode && toolDiff && (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || isPatchTool(normalizedPartTool))) {
                 const label = `${getRelativePath(absolutePath, currentDirectory)} (changes)`;
                 void runtime.editor.openDiff('', absolutePath, label, { line: targetLine, patch: toolDiff });
                 return;
@@ -2125,7 +2193,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         if (!quickOpenTarget) return;
         const { absolutePath, line, toolDiff, toolName } = quickOpenTarget;
         if (runtime?.editor) {
-            if (runtime.runtime.isVSCode && toolDiff && (toolName === 'edit' || toolName === 'multiedit' || toolName === 'apply_patch')) {
+            if (runtime.runtime.isVSCode && toolDiff && (toolName === 'edit' || toolName === 'multiedit' || isPatchTool(toolName))) {
                 const label = `${getRelativePath(absolutePath, currentDirectory)} (changes)`;
                 void runtime.editor.openDiff('', absolutePath, label, { line, patch: toolDiff });
                 return;
@@ -2266,7 +2334,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                                     </button>
                                 ) : null}
                             </div>
-                            {normalizedPartTool === 'bash' && typeof effectiveTimeStart === 'number' ? (
+                            {isShellTool(normalizedPartTool) && typeof effectiveTimeStart === 'number' ? (
                                 <span className={cn('flex-shrink-0 tabular-nums text-muted-foreground/80', TOOL_ROW_DESCRIPTION_CLASS)}>
                                     <LiveDuration
                                         start={effectiveTimeStart}
@@ -2366,6 +2434,8 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                                 isExpanded={isExpanded}
                                 onShowPopup={onShowPopup}
                                 presentation={presentation}
+                                isExecute={isExecute}
+                                isWebSearch={isWebSearch}
                             />
                         </div>
                     ) : null}
@@ -2427,7 +2497,13 @@ class ToolPartErrorBoundary extends React.Component<{
 const ToolPart: React.FC<ToolPartProps> = (props) => {
     const { t } = useI18n();
     const toolName = normalizeToolName(props.part.tool) || 'tool';
-    const displayName = getToolMetadata(toolName).displayName;
+    const generation = React.useSyncExternalStore(
+        (listener) => opencodeClient.subscribeRuntime(listener),
+        () => opencodeClient.getBoundRuntime()?.generation,
+    );
+    const isExecute = generation === 'oc2' && isExecuteTool(props.part.tool);
+    const isWebSearch = generation === 'oc2' && props.part.tool === 'websearch';
+    const displayName = isExecute ? t('chat.toolPart.script') : getToolMetadata(toolName).displayName;
 
     return (
         <ToolPartErrorBoundary
@@ -2436,7 +2512,7 @@ const ToolPart: React.FC<ToolPartProps> = (props) => {
             resetKey={props.part}
             toolName={toolName}
         >
-            <ToolPartContent {...props} />
+            <ToolPartContent {...props} isExecute={isExecute} isWebSearch={isWebSearch} />
         </ToolPartErrorBoundary>
     );
 };

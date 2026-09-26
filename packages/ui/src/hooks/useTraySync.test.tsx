@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 import { useTraySync } from './useTraySync';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { useUIStore } from '@/stores/useUIStore';

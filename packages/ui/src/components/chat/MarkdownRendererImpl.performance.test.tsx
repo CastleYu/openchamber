@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { Window } from 'happy-dom';
+import { JSDOM, type DOMWindow } from 'jsdom';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import type { TextPart } from '@opencode-ai/sdk/v2';
+import type { TextPart } from '@/lib/opencode/model';
 
 type OperationCounts = {
   innerHTMLWrites: number;
@@ -59,7 +59,7 @@ const fixtureWorkload = {
   mermaidBlocksPerRenderer: 2,
 };
 
-let windowInstance: Window;
+let windowInstance: DOMWindow;
 let previousGlobals: Map<string, PropertyDescriptor | undefined>;
 let activeCounts: OperationCounts | null = null;
 let animationFrameQueue: FrameRequestCallback[] = [];
@@ -92,7 +92,7 @@ const makeCounts = (): OperationCounts => ({
   geometrySequence: [],
 });
 
-const installGlobal = (name: string, value: Window[keyof Window]): void => {
+const installGlobal = (name: string, value: DOMWindow[keyof DOMWindow]): void => {
   previousGlobals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
   Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
 };
@@ -179,18 +179,16 @@ const runFixture = async (rendererCount: number): Promise<FixtureMetrics> => {
 };
 
 const initializePerformanceDom = async (): Promise<void> => {
-  windowInstance = new Window({ url: 'http://localhost/' });
-  windowInstance.document.write('<!doctype html><html><head></head><body></body></html>');
-  windowInstance.document.close();
+  windowInstance = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost/' }).window;
   previousGlobals = new Map();
   installGlobal('window', windowInstance);
   installGlobal('document', windowInstance.document);
   installGlobal('navigator', windowInstance.navigator);
   installGlobal('customElements', windowInstance.customElements);
   for (const name of ['Document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'Text', 'NodeFilter', 'MutationObserver', 'DOMParser', 'XMLSerializer', 'HTMLAnchorElement', 'HTMLButtonElement']) {
-    // SAFETY: these names are the DOM constructors installed by this happy-dom Window.
-    const globalValue = windowInstance[name as keyof Window];
-    if (globalValue === undefined) throw new Error(`happy-dom global is unavailable: ${name}`);
+    // SAFETY: these names are the DOM constructors installed by this jsdom Window.
+    const globalValue = windowInstance[name as keyof DOMWindow];
+    if (globalValue === undefined) throw new Error(`jsdom global is unavailable: ${name}`);
     installGlobal(name, globalValue);
   }
   Object.defineProperty(windowInstance, 'matchMedia', { configurable: true, value: () => ({ matches: false, media: '', onchange: null, addListener: () => undefined, removeListener: () => undefined, addEventListener: () => undefined, removeEventListener: () => undefined, dispatchEvent: () => false }) });
@@ -205,7 +203,7 @@ const initializePerformanceDom = async (): Promise<void> => {
   const nodePrototype = Node.prototype;
   const documentPrototype = Document.prototype;
   const innerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-  if (!innerHTMLDescriptor?.set || !innerHTMLDescriptor.get) throw new Error('happy-dom innerHTML descriptor unavailable');
+  if (!innerHTMLDescriptor?.set || !innerHTMLDescriptor.get) throw new Error('jsdom innerHTML descriptor unavailable');
   Object.defineProperty(Element.prototype, 'innerHTML', {
     configurable: true,
     get: innerHTMLDescriptor.get,
@@ -324,6 +322,7 @@ afterAll(() => {
     if (descriptor) Object.defineProperty(globalThis, name, descriptor);
     else Reflect.deleteProperty(globalThis, name);
   }
+  windowInstance.close();
 });
 
 describe('MarkdownRenderer DOM mount performance contract', () => {

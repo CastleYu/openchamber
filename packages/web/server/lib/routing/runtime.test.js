@@ -41,6 +41,10 @@ const makeRuntime = ({ config = readyConfig(), token = 'key', answers, askError,
 };
 
 describe('requestTextOf', () => {
+  it('reads OC2 flat prompts and commands', () => {
+    expect(requestTextOf({ text: '  explain this  ' })).toBe('explain this');
+    expect(requestTextOf({ name: 'review', text: '  3650  ' })).toBe('/review 3650');
+  });
   it('joins authored text parts and ignores synthetic ones and files', () => {
     expect(requestTextOf({ parts: [
       { type: 'text', text: 'fix the typo' },
@@ -51,6 +55,41 @@ describe('requestTextOf', () => {
   });
   it('renders a slash command with its arguments', () => {
     expect(requestTextOf({ command: 'review', arguments: ' 3650 ' })).toBe('/review 3650');
+  });
+});
+
+describe('OC2 session routing', () => {
+  const setup = (epochRef) => {
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: epochRef.value }),
+      listMessages: vi.fn(async () => ({ data: { items: [] } })),
+      switchSessionSelection: vi.fn(async () => ({})),
+    };
+    const store = { readConfig: async () => readyConfig(), readToken: async () => 'key' };
+    const jev = { ask: vi.fn(async () => ({ answers: { category: { choice: 'hard', confidence: 0.97 } }, ms: 12 })) };
+    const runtime = createRoutingRuntime({ kernelOperations, store, jev });
+    return { runtime, kernelOperations, jev };
+  };
+
+  it('switches model and agent for a marked Auto session', async () => {
+    process.env.OPENCHAMBER_ROUTING_ENABLE = '1';
+    const { runtime, kernelOperations } = setup({ value: 1 });
+    expect(runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo')).toBe(true);
+    await runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'find root cause' } });
+    expect(kernelOperations.switchSessionSelection).toHaveBeenCalledWith(expect.objectContaining({
+      sessionID: 'ses_2', directory: '/repo', model: { providerID: 'openai', id: 'gpt-6-astra', variant: 'high' },
+      agent: 'plan', expectedIdentity: { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 },
+    }));
+  });
+
+  it('drops an old Auto mark after the runtime changes', async () => {
+    const epoch = { value: 1 };
+    const { runtime, kernelOperations } = setup(epoch);
+    runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo');
+    epoch.value = 2;
+    expect(runtime.isAutoSession('ses_2')).toBe(false);
+    await expect(runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'hello' } })).resolves.toBeNull();
+    expect(kernelOperations.switchSessionSelection).not.toHaveBeenCalled();
   });
 });
 

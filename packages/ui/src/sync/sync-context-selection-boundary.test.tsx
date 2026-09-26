@@ -7,7 +7,8 @@ import { usePrefetchSessionMessages } from './use-sync'
 import { installHookTestDom } from '../components/session/sidebar/test-utils/testDom'
 import { useSessionUIStore } from './session-ui-store'
 import { opencodeClient } from '@/lib/opencode/client'
-import type { Message, Part } from '@opencode-ai/sdk/v2'
+import type { Message, Part } from '@/lib/opencode/model'
+import { sourceFromSdk } from './__tests__/source-fixture'
 
 const createSdk = (respond?: (url: URL) => Response | undefined) => createOpencodeClient({
   baseUrl: 'https://sync.test',
@@ -41,7 +42,7 @@ describe('SyncProvider selection boundary', () => {
       const sessionID = `selected-${mode}`
       const directory = `/workspace/actual-${mode}`
       try {
-        await act(async () => root.render(<SyncProvider sdk={createSdk()} directory="/workspace/guess"><Probe /></SyncProvider>))
+        await act(async () => root.render(<SyncProvider source={sourceFromSdk(createSdk())} directory="/workspace/guess"><Probe /></SyncProvider>))
         if (!manager) throw new Error('Directory manager was not mounted')
         const store = manager.ensureChild(directory, { bootstrap: false })
         const messages: Message[] = Array.from({ length: 10 }, (_, index) => ({
@@ -95,9 +96,10 @@ describe('SyncProvider selection boundary', () => {
       }
       return undefined
     })
+    const source = sourceFromSdk(sdk)
 
     try {
-      await act(async () => root.render(<SyncProvider sdk={sdk} directory="/workspace/a"><Probe /></SyncProvider>))
+      await act(async () => root.render(<SyncProvider source={source} directory="/workspace/a"><Probe /></SyncProvider>))
       if (!manager) throw new Error('Bootstrap manager was not mounted')
       const mountedManager = manager
       const waitForState = (expected: 'complete' | 'failed') => new Promise<void>((resolve) => {
@@ -149,17 +151,18 @@ describe('SyncProvider selection boundary', () => {
       return null
     }
     const sdk = createSdk()
+    const source = sourceFromSdk(sdk)
 
     try {
       await act(async () => root.render(
-        <SyncProvider sdk={sdk} directory="/workspace/a">
+        <SyncProvider source={source} directory="/workspace/a">
           <RuntimeConsumer />
           <DirectoryConsumer />
         </SyncProvider>,
       ))
       const initialCallback = callback
       await act(async () => root.render(
-        <SyncProvider sdk={sdk} directory="/workspace/b">
+        <SyncProvider source={source} directory="/workspace/b">
           <RuntimeConsumer />
           <DirectoryConsumer />
         </SyncProvider>,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { Session, SessionStatus } from '@opencode-ai/sdk/v2';
+import type { Session, SessionStatus } from '@/lib/opencode/model';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';

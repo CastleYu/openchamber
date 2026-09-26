@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model'
 import { opencodeClient } from '@/lib/opencode/client';
 import { switchRuntimeEndpoint } from '@/lib/runtime-switch';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';

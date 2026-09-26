@@ -37,13 +37,19 @@ export const createSystemPromptRuntime = ({ fsPromises, path, dataDir }) => {
   const pluginDirectory = path.join(dataDir, 'system-prompt');
   const pluginPath = path.join(pluginDirectory, 'openchamber-system-prompt-plugin.js');
 
-  const prepareManagedOpenCodeEnv = async (rawConfig) => {
+  const materializePlugin = async () => {
     await fsPromises.mkdir(pluginDirectory, { recursive: true });
+    await fsPromises.writeFile(path.join(pluginDirectory, 'package.json'), JSON.stringify({ name: 'openchamber-system-prompt', version: '0.0.0', private: true, type: 'module', exports: { '.': './openchamber-system-prompt-plugin.js' } }), { mode: 0o600 });
     await fsPromises.writeFile(pluginPath, createPluginSource(), { mode: 0o600 });
+    return pluginDirectory;
+  };
+
+  const prepareManagedOpenCodeEnv = async (rawConfig) => {
+    await materializePlugin();
     return {
       OPENCODE_CONFIG_CONTENT: appendManagedPlugin(rawConfig, pathToFileURL(pluginPath).href, 'system prompt optimizer'),
     };
   };
 
-  return { prepareManagedOpenCodeEnv };
+  return { prepareManagedOpenCodeEnv, materializePlugin };
 };

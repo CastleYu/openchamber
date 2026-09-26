@@ -2,11 +2,11 @@ import React from 'react';
 import { z } from 'zod';
 import { isAutoModel } from '@/lib/routing/autoModel';
 import { useChatColumnSession } from '@/components/chat/chatColumnSession';
-import type { Message, Part, ReasoningPart, TextPart, ToolPart } from '@opencode-ai/sdk/v2';
+import type { Message, Part, ReasoningPart, Session, TextPart, ToolPart } from '@/lib/opencode/model';
 
 import type { MessageStreamPhase } from '@/stores/types/sessionTypes';
 import { useSessionUIStore } from '@/sync/session-ui-store';
-import { useDirectorySync, useSessionMessages, useSessionPermissions, useSessionQuestions, useSessionStatus } from '@/sync/sync-context';
+import { useDirectorySync, useSession, useSessionMessages, useSessionPermissions, useSessionPendingPermissions, useSessionQuestions, useSessionStatus, useSyncSource } from '@/sync/sync-context';
 import { isFullySyntheticMessage } from '@/lib/messages/synthetic';
 import { useCurrentSessionActivity } from './useSessionActivity';
 
@@ -281,7 +281,23 @@ const readUserMessageModel = (message: Message): { providerId: string; modelId: 
 
 const completedTimeSchema = z.object({ time: z.object({ completed: z.number() }) });
 
-export const getActiveAssistantContext = (messages: Message[]): ActiveAssistantContext => {
+export const getActiveAssistantContext = (
+    messages: Message[], generation: 'oc1' | 'oc2' = 'oc1', sessionModel?: Session['model'],
+): ActiveAssistantContext => {
+    if (generation === 'oc2') {
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+            const message = messages[index];
+            if (message.role !== 'assistant') continue;
+            const newerPrompt = messages.slice(index + 1).some((entry) => entry.role === 'user');
+            if (message.time.completed !== undefined && newerPrompt) {
+                return { assistantId: message.id, model: sessionModel
+                    ? { providerId: sessionModel.providerID, modelId: sessionModel.id } : null };
+            }
+            return { assistantId: message.id, model: message.providerID && message.modelID
+                ? { providerId: message.providerID, modelId: message.modelID } : null };
+        }
+        return { assistantId: null, model: null };
+    }
     let assistantId: string | null = null;
     let parentId: string | null = null;
 
@@ -348,6 +364,8 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
     const liveSessionDirectory = useSessionUIStore((state) => state.currentSessionDirectory);
     const currentSessionId = chatColumnSession ? chatColumnSession.sessionId : liveSessionId;
     const currentSessionDirectory = chatColumnSession ? chatColumnSession.directory : liveSessionDirectory;
+    const source = useSyncSource();
+    const sessionModel = useSession(currentSessionId ?? undefined, currentSessionDirectory ?? undefined)?.model;
 
     const rawSessionMessages = useSessionMessages(
         currentSessionId ?? '',
@@ -355,8 +373,8 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
     );
 
     const activeAssistant = React.useMemo(
-        () => getActiveAssistantContext(rawSessionMessages),
-        [rawSessionMessages],
+        () => getActiveAssistantContext(rawSessionMessages, source.generation, sessionModel),
+        [rawSessionMessages, source.generation, sessionModel],
     );
     const lastAssistantId = activeAssistant.assistantId;
 
@@ -371,6 +389,11 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
 
     const sessionPermissionRequests = useSessionPermissions(currentSessionId ?? '', currentSessionDirectory ?? undefined);
     const sessionQuestionRequests = useSessionQuestions(currentSessionId ?? '', currentSessionDirectory ?? undefined);
+    const pendingPermissions = useSessionPendingPermissions(currentSessionId ?? '', currentSessionDirectory ?? undefined);
+    const pendingInputCount = useDirectorySync(
+        React.useCallback((state) => state.pendingInput[currentSessionId ?? '']?.length ?? 0, [currentSessionId]),
+        currentSessionDirectory ?? undefined,
+    );
 
     const sessionAbortRecord = useSessionUIStore(
         React.useCallback((state) => {
@@ -471,8 +494,8 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             return baseWorking;
         }
 
-        const hasPendingPermission = sessionPermissionRequests.length > 0;
-        const hasPendingQuestion = sessionQuestionRequests.length > 0;
+        const hasPendingPermission = sessionPermissionRequests.length > 0 || pendingPermissions.length > 0;
+        const hasPendingQuestion = sessionQuestionRequests.length > 0 || pendingInputCount > 0;
 
         if (!hasPendingPermission && !hasPendingQuestion) {
             return baseWorking;
@@ -499,7 +522,7 @@ export function useAssistantStatus(): AssistantStatusSnapshot {
             canAbort: false,
             retryInfo: null,
         };
-    }, [baseWorking, sessionPermissionRequests, sessionQuestionRequests]);
+    }, [baseWorking, sessionPermissionRequests, sessionQuestionRequests, pendingPermissions, pendingInputCount]);
 
     return {
         activeModel: activeAssistant.model,

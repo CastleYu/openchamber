@@ -1,4 +1,4 @@
-import type { Part } from "@opencode-ai/sdk/v2";
+import type { Part } from '@/lib/opencode/model';
 
 import { readContextPart } from "./contextParts";
 

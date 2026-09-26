@@ -13,6 +13,7 @@ import { useMobileAutocompleteMaxHeight } from './useMobileAutocompleteMaxHeight
 import { commandMatchesSearch, mergeCommandAutocompleteItems } from './commandAutocompleteItems';
 import { useGuestCommands } from '@/hooks/useGuestSurfaces';
 import { AutocompleteRowTooltip } from './composer/ui/AutocompleteRowTooltip';
+import { opencodeClient } from '@/lib/opencode/client';
 
 type CommandSource = 'openchamber' | 'opencode' | 'skill' | 'extension';
 
@@ -36,7 +37,7 @@ export interface CommandInfo {
 // these names is dropped before it reaches the list.
 const LOCAL_COMMAND_NAMES = [
   'init', 'review', 'undo', 'redo', 'timeline', 'compact', 'btw', 'summary', 'workspace-review', 'handoff-review',
-  'plan-feature', 'craft-goal', 'schedule-task', 'catch-up', 'debug', 'weigh', 'explore',
+  'plan-feature', 'craft-goal', 'schedule-task', 'catch-up', 'debug', 'weigh', 'explore', 'fork',
 ];
 
 export interface CommandAutocompleteHandle {
@@ -79,6 +80,12 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
   const hasSession = Boolean(currentSessionId);
   const hasNewSessionDraft = useSessionUIStore((state) => Boolean(state.newSessionDraft?.open));
   const canStartSessionCommand = hasSession || hasNewSessionDraft;
+  const kernelGeneration = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  const canFork = hasSession && kernelGeneration === 'oc2';
   const isMobile = useUIStore((state) => state.isMobile);
   const canUseReviewHandoffFlow = hasSession && !isMobile && !isVSCodeRuntime();
 
@@ -129,11 +136,12 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
   }, [refreshCommands, refreshSkills]);
 
   const reservedCommandNames = React.useMemo(() => {
-    const names = new Set<string>(LOCAL_COMMAND_NAMES);
+    const names = new Set<string>(LOCAL_COMMAND_NAMES.filter((name) => name !== 'fork'));
+    if (canFork) names.add('fork');
     for (const command of commandsWithMetadata) names.add(command.name.toLowerCase());
     for (const skill of skills) names.add(skill.name.toLowerCase());
     return names;
-  }, [commandsWithMetadata, skills]);
+  }, [canFork, commandsWithMetadata, skills]);
   const guestCommands = useGuestCommands(reservedCommandNames);
 
   React.useEffect(() => {
@@ -177,6 +185,10 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
           ),
           ...(hasSession
             ? [{ id: 'openchamber:btw', name: 'btw', source: 'openchamber' as const, description: t('chat.commandAutocomplete.command.btwDescription'), isOpenChamber: true }]
+            : []
+          ),
+          ...(canFork
+            ? [{ id: 'openchamber:fork', name: 'fork', source: 'openchamber' as const, description: t('chat.commandAutocomplete.command.forkDescription'), isOpenChamber: true }]
             : []
           ),
           ...(hasSession
@@ -265,6 +277,10 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
             ? [{ id: 'openchamber:btw', name: 'btw', source: 'openchamber' as const, description: t('chat.commandAutocomplete.command.btwDescription'), isOpenChamber: true }]
             : []
           ),
+          ...(canFork
+            ? [{ id: 'openchamber:fork', name: 'fork', source: 'openchamber' as const, description: t('chat.commandAutocomplete.command.forkDescription'), isOpenChamber: true }]
+            : []
+          ),
           ...(hasSession
             ? [{ id: 'openchamber:summary', name: 'summary', source: 'openchamber' as const, description: t('chat.commandAutocomplete.command.summaryDescription'), isOpenChamber: true }]
             : []
@@ -321,7 +337,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
     };
 
     loadCommands();
-  }, [searchQuery, hasSession, canStartSessionCommand, canUseReviewHandoffFlow, commandsWithMetadata, guestCommands, skills, t]);
+  }, [searchQuery, hasSession, canStartSessionCommand, canUseReviewHandoffFlow, canFork, commandsWithMetadata, guestCommands, skills, t]);
 
   React.useEffect(() => {
     setSelectedIndex(0);

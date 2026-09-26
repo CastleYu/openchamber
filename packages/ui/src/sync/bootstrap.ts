@@ -1,9 +1,11 @@
 import type { OpencodeClient, Project } from "@opencode-ai/sdk/v2/client"
+import type { SyncSource } from "./source"
+import type { BootstrapPath } from "@/lib/opencode/operations"
 import { z } from "zod"
 import { retry } from "./retry"
 import type { GlobalState, State } from "./types"
 import { runtimeFetch } from "../lib/runtime-fetch"
-import { emitSyncConfigChanged } from "./sync-refs"
+import { emitSyncConfigChanged, emitTaggedSyncConfigChanged } from "./sync-refs"
 import { warmChatsRootDirectory } from "../lib/chatDirectories"
 import { runBackgroundNetworkTask } from "../lib/background-network"
 import { sessionStatusSnapshotSchema } from "../lib/opencode/session-status"
@@ -11,10 +13,18 @@ import {
   readDirectoryStatusSnapshot,
   readDirectoryQuestionSnapshot,
   readDirectoryPermissionSnapshot,
+  readDomainStatusSnapshot,
+  readDomainInputSnapshot,
+  readDomainPermissionSnapshot,
   type DirectoryRecoverySource,
 } from "./directory-recovery-snapshots"
 
 const sdkErrorMessage = z.object({ message: z.string() })
+
+function hasLegacyPath(path: BootstrapPath): path is Required<Pick<BootstrapPath, "directory" | "state" | "config" | "worktree" | "home">> {
+  return typeof path.state === "string" && typeof path.config === "string"
+    && typeof path.worktree === "string" && typeof path.home === "string"
+}
 
 /**
  * SDK returns `{ data, error, response }` without throwing on non-2xx.
@@ -55,15 +65,32 @@ function projectID(directory: string, projects: Project[]) {
  * `project.updated` events keep `projects` current.
  */
 export async function bootstrapGlobal(
-  sdk: OpencodeClient,
+  sdk: OpencodeClient | SyncSource,
   set: (patch: Partial<GlobalState>) => void,
 ) {
+  const source = "generation" in sdk ? sdk : null
+  const legacyClient = (): OpencodeClient => {
+    if ("generation" in sdk) throw new Error("OC1 SDK used by OC2 bootstrap")
+    return sdk
+  }
   const results = await Promise.allSettled([
     // Sync chat classification needs the chats root before session lists load;
     // it resolves alongside the other bootstrap calls, not ahead of them.
     warmChatsRootDirectory(),
-    retry(() => sdk.path.get().then((x) => set({ path: unwrap(x, "path.get") }))),
-    retry(() => sdk.global.config.get().then((x) => set({ config: unwrap(x, "global.config.get") }))),
+    retry(async () => {
+      if (source) {
+        const pathInfo = await source.bootstrap.getBootstrapPath(null)
+        set({ pathInfo, ...(source.generation === "oc1" && hasLegacyPath(pathInfo) ? { path: pathInfo } : {}) })
+      }
+      else set({ path: unwrap(await legacyClient().path.get(), "path.get") })
+    }),
+    retry(async () => {
+      if (source) {
+        const configTagged = await source.bootstrap.getTaggedConfig(null)
+        set({ configTagged, ...(configTagged.generation === "oc1" ? { config: configTagged.value } : {}) })
+      }
+      else set({ config: unwrap(await legacyClient().global.config.get(), "global.config.get") })
+    }),
   ])
 
   const errors = results
@@ -102,7 +129,7 @@ export async function bootstrapGlobal(
 
 type DirectoryBootstrapInput = {
   directory: string
-  sdk: OpencodeClient
+  sdk: OpencodeClient | SyncSource
   store: DirectoryRecoverySource
   set: (patch: Partial<State>) => void
   isStale?: () => boolean
@@ -135,6 +162,11 @@ export function bootstrapDirectory(input: DirectoryBootstrapInput) {
 
 async function initializeDirectory(input: DirectoryBootstrapInput): Promise<BootstrapResult> {
   const { directory, sdk, store, set, global: g } = input
+  const source = "generation" in sdk ? sdk : null
+  const legacyClient = (): OpencodeClient => {
+    if ("generation" in sdk) throw new Error("OC1 SDK used by OC2 bootstrap")
+    return sdk
+  }
   const read = <T>(request: () => Promise<T>) => retry(() => runBackgroundNetworkTask(() => {
     if (input.isStale?.()) throw new Error("Directory initialization superseded")
     return request()
@@ -160,38 +192,66 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
   // config/MCP cannot suppress pending questions or permission recovery.
   const critical = Promise.allSettled([
     read(async () => {
-      const session_status = await readDirectoryStatusSnapshot(store, async () => (
-        sessionStatusSnapshotSchema.parse(unwrap(await sdk.session.status({ directory }), "session.status"))
-      ))
+      const session_status = source
+        ? await readDomainStatusSnapshot(store, () => source.status(directory))
+        : await readDirectoryStatusSnapshot(store, async () => (
+          sessionStatusSnapshotSchema.parse(unwrap(await legacyClient().session.status({ directory }), "session.status"))
+        ))
       commit({ session_status, sessionStatusReady: true })
     }),
     read(async () => {
-      const question = await readDirectoryQuestionSnapshot(store, async () => (
-        unwrap(await sdk.question.list({ directory }), "question.list")
-      ))
-      commit({ question })
+      if (source) {
+        const pendingInput = await readDomainInputSnapshot(store, () => source.inputs(directory))
+        commit({ pendingInput })
+      } else {
+        const question = await readDirectoryQuestionSnapshot(store, async () => (
+          unwrap(await legacyClient().question.list({ directory }), "question.list")
+        ))
+        commit({ question })
+      }
     }),
     read(async () => {
-      const permission = await readDirectoryPermissionSnapshot(store, async () => (
-        unwrap(await sdk.permission.list({ directory }), "permission.list")
-      ))
-      commit({ permission })
+      if (source) {
+        const pendingPermission = await readDomainPermissionSnapshot(store, () => source.permissions(directory))
+        commit({ pendingPermission })
+      } else {
+        const permission = await readDirectoryPermissionSnapshot(store, async () => (
+          unwrap(await legacyClient().permission.list({ directory }), "permission.list")
+        ))
+        commit({ permission })
+      }
     }),
     seededProject
       ? Promise.resolve()
-      : read(() => sdk.project.current({ directory }).then((x) => commit({ project: unwrap(x, "project.current").id }))),
-    read(() => sdk.config.get({ directory }).then((x) => {
-      const config = unwrap(x, "config.get")
-      if (commit({ config })) emitSyncConfigChanged(directory, config)
-    })),
-    read(() =>
-      sdk.path.get({ directory }).then((x) => {
-        const data = unwrap(x, "path.get")
-        commit({ path: data })
-        const next = projectID(data?.directory ?? directory, g.projects)
-        if (next) commit({ project: next })
+      : read(async () => {
+        const project = source ? await source.bootstrap.getCurrentProject(directory) : unwrap(await legacyClient().project.current({ directory }), "project.current")
+        commit({ project: project.id })
       }),
-    ),
+    read(async () => {
+      if (source) {
+        const configTagged = await source.bootstrap.getTaggedConfig(directory)
+        if (commit({ configTagged })) emitTaggedSyncConfigChanged(directory, configTagged)
+        if (configTagged.generation === "oc1") {
+          if (commit({ config: configTagged.value })) emitSyncConfigChanged(directory, configTagged.value)
+        }
+      } else {
+        const config = unwrap(await legacyClient().config.get({ directory }), "config.get")
+        if (commit({ config })) emitSyncConfigChanged(directory, config)
+      }
+    }),
+    read(async () => {
+      if (source) {
+        const data = await source.bootstrap.getBootstrapPath(directory)
+        commit({ pathInfo: data, ...(source.generation === "oc1" && hasLegacyPath(data) ? { path: data } : {}) })
+        const next = projectID(data.directory, g.projects)
+        if (next) commit({ project: next })
+      } else {
+        const data = unwrap(await legacyClient().path.get({ directory }), "path.get")
+        commit({ path: data })
+        const next = projectID(data.directory, g.projects)
+        if (next) commit({ project: next })
+      }
+    }),
   ])
   const enrichment = Promise.allSettled([
     // MCP status and the command list are deliberately not read here. Reading
@@ -201,16 +261,23 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
     // for every known project directory, so either read launched one full
     // fleet per project at startup. Both surfaces fetch on demand through
     // their own stores (useMcpStore, useCommandsStore) instead.
-    read(() => sdk.lsp.status({ directory }).then((x) => commit({ lsp: unwrap(x, "lsp.status") }))),
-    read(() =>
-      sdk.vcs.get({ directory }).then((x) => {
-        const current = store.getState()
-        if (x.error) {
-          throw new Error(`vcs.get failed: ${String(x.error)}`)
-        }
-        commit({ vcs: x.data ?? current.vcs })
+    source?.generation === "oc2"
+      ? Promise.resolve(commit({ lspAvailability: "unsupported" }))
+      : read(async () => {
+        const lsp = source ? await source.bootstrap.getLspStatus(directory) : unwrap(await legacyClient().lsp.status({ directory }), "lsp.status")
+        commit({ lsp, lspAvailability: "supported" })
       }),
-    ),
+    read(async () => {
+      if (source) {
+        const vcs = await source.bootstrap.getVcs(directory)
+        commit({ vcs: { branch: vcs.branch, default_branch: vcs.defaultBranch } })
+      }
+      else {
+        const result = await legacyClient().vcs.get({ directory })
+        if (result.error) throw new Error(`vcs.get failed: ${String(result.error)}`)
+        if (result.data) commit({ vcs: result.data })
+      }
+    }),
   ])
   const [results, enrichmentResults] = await Promise.all([critical, enrichment])
   if (input.isStale?.()) return "stale"

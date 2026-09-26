@@ -1,15 +1,18 @@
-import { buildDeferredRestartResponse } from './config-mutation-response.js';
+import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
 
 export const registerConfigEntityRoutes = (app, dependencies) => {
   const {
+    getGeneration = () => 'oc1',
     resolveProjectDirectory,
     resolveOptionalProjectDirectory,
     getAgentSources,
     getAgentConfig,
+    getAgentPermissions,
     createAgent,
     updateAgent,
     deleteAgent,
     getCommandSources,
+    getCommandConfig,
     createCommand,
     updateCommand,
     deleteCommand,
@@ -26,13 +29,18 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     expandSnippets,
   } = dependencies;
 
+  const complete = (message, details) => getGeneration() === 'oc2'
+    ? buildAppliedResponse(message.replace(/\. Restart OpenCode to apply\.?$/, '.'), details)
+    : buildDeferredRestartResponse(message);
+
   // Persist to disk immediately; OpenCode restart is deferred to an explicit
   // Apply & Restart so settings edits do not interrupt live sessions.
   const completeMcpMutation = async (res, action, name, applyChange) => {
-    applyChange();
+    const result = applyChange();
     const past = action === 'delete' ? 'deleted' : `${action}d`;
-    return res.json(buildDeferredRestartResponse(
+    return res.json(complete(
       `MCP server "${name}" ${past}. Restart OpenCode to apply.`,
+      result,
     ));
   };
 
@@ -77,6 +85,17 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     }
   });
 
+  app.get('/api/config/agents/:name/permissions', async (req, res) => {
+    if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
+    try {
+      const { directory, error } = await resolveProjectDirectory(req);
+      if (!directory) return res.status(400).json({ error });
+      return res.json(getAgentPermissions(req.params.name, directory));
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'Failed to get agent permissions' });
+    }
+  });
+
   app.post('/api/config/agents/:name', async (req, res) => {
     try {
       const agentName = req.params.name;
@@ -90,9 +109,10 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Config received:', JSON.stringify(config, null, 2));
       console.log('[Server] Scope:', scope, 'Working directory:', directory);
 
-      createAgent(agentName, config, directory, scope);
-      res.json(buildDeferredRestartResponse(
+      const created = createAgent(agentName, config, directory, scope);
+      res.json(complete(
         `Agent ${agentName} created successfully. Restart OpenCode to apply.`,
+        created,
       ));
     } catch (error) {
       console.error('Failed to create agent:', error);
@@ -113,12 +133,13 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Updates:', JSON.stringify(updates, null, 2));
       console.log('[Server] Working directory:', directory);
 
-      updateAgent(agentName, updates, directory);
+      const updated = updateAgent(agentName, updates, directory);
 
       console.log(`[Server] Agent ${agentName} updated successfully`);
 
-      res.json(buildDeferredRestartResponse(
+      res.json(complete(
         `Agent ${agentName} updated successfully. Restart OpenCode to apply.`,
+        updated,
       ));
     } catch (error) {
       console.error('[Server] Failed to update agent:', error);
@@ -137,7 +158,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
       const scope = req.body?.scope;
       deleteAgent(agentName, directory, scope);
-      res.json(buildDeferredRestartResponse(
+      res.json(complete(
         `Agent ${agentName} deleted successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
@@ -262,6 +283,17 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     }
   });
 
+  app.get('/api/config/commands/:name/config', async (req, res) => {
+    if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
+    try {
+      const { directory, error } = await resolveProjectDirectory(req);
+      if (!directory) return res.status(400).json({ error });
+      return res.json(getCommandConfig(req.params.name, directory));
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'Failed to get command configuration' });
+    }
+  });
+
   app.post('/api/config/commands/:name', async (req, res) => {
     try {
       const commandName = req.params.name;
@@ -275,9 +307,10 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Config received:', JSON.stringify(config, null, 2));
       console.log('[Server] Scope:', scope, 'Working directory:', directory);
 
-      createCommand(commandName, config, directory, scope);
-      res.json(buildDeferredRestartResponse(
+      const created = createCommand(commandName, config, directory, scope);
+      res.json(complete(
         `Command ${commandName} created successfully. Restart OpenCode to apply.`,
+        created,
       ));
     } catch (error) {
       console.error('Failed to create command:', error);
@@ -298,12 +331,13 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Updates:', JSON.stringify(updates, null, 2));
       console.log('[Server] Working directory:', directory);
 
-      updateCommand(commandName, updates, directory);
+      const updated = updateCommand(commandName, updates, directory);
 
       console.log(`[Server] Command ${commandName} updated successfully`);
 
-      res.json(buildDeferredRestartResponse(
+      res.json(complete(
         `Command ${commandName} updated successfully. Restart OpenCode to apply.`,
+        updated,
       ));
     } catch (error) {
       console.error('[Server] Failed to update command:', error);
@@ -321,7 +355,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       }
 
       deleteCommand(commandName, directory);
-      res.json(buildDeferredRestartResponse(
+      res.json(complete(
         `Command ${commandName} deleted successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {

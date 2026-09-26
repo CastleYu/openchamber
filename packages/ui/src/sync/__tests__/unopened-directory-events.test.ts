@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import type { Event, Session } from "@opencode-ai/sdk/v2/client"
+import type { Event } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { ChildStoreManager } from "../child-store"
 import { createEventRoutingIndex, handleEvent } from "../sync-context"
 import { getRuntimeKey } from "@/lib/runtime-switch"
@@ -72,6 +73,15 @@ describe("events for directories without a store", () => {
       childStores, routingIndex, getRuntimeKey())
 
     expect(useNotificationStore.getState().list).toEqual([])
+  })
+
+  test('OC1 keeps its immediate parent outcome notification while a child is active', () => {
+    const routing = createEventRoutingIndex()
+    handleEvent('/far', { id: 'child-busy', type: 'session.status', properties: { sessionID: 'ses_far_child', status: { type: 'busy' } } }, childStores, routing, getRuntimeKey())
+    handleEvent('/far', { id: 'parent-idle', type: 'session.idle', properties: { sessionID: 'ses_far' } }, childStores, routing, getRuntimeKey())
+    expect(useNotificationStore.getState().list).toHaveLength(1)
+    handleEvent('/far', { id: 'child-idle', type: 'session.idle', properties: { sessionID: 'ses_far_child' } }, childStores, routing, getRuntimeKey())
+    expect(useNotificationStore.getState().list).toHaveLength(1)
   })
 
   test("a directory-less status event for a cached session is not filed into the only open store", () => {

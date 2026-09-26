@@ -4,6 +4,40 @@
 
 This document covers the current client-side session/data architecture in `packages/ui/src/sync` and the rules for updating stores safely.
 
+## Runtime source
+
+`SyncProvider` receives one `SyncSource` for the current runtime binding. It does not bootstrap or subscribe until the runtime descriptor is bound. `opencodeClient.getSyncSource()` creates the source for that binding; an old source rejects work after a rebind, including a rebind to the same OpenCode generation.
+
+The source projects both OpenCode generations into the shared `Session`, `Message`, and `Part` model before data reaches a child store. OC1 events retain their complete event vocabulary in the existing reducer. OC2 events pass the pinned event schema at WebSocket ingress, then become `DomainEvent` records. Permission requests and user input remain tagged by generation. OC2 forms do not become OC1 questions.
+
+Both generations publish directory VCS snapshots to the child store's `vcs` field, which the tray reads. OC2 `vcs.branch.updated` updates that field for the event's directory; its optional branch can clear the current branch. The runtime binding and directory route reject stale or unrelated updates.
+
+The message loader accepts pages from either source and sorts each page by message time before reconciliation. The OC1 and OC2 wire page orders differ; cursors stay with their own source. Failed status, permission, form, or catalog requests leave the previous data intact rather than publishing an empty result.
+
+OC1 ingress preserves the full event envelope, including its directory for sessions not yet indexed. For OC2, `DomainEventAuthority` belongs to the bound source and rejects old per-session sequences before either global or directory side effects. Sequence-only advances are committed even when visible state is unchanged. Session refreshes capture both source revisions and child-store mutation revisions; deletion or a newer mutation invalidates an outstanding response before it can repopulate either cache.
+
+Chat and BTW read tagged pending requests through `useScopedPendingPermissions` and `useScopedPendingInputs`. OC1 still renders `QuestionCard`; OC2 renders typed `FormCard` fields and sends one `FormAnswer` object through `replyToForm`. A failed reply leaves the request pending so the user can try again. Sidebar badges count OC2 forms alongside OC1 questions.
+
+An OC2 answer fork cuts before the next user prompt. `/fork` selects the last
+completed assistant turn and excludes the source's running turn. Before the
+fork enters the child store, `sessionForkLinks.ts` clears source-owned
+BTW/review links, pauses the inherited active goal, and copies a file-backed
+goal objective to the new session ID. If repair fails, the action deletes
+only the new fork and reports rollback failure explicitly. OC1 user-message
+forking and its draft replay remain on the old path.
+
+OC2 catalog announcements retain their catalog kind in a refresh event.
+Accepted batches coalesce kinds before `stores/catalogRefresh.ts` reloads
+Settings and composer lists. Config changes refresh every affected list;
+credential changes also refresh web-search access. A delayed provider reread
+stops when the runtime binding changes. OC1 keeps its existing event path.
+
+VS Code permission auto-accept consumes the selected generation's pending list
+and event requests. Both generations use the same inherited session policy.
+Retries, in-flight work and recent outcomes are scoped to the runtime descriptor,
+directory and request identity. A kernel switch stops old retries before another
+reply and does not suppress a new kernel's request with the same ID.
+
 There are **two distinct session data scopes** in the UI:
 
 1. **Directory-scoped sync stores**
@@ -44,7 +78,7 @@ So:
 |---|---|---|
 | `ChildStoreManager` and child directory stores | Priority-scheduled directory bootstrap plus `session`, `message`, `part`, `permission`, `question`, etc. | One runtime and one store per directory |
 | `SessionMessageLoader` | Initial message loading, pagination, prefetch, retries, load state, and optimistic reconciliation | One runtime, directory, and session ID |
-| `global-session-status.ts` | Incremental non-idle session status index reconciled from events and authoritative directory snapshots, plus a reference-stable active-ID membership collection maintained from the same mutations | All known directories in the active runtime |
+| `global-session-status.ts` | Incremental non-idle session status index reconciled from events and authoritative directory snapshots, plus a reference-stable active-ID membership collection maintained from the same mutations. A running child also keeps known ancestors' turn indicators and timers active. | All known directories in the active runtime |
 | `session-ordering.ts` | Ephemeral lifecycle rank used by every user-visible session list | All known sessions in the active runtime |
 | `session-activity-timing.ts` | Elapsed time of the running turn and of the turn that just finished, plus the persisted starts that survive a reload | All known sessions in the active runtime |
 | `session-ui-store.ts` | Session selection, draft lifecycle, one-shot draft-materialization transition identity, abort prompts, worktree metadata, SDK-facing action entrypoints | App UI state |
@@ -65,6 +99,13 @@ The composer compares normalized attachment MIME types with the selected model's
 Attachment drafts stay in memory for the page's lifetime, including composer remounts, independently of text persistence. `selectAttachmentDraft` saves the outgoing list and restores the rendered composer's runtime, directory, and session before paint. Switching cancels unfinished attachment reads. Send and queue recovery pass their captured draft identity so a late failure restores files to the source rather than the currently open session. Clearing or deleting a draft releases only its files. Opening a new-session draft leaves the outgoing session's files available for a return visit.
 
 ## Session list rules
+
+When opening an OC2 session, ModelControls restores its model, effort and agent
+from the session record before falling back to message history. This record
+does not require a loaded transcript. OC1 keeps its user-message selection path;
+saved manual and Auto choices retain their existing precedence. A newly created
+OC2 fork enters the global session index before selection so its header and
+directory routing are immediately available.
 
 Opening a new draft applies its configured model identifier immediately, then
 reconciles after project config activation. That continuation belongs to the
@@ -530,7 +571,7 @@ Examples of global-store updates performed in `session-actions.ts`:
 
 - `createSession()` -> `upsertSession(session)`
 - `updateSessionTitle()` -> `upsertSession(result.data)`
-- `shareSession()` / `unshareSession()` -> `upsertSession(result.data)`
+- `shareSession()` / `unshareSession()` on OC1 -> project the confirmed result, then `upsertSession(session)`
 - `archiveSession()` / `archiveSessions()` -> wait for server confirmation, then upsert each archived session
 - `unarchiveSession()` / `unarchiveSessions()` -> wait for server confirmation, then upsert each restored session
 - `deleteSession()` / `deleteSessions()` -> wait for server confirmation or `404`, then remove the session and its persisted state

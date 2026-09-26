@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import type { Agent, PermissionConfig } from "@opencode-ai/sdk/v2";
+import type { Agent as LegacyAgent, PermissionConfig } from "@opencode-ai/sdk/v2";
+import type { Agent as V2Agent } from '@/lib/opencode/model';
 import { opencodeClient } from "@/lib/opencode/client";
 import { emitConfigChange, scopeMatches, subscribeToConfigChanges, type ConfigChangeScope } from "@/lib/configSync";
 import {
@@ -84,29 +85,27 @@ const getAgentsCacheKey = (directory: string | null): string => {
   return directory?.trim() || DEFAULT_AGENTS_CACHE_KEY;
 };
 
-const invalidateAgentsLoadCache = (directory: string | null = getConfigDirectory()) => {
+export const invalidateAgentsLoadCache = (directory: string | null = getConfigDirectory()) => {
   agentsLastLoadedAt.delete(getAgentsCacheKey(directory));
 };
 
 const buildAgentsSignature = (agents: Agent[]): string => {
   return agents
     .map((agent) => {
-      const extended = agent as AgentWithExtras;
+      if (agent.generation === 'oc2') return JSON.stringify(agent);
       return [
         agent.name,
-        extended.mode ?? '',
-        typeof extended.model === 'object' && extended.model
-          ? `${extended.model.providerID ?? ''}/${extended.model.modelID ?? ''}`
-          : String(extended.model ?? ''),
-        String(extended.temperature ?? ''),
-        String((extended as { topP?: unknown; top_p?: unknown }).topP ?? (extended as { topP?: unknown; top_p?: unknown }).top_p ?? ''),
-        extended.prompt ?? '',
-        JSON.stringify(extended.permission ?? null),
-        extended.scope ?? '',
-        extended.group ?? '',
-        extended.description ?? '',
-        String(extended.hidden === true),
-        String(extended.native === true),
+        agent.mode ?? '',
+        agent.model ? `${agent.model.providerID}/${agent.model.modelID}` : '',
+        String(agent.temperature ?? ''),
+        String(agent.topP ?? ''),
+        agent.prompt ?? '',
+        JSON.stringify(agent.permission ?? null),
+        agent.scope ?? '',
+        agent.group ?? '',
+        agent.description ?? '',
+        String(agent.hidden === true),
+        String(agent.native === true),
       ].join('|');
     })
     .join('||');
@@ -144,14 +143,13 @@ export interface AgentMutationResult {
 }
 
 // Extended Agent type for API properties not in SDK types
-export type AgentWithExtras = Agent & {
-  native?: boolean;
-  hidden?: boolean;
-  options?: { hidden?: boolean };
-  scope?: AgentScope;
-  /** Subfolder name parsed from file path, e.g. "business", "development" */
-  group?: string;
-};
+export type AgentWithExtras =
+  | (Omit<LegacyAgent, 'permission'> & {
+      generation: 'oc1'; permission: LegacyAgent['permission'] | PermissionConfig;
+      scope?: AgentScope; group?: string;
+    })
+  | (V2Agent & { generation: 'oc2'; scope?: AgentScope; group?: string; builtIn?: boolean });
+export type Agent = AgentWithExtras;
 
 /** Parse the subfolder group name from an agent file path.
  *  e.g. "~/.config/opencode/agents/business/ceo.md" → "business"
@@ -170,15 +168,14 @@ function parseAgentGroup(path: string | null | undefined): string | undefined {
 
 // Helper to check if agent is built-in (handles both SDK 'builtIn' and API 'native')
 export const isAgentBuiltIn = (agent: Agent): boolean => {
-  const extended = agent as AgentWithExtras & { builtIn?: boolean };
-  return extended.native === true || extended.builtIn === true;
+  return ('builtIn' in agent && agent.builtIn === true)
+    || (agent.generation === 'oc1' && agent.native === true);
 };
 
 // Helper to check if agent is hidden (internal agents like title, compaction, summary)
 // Checks both top-level hidden and options.hidden (OpenCode API inconsistency workaround)
 export const isAgentHidden = (agent: Agent): boolean => {
-  const extended = agent as AgentWithExtras;
-  return extended.hidden === true || extended.options?.hidden === true;
+  return agent.hidden === true || (agent.generation === 'oc1' && agent.options?.hidden === true);
 };
 
 // Helper to filter only visible (non-hidden) agents
@@ -196,7 +193,7 @@ const SLOW_HEALTH_POLL_MAX_MS = 2000;
 
 const hasValue = <T>(value: T | null | undefined): value is T => value !== null && value !== undefined;
 
-const parseModelRef = (model: string | null | undefined): Agent['model'] | undefined => {
+const parseModelRef = (model: string | null | undefined): LegacyAgent['model'] | undefined => {
   if (!model || typeof model !== 'string') return undefined;
   const trimmed = model.trim();
   if (!trimmed) return undefined;
@@ -213,14 +210,14 @@ const parseModelRef = (model: string | null | undefined): Agent['model'] | undef
 const buildOptimisticAgent = (
   name: string,
   config: Partial<AgentConfig>,
-  previous?: Agent,
+  previous?: Extract<Agent, { generation: 'oc1' }>,
 ): AgentWithExtras => {
-  const previousExtras = previous as AgentWithExtras | undefined;
   const model = 'model' in config
     ? parseModelRef(config.model)
     : previous?.model;
   return {
-    ...(previous || { name }),
+    ...(previous || { name, permission: [], options: {} }),
+    generation: 'oc1',
     name,
     description: config.description !== undefined ? (config.description || undefined) : previous?.description,
     mode: config.mode ?? previous?.mode ?? 'subagent',
@@ -229,10 +226,10 @@ const buildOptimisticAgent = (
     temperature: 'temperature' in config ? (config.temperature ?? undefined) : previous?.temperature,
     topP: 'top_p' in config ? (config.top_p ?? undefined) : previous?.topP,
     prompt: config.prompt !== undefined ? (config.prompt || undefined) : previous?.prompt,
-    permission: config.permission !== undefined ? (config.permission || undefined) : previous?.permission,
-    scope: config.scope ?? previousExtras?.scope,
-    group: previousExtras?.group,
-  } as unknown as AgentWithExtras;
+    permission: config.permission !== undefined ? (config.permission ?? []) : previous?.permission ?? [],
+    scope: config.scope ?? previous?.scope,
+    group: previous?.group,
+  };
 };
 
 const upsertOptimisticAgentLocal = (
@@ -243,7 +240,7 @@ const upsertOptimisticAgentLocal = (
 ) => {
   const agents = get().agents;
   const existing = agents.find((agent) => agent.name === name);
-  const nextAgent = buildOptimisticAgent(name, config, existing);
+  const nextAgent = buildOptimisticAgent(name, config, existing?.generation === 'oc1' ? existing : undefined);
   if (existing) {
     set({
       agents: agents.map((agent) => (agent.name === name ? nextAgent : agent)),
@@ -256,6 +253,7 @@ const upsertOptimisticAgentLocal = (
 export interface AgentDraft {
   name: string;
   scope: AgentScope;
+  sourceAgentName?: string;
   description?: string;
   model?: string | null;
   variant?: string;
@@ -265,6 +263,9 @@ export interface AgentDraft {
   mode?: "primary" | "subagent" | "all";
   permission?: PermissionConfig;
   disable?: boolean;
+  steps?: number | null;
+  system?: string | null;
+  permissions?: Array<{ action: string; resource: string; effect: 'allow' | 'ask' | 'deny' }>;
 }
 
 interface AgentsStore {
@@ -358,7 +359,10 @@ export const useAgentsStore = create<AgentsStore>()(
                 // Ensure we list agents using the correct project context. Pass the
                 // directory directly so this shares the in-flight request with the config
                 // store instead of issuing a duplicate agents fetch at startup.
-                const agents = await opencodeClient.listAgents(configDirectory);
+                const catalog = await opencodeClient.listTaggedAgents(configDirectory);
+                const agents: Agent[] = catalog.generation === 'oc1'
+                  ? catalog.value.map((agent) => ({ ...agent, generation: 'oc1' as const }))
+                  : catalog.value.map((agent) => ({ ...agent, generation: 'oc2' as const }));
 
                 const agentsWithScope = await Promise.all(
                   agents.map(async (agent) => {
@@ -390,12 +394,13 @@ export const useAgentsStore = create<AgentsStore>()(
                         const mdPath: string | null | undefined = data.sources?.md?.path;
                         const group = parseAgentGroup(mdPath);
 
+                        const builtIn = data.isBuiltIn === true;
                         if (scope === 'project' || scope === 'user') {
-                          return { ...agent, scope: scope as AgentScope, group };
+                          return { ...agent, scope, group, builtIn };
                         }
 
                         // Explicitly set null scope if not found, to clear stale state
-                        return { ...agent, scope: undefined, group };
+                        return { ...agent, scope: undefined, group, builtIn };
                       }
                     } catch (err) {
                       console.warn(`[AgentsStore] Failed to fetch config for agent ${agent.name}:`, err);

@@ -12,7 +12,11 @@
  * Abort controller created once at init, cleaned up via returned cleanup fn.
  */
 
-import type { Event, OpencodeClient, SessionStatus } from "@opencode-ai/sdk/v2/client"
+import type { Event, OpencodeClient } from "@opencode-ai/sdk/v2/client"
+import { z } from "zod"
+import type { SessionStatus } from "@/lib/opencode/model"
+import { parseV2Event, projectV2Event, type DomainEvent } from "@/lib/opencode/events"
+import type { SyncSource } from "./source"
 import { projectResources } from '@/lib/performance/projectResources';
 import { opencodeClient } from "@/lib/opencode/client"
 import { getRuntimeUrlResolver } from "@/lib/runtime-url"
@@ -47,15 +51,14 @@ const RETRY_BACKOFF_CAP_VISIBLE_MS = 5_000
 const RETRY_BACKOFF_CAP_HIDDEN_OR_OFFLINE_MS = 60_000
 const RETRY_BACKOFF_MAX_EXPONENT = 8
 type EventPipelineDelivery = {
-  onEvent: (directory: string, payload: Event) => void
-  onEvents?: never
-} | {
-  onEvent?: never
-  onEvents: (directory: string, payloads: readonly Event[]) => void
+  onEvent?: (directory: string, payload: Event) => void
+  onEvents?: (directory: string, payloads: readonly Event[]) => void
+  onDomainEvents?: (directory: string, payloads: readonly DomainEvent[]) => void
 }
 
 export type EventPipelineInput = {
-  sdk: OpencodeClient
+  sdk?: OpencodeClient
+  source?: Pick<SyncSource, "generation" | "events">
   now?: () => number
   flushFrameMs?: number
   flushTimer?: {
@@ -250,6 +253,7 @@ function openGlobalEventSocket(lastEventId?: string): RelayTunnelWebSocket {
 type DirectoryQueue = {
   queue: Event[]
   buffer: Event[]
+  domain: DomainEvent[]
   coalesced: Map<string, number>
   timer: ReturnType<typeof setTimeout> | undefined
   last: number
@@ -263,6 +267,8 @@ type AttemptAbortReason =
 export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const {
     sdk,
+    source,
+    onDomainEvents,
     onEvent,
     onEvents,
     onReconnect,
@@ -275,13 +281,18 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     wsReadyTimeoutMs = DEFAULT_WS_READY_TIMEOUT_MS,
   } = input
   const now = input.now ?? Date.now
-  const flushTimer = input.flushTimer ?? { schedule: setTimeout, cancel: clearTimeout }
+  const flushTimer = input.flushTimer ?? {
+    schedule: (callback: () => void, ms: number) => setTimeout(callback, ms),
+    cancel: (handle: ReturnType<typeof setTimeout>) => clearTimeout(handle),
+  }
   const abort = new AbortController()
   let disconnected = false
   let lastEventId: string | undefined
   let wsFallbackUntil = 0
 
   const directories = new Map<string, DirectoryQueue>()
+  const seenDomain = new Set<string>()
+  const seenDomainOrder: string[] = []
 
   const getOrCreateDir = (directory: string): DirectoryQueue => {
     let d = directories.get(directory)
@@ -289,6 +300,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     d = {
       queue: [],
       buffer: [],
+      domain: [],
       coalesced: new Map(),
       timer: undefined,
       last: 0,
@@ -323,9 +335,11 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       flushTimer.cancel(d.timer)
       d.timer = undefined
     }
-    if (d.queue.length === 0) return
+    if (d.queue.length === 0 && d.domain.length === 0) return
 
     const events = d.queue
+    const domainEvents = d.domain
+    d.domain = []
     d.queue = d.buffer
     d.buffer = events
     d.queue.length = 0
@@ -336,11 +350,12 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     for (let index = 0; index < events.length; index += 1) {
       countSyncPerformance("pipelineDeliveredEvents")
     }
-    if (onEvents) {
+    if (events.length && onEvents) {
       onEvents(directory, events)
-    } else if (onEvent) {
+    } else if (events.length && onEvent) {
       for (const payload of events) onEvent(directory, payload)
     }
+    if (domainEvents.length) onDomainEvents?.(directory, domainEvents)
 
     d.buffer.length = 0
   }
@@ -555,6 +570,21 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     scheduleDir(routedDirectory)
   }
 
+  const enqueueDomain = (directory: string, payload: DomainEvent) => {
+    if (seenDomain.has(payload.eventID)) return
+    seenDomain.add(payload.eventID)
+    seenDomainOrder.push(payload.eventID)
+    if (seenDomainOrder.length > 1024) {
+      const expired = seenDomainOrder.shift()
+      if (expired) seenDomain.delete(expired)
+    }
+    countSyncPerformance("pipelineRawEvents")
+    const target = payload.directory || directory
+    const d = getOrCreateDir(target)
+    d.domain.push(payload)
+    scheduleDir(target)
+  }
+
   const resetHeartbeat = () => {
     lastEventAt = now()
     if (heartbeat) clearTimeout(heartbeat)
@@ -571,6 +601,34 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   }
 
   const runSseAttempt = async (signal: AbortSignal) => {
+    if (source) {
+      let yielded = now()
+      let connected = false
+      for await (const event of source.events(signal, lastEventId)) {
+        if (!connected) {
+          markConnected()
+          resetHeartbeat()
+          connected = true
+        }
+        resetHeartbeat()
+        streamErrorLogged = false
+        if (event.generation === "oc1") {
+          const payload = resolveEventPayload(event.value)
+          if (payload) {
+            lastEventId = payload.id
+            enqueueEvent(resolveEventDirectory(event.value, payload), payload)
+          }
+        } else {
+          lastEventId = event.value.eventID
+          enqueueDomain(event.value.directory ?? "global", event.value)
+        }
+        if (now() - yielded < STREAM_YIELD_MS) continue
+        yielded = now()
+        await wait(0)
+      }
+      return
+    }
+    if (!sdk) throw new Error("Event pipeline source is not configured")
     const events = await sdk.global.event({
       signal,
       ...(lastEventId && lastEventId.length > 0 ? { headers: { "Last-Event-ID": lastEventId } } : {}),
@@ -753,14 +811,22 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
           return
         }
 
-        const payload = resolveEventPayload(frame.payload)
-        if (!payload) {
+        if (source?.generation === "oc2") {
+          const json = z.json().safeParse(frame.payload)
+          if (!json.success) return
+          const wire = parseV2Event(json.data)
+          if (!wire) return
+          const projected = projectV2Event(wire)
+          if (projected) {
+            if (typeof frame.eventId === "string" && frame.eventId.length > 0) lastEventId = frame.eventId
+            enqueueDomain(frame.directory ?? projected.directory ?? "global", projected)
+          }
           return
         }
 
-        if (typeof frame.eventId === "string" && frame.eventId.length > 0) {
-          lastEventId = frame.eventId
-        }
+        const payload = resolveEventPayload(frame.payload)
+        if (!payload) return
+        if (typeof frame.eventId === "string" && frame.eventId.length > 0) lastEventId = frame.eventId
 
         const directory = resolveEventDirectory(
           { directory: frame.directory, payload },

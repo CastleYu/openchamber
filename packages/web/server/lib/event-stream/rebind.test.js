@@ -66,6 +66,44 @@ function createSseResponse({ blocks = [], signal, holdOpen = false }) {
 }
 
 describe('rebindUpstream (#2638)', () => {
+  it('shares one OC2 global upstream for global and directory clients', async () => {
+    const server = new EventEmitter();
+    const wsClients = new Set();
+    let calls = 0;
+    const fetchImpl = async (_url, options) => {
+      calls += 1;
+      return createSseResponse({
+        signal: options.signal,
+        holdOpen: true,
+        blocks: [
+          'id: v2-1\ndata: {"id":"v2-1","type":"session.execution.started","location":{"directory":"/work"},"data":{"sessionID":"s1"}}\n\n',
+          'id: v2-2\ndata: {"id":"v2-2","type":"session.execution.started","location":{"directory":"/other"},"data":{"sessionID":"s2"}}\n\n',
+        ],
+      });
+    };
+    const runtime = createMessageStreamWsRuntime({
+      server,
+      getKernelRuntime: () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1', epoch: 1 }),
+      buildOpenCodeUrl: (path) => `http://127.0.0.1${path}`,
+      getOpenCodeAuthHeaders: () => ({}),
+      processForwardedEventPayload() {},
+      wsClients,
+      heartbeatIntervalMs: 5000,
+      fetchImpl,
+    });
+    const global = new FakeSocket();
+    const directory = new FakeSocket();
+    runtime.wsServer.emit('connection', global, { url: '/api/global/event/ws' });
+    runtime.wsServer.emit('connection', directory, { url: '/api/event/ws?directory=%2Fwork' });
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    expect(calls).toBe(1);
+    expect(global.sent.filter((frame) => frame.type === 'event')).toHaveLength(2);
+    expect(directory.sent.filter((frame) => frame.type === 'event')).toHaveLength(1);
+    expect(directory.sent.find((frame) => frame.type === 'event')?.payload.location.directory).toBe('/work');
+    global.close();
+    directory.close();
+    await runtime.close();
+  });
   it('restarts the shared hub upstream so a connected client resumes receiving events on the new port', async () => {
     const server = new EventEmitter();
     const wsClients = new Set();

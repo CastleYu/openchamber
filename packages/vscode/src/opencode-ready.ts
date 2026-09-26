@@ -3,7 +3,7 @@ import type { ConnectionStatus, OpenCodeManager } from './opencode';
 const API_URL_WAIT_TIMEOUT_MS = 30000;
 
 export async function waitForApiUrl(
-  manager: OpenCodeManager | undefined,
+  manager: Pick<OpenCodeManager, 'getStatus' | 'getApiUrl' | 'onStatusChange'> | undefined,
   timeoutMs = API_URL_WAIT_TIMEOUT_MS,
 ): Promise<string | null> {
   if (!manager) {

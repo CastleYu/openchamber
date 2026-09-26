@@ -331,6 +331,24 @@ const jsonResponse = (body: unknown, status = 200): Response => {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 };
 
+const sessionStateRoute = async (type: string, payload: unknown): Promise<Response> => {
+  try {
+    return jsonResponse(await sendBridgeMessage(type, payload));
+  } catch (error) {
+    return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 500);
+  }
+};
+
+const CONFIG_ENTITY_RESOURCES = new Set(['config', 'permissions']);
+const splitConfigEntityPath = (pathname: string, prefix: string) => {
+  const segments = pathname.slice(prefix.length).split('/').filter(Boolean);
+  const last = segments.at(-1);
+  if (segments.length > 1 && last && CONFIG_ENTITY_RESOURCES.has(last)) {
+    return { name: decodeURIComponent(segments.slice(0, -1).join('/')), resource: last };
+  }
+  return { name: decodeURIComponent(segments.join('/')), resource: undefined };
+};
+
 const unsupportedWebRouteResponse = (feature: string): Response => {
   return jsonResponse({ error: `${feature} is not supported in VS Code` }, 501);
 };
@@ -391,12 +409,20 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     return unsupportedWebRouteResponse('Remote tunnel settings');
   }
 
-  // Archiving a batch of sessions server-side needs an OpenChamber server
-  // process; the extension host has none. Answering explicitly keeps the
-  // shared UI on its per-session archive path instead of leaving the request
-  // to the generic proxy.
-  if (normalizedPathname === '/api/openchamber/sessions/archive') {
-    return unsupportedWebRouteResponse('Server-side session archiving');
+  if (normalizedPathname === '/api/openchamber/sessions/archive' && method === 'POST') {
+    return sessionStateRoute('api:sessions/archive', await extractJsonBody(input, init, method));
+  }
+  if (normalizedPathname === '/api/openchamber/sessions/unarchive' && method === 'POST') {
+    return sessionStateRoute('api:sessions/unarchive', await extractJsonBody(input, init, method));
+  }
+  const sessionMetadataMatch = normalizedPathname.match(/^\/api\/openchamber\/sessions\/([^/]+)\/metadata$/);
+  if (sessionMetadataMatch && (method === 'GET' || method === 'POST')) {
+    const sessionId = decodeURIComponent(sessionMetadataMatch[1]);
+    const directory = url.searchParams.get('directory') || undefined;
+    if (method === 'GET') return sessionStateRoute('api:sessions/metadata:get', { sessionId, directory });
+    const body = await extractJsonBody(input, init, method);
+    const patch = body && typeof body === 'object' && !Array.isArray(body) ? (body as { patch?: unknown }).patch : undefined;
+    return sessionStateRoute('api:sessions/metadata:set', { sessionId, directory, patch });
   }
 
   if (/^\/api\/projects\/[^/]+\/scheduled-tasks(?:\/[^/]+)?$/.test(normalizedPathname)) {
@@ -677,13 +703,12 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
   }
 
   if (pathname.startsWith('/api/config/agents/')) {
-    const encodedName = pathname.slice('/api/config/agents/'.length);
-    const name = decodeURIComponent(encodedName);
+    const { name, resource } = splitConfigEntityPath(pathname, '/api/config/agents/');
     const verb = method;
     const body = await extractJsonBody(input, init, method);
     const directory = getRequestDirectoryHint(url, input, init);
     try {
-      const data = await sendBridgeMessage('api:config/agents', { method: verb, name, body, directory });
+      const data = await sendBridgeMessage('api:config/agents', { method: verb, name, resource, body, directory });
       return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -692,18 +717,26 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
   }
 
   if (pathname.startsWith('/api/config/commands/')) {
-    const encodedName = pathname.slice('/api/config/commands/'.length);
-    const name = decodeURIComponent(encodedName);
+    const { name, resource } = splitConfigEntityPath(pathname, '/api/config/commands/');
     const verb = method;
     const body = await extractJsonBody(input, init, method);
     const directory = getRequestDirectoryHint(url, input, init);
     try {
-      const data = await sendBridgeMessage('api:config/commands', { method: verb, name, body, directory });
+      const data = await sendBridgeMessage('api:config/commands', { method: verb, name, resource, body, directory });
       return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
+  }
+
+  if (pathname === '/api/config/websearch' && (method === 'GET' || method === 'PUT')) {
+    const directory = getRequestDirectoryHint(url, input, init);
+    const body = method === 'PUT' ? await extractJsonBody(input, init, method) : {};
+    return sessionStateRoute('api:config/websearch', { ...(body && typeof body === 'object' ? body : {}), method, directory });
+  }
+  if (pathname === '/api/config/warming' && method === 'PUT') {
+    return sessionStateRoute('api:config/warming', await extractJsonBody(input, init, method));
   }
 
   if (pathname === '/api/config/mcp') {
@@ -1028,6 +1061,15 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     } catch (error) {
       console.warn('[OpenChamber] Failed to fetch models metadata via bridge, returning empty set:', error);
       return new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (pathname === '/api/opencode/runtime' && method === 'GET') {
+    try {
+      const descriptor = await sendBridgeMessage('api:opencode/runtime');
+      return new Response(JSON.stringify(descriptor), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    } catch {
+      return new Response(JSON.stringify({ error: 'OpenCode runtime discovery failed' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
     }
   }
 

@@ -1,4 +1,4 @@
-import type { SnapshotFileDiff } from '@opencode-ai/sdk/v2';
+import type { LegacySnapshotDiff } from '@/lib/opencode/model';
 import { summarizeLiveActivity } from './liveActivitySummary';
 import type { ChatMessageEntry, TurnChangedFile, TurnDiffStats, TurnSummaryRecord } from './types';
 
@@ -133,7 +133,7 @@ export const projectTurnChangedFiles = (
 ): TurnChangedFile[] | undefined => {
     const summary = summarizeLiveActivity(assistantMessages);
     const snapshotDiffs = userMessage.info.role === 'user' ? userMessage.info.summary?.diffs ?? [] : [];
-    const snapshotByFile = new Map<string, SnapshotFileDiff>();
+    const snapshotByFile = new Map<string, LegacySnapshotDiff>();
     for (const diff of snapshotDiffs) {
         if (diff.file) snapshotByFile.set(diff.file, diff);
     }

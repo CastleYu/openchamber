@@ -1,20 +1,18 @@
-import type { Provider } from '@opencode-ai/sdk/v2';
+import { z } from 'zod';
 
-type ProviderModel = Provider['models'][string];
+const variantList = z.array(z.object({ id: z.string() }));
 
 /**
  * Names of the thinking levels a model exposes, empty when it has none.
  *
- * The SDK's model type does not describe `variants`, so the shape is asserted
- * here once instead of at every call site that offers the levels.
+ * OpenCode 1 uses keyed variants; OpenCode 2 returns an array with bare ids.
  */
-export const modelVariantNames = (model: ProviderModel | undefined): string[] => {
-  if (!model) {
-    return [];
+export const modelVariantNames = (model: { variants?: object } | undefined): string[] => {
+  const variants = model?.variants;
+  if (!variants) return [];
+  if (Array.isArray(variants)) {
+    const parsed = variantList.safeParse(variants);
+    return parsed.success ? parsed.data.map((variant) => variant.id) : [];
   }
-  // SAFETY: the payload types `variants` as an optional object whose keys are
-  // the variant names. Only the key set is read, and it is returned as strings,
-  // so no caller depends on the value shape.
-  const variants = (model as { variants?: object }).variants;
-  return variants ? Object.keys(variants) : [];
+  return Object.keys(variants);
 };

@@ -1,7 +1,7 @@
 import { DirectoryActionIndicator } from '../sessions/DirectoryActionIndicator';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { Session } from '@opencode-ai/sdk/v2';
+import type { Session } from '@/lib/opencode/model';
 
 // Archived buckets routinely grow into the hundreds/thousands; virtualize
 // when we cross this row count so the DOM stays bounded.

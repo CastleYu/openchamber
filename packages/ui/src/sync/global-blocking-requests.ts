@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { Event } from '@opencode-ai/sdk/v2/client';
+import type { DomainEvent } from '@/lib/opencode/events';
+import type { PendingInput, PendingPermission } from '@/lib/opencode/operations';
 import { normalizeProjectPath } from '@/lib/projectResolution';
 import type { PermissionRequest } from '@/types/permission';
 import type { QuestionRequest } from '@/types/question';
@@ -23,16 +25,49 @@ export type PendingBlockingRequests = {
 
 type GlobalBlockingRequestsState = {
   bySession: ReadonlyMap<string, PendingBlockingRequests>;
+  taggedBySession: ReadonlyMap<string, { directory: string; permissions: readonly PendingPermission[]; inputs: readonly PendingInput[] }>;
 };
 
 const EMPTY: readonly never[] = [];
 
 export const useGlobalBlockingRequestsStore = create<GlobalBlockingRequestsState>(() => ({
   bySession: new Map(),
+  taggedBySession: new Map(),
 }));
 
 export const resetGlobalBlockingRequests = (): void => {
-  useGlobalBlockingRequestsStore.setState({ bySession: new Map() });
+  useGlobalBlockingRequestsStore.setState({ bySession: new Map(), taggedBySession: new Map() });
+};
+
+export const applyGlobalDomainBlockingEvents = (directory: string, events: readonly DomainEvent[]): void => {
+  const current = useGlobalBlockingRequestsStore.getState().taggedBySession;
+  let next: Map<string, { directory: string; permissions: readonly PendingPermission[]; inputs: readonly PendingInput[] }> | null = null;
+  const scope = normalizeDirectory(directory);
+  for (const event of events) {
+    if (event.type !== 'permission-asked' && event.type !== 'permission-replied'
+      && event.type !== 'input-created' && event.type !== 'form-closed' && event.type !== 'session-delete') continue;
+    const sessionID = event.type === 'permission-asked' || event.type === 'input-created'
+      ? event.request.value.sessionID : event.sessionID;
+    const previous = (next ?? current).get(sessionID) ?? { directory: scope, permissions: [], inputs: [] };
+    if (event.type === 'session-delete') {
+      if (!(next ?? current).has(sessionID)) continue;
+      (next ??= new Map(current)).delete(sessionID);
+      continue;
+    }
+    let permissions = previous.permissions;
+    let inputs = previous.inputs;
+    if (event.type === 'permission-asked') {
+      const index = permissions.findIndex((item) => item.value.id === event.request.value.id);
+      permissions = index < 0 ? [...permissions, event.request] : permissions.map((item, i) => i === index ? event.request : item);
+    } else if (event.type === 'permission-replied') permissions = permissions.filter((item) => item.value.id !== event.requestID);
+    else if (event.type === 'input-created') {
+      const index = inputs.findIndex((item) => item.value.id === event.request.value.id);
+      inputs = index < 0 ? [...inputs, event.request] : inputs.map((item, i) => i === index ? event.request : item);
+    } else inputs = inputs.filter((item) => item.value.id !== event.requestID);
+    if (permissions === previous.permissions && inputs === previous.inputs) continue;
+    (next ??= new Map(current)).set(sessionID, { directory: scope, permissions, inputs });
+  }
+  if (next) useGlobalBlockingRequestsStore.setState({ taggedBySession: next });
 };
 
 const normalizeDirectory = (directory: string): string => normalizeProjectPath(directory) ?? directory;

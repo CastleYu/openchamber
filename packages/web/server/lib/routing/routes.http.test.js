@@ -9,10 +9,14 @@ import { registerRoutingPromptRewrite, registerRoutingRoutes } from './routes.js
  * replays `req.body` when a middleware parsed it. These tests mount the
  * rewrite ahead of a stand-in proxy that records what it would forward.
  */
-const createApp = ({ flag = '1', resolvePromptBody } = {}) => {
+const createApp = ({ flag = '1', resolvePromptBody, generation = 'oc1' } = {}) => {
   process.env.OPENCHAMBER_ROUTING_ENABLE = flag;
   const forwarded = [];
   const runtime = {
+    generation: () => generation,
+    noteModelSelection: vi.fn((_, model) => model?.providerID === 'openchamber' && model?.id === 'auto'),
+    isAutoSession: vi.fn(() => true),
+    routeSend: vi.fn(async () => ({})),
     resolvePromptBody: resolvePromptBody ?? vi.fn(async (body) => {
       if (body.model?.modelID === 'auto') body.model = { providerID: 'openai', modelID: 'gpt-6-astra' };
       return null;
@@ -48,6 +52,21 @@ afterEach(() => {
 });
 
 describe('routing prompt rewrite', () => {
+  it('holds the OC2 Auto model switch and routes the following flat prompt', async () => {
+    const { app, runtime, forwarded } = createApp({ generation: 'oc2', flag: '' });
+    await request(app).post('/api/session/s2/model').send({ model: { providerID: 'openchamber', id: 'auto' } }).expect(204);
+    expect(forwarded).toEqual([]);
+    await request(app).post('/api/session/s2/prompt').set('x-opencode-directory', '%2Frepo')
+      .send({ text: 'explain this' }).expect(204);
+    expect(runtime.routeSend).toHaveBeenCalledWith({ sessionId: 's2', directory: '/repo', body: { text: 'explain this' } });
+    expect(forwarded).toEqual([{ path: '/session/s2/prompt', parsed: true, body: { text: 'explain this' } }]);
+  });
+
+  it('removes an OC2 Auto sentinel from session creation', async () => {
+    const { app, forwarded } = createApp({ generation: 'oc2', flag: '' });
+    await request(app).post('/api/session').send({ model: { providerID: 'openchamber', id: 'auto' }, title: 'New' }).expect(204);
+    expect(forwarded).toEqual([{ path: '/session', parsed: true, body: { title: 'New' } }]);
+  });
   it('rewrites the Auto sentinel on prompt_async and passes the directory along', async () => {
     const { app, runtime, forwarded } = createApp();
     await request(app)

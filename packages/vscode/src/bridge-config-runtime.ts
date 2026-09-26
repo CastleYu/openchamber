@@ -59,6 +59,7 @@ import {
   type SkillsCatalogSourceConfig,
 } from './skillsCatalog';
 import { buildDeferredRestartResponse } from './config-mutation-response';
+import { handleConfigBridgeMessage as handleConfigBridgeMessageV2 } from './bridge-config-runtime-v2';
 import type { BridgeContext, BridgeResponse } from './bridge';
 
 type BridgeMessageInput = {
@@ -77,6 +78,13 @@ type ConfigRuntimeDeps = {
   fetchOpenCodeSkillsFromApi: (ctx: BridgeContext | undefined, workingDirectory?: string) => Promise<DiscoveredSkill[] | null>;
   clientReloadDelayMs: number;
 };
+
+const KERNEL_CONFIG_TYPES = new Set([
+  'api:behavior/agents-md:get', 'api:behavior/agents-md:save',
+  'api:config/agents', 'api:config/commands', 'api:config/websearch',
+  'api:config/warming', 'api:config/mcp', 'api:config/plugins',
+  'api:config/snippets', 'api:config/skills', 'api:config/skills/files',
+]);
 
 const AGENTS_MD_PATH = path.join(OPENCODE_CONFIG_DIR, 'AGENTS.md');
 const MAX_BEHAVIOR_PROMPT_SIZE = 1024 * 1024;
@@ -133,6 +141,15 @@ export async function handleConfigBridgeMessage(
   deps: ConfigRuntimeDeps,
 ): Promise<BridgeResponse | null> {
   const { id, type, payload } = message;
+
+  if (KERNEL_CONFIG_TYPES.has(type)) {
+    let generation = ctx?.manager?.getKernelRuntime().generation;
+    if (generation !== 'oc1' && generation !== 'oc2') {
+      generation = (await ctx?.manager?.refreshKernelRuntime())?.generation;
+    }
+    if (generation === 'oc2') return handleConfigBridgeMessageV2(message, ctx, deps);
+    if (generation !== 'oc1') return { id, type, success: false, error: 'OpenCode kernel is not ready' };
+  }
 
   switch (type) {
     case 'api:config/opencode-resolution:get': {

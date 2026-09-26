@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Session } from '@opencode-ai/sdk/v2/client';
+import type { Session } from '@/lib/opencode/model';
 import { toast } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -108,13 +108,15 @@ export function MultiRunFusionDialog({
   const handleStart = async () => {
     if (!parsed || !canStart) return;
     const runtimeKey = getRuntimeKey();
-    const client = opencodeClient.getSdkClient();
+    const client = opencodeClient;
+    const binding = client.getBoundRuntime();
     const assertCurrent = () => {
-      if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) throw new Error('Runtime changed');
+      if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) throw new Error('Runtime changed');
     };
     setIsStarting(true);
     try {
-      const usableSources = await loadFusionOutputs(client, sources, parsed, assertCurrent);
+      if (binding?.generation !== 'oc1' && binding?.generation !== 'oc2') throw new Error('OpenCode runtime is unavailable');
+      const usableSources = await loadFusionOutputs(client, sources, parsed, binding.generation, assertCurrent);
 
       if (usableSources.length === 0) {
         toast.error(t('multirun.fusion.toast.noOutputs'));
@@ -129,10 +131,12 @@ export function MultiRunFusionDialog({
         renderMagicPrompt('session.fusion.instructions'),
       ]);
       const fusionSession = await createMultiRunSession(client, {
-        title: fusionTitle, directory,
+        title: fusionTitle, directory, generation: binding.generation,
+        selection: { model: { providerID, id: modelID, variant: variant || undefined }, agent: agent || undefined },
         identity: { group: parsed.group, groupSlug: parsed.groupSlug, runGroup: parsed.runGroup,
           role: 'fusion', providerID, modelID },
       }, assertCurrent);
+      assertCurrent();
       registerMultiRunSession(fusionSession, directory);
 
       useSessionUIStore.getState().setCurrentSession(fusionSession.id, directory);
@@ -155,7 +159,7 @@ export function MultiRunFusionDialog({
         directory,
       });
     } catch (error) {
-      if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) return;
+      if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) return;
       console.error('[MultiRunFusion] Failed to start fusion', error);
       toast.error(t('multirun.fusion.toast.failed'));
     } finally {

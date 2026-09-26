@@ -14,7 +14,7 @@
 
 import type { ContextPartMetadata } from "@/lib/messages/contextParts"
 import { create } from "zustand"
-import type { Session, Part, TextPart } from "@opencode-ai/sdk/v2/client"
+import type { Session, Part, TextPart, Metadata } from "@/lib/opencode/model"
 import type { AttachedFile, SessionContextUsage, SessionWorktreeAttachment } from "@/stores/types/sessionTypes"
 import type { WorktreeMetadata } from "@/types/worktree"
 import { opencodeClient } from "@/lib/opencode/client"
@@ -432,7 +432,7 @@ export type SessionUIState = {
     title?: string,
     directoryOverride?: string | null,
     parentID?: string | null,
-    metadata?: Record<string, unknown>,
+    metadata?: Metadata,
   ) => Promise<Session | null>
   deleteSession: (id: string, options?: DeleteSessionOptions) => Promise<boolean>
   deleteSessions: (ids: string[], options?: DeleteSessionsOptions) => Promise<{ deletedIds: string[]; failedIds: string[] }>
@@ -874,7 +874,7 @@ const createSessionWithDraftLifecycle = async (
   title?: string,
   directoryOverride?: string | null,
   parentID?: string | null,
-  metadata?: Record<string, unknown>,
+  metadata?: Metadata,
   selectionTransition?: "submitted-draft",
 ): Promise<Session | null> => {
   const store = useSessionUIStore.getState()

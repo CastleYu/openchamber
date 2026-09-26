@@ -1,6 +1,8 @@
-import type { OpencodeClient, Session } from '@opencode-ai/sdk/v2';
+import type { opencodeClient } from '@/lib/opencode/client';
+import type { Message, Part, Session } from '@/lib/opencode/model';
 import { flattenAssistantTextParts } from '@/lib/messages/messageText';
 import { getMultiRunIdentity, isFusionSource, type MultiRunIdentity } from './identity';
+import type { MultiRunGeneration } from './createSession';
 
 export type FusionSource = {
   session: Session;
@@ -9,32 +11,39 @@ export type FusionSource = {
   identity: MultiRunIdentity;
 };
 
+type FusionApi = Pick<typeof opencodeClient, 'getSession' | 'getSessionMessages'>;
+type MessageRecord = { info: Message; parts: Part[] };
+
+const latestAssistant = (records: MessageRecord[], generation: MultiRunGeneration): MessageRecord | undefined => {
+  let selected: MessageRecord | undefined;
+  for (const record of records) {
+    if (record.info.role !== 'assistant') continue;
+    if (!selected || record.info.time.created > selected.info.time.created
+      || (record.info.time.created === selected.info.time.created && generation === 'oc1')) selected = record;
+  }
+  return selected;
+};
+
 /** Revalidate selected IDs before reading their output. A failed read is not an empty result. */
 export async function loadFusionOutputs(
-  client: OpencodeClient,
+  api: FusionApi,
   sources: FusionSource[],
   anchor: MultiRunIdentity,
+  generation: MultiRunGeneration,
   assertCurrent: () => void,
 ): Promise<Array<{ source: FusionSource; text: string }>> {
   const outputs = await Promise.all(sources.map(async (source) => {
     assertCurrent();
     const directory = source.directory ?? source.session.directory;
-    const current = await client.session.get({ sessionID: source.session.id, directory }, { throwOnError: true });
+    const current = await api.getSession(source.session.id, directory);
     assertCurrent();
-    if (!current.data || !isFusionSource(anchor, getMultiRunIdentity(current.data, source.projectDirectory ?? current.data.directory))) {
+    if (!isFusionSource(anchor, getMultiRunIdentity(current, source.projectDirectory ?? current.directory))) {
       throw new Error('Fusion source membership changed');
     }
-    const result = await client.session.messages({ sessionID: source.session.id, directory, limit: 50 }, { throwOnError: true });
+    const records = await api.getSessionMessages(source.session.id, 50, directory);
     assertCurrent();
-    if (!result.data) throw new Error('Fusion source messages unavailable');
-    let text = '';
-    for (let index = result.data.length - 1; index >= 0; index -= 1) {
-      const record = result.data[index];
-      if (record.info.role !== 'assistant') continue;
-      text = flattenAssistantTextParts(record.parts).trim();
-      break;
-    }
-    return { source: { ...source, session: current.data }, text };
+    const answer = latestAssistant(records, generation);
+    return { source: { ...source, session: current }, text: answer ? flattenAssistantTextParts(answer.parts).trim() : '' };
   }));
   assertCurrent();
   return outputs.filter((output) => output.text.length > 0);

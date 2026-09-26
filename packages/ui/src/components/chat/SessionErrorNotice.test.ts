@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { Message } from '@opencode-ai/sdk/v2';
+import type { Message } from '@/lib/opencode/model';
+import { getLastConversationMessage } from '@/lib/opencode/model';
 import { readLastMessageState } from './sessionErrorNoticeState';
 
 // Older optimistic sends stamped `completed: 0` on the user message; a user
@@ -39,7 +40,16 @@ describe('readLastMessageState', () => {
     expect(readLastMessageState(assistantMessage({ created: 1_000, completed: 2_000 }))?.timestamp).toBe(2_000);
   });
 
-  test('no message yields no state', () => {
-    expect(readLastMessageState(null)).toBeNull();
-  });
+    test('no message yields no state', () => {
+        expect(readLastMessageState(null)).toBeNull();
+    });
+
+    test('a trailing OC2 notice does not replace the last conversation state', () => {
+        const notice: Message = {
+            id: 'compact-1', sessionID: 'ses_1', role: 'compaction', time: { created: 3_000 },
+            status: 'completed', reason: 'auto', summary: 'Earlier context',
+        };
+        expect(readLastMessageState(getLastConversationMessage([assistantMessage({ created: 1_000, completed: 2_000 }), notice])))
+            .toEqual({ role: 'assistant', timestamp: 2_000, hasError: false });
+    });
 });

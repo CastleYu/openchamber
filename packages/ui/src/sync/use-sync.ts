@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react"
-import type { Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part } from "@/lib/opencode/model"
 import { Binary } from "./binary"
 import { upsertSessionRecord } from "./session-records"
 import { retry } from "./retry"
@@ -8,7 +8,7 @@ import {
   useDirectoryStore,
   useSessionMessageLoader,
   useSyncDirectory,
-  useSyncSDK,
+  useSyncSource,
   useSyncRuntime,
   resyncBlockingRequestsForDirectory,
   buildSessionMessageRecordsSnapshot,
@@ -27,35 +27,6 @@ const syncSessionInflightByKey = new Map<string, Promise<void>>()
 // to the store. This prevents rapid session switches (e.g. 1→2→3 in the
 // sidebar) from having each completed fetch fight for focus.
 const syncSessionGenerationByKey = new Map<string, number>()
-type SdkResult<T> = {
-  data?: T
-  error?: unknown
-  response?: {
-    status?: number
-    headers?: { get?: (name: string) => string | null }
-  }
-}
-
-function formatSdkError(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === "string") return error
-  if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message
-    if (typeof message === "string" && message.length > 0) return message
-  }
-  try {
-    return JSON.stringify(error)
-  } catch {
-    return String(error)
-  }
-}
-
-function assertSdkSuccess<T>(result: SdkResult<T>, operation: string): void {
-  if (!result.error) return
-  const status = result.response?.status
-  throw new Error(`${operation} failed${status ? ` (${status})` : ""}: ${formatSdkError(result.error)}`)
-}
-
 function isUserMessage(message: Message): boolean {
   const info = message as Message & { clientRole?: unknown; role?: unknown }
   const role = typeof info.clientRole === "string" ? info.clientRole : info.role
@@ -83,7 +54,7 @@ function useSessionCacheTouch() {
 }
 
 export function useSync() {
-  const sdk = useSyncSDK()
+  const source = useSyncSource()
   const directory = useSyncDirectory()
   const store = useDirectoryStore()
   const childStores = useChildStoreManager()
@@ -152,13 +123,9 @@ export function useSync() {
           shouldFetchSession
             ? (async () => {
                 try {
-                  const result = await retry(async () => {
-                    const response = await sdk.session.get({ sessionID, directory: targetDirectory })
-                    assertSdkSuccess(response, "session.get")
-                    return response
-                  })
-                  if (result.data && !isStale()) {
-                    const nextSession = stripSessionDiffSnapshots(result.data)
+                  const session = await retry(() => source.getSession(sessionID, targetDirectory))
+                  if (!isStale()) {
+                    const nextSession = stripSessionDiffSnapshots(session)
                     const s = targetStore.getState()
                     const sessions = upsertSessionRecord(s.session, nextSession)
                     if (sessions !== s.session && !isStale()) {
@@ -196,7 +163,7 @@ export function useSync() {
       void promise.then(clearInflightRequest, clearInflightRequest)
       return promise
     },
-    [childStores, directory, keyFor, messageLoader, runtimeKey, sdk, store, touch],
+    [childStores, directory, keyFor, messageLoader, runtimeKey, source, store, touch],
   )
 
   // Load more (pagination)

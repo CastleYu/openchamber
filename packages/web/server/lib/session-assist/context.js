@@ -83,7 +83,7 @@ function collectTurns(messages) {
       turns.push(active);
     } else if (active && message.role === 'user') {
       parents.add(message.id);
-    } else if (active && message.role === 'assistant' && parents.has(message.parentID) && !message.summary) {
+    } else if (active && message.role === 'assistant' && (parents.has(message.parentID) || !message.parentID) && !message.summary) {
       // Compaction's synthetic continuation users belong to the same human
       // turn. Parent IDs alone would lose its eventual final answer.
       if (message.text) active.assistant = message;
@@ -112,9 +112,15 @@ export async function loadAssistContext({ readPage, signal }) {
     }
     messages = older.concat(messages);
     const last = messages.at(-1);
+    const cursor = page.response.headers.get('x-next-cursor');
+    if (!last && cursor) {
+      if (cursors.has(cursor)) throw new Error('Session message pagination made no progress');
+      cursors.add(cursor);
+      before = cursor;
+      continue;
+    }
     if (!last?.complete || !last.text) return null;
     const turns = collectTurns(messages);
-    const cursor = page.response.headers.get('x-next-cursor');
     if (turns.length === TURN_LIMIT || !cursor || pageNumber === MAX_PAGES - 1) {
       if (!turns.at(-1)?.complete || turns.at(-1).assistant.id !== last.id) return null;
       return { turns, last };

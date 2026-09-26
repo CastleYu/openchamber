@@ -27,6 +27,7 @@ import type { ModelMetadata } from '@/types';
 import { getCurrentIntlLocale, useI18n } from '@/lib/i18n';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { opencodeClient } from '@/lib/opencode/client';
+import { ProvidersPageV2 } from './ProvidersPageV2';
 import { requiresProviderAuth, shouldLoadAvailableProviders } from './providerAvailability';
 import {
   getOAuthAuthMethods,
@@ -157,12 +158,13 @@ const parseProvidersPayload = (payload: unknown): ProviderOption[] => {
   });
 };
 
-export const ProvidersPage: React.FC = () => {
+const ProvidersPageV1: React.FC = () => {
   const { t } = useI18n();
   // Settings browses whichever project its own selector points at; the app
   // stays where it is.
   const settingsDirectory = useSettingsDirectory();
-  const providers = useConfigStore((state) => selectProvidersForDirectory(state, settingsDirectory));
+  const providers = useConfigStore((state) => selectProvidersForDirectory(state, settingsDirectory))
+    .filter((provider) => provider.generation === 'oc1');
   const selectedProviderId = useConfigStore((state) => state.selectedProviderId);
   const setSelectedProvider = useConfigStore((state) => state.setSelectedProvider);
   const getModelMetadata = useConfigStore((state) => state.getModelMetadata);
@@ -1173,4 +1175,15 @@ export const ProvidersPage: React.FC = () => {
       ) : null}
     </SettingsPageLayout>
   );
+};
+
+export const ProvidersPage: React.FC = () => {
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  if (generation === 'oc2') return <ProvidersPageV2 />;
+  if (generation === 'oc1') return <ProvidersPageV1 />;
+  return null;
 };

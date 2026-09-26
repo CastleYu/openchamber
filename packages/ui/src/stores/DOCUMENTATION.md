@@ -6,6 +6,15 @@ Update metadata may set `notifyOnly` for a personal runtime. `useUpdateStore` pr
 
 `packages/ui/src/stores` contains app-level Zustand stores for persistent UI state, runtime state, and feature caches.
 
+`usePluginsStore` keeps the configured plugin list separate from the OC2
+runtime inventory returned by official `plugin.list` and `plugin.check`.
+The inventory is scoped by endpoint, kernel epoch, generation and directory;
+a failed read marks status unknown, while only a successful complete inventory
+can mark a configured plugin as not reported. Registry-based version updates
+remain available on OC1. OC2 package updates use the exact reported target
+and refresh the inventory after installation; config entries keep their
+`sourcePath` so relative local specs resolve against the declaring file.
+
 Not all state in the UI belongs here.
 
 Use a store when state is:
@@ -18,6 +27,24 @@ Use a store when state is:
 Do not put high-frequency local component state here just because it is convenient.
 
 ## Architecture
+
+`useWebSearchStore` owns the OC2 web-search Settings snapshot. Its identity
+includes the runtime descriptor and directory; a failed refresh preserves the
+same-scope snapshot, and a kernel change invalidates writes from an old page.
+OC1 has no web-search provider-settings request. Search result parsing and
+first-use consent shapes live in `lib/opencode/websearch.ts`; the consent card
+uses the existing form answer/cancel actions.
+
+The page follows the Settings project selector without changing the chat's
+directory. `catalogRefresh.ts` reloads an already opened search snapshot after
+OC2 config, credential or web-search announcements. SDK requests reject a
+changed runtime binding; a late project read cannot overwrite another scope.
+
+The historical Stats view keeps OC2 `session.stats` reports in
+`components/views/usage/usageStatsStore.ts`, keyed by runtime, range and project.
+The cache is in memory and clears on runtime switch. An old read cannot fill
+the new runtime; a failed refresh keeps the last successful report and shows
+an error instead of zero usage. OC1 has no historical Stats request or entry.
 
 ### Project resource modes
 
@@ -130,6 +157,12 @@ so a delayed or lost handshake cannot hide an already-materialized transcript
 (busy subagents would otherwise show only the working-status row).
 
 ### Session / project coordination stores
+
+Session cache contracts use `lib/opencode/model.ts`. OC1 wire records retain
+their actual IDs and optional fields through `v1/projection.ts`; OC2 uses its
+own projection into the same domain. Consumers must not require an OC1-only
+slug or fabricate one for OC2. Token/context helpers preserve OC1 summary
+compaction and recognize OC2 compaction lifecycle records separately.
 
 `useMultiRunStore` creates ID-bound multi-run members. `useAgentGroupsStore`
 projects those identities for selection and group deletion, retaining failed
@@ -446,6 +479,17 @@ project in Settings cannot change what chat sees. Components select through
 `selectAgentsForDirectory` / `selectCommandsForDirectory` /
 `selectSkillsForDirectory` / `selectMcpServersForDirectory` /
 `selectProvidersForDirectory`, which return stored arrays.
+
+Agent entries keep their OC1 or OC2 generation tag. The OC2 settings editor
+reads each agent's stored config and ordered permission rules from the
+OpenChamber config routes; the resolved runtime agent is used only for hints.
+`useMcpConfigStore` likewise keeps each server's original generation shape:
+OC1 uses `enabled`, a numeric timeout and camel-case OAuth fields; OC2 uses
+`disabled`, startup/catalog/execution timeouts and snake-case OAuth fields.
+The OC2 writer preserves fields outside the editor, including OAuth callback
+metadata. The OC2 editor also writes explicit Code Mode and protocol choices;
+their defaults remove the corresponding override. Its directory cache key
+includes the bound runtime instance.
 
 Command discovery compares responses only with the requested directory's cache.
 A first successful response always creates that entry, even when empty or

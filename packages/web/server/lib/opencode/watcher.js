@@ -1,9 +1,11 @@
 import { createUpstreamSseReader } from '../event-stream/upstream-reader.js';
+import { translateWireEvent } from '../event-stream/translate-v2.js';
 
 export const createOpenCodeWatcherRuntime = (deps) => {
   const {
     waitForOpenCodePort,
     buildOpenCodeUrl,
+    getKernelRuntime,
     getOpenCodeAuthHeaders,
     onPayload,
     fetchImpl = fetch,
@@ -41,11 +43,10 @@ export const createOpenCodeWatcherRuntime = (deps) => {
 
     if (globalEventHub) {
       unsubscribeEvent = globalEventHub.subscribeEvent((event) => {
-        const payload = unwrapGlobalEventPayload(event.payload);
-        if (!payload || typeof payload !== 'object') {
-          return;
+        for (const value of event.translated()) {
+          const payload = unwrapGlobalEventPayload(value);
+          if (payload) onPayload(payload);
         }
-        onPayload(payload);
       });
       unsubscribeStatus = globalEventHub.subscribeStatus((status) => {
         if (signal.aborted) {
@@ -63,9 +64,15 @@ export const createOpenCodeWatcherRuntime = (deps) => {
       return;
     }
 
+    let attached;
     reader = createUpstreamSseReader({
       signal,
-      buildUrl: () => buildOpenCodeUrl('/global/event', ''),
+      buildUrl: () => {
+        attached = getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+        if (attached.generation !== 'oc1' && attached.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
+        return buildOpenCodeUrl(attached.generation === 'oc2' ? '/api/event' : '/global/event', '');
+      },
+      getConnectionKey: () => `${attached.endpoint}|${attached.epoch}|${attached.generation}`,
       getHeaders: getOpenCodeAuthHeaders,
       fetchImpl,
       stallTimeoutMs: upstreamStallTimeoutMs,
@@ -74,11 +81,12 @@ export const createOpenCodeWatcherRuntime = (deps) => {
         console.log('[PushWatcher] connected');
       },
       onEvent(event) {
+        const current = getKernelRuntime?.() ?? attached;
+        if (current.endpoint !== attached.endpoint || current.epoch !== attached.epoch || current.generation !== attached.generation) return;
         const payload = unwrapGlobalEventPayload(event.payload);
-        if (!payload || typeof payload !== 'object') {
-          return;
+        for (const value of attached.generation === 'oc2' ? translateWireEvent(payload) : [payload]) {
+          if (value) onPayload(value);
         }
-        onPayload(payload);
       },
       onError(error) {
         if (signal.aborted) {

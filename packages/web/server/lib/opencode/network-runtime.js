@@ -1,3 +1,5 @@
+import { detectOpenCodeGeneration, OPENCODE_GENERATION } from './compatibility.js';
+
 export const createOpenCodeNetworkRuntime = (deps) => {
   const {
     state,
@@ -46,23 +48,17 @@ export const createOpenCodeNetworkRuntime = (deps) => {
       try {
         const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), 3000);
-        const response = await fetch(`${url.replace(/\/+$/, '')}/global/health`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            ...getOpenCodeAuthHeaders(),
-          },
+        const descriptor = await detectOpenCodeGeneration({
+          endpoint: url,
+          epoch: 0,
+          headers: getOpenCodeAuthHeaders(),
           signal: controller.signal,
         });
         clearTimeout(timeout);
         timeout = null;
 
-        if (response.ok) {
-          const body = await response.json().catch(() => null);
-          if (body?.healthy === true) {
-            return true;
-          }
-        }
+        if (descriptor.generation === OPENCODE_GENERATION.OC1
+          || descriptor.generation === OPENCODE_GENERATION.OC2) return true;
       } catch {
       } finally {
         if (timeout) {

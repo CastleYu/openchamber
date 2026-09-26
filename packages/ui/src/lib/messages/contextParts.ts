@@ -16,7 +16,7 @@
 
 import { z } from 'zod';
 import type { JsonValue } from '@openchamber/sdk';
-import type { TextPart } from '@opencode-ai/sdk/v2';
+import type { TextPart } from '@/lib/opencode/model';
 import type { InlineCommentDraft } from '@/stores/useInlineCommentDraftStore';
 import { appendTerminalContexts } from './terminalContext';
 
@@ -410,7 +410,7 @@ export const contextPartMetadataSchema = z.object({
 });
 
 /** The subset of a message part that context read-back inspects. */
-export type ContextCarrierPart = { type: string } & Pick<TextPart, 'metadata'>;
+export type ContextCarrierPart = { type?: string } & Pick<TextPart, 'metadata'>;
 
 /**
  * Read the structured context payload from a message part, if it carries one.
@@ -418,7 +418,7 @@ export type ContextCarrierPart = { type: string } & Pick<TextPart, 'metadata'>;
  * schema-validated before it is trusted.
  */
 export function readContextPart(part: ContextCarrierPart): ContextPartPayload | null {
-    if (part.type !== 'text') return null;
+    if (part.type !== undefined && part.type !== 'text') return null;
     const parsed = contextPayloadSchema.safeParse(part.metadata?.[CONTEXT_METADATA_KEY]);
     if (parsed.success) return parsed.data;
 

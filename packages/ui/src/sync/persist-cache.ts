@@ -6,7 +6,8 @@
  * Message/part data is always loaded from the server.
  */
 
-import type { Session, VcsInfo } from "@opencode-ai/sdk/v2/client"
+import type { VcsInfo } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import type { ProjectMeta } from "./types"
 import { getRuntimeKey, subscribeRuntimeEndpointWillChange } from "@/lib/runtime-switch"
 import { countSyncPersistenceSerialization, countSyncPersistenceStorageWrite } from "./performance-diagnostics"

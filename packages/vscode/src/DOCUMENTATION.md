@@ -72,11 +72,14 @@ The webview build emits each worker as one self-contained file. VS Code webviews
   - Proxy route handlers (`api:proxy`, `api:session:message`) with injected helper dependencies.
   - SSE routes are intentionally excluded from the generic proxy and use `sseProxy.ts`, whose upstream-only stall watchdog closes a quiet OpenCode stream so the webview can reconnect instead of trusting an open but silent response.
   - The webview allocates each SSE stream ID and installs its listener before requesting the upstream stream, so immediate OpenCode replay events cannot race the bridge start response.
+  - OC2 session GET responses overlay OpenChamber archive and pending metadata from the same scoped stores as the web server. OC1 responses pass through. A store read failure rejects the overlay rather than publishing an empty session state.
 
 - `bridge-config-runtime.ts`
   - Config and skills message handlers (`api:config/*`).
   - Includes OpenCode resolution diagnostics parity handler used by shared UI (`/api/config/opencode-resolution`).
   - OpenCode JSONC reads in `opencodeConfig.ts` fail closed on a partial or non-object `jsonc-parser` tree (`INVALID_JSONC`) so mutations cannot rewrite a `$schema`-only stub over an existing config. Comment-only files read as empty, while other content that yields no JSON value (YAML, plain text) fails closed. A broken layer is omitted from the merge and recorded on `layerErrors`; valid sibling layers still load, including plugin list/read via `getPluginConfigSources`. Writes still refuse to overwrite the broken file.
+  - OC1 keeps `opencodeConfig.ts` and its existing config paths. OC2 dispatches to `bridge-config-runtime-v2.ts` and `opencodeConfigV2.ts`, which emit native sections and `plugins`; the shape functions come from the web server's `config-v2.js`. An unknown generation rejects config mutations before either writer runs.
+  - OC2 plugin list records carry the actual declaring config file as `sourcePath`. Discovered `plugins/` files, `plugins/` package directories, and legacy `plugin/` entries carry their actual `absolutePath`; only files in the preferred `plugins/` directory are editable. Shared Settings matches those paths against OpenCode's runtime inventory. The OC1 list and writer keep their existing shape.
 
 - `bridge-project-setup-runtime.ts`
   - Extension-host side of `GET/PUT /api/projects/:projectId/config` (the webview handles the route locally and bridges `api:project-setup:get` / `api:project-setup:update`). Reads and writes the client-owned keys of `~/.config/openchamber/projects/<projectId>.json` (worktree setup commands, project actions, draft starters) with the rules in `project-setup.ts`, a mirror of the server's `packages/web/server/lib/projects/project-setup.js`; keep the two in sync. The file name follows the server's bounded rule (`projectConfigFileStemOf`, mirrored from `packages/web/server/lib/projects/project-id.js`): an id over 200 characters is stored as `path_sha256_<digest>.json` so a deeply nested checkout does not exceed the file name limit. A file an older build wrote under the long name is still read when the bounded one is missing and is removed once a write has moved its content. Writes to one file are chained; server-owned and unknown keys survive. The read also merges the team's optional `<workspace>/.openchamber/project.json` (checkout path decoded from the `path_<base64url>` id) by the same rules as the server, so the webview sees one view with `shared` / `personal` blocks. The shared UI (`openchamberConfig.ts`) no longer composes that path or reads it through the fs bridge.
@@ -94,6 +97,10 @@ The webview build emits each worker as one self-contained file. VS Code webviews
   - Includes Zen utility model parity handler used by shared notification settings (`/api/zen/models`).
   - Owns managed OpenCode upgrade status and mutation handlers, including capability reporting, upgrade serialization, and process restart after a successful upgrade.
   - Provider handlers cover source lookup, disconnect (`DELETE /api/provider/:id/auth`), and custom provider upsert (`PUT /api/provider`; create/update OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages config with explicit `scope` for user/project/custom layers; requires `env` or stored auth; secrets via OpenCode auth API). Updates preserve existing provider, option, and retained-model fields that the form does not manage while honoring explicit model, header, and env removal. Legacy `providers` entries migrate to the canonical `provider` key when edited.
+  - OC2 provider source reads use the read-only OpenCode credential database and v2 config reader. OC2 credential deletion returns an explicit ownership error; config removal and upsert use the v2 writer. OC1 keeps `auth.json` and its existing config writes. Session archive/metadata bridge messages use OpenCode native updates on OC1 and OpenChamber scoped state on OC2.
+
+- `openchamberSessionState.ts`
+  - Reuses the web archive, metadata migration, and storage-scope stores. The first OC2 scope claims root state files; managed scope survives port changes, while external scopes use endpoint identity. OC1 never opens these files. Metadata migration runs before the first OC2 metadata read or write, and endpoint/epoch checks reject late writes. VS Code's OC2 HTTP adapter merges nested metadata patches before OpenCode's replacing PATCH.
   - Quota handlers keep managed exe.dev, Ollama Cloud, and Cursor credentials in the extension data directory with the same private-file contract as the web runtime. exe.dev uses one command-scoped usage token for the aggregate billing shared by every `exe-*` model provider.
   - `ollamaQuota.ts` owns the Ollama settings request and parser shared by credential validation and quota refresh. Both reject redirects, failed HTTP responses, and pages without parsed windows, with a 15-second request timeout. Validation finishes before the bridge writes a replacement cookie. Monthly dollar quotas and legacy session/weekly/premium quotas remain supported; zero extra-credit balances are omitted.
 
@@ -258,3 +265,26 @@ chosen one, from VS Code's display language, which the HTML exposes as
 `window.__OPENCHAMBER_HOST_LANGUAGE__`. The UI bundle reads the same value as
 its default locale (`detectInitialLocale`), so a fresh install in a supported
 language starts in that language on both the splash and the app.
+
+## Kernel selection and forwarding
+
+`OpenCodeManager` owns a per-instance kernel descriptor and exposes it through
+`api:opencode/runtime`. Managed readiness uses the same authoritative OC1 health
+and OC2 info detector as the web server. Credential changes and completed stops
+invalidate the descriptor. The webview binds this descriptor before sync starts.
+
+`kernelRequest.ts` selects the API prefix and captures endpoint/generation/epoch.
+The generic proxy and SSE proxy reject results from a replaced connection. OC2
+SSE frames stay in their original wire format for the shared UI adapter; OC1
+keeps directory defaults and its existing event vocabulary. Only extension-owned
+OC2 installations use CLI upgrade; OC1 retains HTTP upgrade, and external kernels
+remain outside the extension's upgrade ownership.
+
+The extension's session activity watcher keeps the two event contracts separate.
+OC1 reconciles `/session/status` and consumes `global.event`; OC2 reconciles
+`session.active` and consumes `event.subscribe`, including `session.execution.*`
+transitions. A changed kernel identity cannot publish a late status, event, or
+Git description result. The Git PR description helper retains the OC1 temporary
+session flow and uses OC2's `generate.text` operation without creating a session.
+The extension status command probes each kernel's own paths. An unknown kernel
+produces no OpenCode probes and reports its unknown generation.

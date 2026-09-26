@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 const FETCH_TIMEOUT_MS = 15_000;
 const MESSAGE_FETCH_LIMIT = 20;
 
@@ -34,9 +36,61 @@ export const createContextObligatoryRuntime = ({
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   sessionKnowledgeRuntime = null,
+  kernelOperations = null,
 }) => {
   const inflight = new Set();
   let stopped = false;
+  const assertIdentity = (expected) => {
+    const current = kernelOperations.captureIdentity();
+    if (current.generation !== expected.generation || current.endpoint !== expected.endpoint || current.epoch !== expected.epoch) {
+      throw new Error('OpenCode runtime changed during context restoration');
+    }
+  };
+
+  const tickCurrent = async (sessionId, directory, identity) => {
+    const session = (await kernelOperations.getSession({ sessionID: sessionId, directory })).data;
+    assertIdentity(identity);
+    if (session.parentID) return;
+    const state = readContextState(session);
+    const knowledge = sessionKnowledgeRuntime
+      ? await sessionKnowledgeRuntime.resolvePending(directory, '', sessionKnowledgeRuntime.readPins(session))
+        .catch(() => ({ text: '', signature: '' }))
+      : { text: '', signature: '' };
+    assertIdentity(identity);
+    if (state.messages.length === 0 && !knowledge.text) return;
+
+    const recent = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: MESSAGE_FETCH_LIMIT })).data.items;
+    assertIdentity(identity);
+    const summary = recent.find((message) => message.role === 'compaction' && message.raw?.status === 'completed');
+    if (!summary?.id || !summary.completed) return;
+    if (state.openchamber.context_obligatory_last_compaction_message_id === summary.id) return;
+
+    const fetched = await Promise.allSettled(state.messages.map(async (pinned) => {
+      const message = (await kernelOperations.getMessage({ sessionID: sessionId, messageID: pinned.id, directory })).data;
+      assertIdentity(identity);
+      const parts = Array.isArray(message.content) ? message.content
+        : z.string().safeParse(message.text).success ? [{ type: 'text', text: message.text }] : [];
+      const text = parts.filter((part) => part?.type === 'text' && z.string().safeParse(part.text).success)
+        .map((part) => part.text.trim()).filter(Boolean).join('\n\n');
+      return { pinned, text };
+    }));
+    assertIdentity(identity);
+    const entries = fetched.filter((result) => result.status === 'fulfilled' && result.value.text)
+      .map((result) => result.value).sort((left, right) => left.pinned.createdAt - right.pinned.createdAt);
+    if (entries.length === 0 && !knowledge.text) return;
+
+    const synthetic = {
+      sessionID: sessionId, directory, expectedIdentity: identity,
+      text: [knowledge.text, entries.length > 0 ? buildContextPrompt(entries) : ''].filter(Boolean).join('\n\n---\n\n'),
+      resume: false,
+    };
+    await kernelOperations.addSynthetic(synthetic);
+    assertIdentity(identity);
+    const patch = { context_obligatory_last_compaction_message_id: summary.id };
+    if (knowledge.signature) patch[sessionKnowledgeRuntime.metadataKey] = knowledge.signature;
+    await kernelOperations.updateSession({ sessionID: sessionId, directory, expectedIdentity: identity, metadata: { openchamber: patch } });
+    assertIdentity(identity);
+  };
 
   const openCodeFetch = async (fetchPath, { directory, method = 'GET', body, query } = {}) => {
     const params = new URLSearchParams(query || {});
@@ -57,7 +111,10 @@ export const createContextObligatoryRuntime = ({
   };
 
   const tick = async (sessionId, directory) => {
+    const identity = kernelOperations?.captureIdentity();
+    if (identity?.generation === 'oc2') return tickCurrent(sessionId, directory, identity);
     const session = await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory });
+    if (identity) assertIdentity(identity);
     if (session?.parentID) return;
     const state = readContextState(session);
 
@@ -85,6 +142,7 @@ export const createContextObligatoryRuntime = ({
       directory,
       query: { limit: String(MESSAGE_FETCH_LIMIT) },
     });
+    if (identity) assertIdentity(identity);
     if (!Array.isArray(recent) || recent.length === 0) return;
     const summary = recent.toReversed().find((message) =>
       message?.info?.role === 'assistant' && message.info.summary === true)?.info;
@@ -102,6 +160,7 @@ export const createContextObligatoryRuntime = ({
         : '';
       return { pinned, text };
     }));
+    if (identity) assertIdentity(identity);
     const entries = fetched
       .filter((result) => result.status === 'fulfilled' && result.value.text)
       .map((result) => result.value)
@@ -114,6 +173,7 @@ export const createContextObligatoryRuntime = ({
     const modelID = typeof executionInfo?.modelID === 'string' ? executionInfo.modelID : '';
     if (!providerID || !modelID) throw new Error('no pre-compaction assistant provider/model');
     const agent = typeof executionInfo.agent === 'string' ? executionInfo.agent : executionInfo.mode;
+    if (identity) assertIdentity(identity);
     await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/prompt_async`, {
       directory,
       method: 'POST',
@@ -129,9 +189,12 @@ export const createContextObligatoryRuntime = ({
         }],
       },
     });
+    if (identity) assertIdentity(identity);
 
     const fresh = await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory });
+    if (identity) assertIdentity(identity);
     const freshState = readContextState(fresh);
+    if (identity) assertIdentity(identity);
     await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, {
       directory,
       method: 'PATCH',

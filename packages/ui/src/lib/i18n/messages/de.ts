@@ -1,9 +1,12 @@
+import { fileArtifactsI18n } from './file-artifacts.i18n';
+import { webSearchI18n } from './websearch.i18n';
 import { settingsDict } from './de.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { linearPanelI18n } from './linear-panel.i18n';
 import { routingI18n } from './routing.i18n';
 import { pluginPanelI18n } from './plugin-panel.i18n';
 import { surfacePanelI18n } from './surface-panel.i18n';
+import { usageStatsI18n } from './usage-stats.i18n';
 
 export const dict = {
   'fileOpening.loading': "Datei wird geladen…",
@@ -62,6 +65,22 @@ export const dict = {
   'chat.liveActivity.usedSubagent': '{count} Unteragent eingesetzt',
   'chat.liveActivity.usedSubagents': '{count} Unteragenten eingesetzt',
   'sessions.sidebar.projectAction.active': 'Projektaktion aktiv',
+  'sidebarFilesTree.menu.uploadFiles': 'Dateien hochladen',
+  'sidebarFilesTree.actions.uploadFilesTitle': 'Dateien hochladen',
+  'chat.permissionCard.summary.externalDirectory': "Zugriff auf Dateien außerhalb des Projekts",
+  'chat.permissionCard.summary.read': "Datei lesen",
+  'chat.permissionCard.summary.edit': "Dateien bearbeiten",
+  'chat.permissionCard.summary.shell': "Befehl ausführen",
+  'chat.permissionCard.summary.glob': "Dateien finden",
+  'chat.permissionCard.summary.grep': "Dateiinhalte durchsuchen",
+  'chat.permissionCard.summary.webfetch': "Webseite öffnen",
+  'chat.permissionCard.summary.websearch': "Im Web suchen",
+  'chat.permissionCard.summary.skill': "Skill laden",
+  'chat.permissionCard.summary.tool': "{tool} verwenden",
+  'chat.permissionCard.summary.inPath': "in {path}",
+  'chat.permissionCard.alwaysAllowPatterns': 'Immer: {patterns}',
+  ...fileArtifactsI18n.de,
+  ...webSearchI18n.de,
   ...settingsDict,
   'updateDialog.personalNotice': 'Persönliche Builds zeigen Updates nur an. Synchronisiere den Quellcode und baue neu, um deine Funktionen zu behalten.',
   ...linearIssuePickerI18n.de,
@@ -69,6 +88,7 @@ export const dict = {
   ...routingI18n.de,
   ...pluginPanelI18n.de,
   ...surfacePanelI18n.de,
+  ...usageStatsI18n.de,
   'common.language.german': 'Deutsch',
   'common.loading': 'Wird geladen...',
   'common.unavailable': 'Nicht verfügbar',
@@ -2092,6 +2112,7 @@ export const dict = {
   'chat.commandAutocomplete.command.debugDescription': 'Geführte Ursachenforschung für einen Fehler, bevor eine Lösung vorgeschlagen wird.',
   'chat.commandAutocomplete.command.weighDescription': 'Zwei bis drei Ansätze mit Kompromissen und einer Empfehlung bewerten, bevor du dich entscheidest.',
   'chat.commandAutocomplete.command.btwDescription': 'Stelle eine Neben-Frage in einer temporären Kind-Sitzung, ohne diesen Chat zu unterbrechen.',
+  'chat.commandAutocomplete.command.forkDescription': 'Diesen Chat ab der letzten abgeschlossenen Antwort abzweigen und dort weitermachen; Text nach /fork wird an die Abzweigung gesendet.',
   'chat.commandAutocomplete.command.exploreDescription': 'Vertraut machen mit diesem Codebase: Eine Übersicht über die Architektur und Hauptbestandteile.',
   'chat.commandAutocomplete.badge.skill': 'Fähigkeit',
   'chat.commandAutocomplete.badge.command': 'Befehl',
@@ -2252,6 +2273,9 @@ export const dict = {
   'snippets.source.global': 'global',
   'snippets.source.project': 'Projekt',
   'chat.chatInput.toast.compactFailed': 'Fehler beim Komprimieren der Sitzung',
+  'chat.chatInput.toast.forkFailed': 'Sitzung konnte nicht abgezweigt werden',
+  'chat.chatInput.toast.forkNothingToFork': 'Noch nichts zum Abzweigen: In dieser Sitzung ist noch keine Antwort abgeschlossen',
+  'chat.chatInput.toast.forkSendFailed': 'Abgezweigt, aber die Nachricht wurde nicht gesendet. Sie steht wieder im Eingabefeld.',
   'chat.chatInput.toast.summaryFailed': 'Fehler bei der Erstellung der Zusammenfassung',
   'chat.messageBody.actions.sendReviewFeedback': 'Feedback zur Überprüfung an den implementierenden Agenten senden',
   'chat.messageBody.actions.sendImplementationResponse': 'Implementierungsantwort an den überprüfenden Agenten senden',
@@ -2316,6 +2340,9 @@ export const dict = {
   'chat.toolPart.error': 'Fehler:',
   'chat.toolPart.awaitingResponse': 'Warte auf Antwort...',
   'chat.toolPart.noOutputProduced': 'Keine Ausgabe erzeugt',
+  'chat.toolPart.script': 'Skript',
+  'chat.toolPart.scriptCalls': 'Tool-Aufrufe',
+  'chat.toolPart.outputTruncated': 'Ausgabe wurde gekürzt',
   'chat.toolPart.output': 'Ausgabe',
   'chat.toolPart.showRawJson': 'Rohe JSON anzeigen',
   'chat.toolPart.showFormattedJson': 'Formatierte JSON anzeigen',
@@ -2434,6 +2461,11 @@ export const dict = {
   'chat.messageBody.subtask.hidePrompt': 'Eingabe ausblenden',
   'chat.messageBody.subtask.showPrompt': 'Eingabe anzeigen',
   'chat.messageBody.subtask.openSession': 'Unteraufgaben-Sitzung öffnen',
+  'chat.compaction.running': 'Unterhaltung wird komprimiert…',
+  'chat.compaction.completed': 'Unterhaltung komprimiert',
+  'chat.compaction.failed': 'Komprimierung fehlgeschlagen',
+  'chat.compaction.showSummary': 'Zusammenfassung anzeigen',
+  'chat.compaction.hideSummary': 'Zusammenfassung ausblenden',
   'chat.messageBody.shellCommand.title': 'Shell-Befehl',
   'chat.messageBody.shellCommand.hideOutput': 'Ausgabe ausblenden',
   'chat.messageBody.shellCommand.showOutput': 'Ausgabe anzeigen',
@@ -3458,4 +3490,17 @@ export const dict = {
   'settings.mcp.page.connection.hintCommand': 'Läuft auf diesem Rechner. Fügen Sie einen ganzen Befehl ein — er wird in ein Argument pro Zeile zerlegt.',
   'settings.mcp.page.connection.hintLink': 'Verbindet sich mit einem fremd gehosteten Server. Fügen Sie dessen https-Adresse ein.',
   'mcpDropdown.status.failedWithCause': "{cause}: {error}",
+  'chat.formCard.inputNeeded': 'Eingabe erforderlich',
+  'chat.formCard.fromSubagent': 'von einem Subagenten',
+  'chat.formCard.required': 'Pflichtfeld',
+  'chat.formCard.openLink': 'Link öffnen',
+  'chat.formCard.yes': 'Ja',
+  'chat.formCard.other': 'Andere',
+  'chat.formCard.yourAnswer': 'Ihre Antwort',
+  'chat.formCard.submit': 'Absenden',
+  'chat.formCard.cancel': 'Abbrechen',
+  'chat.formCard.missingRequired': 'Füllen Sie zuerst die Pflichtfelder aus.',
+  'chat.formCard.submitFailed': 'Die Antwort konnte nicht gesendet werden',
+  'chat.formCard.cancelFailed': 'Die Anfrage konnte nicht abgebrochen werden',
+  'chat.formCard.tryAgain': 'Versuchen Sie es erneut.',
 };

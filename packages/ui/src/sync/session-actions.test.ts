@@ -1,7 +1,8 @@
-import { describe, expect, test, beforeEach, mock } from "bun:test"
+import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test"
 import type { PermissionRequest } from "@/types/permission"
 import type { QuestionRequest } from "@/types/question"
 import type { InputState } from "./input-store"
+import type { FormInfo } from "@opencode/client"
 
 // Mock SDK client that records permission.reply / question.reply calls
 const replyCalls: Array<{ method: string; params: Record<string, unknown> }> = []
@@ -11,6 +12,8 @@ let sessionRevertResult: { data?: unknown; error?: unknown; response?: { status?
 let questionReplyError: unknown | null = null
 let questionRejectError: unknown | null = null
 let permissionReplyError: unknown | null = null
+let formReplyError: unknown | null = null
+let formCancelError: unknown | null = null
 let sessionShareResult: { data?: unknown; error?: unknown; response?: { status?: number } } = {}
 let sessionUpdateResult: { data?: unknown; error?: unknown; response?: { status?: number } } = {}
 let sessionMessagesResult: { data?: unknown; error?: unknown; response?: { status?: number } } = { data: [] }
@@ -166,6 +169,8 @@ const mockSdk = {
 // Mock opencodeClient singleton
 // SAFETY: the actions under test touch only the SDK surface mocked above.
 const actionSdk = mockSdk as unknown as OpencodeClient
+let mockBoundRuntime: { generation: 'oc1' | 'oc2' } = { generation: 'oc1' }
+const forkSessionReads = new Map<string, Session>()
 
 mock.module("@/lib/opencode/client", () => ({
   opencodeClient: {
@@ -180,9 +185,36 @@ mock.module("@/lib/opencode/client", () => ({
     }),
     getFilesystemHome: mock(async () => "/home/test"),
     getSdkClient: () => mockSdk,
-    getSessionMessages: mock((sessionId: string, _limit?: number, directory?: string | null) => {
-      replyCalls.push({ method: "session.messages", params: { sessionID: sessionId, directory } })
-      return Promise.resolve(sessionMessageRecords.get(sessionId) ?? [])
+    getBoundRuntime: () => mockBoundRuntime,
+    getSession: async (id: string) => {
+      const session = forkSessionReads.get(id)
+      if (!session) throw new Error('Session unavailable in fixture')
+      return session
+    },
+    shareSession: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.share", params: { sessionID: sessionId, directory } })
+      if (sessionShareResult.error) throw sessionShareResult.error
+      return sessionShareResult.data as Session
+    }),
+    unshareSession: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.unshare", params: { sessionID: sessionId, directory } })
+      if (sessionShareResult.error) throw sessionShareResult.error
+      return sessionShareResult.data as Session
+    }),
+    abortSession: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.abort", params: { sessionID: sessionId, directory } })
+      return true
+    }),
+    unrevertSession: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.unrevert", params: { sessionID: sessionId, directory } })
+      afterUnrevertCall?.(sessionId)
+      if (failingUnrevertSessionIds.has(sessionId)) throw new Error("session.unrevert failed: rejected")
+      return { id: sessionId, time: { created: 1 } } as Session
+    }),
+    getSessionMessages: mock((sessionId: string, limit?: number, directory?: string | null) => {
+      replyCalls.push({ method: "session.messages", params: { sessionID: sessionId, directory, limit } })
+      if (sessionMessagesResult.error) throw sessionMessagesResult.error
+      return Promise.resolve(sessionMessageRecords.get(sessionId) ?? sessionMessagesResult.data ?? [])
     }),
     forkSession: mock(async (sessionId: string, messageId?: string, directory?: string | null): Promise<Session> => {
       replyCalls.push({ method: "session.fork", params: { sessionID: sessionId, messageID: messageId, directory } })
@@ -192,11 +224,31 @@ mock.module("@/lib/opencode/client", () => ({
       return sessionForkResult
     }),
     replyToPermission: mock((requestId: string, reply: string, options?: { directory?: string | null }) => {
+      if (options?.directory) scopedClientDirectories.push(options.directory)
       replyCalls.push({ method: "permission.reply", params: { requestID: requestId, reply, directory: options?.directory } })
+      if (permissionReplyError) throw permissionReplyError
       return Promise.resolve(true)
     }),
     replyToQuestion: mock((requestId: string, answers: string[] | string[][], directory?: string | null) => {
+      if (directory) scopedClientDirectories.push(directory)
       replyCalls.push({ method: "question.reply", params: { requestID: requestId, answers, directory } })
+      if (questionReplyError) throw questionReplyError
+      return Promise.resolve(true)
+    }),
+    rejectQuestion: mock((requestId: string, directory?: string | null) => {
+      if (directory) scopedClientDirectories.push(directory)
+      replyCalls.push({ method: "question.reject", params: { requestID: requestId, directory } })
+      if (questionRejectError) throw questionRejectError
+      return Promise.resolve(true)
+    }),
+    replyToForm: mock((sessionId: string, formId: string, answer: Record<string, unknown>, directory?: string | null) => {
+      replyCalls.push({ method: "form.reply", params: { sessionID: sessionId, formID: formId, answer, directory } })
+      if (formReplyError) throw formReplyError
+      return Promise.resolve(true)
+    }),
+    cancelForm: mock((sessionId: string, formId: string, directory?: string | null) => {
+      replyCalls.push({ method: "form.cancel", params: { sessionID: sessionId, formID: formId, directory } })
+      if (formCancelError) throw formCancelError
       return Promise.resolve(true)
     }),
     revertSession: mock((sessionId: string, messageId: string, partId?: string, directory?: string | null) => {
@@ -442,7 +494,8 @@ mock.module("./sync-refs", () => ({
 
 import { INITIAL_STATE } from "./types"
 import type { DirectoryStore } from "./child-store"
-import type { Message, OpencodeClient, Part, Project, Session } from "@opencode-ai/sdk/v2/client"
+import type { OpencodeClient, Project } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, Session } from "@/lib/opencode/model"
 
 type OptimisticAddCall = { sessionID: string; directory?: string | null; message: Message; parts: Part[] }
 type OptimisticRemoveCall = { sessionID: string; directory?: string | null; messageID: string }
@@ -571,6 +624,94 @@ describe("moveSessionToDirectory", () => {
     expect(destination.getState().session).toHaveLength(0)
     expect(destination.getState().message["session-a"]).toBe(undefined)
     expect(destination.getState().part["message-a"]).toBe(undefined)
+  })
+})
+
+describe("OC2 form actions", () => {
+  beforeEach(() => {
+    replyCalls.length = 0
+    formReplyError = null
+    formCancelError = null
+  })
+  afterEach(() => { formReplyError = null; formCancelError = null })
+
+  const form: FormInfo = { id: "form-1", sessionID: "session-a", title: "Confirm", fields: [{ key: "confirm", type: "boolean", title: "Confirm", required: true }] }
+
+  test("keeps the structured answer and clears the pending form only after success", async () => {
+    const store = createStore({}, { pendingInput: { "session-a": [{ generation: "oc2", kind: "form", value: form }] } })
+    const { setActionRefs, replyToForm } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+
+    const answer = { confirm: true }
+    await replyToForm("session-a", "form-1", answer)
+
+    expect(replyCalls).toEqual([{ method: "form.reply", params: { sessionID: "session-a", formID: "form-1", answer, directory: "/test/project" } }])
+    expect(store.getState().pendingInput["session-a"]).toBeUndefined()
+  })
+
+  test("keeps the form when the reply fails", async () => {
+    const request = { generation: "oc2" as const, kind: "form" as const, value: form }
+    const store = createStore({}, { pendingInput: { "session-a": [request] } })
+    const { setActionRefs, replyToForm } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+    formReplyError = new Error("offline")
+
+    await expect(replyToForm("session-a", "form-1", { confirm: true })).rejects.toThrow("offline")
+    expect(store.getState().pendingInput["session-a"]).toEqual([request])
+  })
+
+  test("cancel uses the form route and preserves pending state on failure", async () => {
+    const request = { generation: "oc2" as const, kind: "form" as const, value: form }
+    const store = createStore({}, { pendingInput: { "session-a": [request] } })
+    const { setActionRefs, cancelForm } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+    formCancelError = new Error("offline")
+
+    await expect(cancelForm("session-a", "form-1")).rejects.toThrow("offline")
+    expect(replyCalls[0]).toEqual({ method: "form.cancel", params: { sessionID: "session-a", formID: "form-1", directory: "/test/project" } })
+    expect(store.getState().pendingInput["session-a"]).toEqual([request])
+  })
+
+  test("send supersession fails when form cancellation fails and keeps the pending request", async () => {
+    const request = { generation: "oc2" as const, kind: "form" as const, value: form }
+    const store = createStore({}, {
+      session: [{ id: "session-a", projectID: "project", directory: "/test/project", title: "Session", time: { created: 1, updated: 1 } }],
+      pendingInput: { "session-a": [request] },
+    })
+    const { setActionRefs, dismissOpenFormsForSession } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+    formCancelError = new Error("offline")
+
+    await expect(dismissOpenFormsForSession("session-a")).rejects.toThrow("offline")
+    expect(store.getState().pendingInput["session-a"]).toEqual([request])
+  })
+})
+
+describe("OC2 tagged permission replies", () => {
+  beforeEach(() => { replyCalls.length = 0; permissionReplyError = null })
+  afterEach(() => { permissionReplyError = null })
+
+  const request = { generation: "oc2" as const, value: { id: "perm-oc2", sessionID: "session-a", action: "shell", resources: ["ls"] } }
+
+  test("routes by the owning session and clears only after a successful reply", async () => {
+    const store = createStore({}, { session: [{ id: "session-a", projectID: "project", directory: "/test/project/wt", title: "Session", time: { created: 1, updated: 1 } }], pendingPermission: { "session-a": [request] } })
+    const { setActionRefs, respondToPermission } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+
+    await respondToPermission("session-a", "perm-oc2", "once")
+
+    expect(replyCalls[0]).toEqual({ method: "permission.reply", params: { requestID: "perm-oc2", reply: "once", directory: "/test/project/wt" } })
+    expect(store.getState().pendingPermission["session-a"]).toBeUndefined()
+  })
+
+  test("retains the tagged request when the reply fails", async () => {
+    const store = createStore({}, { pendingPermission: { "session-a": [request] } })
+    const { setActionRefs, respondToPermission } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/test/project", store]]), () => "/test/project")
+    permissionReplyError = new Error("offline")
+
+    await expect(respondToPermission("session-a", "perm-oc2", "reject")).rejects.toThrow("offline")
+    expect(store.getState().pendingPermission["session-a"]).toEqual([request])
   })
 })
 
@@ -2049,6 +2190,79 @@ describe("forkFromMessage composer restore", () => {
       size: 6,
       source: "local",
     }]
+  })
+
+  test('OC2 answer fork cuts before the next prompt and stages an empty target without changing the source draft', async () => {
+    mockBoundRuntime = { generation: 'oc2' }
+    const answer: Message = { id: 'answer', sessionID: sourceSession.id, role: 'assistant', time: { created: 2, completed: 3 }, agent: 'build', providerID: 'fixture', modelID: 'fixture' }
+    const next: Message = { id: 'next', sessionID: sourceSession.id, role: 'user', time: { created: 4 }, agent: 'build', model: { providerID: 'fixture', modelID: 'fixture' } }
+    const source = createStore({}, { session: [sourceSession], message: { [sourceSession.id]: [answer, next] } })
+    const text = inputState.pendingInputText
+    const { forkAfterMessage, setActionRefs } = await import('./session-actions')
+    setActionRefs(actionSdk, createChildStores([[sourceSession.directory, source]]), () => sourceSession.directory)
+    try {
+      expect(await forkAfterMessage(sourceSession.id, answer.id)).toEqual(forkedSession)
+      expect(globalUpsertedSessions).toEqual([forkedSession])
+      expect(replyCalls).toEqual([{ method: 'session.fork', params: { sessionID: sourceSession.id, messageID: next.id, directory: sourceSession.directory } }])
+      expect(inputState.pendingInputText).toBe(text)
+      expect(inputState.pendingComposerRestore).toMatchObject({ text: '', files: [], target: { sessionId: forkedSession.id } })
+    } finally { mockBoundRuntime = { generation: 'oc1' } }
+  })
+
+  test('OC1 rejects answer-history fork before an API request', async () => {
+    mockBoundRuntime = { generation: 'oc1' }
+    const { forkAfterMessage } = await import('./session-actions')
+    await expect(forkAfterMessage(sourceSession.id, 'answer')).rejects.toThrow('fork after answer')
+    expect(replyCalls).toEqual([])
+  })
+
+  test('metadata repair failure removes only the new fork and never opens it', async () => {
+    mockBoundRuntime = { generation: 'oc2' }
+    sessionForkResult = { ...forkedSession, metadata: { openchamber: { btwSessionID: 'source-btw' } } }
+    forkSessionReads.set(forkedSession.id, sessionForkResult)
+    beforeSessionUpdateResolve = () => { throw new Error('metadata write rejected') }
+    const answer: Message = { id: 'answer', sessionID: sourceSession.id, role: 'assistant', time: { created: 2, completed: 3 }, agent: 'build', providerID: 'fixture', modelID: 'fixture' }
+    const source = createStore({}, { session: [sourceSession], message: { [sourceSession.id]: [answer] } })
+    const { forkAfterMessage, setActionRefs } = await import('./session-actions')
+    setActionRefs(actionSdk, createChildStores([[sourceSession.directory, source]]), () => sourceSession.directory)
+    try {
+      await expect(forkAfterMessage(sourceSession.id, answer.id)).rejects.toThrow('metadata write rejected')
+      expect(replyCalls.filter(call => call.method === 'session.delete').map(call => call.params.sessionID)).toEqual([forkedSession.id])
+      expect(selectedSessions).toEqual([])
+      expect(inputState.pendingComposerRestore).toBeNull()
+    } finally {
+      mockBoundRuntime = { generation: 'oc1' }
+      beforeSessionUpdateResolve = null
+      forkSessionReads.clear()
+    }
+  })
+
+  test('a rollback failure is reported without opening an unsafe fork', async () => {
+    mockBoundRuntime = { generation: 'oc2' }
+    sessionForkResult = { ...forkedSession, metadata: { openchamber: { btwSessionID: 'source-btw' } } }
+    sessionDeleteError = new Error('rollback rejected')
+    const answer: Message = { id: 'answer', sessionID: sourceSession.id, role: 'assistant', time: { created: 2, completed: 3 }, agent: 'build', providerID: 'fixture', modelID: 'fixture' }
+    const source = createStore({}, { session: [sourceSession], message: { [sourceSession.id]: [answer] } })
+    const { forkAfterMessage, setActionRefs } = await import('./session-actions')
+    setActionRefs(actionSdk, createChildStores([[sourceSession.directory, source]]), () => sourceSession.directory)
+    try {
+      await expect(forkAfterMessage(sourceSession.id, answer.id)).rejects.toThrow('new fork could not be removed')
+      expect(selectedSessions).toEqual([])
+      expect(inputState.pendingComposerRestore).toBeNull()
+    } finally { mockBoundRuntime = { generation: 'oc1' }; sessionDeleteError = null }
+  })
+
+  test('deleting a session cannot follow a copied link into another session BTW child', async () => {
+    const source = { ...sourceSession, metadata: { openchamber: { btwSessionID: 'foreign-btw' } } }
+    forkSessionReads.set(source.id, source)
+    forkSessionReads.set('foreign-btw', { ...forkedSession, id: 'foreign-btw', metadata: { openchamber: { kind: 'btw', originalSessionID: 'real-owner' } } })
+    const store = createStore({}, { session: [source] })
+    const { deleteSession, setActionRefs } = await import('./session-actions')
+    setActionRefs(actionSdk, createChildStores([[source.directory, store]]), () => source.directory)
+    try {
+      expect(await deleteSession(source.id)).toBe(true)
+      expect(replyCalls.filter(call => call.method === 'session.delete').map(call => call.params.sessionID)).toEqual([source.id])
+    } finally { forkSessionReads.clear() }
   })
 
   for (const directory of ["/test/project", "/canonical/project"]) {

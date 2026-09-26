@@ -416,6 +416,40 @@ describe('opencode plugin routes', () => {
     expect(response.body.error).toContain('not found');
   });
 
+  test('OC2 plugin mutation reports live application instead of an OC1 restart', async () => {
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'oc2', epoch: 1 }),
+      createPluginEntry: (value) => writes.push(value),
+    });
+    const response = await request(current).post('/api/config/plugins/entry')
+      .send({ spec: 'example-plugin', scope: 'user' }).expect(200);
+    expect(writes).toHaveLength(1);
+    expect(response.body.requiresRestart).toBeUndefined();
+  });
+
+  test('unknown kernels cannot write plugin configuration', async () => {
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'unknown' }),
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(503);
+    expect(writes).toHaveLength(0);
+  });
+
+  test('a connection change during directory resolution blocks plugin mutation', async () => {
+    let epoch = 1;
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'oc2', epoch }),
+      resolveOptionalProjectDirectory: async () => { epoch += 1; return { directory: projectDir }; },
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(409);
+    expect(writes).toHaveLength(0);
+  });
+
   test('POST invalid fileName returns 400', async () => {
     const response = await request(app)
       .post('/api/config/plugins/file')

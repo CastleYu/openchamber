@@ -6,6 +6,7 @@ const previous = getRuntimeUrlResolver()
 beforeEach(() => {
   configureRuntimeUrlResolver({ apiBaseUrl: "https://status.test" })
   opencodeClient.reconnectToRuntimeBaseUrl()
+  opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'https://status.test', epoch: 1, version: '1.18.32' })
 })
 afterEach(() => {
   setRuntimeUrlResolver(previous)

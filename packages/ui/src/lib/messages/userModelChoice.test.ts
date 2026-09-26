@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { Message, Part } from '@opencode-ai/sdk/v2'
+import type { AssistantMessage, TextPart, UserMessage } from '@/lib/opencode/model'
 
 import {
   extractUserModelChoice,
@@ -11,33 +11,37 @@ const userMessage = (
   id: string,
   model: { providerID: string; modelID: string },
   agent = 'custom-agent',
-): Message => ({
+): UserMessage => ({
   id,
   sessionID: 'ses_1',
   role: 'user',
   time: { created: 1 },
   agent,
   model,
-} as Message)
+})
 
-const assistantMessage = (id: string): Message => ({
+const assistantMessage = (id: string): AssistantMessage => ({
   id,
   sessionID: 'ses_1',
   role: 'assistant',
   time: { created: 2 },
-  parentID: 'u1',
-  modelID: 'model-a',
+  agent: 'build',
   providerID: 'provider',
-} as Message)
+  modelID: 'model-a',
+  parentID: 'u1',
+})
 
-const textPart = (id: string, text: string, synthetic = false): Part => ({
+const textPart = (id: string, text: string, synthetic = false): TextPart => {
+  const part: TextPart = {
   id,
   sessionID: 'ses_1',
   messageID: 'u1',
   type: 'text',
   text,
-  ...(synthetic ? { synthetic: true } : {}),
-} as Part)
+  }
+  if (synthetic) part.synthetic = true
+  return part
+}
 
 describe('findLatestUserModelChoice', () => {
   test('returns the latest real user prompt model', () => {
@@ -46,7 +50,7 @@ describe('findLatestUserModelChoice', () => {
       assistantMessage('a1'),
       userMessage('u2', { providerID: 'provider', modelID: 'model-b' }),
     ]
-    const partsById: Record<string, Part[]> = {
+    const partsById: Record<string, TextPart[]> = {
       u1: [textPart('p1', 'first')],
       u2: [textPart('p2', 'second')],
     }
@@ -65,7 +69,7 @@ describe('findLatestUserModelChoice', () => {
     // user nudge that often carries the agent default model (model-a).
     const syntheticNudge = userMessage('u-nudge', { providerID: 'provider', modelID: 'model-a' })
     const messages = [realPrompt, assistantMessage('a1'), syntheticNudge]
-    const partsById: Record<string, Part[]> = {
+    const partsById: Record<string, TextPart[]> = {
       'u-real': [textPart('p-real', 'please investigate', false)],
       'u-nudge': [textPart('p-nudge', 'Subagent finished.', true)],
     }
@@ -80,7 +84,7 @@ describe('findLatestUserModelChoice', () => {
       userMessage('u1', { providerID: 'provider', modelID: 'model-a' }),
       userMessage('u2', { providerID: 'provider', modelID: 'model-b' }),
     ]
-    const partsById: Record<string, Part[]> = {
+    const partsById: Record<string, TextPart[]> = {
       u1: [textPart('p1', 'first')],
       // u2 parts missing
     }
@@ -92,7 +96,7 @@ describe('findLatestUserModelChoice', () => {
 
   test('returns null when only synthetic user messages exist', () => {
     const messages = [userMessage('u-nudge', { providerID: 'provider', modelID: 'model-a' })]
-    const partsById: Record<string, Part[]> = {
+    const partsById: Record<string, TextPart[]> = {
       'u-nudge': [textPart('p-nudge', 'Subagent finished.', true)],
     }
 
@@ -139,7 +143,7 @@ describe('extractUserModelChoice', () => {
     const message = {
       ...userMessage('u1', { providerID: 'provider', modelID: 'model-b' }),
       model: { providerID: 'provider', modelID: 'model-b', variant: 'high' },
-    } as Message
-    expect(extractUserModelChoice(message as never)?.variant).toBe('high')
+    }
+    expect(extractUserModelChoice(message)?.variant).toBe('high')
   })
 })

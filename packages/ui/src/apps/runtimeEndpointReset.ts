@@ -35,17 +35,12 @@ import { resetSessionActivityTiming } from '@/sync/session-activity-timing';
 import { syncDesktopSettings } from '@/lib/persistence';
 import { useSessionMultiSelectStore } from '@/stores/useSessionMultiSelectStore';
 
-// Same-device transport switch (LAN⇄relay for one paired device): rebind the SDK
-// to the new transport WITHOUT tearing down connection/session state or remounting
-// the sync layer. `reconnectToRuntimeBaseUrl` swaps in a fresh SDK client; the
-// caller then forces a re-render so SyncProvider receives it as a new `sdk` prop,
-// which re-runs its event-pipeline + bootstrap effects (keyed on `sdk`) to
-// reconnect over the new transport IN PLACE. Message-pagination refs, the open
-// session, and the whole view are preserved — no reconnecting screen, no flash,
-// no bounce back to the draft.
+// A transport switch for the same paired device preserves its kernel binding.
+// The refreshed SyncSource reconnects through the new transport while the sync
+// provider retains the selected session and pagination state.
 export const reconnectAppForTransportSwitch = (): void => {
   disposeTerminalInputTransport();
-  opencodeClient.reconnectToRuntimeBaseUrl();
+  opencodeClient.reconnectToRuntimeBaseUrl(true);
   resetStreamingState();
 };
 

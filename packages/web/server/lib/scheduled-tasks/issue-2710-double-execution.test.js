@@ -116,6 +116,29 @@ const startInstances = async (count, task) => {
 };
 
 describe('issue 2710: daily scheduled task double execution at the configured time', () => {
+  it('does not mark knowledge delivered by an OC1 command that never carried it', async () => {
+    const task = { ...makeTask({ kind: 'daily', times: ['15:00'] }), enabled: false,
+      execution: { prompt: '/review src', providerID: 'openai', modelID: 'gpt-4o' } };
+    const knowledge = { resolvePendingForSession: vi.fn(async () => ({ text: 'background', signature: 'sig' })),
+      recordDelivered: vi.fn() };
+    const sent = [];
+    const identity = { generation: 'oc1', endpoint: 'http://opencode.test', epoch: 1 };
+    const kernelOperations = {
+      captureIdentity: () => identity,
+      createSession: async () => ({ data: { id: 'ses_scheduled' } }),
+      listCommands: async () => ({ data: [{ name: 'review', template: 'Review $ARGUMENTS' }] }),
+      sendCommand: async (request) => { sent.push(request); return { accepted: true }; },
+    };
+    const runtime = createScheduledTasksRuntime({ ...createRuntimeDeps(createSharedProjectConfigRuntime(task)),
+      kernelOperations, sessionKnowledgeRuntime: knowledge });
+    await runtime.start();
+    const result = await runtime.runNow('p1', 'task-1');
+    expect(result.ok).toBe(true);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].request).toMatchObject({ ...identity, body: { command: 'review', arguments: 'src' } });
+    expect(knowledge.recordDelivered).not.toHaveBeenCalled();
+    runtime.stop();
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     sdk.sessionCreates.length = 0;

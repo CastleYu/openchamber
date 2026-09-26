@@ -10,6 +10,9 @@ export const createServerUtilsRuntime = (dependencies) => {
     openCodeReadyGraceMs,
     longRequestTimeoutMs,
     getRuntime,
+    getKernelRuntime,
+    getArchivedSessions,
+    getStoredSessionMetadata,
     getOpenCodeAuthHeaders,
     buildOpenCodeUrl,
     ensureOpenCodeApiPrefix,
@@ -204,6 +207,9 @@ export const createServerUtilsRuntime = (dependencies) => {
 
   const setupProxy = (app) => {
     registerOpenCodeProxy(app, {
+      getKernelRuntime,
+      getArchivedSessions,
+      getStoredSessionMetadata,
       fs,
       os,
       path,

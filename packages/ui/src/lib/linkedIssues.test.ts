@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { Session } from '@opencode-ai/sdk/v2';
+import { z } from 'zod';
+import type { JsonValue, Metadata, Session } from '@/lib/opencode/model';
 import { buildLinkedGuestIssue, buildLinkedIssue, buildLinkedIssueId, buildLinkedLinearIssue, canOpenLinearIssueInContextPanel, getLinkedIssues, withLinkedIssue, type LinkedIssue } from './linkedIssues';
 
 type LinkedGitHubIssue = Extract<LinkedIssue, { kind: 'issue' | 'pull' }>;
@@ -15,8 +16,22 @@ const issue = (overrides: Partial<LinkedGitHubIssue> = {}): LinkedGitHubIssue =>
   ...overrides,
 });
 
-const sessionWith = (linked: unknown): Session =>
-  ({ metadata: { openchamber: { linked_issues: linked } } } as unknown as Session);
+const sessionWith = (linked?: JsonValue): Session => {
+  const session: Session = {
+    id: 'session',
+    projectID: 'project',
+    directory: '/repo',
+    title: 'Session',
+    time: { created: 1, updated: 1 },
+  };
+  if (linked !== undefined) session.metadata = { openchamber: { linked_issues: linked } };
+  return session;
+};
+
+const sessionWithMetadata = (metadata: Metadata): Session => ({
+  ...sessionWith(),
+  metadata,
+});
 
 describe('buildLinkedIssueId', () => {
   test('is stable per repository and number', () => {
@@ -103,7 +118,7 @@ describe('buildLinkedLinearIssue', () => {
 describe('getLinkedIssues', () => {
   test('returns an empty list for a session with no metadata', () => {
     expect(getLinkedIssues(undefined)).toEqual([]);
-    expect(getLinkedIssues({} as Session)).toEqual([]);
+    expect(getLinkedIssues(sessionWith())).toEqual([]);
     expect(getLinkedIssues(sessionWith(undefined))).toEqual([]);
   });
 
@@ -146,7 +161,10 @@ describe('getLinkedIssues', () => {
     expect(guest.data).toEqual(data);
     // SAFETY: a JSON round trip of a session fixture is the same session shape the
     // metadata channel hands back; the guard under test re-checks every field.
-    const stored = JSON.parse(JSON.stringify(sessionWith([guest]))) as Parameters<typeof getLinkedIssues>[0];
+    const metadata = z.record(z.string(), z.json()).parse(
+      JSON.parse(JSON.stringify(sessionWith([guest]).metadata)),
+    );
+    const stored = sessionWithMetadata(metadata);
     expect(getLinkedIssues(stored)).toEqual([guest]);
     const restored = getLinkedIssues(stored)[0];
     expect(restored?.kind === 'guest' ? restored.data : undefined).toEqual(data);
@@ -208,15 +226,15 @@ describe('withLinkedIssue', () => {
       true,
     );
     expect(next.other).toBe(1);
-    expect((next.openchamber as Record<string, unknown>).kind).toBe('review');
-    expect((next.openchamber as { linked_issues: LinkedIssue[] }).linked_issues).toEqual([issue()]);
+    expect(next.openchamber).toMatchObject({ kind: 'review' });
+    expect(getLinkedIssues(sessionWithMetadata(next))).toEqual([issue()]);
   });
 
   test('re-linking replaces the entry rather than duplicating it', () => {
     // Linking again is how a drifted title gets refreshed.
     const first = withLinkedIssue({}, issue({ title: 'Old' }), true);
     const second = withLinkedIssue(first, issue({ title: 'New' }), true);
-    const stored = (second.openchamber as { linked_issues: LinkedIssue[] }).linked_issues;
+    const stored = getLinkedIssues(sessionWithMetadata(second));
     expect(stored).toHaveLength(1);
     expect(stored[0].title).toBe('New');
   });
@@ -225,13 +243,12 @@ describe('withLinkedIssue', () => {
     const other = issue({ id: 'owner/repo#99', number: 99 });
     const both = withLinkedIssue(withLinkedIssue({}, issue(), true), other, true);
     const next = withLinkedIssue(both, issue(), false);
-    const stored = (next.openchamber as { linked_issues: LinkedIssue[] }).linked_issues;
-    expect(stored).toEqual([other]);
+    expect(getLinkedIssues(sessionWithMetadata(next))).toEqual([other]);
   });
 
   test('unlinking something absent is a no-op, not an error', () => {
     const next = withLinkedIssue({}, issue(), false);
-    expect((next.openchamber as { linked_issues: LinkedIssue[] }).linked_issues).toEqual([]);
+    expect(getLinkedIssues(sessionWithMetadata(next))).toEqual([]);
   });
 
   test('does not carry malformed stored entries forward', () => {
@@ -240,7 +257,7 @@ describe('withLinkedIssue', () => {
       issue(),
       true,
     );
-    expect((next.openchamber as { linked_issues: LinkedIssue[] }).linked_issues).toEqual([issue()]);
+    expect(getLinkedIssues(sessionWithMetadata(next))).toEqual([issue()]);
   });
 });
 

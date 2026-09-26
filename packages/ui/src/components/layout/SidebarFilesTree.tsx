@@ -66,6 +66,14 @@ type UploadConflicts = {
   workspaceRoot: string;
 };
 
+type UploadPickerTarget = {
+  runtimeKey: string;
+  workspaceRoot: string;
+  directory: string;
+};
+
+type UploadSelectionHandler = (target: UploadPickerTarget, files: File[]) => void;
+
 type UploadOutcome = 'uploaded' | 'conflict' | 'failed';
 
 const MAX_PARALLEL_UPLOADS = 3;
@@ -261,6 +269,7 @@ interface FileRowProps {
   onOpenDialog: (type: 'createFile' | 'createFolder' | 'rename' | 'delete', data: { path: string; name?: string; type?: 'file' | 'directory' }) => void;
   onSetDropTarget: (path: string | null) => void;
   onDropFiles: (directory: string, dataTransfer: DataTransfer) => void;
+  onUploadFiles: (directory: string) => void;
 }
 
 const FileRow: React.FC<FileRowProps> = ({
@@ -281,6 +290,7 @@ const FileRow: React.FC<FileRowProps> = ({
   onOpenDialog,
   onSetDropTarget,
   onDropFiles,
+  onUploadFiles,
 }) => {
   const { t } = useI18n();
   const isDir = node.type === 'directory';
@@ -288,7 +298,7 @@ const FileRow: React.FC<FileRowProps> = ({
   const { canRename, canCreateFile, canCreateFolder, canDelete, canReveal } = permissions;
   const canDownload = !isDir && Boolean(downloadFile);
   const canRevealPath = canReveal && !isBrowserClient;
-  const hasMenuActions = canRename || canCreateFile || canCreateFolder || canDelete || canDownload || canRevealPath;
+  const hasMenuActions = canRename || canCreateFile || canCreateFolder || canDelete || canDownload || canRevealPath || (isDir && canUpload);
 
   // Menu open state is local to each row so opening a menu in one row
   // never re-renders its siblings. Previously this state lived on the
@@ -357,7 +367,7 @@ const FileRow: React.FC<FileRowProps> = ({
           <Icon name="folder-received" className="mr-2 h-4 w-4" /> {t(getRevealLabelKey())}
         </Item>
       )}
-      {isDir && (canCreateFile || canCreateFolder) && (
+      {isDir && (canCreateFile || canCreateFolder || canUpload) && (
         <>
           <Separator />
           {canCreateFile && (
@@ -368,6 +378,11 @@ const FileRow: React.FC<FileRowProps> = ({
           {canCreateFolder && (
             <Item onClick={(e: React.MouseEvent) => { e.stopPropagation(); onOpenDialog('createFolder', node); }}>
               <Icon name="folder-add" className="mr-2 h-4 w-4" /> {t('sidebarFilesTree.menu.newFolder')}
+            </Item>
+          )}
+          {canUpload && (
+            <Item onClick={(e: React.MouseEvent) => { e.stopPropagation(); onUploadFiles(node.path); }}>
+              <Icon name="arrow-up" className="mr-2 h-4 w-4" /> {t('sidebarFilesTree.menu.uploadFiles')}
             </Item>
           )}
         </>
@@ -532,6 +547,7 @@ const areFileRowPropsEqual = (prev: FileRowProps, next: FileRowProps): boolean =
   && prev.onOpenDialog === next.onOpenDialog
   && prev.onSetDropTarget === next.onSetDropTarget
   && prev.onDropFiles === next.onDropFiles
+  && prev.onUploadFiles === next.onUploadFiles
 );
 
 const MemoizedFileRow = React.memo(FileRow, areFileRowPropsEqual);
@@ -541,10 +557,62 @@ const MemoizedFileRow = React.memo(FileRow, areFileRowPropsEqual);
 export const SidebarFilesTree: React.FC<{ visible?: boolean }> = ({ visible = true }) => {
   const runtimeKey = useGitStore((state) => state.runtimeKey);
   const directory = useEffectiveDirectory();
-  return <SidebarFilesTreeContent key={JSON.stringify([runtimeKey, directory])} visible={visible} />;
+  const root = normalizePath((directory ?? '').trim());
+  const pickerRef = React.useRef<HTMLInputElement>(null);
+  const pickerTargetRef = React.useRef<UploadPickerTarget | null>(null);
+  const uploadSelectionHandlerRef = React.useRef<UploadSelectionHandler | null>(null);
+
+  const openUploadPicker = React.useCallback((targetDirectory: string) => {
+    if (!root) return;
+    const target = normalizePath(targetDirectory.trim());
+    const rootPrefix = root.endsWith('/') ? root : `${root}/`;
+    if (!target || (target !== root && !target.startsWith(rootPrefix))) return;
+    const input = pickerRef.current;
+    if (!input) return;
+    pickerTargetRef.current = { runtimeKey: getRuntimeKey(), workspaceRoot: root, directory: target };
+    input.value = '';
+    input.click();
+  }, [root]);
+
+  const handleUploadSelection = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const target = pickerTargetRef.current;
+    pickerTargetRef.current = null;
+    const files = Array.from(event.currentTarget.files ?? []);
+    event.currentTarget.value = '';
+    if (!target || files.length === 0) return;
+    if (target.runtimeKey !== getRuntimeKey() || target.workspaceRoot !== root) return;
+    uploadSelectionHandlerRef.current?.(target, files);
+  }, [root]);
+
+  const registerUploadSelectionHandler = React.useCallback((handler: UploadSelectionHandler | null) => {
+    uploadSelectionHandlerRef.current = handler;
+  }, []);
+
+  return (
+    <>
+      <input
+        ref={pickerRef}
+        type="file"
+        multiple
+        tabIndex={-1}
+        className="hidden"
+        onChange={handleUploadSelection}
+      />
+      <SidebarFilesTreeContent
+        key={JSON.stringify([runtimeKey, directory])}
+        visible={visible}
+        onOpenUploadPicker={openUploadPicker}
+        onRegisterUploadSelectionHandler={registerUploadSelectionHandler}
+      />
+    </>
+  );
 };
 
-const SidebarFilesTreeContent: React.FC<{ visible: boolean }> = ({ visible }) => {
+const SidebarFilesTreeContent: React.FC<{
+  visible: boolean;
+  onOpenUploadPicker: (directory: string) => void;
+  onRegisterUploadSelectionHandler: (handler: UploadSelectionHandler | null) => void;
+}> = ({ visible, onOpenUploadPicker, onRegisterUploadSelectionHandler }) => {
   const visibleRef = React.useRef(visible);
   visibleRef.current = visible;
   const { t } = useI18n();
@@ -1098,6 +1166,16 @@ const SidebarFilesTreeContent: React.FC<{ visible: boolean }> = ({ visible }) =>
     }
   }, [files.uploadFile, refreshDirectory, root, t]);
 
+  const handleUploadSelection = React.useCallback((target: UploadPickerTarget, selectedFiles: File[]) => {
+    if (target.runtimeKey !== getRuntimeKey() || target.workspaceRoot !== root) return;
+    void uploadDroppedFiles(target.directory, selectedFiles);
+  }, [root, uploadDroppedFiles]);
+
+  React.useLayoutEffect(() => {
+    onRegisterUploadSelectionHandler(handleUploadSelection);
+    return () => onRegisterUploadSelectionHandler(null);
+  }, [handleUploadSelection, onRegisterUploadSelectionHandler]);
+
   const handleDropFiles = React.useCallback((directory: string, dataTransfer: DataTransfer) => {
     const droppedFiles = getExternalFiles(dataTransfer);
     if (droppedFiles.length === 0) return;
@@ -1292,6 +1370,7 @@ const SidebarFilesTreeContent: React.FC<{ visible: boolean }> = ({ visible }) =>
             onOpenDialog={handleOpenDialog}
             onSetDropTarget={setDropTarget}
             onDropFiles={handleDropFiles}
+            onUploadFiles={onOpenUploadPicker}
           />
           {isDir && isExpanded && (
             <ul className="flex flex-col gap-1 ml-3 pl-3 border-l border-border/40 relative">
@@ -1320,6 +1399,26 @@ const SidebarFilesTreeContent: React.FC<{ visible: boolean }> = ({ visible }) =>
     <section className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex flex-col gap-2 border-b border-border/40 px-3 py-2">
         <div className="flex items-center justify-end gap-2">
+        {canUpload && root && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenUploadPicker(root)}
+                  disabled={isUploading}
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                  title={t('sidebarFilesTree.actions.uploadFilesTitle')}
+                  aria-label={t('sidebarFilesTree.actions.uploadFilesTitle')}
+                >
+                  <Icon name="arrow-up" className="h-4 w-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={6}>{t('sidebarFilesTree.actions.uploadFilesTitle')}</TooltipContent>
+          </Tooltip>
+        )}
         {canCreateFile && (
           <Tooltip>
             <TooltipTrigger asChild>

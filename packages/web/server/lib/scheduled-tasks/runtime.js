@@ -247,6 +247,7 @@ export const formatScheduledSessionTitle = (task, nowMs = Date.now()) => {
 
 export const createScheduledTasksRuntime = (deps) => {
   const {
+    kernelOperations = null,
     projectConfigRuntime,
     listProjects,
     buildOpenCodeUrl,
@@ -483,7 +484,7 @@ export const createScheduledTasksRuntime = (deps) => {
     ],
   });
 
-  const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, projectPath, task }) => {
+  const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, projectPath, task, identity }) => {
     // Never allowed to fail the run: a task that executes without its
     // background is a lesser loss than a task that does not execute.
     const knowledge = sessionKnowledgeRuntime
@@ -491,6 +492,22 @@ export const createScheduledTasksRuntime = (deps) => {
         .catch(() => ({ text: '', signature: '' }))
       : { text: '', signature: '' };
 
+    if (kernelOperations) {
+      const body = buildPromptAsyncPayload(task, projectPath, knowledge.text);
+      const model = { id: body.model.modelID, providerID: body.model.providerID };
+      if (body.variant) model.variant = body.variant;
+      const request = identity.generation === 'oc1' ? { ...identity, body } : {
+        ...identity, model,
+        synthetics: body.parts.filter((part) => part.synthetic).map((part) => ({ text: part.text, resume: false })),
+        body: { text: body.parts.filter((part) => !part.synthetic).map((part) => part.text).join('\n') },
+      };
+      if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+      await kernelOperations.sendPrompt({ sessionID, directory: projectPath, request });
+      if (knowledge.text && sessionKnowledgeRuntime) {
+        await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
+      }
+      return;
+    }
     const promptUrl = new URL(`${baseUrl}/session/${encodeURIComponent(sessionID)}/prompt_async`);
     promptUrl.searchParams.set('directory', projectPath);
     const response = await fetch(promptUrl.toString(), {
@@ -524,8 +541,11 @@ export const createScheduledTasksRuntime = (deps) => {
 
     let commands = [];
     try {
-      const response = await client.command.list({ directory: projectPath });
-      commands = Array.isArray(response?.data) ? response.data : [];
+      if (kernelOperations) commands = (await kernelOperations.listCommands({ directory: projectPath })).data;
+      else {
+        const response = await client.command.list({ directory: projectPath });
+        commands = Array.isArray(response?.data) ? response.data : [];
+      }
     } catch {
       return null;
     }
@@ -534,7 +554,33 @@ export const createScheduledTasksRuntime = (deps) => {
     return command ? { ...parsed, template: command.template } : null;
   };
 
-  const runScheduledCommand = async ({ client, projectPath, sessionID, task, command }) => {
+  const runScheduledCommand = async ({ client, projectPath, sessionID, task, command, identity }) => {
+    if (kernelOperations) {
+      const knowledge = identity.generation === 'oc2' && sessionKnowledgeRuntime
+        ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
+          .catch(() => ({ text: '', signature: '' }))
+        : { text: '', signature: '' };
+      const body = {
+        command: command.command, arguments: command.arguments,
+        model: `${task.execution.providerID}/${task.execution.modelID}`,
+      };
+      if (task.execution.agent) body.agent = task.execution.agent;
+      if (task.execution.variant) body.variant = task.execution.variant;
+      const model = { id: task.execution.modelID, providerID: task.execution.providerID };
+      if (task.execution.variant) model.variant = task.execution.variant;
+      const request = identity.generation === 'oc1' ? { ...identity, body } : {
+        ...identity,
+        model,
+        body: { name: command.command, text: command.arguments },
+      };
+      if (identity.generation === 'oc2' && task.execution.agent) request.agent = task.execution.agent;
+      if (identity.generation === 'oc2' && knowledge.text) request.synthetics = [{ text: knowledge.text, resume: false }];
+      await kernelOperations.sendCommand({ sessionID, directory: projectPath, request });
+      if (identity.generation === 'oc2' && knowledge.text && sessionKnowledgeRuntime) {
+        await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
+      }
+      return;
+    }
     await client.session.command({
       sessionID,
       directory: projectPath,
@@ -559,17 +605,17 @@ export const createScheduledTasksRuntime = (deps) => {
       await waitForOpenCodeReady(10_000, 250);
     }
 
+    const identity = kernelOperations?.captureIdentity();
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const authHeaders = getOpenCodeAuthHeaders();
-    const client = createOpencodeClient({
+    const client = kernelOperations ? null : createOpencodeClient({
       baseUrl,
       headers: authHeaders,
     });
 
-    const sessionResponse = await client.session.create({
-      directory: projectPath,
-      title,
-    });
+    const sessionResponse = kernelOperations
+      ? await kernelOperations.createSession({ directory: projectPath, title })
+      : await client.session.create({ directory: projectPath, title });
     const sessionID = sessionResponse?.data?.id;
     if (!sessionID) {
       throw new Error('failed to create session');
@@ -606,6 +652,7 @@ export const createScheduledTasksRuntime = (deps) => {
       await createSessionGoal({
         baseUrl,
         authHeaders,
+        kernelOperations,
         sessionID,
         directory: projectPath,
         objective: commandObjective ?? expandSnippets(task.execution.prompt, projectPath),
@@ -617,7 +664,7 @@ export const createScheduledTasksRuntime = (deps) => {
     }
 
     if (scheduledCommand) {
-      await runScheduledCommand({ client, projectPath, sessionID, task, command: scheduledCommand });
+      await runScheduledCommand({ client, projectPath, sessionID, task, command: scheduledCommand, identity });
     } else {
       await runPromptAsync({
         baseUrl,
@@ -625,6 +672,7 @@ export const createScheduledTasksRuntime = (deps) => {
         sessionID,
         projectPath,
         task,
+        identity,
       });
     }
 

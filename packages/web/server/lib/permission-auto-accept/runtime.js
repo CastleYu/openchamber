@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 const SETTINGS_KEY = 'permissionAutoAccept';
 const RETRY_DELAYS_MS = [0, 250, 1000];
 const REQUEST_TIMEOUT_MS = 5000;
@@ -29,6 +31,7 @@ export function createPermissionAutoAcceptRuntime({
   // `hold` leaves the request for the user; absent means every request is replied to.
   evaluatePermission = null,
   onPermissionReplied = null,
+  kernelOperations = null,
   fetchImpl = fetch,
   retryDelaysMs = RETRY_DELAYS_MS,
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
@@ -40,6 +43,26 @@ export function createPermissionAutoAcceptRuntime({
   const sessions = new Map();
   const inFlight = new Map();
   const reconcilePromises = new Map();
+  let identityKey = '';
+  const identity = () => {
+    if (!kernelOperations) return null;
+    const current = kernelOperations.captureIdentity();
+    const key = `${current.generation}\0${current.endpoint}\0${current.epoch}`;
+    if (key !== identityKey) {
+      identityKey = key;
+      sessions.clear();
+      inFlight.clear();
+      reconcilePromises.clear();
+    }
+    return current;
+  };
+  const assertIdentity = (expected) => {
+    if (!expected) return;
+    const current = kernelOperations.captureIdentity();
+    if (current.generation !== expected.generation || current.endpoint !== expected.endpoint || current.epoch !== expected.epoch) {
+      throw new Error('OpenCode runtime changed during permission auto-accept');
+    }
+  };
 
   const snapshot = () => ({
     sessions: { ...policy.sessions },
@@ -89,10 +112,14 @@ export function createPermissionAutoAcceptRuntime({
   };
 
   const rememberSession = (info, directoryHint) => {
-    if (!info || typeof info.id !== 'string' || !info.id) return;
+    const id = z.string().min(1).safeParse(info?.id);
+    if (!id.success) return;
+    const parentID = z.string().min(1).safeParse(info.parentID);
+    const ownDirectory = z.string().min(1).safeParse(info.directory);
+    const locationDirectory = z.string().min(1).safeParse(info.location?.directory);
     sessions.set(info.id, {
-      parentID: typeof info.parentID === 'string' && info.parentID ? info.parentID : null,
-      directory: typeof info.directory === 'string' && info.directory ? info.directory : directoryHint,
+      parentID: parentID.success ? parentID.data : null,
+      directory: ownDirectory.success ? ownDirectory.data : locationDirectory.success ? locationDirectory.data : directoryHint,
     });
     if (sessions.size > SESSION_CACHE_LIMIT) {
       sessions.delete(sessions.keys().next().value);
@@ -123,7 +150,9 @@ export function createPermissionAutoAcceptRuntime({
   const getSession = async (sessionId, directory) => {
     const cached = sessions.get(sessionId);
     if (cached) return cached;
-    const info = await request(`/session/${encodeURIComponent(sessionId)}`, { directory });
+    const info = kernelOperations
+      ? (await kernelOperations.getSession({ sessionID: sessionId, directory })).data.raw
+      : await request(`/session/${encodeURIComponent(sessionId)}`, { directory });
     rememberSession(info?.data ?? info, directory);
     return sessions.get(sessionId) ?? null;
   };
@@ -150,11 +179,22 @@ export function createPermissionAutoAcceptRuntime({
 
   const replyOnce = async (permission, directory) => {
     if (!permission?.id || !permission?.sessionID) return false;
+    const captured = identity();
     await load();
     if (!(await isSessionAutoAccepting(permission.sessionID, directory))) return false;
+    assertIdentity(captured);
     if (evaluatePermission) {
       const verdict = await evaluatePermission(permission, directory);
       if (verdict?.action === 'hold') return true;
+    }
+    assertIdentity(captured);
+    if (kernelOperations) {
+      await kernelOperations.replyPermission({
+        requestID: permission.id, sessionID: permission.sessionID, directory,
+        decision: 'once', expectedIdentity: captured,
+      });
+      assertIdentity(captured);
+      return true;
     }
     await request(`/permission/${encodeURIComponent(permission.id)}/reply`, {
       directory,
@@ -166,6 +206,8 @@ export function createPermissionAutoAcceptRuntime({
 
   const processPermission = (permission, directory) => {
     if (!permission?.id) return Promise.resolve(false);
+    let captured;
+    try { captured = identity(); } catch { return Promise.resolve(false); }
     const key = permission.id;
     const existing = inFlight.get(key);
     if (existing) return existing;
@@ -173,13 +215,15 @@ export function createPermissionAutoAcceptRuntime({
       for (const delay of retryDelaysMs) {
         if (delay > 0) await wait(delay);
         try {
+          assertIdentity(captured);
           return await replyOnce(permission, directory);
         } catch (error) {
           if (error?.status === 404) return true;
+          try { assertIdentity(captured); } catch { return false; }
         }
       }
       return false;
-    })().finally(() => inFlight.delete(key));
+    })().finally(() => { if (inFlight.get(key) === task) inFlight.delete(key); });
     inFlight.set(key, task);
     return task;
   };
@@ -193,15 +237,20 @@ export function createPermissionAutoAcceptRuntime({
     if (existing) return existing;
     const task = (async () => {
       await load();
+      const captured = identity();
       const scopes = [undefined, ...normalizedDirectories];
       const pendingById = new Map();
       for (const directory of scopes) {
+        assertIdentity(captured);
         let payload;
         try {
-          payload = await request('/permission', { directory });
+          payload = kernelOperations
+            ? (await kernelOperations.listPendingPermissions({ directory })).data
+            : await request('/permission', { directory });
         } catch {
           continue;
         }
+        assertIdentity(captured);
         const pending = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : null;
         if (!pending) continue;
         for (const permission of pending) {
@@ -209,35 +258,38 @@ export function createPermissionAutoAcceptRuntime({
           pendingById.set(permission.id, { permission, directory: permission.directory ?? directory });
         }
       }
+      assertIdentity(captured);
       await Promise.all(Array.from(pendingById.values()).map(({ permission, directory }) =>
         processPermission(permission, directory)));
-    })().finally(() => { reconcilePromises.delete(key); });
+    })().finally(() => { if (reconcilePromises.get(key) === task) reconcilePromises.delete(key); });
     reconcilePromises.set(key, task);
     return task;
   }
 
   const processEvent = (event) => {
-    const raw = event?.payload;
-    const payload = raw?.payload && typeof raw.payload === 'object' ? raw.payload : raw;
     const directory = typeof event?.directory === 'string' && event.directory !== 'global' ? event.directory : undefined;
-    if (payload?.type === 'session.created' || payload?.type === 'session.updated') {
-      rememberSession(payload.properties?.info, directory);
-      return;
-    }
-    if (payload?.type === 'permission.asked') {
-      void processPermission(payload.properties, directory);
-      return;
-    }
-    if (payload?.type === 'permission.replied') {
-      const permissionId = payload.properties?.requestID;
-      if (typeof permissionId === 'string') onPermissionReplied?.(permissionId);
+    const raw = event?.payload;
+    const payloads = event?.translated
+      ? event.translated()
+      : [raw?.payload && z.object({}).passthrough().safeParse(raw.payload).success ? raw.payload : raw];
+    for (const payload of payloads) {
+      if (payload?.type === 'session.created' || payload?.type === 'session.updated') {
+        rememberSession(payload.properties?.info, directory);
+      } else if (payload?.type === 'permission.asked') {
+        void processPermission(payload.properties, directory ?? payload.properties?.directory);
+      } else if (payload?.type === 'permission.replied') {
+        const permissionId = payload.properties?.requestID;
+        if (z.string().safeParse(permissionId).success) onPermissionReplied?.(permissionId);
+      }
     }
   };
 
   const start = () => {
     const unsubscribeEvent = globalEventHub.subscribeEvent(processEvent);
     const unsubscribeStatus = globalEventHub.subscribeStatus((status) => {
-      if (status?.type === 'connect') void reconcilePending();
+      if (status?.type === 'connect') void reconcilePending().catch((error) => {
+        console.warn('[permission-auto-accept] reconciliation failed:', error?.message ?? error);
+      });
     });
     void load().then(() => reconcilePending()).catch((error) => {
       console.warn('[permission-auto-accept] failed to load policy:', error?.message ?? error);

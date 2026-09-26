@@ -1,71 +1,131 @@
 import { describe, expect, test } from 'bun:test';
-import { createOpencodeClient, type Session } from '@opencode-ai/sdk/v2';
 import { z } from 'zod';
-import { createMultiRunSession } from './createSession';
-import { getMultiRunIdentity, withMultiRunMembership, type MultiRunIdentity } from './identity';
+import type { JsonValue, Session } from '@/lib/opencode/model';
+import { createMultiRunSession, type MultiRunGeneration, type MultiRunSessionApi } from './createSession';
+import { getMultiRunIdentity, getMultiRunMembership, withMultiRunMembership, type MultiRunIdentity } from './identity';
 
 const identity: Omit<MultiRunIdentity, 'key'> = {
   group: { kind: 'id', id: '9f512893-6e63-4e49-a534-5de733ca103e' },
   groupSlug: 'bench', providerID: 'openrouter', modelID: 'vendor/model', role: 'run',
 };
-const bodySchema = z.object({ title: z.string().optional(), metadata: z.record(z.string(), z.unknown()).optional() });
 
-function fixture(options: { rejectUpdate?: boolean; omitSavedMarker?: boolean; switchAfterCreate?: boolean } = {}) {
+const base: Session = {
+  id: 'ses_new', projectID: 'p', directory: '/repo', title: '', time: { created: 1, updated: 1 },
+};
+const jsonObjectSchema = z.record(z.string(), z.json());
+const jsonObject = (value: JsonValue | undefined) => jsonObjectSchema.safeParse(value).data ?? {};
+
+function fixture(generation: MultiRunGeneration, options: {
+  rejectUpdate?: boolean; omitSavedMarker?: boolean; switchAfterCreate?: boolean;
+} = {}) {
   const calls: string[] = [];
+  const creation: Array<Parameters<MultiRunSessionApi['createSession']>[0]> = [];
   let current = true;
-  let stored: Session = { id: 'ses_new', slug: 'new', projectID: 'p', directory: '/repo', title: '', version: '1', time: { created: 1, updated: 1 } };
-  const client = createOpencodeClient({
-    baseUrl: 'http://multirun.test',
-    fetch: async (request) => {
-      const req = new Request(request);
-      const url = new URL(req.url);
-      expect(url.searchParams.get('directory')).toBe('/repo');
-      calls.push(req.method);
-      if (req.method === 'POST') {
-        const body = bodySchema.parse(await req.json());
-        stored = { ...stored, ...body };
-        expect(getMultiRunIdentity(stored)).toBeNull();
-        if (options.switchAfterCreate) current = false;
-      }
-      if (req.method === 'GET') {
-        stored = { ...stored, metadata: withMultiRunMembership({ metadata: {
-          external: 'preserve', openchamber: { goal: { status: 'active' }, reviewSessionID: 'review-id' },
-        } }, { ...identity, role: 'run', version: 1, sessionID: null }) };
-      }
-      if (req.method === 'PATCH') {
-        if (options.rejectUpdate) return Response.json({ error: 'write failed' }, { status: 500 });
-        const body = bodySchema.parse(await req.json());
-        stored = { ...stored, ...body };
-        if (options.omitSavedMarker) stored.metadata = {};
-      }
-      if (req.method === 'DELETE') return Response.json(true);
-      return Response.json(stored);
+  let stored = base;
+  const api: MultiRunSessionApi = {
+    async createSession(input, directory) {
+      calls.push('create');
+      expect(directory).toBe('/repo');
+      creation.push(input);
+      stored = { ...base, title: input?.title ?? '', metadata: input?.metadata };
+      expect(getMultiRunIdentity(stored)).toBeNull();
+      if (options.switchAfterCreate) current = false;
+      return stored;
     },
-  });
+    async getSession(id, directory) {
+      calls.push('get');
+      expect([id, directory]).toEqual(['ses_new', '/repo']);
+      stored = { ...stored, metadata: {
+        ...stored.metadata,
+        external: 'preserve',
+        openchamber: { ...jsonObject(stored.metadata?.openchamber), goal: { status: 'active' }, reviewSessionID: 'review-id' },
+      } };
+      return stored;
+    },
+    async updateSession(id, patch, directory) {
+      calls.push('update');
+      expect([id, directory]).toEqual(['ses_new', '/repo']);
+      if (options.rejectUpdate) throw new Error('write failed');
+      if (generation === 'oc1') {
+        stored = { ...stored, metadata: patch.metadata };
+      } else {
+        // The OC2 route merges the submitted marker into current metadata.
+        stored = { ...stored, metadata: {
+          ...stored.metadata,
+          ...patch.metadata,
+          openchamber: { ...jsonObject(stored.metadata?.openchamber), ...jsonObject(patch.metadata?.openchamber) },
+        } };
+      }
+      if (options.omitSavedMarker) stored = { ...stored, metadata: {} };
+      return stored;
+    },
+    async deleteSession(id, directory) {
+      calls.push('delete');
+      expect([id, directory]).toEqual(['ses_new', '/repo']);
+      return true;
+    },
+  };
   const assertCurrent = () => { if (!current) throw new Error('Runtime changed'); };
-  return { client, calls, assertCurrent };
+  return { api, calls, creation, assertCurrent, get stored() { return stored; }, setStored(value: Session) { stored = value; } };
 }
 
-describe('multi-run creation', () => {
-  for (const role of ['run', 'fusion'] as const) test(`binds ${role} to its actual session ID before returning it`, async () => {
-    const testApi = fixture();
-    const result = await createMultiRunSession(testApi.client, { title: 'any title', directory: '/repo', identity: { ...identity, role } }, testApi.assertCurrent);
-    expect(getMultiRunIdentity(result)).toMatchObject({ role, modelID: 'vendor/model' });
+describe('multi-run creation through the domain facade', () => {
+  for (const generation of ['oc1', 'oc2'] as const) {
+    for (const role of ['run', 'fusion'] as const) {
+      test(`${generation} binds ${role} to the server ID before returning`, async () => {
+        const testApi = fixture(generation);
+        const result = await createMultiRunSession(testApi.api, {
+          title: 'any title', directory: '/repo', generation, identity: { ...identity, role },
+          selection: { model: { providerID: 'openrouter', id: 'vendor/model' }, agent: 'build' },
+        }, testApi.assertCurrent);
+        expect(getMultiRunMembership(result)?.role).toBe(role);
+        expect(getMultiRunIdentity({ ...result, id: 'fork' })).toBeNull();
+        expect(testApi.creation[0]?.model).toEqual(generation === 'oc2' ? { providerID: 'openrouter', id: 'vendor/model' } : undefined);
+        expect(testApi.creation[0]?.agent).toBe(generation === 'oc2' ? 'build' : undefined);
+        expect(testApi.calls).toEqual(generation === 'oc1' ? ['create', 'get', 'update'] : ['create', 'update']);
+      });
+    }
+  }
+
+  test('OC1 full update retains unrelated metadata from its fresh read', async () => {
+    const testApi = fixture('oc1');
+    const result = await createMultiRunSession(testApi.api, { title: 'bench', directory: '/repo', generation: 'oc1', identity }, testApi.assertCurrent);
     expect(result.metadata?.external).toBe('preserve');
     expect(result.metadata?.openchamber).toMatchObject({ goal: { status: 'active' }, reviewSessionID: 'review-id' });
-    expect(getMultiRunIdentity({ ...result, id: 'fork' })).toBeNull();
-    expect(testApi.calls).toEqual(['POST', 'GET', 'PATCH']);
   });
 
-  for (const failure of [{ rejectUpdate: true }, { omitSavedMarker: true }]) test(`rejects an unbound session: ${JSON.stringify(failure)}`, async () => {
-    const testApi = fixture(failure);
-    await expect(createMultiRunSession(testApi.client, { title: 'bench/openrouter/vendor/model', directory: '/repo', identity }, testApi.assertCurrent)).rejects.toThrow();
-    expect(testApi.calls).toEqual(['POST', 'GET', 'PATCH', 'DELETE']);
+  test('OC2 narrow patch preserves metadata added concurrently', async () => {
+    const testApi = fixture('oc2');
+    const api: MultiRunSessionApi = {
+      ...testApi.api,
+      async updateSession(id, patch, directory) {
+        const current = testApi.stored;
+        testApi.setStored({ ...current, metadata: {
+          ...current.metadata,
+          external: 'added during binding',
+          openchamber: { ...jsonObject(current.metadata?.openchamber), reviewSessionID: 'new review' },
+        } });
+        return testApi.api.updateSession(id, patch, directory);
+      },
+    };
+    const result = await createMultiRunSession(api, { title: 'bench', directory: '/repo', generation: 'oc2', identity }, testApi.assertCurrent);
+    expect(result.metadata?.external).toBe('added during binding');
+    expect(result.metadata?.openchamber).toMatchObject({ reviewSessionID: 'new review', multirun: { sessionID: 'ses_new' } });
   });
 
-  test('a runtime switch prevents binding, publishing and cleanup through the new runtime', async () => {
-    const testApi = fixture({ switchAfterCreate: true });
-    await expect(createMultiRunSession(testApi.client, { title: 'bench/openrouter/vendor/model', directory: '/repo', identity }, testApi.assertCurrent)).rejects.toThrow('Runtime changed');
-    expect(testApi.calls).toEqual(['POST']);
+  for (const generation of ['oc1', 'oc2'] as const) {
+    for (const failure of [{ rejectUpdate: true }, { omitSavedMarker: true }]) {
+      test(`${generation} cleans an unbound session after ${JSON.stringify(failure)}`, async () => {
+        const testApi = fixture(generation, failure);
+        await expect(createMultiRunSession(testApi.api, { title: 'bench', directory: '/repo', generation, identity }, testApi.assertCurrent)).rejects.toThrow();
+        expect(testApi.calls.at(-1)).toBe('delete');
+      });
+    }
+  }
+
+  test('a runtime switch prevents binding and cleanup on the new runtime', async () => {
+    const testApi = fixture('oc2', { switchAfterCreate: true });
+    await expect(createMultiRunSession(testApi.api, { title: 'bench', directory: '/repo', generation: 'oc2', identity }, testApi.assertCurrent)).rejects.toThrow('Runtime changed');
+    expect(testApi.calls).toEqual(['create']);
   });
 });

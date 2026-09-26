@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'bun:test';
-import type { AssistantMessage, Part, TextPart, UserMessage } from '@opencode-ai/sdk/v2';
+import type { AssistantMessage, Part, TextPart, TokenUsage, UserMessage } from '@/lib/opencode/model';
 import { formatTelemetryDuration, formatTelemetryTokens, formatThroughputRate, getLatestCompletedTurnStats, mergeTimeIntervals, sumIntervalsDuration } from './telemetry';
 
 const user: UserMessage = { id: 'u1', sessionID: 'session-1', role: 'user', time: { created: 0 }, agent: 'build', model: { providerID: 'test', modelID: 'test' } };
-const assistant = (overrides: Partial<AssistantMessage> = {}): AssistantMessage => ({
+const usage = (): TokenUsage => ({ input: 100, output: 100, reasoning: 0, cache: { read: 0, write: 0 } });
+const assistant = (overrides: Partial<AssistantMessage> = {}): AssistantMessage & { tokens: TokenUsage } => ({
   id: 'a1', sessionID: 'session-1', role: 'assistant', parentID: user.id,
   agent: 'build', mode: 'build', providerID: 'test', modelID: 'test', path: { cwd: '/repo', root: '/repo' },
   time: { created: 1000, completed: 5000 }, cost: 0,
-  tokens: { input: 100, output: 100, reasoning: 0, cache: { read: 0, write: 0 } },
   ...overrides,
+  tokens: overrides.tokens ?? usage(),
 });
 const tool = (start: number, end: number): Part => ({
   id: `tool-${start}`, sessionID: user.sessionID, messageID: 'a1', type: 'tool', tool: 'bash', callID: 'call',

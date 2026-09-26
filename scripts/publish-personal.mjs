@@ -29,8 +29,14 @@ export function publishPersonal({ directory, repository, commit, version, gh = r
   const ref = refs.find(item => item.ref === `refs/tags/${tag}`);
   if (ref && (ref.object.type !== 'commit' || ref.object.sha !== commit)) throw new Error('Release tag belongs to another commit');
 
-  const notes = parseRelease(fs.readFileSync(path.join(sourceRoot, 'changelog/unreleased.md'), 'utf8'), 'changelog/unreleased.md');
-  if (!notes.title || !Object.values(notes.app || {}).flat().length) throw new Error('Personal release notes are empty');
+  const versionNotesPath = path.join(sourceRoot, 'docs/maintenance/releases', `${info.version}.md`);
+  const notesPath = fs.existsSync(versionNotesPath)
+    ? versionNotesPath
+    : path.join(sourceRoot, 'changelog/unreleased.md');
+  const notes = parseRelease(fs.readFileSync(notesPath, 'utf8'), path.relative(sourceRoot, notesPath));
+  if (!notes.title || !Object.values(notes.app || {}).flat().length) {
+    throw new Error(`Personal release notes are empty: ${path.relative(sourceRoot, notesPath)}`);
+  }
   const notesFile = path.join(directory, FILES.notes);
   fs.writeFileSync(notesFile, `Windows x64 portable build ${info.version}.\n\n${renderReleaseNotes(notes)}\n\nSource: ${commit}. Upstream updates remain notification-only.\n`);
   fs.copyFileSync(path.join(sourceRoot, 'packages/ui/src/content/update-history.md'), path.join(directory, FILES.history));

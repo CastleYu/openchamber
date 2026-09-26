@@ -16,13 +16,19 @@ const AUTO_MODEL_ID = 'auto';
 
 const autoModelSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), modelID: z.literal(AUTO_MODEL_ID) });
 const autoModelStringSchema = z.literal(`${AUTO_PROVIDER_ID}/${AUTO_MODEL_ID}`);
+const autoModelRefSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), id: z.literal(AUTO_MODEL_ID) });
+export const AUTO_MODEL_REF = Object.freeze({ providerID: AUTO_PROVIDER_ID, id: AUTO_MODEL_ID });
 
 /** The command route carries the model as `provider/model`; the prompt routes as an object. */
-export const isAutoModel = (model) => autoModelSchema.safeParse(model).success || autoModelStringSchema.safeParse(model).success;
+export const isAutoModel = (model) => autoModelSchema.safeParse(model).success
+  || autoModelStringSchema.safeParse(model).success || autoModelRefSchema.safeParse(model).success;
 
 export const JEV_API_ORIGIN = 'https://api.typesafe.ai';
 export const JEV_API_PATH = '/v1/systemone';
 export const JEV_MODEL = 'jev-latest';
+export const ZEN_JEV_API_URL = 'https://opencode.ai/zen/v1/systemone';
+export const ZEN_JEV_MODEL = 'jev-1.13-free';
+export const ZEN_CLIENT_ID = 'openchamber';
 
 /** Per-attempt timeout; the lab measured 250–700 ms warm, ~1 s on a cold TLS handshake. */
 export const JEV_TIMEOUT_MS = 4000;

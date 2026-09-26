@@ -6,7 +6,7 @@ import path from 'path';
 import { createProjectIdFromPath, projectConfigFileStemOf } from '../projects/project-id.js';
 import { createSettingsRuntime } from './settings-runtime.js';
 
-const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes } = {}) => {
+const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes, onManagedPluginSettingsChanged } = {}) => {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'oc-settings-runtime-'));
   const settingsFilePath = path.join(tempRoot, 'settings.json');
   const runtime = createSettingsRuntime({
@@ -26,6 +26,7 @@ const createRuntime = async ({ mergePersistedSettings = (_current, changes) => c
     normalizeManagedRemoteTunnelPresetTokens: (value) => value,
     syncManagedRemoteTunnelConfigWithPresets: async () => {},
     upsertManagedRemoteTunnelToken: async () => {},
+    onManagedPluginSettingsChanged,
   });
 
   return {
@@ -39,6 +40,19 @@ const createRuntime = async ({ mergePersistedSettings = (_current, changes) => c
 };
 
 describe('settings runtime', () => {
+  it('refreshes managed plugin config after persisted tool and optimizer changes', async () => {
+    const refresh = vi.fn(async () => {});
+    const { runtime, cleanup } = await createRuntime({ onManagedPluginSettingsChanged: refresh });
+    try {
+      await runtime.persistSettings({ agentControlToolEnabled: false });
+      await runtime.persistSettings({ optimizeSystemPrompt: true });
+      await runtime.persistSettings({ theme: 'dark' });
+      expect(refresh).toHaveBeenCalledTimes(2);
+      expect(refresh).toHaveBeenLastCalledWith(expect.objectContaining({ optimizeSystemPrompt: true }));
+    } finally {
+      await cleanup();
+    }
+  });
   it('round-trips both archived-only retention states through instance settings', async () => {
     const { runtime, settingsFilePath, cleanup } = await createRuntime();
     try {

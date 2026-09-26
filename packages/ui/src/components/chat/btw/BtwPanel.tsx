@@ -1,6 +1,7 @@
 import React from 'react';
 import { ComposerFloatingPanel } from '../composer/ui/ComposerFloatingPanel';
-import type { Message, Part } from '@opencode-ai/sdk/v2';
+import type { Message, Part } from '@/lib/opencode/model';
+import { getLastConversationRecord, isIncompleteAssistantTurn } from '@/lib/opencode/model';
 import { useI18n } from '@/lib/i18n';
 import { isIMECompositionEvent } from '@/lib/ime';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,8 @@ import {
     useSessionStatus,
     useScopedBlockingPermissions,
     useScopedBlockingQuestions,
+    useScopedPendingPermissions,
+    useScopedPendingInputs,
 } from '@/sync/sync-context';
 import { useStreamingStore } from '@/sync/streaming';
 import { ScrollShadow } from '@/components/ui/ScrollShadow';
@@ -23,8 +26,13 @@ import type { BtwPanelState } from './useBtwPanelState';
 import { ChatSurfaceProvider } from '../ChatSurfaceContext';
 import { useMobileAutocompleteMaxHeight } from '../useMobileAutocompleteMaxHeight';
 import ChatMessage from '../ChatMessage';
+import { TimelineNotice } from '../message/TimelineNotice';
+import { isSkippedTimelineRole, isTimelineNoticeRole } from '../lib/timelineRoles';
+import { attachSyntheticContext } from '../lib/attachSyntheticContext';
 import { PermissionCard } from '../PermissionCard';
 import { QuestionCard } from '../QuestionCard';
+import { FormCard } from '../FormCard';
+import { V2PermissionCard } from '../V2PermissionCard';
 
 const IDLE_SESSION_STATUS = { type: 'idle' as const };
 
@@ -116,6 +124,8 @@ type BtwSessionData = {
     activeStreamingPhase: 'streaming' | 'cooldown' | 'completed' | null;
     sessionPermissions: ReturnType<typeof useScopedBlockingPermissions>;
     sessionQuestions: ReturnType<typeof useScopedBlockingQuestions>;
+    v2Permissions: Extract<ReturnType<typeof useScopedPendingPermissions>[number], { generation: 'oc2' }>['value'][];
+    sessionForms: Extract<ReturnType<typeof useScopedPendingInputs>[number], { generation: 'oc2' }>['value'][];
     isEmpty: boolean;
 };
 
@@ -149,30 +159,26 @@ const useBtwSessionData = (
     );
     const sessionPermissions = useScopedBlockingPermissions(sessionId, directory);
     const sessionQuestions = useScopedBlockingQuestions(sessionId, directory);
+    const taggedPermissions = useScopedPendingPermissions(sessionId, directory);
+    const taggedInputs = useScopedPendingInputs(sessionId, directory);
+    const v2Permissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedPermissions]);
+    const sessionForms = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedInputs]);
 
     const tailRecords = React.useMemo(
-        () => filterBtwTailMessages(messageRecords, boundaryMessageID),
+        () => attachSyntheticContext(filterBtwTailMessages(messageRecords, boundaryMessageID)),
         [boundaryMessageID, messageRecords],
     );
 
     const sessionIsWorking = React.useMemo(() => {
-        if (sessionPermissions.length > 0 || sessionQuestions.length > 0) {
+        if (sessionPermissions.length > 0 || sessionQuestions.length > 0 || v2Permissions.length > 0 || sessionForms.length > 0) {
             return false;
         }
         const statusType = status.type ?? 'idle';
         if (statusType === 'busy' || statusType === 'retry') {
             return true;
         }
-        // SAFETY: reads only the optional `time.completed` field, which the
-        // SDK Message union does not expose uniformly; a missing value means
-        // the assistant turn has not completed.
-        const lastMessage = tailRecords[tailRecords.length - 1]?.info as (Message & { time?: { completed?: number } }) | undefined;
-        return Boolean(
-            lastMessage
-            && lastMessage.role === 'assistant'
-            && typeof lastMessage.time?.completed !== 'number',
-        );
-    }, [sessionPermissions.length, sessionQuestions.length, status.type, tailRecords]);
+        return isIncompleteAssistantTurn(getLastConversationRecord(tailRecords)?.info);
+    }, [sessionPermissions.length, sessionQuestions.length, v2Permissions.length, sessionForms.length, status.type, tailRecords]);
 
     return {
         messageRecords: tailRecords,
@@ -181,6 +187,8 @@ const useBtwSessionData = (
         activeStreamingPhase,
         sessionPermissions,
         sessionQuestions,
+        v2Permissions,
+        sessionForms,
         isEmpty: tailRecords.length === 0,
     };
 };
@@ -439,7 +447,9 @@ const BtwMessages: React.FC<{
             style={maxHeight !== undefined ? { maxHeight } : undefined}
         >
             <div ref={contentRef}>
-                {data.messageRecords.map((record, index) => (
+                {data.messageRecords.map((record, index) => isSkippedTimelineRole(record.info.role) ? null : isTimelineNoticeRole(record.info.role) ? (
+                    <TimelineNotice key={record.info.id} message={record.info} />
+                ) : (
                     <ChatMessage
                         key={record.info.id}
                         message={record}
@@ -451,7 +461,7 @@ const BtwMessages: React.FC<{
                         }
                     />
                 ))}
-                {data.sessionQuestions.length > 0 || data.sessionPermissions.length > 0 ? (
+                {data.sessionQuestions.length > 0 || data.sessionPermissions.length > 0 || data.v2Permissions.length > 0 || data.sessionForms.length > 0 ? (
                     <div>
                         {data.sessionQuestions.map((question) => (
                             <QuestionCard key={question.id} question={question} />
@@ -459,6 +469,8 @@ const BtwMessages: React.FC<{
                         {data.sessionPermissions.map((permission) => (
                             <PermissionCard key={permission.id} permission={permission} />
                         ))}
+                        {data.sessionForms.map((form) => <FormCard key={form.id} form={form} />)}
+                        {data.v2Permissions.map((permission) => <V2PermissionCard key={permission.id} permission={permission} />)}
                     </div>
                 ) : null}
                 {/* Always reserve this row so the content does not shift down

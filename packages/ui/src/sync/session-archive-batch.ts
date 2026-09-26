@@ -12,7 +12,7 @@
  * unsupported status, and callers fall back to archiving session by session.
  */
 
-import type { Session } from '@opencode-ai/sdk/v2/client';
+import type { Session } from '@/lib/opencode/model'
 import { z } from 'zod';
 
 import { runtimeFetch } from '@/lib/runtime-fetch';

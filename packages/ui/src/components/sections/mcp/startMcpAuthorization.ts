@@ -1,4 +1,6 @@
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { opencodeClient } from '@/lib/opencode/client';
+import { OpenCodeRuntimeError } from '@/lib/opencode/runtime';
 import { applyPendingOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@/lib/runtime-switch';
 import { openExternalUrl } from '@/lib/url';
@@ -135,7 +137,7 @@ const clearCustomRedirectUriForNativeFlow = async (name: string): Promise<void> 
   }
   const configStore = useMcpConfigStore.getState();
   const existing = configStore.getMcpByName(name);
-  const currentOAuth = existing && 'oauth' in existing && existing.oauth ? existing.oauth : null;
+  const currentOAuth = existing?.generation === 'oc1' && existing.type === 'remote' && existing.oauth ? existing.oauth : null;
   if (!existing || !currentOAuth?.redirectUri) return;
 
   const saved = await configStore.updateMcp(name, {
@@ -185,6 +187,8 @@ export const startMcpAuthorization = async (input: {
   name: string;
   directory?: string | null;
 }): Promise<McpAuthorizationStart> => {
+  const generation = opencodeClient.getBoundRuntime()?.generation;
+  if (generation !== 'oc1') throw new OpenCodeRuntimeError(generation ?? 'unknown', 'legacy MCP authorization');
   const { name, directory } = input;
   let queuedState: string | null = null;
 
@@ -223,7 +227,7 @@ export const startMcpAuthorization = async (input: {
       const configStore = useMcpConfigStore.getState();
       const existing = configStore.getMcpByName(name);
       // `oauth: false` means the user disabled it explicitly.
-      const currentOAuth = existing && 'oauth' in existing && existing.oauth
+      const currentOAuth = existing?.generation === 'oc1' && existing.type === 'remote' && existing.oauth
         ? existing.oauth
         : null;
 

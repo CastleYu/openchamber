@@ -58,7 +58,7 @@ const createOpenCode = () => {
   return { state, fetchImpl };
 };
 
-const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), knowledge = null, retryDelayMs, resolvePromptBody, now } = {}) => {
+const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), knowledge = null, kernelOperations = null, retryDelayMs, resolvePromptBody, now } = {}) => {
   let eventHandler = () => {};
   let statusHandler = () => {};
   const broadcasts = [];
@@ -68,6 +68,7 @@ const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), k
       subscribeEvent(handler) { eventHandler = handler; return () => {}; },
       subscribeStatus(handler) { statusHandler = handler; return () => {}; },
     },
+    kernelOperations,
     buildOpenCodeUrl: (fetchPath) => `http://opencode.test${fetchPath}`,
     getOpenCodeAuthHeaders: () => ({}),
     sessionKnowledgeRuntime: knowledge,
@@ -169,6 +170,53 @@ describe('parseQueuedItemInput', () => {
 });
 
 describe('message queue runtime', () => {
+  it('waits for an OC2 descendant after parent idle, then sends when it settles', async () => {
+    const sent = [];
+    let statuses = { child: { type: 'busy' } };
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'local', epoch: 1 }),
+      listActiveStatuses: async () => ({ data: statuses }),
+      listChildren: async ({ sessionID }) => ({ data: sessionID === SESSION ? [{ id: 'child' }] : [] }),
+      listMessages: async () => ({ data: { order: 'desc', items: [{ id: 'done', role: 'assistant', completed: 20, created: 10 }] } }),
+      sendPrompt: async (input) => { sent.push(input); },
+    };
+    const { runtime, emit } = createRuntime({ kernelOperations, retryDelayMs: () => 10 });
+    runtime.start();
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    emit({ type: 'session.status', properties: { sessionID: SESSION, status: { type: 'idle' } } });
+    await settle(30);
+    expect(sent).toHaveLength(0);
+    statuses = {};
+    await settle(40);
+    expect(sent).toHaveLength(1);
+    runtime.stop();
+  });
+
+  it('uses OC2 descending message tail and sends one stamped prompt', async () => {
+    const sent = [];
+    const identity = { generation: 'oc2', endpoint: 'http://opencode.test', epoch: 7 };
+    const kernelOperations = {
+      captureIdentity: () => identity,
+      listActiveStatuses: async () => ({ data: {} }),
+      listChildren: async () => ({ data: [] }),
+      listMessages: async () => ({ data: { order: 'desc', items: [
+        { id: 'done', role: 'assistant', completed: 20, created: 10 },
+        { id: 'old', role: 'assistant', created: 1 },
+      ] } }),
+      listCommands: async () => ({ data: [] }),
+      sendPrompt: async (input) => { sent.push(input); return { accepted: true }; },
+    };
+    const { runtime, emit } = createRuntime({ kernelOperations });
+    runtime.start();
+    await runtime.enqueue(SESSION, DIRECTORY, item({ context: [{ kind: 'synthetic', text: 'background' }] }));
+    emit({ type: 'session.status', properties: { sessionID: SESSION, status: { type: 'idle' } } });
+    await settle();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ sessionID: SESSION, directory: DIRECTORY, request: {
+      ...identity, model: { providerID: 'anthropic', id: 'claude' }, agent: 'build',
+      synthetics: [{ text: 'background', resume: false }], body: { text: 'follow up' },
+    } });
+  });
   it('delivers the head of the queue when the session goes idle, in order', async () => {
     const { runtime, openCode, emit, promptSent, broadcasts } = createRuntime();
     runtime.start();

@@ -132,7 +132,7 @@ export const CommandsPage: React.FC = () => {
 
   const handleSave = async () => {
     const commandName = isNewCommand ? draftName.trim().replace(/\s+/g, '-') : selectedCommandName?.trim();
-    
+
     if (!commandName) {
       toast.error(t('settings.commands.sidebar.toast.commandNameRequired'));
       return;
@@ -167,7 +167,7 @@ export const CommandsPage: React.FC = () => {
       if (isNewCommand) {
         success = await createCommand(config, settingsDirectory);
         if (success) {
-          setCommandDraft(null); 
+          setCommandDraft(null);
         }
       } else {
         success = await updateCommand(commandName, config, settingsDirectory);

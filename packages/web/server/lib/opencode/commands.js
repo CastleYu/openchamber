@@ -65,12 +65,12 @@ function getCommandScope(commandName, workingDirectory) {
       return { scope: COMMAND_SCOPE.PROJECT, path: projectPath };
     }
   }
-  
+
   const userPath = getUserCommandPath(commandName);
   if (fs.existsSync(userPath)) {
     return { scope: COMMAND_SCOPE.USER, path: userPath };
   }
-  
+
   return { scope: null, path: null };
 }
 
@@ -83,19 +83,19 @@ function getCommandWritePath(commandName, workingDirectory, requestedScope) {
   if (existing.path) {
     return existing;
   }
-  
+
   // For new commands or built-in overrides: use requested scope or default to user
   const scope = requestedScope || COMMAND_SCOPE.USER;
   if (scope === COMMAND_SCOPE.PROJECT && workingDirectory) {
-    return { 
-      scope: COMMAND_SCOPE.PROJECT, 
-      path: getProjectCommandPath(workingDirectory, commandName) 
+    return {
+      scope: COMMAND_SCOPE.PROJECT,
+      path: getProjectCommandPath(workingDirectory, commandName)
     };
   }
-  
-  return { 
-    scope: COMMAND_SCOPE.USER, 
-    path: getUserCommandPath(commandName) 
+
+  return {
+    scope: COMMAND_SCOPE.USER,
+    path: getUserCommandPath(commandName)
   };
 }
 

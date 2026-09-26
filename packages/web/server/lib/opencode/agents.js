@@ -133,12 +133,12 @@ function getAgentScope(agentName, workingDirectory, lookupCache = null) {
       return { scope: AGENT_SCOPE.PROJECT, path: projectPath };
     }
   }
-  
+
   const userPath = getUserAgentPath(agentName, lookupCache);
   if (fs.existsSync(userPath)) {
     return { scope: AGENT_SCOPE.USER, path: userPath };
   }
-  
+
   return { scope: null, path: null };
 }
 

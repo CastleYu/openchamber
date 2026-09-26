@@ -51,7 +51,7 @@ function removeProviderAuth(providerId) {
   }
 
   const auth = readAuthFile();
-  
+
   if (!auth[providerId]) {
     console.log(`Provider ${providerId} not found in auth file, nothing to remove`);
     return false;

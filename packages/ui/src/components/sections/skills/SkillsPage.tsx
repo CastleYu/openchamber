@@ -175,10 +175,10 @@ const SkillsInstalledPage: React.FC = () => {
   const [deleteFilePath, setDeleteFilePath] = React.useState<string | null>(null);
   const [isDeletingFile, setIsDeletingFile] = React.useState(false);
   
-  const hasSkillChanges = isNewSkill 
+  const hasSkillChanges = isNewSkill
     ? (draftName.trim() !== '' || description.trim() !== '' || instructions.trim() !== '' || pendingFiles.length > 0)
     : (description !== originalDescription || instructions !== originalInstructions);
-  
+
   const hasFileChanges = editingFilePath 
     ? newFileContent !== originalFileContent
     : newFileName.trim() !== '';

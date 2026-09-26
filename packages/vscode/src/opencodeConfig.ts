@@ -1634,11 +1634,11 @@ export const getAgentSources = (agentName: string, workingDirectory?: string): C
   // Check project level first (takes precedence)
   const projectPath = workingDirectory ? getProjectAgentPath(workingDirectory, agentName) : null;
   const projectExists = projectPath ? fs.existsSync(projectPath) : false;
-  
+
   // Then check user level
   const userPath = getUserAgentPath(agentName);
   const userExists = fs.existsSync(userPath);
-  
+
   // Determine which md file to use (project takes precedence)
   const mdPath = projectExists ? projectPath : (userExists ? userPath : null);
   const mdExists = !!mdPath;
@@ -1676,11 +1676,11 @@ export const createAgent = (agentName: string, config: Record<string, unknown>, 
   // Check if agent already exists at either level
   const projectPath = workingDirectory ? getProjectAgentPath(workingDirectory, agentName) : null;
   const userPath = getUserAgentPath(agentName);
-  
+
   if (projectPath && fs.existsSync(projectPath)) {
     throw new Error(`Agent ${agentName} already exists as project-level .md file`);
   }
-  
+
   if (fs.existsSync(userPath)) {
     throw new Error(`Agent ${agentName} already exists as user-level .md file`);
   }
@@ -1691,7 +1691,7 @@ export const createAgent = (agentName: string, config: Record<string, unknown>, 
 
   // Determine target path based on requested scope
   let targetPath: string;
-  
+
   if (scope === AGENT_SCOPE.PROJECT && workingDirectory) {
     ensureProjectAgentDir(workingDirectory);
     targetPath = projectPath!;
@@ -1730,7 +1730,7 @@ export const updateAgent = (agentName: string, updates: Record<string, unknown>,
   // Determine correct path: project level takes precedence
   const { path: mdPath } = getAgentWritePath(agentName, workingDirectory);
   const mdExists = mdPath ? fs.existsSync(mdPath) : false;
-  
+
   // Check if agent exists in opencode.json across all config layers
   const layers = readConfigLayers(workingDirectory);
   const jsonSource = getJsonEntrySource(layers, 'agent', agentName);
@@ -1740,13 +1740,13 @@ export const updateAgent = (agentName: string, updates: Record<string, unknown>,
     ? { config: jsonSource.config, path: jsonSource.path }
     : getJsonWriteTarget(layers, AGENT_SCOPE.USER);
   const config = (jsonTarget.config || {}) as Record<string, unknown>;
-  
+
   // Determine if we should create a new md file:
   // Only for built-in agents (no md file AND no json config)
   const isBuiltinOverride = !mdExists && !hasJsonFields;
-  
+
   let targetPath = mdPath;
-  
+
   if (!mdExists && isBuiltinOverride) {
     // Built-in agent override - create at user level
     targetPath = getUserAgentPath(agentName);
@@ -2000,11 +2000,11 @@ export const getCommandSources = (commandName: string, workingDirectory?: string
   // Check project level first (takes precedence)
   const projectPath = workingDirectory ? getProjectCommandPath(workingDirectory, commandName) : null;
   const projectExists = projectPath ? fs.existsSync(projectPath) : false;
-  
+
   // Then check user level
   const userPath = getUserCommandPath(commandName);
   const userExists = fs.existsSync(userPath);
-  
+
   // Determine which md file to use (project takes precedence)
   const mdPath = projectExists ? projectPath : (userExists ? userPath : null);
   const mdExists = !!mdPath;
@@ -2042,11 +2042,11 @@ export const createCommand = (commandName: string, config: Record<string, unknow
   // Check if command already exists at either level
   const projectPath = workingDirectory ? getProjectCommandPath(workingDirectory, commandName) : null;
   const userPath = getUserCommandPath(commandName);
-  
+
   if (projectPath && fs.existsSync(projectPath)) {
     throw new Error(`Command ${commandName} already exists as project-level .md file`);
   }
-  
+
   if (fs.existsSync(userPath)) {
     throw new Error(`Command ${commandName} already exists as user-level .md file`);
   }
@@ -2057,7 +2057,7 @@ export const createCommand = (commandName: string, config: Record<string, unknow
 
   // Determine target path based on requested scope
   let targetPath: string;
-  
+
   if (scope === COMMAND_SCOPE.PROJECT && workingDirectory) {
     ensureProjectCommandDir(workingDirectory);
     targetPath = projectPath!;

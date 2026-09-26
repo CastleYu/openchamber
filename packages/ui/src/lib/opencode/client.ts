@@ -1051,14 +1051,14 @@ class OpencodeService {
    */
   private shouldNormalizeToTextPlain(mime: string): boolean {
     if (!mime) return false;
-    
+
     const lowerMime = mime.toLowerCase();
-    
+
     // All text/* types except text/plain need normalization
     if (lowerMime.startsWith('text/') && lowerMime !== 'text/plain') {
       return true;
     }
-    
+
     // Common application types that are actually text
     const textBasedTypes = [
       'application/json',
@@ -1073,7 +1073,7 @@ class OpencodeService {
       'application/octet-stream',
       'image/svg+xml',
     ];
-    
+
     return textBasedTypes.includes(lowerMime);
   }
 
@@ -1094,11 +1094,11 @@ class OpencodeService {
     try {
       // Dynamic import to avoid loading heic2any unless needed
       const heic2any = (await import('heic2any')).default;
-      
+
       // Extract base64 data from data URL
       const commaIndex = file.url.indexOf(',');
       if (commaIndex === -1) return file;
-      
+
       const base64Data = file.url.substring(commaIndex + 1);
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
@@ -1106,14 +1106,14 @@ class OpencodeService {
         bytes[i] = binaryString.charCodeAt(i);
       }
       const heicBlob = new Blob([bytes], { type: file.mime });
-      
+
       // Convert to JPEG
       const jpegBlob = await heic2any({
         blob: heicBlob,
         toType: 'image/jpeg',
         quality: 0.9,
       }) as Blob;
-      
+
       // Convert back to data URL
       const jpegDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -1121,13 +1121,13 @@ class OpencodeService {
         reader.onerror = reject;
         reader.readAsDataURL(jpegBlob);
       });
-      
+
       // Update filename extension
       let newFilename = file.filename;
       if (newFilename) {
         newFilename = newFilename.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
       }
-      
+
       return {
         mime: 'image/jpeg',
         filename: newFilename,
@@ -1156,7 +1156,7 @@ class OpencodeService {
     }
 
     let normalizedUrl = file.url;
-    
+
     // Update MIME type in data URL if present
     // Format: data:<mime>;base64,<content> or data:<mime>,<content>
     if (file.url.startsWith('data:')) {
@@ -1164,7 +1164,7 @@ class OpencodeService {
       if (commaIndex !== -1) {
         const meta = file.url.substring(5, commaIndex); // after "data:"
         const content = file.url.substring(commaIndex); // includes comma
-        
+
         // Replace the MIME type in meta, preserving ;base64 if present
         const newMeta = meta.replace(/^[^;,]+/, 'text/plain');
         normalizedUrl = `data:${newMeta}${content}`;

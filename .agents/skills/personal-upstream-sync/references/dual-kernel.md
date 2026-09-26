@@ -4,11 +4,11 @@ Use this branch of personal upstream sync when a supported OpenCode generation d
 
 ## Establish three baselines
 
-Record the current personal source SHA, the last actually integrated upstream SHA, and the new upstream target SHA. Record the OC1 feature-reference SHA separately. A package version, a merge ancestor or the contents of a reference checkout do not prove feature adoption. A reverted upstream commit remains an ancestor.
+Record the current personal source SHA, the last reviewed upstream comparison SHA, and the new upstream target SHA. Record the retained product baseline and OC1 feature-reference SHA separately. The comparison SHA advances when its full delta has dispositions in the adoption ledger, even if some entries are intentionally not adopted. A package version, a merge ancestor or the contents of a reference checkout do not prove feature adoption. A reverted upstream commit remains an ancestor.
 
 For first adoption, preserve the existing checkout and dirty files, identify the last personal OC1-compatible commit, and create an isolated development checkout there. Keep a separate pinned latest-release upstream checkout for comparison. Retain later personal fixes and documentation only after inspecting their behavior and evidence. Restore the original published branch through reviewed new commits; preserve history and unrelated user changes.
 
-For later updates, compare the last integrated target with the newly fetched target. Do not repeat the first-adoption rollback or rescan the entire old product without a concrete coverage gap.
+For later updates, compare the last reviewed comparison target with the newly fetched target. Carry forward prior dispositions; reopen a deferred item when its implementation, dependencies or maintainer policy changes. The retained OC1 product baseline is not the recurring diff start. Do not repeat the first-adoption rollback or rescan the entire old product without a concrete coverage gap.
 
 ## Classify before merging
 

@@ -23,8 +23,8 @@ import {
   writeSkillSupportingFile,
 } from './shared.js';
 
-const createTempProject = () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'oc-skill-routes-'));
+const createTempProject = (prefix = 'oc-skill-routes-') => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   fs.mkdirSync(path.join(projectRoot, '.git'));
   return projectRoot;
 };
@@ -231,7 +231,7 @@ describe('skill-routes directory soft fallback', () => {
   });
 
   it('reads the OC2 skill.list envelope while retaining local skills', async () => {
-    projectRoot = createTempProject();
+    projectRoot = createTempProject('oc~skill-routes-');
     const localDir = path.join(projectRoot, '.agents', 'skills', 'local-skill');
     fs.mkdirSync(localDir, { recursive: true });
     fs.writeFileSync(path.join(localDir, 'SKILL.md'), '---\nname: local-skill\ndescription: local\n---\n\nLocal body\n');
@@ -252,8 +252,9 @@ describe('skill-routes directory soft fallback', () => {
     expect(payload.partial).toBeUndefined();
     expect(payload.skills.map((skill) => skill.name)).toEqual(expect.arrayContaining(['local-skill', 'remote-skill']));
     expect(requests).toHaveLength(1);
-    expect(requests[0]).toContain('/api/skill?');
-    expect(requests[0]).toContain(encodeURIComponent(projectRoot));
+    const requestedSkillList = new URL(requests[0], kernelHandle.endpoint);
+    expect(requestedSkillList.pathname).toBe('/api/skill');
+    expect(requestedSkillList.searchParams.get('location[directory]')).toBe(projectRoot);
   });
 
   it('marks OC2 discovery failure partial without erasing local skills', async () => {

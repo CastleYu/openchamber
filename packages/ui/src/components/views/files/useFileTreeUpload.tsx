@@ -63,7 +63,7 @@ export const useFileTreeUpload = ({ root, refreshDirectory }: FileTreeUploadOpti
   const rootRef = React.useRef(root);
   rootRef.current = root;
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const pickerDirectoryRef = React.useRef<string | null>(null);
+  const pickerRef = React.useRef<{ directory: string; runtimeKey: string; root: string } | null>(null);
 
   React.useEffect(() => {
     setUploadConflicts(null);
@@ -146,19 +146,19 @@ export const useFileTreeUpload = ({ root, refreshDirectory }: FileTreeUploadOpti
   const pickFiles = React.useCallback((directory: string) => {
     const input = inputRef.current;
     if (!input || uploadingRef.current) return;
-    pickerDirectoryRef.current = directory;
+    pickerRef.current = { directory, runtimeKey: getRuntimeKey(), root };
     input.value = '';
     input.click();
-  }, []);
+  }, [root]);
 
   const handlePickerChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const directory = pickerDirectoryRef.current;
+    const picker = pickerRef.current;
     const picked = Array.from(event.target.files ?? []);
-    pickerDirectoryRef.current = null;
+    pickerRef.current = null;
     event.target.value = '';
-    if (!directory || picked.length === 0) return;
-    void uploadFiles(directory, picked);
-  }, [uploadFiles]);
+    if (!picker || picked.length === 0 || picker.runtimeKey !== getRuntimeKey() || picker.root !== root) return;
+    void uploadFiles(picker.directory, picked);
+  }, [root, uploadFiles]);
 
   const uploadElements = (
     <>

@@ -1,5 +1,6 @@
 import type { BridgeContext, BridgeResponse } from './bridge';
 import { waitForApiUrl } from './opencode-ready';
+import { resolveKernelRequest } from './kernelRequest';
 import { isSessionRecordPath, overlaySessionResponseBody, parseJson, type SessionStateStore } from './openchamberSessionState';
 
 type BridgeMessageInput = {
@@ -47,23 +48,38 @@ const collectProxyResponseHeaders = (headers: Headers, deps: Pick<ProxyRuntimeDe
   return result;
 };
 
-// OpenCode 2.x has one event stream, `GET /api/event`.
 const isSseProxyPath = (requestPath: string): boolean => {
   try {
-    return new URL(requestPath, 'https://openchamber.invalid').pathname === '/api/event';
+    const parsed = new URL(requestPath, 'https://openchamber.invalid');
+    return parsed.pathname === '/event' || parsed.pathname === '/global/event';
   } catch {
-    return requestPath === '/api/event';
+    return requestPath === '/event' || requestPath === '/global/event';
   }
 };
 
 type ProxyRuntimeDeps = {
   tryHandleLocalFsProxy: (method: string, requestPath: string) => Promise<ApiProxyResponsePayload | null>;
-  /** Archive flags and stored metadata to fold onto session reads; optional for callers without owned state. */
   sessionState?: Pick<SessionStateStore, 'readArchived' | 'readMetadata'>;
   buildUnavailableApiResponse: () => ApiProxyResponsePayload;
   sanitizeForwardHeaders: (input: Record<string, string> | undefined) => Record<string, string>;
   collectHeaders: (headers: Headers) => Record<string, string>;
   base64EncodeUtf8: (text: string) => string;
+};
+
+const overlayOwnedSessionState = async (
+  generation: string,
+  method: string,
+  requestPath: string,
+  data: ApiProxyResponsePayload,
+  sessionState: ProxyRuntimeDeps['sessionState'],
+): Promise<ApiProxyResponsePayload> => {
+  if (generation !== 'oc2' || !sessionState || method !== 'GET' || data.status !== 200 || !data.bodyText) return data;
+  const pathname = new URL(requestPath, 'https://openchamber.invalid').pathname;
+  if (!isSessionRecordPath(pathname)) return data;
+  const body = parseJson(data.bodyText);
+  if (body === null) return data;
+  const [archived, metadata] = await Promise.all([sessionState.readArchived(), sessionState.readMetadata()]);
+  return { ...data, bodyText: JSON.stringify(overlaySessionResponseBody(body, archived, metadata)) };
 };
 
 const proxyAbortControllers = new Map<string, AbortController>();
@@ -72,9 +88,8 @@ const proxyAbortControllers = new Map<string, AbortController>();
 // In-flight read coalescing (parity with the web runtimeFetch coalescer)
 //
 // On cold start the webview's two data layers — the sync bootstrap and the
-// config store — fire the SAME idempotent reads (config, location, agent,
-// project, command, model, provider) concurrently through the bridge with no
-// shared dedup. That
+// config store — fire the SAME idempotent reads (config, path, agents, agent,
+// project, command) concurrently through the bridge with no shared dedup. That
 // saturates the single OpenCode process and delays everything queued behind it
 // (e.g. createSession). Coalesce genuinely-concurrent identical GETs to those
 // read endpoints so OpenCode does the work once; every caller gets its own
@@ -87,22 +102,8 @@ const proxyAbortControllers = new Map<string, AbortController>();
 // soon as the request settles, so this only ever shares overlapping in-flight
 // requests; it never serves a stale response.
 // ---------------------------------------------------------------------------
-const COALESCE_READ_PATH = /^\/api\/(config|location|agent|project|command|model|provider)(\b|\/|\?|$)/;
+const COALESCE_READ_PATH = /^\/(config|path|app\/agents|agent|project|command)(\b|\/|\?|$)/;
 const READ_COALESCE = new Map<string, Promise<ApiProxyResponsePayload>>();
-
-// Two reads are "identical" only when everything OpenCode sees is identical.
-// On OpenCode 2.x the project directory travels in the `x-opencode-directory`
-// header, not the URL, and the auth headers pick the upstream scope; keying on
-// the URL alone would answer project B's `/api/config` with project A's body.
-// Every forwarded header therefore joins the key, canonicalized so header-name
-// casing cannot split otherwise-identical reads.
-const buildReadCoalesceKey = (targetUrl: string, headers: Record<string, string>): string => {
-  const canonicalHeaders = Object.entries(headers)
-    .map(([name, value]) => `${name.toLowerCase()}=${value}`)
-    .sort()
-    .join('\n');
-  return `GET ${targetUrl}\n${canonicalHeaders}`;
-};
 
 const performApiProxyFetch = async (
   targetUrl: string,
@@ -133,33 +134,6 @@ const performApiProxyFetch = async (
       }),
     };
   }
-};
-
-/**
- * `GET /api/session` and `GET /api/session/:id` come back with OpenChamber's
- * own archive flag and metadata folded in, the same as the web proxy does, so
- * the shared UI keeps reading `time.archived` and `metadata` where it always
- * did. A file that cannot be read leaves the upstream record untouched.
- */
-const overlayOwnedSessionState = async (
-  method: string,
-  requestPath: string,
-  data: ApiProxyResponsePayload,
-  sessionState: ProxyRuntimeDeps['sessionState'],
-): Promise<ApiProxyResponsePayload> => {
-  if (!sessionState || method !== 'GET' || data.status !== 200 || typeof data.bodyText !== 'string') return data;
-  let pathname: string;
-  try {
-    pathname = new URL(requestPath, 'https://openchamber.invalid').pathname;
-  } catch {
-    return data;
-  }
-  if (!isSessionRecordPath(pathname)) return data;
-  const body = parseJson(data.bodyText);
-  if (body === null) return data;
-  const [archived, stored] = await Promise.all([sessionState.readArchived(), sessionState.readMetadata()]);
-  if (!archived && !stored) return data;
-  return { ...data, bodyText: JSON.stringify(overlaySessionResponseBody(body, archived, stored)) };
 };
 
 export async function handleProxyBridgeMessage(
@@ -209,8 +183,9 @@ export async function handleProxyBridgeMessage(
         return { id, type, success: true, data };
       }
 
-      const base = `${apiUrl.replace(/\/+$/, '')}/`;
-      const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+      if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      const targetUrl = selected.url;
       const requestHeaders: Record<string, string> = {
         ...deps.sanitizeForwardHeaders(headers),
         ...ctx?.manager?.getOpenCodeAuthHeaders(),
@@ -227,13 +202,16 @@ export async function handleProxyBridgeMessage(
       // caller aborting can't strand the others.
       const coalesceKey =
         normalizedMethod === 'GET' && COALESCE_READ_PATH.test(normalizedPath)
-          ? buildReadCoalesceKey(targetUrl, requestHeaders)
-          : null;
+          ? `${selected.descriptor.generation}:${selected.descriptor.epoch} GET ${targetUrl}` : null;
       if (coalesceKey) {
         const existing = READ_COALESCE.get(coalesceKey);
         if (existing) {
           const shared = await existing;
-          return { id, type, success: true, data: { ...shared, headers: { ...shared.headers } } };
+          selected.assertCurrent();
+          const data = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath,
+            { ...shared, headers: { ...shared.headers } }, deps.sessionState);
+          selected.assertCurrent();
+          return { id, type, success: true, data };
         }
         const pending = performApiProxyFetch(targetUrl, 'GET', requestHeaders, undefined, undefined, deps);
         READ_COALESCE.set(coalesceKey, pending);
@@ -241,21 +219,29 @@ export async function handleProxyBridgeMessage(
           () => READ_COALESCE.delete(coalesceKey),
           () => READ_COALESCE.delete(coalesceKey),
         );
-        const data = await overlayOwnedSessionState('GET', normalizedPath, await pending, deps.sessionState);
-        return { id, type, success: true, data };
+        const data = await pending;
+        selected.assertCurrent();
+        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        selected.assertCurrent();
+        return { id, type, success: true, data: projected };
       }
 
       const abortController = new AbortController();
       proxyAbortControllers.set(id, abortController);
 
       try {
-        const data = await overlayOwnedSessionState(
+        const data = await performApiProxyFetch(
+          targetUrl,
           normalizedMethod,
-          normalizedPath,
-          await performApiProxyFetch(targetUrl, normalizedMethod, requestHeaders, requestBody, abortController.signal, deps),
-          deps.sessionState,
+          requestHeaders,
+          requestBody,
+          abortController.signal,
+          deps,
         );
-        return { id, type, success: true, data };
+        selected.assertCurrent();
+        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        selected.assertCurrent();
+        return { id, type, success: true, data: projected };
       } finally {
         proxyAbortControllers.delete(id);
       }
@@ -276,7 +262,7 @@ export async function handleProxyBridgeMessage(
             : `/${requestPath.trim()}`
           : '/';
 
-      if (!/^\/api\/session\/[^/]+\/prompt(?:\?.*)?$/.test(normalizedPath)) {
+      if (!/^\/session\/[^/]+\/message(?:\?.*)?$/.test(normalizedPath)) {
         const body = JSON.stringify({ error: 'Invalid session message proxy path' });
         const data: ApiProxyResponsePayload = {
           status: 400,
@@ -286,8 +272,12 @@ export async function handleProxyBridgeMessage(
         return { id, type, success: true, data };
       }
 
-      const base = `${apiUrl.replace(/\/+$/, '')}/`;
-      const targetUrl = new URL(normalizedPath.replace(/^\/+/, ''), base).toString();
+      if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      if (selected.descriptor.generation !== 'oc1') {
+        return { id, type, success: false, error: 'Legacy message forwarding requires OpenCode 1' };
+      }
+      const targetUrl = selected.url;
       const requestHeaders: Record<string, string> = {
         ...deps.sanitizeForwardHeaders(headers),
         ...ctx?.manager?.getOpenCodeAuthHeaders(),

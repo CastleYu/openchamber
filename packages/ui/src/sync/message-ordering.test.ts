@@ -12,7 +12,7 @@ const message = (id: string, created: number): Message => ({
   sessionID: "session-a",
   role: "user",
   time: { created },
-})
+} as Message)
 
 describe("message chronology", () => {
   test("orders post-rollover IDs after legacy IDs by creation time", () => {

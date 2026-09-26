@@ -6,14 +6,14 @@ afterEach(() => vi.useRealTimers());
 const fixture = () => {
   vi.useFakeTimers();
   const statuses = { first: { status: 'connected' }, second: { status: 'connected' }, off: { status: 'disabled' } };
-  const config = [{ type: 'document', info: { mcp: { servers: { first: {}, second: {}, off: { disabled: true } } } } }];
+  const config = { mcp: { first: { enabled: true }, second: { enabled: true }, off: { enabled: false } } };
   const client = {
-    config: { get: vi.fn(async () => config) },
-    session: { active: vi.fn(async () => ({})) },
+    config: { get: vi.fn(async () => ({ data: config })) },
+    session: { status: vi.fn(async () => ({ data: {} })) },
     mcp: {
-      list: vi.fn(async () => ({ data: Object.entries(statuses).map(([name, status]) => ({ name, status })) })),
-      disconnect: vi.fn(async ({ server }) => { statuses[server] = 'disabled'; }),
-      connect: vi.fn(async ({ server }) => { statuses[server] = 'connected'; }),
+      status: vi.fn(async () => ({ data: structuredClone(statuses) })),
+      disconnect: vi.fn(async ({ path: { name } }) => { statuses[name] = { status: 'disabled' }; }),
+      connect: vi.fn(async ({ path: { name } }) => { statuses[name] = { status: 'connected' }; }),
     },
   };
   return { client, config, statuses, idle: createIdleMcpReclaimer(client) };
@@ -25,8 +25,8 @@ describe('managed directory idle MCP lifecycle', () => {
     const report = vi.fn();
     const idle = createIdleMcpReclaimer(client, async () => true, report);
     await idle.check('active');
-    expect(client.session.active).not.toHaveBeenCalled();
-    client.session.active.mockResolvedValueOnce({ current: { type: 'busy' } });
+    expect(client.session.status).not.toHaveBeenCalled();
+    client.session.status.mockResolvedValueOnce({ data: { current: { type: 'busy' } } });
     await idle.check('idle');
     expect(client.mcp.disconnect).not.toHaveBeenCalled();
     await idle.check('idle');
@@ -50,21 +50,21 @@ describe('managed directory idle MCP lifecycle', () => {
     const idle = createIdleMcpReclaimer(client, canRelease);
     await vi.advanceTimersByTimeAsync(300_000);
     await idle.check();
-    expect(client.mcp.disconnect.mock.calls.map(([arg]) => arg.server)).toEqual(['second']);
+    expect(client.mcp.disconnect.mock.calls.map(([arg]) => arg.path.name)).toEqual(['second']);
     expect(idle.has('first')).toBe(false);
   });
 
   it('waits five minutes and restores only connections it released', async () => {
     const { client, idle } = fixture();
     await idle.check();
-    expect(client.session.active).not.toHaveBeenCalled();
+    expect(client.session.status).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(300_000);
     await idle.check();
-    expect(client.mcp.disconnect.mock.calls.map(([arg]) => arg.server)).toEqual(['first', 'second']);
+    expect(client.mcp.disconnect.mock.calls.map(([arg]) => arg.path.name)).toEqual(['first', 'second']);
     await idle.check();
     expect(client.mcp.disconnect).toHaveBeenCalledTimes(2);
     await idle.restore();
-    expect(client.mcp.connect.mock.calls.map(([arg]) => arg.server)).toEqual(['first', 'second']);
+    expect(client.mcp.connect.mock.calls.map(([arg]) => arg.path.name)).toEqual(['first', 'second']);
     expect(idle.has('first')).toBe(false);
   });
 
@@ -72,13 +72,13 @@ describe('managed directory idle MCP lifecycle', () => {
     const { client, idle } = fixture();
     for (const type of ['busy', 'retry']) {
       await vi.advanceTimersByTimeAsync(300_000);
-      client.session.active.mockResolvedValueOnce({ other: { type } });
+      client.session.status.mockResolvedValueOnce({ data: { other: { type } } });
       await idle.check();
     }
     await vi.advanceTimersByTimeAsync(300_000);
-    client.session.active.mockResolvedValueOnce(null);
+    client.session.status.mockResolvedValueOnce({ error: 'unavailable' });
     await idle.check();
-    client.session.active.mockRejectedValueOnce(new Error('offline'));
+    client.session.status.mockRejectedValueOnce(new Error('offline'));
     await expect(idle.check()).rejects.toThrow('offline');
     expect(client.mcp.disconnect).not.toHaveBeenCalled();
   });
@@ -87,11 +87,11 @@ describe('managed directory idle MCP lifecycle', () => {
     const { client, idle } = fixture();
     await vi.advanceTimersByTimeAsync(300_000);
     let resolve;
-    client.session.active.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    client.session.status.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
     const checking = idle.check();
     await Promise.resolve();
     const restoring = idle.restore();
-    resolve({});
+    resolve({ data: {} });
     await Promise.all([checking, restoring]);
     expect(client.mcp.disconnect).not.toHaveBeenCalled();
   });
@@ -117,7 +117,7 @@ describe('managed directory idle MCP lifecycle', () => {
     client.mcp.disconnect.mockRejectedValueOnce(new Error('lost response'));
     await idle.check();
     expect(client.mcp.disconnect).toHaveBeenCalledTimes(2);
-    config[0].info.mcp.servers.second.disabled = true;
+    config.mcp.second.enabled = false;
     client.mcp.connect.mockRejectedValueOnce(new Error('offline'));
     await expect(idle.restore()).rejects.toThrow('Unable to restore');
     expect(idle.has('first')).toBe(true);
@@ -126,23 +126,12 @@ describe('managed directory idle MCP lifecycle', () => {
     expect(idle.has('first')).toBe(false);
   });
 
-  it('retains sleeping servers when configuration is unavailable', async () => {
-    const { client, idle } = fixture();
-    await idle.check('idle');
-    client.config.get.mockResolvedValueOnce(null);
-    await expect(idle.restore()).rejects.toThrow('MCP configuration unavailable');
-    expect(idle.has('first')).toBe(true);
-    expect(client.mcp.connect).not.toHaveBeenCalled();
-    await idle.restore();
-    expect(idle.has('first')).toBe(false);
-  });
-
   it('stops cleanup after disposal even with a pending snapshot', async () => {
     const { client, idle } = fixture();
     await vi.advanceTimersByTimeAsync(300_000);
-    client.session.active.mockImplementationOnce(async () => {
+    client.session.status.mockImplementationOnce(async () => {
       idle.dispose();
-      return {};
+      return { data: {} };
     });
     await idle.check();
     await idle.restore();

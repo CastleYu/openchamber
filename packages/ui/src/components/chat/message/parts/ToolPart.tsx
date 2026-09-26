@@ -4,10 +4,14 @@ import { useMobileAppActions } from '@/apps/mobileAppContext';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { cn } from '@/lib/utils';
 import { SimpleMarkdownRenderer } from '../../MarkdownRenderer';
-import { FormMarkdown } from '../../FormMarkdown';
+import { QuestionMarkdown } from '../../QuestionMarkdown';
 import { MessageFilesDisplay } from '../../FileAttachment';
 import { getToolMetadata } from '@/lib/toolHelpers';
-import type { FilePart, Metadata, ToolInput, ToolPart as ToolPartType, ToolState as ToolStateUnion } from '@/lib/opencode/model';
+import type { ToolPart as ToolPartType, ToolState as ToolStateUnion, FilePart, Metadata, ToolInput } from '@/lib/opencode/model';
+import { opencodeClient } from '@/lib/opencode/client';
+import { executeDescription, executeOutputTruncation, executeScript, executeToolCalls, isExecuteTool } from '@/lib/opencode/tools';
+import { parseWebSearchOutput, webSearchProviderOf } from '@/lib/opencode/websearch';
+import { isFileChangeTool, isPatchTool, isQuestionTool, isShellTool, isSubagentTool } from '../toolKinds';
 import { toolDisplayStyles } from '@/lib/typography';
 import { WorkerHighlightedCode } from '@/components/code/WorkerHighlightedCode';
 import { useEffectiveDirectory } from '@/hooks/useEffectiveDirectory';
@@ -29,6 +33,7 @@ import {
     formatEditOutput,
     detectLanguageFromOutput,
     formatInputForDisplay,
+    renderTodoOutput,
     tryParseJsonOutput,
     coerceToText,
     capToolOutputText,
@@ -41,6 +46,7 @@ import { MinDurationShineText } from './MinDurationShineText';
 import { ToolRevealOnMount } from './ToolRevealOnMount';
 import { getToolIcon } from './toolPresentation';
 import { GuestToolTable } from './GuestToolTable';
+import { WebSearchResults } from './WebSearchResults';
 import type { JsonValue } from '@openchamber/sdk';
 import {
     guestToolTableRows,
@@ -62,7 +68,6 @@ import { areRenderRelevantPartsEqual } from '../renderCompare';
 import { useI18n } from '@/lib/i18n';
 import {
     extractFirstChangedLineFromDiff,
-    getApplyPatchFilePath,
     getDiffPatchEntries,
     getFirstChangedLineFromMetadata,
     getPatchText,
@@ -76,24 +81,7 @@ import { isEmbeddedSessionChat } from '@/components/layout/contextPanelEmbeddedC
 import { useStreamingTextThrottle } from '../../hooks/useStreamingTextThrottle';
 import { getStreamingOutputAppend, getToolOutput } from './toolOutput';
 import { toAbsoluteFilePath } from '@/lib/path-utils';
-import {
-    executeOutputTruncation,
-    executeScript,
-    executeToolCalls,
-    isEditTool,
-    isExecuteTool,
-    isReadTool,
-    isFileChangeTool,
-    isPatchTool,
-    isQuestionTool,
-    isShellTool,
-    isSubagentTool,
-    isWriteTool,
-    normalizeToolName,
-    toolDescription, type ToolDescription,
-    toolInputPath,
-    toolFileDiffs,
-} from '@/lib/opencode/tools';
+import { getToolDescriptionFallback } from './toolRenderUtils';
 import { ApplyPatchFileButtons } from './ApplyPatchFileButtons';
 import { openApplyPatchFileInEditor } from './applyPatchEditorAction';
 
@@ -114,6 +102,25 @@ interface ToolPartProps {
     onShowPopup?: (content: ToolPopupContent) => void;
     animateTailText?: boolean;
 }
+
+const normalizeToolName = (toolName: string | undefined | null): string => {
+    if (typeof toolName !== 'string') {
+        return '';
+    }
+
+    const trimmed = toolName.trim().toLowerCase();
+    if (!trimmed) {
+        return '';
+    }
+
+    if (trimmed.includes('.')) {
+        const dotParts = trimmed.split('.').filter(Boolean);
+        const last = dotParts[dotParts.length - 1];
+        if (last) return last;
+    }
+
+    return trimmed;
+};
 
 const formatDuration = (start: number, end?: number, now: number = Date.now()) => {
     const duration = Math.max(0, (end ?? now) - start);
@@ -203,21 +210,8 @@ const useDeferredExpandedContent = (isExpanded: boolean) => {
     return shouldRender;
 };
 
-const parseDiffStats = (metadata?: Metadata): { added: number; removed: number } | null => {
-    const files = toolFileDiffs(metadata);
-    if (files.length > 0) {
-        let added = 0;
-        let removed = 0;
-        for (const file of files) {
-            // Missing counts are unknown, not zero; never show a partial total.
-            if (file.additions === undefined || file.deletions === undefined) return null;
-            added += file.additions;
-            removed += file.deletions;
-        }
-        return { added, removed };
-    }
-
-    const diffText = getPatchText(metadata?.patch)
+const parseDiffStats = (metadata?: Record<string, unknown>): { added: number; removed: number } | null => {
+    const diffText = getPatchText((metadata as { patch?: unknown } | undefined)?.patch)
         ?? getPatchText(metadata?.diff);
     if (!diffText) return null;
 
@@ -420,44 +414,125 @@ const parseQuestionOutput = (output: string): Array<{ question: string; answer: 
 
 const getToolDescriptionPath = (part: ToolPartType, state: ToolStateUnion, currentDirectory: string): string | null => {
     const stateWithData = state as ToolStateWithMetadata;
-    const described = toolDescription(part.tool, stateWithData.input, stateWithData.metadata);
-    if (described?.kind !== 'path') {
+    const metadata = stateWithData.metadata;
+    const input = stateWithData.input;
+
+    if (isPatchTool(part.tool)) {
+        const files = Array.isArray(metadata?.files) ? metadata?.files : [];
+        const firstFile = files[0] as { file?: string; relativePath?: string; filePath?: string } | undefined;
+        const filePath = firstFile?.file || firstFile?.relativePath || firstFile?.filePath;
+        if (files.length > 1) return null;
+        if (typeof filePath === 'string') {
+            return getRelativePath(filePath, currentDirectory);
+        }
         return null;
     }
-    return getRelativePath(described.value, currentDirectory);
-};
 
-type DescriptionTranslate = (
-    key: 'chat.toolPart.questionsAsked' | 'chat.toolPart.filesCount' | 'chat.toolPart.moreToolCalls',
-    params: { count: number },
-) => string;
-
-/** Localized text for a tool description; paths are made relative to the project. */
-const describeTool = (described: ToolDescription | null, currentDirectory: string, t: DescriptionTranslate): string => {
-    if (!described) return '';
-    switch (described.kind) {
-        case 'path':
-            return getRelativePath(described.value, currentDirectory);
-        case 'text':
-            return described.value;
-        case 'questions':
-            return t('chat.toolPart.questionsAsked', { count: described.count });
-        case 'files':
-            return t('chat.toolPart.filesCount', { count: described.count });
-        case 'tools': {
-            const named = described.calls
-                .map(({ name, count }) => (count > 1 ? `${name} \u00d7${count}` : name))
-                .join(', ');
-            return described.overflow > 0
-                ? `${named}, ${t('chat.toolPart.moreToolCalls', { count: described.overflow })}`
-                : named;
+    if ((part.tool === 'edit' || part.tool === 'multiedit') && input) {
+        const filePath = input?.filePath || input?.file_path || input?.path || metadata?.filePath || metadata?.file_path || metadata?.path;
+        if (typeof filePath === 'string') {
+            return getRelativePath(filePath, currentDirectory);
         }
     }
+
+    if (part.tool === 'read' && input) {
+        const filePath = input?.filePath || input?.file_path || input?.path || metadata?.filePath || metadata?.file_path || metadata?.path;
+        if (typeof filePath === 'string') {
+            return getRelativePath(filePath, currentDirectory);
+        }
+    }
+
+    if (['write', 'create', 'file_write'].includes(part.tool) && input) {
+        const filePath = input?.filePath || input?.file_path || input?.path;
+        if (typeof filePath === 'string') {
+            return getRelativePath(filePath, currentDirectory);
+        }
+    }
+
+    if (part.tool === 'lsp' && input) {
+        const filePath = input?.filePath || input?.file_path || input?.path;
+        if (typeof filePath === 'string') {
+            return getRelativePath(filePath, currentDirectory);
+        }
+    }
+
+    return null;
 };
 
-const getToolDescription = (part: ToolPartType, state: ToolStateUnion, currentDirectory: string, t: DescriptionTranslate): string => {
+const getLspToolDescription = (input: Record<string, unknown> | undefined, currentDirectory: string): string => {
+    if (!input) {
+        return '';
+    }
+
+    const operation = typeof input.operation === 'string' ? input.operation : 'lsp';
+    if (operation === 'workspaceSymbol') {
+        const query = typeof input.query === 'string' && input.query.trim().length > 0
+            ? ` "${input.query.trim()}"`
+            : '';
+        return `${operation}${query}`;
+    }
+
+    const filePath = typeof input.filePath === 'string'
+        ? input.filePath
+        : typeof input.file_path === 'string'
+            ? input.file_path
+            : typeof input.path === 'string'
+                ? input.path
+                : '';
+    const displayPath = filePath ? getRelativePath(filePath, currentDirectory) : '';
+
+    if (operation === 'documentSymbol') {
+        return displayPath ? `${operation} ${displayPath}` : operation;
+    }
+
+    const line = typeof input.line === 'number' && Number.isFinite(input.line) ? Math.trunc(input.line) : undefined;
+    const character = typeof input.character === 'number' && Number.isFinite(input.character) ? Math.trunc(input.character) : undefined;
+    const position = line !== undefined && character !== undefined ? `:${line}:${character}` : '';
+
+    return displayPath ? `${operation} ${displayPath}${position}` : operation;
+};
+
+const getToolDescription = (part: ToolPartType, state: ToolStateUnion, currentDirectory: string, isExecute = false): string => {
     const stateWithData = state as ToolStateWithMetadata;
-    return describeTool(toolDescription(part.tool, stateWithData.input, stateWithData.metadata), currentDirectory, t);
+    const metadata = stateWithData.metadata;
+    const input = stateWithData.input;
+
+    if (isExecute) return executeDescription(input, metadata);
+
+    const filePathLabel = getToolDescriptionPath(part, state, currentDirectory);
+    if (filePathLabel) {
+        return filePathLabel;
+    }
+
+    if (isPatchTool(part.tool)) {
+        const files = Array.isArray(metadata?.files) ? metadata?.files : [];
+        if (files.length > 1) {
+            return `${files.length} files`;
+        }
+        return '';
+    }
+
+    // Question tool: show "Asked N question(s)"
+    if (isQuestionTool(part.tool) && input?.questions && Array.isArray(input.questions)) {
+        const count = input.questions.length;
+        return `Asked ${count} question${count !== 1 ? 's' : ''}`;
+    }
+
+    if (isShellTool(part.tool) && input?.command && typeof input.command === 'string') {
+        const firstLine = input.command.split('\n')[0];
+        return firstLine.substring(0, 100);
+    }
+
+    if (isSubagentTool(part.tool) && input?.description && typeof input.description === 'string') {
+        return input.description.substring(0, 80);
+    }
+
+    if (part.tool === 'lsp') {
+        return getLspToolDescription(input, currentDirectory);
+    }
+
+    const desc = input?.description || metadata?.description || ('title' in state && state.title) || '';
+    return getToolDescriptionFallback(part.tool, desc, input);
 };
 
 interface ToolScrollableSectionProps {
@@ -781,24 +856,42 @@ const ToolScrollableTextOutput: React.FC<{
 ToolScrollableTextOutput.displayName = 'ToolScrollableTextOutput';
 
 const getTaskSummaryLabel = (entry: TaskToolSummaryEntry): string => {
-    // `title` only reaches here from a legacy `<task_metadata>` block; a live
-    // v2 call is described from its own input.
     const title = entry.state?.title;
     if (typeof title === 'string' && title.trim().length > 0) {
         return title;
     }
 
-    const described = toolDescription(entry.tool, entry.state?.input, undefined);
-    if (described?.kind === 'files') {
-        const names = described.files.slice(0, 3).map((path) => path.split(/[\\/]/).pop() || path);
-        const remaining = described.files.length - names.length;
-        return `${names.join(', ')}${remaining > 0 ? ` +${remaining}` : ''}`;
+    const input = entry.state?.input;
+    if (input && typeof input === 'object') {
+        const pathCandidate = input.filePath ?? input.file_path ?? input.path;
+        if (typeof pathCandidate === 'string' && pathCandidate.trim().length > 0) {
+            return pathCandidate.trim();
+        }
+
+        const urlCandidate = input.url;
+        if (typeof urlCandidate === 'string' && urlCandidate.trim().length > 0) {
+            return urlCandidate.trim();
+        }
     }
-    return described && (described.kind === 'path' || described.kind === 'text') ? described.value.trim() : '';
+
+    return '';
 };
 
+const FILE_PATH_LABEL_TOOLS = new Set([
+    'read',
+    'view',
+    'file_read',
+    'cat',
+    'write',
+    'create',
+    'file_write',
+    'edit',
+    'multiedit',
+    'apply_patch',
+]);
+
 const shouldRenderGitPathLabel = (toolName: string, label: string): boolean => {
-    if (!isReadTool(toolName) && !isFileChangeTool(toolName)) {
+    if (!FILE_PATH_LABEL_TOOLS.has(toolName.toLowerCase())) {
         return false;
     }
 
@@ -1000,9 +1093,8 @@ const TaskToolSummary: React.FC<{
         }
     };
 
-    // v2 names the subagent to run in `input.agent`.
-    const agentType = typeof input?.agent === 'string'
-        ? input.agent
+    const agentType = typeof input?.subagent_type === 'string'
+        ? input.subagent_type
         : 'subagent';
 
     if (entries.length === 0 && !hasOutput && !sessionId) {
@@ -1198,6 +1290,8 @@ interface ToolExpandedContentProps {
     isExpanded: boolean;
     onShowPopup?: (content: ToolPopupContent) => void;
     presentation: GuestToolRule | null;
+    isExecute: boolean;
+    isWebSearch: boolean;
 }
 
 const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
@@ -1207,6 +1301,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
     isExpanded,
     onShowPopup,
     presentation,
+    isExecute,
+    isWebSearch,
 }) => {
     const { t } = useI18n();
     const runtime = React.useContext(RuntimeAPIContext);
@@ -1233,20 +1329,20 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
         [currentDirectory, diffContent, metadata]
     );
     const hasVisualDiffEntry = diffEntries.some((entry) => entry.renderMode === 'diff');
-    // `execute` renders its script and its call list itself, below.
+    const executeCode = React.useMemo(() => isExecute ? executeScript(input) : undefined, [input, isExecute]);
+    const executeCalls = React.useMemo(() => isExecute ? executeToolCalls(metadata) : [], [isExecute, metadata]);
+    const executeTruncation = React.useMemo(() => isExecute ? executeOutputTruncation(metadata) : null, [isExecute, metadata]);
+    const webSearchOutput = React.useMemo(
+        () => isWebSearch && state.status === 'completed' && hasStringOutput ? parseWebSearchOutput(outputString) : null,
+        [hasStringOutput, isWebSearch, outputString, state.status],
+    );
     const hideToolInputPreview = part.tool === 'openchamber'
         || part.tool === 'openchamber_web'
         || part.tool === 'openchamber_memory'
         || isPatchTool(part.tool)
-        || isEditTool(part.tool)
-        || isExecuteTool(part.tool);
-    const isExecute = isExecuteTool(part.tool);
-    const executeCode = React.useMemo(() => (isExecute ? executeScript(input) : undefined), [input, isExecute]);
-    const executeCalls = React.useMemo(() => (isExecute ? executeToolCalls(metadata) : []), [isExecute, metadata]);
-    const executeTruncation = React.useMemo(
-        () => (isExecute ? executeOutputTruncation(metadata) : null),
-        [isExecute, metadata],
-    );
+        || part.tool === 'edit'
+        || part.tool === 'multiedit'
+        || isExecute;
     const diagnosticSection = React.useMemo(
         () => getToolDiagnosticSection(part.tool, input, metadata, currentDirectory),
         [currentDirectory, input, metadata, part.tool],
@@ -1268,7 +1364,14 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
         return formatInputForDisplay(input, part.tool);
     }, [input, part.tool]);
     const hasInputText = !hideToolInputPreview && inputTextContent.trim().length > 0;
-    const isWriteLikeTool = isWriteTool(part.tool);
+    const isWriteLikeTool = part.tool === 'write' || part.tool === 'create' || part.tool === 'file_write';
+    const isTodoTool = part.tool === 'todowrite' || part.tool === 'todoread';
+    const todoContent = React.useMemo(() => {
+        if (Array.isArray(input?.todos)) {
+            return JSON.stringify(input.todos);
+        }
+        return outputString;
+    }, [input?.todos, outputString]);
     const writeLikeInputPatch = React.useMemo(() => {
         if (!isWriteLikeTool || !hasInputText) {
             return undefined;
@@ -1402,7 +1505,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                         <div className="space-y-2">
                             {parsedQA.map((qa, index) => (
                                 <div key={index} className="space-y-0.5">
-                                    <FormMarkdown content={qa.question} size="micro" className="text-muted-foreground" />
+                                    <QuestionMarkdown content={qa.question} size="micro" className="text-muted-foreground" />
                                     <div className="typography-meta text-foreground whitespace-pre-wrap">{qa.answer}</div>
                                 </div>
                             ))}
@@ -1439,7 +1542,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                                 {q.header ? (
                                     <div className="typography-micro text-muted-foreground">{coerceToText(q.header)}</div>
                                 ) : null}
-                                <FormMarkdown content={coerceToText(q.question)} size="meta" className="text-foreground" />
+                                <QuestionMarkdown content={coerceToText(q.question)} size="meta" className="text-foreground" />
                                 {Array.isArray(q.options) && q.options.length > 0 ? (
                                     <div className="flex flex-wrap gap-1 mt-0.5">
                                         {q.options.map((opt) => (
@@ -1467,7 +1570,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             );
         }
 
-        if (isFileChangeTool(part.tool) && (diffEntries.length > 0 || !!diagnosticSection)) {
+        if ((part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && (diffEntries.length > 0 || !!diagnosticSection)) {
             return renderScrollableBlock(
                 <div className="space-y-3">
                     {diffEntries.map((entry) => (
@@ -1526,6 +1629,13 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             return null;
         }
 
+        if (webSearchOutput) {
+            return renderScrollableBlock(
+                <WebSearchResults output={webSearchOutput} providerId={webSearchProviderOf(metadata)} />,
+                { className: 'p-1', maxHeightClass: 'max-h-[50vh]' },
+            );
+        }
+
         if (hasStringOutput && outputString.trim()) {
             const output = (
                 <ToolScrollableTextOutput
@@ -1557,6 +1667,47 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
     const shouldRenderResult = (state.status === 'completed' && 'output' in state)
         || (isShellTool(part.tool) && hasVisibleOutput);
 
+    if (isTodoTool) {
+        if (state.status === 'error' && 'error' in state) {
+            return (
+                <div className="relative pr-2 pb-2 pt-2 space-y-2 pl-4">
+                    <div className="typography-meta font-medium text-muted-foreground/80 mb-1">{t('chat.toolPart.error')}</div>
+                    <div className="typography-meta p-2 rounded-xl border" style={{
+                        backgroundColor: 'var(--status-error-background)',
+                        color: 'var(--status-error)',
+                        borderColor: 'var(--status-error-border)',
+                    }}>
+                        {state.error}
+                    </div>
+                </div>
+            );
+        }
+
+        const todoOutput = renderTodoOutput(todoContent, {
+            total: t('chat.todo.total'),
+            inProgress: t('chat.todo.inProgress'),
+            pending: t('chat.todo.pending'),
+            completed: t('chat.todo.completed'),
+            cancelled: t('chat.todo.cancelled'),
+        }, { unstyled: true });
+
+        return (
+            <div className="relative pr-2 pb-2 pt-2 space-y-2 pl-4">
+                {renderScrollableBlock(
+                    todoOutput ?? (
+                        <ToolScrollableTextOutput
+                            output={todoContent}
+                            part={part}
+                            metadata={metadata}
+                            input={input}
+                        />
+                    ),
+                    { className: 'p-2', maxHeightClass: 'max-h-[46vh]' },
+                )}
+            </div>
+        );
+    }
+
     return (
         <div
             className={cn(
@@ -1587,22 +1738,13 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                                     <ul className="space-y-0.5">
                                         {executeCalls.map((call, index) => (
                                             <li key={`${call.tool}-${index}`} className="flex min-w-0 items-baseline gap-2">
-                                                <span
-                                                    className="typography-code flex-shrink-0"
-                                                    style={call.status === 'error' ? TOOL_ERROR_TITLE_STYLE : undefined}
-                                                >
+                                                <span className="typography-code flex-shrink-0" style={call.status === 'error' ? TOOL_ERROR_TITLE_STYLE : undefined}>
                                                     {call.tool}
                                                 </span>
                                                 {call.status && call.status !== 'error' && call.status !== 'completed' ? (
-                                                    <span className="typography-micro flex-shrink-0 text-muted-foreground/70">
-                                                        {call.status}
-                                                    </span>
+                                                    <span className="typography-micro flex-shrink-0 text-muted-foreground/70">{call.status}</span>
                                                 ) : null}
-                                                {call.input ? (
-                                                    <span className="typography-meta truncate text-muted-foreground/70">
-                                                        {call.input}
-                                                    </span>
-                                                ) : null}
+                                                {call.input ? <span className="typography-meta truncate text-muted-foreground/70">{call.input}</span> : null}
                                             </li>
                                         ))}
                                     </ul>
@@ -1610,7 +1752,6 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                             ) : null}
                         </div>
                     ) : null}
-
                     {hasInputText ? (
                         <div className="my-1">
                             {renderScrollableBlock(
@@ -1638,7 +1779,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
                     {shouldRenderResult && (
                         <div>
-                            {isFileChangeTool(part.tool) && hasVisualDiffEntry ? (
+                            {(part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && hasVisualDiffEntry ? (
                                 <div className="mb-1 flex items-center justify-end gap-2">
                                     <DiffViewToggle
                                         mode={diffViewMode}
@@ -1681,13 +1822,15 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
 ToolExpandedContent.displayName = 'ToolExpandedContent';
 
-const ToolPartContent: React.FC<ToolPartProps> = ({
+const ToolPartContent: React.FC<ToolPartProps & { isExecute: boolean; isWebSearch: boolean }> = ({
     part,
     isExpanded,
     onToggle,
     isMobile,
     onShowPopup,
     animateTailText = true,
+    isExecute,
+    isWebSearch,
 }) => {
     const { t } = useI18n();
     const state = part.state;
@@ -1898,24 +2041,24 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         return metadataTaskSummaryEntries;
     }, [childSessionTaskSummaryEntries, metadataTaskSummaryEntries]);
     const diffStats = React.useMemo(() => {
-        return (isEditTool(normalizedPartTool) || isPatchTool(normalizedPartTool))
+        return (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || isPatchTool(normalizedPartTool))
             ? parseDiffStats(metadata)
             : null;
     }, [metadata, normalizedPartTool]);
     const writeLineCount = React.useMemo(() => {
-        return isWriteTool(normalizedPartTool) ? parseWriteLineCount(input) : null;
+        return normalizedPartTool === 'write' ? parseWriteLineCount(input) : null;
     }, [input, normalizedPartTool]);
     const isMultiFileApplyPatch = isPatchTool(normalizedPartTool) && Array.isArray(metadata?.files) && (metadata?.files as []).length > 1;
     const normalizedPart = normalizedPartTool !== part.tool ? ({ ...part, tool: normalizedPartTool } as ToolPartType) : part;
     const descriptionPath = getToolDescriptionPath(normalizedPart, state, currentDirectory);
-    const builtInDescription = getToolDescription(normalizedPart, state, currentDirectory, t);
+    const builtInDescription = getToolDescription(normalizedPart, state, currentDirectory, isExecute);
     const stateOutput = typeof stateWithData.output === 'string' ? stateWithData.output : undefined;
     const guestHeader = React.useMemo(
         () => (presentation ? renderGuestToolHeader(presentation, { input, output: stateOutput, metadata }) : null),
         [input, metadata, presentation, stateOutput],
     );
     const description = guestHeader?.subtitle ?? builtInDescription;
-    const displayName = guestHeader?.title ?? getToolMetadata(normalizedPartTool || part.tool).displayName;
+    const displayName = guestHeader?.title ?? (isExecute ? t('chat.toolPart.script') : getToolMetadata(normalizedPartTool || part.tool).displayName);
     
     // Tool title/description — shown inline as context. A subtitle the
     // extension declared replaces it, since both land in the same slot.
@@ -1930,18 +2073,25 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         if (isPatchTool(normalizedPartTool)) {
             return null;
         }
+        if (normalizedPartTool === 'lsp') {
+            return null;
+        }
         if (
             descriptionPath
-            && (isPatchTool(normalizedPartTool) || isEditTool(normalizedPartTool) || isWriteTool(normalizedPartTool))
+            && (isPatchTool(normalizedPartTool) || normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || normalizedPartTool === 'write')
         ) {
             return null;
+        }
+        const title = (stateWithData as { title?: string }).title;
+        if (typeof title === 'string' && title.trim().length > 0) {
+            return title;
         }
         const inputDesc = input?.description;
         if (typeof inputDesc === 'string' && inputDesc.trim().length > 0) {
             return inputDesc;
         }
         return null;
-    }, [descriptionPath, guestSubtitle, normalizedPartTool, input]);
+    }, [descriptionPath, guestSubtitle, normalizedPartTool, stateWithData, input]);
     const runtime = React.useContext(RuntimeAPIContext);
     const mobileActions = useMobileAppActions();
 
@@ -1951,8 +2101,11 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         }
 
         event.stopPropagation();
-        const rawPath = getApplyPatchFilePath(file);
-        const displayPath = rawPath ? getRelativePath(rawPath, currentDirectory) : '';
+        const displayPath = typeof file.relativePath === 'string'
+            ? file.relativePath
+            : typeof file.filePath === 'string'
+                ? getRelativePath(file.filePath, currentDirectory)
+                : '';
         openApplyPatchFileInEditor({
             currentDirectory,
             diffLabel: `${displayPath} (changes)`,
@@ -1971,7 +2124,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         let filePath: unknown;
         let targetLine: number | undefined;
         let toolDiff: string | undefined;
-        if (isEditTool(normalizedPartTool)) {
+        if (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit') {
             filePath = input?.filePath || input?.file_path || input?.path || metadata?.filePath || metadata?.file_path || metadata?.path;
             if (typeof filePath === 'string') {
                 toolDiff = getPrimaryDiffFromMetadata(normalizedPartTool, metadata, filePath);
@@ -1983,14 +2136,18 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                 toolDiff = getPrimaryDiffFromMetadata(normalizedPartTool, metadata, filePath);
                 targetLine = getFirstChangedLineFromMetadata(normalizedPartTool, metadata, filePath);
             }
-        } else if (isWriteTool(normalizedPartTool)) {
-            filePath = toolInputPath(input);
+        } else if (['write', 'create', 'file_write'].includes(normalizedPartTool)) {
+            filePath = input?.filePath || input?.file_path || input?.path || metadata?.filePath || metadata?.file_path || metadata?.path;
+        } else if (normalizedPartTool === 'lsp') {
+            filePath = input?.filePath || input?.file_path || input?.path;
+            const line = input?.line;
+            targetLine = typeof line === 'number' && Number.isFinite(line) ? Math.trunc(line) : undefined;
         }
 
         if (typeof filePath === 'string') {
             e.stopPropagation();
             const absolutePath = toAbsoluteFilePath(currentDirectory, filePath);
-            if (runtime.runtime.isVSCode && toolDiff && (isEditTool(normalizedPartTool) || isPatchTool(normalizedPartTool))) {
+            if (runtime.runtime.isVSCode && toolDiff && (normalizedPartTool === 'edit' || normalizedPartTool === 'multiedit' || isPatchTool(normalizedPartTool))) {
                 const label = `${getRelativePath(absolutePath, currentDirectory)} (changes)`;
                 void runtime.editor.openDiff('', absolutePath, label, { line: targetLine, patch: toolDiff });
                 return;
@@ -2036,7 +2193,7 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
         if (!quickOpenTarget) return;
         const { absolutePath, line, toolDiff, toolName } = quickOpenTarget;
         if (runtime?.editor) {
-            if (runtime.runtime.isVSCode && toolDiff && (isEditTool(toolName) || isPatchTool(toolName))) {
+            if (runtime.runtime.isVSCode && toolDiff && (toolName === 'edit' || toolName === 'multiedit' || isPatchTool(toolName))) {
                 const label = `${getRelativePath(absolutePath, currentDirectory)} (changes)`;
                 void runtime.editor.openDiff('', absolutePath, label, { line, patch: toolDiff });
                 return;
@@ -2114,7 +2271,6 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                                 </MinDurationShineText>
                             </div>
                             <ApplyPatchFileButtons
-                                currentDirectory={currentDirectory}
                                 metadata={metadata}
                                 animate={animateTailText}
                                 showFileIcons={showToolFileIcons}
@@ -2203,7 +2359,10 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                                     {justificationText}
                                 </span>
                             )}
-                            {!justificationText && description && (
+                            {!justificationText && normalizedPartTool === 'lsp' && descriptionPath ? (
+                                renderAnimatedPathWithIcon(descriptionPath, animateTailText, false, showToolFileIcons)
+                            ) : null}
+                            {!justificationText && normalizedPartTool !== 'lsp' && description && (
                                 descriptionPath && description === descriptionPath ? (
                                     renderAnimatedPathWithIcon(descriptionPath, animateTailText, false, showToolFileIcons)
                                 ) : (
@@ -2275,6 +2434,8 @@ const ToolPartContent: React.FC<ToolPartProps> = ({
                                 isExpanded={isExpanded}
                                 onShowPopup={onShowPopup}
                                 presentation={presentation}
+                                isExecute={isExecute}
+                                isWebSearch={isWebSearch}
                             />
                         </div>
                     ) : null}
@@ -2336,7 +2497,13 @@ class ToolPartErrorBoundary extends React.Component<{
 const ToolPart: React.FC<ToolPartProps> = (props) => {
     const { t } = useI18n();
     const toolName = normalizeToolName(props.part.tool) || 'tool';
-    const displayName = getToolMetadata(toolName).displayName;
+    const generation = React.useSyncExternalStore(
+        (listener) => opencodeClient.subscribeRuntime(listener),
+        () => opencodeClient.getBoundRuntime()?.generation,
+    );
+    const isExecute = generation === 'oc2' && isExecuteTool(props.part.tool);
+    const isWebSearch = generation === 'oc2' && props.part.tool === 'websearch';
+    const displayName = isExecute ? t('chat.toolPart.script') : getToolMetadata(toolName).displayName;
 
     return (
         <ToolPartErrorBoundary
@@ -2345,7 +2512,7 @@ const ToolPart: React.FC<ToolPartProps> = (props) => {
             resetKey={props.part}
             toolName={toolName}
         >
-            <ToolPartContent {...props} />
+            <ToolPartContent {...props} isExecute={isExecute} isWebSearch={isWebSearch} />
         </ToolPartErrorBoundary>
     );
 };

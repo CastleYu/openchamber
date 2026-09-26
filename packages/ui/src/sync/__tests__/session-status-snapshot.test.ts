@@ -10,7 +10,7 @@ import {
   shouldTriggerStaleResync,
 } from "../sync-context"
 
-type StatusSnapshot = Record<string, SessionStatus>
+type StatusSnapshot = Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }>
 
 function createDirectoryStore(initial: Partial<State>): StoreApi<DirectoryStore> {
   return create<DirectoryStore>()((set) => ({

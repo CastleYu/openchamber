@@ -269,7 +269,7 @@ export const debugUtils = {
     let opencodeHealth: unknown = null;
 
     try {
-      pathInfo = await opencodeClient.getLocation(currentDirectory);
+      pathInfo = await opencodeClient.getBootstrapPath(currentDirectory);
     } catch (error) {
       pathInfo = { error: error instanceof Error ? error.message : String(error) };
     }
@@ -283,10 +283,7 @@ export const debugUtils = {
     settingsInfo = await safeFetchJson('/api/config/settings');
 
     try {
-      // OpenChamber's own health route. Every field read below
-      // (`openCodePort`, `openCodeRunning`, `isOpenCodeReady`, ...) is
-      // OpenChamber's; OpenCode 2.0.8 removed `/api/health` entirely.
-      const resp = await runtimeFetch('/health');
+      const resp = await runtimeFetch('/api/health');
       const contentType = resp.headers.get('content-type') || '';
       const body = await safeText(resp);
       const isJson = contentType.toLowerCase().includes('application/json');

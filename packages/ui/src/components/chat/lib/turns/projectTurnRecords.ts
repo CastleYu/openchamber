@@ -15,6 +15,14 @@ const resolveMessageRole = (message: ChatMessageEntry): string => {
     return typeof role === 'string' ? role : '';
 };
 
+const getMessageParentId = (message: ChatMessageEntry): string | undefined => {
+    const parentId = (message.info as { parentID?: unknown }).parentID;
+    if (typeof parentId !== 'string' || parentId.trim().length === 0) {
+        return undefined;
+    }
+    return parentId;
+};
+
 const getMessageCreatedAt = (message: ChatMessageEntry): number | undefined => {
     const created = (message.info as { time?: { created?: unknown } }).time?.created;
     return typeof created === 'number' ? created : undefined;
@@ -40,6 +48,7 @@ const createTurnMessageRecord = (message: ChatMessageEntry, order: number): Turn
     return {
         messageId: message.info.id,
         role,
+        parentMessageId: getMessageParentId(message),
         message,
         order,
     };
@@ -77,18 +86,18 @@ interface ProjectTurnRecordsOptions {
     showTextJustificationActivity: boolean;
     showTurnChangedFiles: boolean;
     /**
-     * When true, a turn whose user message is hidden (no visible display parts,
-     * e.g. a prompt OpenChamber sent on the user's behalf) is merged into the
-     * previous turn instead of starting a new one.
+     * When set, a turn whose user message is hidden (no visible display parts,
+     * e.g. synthetic subagent-completion nudges) is merged into the previous
+     * turn instead of starting a new one.
      */
-    mergeHiddenUserTurns?: boolean;
+    mergeHiddenUserTurns?: { planModeEnabled: boolean };
 }
 
 const DEFAULT_OPTIONS: ProjectTurnRecordsOptions = {
     previousProjection: null,
     showTextJustificationActivity: false,
     showTurnChangedFiles: false,
-    mergeHiddenUserTurns: false,
+    mergeHiddenUserTurns: undefined,
 };
 
 const areSameMessageRefs = (left: ChatMessageEntry[], right: ChatMessageEntry[]): boolean => {
@@ -120,13 +129,14 @@ const hydrateTurnRecord = (
 ): TurnRecord => {
     turn.summary = projectTurnSummary(turn.assistantMessages);
     turn.summaryText = turn.summary.text ?? getUserSummaryBody(turn.userMessage);
-    // Changed files and their line counts are only shown under a finished
-    // answer, so tool patches are not parsed while the turn still streams.
+    turn.diffStats = projectTurnDiffStats(turn.userMessage);
+    // The list is only shown under a finished answer, so tool patches are not
+    // parsed while the turn still streams.
     const finalMessage = turn.assistantMessages[turn.assistantMessages.length - 1];
     const hasFinalAnswer = finalMessage?.info.role === 'assistant' && finalMessage.info.finish === 'stop';
-    const changedFiles = hasFinalAnswer ? projectTurnChangedFiles(turn.assistantMessages) : undefined;
-    turn.diffStats = projectTurnDiffStats(changedFiles);
-    turn.changedFiles = effectiveOptions.showTurnChangedFiles ? changedFiles : undefined;
+    turn.changedFiles = effectiveOptions.showTurnChangedFiles && hasFinalAnswer
+        ? projectTurnChangedFiles(turn.assistantMessages, turn.userMessage)
+        : undefined;
 
     const activity = projectTurnActivity({
         turnId: turn.turnId,
@@ -190,28 +200,13 @@ export const projectTurnRecords = (
     };
 
     const turns: TurnRecord[] = [];
+    const turnByUserId = new Map<string, TurnRecord>();
     const groupedMessageIds = new Set<string>();
 
     const mergeHiddenUserTurns = effectiveOptions.mergeHiddenUserTurns;
 
-    // v2 assistant messages carry no parent id: a reply belongs to the last
-    // user message before it, so one ordered pass does the grouping. An
-    // assistant message with no user message ahead of it stays ungrouped.
-    let currentTurn: TurnRecord | undefined;
-
     messages.forEach((message, index) => {
         const role = resolveMessageRole(message);
-        if (role === 'assistant') {
-            if (!currentTurn) return;
-            currentTurn.assistantMessages.push(message);
-            currentTurn.assistantMessageIds.push(message.info.id);
-            currentTurn.messages.push(createTurnMessageRecord(message, index));
-            if (!currentTurn.headerMessageId) {
-                currentTurn.headerMessageId = message.info.id;
-            }
-            groupedMessageIds.add(message.info.id);
-            return;
-        }
         if (role !== 'user') {
             return;
         }
@@ -220,9 +215,9 @@ export const projectTurnRecords = (
         if (
             mergeHiddenUserTurns
             && previousTurn
-            && isHiddenUserMessage(message)
+            && isHiddenUserMessage(message, { planModeEnabled: mergeHiddenUserTurns.planModeEnabled })
         ) {
-            currentTurn = previousTurn;
+            turnByUserId.set(message.info.id, previousTurn);
             previousTurn.messages.push(createTurnMessageRecord(message, index));
             groupedMessageIds.add(message.info.id);
             return;
@@ -251,7 +246,35 @@ export const projectTurnRecords = (
             },
         };
         turns.push(turn);
-        currentTurn = turn;
+        turnByUserId.set(turn.userMessageId, turn);
+        groupedMessageIds.add(message.info.id);
+    });
+
+    let currentTurn: TurnRecord | undefined;
+    messages.forEach((message, index) => {
+        const role = resolveMessageRole(message);
+        if (role === 'user') {
+            currentTurn = turnByUserId.get(message.info.id);
+            return;
+        }
+        if (role !== 'assistant') {
+            return;
+        }
+
+        const parentId = getMessageParentId(message);
+        // OC1 names the user message. OC2 omits parentID and its ordered
+        // message stream makes the most recent user turn authoritative.
+        const targetTurn = parentId ? turnByUserId.get(parentId) : currentTurn;
+        if (!targetTurn) {
+            return;
+        }
+
+        targetTurn.assistantMessages.push(message);
+        targetTurn.assistantMessageIds.push(message.info.id);
+        targetTurn.messages.push(createTurnMessageRecord(message, index));
+        if (!targetTurn.headerMessageId) {
+            targetTurn.headerMessageId = message.info.id;
+        }
         groupedMessageIds.add(message.info.id);
     });
 

@@ -504,12 +504,6 @@ svg.animate-spin {
   -webkit-app-region: drag;
 }
 
-/* Native drag regions still intercept pointer input beneath portal dialogs.
-   Restore them when the last dialog closes. */
-.oc-dialog-open .app-region-drag {
-  -webkit-app-region: no-drag;
-}
-
 .app-region-no-drag {
   -webkit-app-region: no-drag;
 }
@@ -642,6 +636,12 @@ html:not(.dark) .chat-scroll {
   scrollbar-gutter: unset !important;
 }
 
+/* Extensions can cross the overflow threshold as cards expand or the catalog loads. */
+.overlay-scrollbar-target:has(> .extensions-settings-page),
+.extensions-settings-page > .overlay-scrollbar-target {
+  scrollbar-gutter: stable !important;
+}
+
 .overlay-scrollbar-target::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
@@ -672,13 +672,6 @@ html:not(.dark) .chat-scroll {
    Follow overflow, not hover visibility, so showing the thumb never shifts text.
    Direct-child matching prevents nested scrollers from reserving space twice. */
 .overlay-scrollbar-wrapper:has(> .overlay-scrollbar > .overlay-scrollbar__thumb--vertical:not([hidden])) {
-  padding-right: 6px;
-}
-
-/* Settings pages cross the overflow threshold all the time (collapsible
-   sections, catalogs loading), so they reserve the thumb's space up front
-   instead of shifting content the moment a scrollbar appears. */
-.overlay-scrollbar-wrapper--stable-gutter {
   padding-right: 6px;
 }
 
@@ -1096,15 +1089,15 @@ html:not(.dark) .chat-scroll {
   font-size: var(--text-code) !important;
 }
 
-.form-markdown > .markdown-content.markdown-tool {
+.question-markdown > .markdown-content.markdown-tool {
   font-size: inherit !important;
 }
 
-.form-markdown > .markdown-content > [data-md-block]:first-child > :first-child {
+.question-markdown > .markdown-content > [data-md-block]:first-child > :first-child {
   margin-top: 0;
 }
 
-.form-markdown > .markdown-content > [data-md-block]:last-child > :last-child {
+.question-markdown > .markdown-content > [data-md-block]:last-child > :last-child {
   margin-bottom: 0;
 }
 

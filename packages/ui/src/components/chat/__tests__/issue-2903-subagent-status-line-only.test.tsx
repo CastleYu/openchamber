@@ -28,9 +28,7 @@ mock.module('sonner', () => ({
 mock.module('@/components/ui', () => ({
   toast: { info: () => undefined, error: () => undefined, success: () => undefined },
 }));
-let mockIdCounter = 0;
 mock.module('@/lib/opencode/client', () => ({
-  ascendingId: (prefix: string) => `${prefix}_${(mockIdCounter += 1).toString(16).padStart(12, '0')}`,
   opencodeClient: {
     getDirectory: () => '/repo',
     setDirectory: () => undefined,
@@ -172,13 +170,11 @@ describe('issue #2903 busy embedded subagent status-line-only', () => {
       status: 'complete',
       session: [{
         id: SESSION_ID,
-        projectID: 'project',
         title: 'Audit Searchbar implementation',
         time: { created: 1, updated: 1 },
+        version: '1',
         directory: DIRECTORY,
-        cost: 0,
-        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-      }],
+      } as State['session'][number]],
       message: { [SESSION_ID]: messages },
       part,
     } as Partial<State>);

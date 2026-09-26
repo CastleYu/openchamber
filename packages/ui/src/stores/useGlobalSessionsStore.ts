@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Session } from '@/lib/opencode/model';
 import { opencodeClient } from '@/lib/opencode/client';
-import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived, type SessionPageLister } from '@/stores/globalSessions';
+import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived, type SessionPager } from '@/stores/globalSessions';
 import { getReviewTransferDirection, type ReviewTransferDirection } from '@/lib/reviewFlow';
 import { getOriginalSessionID, getReviewSessionID } from '@/lib/sessionReviewMetadata';
 import { normalizePath } from '@/lib/pathNormalization';
@@ -42,7 +42,6 @@ type GlobalSessionsState = {
   reviewTransferBySessionId: Map<string, ReviewTransferDirection>;
   mutationRevision: number;
   mutationRevisionBySessionId: Map<string, number>;
-  /** A complete global snapshot has arrived for this runtime. */
   hasLoaded: boolean;
   managedChatsHydrated: boolean;
   status: GlobalSessionsStatus;
@@ -93,7 +92,13 @@ let loadGeneration = 0;
 export const mergeLiveSessionWithGlobalSession = (
   liveSession: Session,
   globalSession: Session,
-): Session => mergeSessionDirectoryMetadata(liveSession, globalSession);
+): Session => {
+  const merged = mergeSessionDirectoryMetadata(liveSession, globalSession);
+  if (merged.share !== globalSession.share) {
+    return { ...merged, share: globalSession.share };
+  }
+  return merged;
+};
 
 const buildSessionsByDirectory = (sessions: Session[]): Map<string, Session[]> => {
   const next = new Map<string, Session[]>();
@@ -113,26 +118,32 @@ const buildSessionsByDirectory = (sessions: Session[]): Map<string, Session[]> =
 };
 
 const getSessionSignature = (session: Session): string => {
+  const record = session as Session & { parentID?: string | null; slug?: string | null };
   return [
     session.id,
     session.title ?? '',
-    session.parentID ?? '',
+    record.parentID ?? '',
+    record.slug ?? '',
     session.time?.created ?? 0,
     session.time?.updated ?? 0,
     session.time?.archived ?? 0,
-    JSON.stringify(session.metadata ?? null),
+    session.share?.url ?? '',
+    JSON.stringify((session as Session & { metadata?: unknown }).metadata ?? null),
     resolveGlobalSessionDirectory(session) ?? '',
   ].join(':');
 };
 
 const getSessionStructuralSignature = (session: Session): string => {
+  const record = session as Session & { parentID?: string | null; slug?: string | null };
   return [
     session.id,
     session.title ?? '',
-    session.parentID ?? '',
+    record.parentID ?? '',
+    record.slug ?? '',
     session.time?.created ?? 0,
     session.time?.archived ?? 0,
-    JSON.stringify(session.metadata ?? null),
+    session.share?.url ?? '',
+    JSON.stringify((session as Session & { metadata?: unknown }).metadata ?? null),
     resolveGlobalSessionDirectory(session) ?? '',
   ].join(':');
 };
@@ -216,10 +227,8 @@ type DirectoryPageResult = {
   errors: unknown[];
 };
 
-/** The session-list transport, bound once so paging code stays testable. */
-const listSessionPage: SessionPageLister = (options) => opencodeClient.listSessionsPage(options);
-
 const fetchDirectoryPages = async (
+  sdk: SessionPager,
   directories: Set<string>,
 ): Promise<DirectoryPageResult> => {
   const currentDirectory = normalizePath(opencodeClient.getDirectory());
@@ -234,10 +243,11 @@ const fetchDirectoryPages = async (
         status: 'fulfilled' as const,
         value: {
           directory,
-          // One request per directory, split client-side: archive state is
-          // OpenChamber's own and the session list has no archived filter.
+          // One inclusive request per directory: the server has no filter that
+          // returns only active sessions including restored (`time.archived`
+          // falsy-but-present) rows, so fetch everything and split client-side.
           sessions: await withDirectorySessionRefreshSlot(() => (
-            listGlobalSessionPages(listSessionPage, { directory, pageSize: PAGE_SIZE })
+            listGlobalSessionPages(sdk, { directory, archived: true, narrowToArchived: false, pageSize: PAGE_SIZE })
           )),
         },
       };
@@ -323,7 +333,7 @@ const applySnapshot = (
   status: GlobalSessionsStatus,
   /** False for a partial page merged mid-load: the lists are incomplete, so
       they must not claim the authority `hasLoaded` grants. */
-  markLoaded = status === 'ready',
+  markLoaded = true,
 ): Partial<GlobalSessionsState> | GlobalSessionsState => {
   if (isVSCodeRuntime()) {
     activeSessions = filterManagedChatsForRuntime(activeSessions, true);
@@ -685,13 +695,19 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
         if (generation !== loadGeneration) return { activeSessions: [], archivedSessions: [] };
         rootsReady = true;
         get().rehydrateManagedChatSessions();
-        // One fetch of every session, split client-side: archive state is
-        // OpenChamber's own, so the server list cannot filter on it.
+        set((state) => (state.status === 'loading' ? state : { status: 'loading' }));
+        const sdk = opencodeClient;
+        // One inclusive fetch, split client-side. The server's
+        // `time_archived IS NULL` active filter would exclude restored
+        // sessions (`time.archived` falsy-but-present), so an
+        // `archived: false` request cannot produce a truthful active list.
         // Thousands of sessions paginate for seconds. Show the newest page as
         // soon as it lands and keep loading the rest silently; the complete
         // snapshot below is still the only authoritative result.
         let firstPageMerged = false;
-        const allSessions = await listGlobalSessionPages(listSessionPage, {
+        const allSessions = await listGlobalSessionPages(sdk, {
+          archived: true,
+          narrowToArchived: false,
           pageSize: PAGE_SIZE,
           onPage: (page) => {
             if (firstPageMerged || generation !== loadGeneration) return;
@@ -746,7 +762,6 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
     })();
 
     inflightLoad = loadPromise;
-    set({ status: 'loading' });
     const clearInflightLoad = () => {
       if (inflightLoad === loadPromise) {
         inflightLoad = null;
@@ -776,7 +791,8 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
       return { activeSessions: state.activeSessions, archivedSessions: state.archivedSessions };
     }
     get().rehydrateManagedChatSessions();
-    const fetched = await fetchDirectoryPages(directorySet);
+    const sdk = opencodeClient;
+    const fetched = await fetchDirectoryPages(sdk, directorySet);
 
     if (generation !== loadGeneration) {
       const state = get();

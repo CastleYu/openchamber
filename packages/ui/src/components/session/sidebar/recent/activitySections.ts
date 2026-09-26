@@ -9,7 +9,6 @@ type SidebarActivityItem = {
   projectId: string | null;
   groupDirectory: string | null;
   secondaryMeta: { projectLabel?: string | null; branchLabel?: string | null } | null;
-  getSecondaryMeta?: (sessionId: string) => SidebarActivityItem['secondaryMeta'];
 };
 
 type RecentActivitySection = {
@@ -67,18 +66,6 @@ export const deriveRecentSessions = (
   });
 };
 
-const attachRecentWorktrees = (
-  node: SessionNode,
-  getSessionLocation: (sessionId: string) => RecentSessionLocation | null,
-): SessionNode => {
-  const worktree = getSessionLocation(node.session.id)?.worktree ?? null;
-  const children = node.children.map((child) => attachRecentWorktrees(child, getSessionLocation));
-  if (worktree === node.worktree && children.every((child, index) => child === node.children[index])) {
-    return node;
-  }
-  return { ...node, worktree, children };
-};
-
 export const deriveRecentActivitySections = ({
   sessions,
   getSessionLocation,
@@ -94,22 +81,14 @@ export const deriveRecentActivitySections = ({
   items: sessions.flatMap((session) => {
     if (!matchesSidebarSessionQuery(session, query)) return [];
     const location = getSessionLocation(session.id);
-    const node = getSessionNode?.(session) ?? { session, children: [], worktree: null };
     return [{
-      node: attachRecentWorktrees(node, getSessionLocation),
+      node: getSessionNode?.(session) ?? { session, children: [], worktree: null },
       projectId: location?.projectId ?? null,
       groupDirectory: location?.groupDirectory ?? session.directory ?? null,
       secondaryMeta: location ? {
         projectLabel: location.projectLabel,
         branchLabel: location.branchLabel,
       } : null,
-      getSecondaryMeta: (sessionId: string) => {
-        const childLocation = getSessionLocation(sessionId);
-        return childLocation ? {
-          projectLabel: childLocation.projectLabel,
-          branchLabel: childLocation.branchLabel,
-        } : null;
-      },
     }];
   }),
 }];

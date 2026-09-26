@@ -25,7 +25,7 @@ export const computeSubtreeIds = (sessions: Session[], rootId: string): Set<stri
   return ids
 }
 
-export const areRequestArraysReferentiallyEqual = <T extends BlockingRequest>(left: T[], right: T[]): boolean => {
+export const areRequestArraysReferentiallyEqual = <T>(left: T[], right: T[]): boolean => {
   if (left === right) return true
   if (left.length !== right.length) return false
   for (let index = 0; index < left.length; index += 1) {
@@ -34,11 +34,12 @@ export const areRequestArraysReferentiallyEqual = <T extends BlockingRequest>(le
   return true
 }
 
-export const collectScopedBlockingRequests = <T extends BlockingRequest>(
+export const collectScopedRequests = <T>(
   sessions: Session[],
   requestsBySession: Record<string, T[] | undefined>,
   sessionID: string | null,
   empty: T[],
+  getID: (request: T) => string,
 ): T[] => {
   if (!sessionID) return empty
 
@@ -51,11 +52,16 @@ export const collectScopedBlockingRequests = <T extends BlockingRequest>(
     const entries = requestsBySession[id]
     if (!entries) continue
     for (const entry of entries) {
-      if (seen.has(entry.id)) continue
-      seen.add(entry.id)
+      const id = getID(entry)
+      if (seen.has(id)) continue
+      seen.add(id)
       result.push(entry)
     }
   }
 
   return result.length === 0 ? empty : result
 }
+
+export const collectScopedBlockingRequests = <T extends BlockingRequest>(
+  sessions: Session[], requestsBySession: Record<string, T[] | undefined>, sessionID: string | null, empty: T[],
+): T[] => collectScopedRequests(sessions, requestsBySession, sessionID, empty, (request) => request.id)

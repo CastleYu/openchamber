@@ -1,8 +1,8 @@
 import React from 'react';
 import type { FormField } from '@opencode/client';
 import { Icon } from '@/components/icon/Icon';
+import { Button } from '@/components/ui/button';
 
-import { cn } from '@/lib/utils';
 import { isIMECompositionEvent } from '@/lib/ime';
 import { toast } from '@/components/ui';
 import type { FormRequest } from '@/lib/opencode/model';
@@ -14,6 +14,8 @@ import { useI18n } from '@/lib/i18n';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { serializeFormAsJson, serializeFormAsMarkdown } from './formSerializers';
 import { FormFieldControl } from './FormFieldControl';
+import { readWebSearchConsent } from '@/lib/opencode/websearch';
+import { WebSearchConsentCard } from './WebSearchConsent';
 import {
     type FormValues,
     buildFormAnswer,
@@ -37,6 +39,12 @@ interface FormCardProps {
  * a `when` clause appear and disappear as their controlling field changes.
  */
 export const FormCard: React.FC<FormCardProps> = ({ form }) => {
+    const consent = readWebSearchConsent(form);
+    if (consent) return <WebSearchConsentCard form={form} consent={consent} />;
+    return <GenericFormCard form={form} />;
+};
+
+const GenericFormCard: React.FC<FormCardProps> = ({ form }) => {
     const { t } = useI18n();
     const isMobile = useUIStore((state) => state.isMobile);
     const currentSessionId = useSessionUIStore((state) => state.currentSessionId);
@@ -159,24 +167,26 @@ export const FormCard: React.FC<FormCardProps> = ({ form }) => {
                                 </span>
                             ) : null}
                             <div className="ml-auto flex items-center gap-0.5">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => void handleCopy('markdown')}
                                     title={t('chat.questionCard.copyMarkdown')}
                                     aria-label={t('chat.questionCard.copyMarkdown')}
-                                    className="rounded p-1 text-muted-foreground/70 transition-colors hover:bg-interactive-hover/30 hover:text-foreground"
+                                    variant="ghost"
+                                    size="icon"
                                 >
                                     <Icon name="file-text" className="h-3 w-3" />
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
                                     onClick={() => void handleCopy('json')}
                                     title={t('chat.questionCard.copyJson')}
                                     aria-label={t('chat.questionCard.copyJson')}
-                                    className="rounded p-1 text-muted-foreground/70 transition-colors hover:bg-interactive-hover/30 hover:text-foreground"
+                                    variant="ghost"
+                                    size="icon"
                                 >
                                     <Icon name="code" className="h-3 w-3" />
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -184,33 +194,26 @@ export const FormCard: React.FC<FormCardProps> = ({ form }) => {
                     <div className="px-2 py-2 space-y-1">{shown.map(renderField)}</div>
 
                     <div className="px-2 pb-1.5 pt-1 flex items-center gap-1.5 border-t border-border/20">
-                        <button
+                        <Button
                             type="button"
                             onClick={() => void handleSubmit()}
                             disabled={isResponding}
-                            className={cn(
-                                'flex items-center gap-1 px-2 py-1 typography-meta font-medium rounded transition-colors',
-                                'bg-[rgb(var(--status-success)/0.1)] text-[var(--status-success)] hover:bg-[rgb(var(--status-success)/0.2)]',
-                                'disabled:opacity-50 disabled:cursor-not-allowed',
-                            )}
+                            size="xs"
                         >
                             <Icon name="check" className="h-3 w-3" />
                             {t('chat.formCard.submit')}
-                        </button>
+                        </Button>
 
-                        <button
+                        <Button
                             type="button"
                             onClick={() => void handleCancel()}
                             disabled={isResponding}
-                            className={cn(
-                                'flex items-center gap-1 px-2 py-1 typography-meta font-medium rounded transition-colors',
-                                'bg-[rgb(var(--status-error)/0.1)] text-[var(--status-error)] hover:bg-[rgb(var(--status-error)/0.2)]',
-                                'disabled:opacity-50 disabled:cursor-not-allowed',
-                            )}
+                            variant="ghost"
+                            size="xs"
                         >
                             <Icon name="close" className="h-3 w-3" />
                             {t('chat.formCard.cancel')}
-                        </button>
+                        </Button>
 
                         {showErrors && !canSubmit ? (
                             <span className="typography-micro text-[var(--status-error)]">

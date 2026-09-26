@@ -9,6 +9,7 @@ import { resolveWorkspaceFolders } from './workspaceResolver';
 import { InlineCommentThreads, SIDEBAR_SURFACE_ID } from './InlineCommentThreads';
 import { applyConnectAttemptTimeout } from './networkDefaults';
 import { stopGitProcesses } from './bridge-git-process-runtime';
+import { resolveKernelRequest } from './kernelRequest';
 
 let chatViewProvider: ChatViewProvider | undefined;
 
@@ -703,42 +704,55 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       };
 
-      const buildProbeUrl = (pathname: string, includeDirectory = true) => {
-        if (!resolvedApiUrl) return null;
-        const base = `${resolvedApiUrl.replace(/\/+$/, '')}/`;
-        const url = new URL(pathname.replace(/^\/+/, ''), base);
-        if (includeDirectory && workingDirectory) {
-          url.searchParams.set('directory', workingDirectory);
-        }
-        return url.toString();
+      const buildProbeUrl = async (pathname: string, includeDirectory = true) => {
+        if (!openCodeManager || !resolvedApiUrl) return null;
+        const pathWithDirectory = new URL(pathname, 'https://openchamber.invalid');
+        if (includeDirectory && workingDirectory) pathWithDirectory.searchParams.set('directory', workingDirectory);
+        return (await resolveKernelRequest(openCodeManager, `${pathWithDirectory.pathname}${pathWithDirectory.search}`)).url;
       };
 
-      const probeTargets: Array<{ label: string; path: string; includeDirectory?: boolean; timeoutMs?: number }> = [
-        { label: 'health', path: '/api/info', includeDirectory: false },
-        { label: 'config', path: '/api/config', includeDirectory: true },
-        { label: 'providers', path: '/api/provider', includeDirectory: true },
+      let kernel = openCodeManager?.getKernelRuntime();
+      if (kernel?.generation === 'unknown' && openCodeManager) {
+        try { kernel = await openCodeManager.refreshKernelRuntime(); }
+        catch { kernel = openCodeManager.getKernelRuntime(); }
+      }
+      const oc1ProbeTargets: Array<{ label: string; path: string; includeDirectory?: boolean; timeoutMs?: number }> = [
+        { label: 'health', path: '/global/health', includeDirectory: false },
+        { label: 'config', path: '/config', includeDirectory: true },
+        { label: 'providers', path: '/config/providers', includeDirectory: true },
         // Can be slower on large configs; keep the probe from producing false negatives.
-        { label: 'agents', path: '/api/agent', includeDirectory: true, timeoutMs: 12000 },
-        { label: 'commands', path: '/api/command', includeDirectory: true, timeoutMs: 10000 },
-        // OpenCode 2.0.8 removed `project.current`; the location probe below
-        // answers which project a directory belongs to, and `/api/project`
-        // lists the known ones.
-        { label: 'project', path: '/api/project', includeDirectory: false },
-        { label: 'location', path: '/api/location', includeDirectory: true },
+        { label: 'agents', path: '/agent', includeDirectory: true, timeoutMs: 12000 },
+        { label: 'commands', path: '/command', includeDirectory: true, timeoutMs: 10000 },
+        { label: 'project', path: '/project/current', includeDirectory: true },
+        { label: 'path', path: '/path', includeDirectory: true },
         // Session listing is what powers the sidebar. This helps diagnose "no sessions shown" bugs.
-        { label: 'sessions', path: '/api/session', includeDirectory: true, timeoutMs: 12000 },
+        { label: 'sessions', path: '/session', includeDirectory: true, timeoutMs: 12000 },
+        { label: 'sessionStatus', path: '/session/status', includeDirectory: true },
+      ];
+      const oc2ProbeTargets: typeof oc1ProbeTargets = [
+        { label: 'health', path: '/api/info', includeDirectory: false },
+        { label: 'config', path: '/api/config' },
+        { label: 'providers', path: '/api/provider' },
+        { label: 'agents', path: '/api/agent', timeoutMs: 12000 },
+        { label: 'commands', path: '/api/command', timeoutMs: 10000 },
+        { label: 'project', path: '/api/project', includeDirectory: false },
+        { label: 'location', path: '/api/location' },
+        { label: 'sessions', path: '/api/session', timeoutMs: 12000 },
         { label: 'sessionStatus', path: '/api/session/active', includeDirectory: false },
       ];
+      const probeTargets = kernel?.generation === 'oc1' ? oc1ProbeTargets : kernel?.generation === 'oc2' ? oc2ProbeTargets : [];
 
-      const probes = resolvedApiUrl
+      const probes = resolvedApiUrl && probeTargets.length > 0
         ? await Promise.all(
             probeTargets.map(async (entry) => {
-              const url = buildProbeUrl(entry.path, entry.includeDirectory !== false);
-              if (!url) {
-                return { label: entry.label, url: '(none)', result: null as null };
+              try {
+                const url = await buildProbeUrl(entry.path, entry.includeDirectory !== false);
+                if (!url) return { label: entry.label, url: '(none)', result: null };
+                const result = await safeFetch(url, entry.timeoutMs);
+                return { label: entry.label, url, result };
+              } catch (error) {
+                return { label: entry.label, url: '(unavailable)', result: { ok: false, status: 0, elapsedMs: 0, summary: `error=${error instanceof Error ? error.message : String(error)}` } };
               }
-              const result = await safeFetch(url, typeof entry.timeoutMs === 'number' ? entry.timeoutMs : undefined);
-              return { label: entry.label, url, result };
             })
           )
         : [];
@@ -754,6 +768,7 @@ export async function activate(context: vscode.ExtensionContext) {
         `Platform: ${process.platform} ${process.arch}`,
         `Workspace folders: ${workspaceFolders.length}${workspaceFolders.length ? ` (${workspaceFolders.join(', ')})` : ''}`,
         `Status: ${openCodeManager?.getStatus() ?? 'unknown'}`,
+        `Kernel generation: ${kernel?.generation ?? 'unknown'}`,
         `Working directory: ${workingDirectory}`,
         `Working dir matches workspace: ${workingDirectoryMatchesWorkspace ? 'yes' : 'no'}`,
         `API URL (configured): ${configuredApiUrl || '(none)'}`,

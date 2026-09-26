@@ -120,6 +120,9 @@
     "agentWebToolEnabled": {
       "scope": "instance"
     },
+    "agentNotifyToolEnabled": {
+      "scope": "instance"
+    },
     "browserProvider": {
       "scope": "instance"
     },
@@ -351,6 +354,9 @@
         "vscode"
       ]
     },
+    "showOpenCodeRestartConfirm": {
+      "scope": "profile"
+    },
     "allowPromptingSubagentSessions": {
       "scope": "profile"
     },
@@ -549,6 +555,9 @@
       "scope": "profile"
     },
     "responseStyleCustomInstructions": {
+      "scope": "profile"
+    },
+    "optimizeSystemPrompt": {
       "scope": "profile"
     },
     "pwaAppName": {

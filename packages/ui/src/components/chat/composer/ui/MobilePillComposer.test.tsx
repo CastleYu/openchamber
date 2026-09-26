@@ -3,8 +3,9 @@ import { Window } from 'happy-dom';
 import { describe, expect, test } from 'bun:test';
 import { createRoot } from 'react-dom/client';
 
-import { OpenCode } from '@opencode/client';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { ThemeSystemProvider } from '@/contexts/ThemeSystemContext';
 import { I18nProvider } from '@/lib/i18n';
 
@@ -21,7 +22,7 @@ const renderPill = async (options: { hasContent: boolean; newSessionDraftOpen: b
     let queued = 0;
     try {
         await act(async () => root.render(
-        <SyncProvider directory="/fixture" sdk={OpenCode.make({ baseUrl: "http://opencode.test", fetch: async () => new Response("[]", { headers: { "content-type": "application/json" } }) })}>
+        <SyncProvider directory="/fixture" source={sourceFromSdk(createOpencodeClient({ baseUrl: "http://opencode.test", fetch: async () => new Response("[]", { headers: { "content-type": "application/json" } }) }))}>
         <ThemeSystemProvider>
         <I18nProvider>
             <MobilePillComposer

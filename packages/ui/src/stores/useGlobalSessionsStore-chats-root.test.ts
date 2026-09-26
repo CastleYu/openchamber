@@ -42,9 +42,8 @@ const deferred = <T>() => {
   return { promise, resolve, reject };
 };
 const chat = (id: string): Session => ({
-  id, projectID: 'openchamber:chats', directory: '/srv/chats/day/session-' + id,
-  title: id, cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  time: { created: 1, updated: 2 },
+  id, slug: id, projectID: 'openchamber:chats', directory: '/srv/chats/day/session-' + id,
+  title: id, time: { created: 1, updated: 2 },
 });
 const scope = 'openchamber:managed-chats';
 let runtime = 0;
@@ -80,13 +79,12 @@ describe('global load owns chats-root readiness', () => {
     try {
       const first = useGlobalSessionsStore.getState().loadSessions();
       const second = useGlobalSessionsStore.getState().loadSessions();
-      expect(useGlobalSessionsStore.getState().status).toBe('loading');
+      expect(useGlobalSessionsStore.getState().status).toBe('idle');
       expect(list.mock.calls).toHaveLength(0);
       root.resolve({ home: '/home/user', chatsRoot: '/srv/chats' });
       await Promise.all([first, second]);
       expect(home.mock.calls).toHaveLength(1);
       expect(useGlobalSessionsStore.getState().status).toBe('error');
-      expect(useGlobalSessionsStore.getState().hasLoaded).toBe(false);
       expect(useGlobalSessionsStore.getState().activeSessions.map((session) => session.id)).toEqual(['saved']);
       expect(readDirCache(scope).sessions?.map((session) => session.id)).toEqual(['saved']);
     } finally { list.mockRestore(); }

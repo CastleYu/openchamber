@@ -1,20 +1,21 @@
-import { act } from 'react';
+import React, { act } from 'react';
 import { expect, test } from 'bun:test';
 import { plugin } from 'bun';
 import { pathToFileURL } from 'node:url';
 import { createRoot } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { OpenCode } from '@opencode/client';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+
 import type { ToolPart as ToolPartData } from '@/lib/opencode/model';
+import { opencodeClient } from '@/lib/opencode/client';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { I18nProvider } from '@/lib/i18n';
 import { ThemeSystemContext, type ThemeContextValue } from '@/contexts/theme-system-context';
 import { getDefaultTheme } from '@/lib/theme/themes';
-import { useGuestsStore } from '@/lib/guests/store';
 
-// Bun does not implement Vite's worker asset-query imports.
 plugin({
-  name: 'tool-guest-worker-url',
+  name: 'tool-execute-worker-url',
   setup(build) {
     build.onLoad({ filter: /markdown-shiki\.worker\.ts\?worker&url$/ }, ({ path }) => ({
       contents: `export default ${JSON.stringify(pathToFileURL(path.split('?')[0]).href)};`,
@@ -24,49 +25,47 @@ plugin({
 });
 
 const { default: ToolPart } = await import('./ToolPart');
-
-const unexpectedThemeChange = (): never => { throw new Error('Rendering must not change the theme'); };
 const theme = getDefaultTheme(false);
+const unchanged = (): never => { throw new Error('Rendering must not update the theme'); };
 const themeContext: ThemeContextValue = {
   currentTheme: theme,
   availableThemes: [theme],
-  setTheme: unexpectedThemeChange,
+  setTheme: unchanged,
   customThemesLoading: false,
-  reloadCustomThemes: unexpectedThemeChange,
-  importTheme: unexpectedThemeChange,
-  deleteImportedTheme: unexpectedThemeChange,
+  reloadCustomThemes: unchanged,
+  importTheme: unchanged,
+  deleteImportedTheme: unchanged,
   customThemeIds: [],
   isSystemPreference: false,
-  setSystemPreference: unexpectedThemeChange,
+  setSystemPreference: unchanged,
   themeMode: 'light',
-  setThemeMode: unexpectedThemeChange,
+  setThemeMode: unchanged,
   lightThemeId: theme.metadata.id,
   darkThemeId: getDefaultTheme(true).metadata.id,
-  setLightThemePreference: unexpectedThemeChange,
-  setDarkThemePreference: unexpectedThemeChange,
+  setLightThemePreference: unchanged,
+  setDarkThemePreference: unchanged,
 };
 
 const part: ToolPartData = {
-  id: 'prt_execute', sessionID: 'ses_exec', messageID: 'msg_exec',
-  type: 'tool', tool: 'execute', callID: 'call_exec',
+  id: 'prt_execute', sessionID: 'ses_execute', messageID: 'msg_execute',
+  type: 'tool', tool: 'execute', callID: 'call_execute',
   state: {
-    status: 'completed',
-    input: { code: 'const issues = await linear.list_issues({ teamId: "OPE" });\nreturn issues;' },
-    output: '{"count":3}',
+    status: 'completed', input: { code: 'const result = await tools.search({ query: "bug" })' },
+    output: 'Found a result',
     metadata: {
-      truncated: true,
-      outputPath: '/tmp/oc-script-output.json',
       toolCalls: [
-        { tool: 'linear.list_issues', status: 'completed', input: { teamId: 'OPE' } },
-        { tool: 'linear.list_issues', status: 'error', input: { teamId: 'OPE' } },
-        { tool: 'linear.get_workspace', status: 'completed' },
+        { tool: 'search', status: 'completed', input: { query: 'bug' } },
+        { tool: 'read', status: 'error', input: { path: 'src/a.ts' } },
+        { tool: 'index', status: 'running', input: {} },
       ],
+      truncated: true,
+      outputPath: '/tmp/opencode/execute-output.txt',
     },
     time: { start: 1, end: 2 },
   },
 };
 
-test('a Code Mode call shows its script, the tools it called, and the truncation note', async () => {
+test('OC2 execute renders its script, ordered calls, status, output and truncation while OC1 remains generic', async () => {
   const happyWindow = new Window({ url: 'http://localhost' });
   const globals = {
     window: happyWindow,
@@ -87,47 +86,80 @@ test('a Code Mode call shows its script, the tools it called, and the truncation
     MutationObserver: happyWindow.MutationObserver,
     IS_REACT_ACT_ENVIRONMENT: true,
   };
-  const previous = Object.keys(globals).map(
-    (name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
-  );
-  for (const [name, value] of Object.entries(globals)) {
-    Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
-  }
+  const previous = Object.keys(globals).map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const);
+  for (const [name, value] of Object.entries(globals)) Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
-  const sdk = OpenCode.make({
+  const sdk = createOpencodeClient({
     baseUrl: 'http://localhost',
     fetch: async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } }),
   });
-
-  try {
-    useGuestsStore.setState({ status: 'ready', guests: [], runtimeKey: 'test' });
+  const render = async (tool: ToolPartData = part) => {
     await act(async () => {
       root.render(
-        <SyncProvider sdk={sdk} directory="">
+        <SyncProvider source={sourceFromSdk(sdk)} directory="">
           <I18nProvider>
             <ThemeSystemContext.Provider value={themeContext}>
-              <ToolPart part={part} isExpanded isMobile={false} onToggle={() => {}} />
+              <ToolPart part={tool} isExpanded isMobile={false} onToggle={() => {}} />
             </ThemeSystemContext.Provider>
           </I18nProvider>
         </SyncProvider>,
       );
     });
+  };
 
-    // The row is named "Script", not "execute", and carries the braces icon.
+  try {
+    opencodeClient.bindRuntime({ generation: 'oc2', endpoint: 'http://localhost', epoch: 'execute-test-2', version: '2.0.16' });
+    await render();
     expect(container.textContent).toContain('Script');
-    expect(container.textContent).not.toContain('execute');
-    expect(container.querySelector('use[href="#oc-braces"]')).not.toBeNull();
-
-    // The description names the called tools, deduplicated and counted.
-    expect(container.textContent).toContain('linear.list_issues \u00d72, linear.get_workspace');
-
-    // The body lists every call with its input, and reports the truncated output.
     expect(container.textContent).toContain('Tool calls');
-    expect(container.textContent).toContain('{"teamId":"OPE"}');
+    expect(container.textContent).toContain('const result = await tools.search');
+    const calls = Array.from(container.querySelectorAll('li')).map((row) => row.textContent);
+    expect(calls).toEqual(['search{"query":"bug"}', 'read{"path":"src/a.ts"}', 'indexrunning']);
+    expect(container.textContent).toContain('Found a result');
     expect(container.textContent).toContain('Output was truncated');
-    expect(container.textContent).toContain('/tmp/oc-script-output.json');
+    expect(container.textContent).toContain('/tmp/opencode/execute-output.txt');
+
+    await act(async () => {
+      opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'http://localhost', epoch: 'execute-test-1', version: '1.18.32' });
+    });
+    await render();
+    expect(container.textContent).not.toContain('Tool calls');
+    expect(container.textContent).not.toContain('Output was truncated');
+
+    const searchPart: ToolPartData = {
+      ...part,
+      id: 'prt_search', tool: 'websearch', callID: 'call_search',
+      state: {
+        status: 'completed', input: { query: 'OpenCode' },
+        output: '## [OpenCode](https://opencode.ai/)\nPublished: 2026-09-26\n\nOfficial result.',
+        metadata: { provider: 'tavily' }, time: { start: 1, end: 2 },
+      },
+    };
+    await act(async () => {
+      opencodeClient.bindRuntime({ generation: 'oc2', endpoint: 'http://localhost', epoch: 'search-test-2', version: '2.0.16' });
+    });
+    await render(searchPart);
+    expect(container.querySelector('a[href="https://opencode.ai/"]')).not.toBeNull();
+    expect(container.textContent).toContain('Official result.');
+    expect(container.textContent).toContain('tavily');
+
+    await render({
+      ...searchPart,
+      state: {
+        status: 'completed', input: { query: 'OpenCode' }, output: 'Custom provider output',
+        metadata: { provider: 'tavily' }, time: { start: 1, end: 2 },
+      },
+    });
+    expect(container.textContent).toContain('Custom provider output');
+    expect(container.querySelector('a[href="https://opencode.ai/"]')).toBeNull();
+
+    await act(async () => {
+      opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'http://localhost', epoch: 'search-test-1', version: '1.18.32' });
+    });
+    await render(searchPart);
+    expect(container.querySelector('a[href="https://opencode.ai/"]')).toBeNull();
   } finally {
     await act(async () => { root.unmount(); });
     await happyWindow.happyDOM.abort();

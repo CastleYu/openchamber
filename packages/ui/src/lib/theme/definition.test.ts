@@ -182,6 +182,19 @@ describe('Catppuccin built-in palettes', () => {
   });
 });
 
+describe('Cursor and Osaka Jade built-in palettes', () => {
+  test('registers each variant once', () => {
+    expect(themes.filter((theme) => theme.metadata.name.startsWith('Cursor')).map((theme) => theme.metadata.id)).toEqual([
+      'cursor-dark',
+      'cursor-light',
+    ]);
+    expect(themes.filter((theme) => theme.metadata.name.startsWith('Osaka Jade')).map((theme) => theme.metadata.id)).toEqual([
+      'osaka-jade-refined',
+      'osaka-jade-refined-light',
+    ]);
+  });
+});
+
 describe('rendered theme color pairs', () => {
   test('keeps high-contrast VS Code fallbacks dark and its focus indicator opaque', () => {
     const theme = buildVSCodeThemeFromPalette({ kind: 'high-contrast', colors: { focusBorder: '#ffffff', 'statusBar.background': '#ff0000' } });

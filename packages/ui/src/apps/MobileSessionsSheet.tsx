@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSessionTurnActive } from '@/sync/global-session-status';
 import { SessionActivityIndicator } from '@/components/session/SessionActivityIndicator';
 import { createPortal } from 'react-dom';
 import {
@@ -70,7 +69,7 @@ import {
   useSessionOrderingStore,
 } from '@/sync/session-ordering';
 import { useSessionUIStore } from '@/sync/session-ui-store';
-import { useAllLiveSessions } from '@/sync/sync-context';
+import { useAllLiveSessions, useGlobalSessionStatus } from '@/sync/sync-context';
 import { useGlobalSyncStore } from '@/sync/global-sync-store';
 import { useSessionUnseenCount } from '@/sync/notification-store';
 import { useHasSessionActivityDuration } from '@/sync/session-activity-timing';
@@ -110,6 +109,7 @@ type MobileSessionsSheetProps = {
     instanceLabel: string | null;
     onOpenInstances?: () => void;
     onOpenSettings: () => void;
+    onOpenUsage?: () => void;
     /** Present only while a server update is available (hosted web). */
     onOpenUpdate?: () => void;
   };
@@ -314,8 +314,10 @@ const SessionRow: React.FC<{
   const aiRename = useSessionAiRenameAction(session.id, session.directory, swipeEnabled && revealed);
   // Live indicators, same conventions as the desktop sidebar: busy/retry →
   // spinner; unseen activity on a non-active row → attention dot.
+  const liveStatus = useGlobalSessionStatus(session.id);
   const unseenCount = useSessionUnseenCount(session.id);
-  const isStreaming = useSessionTurnActive(session.id);
+  const statusType = liveStatus?.type ?? 'idle';
+  const isStreaming = statusType === 'busy' || statusType === 'retry';
   const showUnreadDot = !isStreaming && unseenCount > 0 && !active;
   const hasActivityDuration = useHasSessionActivityDuration(session.id, isStreaming);
   const showActivityDuration = (isStreaming || showUnreadDot) && hasActivityDuration;
@@ -629,27 +631,13 @@ export const MobileSessionsSheet: React.FC<MobileSessionsSheetProps> = ({ open, 
   const ensureGitStatus = useGitStore((state) => state.ensureStatus);
   const liveSessions = useAllLiveSessions();
   const globalActiveSessions = useGlobalSessionsStore((state) => state.activeSessions);
-  // Store reads the closed drawer does not need. They hold the last value seen
-  // while presented rather than dropping to empty: the drawer stays mounted
-  // through its exit slide, and swapping pins, order or branches to empty at
-  // that moment reshuffles rows and drops branch lines mid-animation. A held
-  // reference is stable, so the closed drawer still never re-renders on changes.
-  const presented = open || variant === 'sidebar';
-  const heldPinnedIdsRef = React.useRef(EMPTY_PINNED_SESSION_IDS);
   const pinnedSessionIds = useSessionPinnedStore(React.useCallback(
-    (state) => {
-      if (presented) heldPinnedIdsRef.current = state.ids;
-      return heldPinnedIdsRef.current;
-    },
-    [presented],
+    (state) => open || variant === 'sidebar' ? state.ids : EMPTY_PINNED_SESSION_IDS,
+    [open, variant],
   ));
-  const heldOrderRanksRef = React.useRef(EMPTY_SESSION_ORDER_RANKS);
   const sessionOrderRanks = useSessionOrderingStore(React.useCallback(
-    (state) => {
-      if (presented) heldOrderRanksRef.current = state.rankById;
-      return heldOrderRanksRef.current;
-    },
-    [presented],
+    (state) => open || variant === 'sidebar' ? state.rankById : EMPTY_SESSION_ORDER_RANKS,
+    [open, variant],
   ));
   const projects = useProjectsStore((state) => state.projects);
   const authoritativeProjects = useGlobalSyncStore((state) => state.projects);
@@ -674,7 +662,9 @@ export const MobileSessionsSheet: React.FC<MobileSessionsSheetProps> = ({ open, 
   // Branch per directory, for the timeline row's third line: worktree sessions
   // read their worktree's branch, root sessions the project root's checked-out
   // branch, which only the git store knows. The grouped view never asks.
-  const gitBranchesByDirectory = useGitAllBranches(presented && sidebarViewMode === 'timeline');
+  const gitBranchesByDirectory = useGitAllBranches(
+    (open || variant === 'sidebar') && sidebarViewMode === 'timeline',
+  );
   const removeProject = useProjectsStore((state) => state.removeProject);
   const projectExpandedMap = useMobileSessionTreeStore((state) => state.projectExpanded);
   const worktreeExpandedMap = useMobileSessionTreeStore((state) => state.worktreeExpanded);
@@ -1625,15 +1615,6 @@ export const MobileSessionsSheet: React.FC<MobileSessionsSheetProps> = ({ open, 
                           {chatRootCount}
                         </span>
                       </button>
-                      {/* Same "+" every project header carries, so a new chat is
-                          reachable from its own section, not only the title bar. */}
-                      {!editingOrder ? (
-                        <NewSessionIconButton
-                          className="mr-2"
-                          label={t('mobile.sessions.newChat')}
-                          onClick={handleStartNewChat}
-                        />
-                      ) : null}
                     </div>
                     {chatsExpanded ? (
                       <div className="pb-2">
@@ -1908,6 +1889,18 @@ export const MobileSessionsSheet: React.FC<MobileSessionsSheetProps> = ({ open, 
                   <span className="absolute right-2 top-2 inline-flex size-2 rounded-full bg-primary" aria-hidden />
                 </Button>
               ) : null}
+              {footer.onOpenUsage ? <Button
+                type="button"
+                variant="default"
+                size="lg"
+                className="w-10 px-0"
+                onClick={footer.onOpenUsage}
+                aria-label={t('usageStats.openAction')}
+                title={t('usageStats.openAction')}
+                style={{ touchAction: 'manipulation' }}
+              >
+                <Icon name="bar-chart-2" className="size-5" />
+              </Button> : null}
               <Button
                 type="button"
                 variant="default"

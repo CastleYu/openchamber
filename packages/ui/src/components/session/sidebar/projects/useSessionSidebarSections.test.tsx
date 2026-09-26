@@ -12,10 +12,10 @@ const CHATS_ROOT = '/home/user/.config/openchamber/chats';
 
 const chatSession = (id: string, title: string): Session => ({
   id,
+  slug: id,
   projectID: 'chats',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
   title,
+  version: '1',
   directory: `${CHATS_ROOT}/2026-08-28/session-${id}`,
   time: { created: 1, updated: 1 },
 });

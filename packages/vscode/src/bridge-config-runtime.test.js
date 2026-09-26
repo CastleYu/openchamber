@@ -10,25 +10,19 @@ mock.module('vscode', () => ({
   },
 }));
 
-// Point the user-level OpenCode config at a scratch directory BEFORE importing:
-// the bridge writes agents, commands and plugins there, and a built-in agent
-// such as `build` is materialised as a user-level file. Nothing here may touch
-// the real ~/.config/opencode.
-const scratchConfigRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-bridge-config-'));
-process.env.XDG_CONFIG_HOME = path.join(scratchConfigRoot, 'xdg');
-process.env.OPENCODE_CONFIG_DIR = '';
-
 const { handleConfigBridgeMessage } = await import('./bridge-config-runtime.ts');
 
 const tempRoots = [];
 const originalOpencodeConfig = process.env.OPENCODE_CONFIG;
 
-const createCtx = (workingDirectory, restartImpl = async () => undefined) => {
+const createCtx = (workingDirectory, restartImpl = async () => undefined, generation = 'oc1') => {
   const restart = mock(restartImpl);
   return {
     restart,
     manager: {
       getWorkingDirectory: () => workingDirectory,
+      getKernelRuntime: () => ({ generation, endpoint: 'http://oc.test', epoch: 1 }),
+      refreshKernelRuntime: async () => ({ generation, endpoint: 'http://oc.test', epoch: 1 }),
       restart,
     },
   };
@@ -60,6 +54,82 @@ afterEach(() => {
 const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
 describe('VS Code config bridge plugin parity', () => {
+  test('OC2 plugin list includes declaring config paths and discovered package directories', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-plugins-v2-'));
+    tempRoots.push(root);
+    const configPath = path.join(root, 'custom', 'opencode.json');
+    const projectPath = path.join(root, '.opencode', 'opencode.json');
+    process.env.OPENCODE_CONFIG = configPath;
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.mkdirSync(path.dirname(projectPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify({ plugins: ['user-plugin@2'] }));
+    fs.writeFileSync(projectPath, JSON.stringify({ plugins: ['./plugins/local'] }));
+    const editable = path.join(root, '.opencode', 'plugins', 'notify.ts');
+    const packageDir = path.join(root, '.opencode', 'plugins', 'local');
+    const legacy = path.join(root, '.opencode', 'plugin', 'old.ts');
+    fs.mkdirSync(packageDir, { recursive: true });
+    fs.mkdirSync(path.dirname(legacy), { recursive: true });
+    fs.writeFileSync(editable, 'export default {}');
+    fs.writeFileSync(legacy, 'export default {}');
+
+    const listed = await handleConfigBridgeMessage({
+      id: 'list-v2', type: 'api:config/plugins', payload: { method: 'GET', target: 'list', directory: root },
+    }, createCtx(root, undefined, 'oc2'), deps);
+    expect(listed?.success).toBe(true);
+    expect(listed?.data?.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ spec: 'user-plugin@2', sourcePath: configPath }),
+      expect.objectContaining({ spec: './plugins/local', sourcePath: projectPath }),
+    ]));
+    expect(listed?.data?.files).toEqual(expect.arrayContaining([
+      expect.objectContaining({ fileName: 'notify.ts', kind: 'file', absolutePath: editable }),
+      expect.objectContaining({ fileName: 'local', kind: 'package', absolutePath: packageDir }),
+      expect.objectContaining({ fileName: 'old.ts', kind: 'package', absolutePath: legacy }),
+    ]));
+  });
+
+  test('refuses unknown generation before changing a config file', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-unknown-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root, undefined, 'unknown');
+    const configPath = path.join(root, '.opencode', 'opencode.json');
+    const result = await handleConfigBridgeMessage({ id: 'unknown', type: 'api:config/agents',
+      payload: { method: 'POST', name: 'reviewer', body: { scope: 'project', description: 'Review' } } }, ctx, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode kernel is not ready' });
+    expect(fs.existsSync(configPath)).toBe(false);
+  });
+
+  test('writes an OC2 agent under agents while preserving OC1 module behavior', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-v2-config-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root, undefined, 'oc2');
+    const configPath = path.join(root, '.opencode', 'opencode.json');
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify({ agent: { reviewer: { description: 'Old' } } }));
+    const result = await handleConfigBridgeMessage({ id: 'v2', type: 'api:config/agents',
+      payload: { method: 'PATCH', name: 'reviewer', directory: root, body: { description: 'New' } } }, ctx, deps);
+    expect(result?.success).toBe(true);
+    expect(readJson(configPath).agents.reviewer.description).toBe('New');
+    expect(readJson(configPath).agent?.reviewer).toBeUndefined();
+  });
+
+  test('returns ordered OC2 global and agent permission rules through the bridge', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-v2-permissions-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root, undefined, 'oc2');
+    const configPath = path.join(root, '.opencode', 'opencode.json');
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify({
+      permissions: [{ action: 'shell', resource: '*', effect: 'ask' }],
+      agents: { reviewer: { permissions: [{ action: 'shell', resource: 'git status', effect: 'allow' }] } },
+    }));
+    const result = await handleConfigBridgeMessage({ id: 'rules', type: 'api:config/agents',
+      payload: { method: 'GET', name: 'reviewer', resource: 'permissions', directory: root } }, ctx, deps);
+    expect(result?.success).toBe(true);
+    expect(result?.data.effective).toEqual([
+      { action: 'shell', resource: '*', effect: 'ask', source: 'global' },
+      { action: 'shell', resource: 'git status', effect: 'allow', source: 'agent' },
+    ]);
+  });
   test('explicit config reload restarts OpenCode', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-reload-'));
     tempRoots.push(root);
@@ -109,12 +179,7 @@ describe('VS Code config bridge plugin parity', () => {
     }, ctx, deps);
 
     expect(updated?.success).toBe(true);
-    // The v1 `agent` entry is rewritten in place as a v2 `agents` entry, and the
-    // cleared v1 fields are removed from where v2 keeps them: `variant` off the
-    // model reference, `temperature`/`top_p` out of `request.body`.
-    const agentConfig = readJson(configPath);
-    expect(agentConfig.agent).toBeUndefined();
-    expect(agentConfig.agents.build).toEqual({ mode: 'subagent' });
+    expect(readJson(configPath).agent.build).toEqual({ mode: 'subagent' });
   });
 
   test('creates, lists, updates, and deletes project plugin entries', async () => {
@@ -136,7 +201,10 @@ describe('VS Code config bridge plugin parity', () => {
     expect(created?.success).toBe(true);
     expect(created?.data).toMatchObject({
       success: true,
-      message: 'Plugin entry changed.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin entry changed. Restart OpenCode to apply.',
     });
     expect(ctx.restart).not.toHaveBeenCalled();
 
@@ -163,8 +231,7 @@ describe('VS Code config bridge plugin parity', () => {
     expect(updated?.success).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(path.join(root, '.opencode', 'opencode.json'), 'utf8'));
-    expect(config.plugin).toBeUndefined();
-    expect(config.plugins).toEqual([{ package: 'plugin-b', options: { enabled: true } }]);
+    expect(config.plugin).toEqual([['plugin-b', { enabled: true }]]);
 
     const relisted = await handleConfigBridgeMessage({
       id: 'relist',
@@ -245,9 +312,7 @@ describe('VS Code config bridge plugin parity', () => {
       },
     }, ctx, deps);
     expect(updated?.success).toBe(true);
-    // Touching one entry migrates the whole v1 `plugin` array into v2 `plugins`.
-    expect(readJson(configPath).plugin).toBeUndefined();
-    expect(readJson(configPath).plugins).toEqual(['custom-plugin-next']);
+    expect(readJson(configPath).plugin).toEqual(['custom-plugin-next']);
 
     const relisted = await handleConfigBridgeMessage({
       id: 'relist-custom',
@@ -263,7 +328,6 @@ describe('VS Code config bridge plugin parity', () => {
     }, ctx, deps);
     expect(deleted?.success).toBe(true);
     expect(readJson(configPath).plugin).toBeUndefined();
-    expect(readJson(configPath).plugins).toBeUndefined();
   });
 
   test('writes user plugin files next to OPENCODE_CONFIG', async () => {
@@ -291,43 +355,36 @@ describe('VS Code config bridge plugin parity', () => {
     expect(fs.readFileSync(path.join(configDir, 'plugins', 'demo-plugin.ts'), 'utf8')).toBe('export default {}');
   });
 
-  // OpenCode 2 watches its config sources, so a write is live as soon as it
-  // lands: there is no restart to defer and no restart that can fail. The
-  // mutation just reports where it wrote.
-  test('creates an MCP server under mcp.servers without restarting OpenCode', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-mcp-create-'));
+  test('creates MCP config with deferred restart when restart would fail', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-mcp-deferred-'));
     tempRoots.push(root);
     const ctx = createCtx(root, async () => {
       throw new Error('restart failed');
     });
-    const configPath = path.join(root, '.opencode', 'opencode.json');
 
     const created = await handleConfigBridgeMessage({
-      id: 'create-mcp',
+      id: 'create-mcp-deferred',
       type: 'api:config/mcp',
       payload: {
         method: 'POST',
-        name: 'mcp-server',
+        name: 'mcp-deferred',
         directory: root,
-        body: { scope: 'project', type: 'local', command: ['node', 'server.js'], enabled: false },
+        body: { scope: 'project', type: 'local', command: ['node', 'server.js'] },
       },
     }, ctx, deps);
 
     expect(created?.success).toBe(true);
     expect(created?.data).toMatchObject({
       success: true,
-      message: 'MCP server "mcp-server" created.',
-      path: configPath,
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'MCP server "mcp-deferred" created. Restart OpenCode to apply.',
     });
     expect(ctx.restart).not.toHaveBeenCalled();
-
-    const written = readJson(configPath);
-    expect(written.mcp['mcp-server']).toBeUndefined();
-    expect(written.mcp.servers['mcp-server']).toEqual({
+    expect(readJson(path.join(root, '.opencode', 'opencode.json')).mcp['mcp-deferred']).toMatchObject({
       type: 'local',
       command: ['node', 'server.js'],
-      // v1 `enabled: false` becomes the inverse v2 `disabled: true`.
-      disabled: true,
     });
   });
 });

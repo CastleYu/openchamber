@@ -124,10 +124,7 @@ export const useProjectTodoSend = (options: {
           sessionId = created.id;
           directoryHint = created.path;
         } else {
-          const session = await createSession(undefined, projectRef.path, undefined, {
-            model: { providerID: execution.providerID, id: execution.modelID, variant: execution.variant || undefined },
-            agent: execution.agent.trim() || undefined,
-          });
+          const session = await createSession(undefined, projectRef.path, null);
           if (!session?.id) {
             toast.error(t('rightSidebar.contextNotesTodo.toast.createSessionFailed'));
             return;

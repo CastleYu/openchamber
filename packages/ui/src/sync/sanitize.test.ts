@@ -1,87 +1,154 @@
 import { describe, expect, test } from 'bun:test'
-import type { FileDiffInfo } from '@opencode/client'
 import type { Session } from '@/lib/opencode/model'
 
 import { stripSessionDiffSnapshots, stripSessionListDetails } from './sanitize'
 
-const fileDiff = (file: string): FileDiffInfo => ({
-  file,
-  patch: `@@ -1 +1 @@\n-old\n+new`,
-  additions: 1,
-  deletions: 1,
-  status: 'modified',
-})
-
-const session = (overrides: Partial<Session> = {}): Session => ({
-  id: 'ses_1',
-  projectID: 'proj_1',
-  directory: '/repo/app',
-  title: 'Session',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  time: { created: 1, updated: 2 },
-  ...overrides,
-})
-
 describe('stripSessionDiffSnapshots', () => {
-  test('keeps the revert marker and drops its snapshot and file diffs', () => {
-    const original = session({
+  test('removes oversized revert and summary diff payloads', () => {
+    const session = {
+      id: 'ses_1',
+      slug: 'session-one',
+      projectID: 'proj_1',
+      directory: '/repo/app',
+      title: 'Session',
+      version: '1.0.0',
+      time: { created: 1, updated: 2 },
       revert: {
         messageID: 'msg_2',
         partID: 'part_3',
         snapshot: 'gitsha',
-        files: [fileDiff('src/app.ts'), fileDiff('src/other.ts')],
+        diff: 'diff --git a/file b/file',
       },
-    })
+      summary: {
+        additions: 2,
+        deletions: 1,
+        files: 1,
+        diffs: [{ additions: 2, deletions: 1, before: 'a', after: 'b', patch: '@@ -1 +1 @@' }],
+      },
+    } as unknown as Session
 
-    const next = stripSessionDiffSnapshots(original)
+    const next = stripSessionDiffSnapshots(session) as Session & {
+      revert?: { messageID?: string; partID?: string; snapshot?: string; diff?: string }
+      summary?: { diffs?: Array<{ before?: string; after?: string; patch?: string }> }
+    }
 
-    expect(next).not.toBe(original)
+    expect(next).not.toBe(session)
     expect(next.revert).toEqual({ messageID: 'msg_2', partID: 'part_3' })
+    expect(next.summary?.diffs).toEqual([{ additions: 2, deletions: 1 }])
   })
 
-  test('preserves object identity when the revert is already a bare marker', () => {
-    const original = session({ revert: { messageID: 'msg_2', partID: 'part_3' } })
+  test('preserves object identity when nothing changes', () => {
+    const session = {
+      id: 'ses_1',
+      slug: 'session-one',
+      projectID: 'proj_1',
+      directory: '/repo/app',
+      title: 'Session',
+      version: '1.0.0',
+      time: { created: 1, updated: 2 },
+      revert: { messageID: 'msg_2', partID: 'part_3' },
+      summary: { additions: 2, deletions: 1, diffs: [{ additions: 2, deletions: 1 }] },
+    } as unknown as Session
 
-    expect(stripSessionDiffSnapshots(original)).toBe(original)
-  })
-
-  test('preserves object identity when there is no revert at all', () => {
-    const original = session()
-
-    expect(stripSessionDiffSnapshots(original)).toBe(original)
+    expect(stripSessionDiffSnapshots(session)).toBe(session)
   })
 })
 
 describe('stripSessionListDetails', () => {
-  test('removes session permission rules and revert detail from list records', () => {
-    const original = session({
-      metadata: { openchamber: { kind: 'review', originalSessionID: 'ses_original' } },
-      permissions: [{ action: 'edit', resource: '**', effect: 'ask' }],
-      revert: { messageID: 'msg_2', partID: 'part_3', snapshot: 'gitsha', files: [fileDiff('src/app.ts')] },
+  test('removes detail-only fields from session list records', () => {
+    const session = {
+      id: 'ses_1',
+      slug: 'session-one',
+      projectID: 'proj_1',
+      directory: '/repo/app',
+      title: 'Session',
+      time: { created: 1, updated: 2 },
+      metadata: {
+        openchamber: {
+          kind: 'review',
+          originalSessionID: 'ses_original',
+        },
+      },
+      permission: [{ permission: 'todowrite' }],
+      revert: {
+        messageID: 'msg_2',
+        partID: 'part_3',
+        snapshot: 'gitsha',
+        diff: 'diff --git a/file b/file',
+      },
+      summary: {
+        additions: 2,
+        deletions: 1,
+        files: 1,
+        diffs: [{ additions: 2, deletions: 1, patch: '@@ -1 +1 @@' }],
+      },
+    } as unknown as Session
+
+    const next = stripSessionListDetails(session) as Session & {
+      metadata?: unknown
+      permission?: unknown
+      revert?: { messageID?: string; partID?: string; snapshot?: string; diff?: string }
+      summary?: { additions?: number; deletions?: number; files?: number; diffs?: unknown[] }
+    }
+
+    expect(next).not.toBe(session)
+    expect(next.metadata).toEqual({
+      openchamber: {
+        kind: 'review',
+        originalSessionID: 'ses_original',
+      },
     })
-
-    const next = stripSessionListDetails(original)
-
-    expect(next).not.toBe(original)
-    expect(next.permissions).toBe(undefined)
+    expect(next.permission).toBe(undefined)
     expect(next.revert).toEqual({ messageID: 'msg_2', partID: 'part_3' })
-    // Metadata is what the sidebar renders review/btw badges from, so it stays.
-    expect(next.metadata).toEqual({ openchamber: { kind: 'review', originalSessionID: 'ses_original' } })
+    expect(next.summary).toEqual({ additions: 2, deletions: 1, files: 1 })
   })
 
   test('preserves metadata extension fields in session list records', () => {
-    const original = session({ metadata: { custom: { value: 'kept' } }, permissions: [{ action: 'edit', resource: '**', effect: 'ask' }] })
+    const session = {
+      id: 'ses_1',
+      directory: '/repo/app',
+      title: 'Session',
+      time: { created: 1, updated: 2 },
+      metadata: { custom: { value: 'kept' } },
+      summary: { additions: 2, deletions: 1, files: 1, diffs: [{ patch: '@@ -1 +1 @@' }] },
+    } as unknown as Session
 
-    const next = stripSessionListDetails(original)
+    const next = stripSessionListDetails(session) as Session & {
+      metadata?: unknown
+      summary?: { diffs?: unknown[] }
+    }
 
-    expect(next).not.toBe(original)
+    expect(next).not.toBe(session)
     expect(next.metadata).toEqual({ custom: { value: 'kept' } })
+    expect(next.summary?.diffs).toBe(undefined)
+  })
+
+  test('keeps summary fields other than list-only diffs', () => {
+    const session = {
+      id: 'ses_1',
+      directory: '/repo/app',
+      title: 'Session',
+      time: { created: 1, updated: 2 },
+      summary: { custom: 'kept', diffs: [{ patch: '@@ -1 +1 @@' }] },
+    } as unknown as Session
+
+    const next = stripSessionListDetails(session) as Session & {
+      summary?: { custom?: string; diffs?: unknown[] }
+    }
+
+    expect(next.summary).toEqual({ custom: 'kept' })
   })
 
   test('preserves object identity for already lightweight records with revert markers', () => {
-    const original = session({ revert: { messageID: 'msg_2', partID: 'part_3' } })
+    const session = {
+      id: 'ses_1',
+      directory: '/repo/app',
+      title: 'Session',
+      time: { created: 1, updated: 2 },
+      revert: { messageID: 'msg_2', partID: 'part_3' },
+      summary: { additions: 2, deletions: 1, files: 1 },
+    } as unknown as Session
 
-    expect(stripSessionListDetails(original)).toBe(original)
+    expect(stripSessionListDetails(session)).toBe(session)
   })
 })

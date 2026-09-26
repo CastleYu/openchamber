@@ -12,6 +12,7 @@
  */
 
 import type { CatalogKind } from "@/lib/opencode/events";
+import { opencodeClient } from '@/lib/opencode/client';
 import { invalidateAgentsLoadCache, useAgentsStore } from "@/stores/useAgentsStore";
 import { invalidateCommandsLoadCache, useCommandsStore } from "@/stores/useCommandsStore";
 import { invalidateSkillsLoadCache, useSkillsStore } from "@/stores/useSkillsStore";
@@ -19,6 +20,7 @@ import { useSkillsCatalogStore } from "@/stores/useSkillsCatalogStore";
 import { useConfigStore } from "@/stores/useConfigStore";
 import { useMcpConfigStore } from "@/stores/useMcpConfigStore";
 import { usePluginsStore } from "@/stores/usePluginsStore";
+import { refreshWebSearchIfLoaded } from "@/stores/useWebSearchStore";
 
 const SOURCE = "catalogRefresh";
 
@@ -74,8 +76,10 @@ const refreshProviders = async (): Promise<void> => {
 const PROVIDER_REREAD_AFTER_CREDENTIAL_MS = 5000;
 
 const refreshProvidersAfterCredentialChange = async (): Promise<void> => {
+  const runtime = opencodeClient.getBoundRuntime();
   await refreshProviders();
   await new Promise((resolve) => setTimeout(resolve, PROVIDER_REREAD_AFTER_CREDENTIAL_MS));
+  if (opencodeClient.getBoundRuntime() !== runtime) return;
   await refreshProviders();
 };
 
@@ -97,21 +101,26 @@ export function catalogRefreshTasks(kind: CatalogKind): Array<() => Promise<void
     case "provider":
     case "model":
       return [refreshProviders];
+    // A web search key is a credential too.
     case "credential":
-      return [refreshProvidersAfterCredentialChange];
+      return [refreshProvidersAfterCredentialChange, refreshWebSearchIfLoaded];
     // A config file can carry any of them (a provider declared in
     // opencode.json included), and OpenChamber's own plugin injection lives
     // in one, so the whole set is re-read.
     case "config":
-      return [refreshAgents, refreshCommands, refreshSkills, refreshMcp, refreshPlugins, refreshProviders];
+      return [refreshAgents, refreshCommands, refreshSkills, refreshMcp, refreshPlugins, refreshProviders, refreshWebSearchIfLoaded];
     // Projects are the sync layer's own slice; nothing in Settings reads them
     // through these stores.
     case "project":
       return [];
+    case "websearch":
+      return [refreshWebSearchIfLoaded];
   }
 }
 
 export async function refreshStoresForCatalogKind(kind: CatalogKind): Promise<void> {
+  if (opencodeClient.getBoundRuntime()?.generation !== 'oc2') return;
+  if (kind === 'config') opencodeClient.clearConfigCache();
   const tasks = catalogRefreshTasks(kind);
   if (tasks.length === 0) return;
   await Promise.allSettled(tasks.map((task) => task()));

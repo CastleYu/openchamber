@@ -1,5 +1,13 @@
 # Session assist
 
+The server injects `kernelOperations` for session and message reads and the
+metadata write. OC2 message pages are reversed into chronological order for
+context assembly. The runtime checks its captured kernel epoch before saving
+a recap, so a generation started on one server cannot write to another.
+For OC2, it waits while the parent or any descendant has a live active status.
+It checks again before saving, so a child starting during generation cannot
+publish a premature summary. A failed live read leaves the work pending.
+
 The server generates a short reminder of recent work and an optional next user
 message with Small Model. Results live in `metadata.openchamber.assist` with
 `recap`, `suggestion`, `forMessageID`, and `generatedAt`. The payload shape is
@@ -28,14 +36,9 @@ bringing an entire old task back into the prompt. This was compared against
 one, five, ten, and full-history contexts on long maintainer sessions. There
 is no full-history cache and no assumed provider prefix-cache behavior.
 
-The latest content record must be a completed, successful, non-summary
-assistant answer with visible text. OpenCode closes every turn with an `idle`
-record and appends agent/model/location switches as records of their own;
-`newestContentId` looks past those, both here and in the re-check before the
-write, so an ordinary v2 transcript still ends in its answer. An `idle` whose
-outcome is `failed` or `interrupted` is not skipped: it disqualifies the turn.
-Child, archived, and reverted sessions are skipped. A new prompt clears the
-revert boundary before its next idle event.
+The latest record must be a completed, successful, non-summary assistant answer
+with visible text. Child, archived, and reverted sessions are skipped. A new
+prompt clears the revert boundary before its next idle event.
 
 Human turns follow chronological message intervals. OpenCode can insert
 synthetic continuation users during compaction, so a final answer's `parentID`

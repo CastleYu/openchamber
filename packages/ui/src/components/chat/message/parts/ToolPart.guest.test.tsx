@@ -4,9 +4,10 @@ import { plugin } from 'bun';
 import { pathToFileURL } from 'node:url';
 import { createRoot } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { OpenCode } from '@opencode/client';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import type { ToolPart as ToolPartData } from '@/lib/opencode/model';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { I18nProvider } from '@/lib/i18n';
 import { ThemeSystemContext, type ThemeContextValue } from '@/contexts/theme-system-context';
 import { getDefaultTheme } from '@/lib/theme/themes';
@@ -74,6 +75,7 @@ const part: ToolPartData = {
       { id: 'DEMO-1', title: 'Write docs', assignee: { name: 'Ada' } },
       { id: 'DEMO-2', title: 'Ship it' },
     ] }),
+    title: 'List tasks',
     metadata: {},
     time: { start: 1, end: 2 },
   },
@@ -109,14 +111,14 @@ test('a declared tool rule sets the header, icon, and table body of a matching t
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
-  const sdk = OpenCode.make({
+  const sdk = createOpencodeClient({
     baseUrl: 'http://localhost',
     fetch: async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } }),
   });
   const render = async () => {
     await act(async () => {
       root.render(
-        <SyncProvider sdk={sdk} directory="">
+        <SyncProvider source={sourceFromSdk(sdk)} directory="">
           <I18nProvider>
             <ThemeSystemContext.Provider value={themeContext}>
               <ToolPart part={part} isExpanded isMobile={false} onToggle={() => {}} />

@@ -1,65 +1,82 @@
 import { create } from 'zustand';
-import type { SyncEvent } from '@/lib/opencode/events';
+import type { Event } from '@opencode-ai/sdk/v2/client';
+import type { DomainEvent } from '@/lib/opencode/events';
+import type { PendingInput, PendingPermission } from '@/lib/opencode/operations';
 import { normalizeProjectPath } from '@/lib/projectResolution';
-import type { FormRequest, PermissionRequest } from '@/lib/opencode/model';
+import type { PermissionRequest } from '@/types/permission';
+import type { QuestionRequest } from '@/types/question';
 
-// Cross-directory index of permission requests and forms still waiting for an
-// answer. Directory stores remain the source for open directories; this index
-// exists for the ones that are never bootstrapped, whose pending requests
-// would otherwise be invisible to the tray and to any surface that does not
-// mount a row for them.
+// Cross-directory index of permission and question requests still waiting
+// for an answer. Directory stores remain the source for open directories;
+// this index exists for the ones that are never bootstrapped, whose pending
+// requests would otherwise be invisible to the tray and to any surface that
+// does not mount a row for them.
 //
 // It is fed by the same rare events the directory reducer consumes
-// (`permission.asked`/`permission.replied`, `form.created`/`form.settled`,
-// `session.deleted`) and seeded once from the host. Nothing streams through
-// here, so consumers subscribe per session ID without cost.
-//
-// Only the fields the consuming surfaces render are kept. The host seed can
-// carry no more than this, and storing the full requests would make the two
-// feeds disagree on shape for no gain.
-export type BlockingPermissionRequest = Pick<PermissionRequest, 'id' | 'sessionID' | 'action' | 'resources'>;
-export type BlockingFormRequest = Pick<FormRequest, 'id' | 'sessionID' | 'title'>;
+// (`permission.asked`/`permission.replied`, `question.asked`/`question.replied`/
+// `question.rejected`, `session.deleted`) and seeded once from the host. Nothing
+// streams through here, so consumers subscribe per session ID without cost.
 
 export type PendingBlockingRequests = {
   directory: string;
-  permissions: readonly BlockingPermissionRequest[];
-  forms: readonly BlockingFormRequest[];
+  permissions: readonly PermissionRequest[];
+  questions: readonly QuestionRequest[];
 };
 
 type GlobalBlockingRequestsState = {
   bySession: ReadonlyMap<string, PendingBlockingRequests>;
+  taggedBySession: ReadonlyMap<string, { directory: string; permissions: readonly PendingPermission[]; inputs: readonly PendingInput[] }>;
 };
 
 const EMPTY: readonly never[] = [];
 
 export const useGlobalBlockingRequestsStore = create<GlobalBlockingRequestsState>(() => ({
   bySession: new Map(),
+  taggedBySession: new Map(),
 }));
 
 export const resetGlobalBlockingRequests = (): void => {
-  useGlobalBlockingRequestsStore.setState({ bySession: new Map() });
+  useGlobalBlockingRequestsStore.setState({ bySession: new Map(), taggedBySession: new Map() });
+};
+
+export const applyGlobalDomainBlockingEvents = (directory: string, events: readonly DomainEvent[]): void => {
+  const current = useGlobalBlockingRequestsStore.getState().taggedBySession;
+  let next: Map<string, { directory: string; permissions: readonly PendingPermission[]; inputs: readonly PendingInput[] }> | null = null;
+  const scope = normalizeDirectory(directory);
+  for (const event of events) {
+    if (event.type !== 'permission-asked' && event.type !== 'permission-replied'
+      && event.type !== 'input-created' && event.type !== 'form-closed' && event.type !== 'session-delete') continue;
+    const sessionID = event.type === 'permission-asked' || event.type === 'input-created'
+      ? event.request.value.sessionID : event.sessionID;
+    const previous = (next ?? current).get(sessionID) ?? { directory: scope, permissions: [], inputs: [] };
+    if (event.type === 'session-delete') {
+      if (!(next ?? current).has(sessionID)) continue;
+      (next ??= new Map(current)).delete(sessionID);
+      continue;
+    }
+    let permissions = previous.permissions;
+    let inputs = previous.inputs;
+    if (event.type === 'permission-asked') {
+      const index = permissions.findIndex((item) => item.value.id === event.request.value.id);
+      permissions = index < 0 ? [...permissions, event.request] : permissions.map((item, i) => i === index ? event.request : item);
+    } else if (event.type === 'permission-replied') permissions = permissions.filter((item) => item.value.id !== event.requestID);
+    else if (event.type === 'input-created') {
+      const index = inputs.findIndex((item) => item.value.id === event.request.value.id);
+      inputs = index < 0 ? [...inputs, event.request] : inputs.map((item, i) => i === index ? event.request : item);
+    } else inputs = inputs.filter((item) => item.value.id !== event.requestID);
+    if (permissions === previous.permissions && inputs === previous.inputs) continue;
+    (next ??= new Map(current)).set(sessionID, { directory: scope, permissions, inputs });
+  }
+  if (next) useGlobalBlockingRequestsStore.setState({ taggedBySession: next });
 };
 
 const normalizeDirectory = (directory: string): string => normalizeProjectPath(directory) ?? directory;
 
-// The live events carry the whole request; only the rendered fields are kept,
-// so the index holds the same shape the host seed can provide and a long-lived
-// global map never retains a form's full field definitions.
-const toBlockingPermission = ({ id, sessionID, action, resources }: PermissionRequest): BlockingPermissionRequest => (
-  { id, sessionID, action, resources }
-);
-const toBlockingForm = ({ id, sessionID, title }: FormRequest): BlockingFormRequest => ({ id, sessionID, title });
-
-/**
- * Returns the list with the request added or replaced, or null when nothing
- * changed. OpenCode re-sends an unanswered ask, and the projection above makes
- * a fresh object every time, so equality is by value: an identical repeat must
- * not publish a new store snapshot to every subscriber.
- */
+/** Returns the list with the request added or replaced, or null when nothing changed. */
 const upsertRequest = <T extends { id: string }>(list: readonly T[], request: T): readonly T[] | null => {
   const index = list.findIndex((entry) => entry.id === request.id);
   if (index === -1) return [...list, request];
-  if (JSON.stringify(list[index]) === JSON.stringify(request)) return null;
+  if (list[index] === request) return null;
   const next = [...list];
   next[index] = request;
   return next;
@@ -85,23 +102,23 @@ class Reducer {
 
   write(sessionId: string, entry: PendingBlockingRequests): void {
     this.draft ??= new Map(this.state.bySession);
-    if (entry.permissions.length === 0 && entry.forms.length === 0) this.draft.delete(sessionId);
+    if (entry.permissions.length === 0 && entry.questions.length === 0) this.draft.delete(sessionId);
     else this.draft.set(sessionId, entry);
   }
 
-  ask(directory: string, sessionId: string, request: BlockingPermissionRequest | null, form: BlockingFormRequest | null): void {
-    const existing = this.current(sessionId) ?? { directory, permissions: EMPTY, forms: EMPTY };
+  ask(directory: string, sessionId: string, request: PermissionRequest | null, question: QuestionRequest | null): void {
+    const existing = this.current(sessionId) ?? { directory, permissions: EMPTY, questions: EMPTY };
     const permissions = request ? upsertRequest(existing.permissions, request) : null;
-    const forms = form ? upsertRequest(existing.forms, form) : null;
-    if (!permissions && !forms && existing.directory === directory) return;
+    const questions = question ? upsertRequest(existing.questions, question) : null;
+    if (!permissions && !questions && existing.directory === directory) return;
     this.write(sessionId, {
       directory,
       permissions: permissions ?? existing.permissions,
-      forms: forms ?? existing.forms,
+      questions: questions ?? existing.questions,
     });
   }
 
-  settle(kind: 'permissions' | 'forms', sessionId: string, requestId: string | undefined): void {
+  settle(kind: 'permissions' | 'questions', sessionId: string, requestId: string | undefined): void {
     const existing = this.current(sessionId);
     if (!existing) return;
     if (kind === 'permissions') {
@@ -109,14 +126,14 @@ class Reducer {
       if (permissions) this.write(sessionId, { ...existing, permissions });
       return;
     }
-    const forms = withoutRequest(existing.forms, requestId);
-    if (forms) this.write(sessionId, { ...existing, forms });
+    const questions = withoutRequest(existing.questions, requestId);
+    if (questions) this.write(sessionId, { ...existing, questions });
   }
 
   remove(sessionId: string): void {
     const existing = this.current(sessionId);
     if (!existing) return;
-    this.write(sessionId, { ...existing, permissions: EMPTY, forms: EMPTY });
+    this.write(sessionId, { ...existing, permissions: EMPTY, questions: EMPTY });
   }
 
   publish(): void {
@@ -125,7 +142,7 @@ class Reducer {
 }
 
 /** Applies request lifecycle events for one directory. Other event types are ignored cheaply. */
-export const applyGlobalBlockingRequestEvents = (rawDirectory: string, payloads: readonly SyncEvent[]): void => {
+export const applyGlobalBlockingRequestEvents = (rawDirectory: string, payloads: readonly Event[]): void => {
   if (payloads.length === 0) return;
   const directory = normalizeDirectory(rawDirectory);
   const reducer = new Reducer(useGlobalBlockingRequestsStore.getState());
@@ -133,28 +150,32 @@ export const applyGlobalBlockingRequestEvents = (rawDirectory: string, payloads:
   for (const payload of payloads) {
     switch (payload.type) {
       case 'permission.asked': {
-        const request = payload.properties;
-        if (request.sessionID && request.id) reducer.ask(directory, request.sessionID, toBlockingPermission(request), null);
+        // SAFETY: the ask event carries the full permission request as its properties, the same contract the directory reducer relies on.
+        const request = payload.properties as PermissionRequest;
+        if (request.sessionID && request.id) reducer.ask(directory, request.sessionID, request, null);
         continue;
       }
-      case 'form.created': {
-        const { form } = payload.properties;
-        if (form.sessionID && form.id) reducer.ask(directory, form.sessionID, null, toBlockingForm(form));
+      case 'question.asked': {
+        // SAFETY: the ask event carries the full question request as its properties, the same contract the directory reducer relies on.
+        const request = payload.properties as QuestionRequest;
+        if (request.sessionID && request.id) reducer.ask(directory, request.sessionID, null, request);
         continue;
       }
-      case 'permission.replied': {
-        const { sessionID, requestID } = payload.properties;
-        if (sessionID) reducer.settle('permissions', sessionID, requestID);
-        continue;
-      }
-      case 'form.settled': {
-        const { sessionID, formID } = payload.properties;
-        if (sessionID) reducer.settle('forms', sessionID, formID);
+      case 'permission.replied':
+      case 'question.replied':
+      case 'question.rejected': {
+        // SAFETY: reply events name the session and, when OpenCode includes it, the request they settle.
+        const props = payload.properties as { sessionID?: string; requestID?: string };
+        if (props.sessionID) {
+          reducer.settle(payload.type === 'permission.replied' ? 'permissions' : 'questions', props.sessionID, props.requestID);
+        }
         continue;
       }
       case 'session.deleted': {
-        const { sessionID } = payload.properties;
-        if (sessionID) reducer.remove(sessionID);
+        // SAFETY: deletion event properties identify the deleted session directly or through info.id.
+        const props = payload.properties as { sessionID?: string; info?: { id?: string } };
+        const sessionId = props.sessionID ?? props.info?.id;
+        if (sessionId) reducer.remove(sessionId);
         continue;
       }
       default:
@@ -171,22 +192,17 @@ export const applyGlobalBlockingRequestEvents = (rawDirectory: string, payloads:
  * because a live reply may already have settled a request the host map lags on.
  */
 export const seedGlobalBlockingRequests = (
-  entries: ReadonlyArray<{
-    sessionId: string;
-    directory: string;
-    permissions: readonly BlockingPermissionRequest[];
-    forms: readonly BlockingFormRequest[];
-  }>,
+  entries: ReadonlyArray<{ sessionId: string; directory: string; permissions: readonly PermissionRequest[]; questions: readonly QuestionRequest[] }>,
 ): void => {
   const state = useGlobalBlockingRequestsStore.getState();
   const reducer = new Reducer(state);
   for (const entry of entries) {
     if (state.bySession.has(entry.sessionId)) continue;
-    if (entry.permissions.length === 0 && entry.forms.length === 0) continue;
+    if (entry.permissions.length === 0 && entry.questions.length === 0) continue;
     reducer.write(entry.sessionId, {
       directory: normalizeDirectory(entry.directory),
       permissions: entry.permissions,
-      forms: entry.forms,
+      questions: entry.questions,
     });
   }
   reducer.publish();

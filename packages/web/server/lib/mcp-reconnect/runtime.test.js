@@ -35,8 +35,8 @@ const createClient = (statuses, { onConnect } = {}) => {
     attempts,
     statuses,
     mcp: {
-      list: vi.fn(async () => ({ data: Object.entries(statuses).map(([name, status]) => ({ name, status })) })),
-      connect: vi.fn(async ({ server: name }) => {
+      status: vi.fn(async () => ({ data: { ...statuses } })),
+      connect: vi.fn(async ({ path: { name } }) => {
         attempts.push({ name, at: Date.now() });
         onConnect?.(name);
         return { data: true };
@@ -64,24 +64,22 @@ describe('managed MCP reconnect runtime', () => {
       clients.push(client); hooks.push(hook); disposers.push(hook.dispose);
     }
     await vi.advanceTimersByTimeAsync(600_000);
-    for (const client of clients) expect(client.mcp.list).not.toHaveBeenCalled();
+    for (const client of clients) expect(client.mcp.status).not.toHaveBeenCalled();
     await hooks[0]['chat.message']();
     await hooks[1].event({ event: { type: 'mcp.tools.changed' } });
     await vi.advanceTimersByTimeAsync(1000);
     expect(clients[0].attempts).toHaveLength(1);
     expect(clients[1].attempts).toHaveLength(1);
-    for (const client of clients.slice(2)) expect(client.mcp.list).not.toHaveBeenCalled();
+    for (const client of clients.slice(2)) expect(client.mcp.status).not.toHaveBeenCalled();
   });
 
   it('materializes the plugin and preserves existing plugin entries', async () => {
     const { prepared, pluginPath } = await materialize('{ "plugin": ["file:///existing.js"], "model": "test/model" }');
     const config = JSON.parse(prepared.OPENCODE_CONFIG_CONTENT);
     expect(config.model).toBe('test/model');
-    expect(config.plugins).toEqual(['file:///existing.js', path.dirname(pluginPath)]);
-    expect(JSON.parse(await fs.readFile(path.join(path.dirname(pluginPath), 'package.json'), 'utf8'))).toMatchObject({
-      name: 'openchamber-mcp-reconnect',
-      exports: { '.': './openchamber-mcp-reconnect-plugin.js' },
-    });
+    expect(config.plugin).toEqual(['file:///existing.js', pathToFileURL(pluginPath).href]);
+    const manifest = JSON.parse(await fs.readFile(path.join(path.dirname(pluginPath), 'package.json'), 'utf8'));
+    expect(manifest.exports['.']).toBe('./openchamber-mcp-reconnect-plugin.js');
   });
 
   it('reconnects only servers in the failed state', async () => {
@@ -139,7 +137,7 @@ describe('managed MCP reconnect runtime', () => {
     vi.useFakeTimers();
     const { plugin } = await materialize();
     const client = createClient({ broken: { status: 'failed', error: 'refused' } });
-    client.mcp.list.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    client.mcp.status.mockRejectedValueOnce(new Error('ECONNREFUSED'));
     await start(plugin, client);
 
     await vi.advanceTimersByTimeAsync(1000);
@@ -159,7 +157,7 @@ describe('managed MCP reconnect runtime', () => {
     await hooks.event({ event: { type: 'mcp.tools.changed', properties: { server: 'broken' } } });
     await vi.advanceTimersByTimeAsync(120_000);
 
-    expect(client.mcp.list).not.toHaveBeenCalled();
+    expect(client.mcp.status).not.toHaveBeenCalled();
     expect(client.attempts).toHaveLength(0);
   });
 });

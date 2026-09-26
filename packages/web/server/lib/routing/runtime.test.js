@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRoutingRuntime, requestTextOf } from './runtime.js';
 import { resolveEffectiveConfig } from './store.js';
 import { excerptHead, excerptHeadTail, turnsToHistory } from './history.js';
-import { createJevClient, decidePermission, decideRouting } from './jev.js';
+import { decidePermission, decideRouting } from './jev.js';
 
-const AUTO = { providerID: 'openchamber', id: 'auto' };
+const AUTO = { providerID: 'openchamber', modelID: 'auto' };
 const FALLBACK = { model: { providerID: 'anthropic', modelID: 'claude-sonnet-5' }, variant: 'medium' };
 
 const readyConfig = () => {
@@ -18,7 +18,8 @@ const readyConfig = () => {
   return config;
 };
 
-const makeRuntime = ({ config = readyConfig(), token = 'key', answers, askError } = {}) => {
+const makeRuntime = ({ config = readyConfig(), token = 'key', answers, askError, flag = '1' } = {}) => {
+  process.env.OPENCHAMBER_ROUTING_ENABLE = flag;
   const events = [];
   const store = {
     readConfig: vi.fn(async () => config),
@@ -40,15 +41,55 @@ const makeRuntime = ({ config = readyConfig(), token = 'key', answers, askError 
 };
 
 describe('requestTextOf', () => {
-  it('reads the prompt text a v2 send carries', () => {
-    expect(requestTextOf({ text: '  fix the typo in README  ', files: [{ uri: 'data:...' }] })).toBe('fix the typo in README');
+  it('reads OC2 flat prompts and commands', () => {
+    expect(requestTextOf({ text: '  explain this  ' })).toBe('explain this');
+    expect(requestTextOf({ name: 'review', text: '  3650  ' })).toBe('/review 3650');
   });
-  it('renders a v2 command body (`name` plus `text`) as the slash command', () => {
-    expect(requestTextOf({ name: 'review', text: ' src ' })).toBe('/review src');
+  it('joins authored text parts and ignores synthetic ones and files', () => {
+    expect(requestTextOf({ parts: [
+      { type: 'text', text: 'fix the typo' },
+      { type: 'text', text: 'injected', synthetic: true },
+      { type: 'file', url: 'data:...' },
+      { type: 'text', text: 'in README' },
+    ] })).toBe('fix the typo\n\nin README');
   });
-  it('keeps the command name when it has no arguments', () => {
-    expect(requestTextOf({ name: 'review', text: '' })).toBe('/review');
-    expect(requestTextOf({ name: 'review' })).toBe('/review');
+  it('renders a slash command with its arguments', () => {
+    expect(requestTextOf({ command: 'review', arguments: ' 3650 ' })).toBe('/review 3650');
+  });
+});
+
+describe('OC2 session routing', () => {
+  const setup = (epochRef) => {
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: epochRef.value }),
+      listMessages: vi.fn(async () => ({ data: { items: [] } })),
+      switchSessionSelection: vi.fn(async () => ({})),
+    };
+    const store = { readConfig: async () => readyConfig(), readToken: async () => 'key' };
+    const jev = { ask: vi.fn(async () => ({ answers: { category: { choice: 'hard', confidence: 0.97 } }, ms: 12 })) };
+    const runtime = createRoutingRuntime({ kernelOperations, store, jev });
+    return { runtime, kernelOperations, jev };
+  };
+
+  it('switches model and agent for a marked Auto session', async () => {
+    process.env.OPENCHAMBER_ROUTING_ENABLE = '1';
+    const { runtime, kernelOperations } = setup({ value: 1 });
+    expect(runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo')).toBe(true);
+    await runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'find root cause' } });
+    expect(kernelOperations.switchSessionSelection).toHaveBeenCalledWith(expect.objectContaining({
+      sessionID: 'ses_2', directory: '/repo', model: { providerID: 'openai', id: 'gpt-6-astra', variant: 'high' },
+      agent: 'plan', expectedIdentity: { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 },
+    }));
+  });
+
+  it('drops an old Auto mark after the runtime changes', async () => {
+    const epoch = { value: 1 };
+    const { runtime, kernelOperations } = setup(epoch);
+    runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo');
+    epoch.value = 2;
+    expect(runtime.isAutoSession('ses_2')).toBe(false);
+    await expect(runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'hello' } })).resolves.toBeNull();
+    expect(kernelOperations.switchSessionSelection).not.toHaveBeenCalled();
   });
 });
 
@@ -83,91 +124,63 @@ describe('decisions', () => {
   });
 });
 
-describe('resolveAutoSelection', () => {
-  const send = (extra = {}) => ({ sessionId: 's1', model: AUTO, requestText: 'find the root cause', ...extra });
-
+describe('resolvePromptBody', () => {
   it('leaves a real model untouched and does not consult Jev', async () => {
     const { runtime, jev } = makeRuntime({ answers: {} });
-    expect(await runtime.resolveAutoSelection(send({ model: { providerID: 'anthropic', id: 'claude-opus-5' } }))).toBeNull();
+    const body = { model: { providerID: 'anthropic', modelID: 'claude-opus-5' }, parts: [] };
+    expect(await runtime.resolvePromptBody(body, { sessionId: 's1' })).toBeNull();
+    expect(body.model.modelID).toBe('claude-opus-5');
     expect(jev.ask).not.toHaveBeenCalled();
   });
 
-  it('answers with the routed category model, variant and agent', async () => {
+  it('rewrites the sentinel with the routed category model, variant and agent', async () => {
     const { runtime, events } = makeRuntime({ answers: { category: { choice: 'hard', confidence: 0.97 } } });
-    const resolved = await runtime.resolveAutoSelection(send({ agent: 'build' }));
-    expect(resolved.model).toEqual({ providerID: 'openai', id: 'gpt-6-astra', variant: 'high' });
-    expect(resolved.agent).toBe('plan');
-    expect(resolved.decision).toMatchObject({ category: 'hard', reason: 'routed', confidence: 0.97 });
+    const body = { model: AUTO, variant: 'low', agent: 'build', parts: [{ type: 'text', text: 'find the root cause' }] };
+    const decision = await runtime.resolvePromptBody(body, { sessionId: 's1' });
+    expect(body).toMatchObject({ model: { providerID: 'openai', modelID: 'gpt-6-astra' }, variant: 'high', agent: 'plan' });
+    expect(decision).toMatchObject({ category: 'hard', reason: 'routed', confidence: 0.97 });
     expect(events.at(-1)).toMatchObject({ type: 'openchamber:routing.decision', properties: { sessionId: 's1', category: 'hard' } });
   });
 
-  it('uses the fallback pair and keeps the composer agent when the category has no model', async () => {
+  it('rewrites the string sentinel the command route sends, keeping the string shape', async () => {
+    const { runtime } = makeRuntime({ answers: { category: { choice: 'hard', confidence: 0.97 } } });
+    const body = { model: 'openchamber/auto', command: 'review', arguments: '3650' };
+    await runtime.resolvePromptBody(body, { sessionId: 's1' });
+    expect(body.model).toBe('openai/gpt-6-astra');
+    expect(body.agent).toBe('plan');
+  });
+
+  it('uses the fallback and keeps the composer agent when the category has no model', async () => {
     const { runtime } = makeRuntime({ answers: { category: { choice: 'trivial', confidence: 0.99 } } });
-    const resolved = await runtime.resolveAutoSelection(send({ agent: 'build', requestText: 'fix typo' }));
-    expect(resolved.model).toEqual({ providerID: 'anthropic', id: 'claude-sonnet-5', variant: 'medium' });
-    expect(resolved.agent).toBe('build');
+    const body = { model: AUTO, variant: 'high', agent: 'build', parts: [{ type: 'text', text: 'fix typo' }] };
+    await runtime.resolvePromptBody(body, { sessionId: 's1' });
+    expect(body).toMatchObject({ model: FALLBACK.model, variant: 'medium', agent: 'build' });
   });
 
   it('falls back on low confidence and on a Jev failure, and records why', async () => {
     const low = makeRuntime({ answers: { category: { choice: 'hard', confidence: 0.3 } } });
-    const lowResolved = await low.runtime.resolveAutoSelection(send());
-    expect(lowResolved.decision.reason).toBe('low-confidence');
-    expect(lowResolved.model).toMatchObject({ providerID: 'anthropic', id: 'claude-sonnet-5' });
+    const body = { model: AUTO, parts: [] };
+    expect((await low.runtime.resolvePromptBody(body, { sessionId: 's1' })).reason).toBe('low-confidence');
+    expect(body.model).toEqual(FALLBACK.model);
 
     const failing = makeRuntime({ askError: Object.assign(new Error('Jev responded 401'), { status: 401 }) });
-    const resolved = await failing.runtime.resolveAutoSelection(send());
-    expect(resolved.decision).toMatchObject({ reason: 'error', error: 'Jev responded 401' });
-    expect(resolved.model).toMatchObject({ providerID: 'anthropic', id: 'claude-sonnet-5' });
+    const body2 = { model: AUTO, parts: [] };
+    const decision = await failing.runtime.resolvePromptBody(body2, { sessionId: 's1' });
+    expect(decision).toMatchObject({ reason: 'error', error: 'Jev responded 401' });
+    expect(body2.model).toEqual(FALLBACK.model);
   });
 
   it('falls back without asking Jev while Auto is not ready, and refuses without a fallback', async () => {
     const config = readyConfig();
     config.enabled = false;
     const notReady = makeRuntime({ config, answers: {} });
-    const resolved = await notReady.runtime.resolveAutoSelection(send());
-    expect(resolved.decision.reason).toBe('not-ready');
-    expect(resolved.model).toMatchObject({ providerID: 'anthropic', id: 'claude-sonnet-5' });
+    const body = { model: AUTO, parts: [] };
+    expect((await notReady.runtime.resolvePromptBody(body, { sessionId: 's1' })).reason).toBe('not-ready');
+    expect(body.model).toEqual(FALLBACK.model);
     expect(notReady.jev.ask).not.toHaveBeenCalled();
 
     const noFallback = makeRuntime({ config: { ...readyConfig(), fallback: null }, answers: {} });
-    await expect(noFallback.runtime.resolveAutoSelection(send())).rejects.toMatchObject({ status: 400 });
-  });
-});
-
-describe('jev endpoint', () => {
-  const capture = async (token) => {
-    let call = null;
-    const fetchImpl = async (url, init) => {
-      call = { url, init };
-      return { ok: true, status: 200, text: async () => JSON.stringify({ answers: {} }) };
-    };
-    await createJevClient({ fetchImpl }).ask({ state: 'x', questions: {} }, token);
-    return { url: call.url, headers: call.init.headers, body: JSON.parse(call.init.body) };
-  };
-
-  it('sends a saved key to TypeSafe and falls back to the free model zen serves without one', async () => {
-    const keyed = await capture('secret');
-    expect(keyed.url).toBe('https://api.typesafe.ai/v1/systemone');
-    expect(keyed.headers.authorization).toBe('Bearer secret');
-    expect(keyed.body.model).toBe('jev-latest');
-
-    const free = await capture(null);
-    expect(free.url).toBe('https://opencode.ai/zen/v1/systemone');
-    expect(free.headers.authorization).toBeUndefined();
-    // Zen counts our calls by this header, and does not know the `jev-latest` alias.
-    expect(free.headers['x-opencode-client']).toBe('openchamber');
-    expect(free.body.model).toBe('jev-1.13-free');
-  });
-});
-
-describe('auto sessions', () => {
-  it('remembers the sentinel selection and forgets it when a real model is chosen', () => {
-    const { runtime } = makeRuntime({ answers: {} });
-    expect(runtime.isAutoSession('s1')).toBe(false);
-    expect(runtime.noteModelSelection('s1', AUTO, '/repo')).toBe(true);
-    expect(runtime.isAutoSession('s1')).toBe(true);
-    expect(runtime.noteModelSelection('s1', { providerID: 'anthropic', id: 'claude-opus-5' }, '/repo')).toBe(false);
-    expect(runtime.isAutoSession('s1')).toBe(false);
+    await expect(noFallback.runtime.resolvePromptBody({ model: AUTO, parts: [] }, { sessionId: 's1' })).rejects.toMatchObject({ status: 400 });
   });
 });
 
@@ -191,22 +204,24 @@ describe('evaluatePermission', () => {
     expect(events.at(-1)).toMatchObject({ type: 'openchamber:routing.safety-skipped', properties: { permissionId: 'p1', error: 'Jev timed out after 4000ms' } });
   });
 
-  it('accepts without asking when the safety net is off', async () => {
+  it('accepts without asking when the safety net is off, the key is missing, or the flag is unset', async () => {
     const off = readyConfig();
     off.safetyNet.enabled = false;
-    const { runtime, jev } = makeRuntime({ config: off, answers: {} });
-    expect(await runtime.evaluatePermission(permission, '/repo')).toEqual({ action: 'accept' });
-    expect(jev.ask).not.toHaveBeenCalled();
+    for (const setup of [{ config: off }, { token: null }, { flag: '' }]) {
+      const { runtime, jev } = makeRuntime({ ...setup, answers: {} });
+      expect(await runtime.evaluatePermission(permission, '/repo')).toEqual({ action: 'accept' });
+      expect(jev.ask).not.toHaveBeenCalled();
+    }
   });
 });
 
 describe('describe', () => {
-  it('reports Auto ready with an enabled config, a fallback and two categories, key or no key', async () => {
-    expect((await makeRuntime({ answers: {} }).runtime.describe())).toMatchObject({ autoReady: true, tokenPresent: true, jevSource: 'typesafe' });
-    // Without a key the free Jev model on zen answers, so Auto stays available.
-    expect((await makeRuntime({ token: null, answers: {} }).runtime.describe())).toMatchObject({ autoReady: true, tokenPresent: false, jevSource: 'zen-free' });
+  it('reports Auto ready only with the flag, enabled config, key, fallback and two categories', async () => {
+    expect((await makeRuntime({ answers: {} }).runtime.describe()).autoReady).toBe(true);
+    expect((await makeRuntime({ token: null, answers: {} }).runtime.describe())).toMatchObject({ autoReady: false, tokenPresent: false });
     const one = readyConfig();
     one.categories = one.categories.map((c, i) => ({ ...c, enabled: i === 0 }));
     expect((await makeRuntime({ config: one, answers: {} }).runtime.describe()).autoReady).toBe(false);
+    expect(await makeRuntime({ flag: '', answers: {} }).runtime.describe()).toEqual({ available: false, autoReady: false, tokenPresent: false, config: null, builtins: [] });
   });
 });

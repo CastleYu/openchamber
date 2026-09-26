@@ -1,5 +1,5 @@
 import type { OpenCodeManager } from './opencode';
-import { waitForApiUrl } from './opencode-ready';
+import { resolveKernelRequest } from './kernelRequest';
 
 type OpenSseProxyOptions = {
   manager: OpenCodeManager;
@@ -44,22 +44,19 @@ const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve) =
 
 const getAbortReason = (signal: AbortSignal) => signal.reason ?? new DOMException('Aborted', 'AbortError');
 
-// OpenCode 2.x serves one global stream at `GET /api/event`; every frame carries
-// its own `location.directory`, so there is nothing to scope the request with.
-const OPENCODE_EVENT_PATH = '/api/event';
-
-const normalizeSseSearchParams = (path: string): URLSearchParams => {
+const normalizeSsePath = (path: string): { pathname: '/event' | '/global/event'; searchParams: URLSearchParams; directory: string | null } => {
   const parsed = new URL(path, 'https://openchamber.invalid');
-  return new URLSearchParams(parsed.searchParams);
+  const pathname = parsed.pathname.replace(/^\/api(?=\/)/, '') === '/global/event' ? '/global/event' : '/event';
+  const directory = parsed.searchParams.get('directory');
+  return {
+    pathname,
+    searchParams: new URLSearchParams(parsed.searchParams),
+    directory: typeof directory === 'string' && directory.trim().length > 0 ? directory.trim() : null,
+  };
 };
 
-const createSseUrl = (baseUrl: string, searchParams: URLSearchParams): URL => {
-  const base = `${baseUrl.replace(/\/+$/, '')}/`;
-  const url = new URL(OPENCODE_EVENT_PATH.replace(/^\/+/, ''), base);
-  for (const [key, value] of searchParams) {
-    url.searchParams.append(key, value);
-  }
-  return url;
+const resolveDefaultDirectory = (manager: OpenCodeManager): string => {
+  return manager.getWorkingDirectory() || 'global';
 };
 
 const createSseHeaders = (manager: OpenCodeManager, headers?: Record<string, string>): Record<string, string> => ({
@@ -80,19 +77,27 @@ const fetchSseResponse = async (
   path: string,
   headers: Record<string, string> | undefined,
   signal: AbortSignal,
+  selected: Awaited<ReturnType<typeof resolveKernelRequest>>,
 ): Promise<Response> => {
-  const baseUrl = await waitForApiUrl(manager);
-  if (!baseUrl) {
-    throw new Error('OpenCode API URL not available');
+  selected.assertCurrent();
+  const { pathname, directory } = normalizeSsePath(path);
+  const resolvedDirectory = directory || resolveDefaultDirectory(manager);
+  const targetUrl = new URL(selected.url);
+  if (selected.descriptor.generation === 'oc1' && pathname === '/event' && !targetUrl.searchParams.has('directory')) {
+    targetUrl.searchParams.set('directory', resolvedDirectory);
   }
-
-  const targetUrl = createSseUrl(baseUrl, normalizeSseSearchParams(path));
 
   const response = await fetch(targetUrl.toString(), {
     method: 'GET',
     headers: createSseHeaders(manager, headers),
     signal,
   });
+  try {
+    selected.assertCurrent();
+  } catch (error) {
+    await response.body?.cancel().catch(() => {});
+    throw error;
+  }
 
   if (!response.ok) {
     await response.body?.cancel().catch(() => {});
@@ -194,14 +199,21 @@ export const openSseProxy = async ({
   onChunk,
   stallTimeoutMs,
 }: OpenSseProxyOptions): Promise<OpenSseProxyResult> => {
+  const selected = await resolveKernelRequest(manager, path);
+  const forwardChunk = (chunk: string) => {
+    selected.assertCurrent();
+    onChunk(chunk);
+  };
   // Reconnect logic with exponential backoff
   let reconnectAttempts = 0;
 
   const connect = async (): Promise<Response> => {
+    selected.assertCurrent();
     try {
-      console.log(`[SSE] Connecting to ${OPENCODE_EVENT_PATH} (attempt ${reconnectAttempts + 1}/${MAX_RECONNECTS + 1})`);
+      const { pathname } = normalizeSsePath(path);
+      console.log(`[SSE] Connecting to ${pathname} (attempt ${reconnectAttempts + 1}/${MAX_RECONNECTS + 1})`);
 
-      const result = await fetchSseResponse(manager, path, headers, signal);
+      const result = await fetchSseResponse(manager, path, headers, signal, selected);
       reconnectAttempts = 0;
       return result;
     } catch (error) {
@@ -237,7 +249,7 @@ export const openSseProxy = async ({
   const run = (async () => {
     let activeResponse = response;
     try {
-      await pipeSseResponse(activeResponse, signal, onChunk, stallTimeoutMs);
+      await pipeSseResponse(activeResponse, signal, forwardChunk, stallTimeoutMs);
     } catch (error: unknown) {
       const cause = (error as { cause?: { code?: string } } | null)?.cause;
 
@@ -257,7 +269,7 @@ export const openSseProxy = async ({
             // Attempt to reconnect
             try {
               activeResponse = await connect();
-              await pipeSseResponse(activeResponse, signal, onChunk, stallTimeoutMs);
+              await pipeSseResponse(activeResponse, signal, forwardChunk, stallTimeoutMs);
               return; // Successfully reconnected
             } catch (reconnectError) {
               console.error('[SSE] Reconnect failed', reconnectError);

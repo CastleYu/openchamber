@@ -13,11 +13,11 @@ const UNSYNCED_DIRECTORY = '/workspace/archive';
 
 const makeSession = (id: string, directory: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
   directory,
   title: id,
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  version: '1',
   time: { created: 1, updated: 1 },
 });
 
@@ -34,15 +34,13 @@ const setSyncedDirectories = (...directories: string[]): ChildStoreManager => {
   const manager = new ChildStoreManager();
   managers.push(manager);
   for (const directory of directories) manager.ensureChild(directory, { bootstrap: false });
-  // SAFETY: `setSyncRefs` only stores the SDK for other readers; nothing here calls it.
-  setSyncRefs({} as never, manager, directories[0] ?? '');
+  setSyncRefs({}, manager, directories[0] ?? '');
   return manager;
 };
 
 afterEach(() => {
   for (const manager of managers.splice(0)) manager.disposeAll();
-  // SAFETY: same unused SDK slot; drops the refs this file installed.
-  setSyncRefs({} as never, new ChildStoreManager(), '');
+  setSyncRefs({}, new ChildStoreManager(), '');
 });
 
 describe('collectTrayStatusPollTargets', () => {

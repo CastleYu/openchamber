@@ -1,26 +1,15 @@
-import type {
-  Agent,
-  Config,
-  FormRequest,
-  Message,
-  Part,
-  PermissionRequest,
-  Project,
-  Session,
-  SessionStatus,
-  Vcs,
-} from "@/lib/opencode/model"
-import type { ProviderCatalog } from "@/lib/opencode/client"
+import type { Agent, Config, LspStatus, Path, PermissionRequest, Project, ProviderAuthResponse, ProviderListResponse, QuestionRequest, Todo, VcsInfo } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, Session, SessionStatus } from "@/lib/opencode/model"
+import type { BootstrapPath, PendingInput, PendingPermission, ProviderCatalog, TaggedConfig } from "@/lib/opencode/operations"
+import type { TaggedAgents } from "./source"
 
-export type { Project }
-
-/** Resolved filesystem context of a directory (from `/api/location` plus the server home). */
-export type Path = {
-  /** Directory the store is scoped to. */
-  directory: string
-  /** Project root that contains `directory`. */
-  worktree: string
-  home: string
+export type FileDiff = {
+  file?: string
+  status?: string
+  additions?: number
+  deletions?: number
+  patch?: string
+  [key: string]: unknown
 }
 
 export type ProjectMeta = {
@@ -41,7 +30,7 @@ export type State = {
   project: string
   projectMeta: ProjectMeta | undefined
   icon: string | undefined
-  provider: ProviderCatalog
+  provider: ProviderListResponse
   config: Config
   path: Path
   session: Session[]
@@ -50,13 +39,25 @@ export type State = {
   sessionRevision?: number
   sessionEventRevision?: Record<string, number>
   sessionDeletedRevision?: Record<string, number>
+  /** Last committed OC2 durable sequence per session aggregate. */
+  eventSequence?: Record<string, number>
   session_status: Record<string, SessionStatus>
   /** A successful status snapshot makes omitted sessions authoritatively idle. */
   sessionStatusReady?: boolean
+  session_diff: Record<string, FileDiff[]>
+  todo: Record<string, Todo[]>
   permission: Record<string, PermissionRequest[]>
-  /** Pending forms (the agent asking the user for input), keyed by session. */
-  form: Record<string, FormRequest[]>
-  vcs: Vcs | undefined
+  question: Record<string, QuestionRequest[]>
+  /** OC2 blocking requests retain their generation and form/permission kind. */
+  pendingPermission: Record<string, PendingPermission[]>
+  pendingInput: Record<string, PendingInput[]>
+  configTagged?: TaggedConfig
+  providerCatalog?: ProviderCatalog
+  agentCatalog?: TaggedAgents
+  pathInfo?: BootstrapPath
+  lsp: LspStatus[]
+  lspAvailability?: "supported" | "unsupported"
+  vcs: VcsInfo | undefined
   limit: number
   message: Record<string, Message[]>
   part: Record<string, Part[]>
@@ -68,9 +69,14 @@ export type GlobalState = {
   error?: InitError
   path: Path
   projects: Project[]
-  providers: ProviderCatalog
+  providers: ProviderListResponse
+  providerCatalog?: ProviderCatalog
+  providerAuth: ProviderAuthResponse
   config: Config
+  configTagged?: TaggedConfig
+  pathInfo?: BootstrapPath
   reload: undefined | "pending" | "complete"
+  sessionTodo: Record<string, Todo[]>
 }
 
 type InitError = {
@@ -118,16 +124,13 @@ export const EVICTION_GRACE_MS = 30 * 1000
 export const DIR_IDLE_TTL_MS = 20 * 60 * 1000
 export const SESSION_CACHE_LIMIT = 20
 
-export const EMPTY_PATH: Path = { directory: "", worktree: "", home: "" }
-export const EMPTY_PROVIDER_CATALOG: ProviderCatalog = { providers: [], models: [] }
-
 export const INITIAL_STATE: State = {
   project: "",
   projectMeta: undefined,
   icon: undefined,
-  provider: EMPTY_PROVIDER_CATALOG,
+  provider: { all: [], connected: [], default: {} },
   config: {},
-  path: EMPTY_PATH,
+  path: { state: "", config: "", worktree: "", directory: "", home: "" },
   status: "loading",
   agent: [],
   session: [],
@@ -136,9 +139,15 @@ export const INITIAL_STATE: State = {
   sessionRevision: 0,
   sessionEventRevision: {},
   sessionDeletedRevision: {},
+  eventSequence: {},
   session_status: {},
+  session_diff: {},
+  todo: {},
   permission: {},
-  form: {},
+  question: {},
+  pendingPermission: {},
+  pendingInput: {},
+  lsp: [],
   vcs: undefined,
   limit: 5,
   message: {},
@@ -147,9 +156,11 @@ export const INITIAL_STATE: State = {
 
 export const INITIAL_GLOBAL_STATE: GlobalState = {
   ready: false,
-  path: EMPTY_PATH,
+  path: { state: "", config: "", worktree: "", directory: "", home: "" },
   projects: [],
-  providers: EMPTY_PROVIDER_CATALOG,
+  providers: { all: [], connected: [], default: {} },
+  providerAuth: {},
   config: {},
   reload: undefined,
+  sessionTodo: {},
 }

@@ -16,6 +16,13 @@ Policy inheritance uses the nearest explicit session value. A child `false` ther
 
 Unknown lineage and failed policy loads fail closed. A failed pending-permission fetch is distinct from an empty successful response and never clears policy state.
 
+The web runtime receives `kernelOperations` at startup. OC1 uses its existing
+permission list and reply contract; OC2 uses the session-scoped permission
+request list and reply with `decision`. Session lineage reads use the same
+generation. The runtime captures endpoint and epoch before resolving lineage
+or consulting the safety net, and rejects a reply if either changes. A
+generation switch also clears the cached session lineage.
+
 ## Safety net
 
 `evaluatePermission` (the routing runtime, `../routing/DOCUMENTATION.md`) is

@@ -6,9 +6,9 @@ import { handleFsBridgeMessage } from './bridge-fs-runtime';
 import { handleConfigBridgeMessage } from './bridge-config-runtime';
 import { handleSystemBridgeMessage } from './bridge-system-runtime';
 import { handleProxyBridgeMessage } from './bridge-proxy-runtime';
+import { createSessionStateStore, getOpenChamberDataDir, type SessionStateStore } from './openchamberSessionState';
 import { handlePermissionAutoAcceptBridgeMessage } from './bridge-permission-auto-accept-runtime';
 import { createProjectSetupStore, handleProjectSetupBridgeMessage } from './bridge-project-setup-runtime';
-import { createSessionStateStore, getOpenChamberDataDir } from './openchamberSessionState';
 import {
   fetchOpenCodeSkillsFromApi,
   persistSettings,
@@ -58,7 +58,16 @@ export interface BridgeContext {
 
 const CLIENT_RELOAD_DELAY_MS = 800;
 const projectSetupStore = createProjectSetupStore();
-const sessionStateStore = createSessionStateStore({ dataDir: getOpenChamberDataDir() });
+const sessionStores = new WeakMap<OpenCodeManager, SessionStateStore>();
+const sessionStoreFor = (manager: OpenCodeManager | undefined): SessionStateStore | undefined => {
+  if (!manager) return undefined;
+  let store = sessionStores.get(manager);
+  if (!store) {
+    store = createSessionStateStore({ dataDir: getOpenChamberDataDir(), manager });
+    sessionStores.set(manager, store);
+  }
+  return store;
+};
 
 const UPDATE_CHECK_URL = process.env.OPENCHAMBER_UPDATE_API_URL || 'https://api.openchamber.dev/v1/update/check';
 const GITHUB_BACKEND_DISABLED_ERROR = 'OpenChamber VS Code backend GitHub integration is disabled. Use native VS Code GitHub integrations.';
@@ -134,7 +143,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
       ctx,
       {
         resolveUserPath,
-        sessionState: sessionStateStore,
+        sessionState: sessionStoreFor(ctx?.manager),
         fetchModelsMetadata,
         updateCheckUrl: UPDATE_CHECK_URL,
         clientReloadDelayMs: CLIENT_RELOAD_DELAY_MS,
@@ -148,7 +157,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
       ctx,
       {
         tryHandleLocalFsProxy,
-        sessionState: sessionStateStore,
+        sessionState: sessionStoreFor(ctx?.manager),
         buildUnavailableApiResponse,
         sanitizeForwardHeaders,
         collectHeaders,

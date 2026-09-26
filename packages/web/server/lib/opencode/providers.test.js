@@ -82,7 +82,7 @@ describe('custom provider config persistence', () => {
         models: { m: { name: 'M' } },
       });
       expect(result.ok).toBe(true);
-      expect(result.value.config.package).toBe(`aisdk:${npm}`);
+      expect(result.value.config.npm).toBe(npm);
     }
   });
 
@@ -118,15 +118,16 @@ describe('custom provider config persistence', () => {
     expect(result.path.startsWith(projectDir)).toBe(true);
 
     const written = readJson(result.path);
-    expect(written.provider).toBeUndefined();
-    expect(written.providers['campus-llm']).toEqual({
+    expect(written.provider['campus-llm']).toEqual({
+      npm: '@ai-sdk/openai-compatible',
       name: 'Campus LLM',
-      package: 'aisdk:@ai-sdk/openai-compatible',
       env: ['CAMPUS_KEY'],
-      settings: { baseURL: 'https://llm.example.edu/v1' },
-      headers: { 'X-Campus': '1' },
+      options: {
+        baseURL: 'https://llm.example.edu/v1',
+        headers: { 'X-Campus': '1' },
+      },
       models: {
-        'fast-model': { modelID: 'fast-model', name: 'Fast' },
+        'fast-model': { name: 'Fast' },
       },
     });
 
@@ -136,7 +137,7 @@ describe('custom provider config persistence', () => {
   });
 
   test('upsertProviderConfig updates existing entry and clears disabled_providers', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
+    const configPath = path.join(projectDir, 'opencode.json');
     writeJson(configPath, {
       provider: {
         'campus-llm': {
@@ -157,14 +158,13 @@ describe('custom provider config persistence', () => {
     }, projectDir, 'project');
 
     const written = readJson(configPath);
-    expect(written.provider).toBeUndefined();
-    expect(written.providers['campus-llm'].name).toBe('Campus LLM');
-    expect(written.providers['campus-llm'].models).toEqual({ b: { modelID: 'b', name: 'B' } });
+    expect(written.provider['campus-llm'].name).toBe('Campus LLM');
+    expect(written.provider['campus-llm'].models).toEqual({ b: { name: 'B' } });
     expect(written.disabled_providers).toEqual(['other']);
   });
 
   test('upsertProviderConfig preserves unmanaged provider and model metadata', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
+    const configPath = path.join(projectDir, 'opencode.json');
     writeJson(configPath, {
       provider: {
         'campus-llm': {
@@ -210,116 +210,44 @@ describe('custom provider config persistence', () => {
       },
     }, projectDir, 'project', { hasStoredAuth: true });
 
-    // A legacy `provider` entry is rewritten in place into `providers` in v2
-    // shape: `npm` -> `package`, `options` -> `settings`, `tool_call`/
-    // `modalities` -> `capabilities`, variants map -> variants array. Fields v2
-    // accepts but ignores (`reasoning`, `attachment`) are dropped.
-    const config = readJson(configPath);
-    expect(config.provider).toBeUndefined();
-    expect(config.providers['campus-llm']).toEqual({
+    const written = readJson(configPath).provider['campus-llm'];
+    expect(written).toEqual({
+      npm: '@ai-sdk/openai-compatible',
       name: 'Campus LLM',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      settings: {
+      customProviderField: { owner: 'user' },
+      options: {
         baseURL: 'https://new.example.edu/v1',
         timeout: 45_000,
       },
       models: {
         retained: {
-          modelID: 'retained',
           name: 'Retained model',
-          settings: { instructions: 'Keep this instruction' },
-          capabilities: { tools: true, input: ['text', 'image', 'pdf'], output: ['text'] },
-          variants: [
-            { id: 'low', settings: { reasoningEffort: 'low' } },
-            { id: 'high', settings: { reasoningEffort: 'high' } },
-          ],
+          reasoning: true,
+          attachment: true,
+          tool_call: true,
+          modalities: { input: ['text', 'image', 'pdf'], output: ['text'] },
           limit: { context: 1_050_000, input: 922_000, output: 128_000 },
-        },
-        added: { modelID: 'added', name: 'Added model' },
-      },
-    });
-  });
-
-  test('renaming a provider keeps canonical and model compatibility', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
-    writeJson(configPath, {
-      providers: {
-        'openai-proxy': {
-          canonical: 'openai',
-          name: 'Old name',
-          package: 'aisdk:@ai-sdk/openai-compatible',
-          env: ['PROXY_KEY'],
-          settings: { baseURL: 'https://proxy.example.com/v1' },
-          models: {
-            'gpt-5': {
-              modelID: 'gpt-5',
-              name: 'GPT-5',
-              compatibility: { reasoningField: 'reasoning_content', requireReasoning: true, maxTokensField: 'max_tokens' },
-            },
+          options: { instructions: 'Keep this instruction' },
+          variants: {
+            low: { reasoningEffort: 'low' },
+            high: { reasoningEffort: 'high' },
           },
+          customModelField: { source: 'manual' },
         },
-      },
-    });
-
-    upsertProviderConfig('openai-proxy', {
-      name: 'New name',
-      env: ['PROXY_KEY'],
-      settings: { baseURL: 'https://proxy.example.com/v1' },
-      models: { 'gpt-5': { name: 'GPT-5' } },
-    }, projectDir, 'project');
-
-    expect(readJson(configPath).providers['openai-proxy']).toEqual({
-      canonical: 'openai',
-      name: 'New name',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      env: ['PROXY_KEY'],
-      settings: { baseURL: 'https://proxy.example.com/v1' },
-      models: {
-        'gpt-5': {
-          modelID: 'gpt-5',
-          name: 'GPT-5',
-          compatibility: { reasoningField: 'reasoning_content', requireReasoning: true, maxTokensField: 'max_tokens' },
-        },
+        added: { name: 'Added model' },
       },
     });
   });
 
-  test('accepts a native v2 payload and keeps the entry in providers', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
+  test('upsertProviderConfig preserves metadata while migrating the legacy providers alias', () => {
+    const configPath = path.join(projectDir, 'opencode.json');
     writeJson(configPath, {
       providers: {
-        native: {
-          name: 'Native provider',
-          package: 'aisdk:@ai-sdk/openai-compatible',
-          settings: { baseURL: 'https://old.example.com/v1', timeout: 30_000 },
-          models: { model: { modelID: 'model', name: 'Old model' } },
+        legacy: {
+          name: 'Legacy provider',
+          options: { baseURL: 'https://old.example.com/v1', timeout: 30_000 },
+          models: { model: { name: 'Old model', reasoning: true } },
         },
-      },
-    });
-
-    upsertProviderConfig('native', {
-      name: 'Updated provider',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      settings: { baseURL: 'https://new.example.com/v1' },
-      models: { model: { name: 'Updated model' } },
-    }, projectDir, 'project', { hasStoredAuth: true });
-
-    const written = readJson(configPath);
-    expect(written.provider).toBeUndefined();
-    expect(written.providers.native).toEqual({
-      name: 'Updated provider',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      settings: { baseURL: 'https://new.example.com/v1', timeout: 30_000 },
-      models: { model: { modelID: 'model', name: 'Updated model' } },
-    });
-  });
-
-  test('rewriting one legacy provider entry leaves the other legacy entries alone', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
-    writeJson(configPath, {
-      provider: {
-        legacy: { npm: '@ai-sdk/openai-compatible', name: 'Legacy provider', options: { baseURL: 'https://old.example.com/v1' }, models: { model: { name: 'Old model' } } },
-        untouched: { npm: '@ai-sdk/openai-compatible', name: 'Untouched', options: { baseURL: 'https://other.example.com/v1' }, models: { model: { name: 'Other model' } } },
       },
     });
 
@@ -330,10 +258,35 @@ describe('custom provider config persistence', () => {
     }, projectDir, 'project', { hasStoredAuth: true });
 
     const written = readJson(configPath);
-    expect(written.provider).toEqual({
-      untouched: { npm: '@ai-sdk/openai-compatible', name: 'Untouched', options: { baseURL: 'https://other.example.com/v1' }, models: { model: { name: 'Other model' } } },
+    expect(written.providers).toBeUndefined();
+    expect(written.provider.legacy).toEqual({
+      npm: '@ai-sdk/openai-compatible',
+      name: 'Updated provider',
+      options: { baseURL: 'https://new.example.com/v1', timeout: 30_000 },
+      models: { model: { name: 'Updated model', reasoning: true } },
     });
-    expect(written.providers.legacy.name).toBe('Updated provider');
+  });
+
+  test('migrating one legacy providers entry keeps the other legacy entries', () => {
+    const configPath = path.join(projectDir, 'opencode.json');
+    writeJson(configPath, {
+      providers: {
+        legacy: { name: 'Legacy provider', options: { baseURL: 'https://old.example.com/v1' }, models: { model: { name: 'Old model' } } },
+        untouched: { name: 'Untouched', options: { baseURL: 'https://other.example.com/v1' }, models: { model: { name: 'Other model' } } },
+      },
+    });
+
+    upsertProviderConfig('legacy', {
+      name: 'Updated provider',
+      options: { baseURL: 'https://new.example.com/v1' },
+      models: { model: { name: 'Updated model' } },
+    }, projectDir, 'project', { hasStoredAuth: true });
+
+    const written = readJson(configPath);
+    expect(written.providers).toEqual({
+      untouched: { name: 'Untouched', options: { baseURL: 'https://other.example.com/v1' }, models: { model: { name: 'Other model' } } },
+    });
+    expect(written.provider.legacy.name).toBe('Updated provider');
   });
 
   test('upsert then remove restores absence', () => {
@@ -350,7 +303,7 @@ describe('custom provider config persistence', () => {
   });
 
   test('failed validation does not write config', () => {
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
+    const configPath = path.join(projectDir, 'opencode.json');
     expect(() => upsertProviderConfig('ok', {
       name: 'X',
       options: { baseURL: 'not-a-url' },
@@ -373,7 +326,7 @@ describe('custom provider config persistence', () => {
 
   test('project-scope edit updates project layer without creating a user entry', () => {
     const providerId = `proj-scope-${Date.now()}`;
-    const configPath = path.join(projectDir, '.opencode', 'opencode.json');
+    const configPath = path.join(projectDir, 'opencode.json');
 
     upsertProviderConfig(providerId, {
       name: 'Project Scoped',
@@ -388,12 +341,14 @@ describe('custom provider config persistence', () => {
     }, projectDir, 'project', { hasStoredAuth: true });
 
     const written = readJson(configPath);
-    expect(written.providers[providerId]).toEqual({
+    expect(written.provider[providerId]).toEqual({
+      npm: '@ai-sdk/openai-compatible',
       name: 'Project Scoped Updated',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      settings: { baseURL: 'https://project.example.com/v2' },
-      headers: { 'X-Project': '1' },
-      models: { m: { modelID: 'm', name: 'M2' } },
+      options: {
+        baseURL: 'https://project.example.com/v2',
+        headers: { 'X-Project': '1' },
+      },
+      models: { m: { name: 'M2' } },
     });
 
     const sources = getProviderSources(providerId, projectDir);
@@ -432,8 +387,8 @@ describe('custom provider config persistence', () => {
       }, projectDir, 'custom', { hasStoredAuth: true });
 
       const written = readJson(customPath);
-      expect(written.providers[providerId].name).toBe('Custom Scoped Updated');
-      expect(written.providers[providerId].settings.baseURL).toBe('https://custom.example.com/v2');
+      expect(written.provider[providerId].name).toBe('Custom Scoped Updated');
+      expect(written.provider[providerId].options.baseURL).toBe('https://custom.example.com/v2');
 
       const sources = getProviderSources(providerId, projectDir);
       expect(sources.sources.custom.exists).toBe(true);

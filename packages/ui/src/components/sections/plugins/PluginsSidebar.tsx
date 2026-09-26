@@ -11,13 +11,20 @@ import {
 } from '@/components/ui/dialog';
 import { AddPluginDialog } from './AddPluginDialog';
 import { RegistryBadge } from './RegistryBadge';
+import { PluginStatusBadge } from './PluginStatusBadge';
+import { configEntryRuntimeTarget, findRuntimeMatches, pluginFileRuntimeTarget, resolveUpdateFlag, type PluginRuntimeTarget } from './pluginLoadState';
 import { toast } from '@/components/ui';
 import { Icon } from '@/components/icon/Icon';
 import type { IconName } from '@/components/icon/icons';
 import { SettingsSidebarLayout } from '@/components/sections/shared/SettingsSidebarLayout';
 import { SettingsSidebarItem } from '@/components/sections/shared/SettingsSidebarItem';
 import { useI18n } from '@/lib/i18n';
+import { opencodeClient } from '@/lib/opencode/client';
+import { useProjectsStore } from '@/stores/useProjectsStore';
 import {
+  getPluginsConfigDirectory,
+  getPluginsScopeKey,
+  getPluginUpdateKey,
   usePluginsStore,
   type PluginEntry,
   type PluginFile,
@@ -42,6 +49,7 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
   onAddClick,
 }) => {
   const { t } = useI18n();
+  useProjectsStore((state) => state.getActiveProject()?.path);
 
   const { entries, files, selectedId, setSelected, deleteEntry, deleteFile, loadPlugins } =
     usePluginsStore(
@@ -60,6 +68,30 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
   const isLoadingRegistry = usePluginsStore((s) => s.isLoadingRegistry);
   const loadRegistryInfo = usePluginsStore((s) => s.loadRegistryInfo);
   const updateToLatest = usePluginsStore((s) => s.updateToLatest);
+  const runtime = usePluginsStore((s) => s.runtime);
+  const isCheckingUpdates = usePluginsStore((s) => s.isCheckingUpdates);
+  const checkUpdates = usePluginsStore((s) => s.checkUpdates);
+  const updatePackage = usePluginsStore((s) => s.updatePackage);
+  const packageUpdates = usePluginsStore((s) => s.packageUpdates);
+  const runtimeScope = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => getPluginsScopeKey(getPluginsConfigDirectory()),
+  );
+  const isV2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const runtimeUnavailable = isV2 && runtime.kind === 'failed' && runtime.scope === runtimeScope;
+  const runtimePlugins = isV2 && runtime.kind === 'ready' && runtime.scope === runtimeScope ? runtime.plugins : null;
+  const runtimeTargets = React.useMemo(() => {
+    const targets = new Map<string, PluginRuntimeTarget | null>();
+    for (const entry of entries) targets.set(entry.id, configEntryRuntimeTarget(entry.spec, entry.sourcePath));
+    for (const file of files) targets.set(file.id, pluginFileRuntimeTarget(file.absolutePath));
+    return targets;
+  }, [entries, files]);
+  const openCodeUpdateTarget = React.useCallback((entryId: string): string | null => {
+    const target = runtimeTargets.get(entryId);
+    if (!runtimePlugins || target?.kind !== 'package') return null;
+    if (packageUpdates[getPluginUpdateKey(runtimeScope, target.target)]?.kind === 'running') return null;
+    return resolveUpdateFlag(findRuntimeMatches(target, runtimePlugins)) === 'available' ? target.target : null;
+  }, [packageUpdates, runtimePlugins, runtimeScope, runtimeTargets]);
 
   const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -67,7 +99,7 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
 
   React.useEffect(() => {
     void loadPlugins();
-  }, [loadPlugins]);
+  }, [loadPlugins, runtimeScope]);
 
   React.useEffect(() => {
     const handleOpenAdd = () => setIsAddOpen(true);
@@ -79,13 +111,13 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
     const counts = { userEntries: 0, projectEntries: 0 };
     for (const entry of entries) {
       const info = registryInfo[entry.spec];
-      if (info?.kind === 'npm-ok' && info.hasUpdate) {
+      if ((info?.kind === 'npm-ok' && info.hasUpdate) || openCodeUpdateTarget(entry.id) !== null) {
         if (entry.scope === 'user') counts.userEntries++;
         else if (entry.scope === 'project') counts.projectEntries++;
       }
     }
     return counts;
-  }, [entries, registryInfo]);
+  }, [entries, registryInfo, openCodeUpdateTarget]);
 
   const userEntries = React.useMemo(
     () => entries.filter((e) => e.scope === 'user'),
@@ -144,14 +176,21 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
     [entries, registryInfo, t, updateToLatest],
   );
 
+  const handleOpenCodeUpdate = React.useCallback(async (target: string, name: string) => {
+    const ok = await updatePackage(target);
+    if (ok) toast.success(t('settings.plugins.update.toast.done', { name }));
+    else toast.error(t('settings.plugins.update.toast.failed', { name }));
+  }, [t, updatePackage]);
+
   const handleRefresh = React.useCallback(async () => {
     toast.info(t('settings.plugins.toast.refreshing'));
-    try {
-      await loadRegistryInfo({ force: true });
-    } catch {
-      toast.error(t('settings.plugins.toast.refreshFailed'));
-    }
-  }, [loadRegistryInfo, t]);
+    const [registryOk, checkOk] = await Promise.all([
+      loadRegistryInfo({ force: true }),
+      isV2 ? checkUpdates() : Promise.resolve(true),
+    ]);
+    if (!registryOk) toast.error(t('settings.plugins.toast.refreshFailed'));
+    if (!checkOk) toast.error(t('settings.plugins.toast.checkFailed'));
+  }, [checkUpdates, isV2, loadRegistryInfo, t]);
 
   const handleDelete = React.useCallback(async () => {
     if (!deleteTarget) return;
@@ -176,6 +215,7 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
     const info = registryInfo[entry.spec];
     const canUpdate =
       info?.kind === 'npm-ok' && info.hasUpdate && !!info.latestVersion;
+    const updateTarget = isV2 ? openCodeUpdateTarget(entry.id) : null;
     const actions: Array<{
       label: string;
       icon?: IconName;
@@ -187,6 +227,12 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
         label: t('settings.plugins.sidebar.actions.updateToLatest'),
         icon: 'arrow-up-s',
         onClick: () => void handleUpdateToLatest(entry.id),
+      });
+    } else if (updateTarget) {
+      actions.push({
+        label: t('settings.plugins.update.action'),
+        icon: 'arrow-up-s',
+        onClick: () => void handleOpenCodeUpdate(updateTarget, entry.spec),
       });
     }
     actions.push({
@@ -202,6 +248,7 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
         title={
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="min-w-0 flex-1 truncate">{entry.spec}</span>
+            {isV2 ? <PluginStatusBadge target={runtimeTargets.get(entry.id) ?? null} /> : null}
             <RegistryBadge spec={entry.spec} />
           </span>
         }
@@ -223,26 +270,29 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
     );
   };
 
-  // A plugin package directory (or a v1 `plugin/` file) is OpenCode's to load
-  // and OpenChamber's only to show: nothing to open, nothing to delete here.
-  const renderFile = (file: PluginFile) => file.kind === 'package' ? (
+  const renderFile = (file: PluginFile) => file.kind === 'package' && isV2 ? (
     <SettingsSidebarItem
       key={file.id}
-      title={file.fileName}
+      title={
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate">{file.fileName}</span>
+          <PluginStatusBadge target={runtimeTargets.get(file.id) ?? null} />
+        </span>
+      }
       metadata={t('settings.plugins.sidebar.kind.package')}
       selected={false}
       onSelect={() => {}}
-      icon={
-        <Icon
-          name="folder"
-          className="h-4 w-4 flex-shrink-0 text-muted-foreground/70"
-        />
-      }
+      icon={<Icon name="folder" className="h-4 w-4 flex-shrink-0 text-muted-foreground/70" />}
     />
   ) : (
     <SettingsSidebarItem
       key={file.id}
-      title={file.fileName}
+      title={
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate">{file.fileName}</span>
+          {isV2 ? <PluginStatusBadge target={runtimeTargets.get(file.id) ?? null} /> : null}
+        </span>
+      }
       metadata={t('settings.plugins.sidebar.kind.file')}
       selected={selectedId === file.id}
       onSelect={() => handleSelect(file.id)}
@@ -301,6 +351,12 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
             <div className="flex items-center justify-between gap-2">
               <span className="typography-meta text-muted-foreground">
                 {t('settings.plugins.sidebar.total', { count: total })}
+                {runtimeUnavailable ? (
+                  <span className="ml-2 inline-flex items-center gap-1">
+                    <Icon name="question" className="size-3" />
+                    {t('settings.plugins.status.sidebar.unavailable')}
+                  </span>
+                ) : null}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -310,14 +366,14 @@ export const PluginsSidebar: React.FC<PluginsSidebarProps> = ({
                   size="icon"
                   className="h-7 w-7 -my-1 text-muted-foreground"
                   onClick={() => void handleRefresh()}
-                  disabled={isLoadingRegistry}
+                  disabled={isLoadingRegistry || (isV2 && isCheckingUpdates)}
                   aria-label={t('settings.plugins.sidebar.actions.refresh')}
                   title={t('settings.plugins.sidebar.actions.refresh')}
                 >
                   <Icon
                     name="refresh"
                     className={
-                      isLoadingRegistry ? 'size-4 animate-spin' : 'size-4'
+                      isLoadingRegistry || (isV2 && isCheckingUpdates) ? 'size-4 animate-spin' : 'size-4'
                     }
                   />
                 </Button>

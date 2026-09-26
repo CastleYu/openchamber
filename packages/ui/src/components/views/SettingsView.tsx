@@ -33,6 +33,8 @@ import { ProjectsPage } from '@/components/sections/projects/ProjectsPage';
 import { RemoteInstancesPage } from '@/components/sections/remote-instances/RemoteInstancesPage';
 import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSidebar';
 import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
+import { WebSearchPage } from '@/components/sections/websearch/WebSearchPage';
+import { opencodeClient } from '@/lib/opencode/client';
 import { UsageSidebar } from '@/components/sections/usage/UsageSidebar';
 import { UsagePage } from '@/components/sections/usage/UsagePage';
 import { MagicPromptsSidebar } from '@/components/sections/magic-prompts/MagicPromptsSidebar';
@@ -59,6 +61,11 @@ import { isWindowsArm64 as isWindowsArm64Platform } from '@/lib/platform';
 import { useI18n } from '@/lib/i18n';
 import { Icon } from "@/components/icon/Icon";
 import { McpIcon } from '@/components/icons/McpIcon';
+import { OpenCodeReloadFooterAction } from '@/components/views/OpenCodeReloadFooterAction';
+import {
+  selectPendingOpenCodeRestartCount,
+  usePendingOpenCodeRestartStore,
+} from '@/stores/usePendingOpenCodeRestartStore';
 import {
   SETTINGS_PAGE_METADATA,
   getSettingsNavIcon,
@@ -118,6 +125,7 @@ const pageOrder: SettingsPageSlug[] = [
   'git',
   // 'opencode' group — OpenCode
   'providers',
+  'web-search',
   'agents',
   'behavior',
   'commands',
@@ -194,6 +202,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
   const { t } = useI18n();
   const deviceInfo = useDeviceInfo();
   const isMobile = forceMobile ?? deviceInfo.isMobile;
+  const pendingRestartCount = usePendingOpenCodeRestartStore(selectPendingOpenCodeRestartCount);
 
   const settingsPageRaw = useUIStore((state) => state.settingsPage);
   const isSettingsDialogOpen = useUIStore((state) => state.isSettingsDialogOpen);
@@ -249,7 +258,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
   // keep platform check available for future window chrome tweaks
 
   const routingAvailable = useUIStore((state) => state.routingFeatureAvailable);
-  const runtimeCtx = React.useMemo(() => buildRuntimeContext(isDesktopApp, isMobile, routingAvailable), [isDesktopApp, isMobile, routingAvailable]);
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  const runtimeCtx = React.useMemo(() => ({ ...buildRuntimeContext(isDesktopApp, isMobile, routingAvailable), generation }), [isDesktopApp, isMobile, routingAvailable, generation]);
 
   const visiblePages = React.useMemo(() => {
     const allowedPages = visiblePageSlugs ? new Set<SettingsPageSlug>(visiblePageSlugs) : null;
@@ -345,6 +359,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.remoteInstances.title');
       case 'providers':
         return t('settings.page.providers.title');
+      case 'web-search':
+        return t('settings.page.webSearch.title');
       case 'usage':
         return t('settings.page.usage.title');
       case 'agents':
@@ -442,14 +458,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         oauthClientSecret: '',
         oauthScope: '',
         oauthRedirectUri: '',
-        oauthCallbackPort: '',
-        oauthAuthServerMetadataUrl: '',
-        protocol: 'legacy',
-        timeoutStartup: '',
-        timeoutCatalog: '',
-        timeoutExecution: '',
-        codemode: true,
-        disabled: false,
+        timeout: '',
+        enabled: true,
       });
       store.setSelectedMcp(name);
       return result.id === 'mcp.create' ? 'mcp.server' : result.id;
@@ -668,6 +678,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return <SkillsPage view="catalog" />;
       case 'providers':
         return <ProvidersPage />;
+      case 'web-search':
+        return <WebSearchPage />;
       case 'usage':
         return <UsagePage />;
       case 'logs':
@@ -1000,6 +1012,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
             })()}
           </div>
         </ScrollableOverlay>
+
+        {/* Footer */}
+        <div className="overflow-hidden transition-opacity duration-150 opacity-100">
+          <div className="border-t border-border bg-background px-4 py-1.5 space-y-0.5 sm:bg-sidebar">
+            {(!runtimeCtx.isVSCode || pendingRestartCount > 0) && (
+              <OpenCodeReloadFooterAction />
+            )}
+          </div>
+        </div>
       </div>
     );
   };

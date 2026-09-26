@@ -176,6 +176,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
   const [editTitle, setEditTitle] = React.useState('');
   const [openSidebarMenuKey, setOpenSidebarMenuKey] = React.useState<string | null>(null);
   const [deleteSessionConfirm, setDeleteSessionConfirm] = React.useState<DeleteSessionConfirmState>(null);
+  const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
   const [folderRename, setFolderRename] = React.useState<{ scopeKey: string; folderId: string; draft: string } | null>(null);
   const startFolderRename = React.useCallback((scopeKey: string, folder: { id: string; name: string }) => {
     setFolderRename({ scopeKey, folderId: folder.id, draft: folder.name });
@@ -328,19 +329,8 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     [getOrderedGroups, sectionsForSidebarRender],
   );
   const recentActivitySections = React.useMemo(() => {
-    const nodes = new Map(recentSessions.map((session) => [
-      session.id, buildActiveSessionNode(collection.childrenMap, session),
-    ]));
-    const pending = [...nodes.values()];
-    const recentTreeSessions = [];
-    while (pending.length > 0) {
-      const node = pending.pop();
-      if (!node) break;
-      recentTreeSessions.push(node.session);
-      pending.push(...node.children);
-    }
     const locations = resolveSidebarSessionLocations({
-      sessions: recentTreeSessions,
+      sessions: recentSessions,
       projects: topology.projects,
       ownerBySessionId: ownership.bySessionId,
       availableWorktreesByProject: topology.availableWorktreesByProject,
@@ -351,7 +341,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     return deriveRecentActivitySections({
       sessions: recentSessions,
       getSessionLocation: (sessionId) => locations.get(sessionId) ?? null,
-      getSessionNode: (session) => nodes.get(session.id) ?? buildActiveSessionNode(collection.childrenMap, session),
+      getSessionNode: (session) => buildActiveSessionNode(collection.childrenMap, session),
       query: view.hasSessionSearchQuery ? view.normalizedSessionSearchQuery : '',
     });
   }, [collection.childrenMap, ownership.bySessionId, recentSessions, topology.availableWorktreesByProject, topology.gitBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery]);
@@ -418,6 +408,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     editingId,
     editingRowKey,
     editTitle,
+    copiedSessionId,
     sessionBatchSize: singleProjectMode && !view.useGroupedSections ? 20 : undefined,
     setEditingId,
     setEditingRowKey,
@@ -429,6 +420,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     deleteSessionConfirm,
     setDeleteSessionConfirm,
     startFolderRename,
+    setCopiedSessionId,
     startSessionWorktreeMenuLoad: actions.startSessionWorktreeMenuLoad,
     onEditProject: timelineMode ? scrollerActions.openProjectEditDialog : undefined,
     folderRename,
@@ -450,6 +442,8 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     clearFolderRename,
     startFolderRename,
     deleteSessionConfirm,
+    copiedSessionId,
+    setCopiedSessionId,
     actions.startSessionWorktreeMenuLoad,
     scrollerActions.openProjectEditDialog,
     timelineMode,

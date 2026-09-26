@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 
 import { isAgentMemoryFeatureAvailable } from '../agent-memory/feature-flag.js';
+import { isRoutingFeatureAvailable } from '../routing/feature-flag.js';
 
 // Generated from packages/ui/src/lib/settings/registry.ts by
 // `bun run settings-registry:generate`; `registry.test.ts` fails when stale.
@@ -599,6 +600,9 @@ export const createSettingsHelpers = (dependencies) => {
     if (typeof candidate.agentWebToolEnabled === 'boolean') {
       result.agentWebToolEnabled = candidate.agentWebToolEnabled;
     }
+    if (typeof candidate.agentNotifyToolEnabled === 'boolean') {
+      result.agentNotifyToolEnabled = candidate.agentNotifyToolEnabled;
+    }
     if (typeof candidate.browserProvider === 'string' && candidate.browserProvider.trim()) {
       result.browserProvider = candidate.browserProvider.trim();
     }
@@ -607,6 +611,9 @@ export const createSettingsHelpers = (dependencies) => {
     }
     if (typeof candidate.agentMemoryToolEnabled === 'boolean') {
       result.agentMemoryToolEnabled = candidate.agentMemoryToolEnabled;
+    }
+    if (typeof candidate.optimizeSystemPrompt === 'boolean') {
+      result.optimizeSystemPrompt = candidate.optimizeSystemPrompt;
     }
     if (typeof candidate.openCodeUpdateToastDismissedVersion === 'string') {
       const version = candidate.openCodeUpdateToastDismissedVersion.trim();
@@ -1047,9 +1054,8 @@ export const createSettingsHelpers = (dependencies) => {
       // Tells the client whether agent memory exists in this build at all, so
       // its settings row and panel tab can be absent rather than merely off.
       agentMemoryFeatureAvailable: isAgentMemoryFeatureAvailable(),
-      // Jev routing needs the OpenChamber server, so it is present here and
-      // absent wherever this payload does not come from one (VS Code).
-      routingFeatureAvailable: true,
+      // Same idea for Jev routing: absent from the picker and Settings unless the build has it.
+      routingFeatureAvailable: isRoutingFeatureAvailable(),
       ...(pwaAppName ? { pwaAppName } : {}),
       pwaOrientation,
       mobileKeyboardMode,

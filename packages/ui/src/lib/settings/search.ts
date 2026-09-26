@@ -1,6 +1,7 @@
 import type { I18nKey } from '@/lib/i18n/store';
 import { UPDATE_HISTORY_PAGE, UPDATE_HISTORY_ANCHOR } from './updateHistory';
 import { useUIStore } from '@/stores/useUIStore';
+import { opencodeClient } from '@/lib/opencode/client';
 import type { SettingsPageSlug, SettingsRuntimeContext } from './metadata';
 import { getSettingsPageMeta } from './metadata';
 
@@ -33,6 +34,19 @@ interface SettingsSearchAvailabilityContext extends SettingsRuntimeContext {
 }
 
 const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
+  {
+    id: 'web-search.provider',
+    page: 'web-search',
+    titleKey: 'settings.webSearch.section.provider',
+    descriptionKey: 'settings.webSearch.section.providerInfo',
+    keywords: ['web search', 'websearch', 'internet', 'provider', 'random'],
+  },
+  {
+    id: 'web-search.keys',
+    page: 'web-search',
+    titleKey: 'settings.webSearch.section.keys',
+    keywords: ['api key', 'exa', 'tavily', 'firecrawl', 'credentials'],
+  },
   {
     id: 'chat.activity-default',
     page: 'chat',
@@ -582,6 +596,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'sessions.agent-notify-tool',
+    page: 'general',
+    titleKey: 'settings.openchamber.tools.field.agentNotifyTool',
+    descriptionKey: 'settings.openchamber.tools.field.agentNotifyToolInfo',
+    keywords: ['agent', 'notify', 'notification', 'tool'],
+    isAvailable: (ctx) => !ctx.isVSCode && opencodeClient.getBoundRuntime()?.generation === 'oc2',
+  },
+  {
     id: 'sessions.browser-provider',
     page: 'general',
     titleKey: 'settings.openchamber.tools.browserProvider.label',
@@ -604,7 +626,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     page: 'routing',
     titleKey: 'settings.routing.token.label',
     descriptionKey: 'settings.routing.token.info',
-    keywords: ['jev', 'typesafe', 'api key', 'token', 'routing', 'zen', 'free'],
+    keywords: ['jev', 'typesafe', 'api key', 'token', 'routing'],
     isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
   },
   {
@@ -775,6 +797,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => ctx.isDesktop,
   },
   {
+    id: 'behavior.system-prompt-optimization',
+    page: 'behavior',
+    titleKey: 'settings.behavior.page.section.systemPromptOptimization',
+    descriptionKey: 'settings.behavior.page.systemPromptOptimization.info',
+    keywords: ['system prompt', 'tokens', 'context', 'optimize', 'minimal'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
     id: 'behavior.system-prompt',
     page: 'behavior',
     titleKey: 'settings.behavior.page.section.systemPrompt',
@@ -841,17 +871,10 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['prompt', 'instructions'],
   },
   {
-    id: 'agents.steps',
-    page: 'agents',
-    titleKey: 'settings.agents.page.field.steps',
-    descriptionKey: 'settings.agents.page.field.stepsTooltip',
-    keywords: ['steps', 'loop', 'tool calls'],
-  },
-  {
     id: 'agents.permissions',
     page: 'agents',
     titleKey: 'settings.agents.page.section.toolPermissions',
-    keywords: ['tools', 'permissions', 'rules', 'allow', 'ask', 'deny'],
+    keywords: ['tools', 'permissions', 'allow', 'ask', 'deny'],
   },
   {
     id: 'commands.create',
@@ -876,19 +899,6 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     page: 'commands',
     titleKey: 'settings.agents.page.field.overrideModel',
     keywords: ['model', 'provider'],
-  },
-  {
-    id: 'commands.variant',
-    page: 'commands',
-    titleKey: 'settings.agents.page.field.variant',
-    keywords: ['variant', 'reasoning', 'thinking'],
-  },
-  {
-    id: 'commands.subagent',
-    page: 'commands',
-    titleKey: 'settings.commands.page.field.subagent',
-    descriptionKey: 'settings.commands.page.field.subagentTooltip',
-    keywords: ['subagent', 'background', 'child session'],
   },
   {
     id: 'commands.template',
@@ -924,7 +934,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     id: 'mcp.advanced',
     page: 'mcp',
     titleKey: 'settings.mcp.page.advanced.title',
-    keywords: ['oauth', 'headers', 'timeout', 'code mode', 'codemode'],
+    keywords: ['oauth', 'headers', 'timeout'],
   },
   {
     id: 'plugins.create',

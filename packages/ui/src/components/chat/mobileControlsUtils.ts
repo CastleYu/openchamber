@@ -1,14 +1,15 @@
-import type { Agent } from '@/lib/opencode/model';
 import { getProviderModelDisplayName, type DisplayProvider } from '@/lib/modelDisplay';
 
 export type MobileControlsPanel = 'model' | 'agent' | 'variant' | null;
 
 export const isPrimaryMode = (mode?: string) => mode === 'primary' || mode === 'all' || mode === undefined || mode === null;
 
-const getCyclablePrimaryAgents = (agents: Agent[]) => agents.filter((agent) => isPrimaryMode(agent.mode));
+type NamedAgent = { name: string; mode?: string };
+
+const getCyclablePrimaryAgents = (agents: NamedAgent[]) => agents.filter((agent) => isPrimaryMode(agent.mode));
 
 export const getCycledPrimaryAgentName = (
-    agents: Agent[],
+    agents: NamedAgent[],
     currentAgentName: string | undefined,
     direction: 1 | -1 = 1,
 ) => {
@@ -25,7 +26,7 @@ export const getCycledPrimaryAgentName = (
 
 const capitalizeLabel = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
-export const getAgentDisplayName = (agents: Agent[], agentName?: string) => {
+export const getAgentDisplayName = (agents: NamedAgent[], agentName?: string) => {
     if (agentName) {
         const agent = agents.find((entry) => entry.name === agentName);
         return agent ? capitalizeLabel(agent.name) : capitalizeLabel(agentName);

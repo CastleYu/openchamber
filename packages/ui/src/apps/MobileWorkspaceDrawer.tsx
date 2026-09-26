@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Icon } from '@/components/icon/Icon';
 import { McpIcon } from '@/components/icons/McpIcon';
 import { McpDropdownContent } from '@/components/mcp/McpDropdown';
+import { McpOAuthDialog } from '@/components/sections/mcp/McpOAuthDialog';
 import { ProjectContextPanel } from '@/components/layout/RightSidebarTabs';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SortableTabsStrip, type SortableTabsStripItem } from '@/components/ui/sortable-tabs-strip';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useMcpConfigStore } from '@/stores/useMcpConfigStore';
 import { useMcpStore } from '@/stores/useMcpStore';
+import { opencodeClient } from '@/lib/opencode/client';
 
 import { MobileChangesSurface } from './MobileChangesSurface';
 import { MobileFilesSurface } from './MobileFilesSurface';
@@ -35,6 +37,13 @@ export type MobileWorkspaceTab = 'changes' | 'files' | 'terminal' | 'notes' | 'm
 const McpWorkspacePane: React.FC<{ onOpenMcpSettings: () => void }> = ({ onOpenMcpSettings }) => {
   const { t } = useI18n();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [oauthName, setOauthName] = React.useState<string | null>(null);
+  const runtimeKey = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
+    () => '',
+  );
+  React.useEffect(() => { setOauthName(null); }, [runtimeKey]);
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
   const refreshMcpStatus = useMcpStore((state) => state.refresh);
   const loadMcpConfigs = useMcpConfigStore((state) => state.loadMcpConfigs);
@@ -82,8 +91,10 @@ const McpWorkspacePane: React.FC<{ onOpenMcpSettings: () => void }> = ({ onOpenM
           listClassName="max-h-none"
           hideHeader
           mobileListDensity
+          onOAuthRequested={setOauthName}
         />
       </div>
+      <McpOAuthDialog name={oauthName} directory={currentDirectory || null} onClose={() => setOauthName(null)} />
     </div>
   );
 };

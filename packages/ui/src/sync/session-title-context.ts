@@ -1,4 +1,4 @@
-import type { Message, Part } from "@/lib/opencode/model"
+import type { Message, Part } from '@/lib/opencode/model'
 import { collectSessionTitleTurns } from '@/lib/sessionTitle';
 import type { SessionMessageLoader, SessionMessageTarget } from './session-message-loader';
 

@@ -1,5 +1,4 @@
 import type { Message, Part } from '@/lib/opencode/model';
-import { isConversationRole } from '@/lib/opencode/model';
 import { computeCacheHitRate } from '@/stores/utils/tokenUtils';
 
 type SessionMessageRecord = {
@@ -144,6 +143,8 @@ function calculateResponseTokenRate(record: SessionMessageRecord): number | null
   const intervals: Array<[number, number]> = [];
   for (const part of parts) {
     if (part.type !== 'text') continue;
+    // Synthetic/ignored text cannot be matched to the provider's output count.
+    if (part.synthetic || part.ignored) return null;
     if (!part.text) continue;
     const start = part.time?.start;
     const end = part.time?.end;
@@ -235,16 +236,7 @@ export function getLatestCompletedTurnStats(
 
   // Only the newest user-bounded turn qualifies. A partial newer turn must not
   // be published as complete or silently replaced with an older turn's stats.
-  // v2 plumbing roles can trail the final assistant step, so the turn ends at
-  // the newest conversation record rather than the newest record.
-  let lastCompletedAssistantIdx = -1;
-  for (let i = records.length - 1; i >= 0; i -= 1) {
-    if (isConversationRole(records[i].info.role)) {
-      lastCompletedAssistantIdx = i;
-      break;
-    }
-  }
-  if (lastCompletedAssistantIdx < 0) return null;
+  const lastCompletedAssistantIdx = records.length - 1;
   if (records[lastCompletedAssistantIdx].info.role !== 'assistant') return null;
   let turnStartIdx = -1;
   for (let i = records.length - 1; i >= 0; i -= 1) {

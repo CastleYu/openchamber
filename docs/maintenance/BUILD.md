@@ -30,9 +30,11 @@
 
 ## 操作
 
+双内核构建会先执行工作区类型检查、个人版本与仅通知更新策略测试、CLI 制品测试，以及独立进程中的 UI 合同测试和 Web API 合同测试。另一个 Windows 作业准备并验证 OpenCode 2.0.16，使用独立 runner 和检出目录。正式便携包继续使用默认 OC1 1.18.31；OC2 验证不会替换正式包内核。发布必须等待两个作业成功。首次双内核功能的个人版本为 `1.24.2-DIJIANG.4.0`，上游基线保持 1.24.2。
+
 `.github/workflows/personal-portable.yml` 会在向 `codex/personal` 推送或手动派发该分支时运行，且仅限 `CastleYu/openchamber`。它使用相同的本地构建脚本、固定版本的 actions、Node 22 和 Bun 1.4.2。构建作业只有只读权限，并将 portable EXE 和元数据作为 Actions 制品保留 30 天；不包含解包后的应用文件。
 
-单独的发布作业具有 `contents: write` 权限。`scripts/publish-personal.mjs` 会检查构建版本、源提交、架构和仅通知策略，创建标签为 `v<personal-version>` 的草稿发布，并上传 EXE、`build-info.json`、完整的 `update-history.md`、其简体中文对应文件 `update-history.zh-CN.md` 以及 `SHA256SUMS.txt`。发布前会检查每个附件的 GitHub 文件大小和 SHA-256。发布说明取自同一源提交中的 `changelog/unreleased.md`。
+单独的发布作业具有 `contents: write` 权限。`scripts/publish-personal.mjs` 会检查构建版本、源提交、架构和仅通知策略，创建标签为 `v<personal-version>` 的草稿发布，并上传 EXE、`build-info.json`、完整的 `update-history.md`、其简体中文对应文件 `update-history.zh-CN.md` 以及 `SHA256SUMS.txt`。发布前会检查每个附件的 GitHub 文件大小和 SHA-256。若同一源提交存在 `docs/maintenance/releases/<personal-version>.md`，发布说明优先使用该文件；否则回退到 `changelog/unreleased.md`。专属说明必须包含标题和至少一条 App 更新。
 
 后续推送会跳过已发布的版本。失败的草稿只能从其原始源提交重试。草稿或标签冲突需要有意递增版本；上传或摘要验证失败时会保留草稿。不会生成 npm 包、更新器清单或修改版本的提交。
 

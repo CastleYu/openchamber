@@ -47,6 +47,8 @@ const fitObjective = async ({ objective, directory, sessionID, providerID, model
 };
 
 export const createSessionGoal = async ({
+  kernelOperations = null,
+  expectedIdentity,
   baseUrl,
   authHeaders,
   sessionID,
@@ -56,8 +58,16 @@ export const createSessionGoal = async ({
   providerID,
   modelID,
   onWarning,
-  persistSessionGoal,
 }) => {
+  const identity = expectedIdentity ?? kernelOperations?.captureIdentity();
+  const checkCurrent = () => {
+    if (!identity) return;
+    const current = kernelOperations.captureIdentity();
+    if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+      throw new Error('OpenCode runtime changed while preparing the goal');
+    }
+  };
+  checkCurrent();
   const warn = (message, error) => {
     if (typeof onWarning === 'function') {
       onWarning(message, error);
@@ -74,6 +84,7 @@ export const createSessionGoal = async ({
     warn,
   });
   if (!objectiveText) throw new Error('goal objective is required');
+  checkCurrent();
 
   let objectiveFile = false;
   try {
@@ -82,6 +93,7 @@ export const createSessionGoal = async ({
   } catch (error) {
     warn('goal objective file write failed, falling back to inline', error);
   }
+  checkCurrent();
 
   const now = Date.now();
   const goal = {
@@ -99,13 +111,23 @@ export const createSessionGoal = async ({
     createdAt: now,
     updatedAt: now,
   };
-  // OpenCode 2.x accepts session metadata only at create time, so the goal
-  // record lives in OpenChamber's own store next to the objective text.
-  void baseUrl;
-  void authHeaders;
-  if (typeof persistSessionGoal !== 'function') {
-    throw new Error('goal mode needs a session metadata store to save the goal in');
+  if (kernelOperations) {
+    await kernelOperations.updateSession({ sessionID, directory, expectedIdentity: identity,
+      metadata: { openchamber: { goal } },
+    });
+    return goal;
   }
-  await persistSessionGoal(sessionID, directory, goal);
+  const url = new URL(`${baseUrl}/session/${encodeURIComponent(sessionID)}`);
+  url.searchParams.set('directory', directory);
+  const response = await fetch(url.toString(), {
+    method: 'PATCH',
+    headers: {
+      ...authHeaders,
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify({ metadata: { openchamber: { goal } } }),
+  });
+  if (!response.ok) throw new Error(`goal metadata patch failed (${response.status})`);
   return goal;
 };

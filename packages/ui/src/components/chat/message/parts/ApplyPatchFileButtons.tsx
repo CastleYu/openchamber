@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
-import { getRelativeFilePath } from '@/lib/path-utils';
-
 import { getApplyPatchFilePath } from './toolDiffUtils';
 
 type ApplyPatchFileEntry = {
@@ -34,20 +32,18 @@ const combineCounts = (base: number | null, incoming: number | null): number | n
     return base + incoming;
 };
 
-/**
- * One row chip per file the patch touched. v2 reports each file as
- * `{ file, patch, additions, deletions, status }`; the path reader also
- * accepts the older `filePath`/`relativePath` naming of MCP and plugin tools.
- */
-const getApplyPatchFileEntries = (metadata: Record<string, unknown> | undefined, currentDirectory: string): ApplyPatchFileEntry[] => {
+const getApplyPatchFileEntries = (metadata: Record<string, unknown> | undefined): ApplyPatchFileEntry[] => {
     const files = Array.isArray(metadata?.files) ? metadata.files : [];
     const entriesByPath = new Map<string, ApplyPatchFileEntry>();
 
     for (const file of files) {
         if (!file || typeof file !== 'object') continue;
         const fileRecord = file as Record<string, unknown>;
-        const rawPath = getApplyPatchFilePath(fileRecord);
-        const displayPath = rawPath ? getRelativeFilePath(rawPath, currentDirectory) : '';
+        const displayPath = typeof fileRecord.relativePath === 'string'
+            ? fileRecord.relativePath
+            : typeof fileRecord.filePath === 'string'
+                ? fileRecord.filePath
+                : '';
         if (!displayPath) continue;
 
         const added = parseCount(fileRecord.additions);
@@ -73,7 +69,6 @@ const getApplyPatchFileEntries = (metadata: Record<string, unknown> | undefined,
 
 export const ApplyPatchFileButtons = ({
     animate = true,
-    currentDirectory = '',
     metadata,
     onFileClick,
     openDiffLabel,
@@ -81,15 +76,13 @@ export const ApplyPatchFileButtons = ({
     textClassName,
 }: {
     animate?: boolean;
-    /** Paths in the chips are shown relative to this directory. */
-    currentDirectory?: string;
     metadata: Record<string, unknown> | undefined;
     onFileClick?: (file: Record<string, unknown>, event: React.MouseEvent<HTMLButtonElement>) => void;
     openDiffLabel: string;
     showFileIcons?: boolean;
     textClassName?: string;
 }): React.ReactNode => {
-    const entries = getApplyPatchFileEntries(metadata, currentDirectory);
+    const entries = getApplyPatchFileEntries(metadata);
     if (entries.length <= 1) return null;
 
     return (
@@ -116,7 +109,7 @@ export const ApplyPatchFileButtons = ({
                         ) : null}
                     </>
                 );
-                const canOpen = onFileClick && entry.file.status !== 'deleted' && entry.file.type !== 'delete';
+                const canOpen = onFileClick && entry.file.type !== 'delete' && getApplyPatchFilePath(entry.file);
                 const actionLabel = `${openDiffLabel}: ${entry.path}`;
                 return canOpen ? (
                     <Button

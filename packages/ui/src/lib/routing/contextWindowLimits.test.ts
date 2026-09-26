@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { findAnsweringModelKey, findSessionModelKey, limitsForAnsweringModel } from './contextWindowLimits';
+import { findAnsweringModelKey, limitsForAnsweringModel } from './contextWindowLimits';
 
 describe('findAnsweringModelKey', () => {
   test('names the newest assistant message with model ids', () => {
@@ -15,14 +15,6 @@ describe('findAnsweringModelKey', () => {
   test('is null before the first answer or when the answer names no model', () => {
     expect(findAnsweringModelKey([{ role: 'user' }])).toBeNull();
     expect(findAnsweringModelKey([{ role: 'assistant' }])).toBeNull();
-  });
-});
-
-describe('findSessionModelKey', () => {
-  test('names the model the session record runs on, null when it has none', () => {
-    expect(findSessionModelKey({ model: { providerID: 'openai', id: 'gpt' } })).toBe('openai/gpt');
-    expect(findSessionModelKey({})).toBeNull();
-    expect(findSessionModelKey(undefined)).toBeNull();
   });
 });
 

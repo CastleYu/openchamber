@@ -10,21 +10,16 @@ Members carry a `run` or `fusion` role and their owning `sessionID`.
 OpenCode copies metadata when forking, sometimes without a `parentID`. A marker
 belongs only to the matching session ID. A copied, pending, malformed or future
 marker is ineligible and never falls back to a title. Metadata is not an access
-grant; all reads, writes and deletions still go through the authenticated SDK
-and OpenChamber server routes.
+grant; all reads, writes and deletions still go through the authenticated domain facade.
 
-`createSession.ts` creates a pending marker with `sessionID: null`, then binds
-the server-assigned ID with a second write. Callers register and dispatch only
-after the returned metadata confirms binding. OpenCode 2.x accepts `metadata`
-only at creation, so the binding write goes to OpenChamber's own metadata route
-(`/api/openchamber/sessions/:id/metadata`, see `sync/session-archive-batch.ts`).
-That route applies an RFC 7386 merge patch, so only the marker travels and
-whatever another feature stored under `openchamber` in the meantime survives —
-no read-before-write is needed. It is still not a compare-and-swap: this is
-limited to a new, undispatched session, not a general concurrent metadata editor.
-
-The run's model and agent are set on the session at creation (`selection`),
-because v2 pins a session to a model instead of taking one per prompt.
+`createSession.ts` uses the domain facade for both OpenCode generations. It
+creates a pending marker with `sessionID: null`, then binds the server-assigned
+ID before callers register or dispatch. OC1 reads the fresh session and sends
+its full metadata because its update replaces the object. OC2 sends only the
+membership marker through the facade's merge-patch route, preserving other
+metadata written concurrently. The returned session must confirm the bound
+marker. OC2 also receives its model and agent when the session is created;
+OC1 keeps the existing per-prompt selection.
 
 A failed binding attempts to delete only that newly created session. Worktrees
 are retained because setup may already have written files. Successful siblings
@@ -38,10 +33,10 @@ runtime. A pending record left behind is not an eligible member.
 - Sidebar menus use membership, including metadata-only row invalidation.
 - `MultiRunFusionDialog` selects the same group and prompt group, excludes fusion
   results, and retains user exclusions across session-list updates.
-- `fusion.ts` revalidates selected IDs and reads current output before creating
-  the result. Read failures stop fusion rather than silently dropping a source.
+- `fusion.ts` revalidates selected IDs and reads current output through the domain
+  facade before creating the result. It selects the newest assistant by message
+  time, independent of page order. Read failures stop fusion rather than silently dropping a source.
   A successful empty output is omitted; no nonempty output means no new session.
-  v2 pages messages newest first, so the first assistant record is the last reply.
 - Fusion results keep the group identity and role `fusion`, so another fusion
   can be started from the result without using it as a source.
 - `groups.ts` and Agent Manager use group keys for selection, rendering and bulk
@@ -50,8 +45,7 @@ runtime. A pending record left behind is not an eligible member.
 
 The global session cache already preserves metadata across reload, archive and
 runtime switching. No separate persistence or polling is added. Web, Electron
-and VS Code share the SDK contract; VS Code reaches the metadata route through
-its bridge (`api:sessions/metadata:set`). Hosted mobile and Capacitor retain their
+and VS Code share the domain contract. Hosted mobile and Capacitor retain their
 existing controls; this change adds no mobile launcher or fusion menu.
 
 ## Legacy sessions

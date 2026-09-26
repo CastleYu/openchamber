@@ -4,27 +4,17 @@ import { createDeltaCoalescer, DELTA_COALESCE_WINDOW_MS, resolveDeltaCoalesceWin
 
 let nextId = 0;
 
-// v2 wire shape: `{ type, id, data, location }`. Text and reasoning fragments
-// are addressed by `ordinal`, tool-input fragments by the tool call `id`.
-const delta = (ordinal, text, {
-  messageID = 'msg_1',
-  type = 'session.text.delta',
-  directory = '/repo',
-  sessionID = 'ses_1',
-} = {}) => {
+const delta = (partID, text, { messageID = 'msg_1', field = 'text', directory = '/repo', sessionID = 'ses_1' } = {}) => {
   nextId += 1;
   const id = String(nextId).padStart(6, '0');
-  const data = { sessionID, assistantMessageID: messageID, delta: text };
-  if (type === 'session.tool.input.delta') data.id = String(ordinal);
-  else data.ordinal = ordinal;
-  const payload = { id, type, location: { directory }, data };
+  const payload = { id, type: 'message.part.delta', properties: { sessionID, messageID, partID, field, delta: text } };
   return { envelope: { eventId: id, directory, payload }, payload };
 };
 
-const other = (type, data = {}) => {
+const other = (type, properties = {}) => {
   nextId += 1;
   const id = String(nextId).padStart(6, '0');
-  const payload = { id, type, location: { directory: '/repo' }, data };
+  const payload = { id, type, properties };
   return { envelope: { eventId: id, directory: '/repo', payload }, payload };
 };
 
@@ -62,15 +52,14 @@ const createHarness = (options = {}) => {
   return { coalescer, emitted, advance, pendingTimers: () => timers.length };
 };
 
-const DELTA_TYPES = new Set(['session.text.delta', 'session.reasoning.delta', 'session.tool.input.delta']);
-const isDelta = (event) => DELTA_TYPES.has(event.payload.type);
-const keyOf = (event) => `${event.payload.data.assistantMessageID}:${event.payload.type}:${event.payload.data.ordinal ?? event.payload.data.id}`;
+const isDelta = (event) => event.payload.type === 'message.part.delta';
+const keyOf = (event) => `${event.payload.properties.messageID}:${event.payload.properties.partID}:${event.payload.properties.field}`;
 
 const textByKey = (events) => {
   const text = new Map();
   for (const event of events) {
     if (!isDelta(event)) continue;
-    text.set(keyOf(event), (text.get(keyOf(event)) ?? '') + event.payload.data.delta);
+    text.set(keyOf(event), (text.get(keyOf(event)) ?? '') + event.payload.properties.delta);
   }
   return text;
 };
@@ -78,7 +67,7 @@ const textByKey = (events) => {
 describe('delta coalescer', () => {
   it('emits the first delta after a quiet spell at once and unchanged', () => {
     const { coalescer, emitted } = createHarness();
-    const first = delta(1, 'He');
+    const first = delta('prt_a', 'He');
 
     coalescer.push(first);
 
@@ -86,28 +75,28 @@ describe('delta coalescer', () => {
     expect(emitted[0]).toBe(first);
   });
 
-  it('merges following deltas for one stream and carries the last fragment id', () => {
+  it('merges following deltas for one part field and carries the last fragment id', () => {
     const { coalescer, emitted, advance, pendingTimers } = createHarness();
-    const fragments = [delta(1, 'He'), delta(1, 'll'), delta(1, 'o,'), delta(1, ' wor'), delta(1, 'ld')];
+    const fragments = [delta('prt_a', 'He'), delta('prt_a', 'll'), delta('prt_a', 'o,'), delta('prt_a', ' wor'), delta('prt_a', 'ld')];
 
     for (const fragment of fragments) coalescer.push(fragment);
     expect(emitted).toHaveLength(1);
     advance(50);
 
     expect(emitted).toHaveLength(2);
-    expect(emitted[1].payload.data).toEqual({ sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, delta: 'llo, world' });
+    expect(emitted[1].payload.properties).toEqual({ sessionID: 'ses_1', messageID: 'msg_1', partID: 'prt_a', field: 'text', delta: 'llo, world' });
     expect(emitted[1].envelope.eventId).toBe(fragments[4].envelope.eventId);
     expect(emitted[1].payload.id).toBe(fragments[4].payload.id);
     expect(emitted[1].envelope.payload).toBe(emitted[1].payload);
     expect(pendingTimers()).toBe(0);
     // Upstream objects are never mutated: other hub subscribers may hold them.
-    expect(fragments.map((fragment) => fragment.payload.data.delta)).toEqual(['He', 'll', 'o,', ' wor', 'ld']);
+    expect(fragments.map((fragment) => fragment.payload.properties.delta)).toEqual(['He', 'll', 'o,', ' wor', 'ld']);
   });
 
   it('never holds text longer than the window', () => {
     const { coalescer, emitted, advance } = createHarness();
-    coalescer.push(delta(1, 'a'));
-    coalescer.push(delta(1, 'b'));
+    coalescer.push(delta('prt_a', 'a'));
+    coalescer.push(delta('prt_a', 'b'));
 
     advance(49);
     expect(emitted).toHaveLength(1);
@@ -115,104 +104,104 @@ describe('delta coalescer', () => {
     expect(emitted).toHaveLength(2);
   });
 
-  it('treats every other event as a barrier, so a delta never crosses a stream snapshot', () => {
+  it('treats every other event as a barrier, so a delta never crosses a part snapshot', () => {
     const { coalescer, emitted, advance } = createHarness();
-    const snapshot = other('session.text.ended', { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, text: 'abc' });
+    const snapshot = other('message.part.updated', { part: { id: 'prt_a', messageID: 'msg_1', text: 'abc' } });
 
-    coalescer.push(delta(1, 'a'));
-    coalescer.push(delta(1, 'b'));
-    coalescer.push(delta(1, 'c'));
+    coalescer.push(delta('prt_a', 'a'));
+    coalescer.push(delta('prt_a', 'b'));
+    coalescer.push(delta('prt_a', 'c'));
     coalescer.push(snapshot);
-    coalescer.push(delta(1, 'd'));
-    coalescer.push(delta(1, 'e'));
+    coalescer.push(delta('prt_a', 'd'));
+    coalescer.push(delta('prt_a', 'e'));
     advance(50);
 
-    expect(emitted.map((event) => (isDelta(event) ? event.payload.data.delta : event.payload.type)))
-      .toEqual(['a', 'bc', 'session.text.ended', 'de']);
+    expect(emitted.map((event) => (isDelta(event) ? event.payload.properties.delta : event.payload.type)))
+      .toEqual(['a', 'bc', 'message.part.updated', 'de']);
     expect(emitted[2]).toBe(snapshot);
   });
 
-  it('keeps several streams pending at once and emits them in upstream id order', () => {
+  it('keeps several part fields pending at once and emits them in upstream id order', () => {
     const { coalescer, emitted, advance } = createHarness();
-    coalescer.push(delta(0, '.'));
+    coalescer.push(delta('prt_lead', '.'));
 
-    coalescer.push(delta(1, 'a1'));
-    coalescer.push(delta(2, 'b1', { messageID: 'msg_2', sessionID: 'ses_2' }));
-    coalescer.push(delta(1, 'a2'));
-    const lastB = delta(2, 'b2', { messageID: 'msg_2', sessionID: 'ses_2' });
+    coalescer.push(delta('prt_a', 'a1'));
+    coalescer.push(delta('prt_b', 'b1', { messageID: 'msg_2', sessionID: 'ses_2' }));
+    coalescer.push(delta('prt_a', 'a2'));
+    const lastB = delta('prt_b', 'b2', { messageID: 'msg_2', sessionID: 'ses_2' });
     coalescer.push(lastB);
     advance(50);
 
     const merged = emitted.slice(1);
-    expect(merged.map((event) => event.payload.data.delta)).toEqual(['a1a2', 'b1b2']);
+    expect(merged.map((event) => event.payload.properties.delta)).toEqual(['a1a2', 'b1b2']);
     expect(merged[1].envelope.eventId).toBe(lastB.envelope.eventId);
     const ids = emitted.map((event) => event.envelope.eventId);
     expect(ids).toEqual([...ids].sort());
   });
 
-  it('does not merge the same ordinal across directories, sessions, messages, or stream kinds', () => {
+  it('does not merge the same part across directories, sessions, messages, or fields', () => {
     const { coalescer, emitted, advance } = createHarness();
-    coalescer.push(delta(0, '.'));
+    coalescer.push(delta('prt_lead', '.'));
 
-    coalescer.push(delta(1, '1'));
-    coalescer.push(delta(1, '2', { directory: '/other' }));
-    coalescer.push(delta(1, '3', { messageID: 'msg_2' }));
-    coalescer.push(delta(1, '4', { type: 'session.reasoning.delta' }));
-    coalescer.push(delta(1, '5', { sessionID: 'ses_2' }));
+    coalescer.push(delta('prt_a', '1'));
+    coalescer.push(delta('prt_a', '2', { directory: '/other' }));
+    coalescer.push(delta('prt_a', '3', { messageID: 'msg_2' }));
+    coalescer.push(delta('prt_a', '4', { field: 'reasoning' }));
+    coalescer.push(delta('prt_a', '5', { sessionID: 'ses_2' }));
     advance(50);
 
-    expect(emitted.slice(1).map((event) => event.payload.data.delta)).toEqual(['1', '2', '3', '4', '5']);
+    expect(emitted.slice(1).map((event) => event.payload.properties.delta)).toEqual(['1', '2', '3', '4', '5']);
   });
 
-  it('bounds pending text by characters and by streams, emitting early instead of dropping', () => {
+  it('bounds pending text by characters and by part fields, emitting early instead of dropping', () => {
     const { coalescer, emitted } = createHarness({ maxPendingChars: 10, maxPendingKeys: 3 });
-    coalescer.push(delta(0, '.'));
+    coalescer.push(delta('prt_lead', '.'));
 
     let peakChars = 0;
     for (let index = 0; index < 40; index += 1) {
-      coalescer.push(delta(1, 'xyz'));
+      coalescer.push(delta('prt_a', 'xyz'));
       peakChars = Math.max(peakChars, coalescer.pendingSize().chars);
     }
     expect(peakChars).toBeLessThan(10 + 3);
-    expect(textByKey(emitted).get('msg_1:session.text.delta:1')).toBe('xyz'.repeat(40));
+    expect(textByKey(emitted).get('msg_1:prt_a:text')).toBe('xyz'.repeat(40));
 
     let peakKeys = 0;
     for (let index = 0; index < 20; index += 1) {
-      coalescer.push(delta(100 + index, 'k'));
+      coalescer.push(delta(`prt_k${index}`, 'k'));
       peakKeys = Math.max(peakKeys, coalescer.pendingSize().keys);
     }
     expect(peakKeys).toBeLessThanOrEqual(3);
     coalescer.flush();
-    expect(emitted.filter((event) => event.payload.data.delta === 'k')).toHaveLength(20);
+    expect(emitted.filter((event) => event.payload.properties.delta === 'k')).toHaveLength(20);
   });
 
   it('flushes on demand and leaves nothing pending', () => {
     const { coalescer, emitted, pendingTimers } = createHarness();
-    coalescer.push(delta(1, 'a'));
-    coalescer.push(delta(1, 'b'));
+    coalescer.push(delta('prt_a', 'a'));
+    coalescer.push(delta('prt_a', 'b'));
 
     coalescer.flush();
 
-    expect(emitted.map((event) => event.payload.data.delta)).toEqual(['a', 'b']);
+    expect(emitted.map((event) => event.payload.properties.delta)).toEqual(['a', 'b']);
     expect(coalescer.pendingSize()).toEqual({ keys: 0, chars: 0 });
     expect(pendingTimers()).toBe(0);
   });
 
   it('passes a malformed delta through as a barrier instead of guessing', () => {
     const { coalescer, emitted } = createHarness();
-    const malformed = other('session.text.delta', { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, delta: 42 });
+    const malformed = other('message.part.delta', { messageID: 'msg_1', partID: 'prt_a', field: 'text', delta: 42 });
 
-    coalescer.push(delta(1, 'a'));
-    coalescer.push(delta(1, 'b'));
+    coalescer.push(delta('prt_a', 'a'));
+    coalescer.push(delta('prt_a', 'b'));
     coalescer.push(malformed);
 
-    expect(emitted.map((event) => event.payload.data.delta)).toEqual(['a', 'b', 42]);
+    expect(emitted.map((event) => event.payload.properties.delta)).toEqual(['a', 'b', 42]);
     expect(emitted[2]).toBe(malformed);
   });
 
   it('is a pass-through when the window is zero', () => {
     const { coalescer, emitted } = createHarness({ windowMs: 0 });
-    const events = [delta(1, 'a'), delta(1, 'b'), delta(1, 'c')];
+    const events = [delta('prt_a', 'a'), delta('prt_a', 'b'), delta('prt_a', 'c')];
 
     for (const event of events) coalescer.push(event);
 
@@ -237,11 +226,11 @@ describe('delta coalescer', () => {
         let event;
         if (roll < 0.9) {
           const part = Math.floor(random() * partCount);
-          event = delta(part, `${index}|`.repeat(1 + Math.floor(random() * 3)), { messageID: `msg_${part % 2}` });
+          event = delta(`prt_${part}`, `${index}|`.repeat(1 + Math.floor(random() * 3)), { messageID: `msg_${part % 2}` });
         } else if (roll < 0.95) {
-          event = other('session.text.ended', { sessionID: 'ses_1', assistantMessageID: 'msg_0', ordinal: Math.floor(random() * partCount), text: '' });
+          event = other('message.part.updated', { part: { id: `prt_${Math.floor(random() * partCount)}`, messageID: 'msg_0' } });
         } else {
-          event = other('session.execution.started', { sessionID: 'ses_1' });
+          event = other('session.status', { sessionID: 'ses_1', status: { type: 'busy' } });
         }
         raw.push(event);
         coalescer.push(event);
@@ -275,12 +264,12 @@ describe('delta coalescer', () => {
 
     // 150 fragments a second for two seconds, the rate measured from OpenCode.
     for (let index = 0; index < 300; index += 1) {
-      coalescer.push(delta(1, 'ab'));
+      coalescer.push(delta('prt_a', 'ab'));
       advance(index % 3 === 2 ? 8 : 6);
     }
     advance(50);
 
-    expect(textByKey(emitted).get('msg_1:session.text.delta:1')).toBe('ab'.repeat(300));
+    expect(textByKey(emitted).get('msg_1:prt_a:text')).toBe('ab'.repeat(300));
     expect(emitted.length).toBeLessThanOrEqual(45);
   });
 });

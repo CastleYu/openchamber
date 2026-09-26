@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react"
 import type { Message, Part } from "@/lib/opencode/model"
-import { opencodeClient } from "@/lib/opencode/client"
 import { Binary } from "./binary"
 import { upsertSessionRecord } from "./session-records"
 import { retry } from "./retry"
@@ -9,6 +8,7 @@ import {
   useDirectoryStore,
   useSessionMessageLoader,
   useSyncDirectory,
+  useSyncSource,
   useSyncRuntime,
   resyncBlockingRequestsForDirectory,
   buildSessionMessageRecordsSnapshot,
@@ -27,8 +27,11 @@ const syncSessionInflightByKey = new Map<string, Promise<void>>()
 // to the store. This prevents rapid session switches (e.g. 1→2→3 in the
 // sidebar) from having each completed fetch fight for focus.
 const syncSessionGenerationByKey = new Map<string, number>()
-
-const isUserMessage = (message: Message): boolean => message.role === "user"
+function isUserMessage(message: Message): boolean {
+  const info = message as Message & { clientRole?: unknown; role?: unknown }
+  const role = typeof info.clientRole === "string" ? info.clientRole : info.role
+  return role === "user"
+}
 
 export function hasUserMessage(messages: Message[] | undefined): boolean {
   return Boolean(messages?.some(isUserMessage))
@@ -51,6 +54,7 @@ function useSessionCacheTouch() {
 }
 
 export function useSync() {
+  const source = useSyncSource()
   const directory = useSyncDirectory()
   const store = useDirectoryStore()
   const childStores = useChildStoreManager()
@@ -70,7 +74,7 @@ export function useSync() {
         includePermissions: false,
       })
       if (getRuntimeKey() !== runtimeKey) return false
-      return (targetStore.getState().form[sessionID]?.length ?? 0) > 0
+      return (targetStore.getState().question[sessionID]?.length ?? 0) > 0
     },
     [childStores, directory, runtimeKey],
   )
@@ -119,7 +123,7 @@ export function useSync() {
           shouldFetchSession
             ? (async () => {
                 try {
-                  const session = await retry(() => opencodeClient.getSession(sessionID, targetDirectory))
+                  const session = await retry(() => source.getSession(sessionID, targetDirectory))
                   if (!isStale()) {
                     const nextSession = stripSessionDiffSnapshots(session)
                     const s = targetStore.getState()
@@ -159,7 +163,7 @@ export function useSync() {
       void promise.then(clearInflightRequest, clearInflightRequest)
       return promise
     },
-    [childStores, directory, keyFor, messageLoader, runtimeKey, store, touch],
+    [childStores, directory, keyFor, messageLoader, runtimeKey, source, store, touch],
   )
 
   // Load more (pagination)

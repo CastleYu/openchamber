@@ -11,7 +11,7 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => fs.rm(directory, { recursive: true, force: true })));
 });
 
-const createHarness = async ({ settings = {}, env = {}, memoryAvailable = true, additional = async () => [] } = {}) => {
+const createHarness = async ({ settings = {}, env = {}, memoryAvailable = true, extraPlugins = false } = {}) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'openchamber-managed-config-'));
   temporaryDirectories.push(dataDir);
   const agentToolRuntime = {
@@ -33,7 +33,18 @@ const createHarness = async ({ settings = {}, env = {}, memoryAvailable = true, 
     dataDir,
     env,
     agentToolRuntime,
-    getAdditionalPluginDirectories: additional,
+    ...(extraPlugins ? {
+      systemPromptRuntime: { materializePlugin: async () => {
+        const directory = path.join(dataDir, 'system-prompt');
+        await fs.mkdir(directory, { recursive: true });
+        return directory;
+      } },
+      mcpReconnectRuntime: { materializePlugin: async () => {
+        const directory = path.join(dataDir, 'mcp-reconnect');
+        await fs.mkdir(directory, { recursive: true });
+        return directory;
+      } },
+    } : {}),
     readSettings: () => current.settings,
     isAgentMemoryAvailable: () => memoryAvailable,
   });
@@ -42,6 +53,25 @@ const createHarness = async ({ settings = {}, env = {}, memoryAvailable = true, 
 };
 
 describe('managed OpenCode config file', () => {
+  it('does not replace managed config when settings cannot be read', async () => {
+    const { dataDir, runtime, current, readConfigFile } = await createHarness();
+    await runtime.buildManagedChildEnv();
+    const before = await readConfigFile();
+    current.settings = Promise.reject(new Error('settings unavailable'));
+    await expect(runtime.refreshManagedConfigFile()).rejects.toThrow('settings unavailable');
+    expect(await readConfigFile()).toEqual(before);
+    expect((await fs.stat(path.join(dataDir, MANAGED_CONFIG_FILE_NAME))).isFile()).toBe(true);
+  });
+  it('lists existing OpenChamber plugins after materializing their directories', async () => {
+    const { dataDir, runtime, readConfigFile } = await createHarness({ extraPlugins: true, settings: { optimizeSystemPrompt: true } });
+    await runtime.buildManagedChildEnv();
+    expect((await readConfigFile()).plugins).toEqual([
+      '-opencode.browser',
+      path.join(dataDir, 'agent-tool', 'openchamber-agent-tool'),
+      path.join(dataDir, 'system-prompt'),
+      path.join(dataDir, 'mcp-reconnect'),
+    ]);
+  });
   it('points the child at a config file listing the enabled plugins', async () => {
     const { dataDir, runtime, readConfigFile } = await createHarness({
       settings: {},
@@ -53,7 +83,7 @@ describe('managed OpenCode config file', () => {
     expect(childEnv.OPENCODE_CONFIG_CONTENT).toBeUndefined();
     expect(childEnv.OPENCHAMBER_AGENT_TOOL_TOKEN).toBe('token');
     expect(await readConfigFile()).toEqual({
-      plugins: [path.join(dataDir, 'agent-tool', 'openchamber-agent-tool')],
+      plugins: ['-opencode.browser', path.join(dataDir, 'agent-tool', 'openchamber-agent-tool')],
     });
   });
 
@@ -62,21 +92,9 @@ describe('managed OpenCode config file', () => {
 
     await runtime.buildManagedChildEnv();
 
-    for (const directory of (await readConfigFile()).plugins) {
+    for (const directory of (await readConfigFile()).plugins.filter((entry) => !entry.startsWith('-'))) {
       expect((await fs.stat(directory)).isDirectory()).toBe(true);
     }
-  });
-
-  it('adds additional OpenCode 2 plugin directories once to the watched config', async () => {
-    const additional = vi.fn(async () => ['/tmp/mcp-reconnect']);
-    const { runtime, readConfigFile } = await createHarness({ additional });
-    await runtime.buildManagedChildEnv();
-    await runtime.refreshManagedConfigFile();
-    expect((await readConfigFile()).plugins).toEqual([
-      expect.stringContaining('agent-tool'),
-      '/tmp/mcp-reconnect',
-    ]);
-    expect(additional).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the callback token in the child env while every tool is off', async () => {
@@ -87,7 +105,7 @@ describe('managed OpenCode config file', () => {
     const childEnv = await runtime.buildManagedChildEnv();
 
     expect(agentToolRuntime.materializePlugin).not.toHaveBeenCalled();
-    expect(await readConfigFile()).toEqual({ plugins: [] });
+    expect(await readConfigFile()).toEqual({ plugins: ['-opencode.browser'] });
     // A tool switched on later reaches a process that can already call back.
     expect(childEnv.OPENCHAMBER_AGENT_TOOL_TOKEN).toBe('token');
   });
@@ -102,7 +120,7 @@ describe('managed OpenCode config file', () => {
     expect(await runtime.refreshManagedConfigFile()).toEqual({ updated: true });
 
     const { plugins } = await readConfigFile();
-    expect(plugins).toEqual([]);
+    expect(plugins).toEqual(['-opencode.browser']);
     expect(agentToolRuntime.createChildEnv).toHaveBeenCalledTimes(1);
   });
 
@@ -115,11 +133,27 @@ describe('managed OpenCode config file', () => {
     current.settings = { agentControlToolEnabled: false, agentWebToolEnabled: true };
     await runtime.refreshManagedConfigFile();
 
-    expect((await readConfigFile()).plugins).toHaveLength(1);
+    expect((await readConfigFile()).plugins).toHaveLength(2);
     expect(agentToolRuntime.materializePlugin).toHaveBeenCalledWith({
       includeControl: false,
       includeWeb: true,
       includeMemory: false,
+      includeNotify: false,
+    });
+  });
+
+  it('injects the notify tool only when it is switched on', async () => {
+    const { runtime, agentToolRuntime } = await createHarness({
+      settings: { agentControlToolEnabled: false, agentWebToolEnabled: false, agentNotifyToolEnabled: true },
+    });
+
+    await runtime.buildManagedChildEnv();
+
+    expect(agentToolRuntime.materializePlugin).toHaveBeenCalledWith({
+      includeControl: false,
+      includeWeb: false,
+      includeMemory: false,
+      includeNotify: true,
     });
   });
 
@@ -134,7 +168,7 @@ describe('managed OpenCode config file', () => {
     expect(childEnv.OPENCODE_CONFIG).toBeUndefined();
     expect(JSON.parse(childEnv.OPENCODE_CONFIG_CONTENT)).toEqual({
       model: 'test/model',
-      plugins: [path.join(dataDir, 'agent-tool', 'openchamber-agent-tool')],
+      plugins: ['-opencode.browser', path.join(dataDir, 'agent-tool', 'openchamber-agent-tool')],
     });
     await expect(fs.stat(path.join(dataDir, MANAGED_CONFIG_FILE_NAME))).rejects.toThrow();
     expect(await runtime.refreshManagedConfigFile()).toEqual({ updated: false, reason: 'external-config' });
@@ -160,6 +194,6 @@ describe('managed OpenCode config file', () => {
     await runtime.buildManagedChildEnv();
 
     expect(agentToolRuntime.materializePlugin).not.toHaveBeenCalled();
-    expect(await readConfigFile()).toEqual({ plugins: [] });
+    expect(await readConfigFile()).toEqual({ plugins: ['-opencode.browser'] });
   });
 });

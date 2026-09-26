@@ -1,11 +1,15 @@
 ---
 name: personal-upstream-sync
-description: Sync this repository's personal maintenance branch with the latest community upstream, resolve merge conflicts while preserving personal behavior, validate the integration, and push to the personal fork when requested. Use for upstream intake or conflicts encountered during that intake, not for upgrading an installed app.
+description: Sync this repository's personal maintenance branch with the latest community upstream, resolve merge conflicts while preserving personal behavior, validate the integration, and push to the personal fork when requested. Use for upstream intake, OC1/OC2 compatibility intake, or conflicts encountered during that intake, not for upgrading an installed app.
 ---
 
 # Personal upstream sync
 
 Deliver a reviewed merge that retains the personal commit history and behavior. Work on source branches; application update/download mechanisms are not part of this workflow.
+
+## Dual-kernel branch
+
+When preserving OC1 while adopting an OC2 upstream target, read [dual-kernel intake](references/dual-kernel.md) before choosing a merge or declaring the target integrated. It owns API classification, preserved OC1 behavior, task delegation and content-adoption gates. The remaining sections own Git protection, personal policies and publication. A restored or reverted upstream change must be evaluated by actual content, not ancestry alone.
 
 ## Establish the target
 
@@ -48,7 +52,7 @@ and any pre-existing stashes.
 
 If updating the original checkout later requires parking dirty changes, use a uniquely named stash with untracked files included and record its exact object ID. Preserve the original staged/unstaged split. Do not use a moving `stash@{0}` reference to identify that backup after other operations. Ignored files are not captured by `stash -u`; use the isolated worktree whenever those files would otherwise be at risk.
 
-If the pinned upstream is already an ancestor and the fork adds no missing personal work, there is no merge to create. Report the checked SHAs; perform only an independently authorized outstanding push.
+For ordinary intake, if the pinned upstream is already an ancestor and the fork adds no missing personal work, there is no merge to create. For dual-kernel intake, first reconcile the content-adoption ledger; previously reverted or deferred content can still require integration. Report the checked SHAs; perform only an independently authorized outstanding push.
 
 ## Merge and resolve
 
@@ -113,7 +117,7 @@ Run affected upstream and personal regression tests. When manifests/lockfiles ch
 
 Compare failures with the recorded base or a reproducible clean-base run. New failures or unverified personal behavior in a touched area block promotion. Report reproducibly pre-existing failures separately; neither suppress them nor present the run as fully green. Put unresolved work and its evidence in the maintenance task queue.
 
-Commit the resolved integration with the repository's commit convention and a Chinese main description. Verify that both the invoking branch's original tip and the pinned upstream SHA are ancestors of the integration tip. Record the resulting SHA, conflict decisions, checks and limits in a dated file under `docs/maintenance/evidence/`. Commit that record as a docs-only follow-up before promotion; it identifies the validated merge SHA rather than attempting to contain its own commit SHA.
+Commit the resolved integration with the repository's commit convention and a Chinese main description. Verify that the invoking branch's original tip remains an ancestor of the integration tip. For a full upstream merge, also require the pinned upstream SHA as an ancestor. For selective dual-kernel intake on the retained OC1 core, use the content-adoption evidence required by [dual-kernel intake](references/dual-kernel.md); its comparison target need not become an ancestor. Record the resulting SHA, conflict decisions, checks and limits in a dated file under `docs/maintenance/evidence/`. Commit that record as a docs-only follow-up before promotion; it identifies the validated merge SHA rather than attempting to contain its own commit SHA.
 
 Promote the reviewed invoking branch into the formal release line,
 `codex/personal` by default, before calling the sync complete. If the invoking

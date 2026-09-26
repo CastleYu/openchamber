@@ -11,16 +11,41 @@ const mapPwaOrientationToManifest = (value) => {
 
 export const registerPwaManifestRoute = (app, dependencies) => {
   const {
-    process,
     resolveProjectDirectory,
-    buildOpenCodeUrl,
-    getOpenCodeAuthHeaders,
+    kernelOperations,
     readSettingsFromDiskMigrated,
     normalizePwaAppName,
     normalizePwaOrientation,
   } = dependencies;
 
   const recentPwaSessionsCache = new Map();
+
+  const sameKernel = (identity) => {
+    const current = kernelOperations.captureIdentity();
+    return current.generation === identity.generation
+      && current.endpoint === identity.endpoint && current.epoch === identity.epoch;
+  };
+
+  const listSessions = async (identity, directory) => {
+    const sessions = [];
+    const cursors = new Set();
+    const signal = AbortSignal.timeout(2500);
+    let cursor;
+    while (true) {
+      if (!sameKernel(identity)) throw new Error('OpenCode runtime changed during PWA session read');
+      const page = await kernelOperations.listSessions({ directory: directory ?? undefined, limit: 100, cursor, signal });
+      if (!sameKernel(identity) || page.generation !== identity.generation
+        || page.endpoint !== identity.endpoint || page.epoch !== identity.epoch) {
+        throw new Error('OpenCode runtime changed during PWA session read');
+      }
+      sessions.push(...page.data.items);
+      const next = page.data.cursor?.next;
+      if (next === undefined || next === null) return sessions;
+      if (cursors.has(next)) throw new Error('OpenCode PWA session cursor did not advance');
+      cursors.add(next);
+      cursor = next;
+    }
+  };
 
   const getRecentPwaSessionShortcuts = async (req) => {
     const now = Date.now();
@@ -29,8 +54,14 @@ export const registerPwaManifestRoute = (app, dependencies) => {
     const preferredDirectory = typeof resolvedDirectoryResult?.directory === 'string'
       ? resolvedDirectoryResult.directory
       : null;
+    let identity;
+    try {
+      identity = kernelOperations.captureIdentity();
+    } catch {
+      return [];
+    }
 
-    const cacheKey = preferredDirectory ? `dir:${preferredDirectory}` : 'global';
+    const cacheKey = `${identity.generation}:${identity.endpoint}:${identity.epoch}:${preferredDirectory ?? 'global'}`;
     const cached = recentPwaSessionsCache.get(cacheKey);
     if (cached && now - cached.at < 5000) {
       return cached.data;
@@ -90,52 +121,22 @@ export const registerPwaManifestRoute = (app, dependencies) => {
       });
     };
 
-    const listSessions = async (directory) => {
-      const query = (() => {
-        if (typeof directory !== 'string' || directory.length === 0) {
-          return '';
-        }
-        const preparedDirectory = process.platform === 'win32'
-          ? directory.replace(/\//g, '\\\\')
-          : directory;
-        return `?directory=${encodeURIComponent(preparedDirectory)}`;
-      })();
-
-      const response = await fetch(buildOpenCodeUrl(`/api/session${query}`, ''), {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          ...getOpenCodeAuthHeaders(),
-        },
-        signal: AbortSignal.timeout(2500),
-      });
-
-      if (!response.ok) {
-        return [];
-      }
-
-      // v2 pages the session list as `{ data, cursor }`.
-      const body = await response.json().catch(() => null);
-      const payload = Array.isArray(body) ? body : body?.data;
-      return Array.isArray(payload) ? payload : [];
-    };
-
     try {
       let payload = [];
 
       if (preferredDirectory) {
-        const scopedPayload = await listSessions(preferredDirectory);
+        const scopedPayload = await listSessions(identity, preferredDirectory);
         const filteredScopedPayload = filterSessionsByDirectory(scopedPayload, preferredDirectory);
 
         if (filteredScopedPayload.length > 0) {
           payload = filteredScopedPayload;
         } else {
-          const globalPayload = await listSessions(null);
+          const globalPayload = await listSessions(identity, null);
           const filteredGlobalPayload = filterSessionsByDirectory(globalPayload, preferredDirectory);
           payload = filteredGlobalPayload;
         }
       } else {
-        payload = await listSessions(null);
+        payload = await listSessions(identity, null);
       }
 
       const seen = new Set();
@@ -171,7 +172,6 @@ export const registerPwaManifestRoute = (app, dependencies) => {
       recentPwaSessionsCache.set(cacheKey, { at: now, data: shortcuts });
       return shortcuts;
     } catch {
-      recentPwaSessionsCache.set(cacheKey, { at: now, data: [] });
       return [];
     }
   };

@@ -115,6 +115,19 @@ describe('createArchiveStore', () => {
     expect(fs.readdirSync(dataDir).some((name) => name.includes('sessions-archive.json.'))).toBe(true);
   });
 
+  it('refuses writes when a malformed archive cannot be backed up', async () => {
+    const dataDir = makeDataDir();
+    fs.writeFileSync(path.join(dataDir, 'sessions-archive.json'), '{bad', 'utf8');
+    const fsPromises = { ...fs.promises, rename: async () => {
+      throw Object.assign(new Error('backup failed'), { code: 'EACCES' });
+    } };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = createArchiveStore({ dataDir, fsPromises });
+    await expect(store.getAll()).rejects.toThrow('Session archive state is unavailable');
+    await expect(store.archive(['ses_1'])).resolves.toEqual({ archived: [], failedIds: ['ses_1'] });
+    expect(readFile(dataDir)).toBe('{bad');
+  });
+
   it('drops entries that are not positive timestamps', async () => {
     const dataDir = makeDataDir();
     fs.writeFileSync(

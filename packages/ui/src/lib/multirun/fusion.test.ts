@@ -1,33 +1,13 @@
-import { expect, mock, test } from 'bun:test';
-import type { Session } from '@/lib/opencode/model';
+import { expect, test } from 'bun:test';
+import type { Message, Part, Session } from '@/lib/opencode/model';
+import { loadFusionOutputs, type FusionSource } from './fusion';
 import { getMultiRunIdentity, withMultiRunMembership } from './identity';
 
-const calls: string[] = [];
-let getSessionImpl: (id: string, directory?: string | null) => Promise<Session>;
-let getSessionMessagesImpl: (id: string, options?: { limit?: number }, directory?: string | null) => Promise<{
-  items: Array<{ info: { role: string }; parts: Array<{ type: string; text: string }> }>;
-}>;
-
-mock.module('@/lib/opencode/client', () => ({
-  opencodeClient: {
-    getSession: (id: string, directory?: string | null) => {
-      calls.push(`session:${id}:${directory}`);
-      return getSessionImpl(id, directory);
-    },
-    getSessionMessages: (id: string, options?: { limit?: number }, directory?: string | null) => {
-      calls.push(`messages:${id}:${directory}`);
-      return getSessionMessagesImpl(id, options, directory);
-    },
-  },
-}));
-
-const { loadFusionOutputs } = await import('./fusion');
-type FusionSource = Parameters<typeof loadFusionOutputs>[0][number];
+type FusionApi = Parameters<typeof loadFusionOutputs>[0];
+type MessageRecord = { info: Message; parts: Part[] };
 
 const session: Session = {
-  id: 'run', directory: '/repo', projectID: 'project', title: 'renamed freely',
-  cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  time: { created: 1, updated: 1 },
+  id: 'run', directory: '/repo', projectID: 'project', title: 'renamed freely', time: { created: 1, updated: 1 },
   metadata: withMultiRunMembership({}, {
     version: 1, sessionID: 'run', group: { kind: 'id', id: '9f512893-6e63-4e49-a534-5de733ca103e' },
     groupSlug: 'bench', role: 'run', providerID: 'openrouter', modelID: 'vendor/model',
@@ -37,48 +17,62 @@ const identity = getMultiRunIdentity(session);
 if (!identity) throw new Error('Fixture must have membership');
 const source: FusionSource = { session, identity, directory: '/repo', projectDirectory: '/repo' };
 
-const reset = () => {
-  calls.length = 0;
-  getSessionImpl = async () => session;
-  getSessionMessagesImpl = async () => ({ items: [] });
-};
+const assistant = (id: string, created: number, text: string): MessageRecord => ({
+  info: { id, sessionID: session.id, role: 'assistant', time: { created, completed: created + 1 },
+    agent: 'build', providerID: 'openrouter', modelID: 'vendor/model' },
+  parts: [{ id: `${id}-text`, sessionID: session.id, messageID: id, type: 'text', text }],
+});
+const user: MessageRecord = { info: { id: 'user', sessionID: session.id, role: 'user', time: { created: 3 } }, parts: [] };
 
-test('fusion loads the selected session by ID and uses its current last assistant output', async () => {
-  reset();
-  getSessionImpl = async () => ({ ...session, title: 'renamed again' });
-  // v2 pages messages newest first.
-  getSessionMessagesImpl = async () => ({
-    items: [
-      { info: { role: 'assistant' }, parts: [{ type: 'text', text: 'latest result' }] },
-      { info: { role: 'user' }, parts: [{ type: 'text', text: 'question' }] },
-      { info: { role: 'assistant' }, parts: [{ type: 'text', text: 'older' }] },
-    ],
+function fixture(records: MessageRecord[], options: { changedMembership?: boolean; failRead?: boolean; switchAfterGet?: boolean } = {}) {
+  const calls: string[] = [];
+  let current = true;
+  const api: FusionApi = {
+    async getSession(id, directory) {
+      calls.push('get');
+      expect([id, directory]).toEqual(['run', '/repo']);
+      if (options.switchAfterGet) current = false;
+      return options.changedMembership ? { ...session, id: 'fork' } : { ...session, title: 'renamed again' };
+    },
+    async getSessionMessages(id, limit, directory) {
+      calls.push('messages');
+      expect([id, limit, directory]).toEqual(['run', 50, '/repo']);
+      if (options.failRead) throw new Error('read unavailable');
+      return records;
+    },
+  };
+  const assertCurrent = () => { if (!current) throw new Error('Runtime changed'); };
+  return { api, calls, assertCurrent };
+}
+
+for (const generation of ['oc1', 'oc2'] as const) {
+  test(`${generation} fuses the latest assistant output despite page order`, async () => {
+    const records = generation === 'oc1'
+      ? [assistant('older', 2, 'older'), user, assistant('latest', 4, 'latest result')]
+      : [assistant('latest', 4, 'latest result'), user, assistant('older', 2, 'older')];
+    const current = fixture(records);
+    const result = await loadFusionOutputs(current.api, [source], source.identity, generation, current.assertCurrent);
+    expect(result.map((item) => item.text)).toEqual(['latest result']);
+    expect(result[0]?.source.session.title).toBe('renamed again');
+    expect(current.calls).toEqual(['get', 'messages']);
   });
-  const result = await loadFusionOutputs([source], source.identity, () => {});
-  expect(result.map((item) => item.text)).toEqual(['latest result']);
-  expect(result[0].source.session.title).toBe('renamed again');
-  expect(calls).toEqual(['session:run:/repo', 'messages:run:/repo']);
+}
+
+test('a selected ID whose membership changed is rejected before reading output', async () => {
+  const current = fixture([], { changedMembership: true });
+  await expect(loadFusionOutputs(current.api, [source], source.identity, 'oc2', current.assertCurrent)).rejects.toThrow('membership changed');
+  expect(current.calls).toEqual(['get']);
 });
 
-test('fusion stops before fetching output when a selected ID no longer owns membership', async () => {
-  reset();
-  getSessionImpl = async () => ({ ...session, id: 'fork' });
-  await expect(loadFusionOutputs([source], source.identity, () => {})).rejects.toThrow('membership changed');
-  expect(calls).toEqual(['session:run:/repo']);
+test('a failed output read is distinct from a successful empty answer', async () => {
+  const failed = fixture([], { failRead: true });
+  await expect(loadFusionOutputs(failed.api, [source], source.identity, 'oc1', failed.assertCurrent)).rejects.toThrow('read unavailable');
+  const empty = fixture([user]);
+  expect(await loadFusionOutputs(empty.api, [source], source.identity, 'oc2', empty.assertCurrent)).toEqual([]);
 });
 
-test('fusion read failure is not silently treated as an empty source', async () => {
-  reset();
-  getSessionMessagesImpl = async () => { throw new Error('unavailable'); };
-  await expect(loadFusionOutputs([source], source.identity, () => {})).rejects.toThrow('unavailable');
-});
-
-test('a runtime switch during source lookup stops the next request', async () => {
-  reset();
-  let switched = false;
-  getSessionImpl = async () => { switched = true; return session; };
-  await expect(loadFusionOutputs([source], source.identity, () => {
-    if (switched) throw new Error('Runtime changed');
-  })).rejects.toThrow('Runtime changed');
-  expect(calls).toEqual(['session:run:/repo']);
+test('a runtime switch after source lookup stops the next request', async () => {
+  const current = fixture([assistant('answer', 2, 'answer')], { switchAfterGet: true });
+  await expect(loadFusionOutputs(current.api, [source], source.identity, 'oc2', current.assertCurrent)).rejects.toThrow('Runtime changed');
+  expect(current.calls).toEqual(['get']);
 });

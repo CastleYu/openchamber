@@ -1,188 +1,98 @@
-import { describe, it } from 'node:test';
+import { after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer, type Server } from 'node:http';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
+import { createSessionStateStore, overlaySessionResponseBody } from './openchamberSessionState';
 
-import {
-  type JsonValue,
-  createSessionStateStore,
-  isSessionRecordPath,
-  mergeMetadataPatch,
-  overlaySessionResponseBody,
-  type SessionMetadata,
-  type SessionMetadataOnOpenCode,
-  type SessionStateFs,
-} from './openchamberSessionState';
-
-/** OpenCode's side: `write` replaces the whole object, as PATCH does. */
-const createFakeOpenCode = (records: Record<string, SessionMetadata> = {}) => {
-  const sessions = new Map(Object.entries(records));
-  const openCode: SessionMetadataOnOpenCode = {
-    read: async (id) => sessions.get(id) ?? null,
-    write: async (id, metadata) => {
-      if (!sessions.has(id)) throw new Error('not found');
-      sessions.set(id, metadata);
-    },
+const dirs: string[] = [];
+const servers: Server[] = [];
+after(async () => {
+  await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+  await Promise.all(dirs.map((dir) => fs.rm(dir, { recursive: true, force: true })));
+});
+const fixture = async () => {
+  let metadata: Record<string, unknown> = { openchamber: { keep: 'yes' } };
+  const requests: Array<{ path: string; method: string; body: Record<string, unknown> | null }> = [];
+  const server = createServer(async (req, res) => {
+    const raw: Buffer[] = [];
+    for await (const chunk of req) raw.push(Buffer.from(chunk));
+    const body = raw.length ? JSON.parse(Buffer.concat(raw).toString('utf8')) as Record<string, unknown> : null;
+    requests.push({ path: req.url ?? '', method: req.method ?? '', body });
+    if (req.url === '/api/session/ses_1' && req.method === 'GET') {
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ data: { id: 'ses_1', metadata, location: { directory: '/repo' } } }));
+      return;
+    }
+    if (req.url === '/api/session/ses_1' && req.method === 'PATCH') {
+      metadata = body?.metadata as Record<string, unknown>;
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: 'missing' }));
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  servers.push(server);
+  const endpoint = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-state-'));
+  dirs.push(dataDir);
+  let generation: 'oc1' | 'oc2' = 'oc2';
+  let epoch = 1;
+  let mode: 'managed' | 'external' = 'managed';
+  let currentEndpoint = endpoint;
+  const manager = {
+    getKernelRuntime: () => ({ generation, endpoint: currentEndpoint, epoch, version: generation === 'oc2' ? '2.0.16' : '1.18.32' }),
+    getOpenCodeAuthHeaders: () => ({}),
+    getDebugInfo: () => ({ mode }),
   };
-  return { openCode, sessions };
+  const store = createSessionStateStore({ dataDir, manager });
+  return { store, dataDir, requests, metadata: () => metadata, setGeneration: (value: 'oc1' | 'oc2') => { generation = value; },
+    setEpoch: (value: number) => { epoch = value; }, setMode: (value: 'managed' | 'external') => { mode = value; },
+    setEndpoint: (value: string) => { currentEndpoint = value; } };
 };
 
-/** In-memory file system: the store must read before every write and rename atomically. */
-const createMemoryFs = (initial: Record<string, string> = {}) => {
-  const files = new Map(Object.entries(initial));
-  const writes: string[] = [];
-  const fsPromises: SessionStateFs = {
-    readFile: async (filePath) => {
-      const content = files.get(filePath);
-      if (content === undefined) {
-        const error = new Error('missing') as Error & { code?: string };
-        error.code = 'ENOENT';
-        throw error;
-      }
-      return content;
-    },
-    writeFile: async (filePath, data) => {
-      files.set(filePath, data);
-      writes.push(filePath);
-    },
-    rename: async (from, to) => {
-      const content = files.get(from);
-      if (content === undefined) throw new Error(`rename source missing: ${from}`);
-      files.delete(from);
-      files.set(to, content);
-    },
-    mkdir: async () => undefined,
-  };
-  return { fsPromises, files, writes };
-};
-
-describe('openchamber session state store', () => {
-  it('archives and unarchives a batch and reads the flags back from disk', async () => {
-    const memory = createMemoryFs();
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises, now: () => 1000 });
-
-    assert.deepEqual(await store.archive(['ses_a', 'ses_b', 'ses_a'], null), {
-      archived: [{ id: 'ses_a', archivedAt: 1000 }, { id: 'ses_b', archivedAt: 1000 }],
-      failedIds: [],
-    });
-    assert.deepEqual(await store.readArchived(), { ses_a: 1000, ses_b: 1000 });
-    assert.equal(memory.files.has(store.archivePath), true);
-    // Every write went through a temp file that was renamed into place.
-    assert.equal(memory.writes.every((filePath) => filePath.endsWith('.tmp')), true);
-
-    assert.deepEqual(await store.unarchive(['ses_a']), { restored: [{ id: 'ses_a', archivedAt: null }], failedIds: [] });
-    // The unarchive stays on file: it overrides an archived stamp OpenCode may still carry.
-    assert.deepEqual(await store.readArchived(), { ses_a: null, ses_b: 1000 });
-  });
-
-  it('keeps a change another process made between two of its own writes', async () => {
-    const memory = createMemoryFs();
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises, now: () => 1000 });
-    await store.archive(['ses_a']);
-    // The desktop app archives ses_c in the same file.
-    memory.files.set(store.archivePath, JSON.stringify({ ses_a: 1000, ses_c: 2000 }));
-
-    await store.archive(['ses_b']);
-
-    assert.deepEqual(await store.readArchived(), { ses_a: 1000, ses_b: 1000, ses_c: 2000 });
-  });
-
-  it('reports every id as failed when the archive file cannot be read', async () => {
-    const memory = createMemoryFs();
-    memory.fsPromises.readFile = async () => { throw new Error('EACCES'); };
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises });
-
-    assert.deepEqual(await store.archive(['ses_a']), { archived: [], failedIds: ['ses_a'] });
-    assert.equal(await store.readArchived(), null);
-    assert.deepEqual(memory.writes, []);
-  });
-
-  it('moves an unreadable file aside instead of overwriting it', async () => {
-    const archive = path.join('/data', 'sessions-archive.json');
-    const memory = createMemoryFs({ [archive]: '{not json' });
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises, now: () => 5 });
-
+describe('VS Code dual-kernel session state', () => {
+  it('claims root files for the first OC2 scope and keeps external state separate', async () => {
+    const { store, dataDir, setGeneration, setMode, setEndpoint } = await fixture();
+    assert.equal((await store.archive(['ses_1'], 10)).archived[0].archivedAt, 10);
+    assert.equal((await store.readArchived()).ses_1, 10);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(dataDir, 'sessions-storage-owner.json'), 'utf8')), { version: 1, scope: 'managed' });
+    setEndpoint('http://127.0.0.1:1');
+    assert.equal((await store.readArchived()).ses_1, 10);
+    setMode('external');
     assert.deepEqual(await store.readArchived(), {});
-    assert.equal(memory.files.get(`${archive}.corrupt-5`), '{not json');
+    await store.archive(['ses_1'], 20);
+    assert.equal(JSON.parse(await fs.readFile(path.join(dataDir, 'sessions-archive.json'), 'utf8')).ses_1, 10);
+    setGeneration('oc1');
+    await assert.rejects(store.readArchived(), /OC2 session state is unavailable/);
   });
 
-  it('merges metadata patches on OpenCode per key and deletes on null', async () => {
-    const memory = createMemoryFs();
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises });
-    const { openCode, sessions } = createFakeOpenCode({ ses_a: { kind: 'review' } });
-
-    await store.setMetadata('ses_a', { openchamber: { goal: { objective: 'ship' }, assist: { recap: 'r' } } }, openCode);
-    const merged = await store.setMetadata('ses_a', { openchamber: { goal: null, pinned: true } }, openCode);
-
-    assert.deepEqual(merged, { kind: 'review', openchamber: { assist: { recap: 'r' }, pinned: true } });
-    assert.deepEqual(sessions.get('ses_a'), merged);
-    assert.deepEqual(await store.getMetadata('ses_a', openCode), merged);
-    assert.deepEqual(await store.getMetadata('ses_missing', openCode), {});
-    await assert.rejects(store.setMetadata('ses_missing', { a: 1 }, openCode));
-    // Nothing touches the legacy file.
-    assert.equal(memory.files.has(path.join('/data', 'sessions-metadata.json')), false);
+  it('migrates legacy OC2 metadata before read, then applies a null-delete patch', async () => {
+    const { store, dataDir, requests, metadata } = await fixture();
+    await fs.writeFile(path.join(dataDir, 'sessions-metadata.json'), JSON.stringify({ ses_1: { openchamber: { old: 'yes', remove: 'x' } } }));
+    const first = await store.getMetadata('ses_1', '/repo');
+    assert.deepEqual(first.openchamber, { old: 'yes', remove: 'x' });
+    assert.equal(requests.filter((item) => item.method === 'PATCH').length, 1);
+    assert.equal((await fs.readdir(dataDir)).includes('sessions-metadata.json.migrated'), true);
+    const next = await store.setMetadata('ses_1', { openchamber: { remove: null, added: true } }, '/repo');
+    assert.deepEqual(next.openchamber, { old: 'yes', added: true });
+    assert.deepEqual(metadata().openchamber, { old: 'yes', added: true });
   });
 
-  it('folds a legacy entry into the first write, then drops it from the file', async () => {
-    const memory = createMemoryFs({
-      [path.join('/data', 'sessions-metadata.json')]: JSON.stringify({ ses_a: { openchamber: { goal: { id: 'g1' } } }, ses_b: { x: 1 } }),
-    });
-    const store = createSessionStateStore({ dataDir: '/data', fsPromises: memory.fsPromises });
-    const { openCode, sessions } = createFakeOpenCode({ ses_a: { kind: 'review' } });
-
-    assert.deepEqual(await store.getMetadata('ses_a', openCode), { kind: 'review', openchamber: { goal: { id: 'g1' } } });
-    await store.setMetadata('ses_a', { openchamber: { pinned: true } }, openCode);
-
-    assert.deepEqual(sessions.get('ses_a'), { kind: 'review', openchamber: { goal: { id: 'g1' }, pinned: true } });
-    assert.deepEqual(await store.readMetadata(), { ses_b: { x: 1 } });
-  });
-});
-
-describe('mergeMetadataPatch', () => {
-  it('replaces non-object values and recurses into objects', () => {
-    assert.deepEqual(mergeMetadataPatch({ a: { b: 1, c: 2 }, d: 'x' }, { a: { b: null, e: 3 }, d: ['y'] }), {
-      a: { c: 2, e: 3 },
-      d: ['y'],
-    });
-  });
-});
-
-describe('overlaySessionResponseBody', () => {
-  const archived = { ses_a: 1234 };
-  const stored = { ses_a: { openchamber: { pinned: true } } };
-
-  it('folds archive time and stored metadata onto list and detail envelopes', () => {
-    const list: JsonValue = {
-      data: [
-        { id: 'ses_a', time: { created: 1 }, metadata: { seed: 1 } },
-        { id: 'ses_b', time: { created: 2, archived: 99 } },
-        { id: 'ses_c', time: { created: 3, archived: 77 } },
-      ],
-      cursor: {},
-    };
-    assert.deepEqual(overlaySessionResponseBody(list, { ...archived, ses_b: null }, stored), {
-      data: [
-        { id: 'ses_a', time: { created: 1, archived: 1234 }, metadata: { seed: 1, openchamber: { pinned: true } } },
-        // An explicit unarchive drops the stamp OpenCode still carries.
-        { id: 'ses_b', time: { created: 2 } },
-        // A session the file does not mention keeps what OpenCode says (migrated v1 archive).
-        { id: 'ses_c', time: { created: 3, archived: 77 } },
-      ],
-      cursor: {},
-    });
-    assert.deepEqual(overlaySessionResponseBody({ data: { id: 'ses_a', time: {} } }, archived, null), {
-      data: { id: 'ses_a', time: { archived: 1234 } },
-    });
+  it('rejects an old epoch before a metadata write', async () => {
+    const { store, setEpoch, requests } = await fixture();
+    const pending = store.getMetadata('ses_1');
+    setEpoch(2);
+    await assert.rejects(pending, /connection changed/);
+    assert.equal(requests.filter((item) => item.method === 'PATCH').length, 0);
   });
 
-  it('leaves the body alone when nothing is known', () => {
-    const body = { data: [{ id: 'ses_a', time: { archived: 7 } }] };
-    assert.equal(overlaySessionResponseBody(body, null, null), body);
-    assert.equal(overlaySessionResponseBody('not json', archived, stored), 'not json');
-  });
-
-  it('matches only the list and single-record session paths', () => {
-    assert.equal(isSessionRecordPath('/api/session'), true);
-    assert.equal(isSessionRecordPath('/api/session/ses_a'), true);
-    assert.equal(isSessionRecordPath('/api/session/ses_a/message'), false);
+  it('overlays archive and pending metadata without treating an unarchive as missing', () => {
+    const body = { data: [{ id: 'ses_1', time: { archived: 2 }, metadata: { keep: true } }] };
+    assert.deepEqual(overlaySessionResponseBody(body, { ses_1: null }, { ses_1: { other: 'x' } }),
+      { data: [{ id: 'ses_1', time: {}, metadata: { keep: true, other: 'x' } }] });
   });
 });

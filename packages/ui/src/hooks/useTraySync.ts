@@ -12,7 +12,7 @@ import {
 } from './tray-status-poll';
 import { opencodeClient } from '@/lib/opencode/client';
 import { useGlobalSessionStatusStore, applyGlobalSessionStatusSnapshot } from '@/sync/global-session-status';
-import { useGlobalBlockingRequestsStore, type BlockingPermissionRequest, type BlockingFormRequest } from '@/sync/global-blocking-requests';
+import { useGlobalBlockingRequestsStore } from '@/sync/global-blocking-requests';
 import { compareSessionsByLifecycleOrder, useSessionOrderingStore } from '@/sync/session-ordering';
 import { useNotificationStore } from '@/sync/notification-store';
 import { useSessionPinnedStore } from '@/stores/useSessionPinnedStore';
@@ -31,6 +31,8 @@ import { resolveProjectForSessionDirectory, normalizeProjectPath } from '@/lib/p
 import type { ProjectEntry } from '@/lib/api/types';
 import type { WorktreeMetadata } from '@/types/worktree';
 import { toast } from '@/components/ui';
+import type { PermissionRequest } from '@/types/permission';
+import type { QuestionRequest } from '@/types/question';
 
 // Native tray/menu bar bridge. The Electron main process owns the Tray UI; this hook
 // streams a compact snapshot of live session/approval state to it via the
@@ -59,7 +61,7 @@ type TraySession = {
 };
 
 type TrayApproval = {
-  kind: 'permission' | 'form';
+  kind: 'permission' | 'question';
   id: string;
   sessionId: string;
   sessionTitle: string;
@@ -108,13 +110,16 @@ const isTrayPlatform = (): boolean => {
 const isTrayEnabled = (): boolean =>
   typeof window !== 'undefined' && window.__OPENCHAMBER_ELECTRON__?.trayEnabled !== false;
 
-const permissionLabel = (request: BlockingPermissionRequest): string => {
-  const head = request.action.trim() || 'Permission';
-  const resource = request.resources.find((item) => item.trim());
-  return resource ? `${head}: ${resource}` : head;
+const permissionLabel = (request: PermissionRequest): string => {
+  const head = typeof request.permission === 'string' ? request.permission : 'Permission';
+  const pattern = Array.isArray(request.patterns) ? request.patterns.find((p) => typeof p === 'string' && p.trim()) : '';
+  return pattern ? `${head}: ${pattern}` : head;
 };
 
-const formLabel = (request: BlockingFormRequest): string => request.title.trim() || 'Question';
+const questionLabel = (request: QuestionRequest): string => {
+  const first = Array.isArray(request.questions) ? request.questions[0] : undefined;
+  return first?.header || first?.question || 'Question';
+};
 
 const compareSessionOrder = (left: Session, right: Session): number => (
   compareSessionsByLifecycleOrder(
@@ -270,11 +275,11 @@ const collectLiveData = (): LiveData => {
         approvals.push({ kind: 'permission', id: request.id, sessionId: sid, sessionTitle: '', label: permissionLabel(request), directory });
       }
     }
-    for (const [sessionId, requests] of Object.entries(state.form ?? {})) {
+    for (const [sessionId, requests] of Object.entries(state.question ?? {})) {
       for (const request of requests ?? []) {
         if (!request?.id) continue;
         const sid = request.sessionID || sessionId;
-        approvals.push({ kind: 'form', id: request.id, sessionId: sid, sessionTitle: '', label: formLabel(request), directory });
+        approvals.push({ kind: 'question', id: request.id, sessionId: sid, sessionTitle: '', label: questionLabel(request), directory });
       }
     }
   }
@@ -301,9 +306,7 @@ const buildSnapshot = (instanceName: string, includeTray = true): TraySnapshot =
   // knows about, independent of which directories this client has opened. Live
   // status/unread/branch are merged in by id where we have them (the session's
   // directory is synced); otherwise the row is shown as idle.
-  // The global store retains generated SDK records; tray rendering consumes
-  // the shared domain projection used by ordering and subtitle helpers.
-  const allSessions = useGlobalSessionsStore.getState().activeSessions as unknown as Session[];
+  const allSessions = useGlobalSessionsStore.getState().activeSessions;
   const childrenByParent = new Map<string, string[]>();
   for (const session of allSessions) {
     if (!session?.id) continue;
@@ -404,10 +407,10 @@ const buildSnapshot = (instanceName: string, includeTray = true): TraySnapshot =
       seen.add(request.id);
       approvals.push({ kind: 'permission', id: request.id, sessionId, sessionTitle, label: permissionLabel(request), directory: pending.directory });
     }
-    for (const request of pending.forms) {
+    for (const request of pending.questions) {
       if (seen.has(request.id)) continue;
       seen.add(request.id);
-      approvals.push({ kind: 'form', id: request.id, sessionId, sessionTitle, label: formLabel(request), directory: pending.directory });
+      approvals.push({ kind: 'question', id: request.id, sessionId, sessionTitle, label: questionLabel(request), directory: pending.directory });
     }
   }
 
@@ -443,17 +446,14 @@ export const useTraySync = (): void => {
     // (see tray-status-poll.ts). Cheap: ~ms per remaining directory.
     const refreshGlobalStatus = async () => {
       const targets = collectTrayStatusPollTargets({
-        sessions: useGlobalSessionsStore.getState().activeSessions as never,
+        sessions: useGlobalSessionsStore.getState().activeSessions,
         syncedDirectories: readSyncedDirectories(),
-        compareSessions: compareSessionOrder as never,
+        compareSessions: compareSessionOrder,
       });
       await Promise.all([...targets.entries()].map(async ([directory, sessionIds]) => {
         // null = fetch failed → keep that directory's current entries;
         // {} = authoritative "everything here is idle".
-        const allStatuses = await opencodeClient.getActiveSessionStatuses().catch(() => null);
-        const raw = allStatuses === null ? null : Object.fromEntries(
-          [...sessionIds].flatMap((sessionId) => allStatuses[sessionId] ? [[sessionId, allStatuses[sessionId]]] : []),
-        );
+        const raw = await opencodeClient.getSessionStatusForDirectory(directory).catch(() => null);
         if (disposed || raw === null) return;
         applyGlobalSessionStatusSnapshot(directory, raw, sessionIds);
       }));

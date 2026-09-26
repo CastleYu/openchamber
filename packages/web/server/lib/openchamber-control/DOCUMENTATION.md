@@ -1,5 +1,18 @@
 # OpenChamber Control Service
 
+The server injects `kernelOperations` for session listing, status and message
+reads. A failed status lookup leaves that session `unknown`. Message output
+follows the page's declared order and sorts by creation time before applying
+`last` or `limit`.
+
+`notify.send` delegates to the injected `notifyUser` service. `file.open`
+delegates to `createFileOpenRequester`: it resolves a path from the session
+directory, checks that a file exists, broadcasts
+`openchamber:file-open-request`, and reports 503 when no client can show it.
+These new agent actions require OC2 under the initial adoption policy. OC1 keeps
+its existing notification delivery and file viewer. The control service enforces
+this gate for direct HTTP callers as well as generated tool schemas.
+
 ## Purpose
 
 This module owns the typed control contract shared by the OpenChamber CLI and
@@ -59,16 +72,6 @@ other.
   directory and does not erase other session results.
 - Destructive session/worktree deletion and project-path registration are not
   part of the action contract.
-- `file.open` shows a file in the user's viewer. `file-open.js` resolves a
-  relative path against the session directory (an explicit `directory` wins),
-  refuses a relative path with no directory at all, checks the target is an
-  existing file, then hands `{ path, directory, sessionId }` to the injected
-  `emit`, which `index.js` writes to every UI control stream as
-  `openchamber:file-open-request`. Nothing comes back: opening a tab does not
-  fail quietly on a client, so the count of clients reached is the signal, and
-  zero is a 503, never a claimed success. Paths outside the workspace are
-  allowed on purpose: screenshots and recordings often land in a temp
-  directory, and the viewer already reads such files.
 - `browser.capture` writes its image on the server, into
   `.openchamber/screenshots/` under the scoped project directory, and returns
   the project-relative path rather than the image bytes. The client that took

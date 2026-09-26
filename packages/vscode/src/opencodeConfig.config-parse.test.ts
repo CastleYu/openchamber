@@ -86,14 +86,12 @@ describe('opencodeConfig JSONC parse safety (issue #2923)', () => {
     fs.writeFileSync(configPath, VALID_CONFIG, 'utf8');
     process.env.OPENCODE_CONFIG = configPath;
 
-    updateMcpConfig('openproject', { disabled: true });
+    updateMcpConfig('openproject', { enabled: false });
 
     const rewritten = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     assert.deepEqual(rewritten.plugin, ['opencode-see-image']);
     assert.equal(rewritten.provider['ollama-cloud'].name, 'Ollama Cloud');
-    // The v1 `mcp.<name>` entry is rewritten in place into `mcp.servers`.
-    assert.equal(rewritten.mcp.openproject, undefined);
-    assert.equal(rewritten.mcp.servers.openproject.disabled, true);
+    assert.equal(rewritten.mcp.openproject.enabled, false);
     assert.equal(fs.readFileSync(`${configPath}.openchamber.backup`, 'utf8'), VALID_CONFIG);
   });
 
@@ -140,12 +138,11 @@ describe('opencodeConfig JSONC parse safety (issue #2923)', () => {
     fs.writeFileSync(projectFile, PARTIAL_PARSE_CONFIG, 'utf8');
     process.env.OPENCODE_CONFIG = customPath;
 
-    updateMcpConfig('openproject', { disabled: true }, projectDir);
+    updateMcpConfig('openproject', { enabled: false }, projectDir);
 
     const rewritten = JSON.parse(fs.readFileSync(customPath, 'utf8'));
     assert.deepEqual(rewritten.plugin, ['opencode-see-image']);
-    assert.equal(rewritten.mcp.openproject, undefined);
-    assert.equal(rewritten.mcp.servers.openproject.disabled, true);
+    assert.equal(rewritten.mcp.openproject.enabled, false);
     assert.equal(fs.readFileSync(projectFile, 'utf8'), PARTIAL_PARSE_CONFIG);
     assert.equal(fs.existsSync(`${projectFile}.openchamber.backup`), false);
   });

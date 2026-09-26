@@ -98,11 +98,11 @@
       "inlineCode": "#4A6030",
       "inlineCodeBackground": "#ECE8DE",
       "blockquote": "#5a5048",
-      "blockquoteBorder": "#1a16121c",
+      "blockquoteBorder": "#1a161230",
       "listMarker": "#8c552099"
     },
     "tools": {
-      "border": "#1a16121c",
+      "border": "#1a161230",
       "icon": "#5a5048",
       "title": "#1a1612",
       "description": "#5a5048",

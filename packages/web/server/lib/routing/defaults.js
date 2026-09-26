@@ -14,29 +14,18 @@ import { z } from 'zod';
 const AUTO_PROVIDER_ID = 'openchamber';
 const AUTO_MODEL_ID = 'auto';
 
-// v2 names a model `{ providerID, id }` (`Model.Ref`); OpenChamber's own stored
-// config and the message queue's send config name it `{ providerID, modelID }`.
-const autoModelSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), id: z.literal(AUTO_MODEL_ID) });
-const autoStoredModelSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), modelID: z.literal(AUTO_MODEL_ID) });
+const autoModelSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), modelID: z.literal(AUTO_MODEL_ID) });
+const autoModelStringSchema = z.literal(`${AUTO_PROVIDER_ID}/${AUTO_MODEL_ID}`);
+const autoModelRefSchema = z.object({ providerID: z.literal(AUTO_PROVIDER_ID), id: z.literal(AUTO_MODEL_ID) });
+export const AUTO_MODEL_REF = Object.freeze({ providerID: AUTO_PROVIDER_ID, id: AUTO_MODEL_ID });
 
+/** The command route carries the model as `provider/model`; the prompt routes as an object. */
 export const isAutoModel = (model) => autoModelSchema.safeParse(model).success
-  || autoStoredModelSchema.safeParse(model).success;
+  || autoModelStringSchema.safeParse(model).success || autoModelRefSchema.safeParse(model).success;
 
-/** The sentinel itself, in the v2 `Model.Ref` shape. */
-export const AUTO_MODEL_REF = { providerID: AUTO_PROVIDER_ID, id: AUTO_MODEL_ID };
-
-/** The user's own TypeSafe key: their quota, their account, the `jev-latest` alias. */
-export const JEV_API_URL = 'https://api.typesafe.ai/v1/systemone';
+export const JEV_API_ORIGIN = 'https://api.typesafe.ai';
+export const JEV_API_PATH = '/v1/systemone';
 export const JEV_MODEL = 'jev-latest';
-
-/**
- * OpenCode Zen serves the same System One endpoint and answers without any
- * credential while `jev-1.13-free` is free. Dax approved OpenChamber using it
- * (Slack, 2026-09-22) on terms this module keeps: the UI tells the user it is a
- * limited-time free model that will later need a Zen key, and every call names
- * OpenChamber so zen can see or throttle us. Zen rejects the `jev-latest`
- * alias, so the versioned free id is sent instead.
- */
 export const ZEN_JEV_API_URL = 'https://opencode.ai/zen/v1/systemone';
 export const ZEN_JEV_MODEL = 'jev-1.13-free';
 export const ZEN_CLIENT_ID = 'openchamber';

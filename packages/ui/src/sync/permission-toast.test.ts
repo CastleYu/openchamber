@@ -5,8 +5,7 @@ import { showPermissionNeededToast } from './permission-toast';
 const permission = {
   id: 'permission-1',
   sessionID: 'inactive-session',
-  action: 'bash',
-  resources: ['ls -la'],
+  permission: 'bash',
 } as PermissionRequest;
 
 describe('permission needed toast', () => {

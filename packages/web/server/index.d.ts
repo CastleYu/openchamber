@@ -7,7 +7,6 @@ export interface WebUiServerController {
   getPort: () => number | null;
   getOpenCodePort: () => number | null;
   isReady: () => boolean;
-  getManagedOpenCodePreflight: () => Promise<boolean>;
   restartOpenCode: () => Promise<void>;
   stop: (options?: { exitProcess?: boolean }) => Promise<void>;
 }

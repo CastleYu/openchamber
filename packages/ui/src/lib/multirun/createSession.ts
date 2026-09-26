@@ -1,47 +1,51 @@
-import { opencodeClient } from '@/lib/opencode/client';
+import type { opencodeClient } from '@/lib/opencode/client';
 import type { ModelRef, Session } from '@/lib/opencode/model';
-import { requestSessionMetadataUpdate } from '@/sync/session-archive-batch';
-import { getMultiRunMembership, multiRunMembershipPatch, withMultiRunMembership, type MultiRunIdentity } from './identity';
+import { getMultiRunMembership, withMultiRunMembership, type MultiRunIdentity } from './identity';
+
+export type MultiRunSessionApi = Pick<typeof opencodeClient, 'createSession' | 'getSession' | 'updateSession' | 'deleteSession'>;
+export type MultiRunGeneration = 'oc1' | 'oc2';
 
 /** Bind the server-assigned ID before dispatch. A fork inherits this ID and cannot join. */
 export async function createMultiRunSession(
+  api: MultiRunSessionApi,
   input: {
     title: string;
     directory: string;
+    generation: MultiRunGeneration;
     identity: Omit<MultiRunIdentity, 'key'>;
-    /** Model and agent the run is pinned to; v2 sets them on the session, not per prompt. */
     selection?: { model?: ModelRef; agent?: string };
   },
   assertCurrent: () => void,
 ): Promise<Session> {
   assertCurrent();
-  const membership = { ...input.identity, version: 1 as const, sessionID: null };
-  const session = await opencodeClient.createSession({
+  const pending = { ...input.identity, version: 1 as const, sessionID: null };
+  const created = await api.createSession({
     title: input.title,
-    model: input.selection?.model,
-    agent: input.selection?.agent,
-    metadata: withMultiRunMembership({}, membership),
+    metadata: withMultiRunMembership({}, pending),
+    ...(input.generation === 'oc2' ? input.selection : undefined),
   }, input.directory);
+
   try {
     assertCurrent();
-    // OpenCode 2.x takes metadata only at creation, so the ID is bound through
-    // OpenChamber's own metadata route. It applies an RFC 7386 merge patch, so
-    // only the marker travels and nothing another feature wrote under
-    // `openchamber` in the meantime is replaced — no read-modify-write needed.
-    const result = await requestSessionMetadataUpdate(
-      session.id,
-      multiRunMembershipPatch({ ...membership, sessionID: session.id }),
-    );
+    const bound = { ...pending, sessionID: created.id };
+    // OC1 replaces metadata, so read the new session and retain every field
+    // written since creation. OC2's metadata route applies a merge patch:
+    // send only the marker so concurrent fields stay under server ownership.
+    const metadata = input.generation === 'oc1'
+      ? withMultiRunMembership(await api.getSession(created.id, input.directory), bound)
+      : withMultiRunMembership({}, bound);
     assertCurrent();
-    if (result.outcome !== 'updated') throw new Error(`Multi-run membership was not saved: ${result.reason}`);
-    const bound: Session = { ...session, metadata: result.metadata };
-    if (!getMultiRunMembership(bound)) throw new Error('Multi-run membership was not saved');
-    return bound;
+    const updated = await api.updateSession(created.id, { metadata }, input.directory);
+    assertCurrent();
+    if (updated.id !== created.id || !getMultiRunMembership(updated)) {
+      throw new Error('Multi-run membership was not saved');
+    }
+    return updated;
   } catch (error) {
-    // Never delete through a switched runtime. The pending marker remains ineligible.
+    // A switched runtime must never receive cleanup for the old session.
     assertCurrent();
     try {
-      await opencodeClient.deleteSession(session.id, input.directory);
+      await api.deleteSession(created.id, input.directory);
     } catch {
       console.warn('[MultiRun] Could not remove an undispatched session after membership failure');
     }

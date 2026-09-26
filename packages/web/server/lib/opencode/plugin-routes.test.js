@@ -272,7 +272,10 @@ describe('opencode plugin routes', () => {
 
     expect(response.body).toMatchObject({
       success: true,
-      message: 'Plugin entry created.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin entry created. Restart OpenCode to apply.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -308,7 +311,10 @@ describe('opencode plugin routes', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body).toMatchObject({
-      message: 'Plugin entry updated.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin entry updated. Restart OpenCode to apply.',
     });
     const after = await request(app).get('/api/config/plugins').expect(200);
     expect(after.body.entries[0]).toEqual(expect.objectContaining({ spec: 'b', scope: 'user' }));
@@ -327,7 +333,10 @@ describe('opencode plugin routes', () => {
     expect(readJson(userConfigPath).plugin).toBeUndefined();
     expect(response.body).toMatchObject({
       success: true,
-      message: 'Plugin entry deleted.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin entry deleted. Restart OpenCode to apply.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -337,7 +346,10 @@ describe('opencode plugin routes', () => {
 
     expect(response.body).toMatchObject({
       success: true,
-      message: 'Plugin file created.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin file created. Restart OpenCode to apply.',
     });
     expect(fs.readFileSync(path.join(rootDir, 'plugins', 'test.js'), 'utf8')).toBe('//x');
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
@@ -367,7 +379,10 @@ describe('opencode plugin routes', () => {
     expect(fs.readFileSync(path.join(rootDir, 'plugins', 'test.js'), 'utf8')).toBe('//y');
     expect(response.body).toMatchObject({
       success: true,
-      message: 'Plugin file updated.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin file updated. Restart OpenCode to apply.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -382,7 +397,10 @@ describe('opencode plugin routes', () => {
     expect(fs.existsSync(path.join(rootDir, 'plugins', 'test.js'))).toBe(false);
     expect(response.body).toMatchObject({
       success: true,
-      message: 'Plugin file deleted.',
+      requiresReload: false,
+      requiresRestart: true,
+      restartDeferred: true,
+      message: 'Plugin file deleted. Restart OpenCode to apply.',
     });
     expect(refreshOpenCodeAfterConfigChange).not.toHaveBeenCalled();
   });
@@ -396,6 +414,40 @@ describe('opencode plugin routes', () => {
       .expect(404);
 
     expect(response.body.error).toContain('not found');
+  });
+
+  test('OC2 plugin mutation reports live application instead of an OC1 restart', async () => {
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'oc2', epoch: 1 }),
+      createPluginEntry: (value) => writes.push(value),
+    });
+    const response = await request(current).post('/api/config/plugins/entry')
+      .send({ spec: 'example-plugin', scope: 'user' }).expect(200);
+    expect(writes).toHaveLength(1);
+    expect(response.body.requiresRestart).toBeUndefined();
+  });
+
+  test('unknown kernels cannot write plugin configuration', async () => {
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'unknown' }),
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(503);
+    expect(writes).toHaveLength(0);
+  });
+
+  test('a connection change during directory resolution blocks plugin mutation', async () => {
+    let epoch = 1;
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'oc2', epoch }),
+      resolveOptionalProjectDirectory: async () => { epoch += 1; return { directory: projectDir }; },
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(409);
+    expect(writes).toHaveLength(0);
   });
 
   test('POST invalid fileName returns 400', async () => {

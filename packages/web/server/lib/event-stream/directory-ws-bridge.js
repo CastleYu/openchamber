@@ -1,5 +1,38 @@
-import { sendMessageStreamWsEvent, sendMessageStreamWsFrame } from './protocol.js';
+import { sendMessageStreamWsEvent, sendMessageStreamWsFrame, sendSerializedMessageStreamWsFrame } from './protocol.js';
 import { createUpstreamSseReader } from './upstream-reader.js';
+
+export function acceptSharedDirectoryMessageStreamWsConnection({ socket, requestedDirectory, requestedLastEventId, globalHub, wsClients, heartbeatIntervalMs }) {
+  let ready = false;
+  const matches = (directory) => !requestedDirectory || directory === requestedDirectory;
+  const sendReady = (reset = false) => {
+    const replay = reset ? null : globalHub.replayAfter(requestedLastEventId);
+    const frame = { type: 'ready', scope: 'directory' };
+    if (replay === null) frame.replayReset = true;
+    if (!sendMessageStreamWsFrame(socket, frame)) return;
+    ready = true;
+    wsClients.add(socket);
+    for (const entry of replay || []) {
+      if (matches(entry.directory)) sendSerializedMessageStreamWsFrame(socket, entry.serializedFrame);
+    }
+  };
+  const unsubscribeEvent = globalHub.subscribeEvent((event) => {
+    if (ready && matches(event.directory)) sendSerializedMessageStreamWsFrame(socket, event.serialize());
+  });
+  const unsubscribeStatus = globalHub.subscribeStatus((status) => {
+    if (status.type === 'identity-change' && ready) sendReady(true);
+    else if (status.type === 'connect' && !ready) sendReady();
+    else if (status.type === 'connect' && status.wasReady) sendMessageStreamWsFrame(socket, { type: 'ready', scope: 'directory' });
+  });
+  const ping = setInterval(() => { if (socket.readyState === 1) socket.ping(); }, heartbeatIntervalMs);
+  socket.on('close', () => {
+    clearInterval(ping);
+    unsubscribeEvent();
+    unsubscribeStatus();
+    wsClients.delete(socket);
+  });
+  globalHub.start();
+  if (globalHub.isConnected()) sendReady();
+}
 
 function shouldTriggerUpstreamHealthCheck(upstream) {
   if (!upstream) {
@@ -18,6 +51,7 @@ export function acceptDirectoryMessageStreamWsConnection({
   requestedLastEventId,
   requestedDirectory,
   buildOpenCodeUrl,
+  getKernelRuntime,
   getOpenCodeAuthHeaders,
   processForwardedEventPayload,
   wsClients,
@@ -31,6 +65,7 @@ export function acceptDirectoryMessageStreamWsConnection({
   let upstreamConnected = false;
   let streamReady = false;
   let reader = null;
+  const generation = getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
 
   const cleanup = () => {
     if (!controller.signal.aborted) {
@@ -106,7 +141,8 @@ export function acceptDirectoryMessageStreamWsConnection({
           buildUrlFailed = false;
           let targetUrl;
           try {
-            targetUrl = new URL(buildOpenCodeUrl('/api/event', ''));
+            if (generation.generation !== 'oc1') throw new Error('OpenCode generation unavailable');
+            targetUrl = new URL(buildOpenCodeUrl('/event', ''));
           } catch {
             buildUrlFailed = true;
             throw new Error('OpenCode service unavailable');
@@ -119,6 +155,7 @@ export function acceptDirectoryMessageStreamWsConnection({
           return targetUrl;
         },
         getHeaders: getOpenCodeAuthHeaders,
+        getConnectionKey: () => `${generation.endpoint}|${generation.epoch}|${generation.generation}`,
         onConnect() {
           if (!streamReady) {
             sendMessageStreamWsFrame(socket, {

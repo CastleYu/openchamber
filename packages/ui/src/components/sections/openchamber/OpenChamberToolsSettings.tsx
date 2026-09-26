@@ -18,10 +18,12 @@ import {
 import { BUILTIN_BROWSER_PROVIDER, browserProviderGuests } from '@/lib/guests/browser-providers';
 import { loadGuestCatalog } from '@/lib/guests/load-catalog';
 import { useGuestsStore } from '@/lib/guests/store';
+import { recordDeferredOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { updateDesktopSettings } from '@/lib/persistence';
 import { useAgentMemoryStore } from '@/stores/useAgentMemoryStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
+import { opencodeClient } from '@/lib/opencode/client';
 
 /**
  * Which OpenChamber capabilities agents are given.
@@ -30,12 +32,24 @@ import { useI18n } from '@/lib/i18n';
  * belong together and not under the CLI's own configuration — the binary path
  * is about which OpenCode runs, these are about what it can do.
  *
- * A toggle only writes the setting: the server keeps OpenChamber's plugin
- * injection in a watched file, so OpenCode picks the change up on its own and
- * the tool list is live without a restart.
+ * A toggle is written immediately but only reaches agents once OpenCode
+ * restarts, so each one records a pending restart rather than implying the
+ * change is already live.
  */
 export const OpenChamberToolsSettings: React.FC = () => {
   const { t } = useI18n();
+  const notifyAvailable = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation === 'oc2',
+    () => false,
+  );
+  const agentNotifyToolEnabled = useUIStore((state) => state.agentNotifyToolEnabled);
+  const setAgentNotifyToolEnabled = useUIStore((state) => state.setAgentNotifyToolEnabled);
+  const handleAgentNotifyToolChange = React.useCallback((enabled: boolean) => {
+    setAgentNotifyToolEnabled(enabled);
+    void updateDesktopSettings({ agentNotifyToolEnabled: enabled });
+    recordDeferredOpenCodeRestart('cli', { id: 'agent-notify-tool' });
+  }, [setAgentNotifyToolEnabled]);
   const agentControlToolEnabled = useUIStore((state) => state.agentControlToolEnabled);
   const setAgentControlToolEnabled = useUIStore((state) => state.setAgentControlToolEnabled);
   const agentWebToolEnabled = useUIStore((state) => state.agentWebToolEnabled);
@@ -52,11 +66,13 @@ export const OpenChamberToolsSettings: React.FC = () => {
   const handleAgentControlToolChange = React.useCallback((enabled: boolean) => {
     setAgentControlToolEnabled(enabled);
     void updateDesktopSettings({ agentControlToolEnabled: enabled });
+    recordDeferredOpenCodeRestart('cli', { id: 'agent-control-tool' });
   }, [setAgentControlToolEnabled]);
 
   const handleAgentWebToolChange = React.useCallback((enabled: boolean) => {
     setAgentWebToolEnabled(enabled);
     void updateDesktopSettings({ agentWebToolEnabled: enabled });
+    recordDeferredOpenCodeRestart('cli', { id: 'agent-web-tool' });
   }, [setAgentWebToolEnabled]);
 
   // The dropdown lists installed extensions, so the catalog has to be loaded
@@ -92,11 +108,22 @@ export const OpenChamberToolsSettings: React.FC = () => {
           void useAgentMemoryStore.getState().refresh();
         }
       });
+    recordDeferredOpenCodeRestart('cli', { id: 'agent-memory-tool' });
   }, [setAgentMemoryToolEnabled]);
 
   return (
     <SettingsSection title={t('settings.openchamber.tools.title')}>
       <div className={SETTINGS_OPTION_STACK_CLASS}>
+        {notifyAvailable ? (
+          <SettingsCheckboxRow
+            settingsItem="sessions.agent-notify-tool"
+            checked={agentNotifyToolEnabled}
+            onChange={handleAgentNotifyToolChange}
+            label={t('settings.openchamber.tools.field.agentNotifyTool')}
+            ariaLabel={t('settings.openchamber.tools.field.agentNotifyToolAria')}
+            info={t('settings.openchamber.tools.field.agentNotifyToolInfo')}
+          />
+        ) : null}
         <SettingsCheckboxRow
           settingsItem="sessions.agent-control-tool"
           checked={agentControlToolEnabled}

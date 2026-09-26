@@ -1,17 +1,16 @@
 import type { EditPermissionMode } from "../types/sessionTypes";
 
-type PermissionEffect = 'allow' | 'deny' | 'ask';
+type PermissionAction = 'allow' | 'deny' | 'ask';
 
-/** One entry of an OpenCode 2 ruleset; evaluation is last-match-wins. */
 type PermissionRule = {
-    action: string;
-    resource: string;
-    effect: PermissionEffect;
+    permission: string;
+    pattern: string;
+    action: PermissionAction;
 };
 
 type ConfigStoreAgent = {
     name: string;
-    permissions?: PermissionRule[];
+    permission?: PermissionRule[];
 };
 
 type ConfigStoreState = {
@@ -24,8 +23,6 @@ const resolveConfigStore = (): ConfigStoreRef | undefined => {
     if (typeof window === 'undefined') {
         return undefined;
     }
-    // SAFETY: `useConfigStore` publishes itself on `window` under this name at
-    // module load; the optional property covers the window before it does.
     return (window as { __zustand_config_store__?: ConfigStoreRef }).__zustand_config_store__;
 };
 
@@ -47,26 +44,24 @@ const getAgentDefinition = (agentName?: string): ConfigStoreAgent | undefined =>
     return undefined;
 };
 
-/**
- * What the agent's resolved ruleset says about an action with no particular
- * resource. The scan runs backwards because the last matching rule wins.
- */
-const resolvePermissionEffect = (ruleset: PermissionRule[] | undefined, action: string): PermissionEffect => {
+const resolvePermissionAction = (ruleset: PermissionRule[] | undefined, permission: string): PermissionAction => {
     if (!ruleset || ruleset.length === 0) {
         return 'ask';
     }
 
+    // Prefer explicit rule for the tool at wildcard pattern.
     for (let index = ruleset.length - 1; index >= 0; index -= 1) {
         const rule = ruleset[index];
-        if (rule.action === action && rule.resource === '*') {
-            return rule.effect;
+        if (rule.permission === permission && rule.pattern === '*') {
+            return rule.action;
         }
     }
 
+    // Fall back to global wildcard.
     for (let index = ruleset.length - 1; index >= 0; index -= 1) {
         const rule = ruleset[index];
-        if (rule.action === '*' && rule.resource === '*') {
-            return rule.effect;
+        if (rule.permission === '*' && rule.pattern === '*') {
+            return rule.action;
         }
     }
 
@@ -79,5 +74,6 @@ export const getAgentDefaultEditPermission = (agentName?: string): EditPermissio
         return 'ask';
     }
 
-    return resolvePermissionEffect(agent.permissions, 'edit');
+    const action = resolvePermissionAction(agent.permission, 'edit');
+    return action;
 };

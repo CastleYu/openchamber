@@ -1,25 +1,22 @@
 import express from 'express';
-import {
-  createWorktree as createWorktreeDefault,
-  getWorktreeBootstrapStatus as getWorktreeBootstrapStatusDefault,
-  resolvePrimaryWorktreeRoot,
-} from '../git/index.js';
+import { createWorktree, getWorktreeBootstrapStatus, resolvePrimaryWorktreeRoot } from '../git/index.js';
 import { expandSnippets } from '../opencode/snippets.js';
-import { AUTO_MODEL_REF, isAutoModel } from '../routing/defaults.js';
-import { parseScheduledCommandPrompt } from '../scheduled-tasks/runtime.js';
+import { expandCommandGoalObjective, parseScheduledCommandPrompt } from '../scheduled-tasks/runtime.js';
 import { buildGoalIntroText, createSessionGoal } from '../session-goal/create.js';
 import { OpenChamberControlError, asControlError } from '../openchamber-control/error.js';
 import { createArchiveStore } from './archive-store.js';
-import { createOpenCodeClient as defaultCreateOpenCodeClient } from './opencode-client.js';
-import { createSessionMetadataStore, createOpenCodeSessionMetadata } from './session-metadata-store.js';
+import { createOpenCodeSessionMetadata, createSessionMetadataStore } from './session-metadata-store.js';
+import { defaultV2Selection, validateV2Selection } from './selection-v2.js';
+import { createSessionStorageScopes } from './storage-scope.js';
+import { applyForkInheritance, forkGoalID } from './fork-inheritance.js';
+import { readObjectiveForFork, writeObjective, removeObjectiveForFork } from '../session-goal/objectives.js';
+import { isAutoModel } from '../routing/defaults.js';
 
 const asNonEmptyString = (value) => {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 };
-
-const asList = (value) => (Array.isArray(value) ? value : []);
 
 const splitModel = (value) => {
   const model = asNonEmptyString(value);
@@ -68,33 +65,29 @@ const resolveGoalInput = (payload, prompt) => {
 
 const isPrimaryAgentMode = (mode) => !mode || mode === 'primary' || mode === 'all';
 
-// OpenCode 2.x serves one flat model catalogue instead of models nested under
-// providers: every entry already names its provider.
-const hasCatalogModel = (models, providerID, modelID) => models.some(
-  (model) => model?.providerID === providerID && model?.modelID === modelID,
-);
+const providerModels = (provider) => {
+  if (Array.isArray(provider?.models)) return provider.models;
+  if (provider?.models && typeof provider.models === 'object') return Object.values(provider.models);
+  return [];
+};
 
-const findCatalogModel = (models, providerID, modelID) => models.find(
-  (model) => model?.providerID === providerID && model?.modelID === modelID,
-) || null;
+const hasProviderModel = (providers, providerID, modelID) => {
+  return providers.some((provider) => provider?.id === providerID
+    && providerModels(provider).some((model) => model?.id === modelID));
+};
 
-const resolveVariant = (models, providerID, modelID, variant) => {
+const resolveVariant = (providers, providerID, modelID, variant) => {
   const normalized = asNonEmptyString(variant);
   if (!normalized) return undefined;
-  const model = findCatalogModel(models, providerID, modelID);
-  // A model the catalog does not know yet (cold or unreachable) keeps the
-  // user's saved variant instead of losing it to a discovery gap.
+  const provider = providers.find((entry) => entry?.id === providerID);
+  const model = providerModels(provider).find((entry) => entry?.id === modelID);
   if (!model) return normalized;
-  return asList(model.variants).some((entry) => entry?.id === normalized) ? normalized : undefined;
+  return model?.variants && Object.prototype.hasOwnProperty.call(model.variants, normalized)
+    ? normalized
+    : undefined;
 };
 
-// Config `model` is either "providerID/modelID" or the expanded object form.
-const parseConfigModel = (value) => {
-  if (typeof value === 'string') return splitModel(value);
-  const providerID = asNonEmptyString(value?.providerID);
-  const modelID = asNonEmptyString(value?.model);
-  return providerID && modelID ? { providerID, modelID } : null;
-};
+const parseConfigModel = (value) => splitModel(value);
 
 const resolveProjectDefaults = (settings, directory, projectId) => {
   const projects = Array.isArray(settings?.projects) ? settings.projects : [];
@@ -108,161 +101,90 @@ const resolveProjectDefaults = (settings, directory, projectId) => {
   };
 };
 
-/** `x-opencode-directory` is how v2 scopes a request; there is no query param. */
-/**
- * Everything the default model/agent resolution needs, from one directory-scoped
- * client. A failed lookup answers empty on purpose: an empty catalogue means
- * "unknown", and callers must never turn that into a rejection.
- */
-const fetchSelectionInputs = async ({ client, readSettingsFromDiskMigrated }) => {
+const fetchSelectionInputs = async ({ kernelOperations, directory, readSettingsFromDiskMigrated }) => {
   const settings = await readSettingsFromDiskMigrated();
-  const [models, agents, configEntries] = await Promise.all([
-    client.model.list().then((response) => asList(response?.data)).catch(() => []),
-    // v2 agents carry `id` (`build`, what prompts and sessions refer to) and a
-    // display `name` (`Build`); every lookup here is by id.
-    client.agent.list().then((response) => asList(response?.data)).catch(() => []),
-    client.config.get().then((response) => asList(response)).catch(() => []),
-  ]);
-
-  // Config entries arrive lowest priority first, so the last definition wins.
-  let opencodeDefaultAgent = null;
-  let opencodeDefaultModel = null;
-  for (const entry of configEntries) {
-    const info = entry?.info;
-    if (!info) continue;
-    const agent = asNonEmptyString(info.default_agent);
-    if (agent) opencodeDefaultAgent = agent;
-    const model = parseConfigModel(info.model);
-    if (model) opencodeDefaultModel = model;
-  }
-
-  return { settings, models, agents, opencodeDefaultAgent, opencodeDefaultModel };
+  const catalog = (await kernelOperations.getSelectionCatalog({ directory })).data;
+  if (catalog.generation === 'oc2') return { settings, catalog };
+  return { settings, catalog, providers: catalog.providers, agents: catalog.agents,
+    opencodeDefaultAgent: asNonEmptyString(catalog.config?.default_agent) || asNonEmptyString(catalog.config?.defaultAgent),
+    opencodeDefaultModel: asNonEmptyString(catalog.config?.model) };
 };
 
-const resolveDefaultSelection = ({ agents, models, settings, projectDefaults, opencodeDefaultAgent, opencodeDefaultModel }) => {
+const resolveDefaultSelection = ({ agents, providers, settings, projectDefaults, opencodeDefaultAgent, opencodeDefaultModel }) => {
   const primaryAgents = agents.filter((agent) => isPrimaryAgentMode(agent?.mode) && agent?.hidden !== true);
   let resolvedAgent = null;
   const projectDefaultAgent = asNonEmptyString(projectDefaults?.defaultAgent);
   const settingsDefaultAgent = asNonEmptyString(settings?.defaultAgent);
-  // The project's default agent wins over the global one. v1 stored the agent's
-  // display name; v2 agents are addressed by id (`build` vs `Build`), so a
-  // setting saved before the upgrade still resolves.
-  const findAgentBySetting = (wantedName) => {
-    const wanted = wantedName.toLowerCase();
-    return agents.find((agent) => agent?.id === wantedName)
-      || agents.find((agent) => typeof agent?.name === 'string' && agent.name.toLowerCase() === wanted)
-      || agents.find((agent) => typeof agent?.id === 'string' && agent.id.toLowerCase() === wanted)
-      || null;
-  };
-  if (projectDefaultAgent) resolvedAgent = findAgentBySetting(projectDefaultAgent);
-  if (!resolvedAgent && settingsDefaultAgent) resolvedAgent = findAgentBySetting(settingsDefaultAgent);
+  if (projectDefaultAgent) {
+    resolvedAgent = agents.find((agent) => agent?.name === projectDefaultAgent) || null;
+  }
+  if (!resolvedAgent && settingsDefaultAgent) {
+    resolvedAgent = agents.find((agent) => agent?.name === settingsDefaultAgent) || null;
+  }
   if (!resolvedAgent && opencodeDefaultAgent) {
-    const candidate = agents.find((agent) => agent?.id === opencodeDefaultAgent) || null;
+    const candidate = agents.find((agent) => agent?.name === opencodeDefaultAgent) || null;
     if (candidate && isPrimaryAgentMode(candidate.mode) && candidate.hidden !== true) {
       resolvedAgent = candidate;
     }
   }
   if (!resolvedAgent) {
-    resolvedAgent = primaryAgents.find((agent) => agent?.id === 'build') || primaryAgents[0] || agents[0] || null;
+    resolvedAgent = primaryAgents.find((agent) => agent?.name === 'build') || primaryAgents[0] || agents[0] || null;
   }
 
   let model = null;
   let variant;
   const projectDefaultModel = parseConfigModel(projectDefaults?.defaultModel);
   const settingsDefaultModel = parseConfigModel(settings?.defaultModel);
-  // A saved choice is honoured even when the catalog has not listed it yet: a
-  // discovery gap must not silently move the user onto another model.
   if (projectDefaultModel) {
     model = projectDefaultModel;
-    variant = resolveVariant(models, model.providerID, model.modelID, projectDefaults?.defaultVariant);
+    variant = resolveVariant(providers, model.providerID, model.modelID, projectDefaults?.defaultVariant);
   }
   if (!model && settingsDefaultModel) {
     model = settingsDefaultModel;
-    variant = resolveVariant(models, model.providerID, model.modelID, settings?.defaultVariant);
+    variant = resolveVariant(providers, model.providerID, model.modelID, settings?.defaultVariant);
   }
 
-  // An agent's model is a v2 `ModelRef`: `id` is the model id, not a composite.
-  const agentModel = resolvedAgent?.model;
-  if (!model && asNonEmptyString(agentModel?.providerID) && asNonEmptyString(agentModel?.id)) {
-    model = { providerID: agentModel.providerID, modelID: agentModel.id };
-    variant = resolveVariant(models, model.providerID, model.modelID, agentModel.variant);
+  if (!model && resolvedAgent?.model?.providerID && resolvedAgent?.model?.modelID) {
+    model = { providerID: resolvedAgent.model.providerID, modelID: resolvedAgent.model.modelID };
+    variant = resolveVariant(providers, model.providerID, model.modelID, resolvedAgent.variant);
   }
 
-  if (!model && opencodeDefaultModel) {
-    model = opencodeDefaultModel;
+  const opencodeModel = parseConfigModel(opencodeDefaultModel);
+  if (!model && opencodeModel) {
+    model = opencodeModel;
   }
 
-  if (!model && hasCatalogModel(models, FALLBACK_PROVIDER_ID, FALLBACK_MODEL_ID)) {
+  if (!model && hasProviderModel(providers, FALLBACK_PROVIDER_ID, FALLBACK_MODEL_ID)) {
     model = { providerID: FALLBACK_PROVIDER_ID, modelID: FALLBACK_MODEL_ID };
   }
 
   if (!model) {
-    const first = models[0];
-    if (asNonEmptyString(first?.providerID) && asNonEmptyString(first?.modelID)) {
-      model = { providerID: first.providerID, modelID: first.modelID };
+    const provider = providers[0];
+    const firstModel = providerModels(provider)[0];
+    if (provider?.id && firstModel?.id) {
+      model = { providerID: provider.id, modelID: firstModel.id };
     }
   }
 
   return {
-    agent: resolvedAgent?.id,
+    agent: resolvedAgent?.name,
     model,
     variant,
   };
 };
 
-/**
- * v2 selects model and agent per session, not per prompt: the choice is
- * switched once and then persists, so every dispatch sets it explicitly rather
- * than passing it alongside the prompt.
- */
-const applySessionSelection = async ({ client, sessionID, model, agent, variant }) => {
-  if (model) {
-    await client.session.switchModel({
-      sessionID,
-      model: { id: model.modelID, providerID: model.providerID, ...(variant ? { variant } : {}) },
-    });
-  }
-  if (agent) await client.session.switchAgent({ sessionID, agent });
-};
-
-const createSession = async ({ client, directory, title }) => {
-  const session = await client.session.create({
-    location: { directory },
-    ...(title ? { title } : {}),
-  });
-  const sessionID = asNonEmptyString(session?.id);
-  if (!sessionID) throw new Error('failed to create session');
-  return sessionID;
-};
-
-const forkSession = async ({ client, sessionID, messageID }) => {
-  const session = await client.session.fork({
-    sessionID,
-    // OpenCode 2.0.8 replaced the SessionForkBoundary object with an optional
-    // `before` message id. Omitting it carries the whole session over, which is
-    // what the old `{ type: 'through' }` boundary meant.
-    ...(messageID ? { before: messageID } : {}),
-  });
-  if (!asNonEmptyString(session?.id)) throw new Error('failed to fork session');
-  return session;
-};
-
-const listMessages = async ({ client, sessionID, limit }) => {
-  const response = await client.message.list({ sessionID, limit, order: 'desc' });
-  return asList(response?.data);
-};
-
-const latestCompletedAssistantMessageID = async ({ client, sessionID }) => {
-  let messages;
+const latestCompletedAssistantMessageID = async ({ kernelOperations, sessionID, directory }) => {
+  let response;
   try {
-    messages = await listMessages({ client, sessionID, limit: 100 });
+    response = await kernelOperations.listMessages({ sessionID, directory, limit: 100 });
   } catch {
     return null;
   }
+  const messages = response.data.items;
   let latest = null;
   for (const message of messages) {
-    if (message?.type !== 'assistant' || !Number.isFinite(message?.time?.completed)) continue;
-    if (!latest || (message.time.created || 0) >= (latest.time?.created || 0)) latest = message;
+    if (message.role !== 'assistant' || !Number.isFinite(message.completed)) continue;
+    if (!latest || (message.created || 0) >= (latest.created || 0)) latest = message;
   }
   return asNonEmptyString(latest?.id);
 };
@@ -270,12 +192,14 @@ const latestCompletedAssistantMessageID = async ({ client, sessionID }) => {
 /**
  * Upper bound on one archive batch.
  *
- * The batch is a bounded amount of work on one request, and callers with more
- * sessions than this send several batches and keep their own partial results.
+ * The batch is applied one session at a time against OpenCode, so an unbounded
+ * list would hold a request open for as long as the list is large. Callers with
+ * more sessions than this send several batches and keep their own partial
+ * results.
  */
 const MAX_ARCHIVE_BATCH = 500;
 
-const parseIdBatch = (payload) => {
+const parseArchiveRequest = (payload) => {
   const rawIds = payload?.ids;
   if (!Array.isArray(rawIds) || rawIds.length === 0) {
     return { ok: false, error: 'ids must be a non-empty array of session ids' };
@@ -290,19 +214,13 @@ const parseIdBatch = (payload) => {
     if (!id) return { ok: false, error: 'ids must contain non-empty session ids' };
     ids.push(id);
   }
-  return { ok: true, ids };
-};
-
-const parseArchiveRequest = (payload) => {
-  const parsed = parseIdBatch(payload);
-  if (!parsed.ok) return parsed;
 
   const archivedAt = payload?.archivedAt;
   if (archivedAt !== undefined && (!Number.isSafeInteger(archivedAt) || archivedAt <= 0)) {
     return { ok: false, error: 'archivedAt must be a positive integer timestamp' };
   }
 
-  return { ok: true, ids: parsed.ids, archivedAt: archivedAt ?? Date.now() };
+  return { ok: true, ids, archivedAt: archivedAt ?? Date.now() };
 };
 
 const resolveRequestedDirectory = async ({ payload, readSettingsFromDiskMigrated, sanitizeProjects, validateDirectoryPath }) => {
@@ -333,6 +251,9 @@ const resolveRequestedDirectory = async ({ payload, readSettingsFromDiskMigrated
   return { ok: true, directory: validated.directory, ...(project ? { projectId: project.id } : {}) };
 };
 
+const PROMPT_LANDED_TIMEOUT_MS = 5_000;
+const PROMPT_LANDED_POLL_MS = 150;
+
 // createWorktree returns while the worktree is still being populated in the
 // background (git reset --hard after a --no-checkout add). Dispatching a
 // prompt into a half-populated directory makes opencode's run die with
@@ -341,6 +262,53 @@ const resolveRequestedDirectory = async ({ payload, readSettingsFromDiskMigrated
 // session and dispatching.
 const WORKTREE_BOOTSTRAP_TIMEOUT_MS = 60_000;
 const WORKTREE_BOOTSTRAP_POLL_MS = 150;
+
+const waitForWorktreeBootstrapReady = async ({ directory }) => {
+  const deadline = Date.now() + WORKTREE_BOOTSTRAP_TIMEOUT_MS;
+  for (;;) {
+    const status = await getWorktreeBootstrapStatus(directory);
+    if (status?.status === 'failed') {
+      throw new OpenChamberControlError(`Worktree bootstrap failed: ${status.error || 'unknown error'}`, 500);
+    }
+    const phase = status?.phase;
+    if (status?.status === 'ready' || phase === 'git-ready' || phase === 'setup-ready') return;
+    if (Date.now() >= deadline) {
+      throw new OpenChamberControlError('Timed out waiting for the worktree bootstrap', 500);
+    }
+    await new Promise((resolve) => setTimeout(resolve, WORKTREE_BOOTSTRAP_POLL_MS));
+  }
+};
+
+const latestUserMessageID = async ({ kernelOperations, sessionID, directory }) => {
+  let response;
+  try {
+    response = await kernelOperations.listMessages({ sessionID, directory, limit: 100 });
+  } catch {
+    return { ok: false, messageID: null };
+  }
+  const messages = response.data.items;
+  let latest = null;
+  for (const message of messages) {
+    if (message.role !== 'user') continue;
+    if (!latest || (message.created || 0) >= (latest.created || 0)) latest = message;
+  }
+  return { ok: true, messageID: asNonEmptyString(latest?.id) };
+};
+
+// `prompt_async` answers 204 as soon as OpenCode forks the run, and every later
+// failure is reported only on the session event stream. Confirm the prompt was
+// actually recorded so `promptDispatched` never claims a dispatch that vanished.
+const waitForPromptLanded = async ({ kernelOperations, sessionID, directory, baselineUserMessageID }) => {
+  const deadline = Date.now() + PROMPT_LANDED_TIMEOUT_MS;
+  for (;;) {
+    const latest = await latestUserMessageID({ kernelOperations, sessionID, directory });
+    // A failed lookup is not authoritative evidence that the prompt was lost.
+    if (!latest.ok) return true;
+    if (latest.messageID && latest.messageID !== baselineUserMessageID) return true;
+    if (Date.now() >= deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, PROMPT_LANDED_POLL_MS));
+  }
+};
 
 const resolveWorktreeInput = (payload) => {
   if (!payload?.worktree || typeof payload.worktree !== 'object') return null;
@@ -359,6 +327,10 @@ const resolveWorktreeInput = (payload) => {
 
 export const createOpenChamberSessionService = (dependencies) => {
   const {
+    kernelOperations,
+    dataDir,
+    getStorageScope,
+    broadcastGlobalUiEvent,
     readSettingsFromDiskMigrated,
     sanitizeProjects,
     validateDirectoryPath,
@@ -366,95 +338,144 @@ export const createOpenChamberSessionService = (dependencies) => {
     getOpenCodeAuthHeaders,
     waitForOpenCodeReady,
     emitSessionCreatedEvent,
-    broadcastGlobalUiEvent,
     createSessionGoal: createSessionGoalOverride,
     sessionKnowledgeRuntime = null,
-    dataDir = null,
-    archiveStore: injectedArchiveStore = null,
-    sessionMetadataStore: injectedSessionMetadataStore = null,
-    // Injected by the server so every metadata write takes the same path:
-    // store, broadcast, and tell the goal loop. Falls back to store+broadcast
-    // when it is absent, which is what module tests use.
-    persistSessionMetadata = null,
-    createOpenCodeClient = defaultCreateOpenCodeClient,
-    createWorktree = createWorktreeDefault,
-    getWorktreeBootstrapStatus = getWorktreeBootstrapStatusDefault,
-    // Auto routing. Sessions dispatched here talk to OpenCode through the SDK,
-    // not through the proxy that intercepts the Auto sentinel, so a default of
-    // `openchamber/auto` (Session Defaults) is resolved here before the
-    // session is switched onto it. Null when routing is not wired in.
-    resolveAutoSelection = null,
+    // Auto routing. Prompts dispatched here go straight to OpenCode, not
+    // through the proxy that rewrites the Auto sentinel, so the same hook runs
+    // on the body before it is sent. Null when routing is not wired in.
+    resolvePromptBody = null,
   } = dependencies;
 
-  if ((!injectedArchiveStore || !injectedSessionMetadataStore) && !dataDir) {
-    throw new Error('openchamber session routes need either both stores or a dataDir');
-  }
-  const archiveStore = injectedArchiveStore || createArchiveStore({ dataDir });
-  const sessionMetadataStore = injectedSessionMetadataStore || createSessionMetadataStore({
-    dataDir,
-    openCode: createOpenCodeSessionMetadata({
-      buildOpenCodeUrl,
-      getOpenCodeAuthHeaders,
-      createOpenCodeClient,
-    }),
-  });
-
-  const openCodeBaseUrl = () => buildOpenCodeUrl('/', '').replace(/\/$/, '');
-  const clientFor = (directory) => createOpenCodeClient({
-    baseUrl: openCodeBaseUrl(),
-    headers: getOpenCodeAuthHeaders(),
-    directory,
-  });
-
-  const waitForWorktreeBootstrapReady = async ({ directory }) => {
-    const deadline = Date.now() + WORKTREE_BOOTSTRAP_TIMEOUT_MS;
-    for (;;) {
-      const status = await getWorktreeBootstrapStatus(directory);
-      if (status?.status === 'failed') {
-        throw new OpenChamberControlError(`Worktree bootstrap failed: ${status.error || 'unknown error'}`, 500);
-      }
-      const phase = status?.phase;
-      if (status?.status === 'ready' || phase === 'git-ready' || phase === 'setup-ready') return;
-      if (Date.now() >= deadline) {
-        throw new OpenChamberControlError('Timed out waiting for the worktree bootstrap', 500);
-      }
-      await new Promise((resolve) => setTimeout(resolve, WORKTREE_BOOTSTRAP_POLL_MS));
+  if (!kernelOperations) throw new Error('kernelOperations is required for session routes');
+  const current = (identity) => {
+    const now = kernelOperations.captureIdentity();
+    if (now.generation !== identity.generation || now.endpoint !== identity.endpoint || now.epoch !== identity.epoch) {
+      throw new OpenChamberControlError('OpenCode runtime changed during session operation', 409);
     }
   };
+  const oc2 = () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') throw new OpenChamberControlError('This route requires OpenCode 2.x', 404);
+    return identity;
+  };
+  const scopes = dataDir ? createSessionStorageScopes({ dataDir }) : null;
+  const stores = new Map();
+  const storageScope = (identity) => {
+    current(identity);
+    const scope = getStorageScope ? getStorageScope() : 'managed';
+    if (!asNonEmptyString(scope)) throw new Error('OC2 storage scope is unavailable');
+    return scope;
+  };
+  const storesFor = async (identity) => {
+    const scope = storageScope(identity);
+    if (dependencies.archiveStore || dependencies.sessionMetadataStore) {
+      return { archiveStore: dependencies.archiveStore, sessionMetadataStore: dependencies.sessionMetadataStore };
+    }
+    if (!scopes) throw new Error('OC2 session storage is unavailable');
+    let entry = stores.get(scope);
+    if (!entry) {
+      const dir = await scopes.directory(scope);
+      current(identity);
+      // Another first request may have installed the shared transaction owner
+      // while scope resolution was pending. Never create a second writer.
+      entry = stores.get(scope);
+      if (!entry) {
+        entry = {
+          archiveStore: createArchiveStore({ dataDir: dir }),
+          sessionMetadataStore: createSessionMetadataStore({ dataDir: dir,
+            openCode: createOpenCodeSessionMetadata({ kernelOperations }) }),
+        };
+        stores.set(scope, entry);
+      }
+    }
+    current(identity);
+    return entry;
+  };
+  const broadcastArchived = (sessionID, archivedAt) => broadcastGlobalUiEvent?.({
+    type: 'openchamber:session-archived', properties: { sessionID, archivedAt },
+  });
+  const getArchivedSessions = async () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') return null;
+    const { archiveStore } = await storesFor(identity);
+    const result = await archiveStore.getAll();
+    current(identity);
+    return result;
+  };
+  const getStoredSessionMetadata = async () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2') return null;
+    const { sessionMetadataStore } = await storesFor(identity);
+    const result = await sessionMetadataStore.listUnmigrated();
+    current(identity);
+    return result;
+  };
+  const prepareSessionMetadata = async ({ sessionID, directory = '', identity }) => {
+    if (identity.generation !== 'oc2') return;
+    current(identity);
+    const { sessionMetadataStore } = await storesFor(identity);
+    await sessionMetadataStore.ensureMigrated(sessionID, { directory, expectedIdentity: identity });
+    current(identity);
+  };
+  const migrateStoredSessionMetadata = async () => {
+    const identity = oc2();
+    const { sessionMetadataStore } = await storesFor(identity);
+    const pending = await sessionMetadataStore.migrateLegacy();
+    current(identity);
+    return pending;
+  };
 
-  /**
-   * The selection an existing session already runs on. v2 keeps it on the
-   * session record, so there is no need to walk the message history for it.
-   */
-  const fetchSessionSelection = async ({ client, sessionID }) => {
+  // Last user message of an existing session, as a selection to reuse. Returns
+  // null when the session has no user message carrying a model.
+  const fetchLastUserSelection = async ({ sessionID, directory }) => {
     try {
-      const session = await client.session.get({ sessionID });
-      const providerID = asNonEmptyString(session?.model?.providerID);
-      const modelID = asNonEmptyString(session?.model?.id);
-      return {
-        model: providerID && modelID ? { providerID, modelID } : null,
-        agent: asNonEmptyString(session?.agent),
-        variant: asNonEmptyString(session?.model?.variant),
-      };
+      if (kernelOperations.captureIdentity().generation === 'oc2') {
+        const session = (await kernelOperations.getSession({ sessionID, directory })).data;
+        const providerID = asNonEmptyString(session.raw?.model?.providerID);
+        const modelID = asNonEmptyString(session.raw?.model?.id);
+        return { model: providerID && modelID ? { providerID, modelID } : null,
+          agent: asNonEmptyString(session.raw?.agent), variant: asNonEmptyString(session.raw?.model?.variant) };
+      }
+      const response = await kernelOperations.listMessages({ sessionID, directory, limit: 20 });
+      const records = response.data.items;
+      for (let index = records.length - 1; index >= 0; index -= 1) {
+        const info = records[index]?.raw?.info;
+        if (info?.role !== 'user') continue;
+        const providerID = asNonEmptyString(info.model?.providerID);
+        const modelID = asNonEmptyString(info.model?.modelID);
+        if (!providerID || !modelID) continue;
+        return {
+          model: { providerID, modelID },
+          agent: asNonEmptyString(info.agent),
+          variant: asNonEmptyString(info.model?.variant),
+        };
+      }
     } catch {
-      return null;
     }
+    return null;
   };
 
-  // An unknown agent or model makes the run fail after the prompt is accepted,
-  // leaving a session with no answer. Reject them before any session, worktree,
-  // or goal side effect happens.
+  // Explicit model/agent/variant are never checked by `prompt_async`: an unknown
+  // agent makes the forked run fail silently, leaving a session with no message.
+  // Reject them before any session, worktree, or goal side effect happens.
   const validateRequestedSelection = async ({ directory, requestedModel, requestedAgent, requestedVariant }) => {
     if (!requestedModel && !requestedAgent && !requestedVariant) return;
-    const { models, agents } = await fetchSelectionInputs({
-      client: clientFor(directory),
+    const inputs = await fetchSelectionInputs({
+      kernelOperations,
+      directory,
       readSettingsFromDiskMigrated,
     });
+    if (inputs.catalog.generation === 'oc2') {
+      validateV2Selection({ catalog: inputs.catalog, model: requestedModel, agent: requestedAgent,
+        variant: requestedVariant, directory });
+      return;
+    }
+    const { providers, agents } = inputs;
 
     // An empty list means the lookup failed or returned nothing authoritative;
     // it must not turn a valid selection into a rejection.
     if (requestedAgent && agents.length > 0) {
-      const agent = agents.find((entry) => entry?.id === requestedAgent) || null;
+      const agent = agents.find((entry) => entry?.name === requestedAgent) || null;
       if (!agent) {
         throw new OpenChamberControlError(`Unknown agent '${requestedAgent}' for ${directory}`, 400);
       }
@@ -463,15 +484,15 @@ export const createOpenChamberSessionService = (dependencies) => {
       }
     }
 
-    if (requestedModel && models.length > 0) {
-      if (!hasCatalogModel(models, requestedModel.providerID, requestedModel.modelID)) {
+    if (requestedModel && providers.length > 0) {
+      if (!hasProviderModel(providers, requestedModel.providerID, requestedModel.modelID)) {
         throw new OpenChamberControlError(
           `Unknown model '${requestedModel.providerID}/${requestedModel.modelID}' for ${directory}`,
           400,
         );
       }
       if (requestedVariant
-        && !resolveVariant(models, requestedModel.providerID, requestedModel.modelID, requestedVariant)) {
+        && !resolveVariant(providers, requestedModel.providerID, requestedModel.modelID, requestedVariant)) {
         throw new OpenChamberControlError(
           `Unknown variant '${requestedVariant}' for model '${requestedModel.providerID}/${requestedModel.modelID}'`,
           400,
@@ -481,9 +502,9 @@ export const createOpenChamberSessionService = (dependencies) => {
   };
 
   const dispatchPrompt = async ({
-    client,
     baseUrl,
     authHeaders,
+    identity,
     sessionID,
     directory,
     projectId,
@@ -498,7 +519,7 @@ export const createOpenChamberSessionService = (dependencies) => {
     let agent = requestedAgent;
     let variant = requestedVariant;
     if (reuseSessionSelection && (!model || !agent)) {
-      const previous = await fetchSessionSelection({ client, sessionID });
+      const previous = await fetchLastUserSelection({ sessionID, directory });
       if (previous) {
         if (!model && previous.model) {
           model = previous.model;
@@ -508,11 +529,15 @@ export const createOpenChamberSessionService = (dependencies) => {
       }
     }
     if (!model || !agent) {
-      const inputs = await fetchSelectionInputs({ client, readSettingsFromDiskMigrated });
-      const defaults = resolveDefaultSelection({
-        ...inputs,
-        projectDefaults: resolveProjectDefaults(inputs.settings, directory, projectId),
+      const inputs = await fetchSelectionInputs({
+        kernelOperations,
+        directory,
+        readSettingsFromDiskMigrated,
       });
+      const projectDefaults = resolveProjectDefaults(inputs.settings, directory, projectId);
+      const defaults = inputs.catalog.generation === 'oc2'
+        ? defaultV2Selection({ catalog: inputs.catalog, settings: inputs.settings, projectDefaults })
+        : resolveDefaultSelection({ ...inputs, projectDefaults });
       if (!model) {
         model = defaults.model;
         if (variant == null) variant = defaults.variant;
@@ -526,53 +551,42 @@ export const createOpenChamberSessionService = (dependencies) => {
     }
 
     const expandedPrompt = expandSnippets(prompt, directory);
-    if (isAutoModel(model)) {
-      // The sentinel must never reach OpenCode: neither the goal record nor the
-      // session switch below may carry it.
-      if (!resolveAutoSelection) {
-        throw new OpenChamberControlError('Auto routing is not available on this server. Choose a model.', 400);
-      }
-      const routed = await resolveAutoSelection({
-        sessionId: sessionID,
-        directory,
-        model: AUTO_MODEL_REF,
-        agent: agent ?? null,
-        requestText: expandedPrompt,
-      });
-      model = { providerID: routed.model.providerID, modelID: routed.model.id };
-      variant = routed.model.variant ?? undefined;
+    if (identity.generation === 'oc2' && isAutoModel(model)) {
+      if (!resolvePromptBody) throw new OpenChamberControlError('Auto routing is unavailable on this server', 400);
+      const routed = { model, agent, variant, parts: [{ type: 'text', text: expandedPrompt }] };
+      await resolvePromptBody(routed, { sessionId: sessionID, directory });
+      model = routed.model;
       agent = routed.agent || agent;
+      variant = routed.variant;
+      if (isAutoModel(model)) throw new OpenChamberControlError('Auto routing returned no concrete model', 500);
     }
     const parsedCommand = parseScheduledCommandPrompt(prompt);
     let resolvedCommand = null;
     if (parsedCommand) {
       try {
-        const response = await client.command.list();
-        const commands = asList(response?.data);
-        if (commands.some((candidate) => candidate?.name === parsedCommand.command)) {
-          resolvedCommand = parsedCommand;
-        }
+        const response = await kernelOperations.listCommands({ directory });
+        const commands = response.data;
+        const command = commands.find((candidate) => candidate?.name === parsedCommand.command);
+        if (command) resolvedCommand = { ...parsedCommand, template: command.template };
       } catch {
       }
     }
     if (goalInput.enabled) {
-      // v2 no longer publishes a command's template, so a slash command's goal
-      // objective is the prompt the user typed rather than the expanded body.
+      const commandObjective = identity.generation === 'oc1' && resolvedCommand
+        ? expandCommandGoalObjective(resolvedCommand.template, resolvedCommand.arguments)
+        : null;
       await (createSessionGoalOverride || createSessionGoal)({
         baseUrl,
         authHeaders,
         sessionID,
         directory,
-        objective: expandedPrompt,
+        objective: commandObjective ?? expandedPrompt,
         tokenBudget: goalInput.tokenBudget,
         providerID: model.providerID,
         modelID: model.modelID,
         onWarning: (message, error) => console.warn(`[OpenChamberSessions] ${message}:`, error?.message || error),
-        // v2 has no session-metadata route, so the goal record goes to
-        // OpenChamber's own store — the same one the proxy overlays back.
-        persistSessionGoal: async (goalSessionID, goalDirectory, goal) => {
-          await writeMetadata(goalSessionID, { openchamber: { goal } }, goalDirectory);
-        },
+        kernelOperations,
+        expectedIdentity: identity,
       });
     }
 
@@ -581,20 +595,10 @@ export const createOpenChamberSessionService = (dependencies) => {
       return error;
     };
 
-    try {
-      await applySessionSelection({ client, sessionID, model, agent, variant });
-    } catch (error) {
-      throw markGoalPartial(error);
-    }
-
-    // A session the agent dispatched has no UI to attach the project's
-    // standing context, so it is asked for here. Never fails the dispatch:
-    // a session that runs without its background beats one that never runs.
     const knowledge = sessionKnowledgeRuntime
       ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, directory)
         .catch(() => ({ text: '', signature: '' }))
       : { text: '', signature: '' };
-    // After the send is accepted, so a rejected dispatch carries it again.
     const recordKnowledge = async () => {
       if (knowledge.text && sessionKnowledgeRuntime) {
         await sessionKnowledgeRuntime.recordDelivered(sessionID, directory, knowledge.signature)
@@ -604,52 +608,70 @@ export const createOpenChamberSessionService = (dependencies) => {
 
     if (resolvedCommand) {
       try {
-        // The command route takes no extra parts, so the context goes in
-        // first as a synthetic message that does not start execution.
-        if (knowledge.text) {
-          await client.session.synthetic({ sessionID, text: knowledge.text, resume: false });
-        }
-        await client.session.command({
-          sessionID,
-          // OpenCode 2.0.8 renamed the command body field `command` to `name`.
-          name: resolvedCommand.command,
-          text: resolvedCommand.arguments || '',
-        });
+        current(identity);
+        await kernelOperations.sendCommand({ sessionID, directory, request: identity.generation === 'oc1'
+          ? { ...identity, body: { command: resolvedCommand.command, arguments: resolvedCommand.arguments,
+            ...(agent ? { agent } : {}), model: `${model.providerID}/${model.modelID}`,
+            ...(variant ? { variant } : {}) } }
+          : { ...identity, body: { name: resolvedCommand.command, text: resolvedCommand.arguments || '' },
+            model: { id: model.modelID, providerID: model.providerID, ...(variant ? { variant } : {}) },
+            agent, synthetics: knowledge.text ? [{ text: knowledge.text, resume: false }] : [] } });
       } catch (error) {
         throw markGoalPartial(error);
       }
-      await recordKnowledge();
+      if (identity.generation === 'oc2') await recordKnowledge();
     } else {
-      let landedMessageID = null;
+      const baseline = identity.generation === 'oc1'
+        ? await latestUserMessageID({ kernelOperations, sessionID, directory }) : { messageID: null };
+      // A session the agent dispatched has no UI to attach the project's
+      // standing context, so it is asked for here. Never fails the dispatch:
+      // a session that runs without its background beats one that never runs.
+      const payload = {
+        model,
+        ...(agent ? { agent } : {}),
+        ...(variant ? { variant } : {}),
+        parts: [
+          ...(knowledge.text ? [{ type: 'text', text: knowledge.text, synthetic: true }] : []),
+          { type: 'text', text: expandedPrompt },
+          ...(goalInput.enabled
+            ? [{ type: 'text', text: buildGoalIntroText(goalInput.tokenBudget), synthetic: true }]
+            : []),
+        ],
+      };
+      if (identity.generation === 'oc1') await resolvePromptBody?.(payload, { sessionId: sessionID, directory });
       try {
-        if (knowledge.text) {
-          await client.session.synthetic({ sessionID, text: knowledge.text, resume: false });
-        }
-        const sent = await client.session.prompt({ sessionID, text: expandedPrompt });
-        landedMessageID = asNonEmptyString(sent?.id);
-        if (goalInput.enabled) {
-          // Goal mode's reminder refers to "the user message above", so it is
-          // admitted after the prompt; v2 has no way to append to one message.
-          await client.session.synthetic({
-            sessionID,
-            text: buildGoalIntroText(goalInput.tokenBudget),
-            resume: false,
-          });
+        current(identity);
+        const sent = await kernelOperations.sendPrompt({ sessionID, directory, request: identity.generation === 'oc1'
+          ? { ...identity, body: payload }
+          : { ...identity, body: { text: expandedPrompt },
+            model: { id: model.modelID, providerID: model.providerID, ...(variant ? { variant } : {}) },
+            agent,
+            synthetics: knowledge.text ? [{ text: knowledge.text, resume: false }] : [],
+            postSynthetics: goalInput.enabled
+              ? [{ text: buildGoalIntroText(goalInput.tokenBudget), resume: false }] : [] } });
+        if (identity.generation === 'oc2' && !asNonEmptyString(sent.data?.id)) {
+          return { model, agent, variant, promptDispatched: false, dispatchedAsCommand: false,
+            promptError: 'OpenCode accepted the prompt but returned no queued message' };
         }
       } catch (error) {
         throw markGoalPartial(error);
       }
+      // After the prompt is accepted, so a rejected dispatch carries it again.
       await recordKnowledge();
-      if (!landedMessageID) {
-        // v2 answers a prompt with the inbox item it recorded. No item id means
-        // nothing is queued, so the dispatch must not be claimed as done.
+      const landed = identity.generation === 'oc2' || await waitForPromptLanded({
+        kernelOperations,
+        sessionID,
+        directory,
+        baselineUserMessageID: baseline.messageID,
+      });
+      if (!landed) {
         return {
           model,
           agent,
           variant,
           promptDispatched: false,
           dispatchedAsCommand: false,
-          promptError: 'OpenCode accepted the prompt but returned no queued message',
+          promptError: 'OpenCode accepted the prompt but it never appeared in the session',
         };
       }
     }
@@ -657,63 +679,20 @@ export const createOpenChamberSessionService = (dependencies) => {
     return { model, agent, variant, promptDispatched: true, dispatchedAsCommand: Boolean(resolvedCommand) };
   };
 
-  const broadcastMetadata = (sessionID, metadata) => {
-    broadcastGlobalUiEvent?.({
-      type: 'openchamber:session-metadata',
-      properties: { sessionID, metadata },
-    });
-  };
-
-  /**
-   * Merge-patch a session's OpenChamber metadata on its OpenCode record: the
-   * per-session state of goal mode, session assist, obligatory context and
-   * pinned notes. The broadcast carries the full merged object, because a
-   * client that missed an earlier patch must not have to reconstruct it.
-   */
-  const writeMetadata = async (sessionID, patch, directory = '') => {
-    if (typeof persistSessionMetadata === 'function') {
-      return persistSessionMetadata(sessionID, patch, { directory });
-    }
-    const metadata = await sessionMetadataStore.setSessionMetadata(sessionID, patch, { directory });
-    broadcastMetadata(sessionID, metadata);
-    return metadata;
-  };
-
-  const setMetadata = async (sessionID, payload = {}) => {
-    const id = asNonEmptyString(sessionID);
-    if (!id) throw new OpenChamberControlError('a session id is required', 400);
-    const patch = payload?.patch;
-    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
-      throw new OpenChamberControlError('patch must be an object', 400);
-    }
-
-    return { metadata: await writeMetadata(id, patch, asNonEmptyString(payload?.directory) || '') };
-  };
-
-  const getMetadata = async (sessionID, directory = '') => {
-    const id = asNonEmptyString(sessionID);
-    if (!id) throw new OpenChamberControlError('a session id is required', 400);
-    return { metadata: await sessionMetadataStore.get(id, { directory }) };
-  };
-
-  const broadcastArchived = (sessionID, archivedAt) => {
-    broadcastGlobalUiEvent?.({
-      type: 'openchamber:session-archived',
-      properties: { sessionID, archivedAt },
-    });
-  };
-
   /**
    * Archive a batch of sessions in one request.
    *
-   * OpenCode 2.x has no route that sets `time.archived`, so the state is
-   * OpenChamber's own: a JSON file beside the OpenCode instance, folded back
-   * onto the session records the proxy serves. Batching matters for the same
-   * reason it did before — the UI archives every session linked to a worktree
-   * before removing it, and doing that one request at a time is what made
-   * removing a busy worktree take tens of seconds.
+   * The UI archives every session linked to a worktree before removing it.
+   * Doing that from the browser costs one request per session plus a store
+   * reconciliation between each of them, which is what made deleting a
+   * worktree with many sessions take tens of seconds. Here the batch stays on
+   * the server, next to OpenCode, and the client reconciles once.
    *
-   * No directory is needed: archive state is keyed by session id per data dir.
+   * Sessions are updated one at a time on purpose: they are archived against a
+   * single OpenCode instance, and a fan-out of concurrent writes would trade a
+   * UI stall for server event-loop starvation. One failed session never stops
+   * the batch — it is reported in `failedIds` while the rest still archive, so
+   * callers keep the partial-failure behaviour they already show.
    */
   const archive = async (payload = {}) => {
     const parsed = parseArchiveRequest(payload);
@@ -721,24 +700,88 @@ export const createOpenChamberSessionService = (dependencies) => {
       throw new OpenChamberControlError(parsed.error, 400);
     }
 
-    const { archived, failedIds } = await archiveStore.archive(parsed.ids, parsed.archivedAt);
-    for (const entry of archived) broadcastArchived(entry.id, entry.archivedAt);
-    return { archived, failedIds };
-  };
-
-  /** Clears the archive flag for a batch. Mirrors `archive`. */
-  const unarchive = async (payload = {}) => {
-    const parsed = parseIdBatch(payload);
-    if (!parsed.ok) {
-      throw new OpenChamberControlError(parsed.error, 400);
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation === 'oc2') {
+      const { archiveStore } = await storesFor(identity);
+      current(identity);
+      const { archived, failedIds } = await archiveStore.archive(parsed.ids, parsed.archivedAt, () => current(identity));
+      for (const entry of archived) broadcastArchived(entry.id, entry.archivedAt);
+      return { archived, failedIds };
     }
 
-    const { restored, failedIds } = await archiveStore.unarchive(parsed.ids);
+    const resolvedDirectory = await resolveRequestedDirectory({
+      payload,
+      readSettingsFromDiskMigrated,
+      sanitizeProjects,
+      validateDirectoryPath,
+    });
+    if (!resolvedDirectory.ok) {
+      throw new OpenChamberControlError(resolvedDirectory.error, resolvedDirectory.status || 400);
+    }
+
+    if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
+
+    const directory = resolvedDirectory.directory;
+    const archived = [];
+    const failedIds = [];
+    for (const sessionID of parsed.ids) {
+      try {
+        current(identity);
+        const response = await kernelOperations.updateSession({ sessionID, directory,
+          time: { archived: parsed.archivedAt }, expectedIdentity: identity });
+        const session = response.data;
+        if (session?.id) archived.push(session);
+        else failedIds.push(sessionID);
+      } catch (error) {
+        if (error?.code === 'runtime-changed' || error?.statusCode === 409) throw error;
+        console.warn('[OpenChamberSessions] failed to archive session', sessionID, error);
+        failedIds.push(sessionID);
+      }
+    }
+
+    return { directory, archived, failedIds };
+  };
+
+  const unarchive = async (payload = {}) => {
+    const identity = oc2();
+    const parsed = parseArchiveRequest(payload);
+    if (!parsed.ok) throw new OpenChamberControlError(parsed.error, 400);
+    const { archiveStore } = await storesFor(identity);
+    current(identity);
+    const { restored, failedIds } = await archiveStore.unarchive(parsed.ids, () => current(identity));
     for (const entry of restored) broadcastArchived(entry.id, null);
     return { restored, failedIds };
   };
 
+  const setMetadata = async (sessionID, payload = {}) => {
+    const identity = oc2();
+    const id = asNonEmptyString(sessionID);
+    if (!id) throw new OpenChamberControlError('a session id is required', 400);
+    const patch = payload.patch;
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw new OpenChamberControlError('patch must be an object', 400);
+    }
+    const { sessionMetadataStore } = await storesFor(identity);
+    current(identity);
+    const metadata = await sessionMetadataStore.setSessionMetadata(id, patch,
+      { directory: asNonEmptyString(payload.directory) || '' });
+    current(identity);
+    broadcastGlobalUiEvent?.({ type: 'openchamber:session-metadata', properties: { sessionID: id, metadata } });
+    return { metadata };
+  };
+
+  const getMetadata = async (sessionID, directory = '') => {
+    const identity = oc2();
+    const id = asNonEmptyString(sessionID);
+    if (!id) throw new OpenChamberControlError('a session id is required', 400);
+    const { sessionMetadataStore } = await storesFor(identity);
+    const metadata = await sessionMetadataStore.get(id, { directory });
+    current(identity);
+    return { metadata };
+  };
+
   const create = async (payload = {}) => {
+    const identity = kernelOperations.captureIdentity();
     const title = asNonEmptyString(payload.title);
     const prompt = asNonEmptyString(payload.prompt);
     const goalInput = resolveGoalInput(payload, prompt);
@@ -783,21 +826,18 @@ export const createOpenChamberSessionService = (dependencies) => {
       await waitForWorktreeBootstrapReady({ directory: sessionDirectory });
     }
 
-    const baseUrl = openCodeBaseUrl();
+    current(identity);
+    const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const authHeaders = getOpenCodeAuthHeaders();
-    const client = clientFor(sessionDirectory);
-    const sessionID = await createSession({
-      client,
-      directory: sessionDirectory,
-      ...(title ? { title } : {}),
-    });
+    const sessionID = (await kernelOperations.createSession({ directory: sessionDirectory,
+      ...(title ? { title } : {}), expectedIdentity: identity })).data.id;
 
     let dispatch = { model, agent, variant, promptDispatched: false, dispatchedAsCommand: false };
     if (prompt) {
       dispatch = await dispatchPrompt({
-        client,
         baseUrl,
         authHeaders,
+        identity,
         sessionID,
         directory: sessionDirectory,
         projectId: resolvedDirectory.projectId,
@@ -848,6 +888,7 @@ export const createOpenChamberSessionService = (dependencies) => {
   };
 
   const runExisting = async (action, sourceSessionId, payload = {}) => {
+    const identity = kernelOperations.captureIdentity();
     const sourceSessionID = asNonEmptyString(sourceSessionId);
     const prompt = asNonEmptyString(payload.prompt);
     if (!sourceSessionID) throw new OpenChamberControlError('sessionId is required', 400);
@@ -879,27 +920,60 @@ export const createOpenChamberSessionService = (dependencies) => {
         requestedVariant: asNonEmptyString(payload.variant),
       });
 
-      const baseUrl = openCodeBaseUrl();
+      const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
       const authHeaders = getOpenCodeAuthHeaders();
-      const client = clientFor(directory);
       if (action === 'fork') {
-        targetSession = await forkSession({
-          client,
-          sessionID: sourceSessionID,
-          messageID: asNonEmptyString(payload.messageId) || undefined,
-        });
+        current(identity);
+        targetSession = (await kernelOperations.forkSession({ sessionID: sourceSessionID, directory,
+          messageID: asNonEmptyString(payload.messageId) || undefined, expectedIdentity: identity })).data;
         targetSessionID = targetSession.id;
+        if (identity.generation === 'oc2') {
+          try {
+            await applyForkInheritance({
+              sourceSessionID, fork: targetSession,
+              readObjective: readObjectiveForFork,
+              readGoalID: async (sessionID) => {
+                const session = (await kernelOperations.getSession({ sessionID, directory })).data;
+                current(identity);
+                return forkGoalID(session.metadata);
+              },
+              writeObjective, removeObjective: removeObjectiveForFork,
+              writeMetadata: (sessionID, metadata) => kernelOperations.updateSession({
+                sessionID, directory, metadata, expectedIdentity: identity,
+              }),
+              assertCurrent: () => current(identity),
+            });
+            current(identity);
+          } catch (error) {
+            // Only the new fork is eligible for rollback, and only on its
+            // captured kernel. A failed/ambiguous delete stays partial.
+            current(identity);
+            try {
+              const removed = await kernelOperations.removeSession({
+                sessionID: targetSessionID, directory, expectedIdentity: identity,
+              });
+              current(identity);
+              if (removed.data !== true) throw new Error('Fork rollback was not acknowledged');
+            } catch (rollbackError) {
+              throw new AggregateError([error, rollbackError], 'Fork inheritance failed and the new fork could not be removed');
+            }
+            targetSessionID = sourceSessionID;
+            targetSession = null;
+            throw error;
+          }
+        }
       }
 
       const baselineAssistantMessageId = await latestCompletedAssistantMessageID({
-        client,
+        kernelOperations,
         sessionID: targetSessionID,
+        directory,
       });
 
       const dispatch = await dispatchPrompt({
-        client,
         baseUrl,
         authHeaders,
+        identity,
         sessionID: targetSessionID,
         directory,
         projectId: resolvedDirectory.projectId,
@@ -972,10 +1046,12 @@ export const createOpenChamberSessionService = (dependencies) => {
     create,
     archive,
     unarchive,
-    archiveStore,
-    sessionMetadataStore,
-    setMetadata,
     getMetadata,
+    setMetadata,
+    getArchivedSessions,
+    getStoredSessionMetadata,
+    prepareSessionMetadata,
+    migrateStoredSessionMetadata,
     send: (sessionID, payload) => runExisting('send', sessionID, payload),
     fork: (sessionID, payload) => runExisting('fork', sessionID, payload),
   };
@@ -1015,12 +1091,18 @@ export const registerOpenChamberSessionRoutes = (app, dependencies) => {
     }
   });
 
+  app.post('/api/openchamber/sessions/unarchive', express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      return res.json(await service.unarchive(req.body && typeof req.body === 'object' ? req.body : {}));
+    } catch (error) {
+      console.error('[OpenChamberSessions] failed to unarchive sessions:', error);
+      return sendServiceError(res, error, 'Failed to unarchive sessions');
+    }
+  });
+
   app.get('/api/openchamber/sessions/:sessionId/metadata', async (req, res) => {
     try {
-      return res.json(await service.getMetadata(
-        req.params.sessionId,
-        asNonEmptyString(req.query?.directory) || '',
-      ));
+      return res.json(await service.getMetadata(req.params.sessionId, asNonEmptyString(req.query?.directory) || ''));
     } catch (error) {
       console.error('[OpenChamberSessions] failed to read session metadata:', error);
       return sendServiceError(res, error, 'Failed to read session metadata');
@@ -1029,22 +1111,11 @@ export const registerOpenChamberSessionRoutes = (app, dependencies) => {
 
   app.post('/api/openchamber/sessions/:sessionId/metadata', express.json({ limit: '1mb' }), async (req, res) => {
     try {
-      return res.json(await service.setMetadata(
-        req.params.sessionId,
-        req.body && typeof req.body === 'object' ? req.body : {},
-      ));
+      return res.json(await service.setMetadata(req.params.sessionId,
+        req.body && typeof req.body === 'object' ? req.body : {}));
     } catch (error) {
       console.error('[OpenChamberSessions] failed to store session metadata:', error);
       return sendServiceError(res, error, 'Failed to store session metadata');
-    }
-  });
-
-  app.post('/api/openchamber/sessions/unarchive', express.json({ limit: '1mb' }), async (req, res) => {
-    try {
-      return res.json(await service.unarchive(req.body && typeof req.body === 'object' ? req.body : {}));
-    } catch (error) {
-      console.error('[OpenChamberSessions] failed to unarchive sessions:', error);
-      return sendServiceError(res, error, 'Failed to unarchive sessions');
     }
   });
 

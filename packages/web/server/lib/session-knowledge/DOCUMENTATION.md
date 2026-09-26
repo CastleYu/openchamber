@@ -1,5 +1,10 @@
 # Session Knowledge
 
+The server injects `kernelOperations` for session reads and metadata writes.
+An unreadable session fails the pending-context lookup; callers can send the
+user's message without standing context and retry that context later. A failed
+read never becomes an authoritative empty set of pins.
+
 What a session must be told about the project — that session's pinned notes and
 plans, and the index of what the agent has remembered — and whether it has been
 told yet.
@@ -51,11 +56,6 @@ messages back to back read as the agent being interrupted twice.
 Nothing here may fail a send. A message without its background costs the agent
 some context; a failed send costs the user their message. Every caller treats an
 error as "no block this time".
-
-While memory is on, every session is told when to save, even with an empty
-store. The tool description alone is read only when the agent already means to
-call it, so agents told nothing here saved only when the user said "remember".
-The session hears "nothing is stored yet" only when both scopes loaded.
 
 A source that will not load never blanks the rest: an unreadable memory store
 still delivers the pinned notes. A memory scope that failed to load is left out

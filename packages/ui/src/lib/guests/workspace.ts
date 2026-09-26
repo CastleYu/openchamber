@@ -46,9 +46,7 @@ const projectSession = (session: Session, projectId: string, guestId: string, wo
     else if (status?.type === 'retry') activity = 'retrying';
     else if (status?.type === 'idle' || child?.sessionStatusReady || observed) activity = 'idle';
     if (child?.permission[session.id]?.length) activity = 'waiting-permission';
-    // v2 replaced the v1 question tool with typed forms; both are "the agent
-    // is waiting for the user to answer", so the public activity value stays.
-    else if (child?.form[session.id]?.length) activity = 'waiting-question';
+    else if (child?.question[session.id]?.length) activity = 'waiting-question';
   }
   return {
     id: session.id, title: session.title || session.id, projectId, directory,
@@ -150,7 +148,7 @@ export const observeGuestWorkspace = (query: GuestWorkspaceQuery, guestId: strin
         manager.subscribeBootstrap(update),
         manager.subscribeAllSelected((state) => state.session, update),
         manager.subscribeAllSelected((state) => state.permission, update),
-        manager.subscribeAllSelected((state) => state.form, update),
+        manager.subscribeAllSelected((state) => state.question, update),
         manager.subscribeAllSelected((state) => state.sessionStatusReady, update),
       );
     }

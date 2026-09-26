@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Message, Part, Session } from '@/lib/opencode/model';
-import { getLastConversationRecord, isIncompleteAssistantTurn } from '@/lib/opencode/model';
+import type { PermissionRequest } from '@/types/permission';
+import type { QuestionRequest } from '@/types/question';
+import type { FormInfo, PermissionRequest as V2PermissionRequest } from '@opencode/client';
 
 import { ChatInput } from './ChatInput';
 import { ChatColumnSessionContext, type ChatColumnSession } from './chatColumnSession';
@@ -34,9 +36,11 @@ const FLOATING_COMPOSER_DEFAULT_HEIGHT = 128;
 // for this many consecutive frames, or after the cap.
 const TIMELINE_SETTLE_STABLE_FRAMES = 2;
 const TIMELINE_SETTLE_CAP_MS = 300;
-// Mirrors the oc-chat-hydration-reveal duration in index.css.
-const TIMELINE_REVEAL_FADE_MS = 100;
-import { hasActiveFormToolInCurrentTurn, recoverPendingFormWithRetry } from '@/sync/form-recovery';
+import { PermissionCard } from './PermissionCard';
+import { QuestionCard } from './QuestionCard';
+import { FormCard } from './FormCard';
+import { V2PermissionCard } from './V2PermissionCard';
+import { hasActiveQuestionToolInCurrentTurn, recoverPendingQuestionWithRetry } from '@/sync/question-recovery';
 import { StatusRowContainer } from './StatusRowContainer';
 import { SessionRecapNote } from '@/components/chat/SessionRecapSpacer';
 import { SessionErrorNotice } from '@/components/chat/SessionErrorNotice';
@@ -68,7 +72,9 @@ import {
     useSessionRenderable,
     useSessionStatus,
     useScopedBlockingPermissions,
-    useScopedBlockingForms,
+    useScopedBlockingQuestions,
+    useScopedPendingPermissions,
+    useScopedPendingInputs,
     useParentSession,
     useSession,
 } from '@/sync/sync-context';
@@ -79,7 +85,10 @@ import { isVSCodeRuntime } from '@/lib/desktop';
 import { WorkStatusPanel } from './work-status/WorkStatusPanel';
 import { useWorkStatusVisibility } from './work-status/useWorkStatusVisibility';
 import { getEmbeddedSessionChatOriginSessionId } from '@/components/layout/contextPanelEmbeddedChat';
+import { isFullySyntheticMessage } from '@/lib/messages/synthetic';
+import { hasContextParts } from '@/lib/messages/contextParts';
 import { normalizeUserDisplayParts } from './message/normalizeUserDisplayParts';
+import { findShellCommandForMessage, isUserShellMarkerMessage } from './lib/shellBridge';
 import { resolveChatPromptReadOnly } from './chatPromptReadOnly';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 import { createFirstVisibleSessionPerformanceTracker } from '@/sync/session-load-performance';
@@ -200,6 +209,10 @@ type ChatViewportProps = {
     /** The user waited for this session (held or fetched); reveal it with a fade. */
     revealWaited: boolean;
     revealGate: TimelineRevealGate;
+    sessionQuestions: QuestionRequest[];
+    sessionPermissions: PermissionRequest[];
+    v2Permissions: V2PermissionRequest[];
+    sessionForms: FormInfo[];
     isProgrammaticFollowActive: boolean;
     showLoadOlderButton: boolean;
     onLoadOlder: () => void;
@@ -235,6 +248,10 @@ const ChatViewport = React.memo(({
     endPinningReleased,
     revealWaited,
     revealGate,
+    sessionQuestions,
+    sessionPermissions,
+    v2Permissions,
+    sessionForms,
     isProgrammaticFollowActive,
     showLoadOlderButton,
     onLoadOlder,
@@ -251,6 +268,14 @@ const ChatViewport = React.memo(({
     // Cache normalized parts per source array so unchanged messages keep the
     // same reference and the memo below can bail out to the previous map.
     const normalizedPromptPartsCache = React.useRef(new WeakMap<Part[], Part[]>());
+    // Shell-mode prompts show their extracted command; cache by message id so
+    // the parts array reference is stable while the command is unchanged.
+    const shellPreviewCache = React.useRef(new Map<string, { command: string; parts: Part[] }>());
+    const shellPreviewSessionRef = React.useRef(currentSessionId);
+    if (shellPreviewSessionRef.current !== currentSessionId) {
+        shellPreviewSessionRef.current = currentSessionId;
+        shellPreviewCache.current.clear();
+    }
     const promptPreviewsByTurnId = React.useMemo(() => {
         const next = new Map<string, Part[]>();
         for (let index = 0; index < renderedMessages.length; index += 1) {
@@ -258,10 +283,27 @@ const ChatViewport = React.memo(({
             if (message.info.role !== 'user') {
                 continue;
             }
-            // v2 keeps injected context out of the user message: loop
-            // continuations and plan-mode injections arrive as their own
-            // `synthetic`-role messages, so every remaining user message is a
-            // turn the user actually sent and stays navigable.
+            if (isUserShellMarkerMessage(message)) {
+                const command = findShellCommandForMessage(renderedMessages, index) ?? '';
+                const cached = shellPreviewCache.current.get(message.info.id);
+                if (cached && cached.command === command) {
+                    next.set(message.info.id, cached.parts);
+                } else {
+                    const parts = [{ type: 'text', text: command ? `$ ${command}` : '/shell' } as Part];
+                    shellPreviewCache.current.set(message.info.id, { command, parts });
+                    next.set(message.info.id, parts);
+                }
+                continue;
+            }
+            // Other fully synthetic user messages (loop continuations,
+            // plan-mode injections) are not prompts the user typed — keep
+            // them out of the navigator entirely.
+            // Attached context (a quoted message, a terminal selection) is
+            // synthetic transport-wise but is a turn the user sent, so a
+            // context-only message stays navigable.
+            if (isFullySyntheticMessage(message.parts) && !hasContextParts(message.parts)) {
+                continue;
+            }
             let displayParts = normalizedPromptPartsCache.current.get(message.parts);
             if (!displayParts) {
                 displayParts = normalizeUserDisplayParts(message.parts);
@@ -344,7 +386,19 @@ const ChatViewport = React.memo(({
 
     const listFooter = React.useMemo(() => (
         <>
-            {/* Permissions and forms dock above the composer (`PermissionDock`, `FormDock`). */}
+            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || sessionForms.length > 0) && (
+                <div>
+                    {sessionQuestions.map((question) => (
+                        <QuestionCard key={question.id} question={question} />
+                    ))}
+                    {sessionPermissions.map((permission) => (
+                        <PermissionCard key={permission.id} permission={permission} />
+                    ))}
+                    {sessionForms.map((form) => <FormCard key={form.id} form={form} />)}
+                    {v2Permissions.map((permission) => <V2PermissionCard key={permission.id} permission={permission} />)}
+                </div>
+            )}
+
             <SessionErrorNotice sessionId={currentSessionId} directory={directory} />
 
             {/* Tail spacer. With a floating composer it reserves the band the
@@ -365,7 +419,7 @@ const ChatViewport = React.memo(({
                 aria-hidden="true"
             />
         </>
-    ), [currentSessionId, directory, floatingComposer, isMobile]);
+    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions]);
 
     // Opening a session paints the timeline as one finished picture: the root
     // stays invisible while any renderer holds a provisional first paint, then
@@ -389,7 +443,6 @@ const ChatViewport = React.memo(({
         let finished = false;
         let timer: number | null = null;
         let frame: number | null = null;
-        let fadeTimer: number | null = null;
         // Revealed once the geometry has settled: after the last hold the
         // list still lays rows out from its own measurements over a few
         // frames, so the timeline stays hidden — pinned to the end on every
@@ -420,28 +473,8 @@ const ChatViewport = React.memo(({
                     frame = window.requestAnimationFrame(settle);
                     return;
                 }
-                if (!fade) {
-                    root.removeAttribute('data-timeline-reveal');
-                    return;
-                }
-                root.setAttribute('data-timeline-reveal', 'fading');
-                // The fade is a filled opacity animation, and a filled
-                // animation keeps the root a stacking context for as long
-                // as the attribute stays. That would trap the overlay
-                // scrollbar (z-30) under the composer slot (z-10): the thumb
-                // paints over the composer band but cannot be grabbed there.
-                // Drop the attribute once the fade has run (or immediately
-                // under reduced motion, where the animation never fires).
-                const clearFade = (event?: AnimationEvent) => {
-                    // Child entrance animations bubble here too.
-                    if (event && event.target !== root) return;
-                    if (fadeTimer !== null) window.clearTimeout(fadeTimer);
-                    fadeTimer = null;
-                    root.removeEventListener('animationend', clearFade);
-                    root.removeAttribute('data-timeline-reveal');
-                };
-                root.addEventListener('animationend', clearFade);
-                fadeTimer = window.setTimeout(clearFade, TIMELINE_REVEAL_FADE_MS * 2);
+                if (fade) root.setAttribute('data-timeline-reveal', 'fading');
+                else root.removeAttribute('data-timeline-reveal');
             };
             frame = window.requestAnimationFrame(settle);
         };
@@ -462,7 +495,6 @@ const ChatViewport = React.memo(({
             finished = true;
             if (timer !== null) window.clearTimeout(timer);
             if (frame !== null) window.cancelAnimationFrame(frame);
-            if (fadeTimer !== null) window.clearTimeout(fadeTimer);
             revealGate.onEmpty = null;
         };
     }, [revealGate, scrollRef]);
@@ -551,6 +583,10 @@ const ChatViewport = React.memo(({
         && prev.endPinningReleased === next.endPinningReleased
         && prev.revealWaited === next.revealWaited
         && prev.revealGate === next.revealGate
+        && prev.sessionQuestions === next.sessionQuestions
+        && prev.sessionPermissions === next.sessionPermissions
+        && prev.v2Permissions === next.v2Permissions
+        && prev.sessionForms === next.sessionForms
         && prev.isProgrammaticFollowActive === next.isProgrammaticFollowActive
         && prev.showLoadOlderButton === next.showLoadOlderButton
         && prev.onLoadOlder === next.onLoadOlder
@@ -833,23 +869,27 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     // Session status from sync system
     const sessionStatusForCurrent = useSessionStatus(currentSessionId ?? '', effectiveSessionDirectory) ?? IDLE_SESSION_STATUS;
 
-    // Scoped blocking requests — only subscribe to permissions/forms for
+    // Scoped blocking requests — only subscribe to permissions/questions for
     // the current session + descendant subagent sessions, not all sessions in
     // the directory.
     const sessionPermissions = useScopedBlockingPermissions(currentSessionId, effectiveSessionDirectory);
-    const sessionForms = useScopedBlockingForms(currentSessionId, effectiveSessionDirectory);
+    const sessionQuestions = useScopedBlockingQuestions(currentSessionId, effectiveSessionDirectory);
+    const taggedPermissions = useScopedPendingPermissions(currentSessionId, effectiveSessionDirectory);
+    const taggedInputs = useScopedPendingInputs(currentSessionId, effectiveSessionDirectory);
+    const v2Permissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedPermissions]);
+    const sessionForms = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedInputs]);
 
-    const hasUnreconciledFormTool = React.useMemo(
-        () => !sessionForms.some((form) => form.sessionID === currentSessionId)
-            && hasActiveFormToolInCurrentTurn(sessionMessages),
-        [currentSessionId, sessionMessages, sessionForms],
+    const hasUnreconciledQuestionTool = React.useMemo(
+        () => !sessionQuestions.some((question) => question.sessionID === currentSessionId)
+            && hasActiveQuestionToolInCurrentTurn(sessionMessages),
+        [currentSessionId, sessionMessages, sessionQuestions],
     );
 
     React.useEffect(() => {
-        if (!active || !currentSessionId || !effectiveSessionDirectory || !hasUnreconciledFormTool) return;
+        if (!active || !currentSessionId || !effectiveSessionDirectory || !hasUnreconciledQuestionTool) return;
         let cancelled = false;
 
-        void recoverPendingFormWithRetry(
+        void recoverPendingQuestionWithRetry(
             () => sync.recoverPendingQuestions(currentSessionId, effectiveSessionDirectory),
             { isCancelled: () => cancelled },
         );
@@ -857,10 +897,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [active, currentSessionId, effectiveSessionDirectory, hasUnreconciledFormTool, sync]);
+    }, [active, currentSessionId, effectiveSessionDirectory, hasUnreconciledQuestionTool, sync]);
 
     const sessionIsWorking = React.useMemo(() => {
-        if (!currentSessionId || sessionPermissions.length > 0 || sessionForms.length > 0) {
+        if (!currentSessionId || sessionPermissions.length > 0 || sessionQuestions.length > 0) {
             return false;
         }
 
@@ -869,10 +909,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
             return true;
         }
 
-        // The last record can be a synthetic/skill/shell/switch message; the
-        // turn is still running only per the last conversation message.
-        return isIncompleteAssistantTurn(getLastConversationRecord(sessionMessages)?.info);
-    }, [currentSessionId, sessionMessages, sessionPermissions.length, sessionForms.length, sessionStatusForCurrent.type]);
+        const lastMessage = sessionMessages[sessionMessages.length - 1]?.info as Message | undefined;
+        return Boolean(
+            lastMessage
+            && lastMessage.role === 'assistant'
+            && typeof (lastMessage as { time?: { completed?: number } }).time?.completed !== 'number',
+        );
+    }, [currentSessionId, sessionMessages, sessionPermissions.length, sessionQuestions.length, sessionStatusForCurrent.type]);
     const activeRetryStatus = React.useMemo(() => {
         if (!currentSessionId || sessionStatusForCurrent.type !== 'retry') {
             return null;
@@ -1589,6 +1632,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 endPinningReleased={userOwnsScroll}
                 revealWaited={revealWaited}
                 revealGate={revealGate}
+                sessionQuestions={sessionQuestions}
+                sessionPermissions={sessionPermissions}
+                v2Permissions={v2Permissions}
+                sessionForms={sessionForms}
                 isProgrammaticFollowActive={isFollowingProgrammatically}
                 showLoadOlderButton={showLoadOlderButton}
                 onLoadOlder={handleLoadOlderClick}

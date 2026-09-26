@@ -1,11 +1,48 @@
 import { describe, expect, mock, test } from "bun:test"
-import type { PermissionRequest, Session } from "@/lib/opencode/model"
+import type { PermissionRequest } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/lib/opencode/model"
 import { createVSCodePermissionAutoAcceptRuntime } from "./vscode-permission-auto-accept"
 
 const permission = { id: "perm-1", sessionID: "child" } as PermissionRequest
 const session = (id: string, parentID?: string) => ({ id, parentID }) as Session
 
 describe("VS Code permission auto-accept runtime", () => {
+  test("a kernel switch cancels retries and does not deduplicate the new request", async () => {
+    let scope = 'oc1:1'
+    let calls = 0
+    const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => scope,
+      getPolicy: () => ({ child: true }),
+      getSessions: () => new Map(),
+      getSession: async () => session('child'),
+      listPendingPermissions: async () => [],
+      getPermissionState: async () => 'ok',
+      reply: async () => { calls += 1; if (scope === 'oc1:1') throw new Error('offline') },
+      wait: async () => { scope = 'oc2:2' },
+    })
+    expect(await runtime.processPermission(permission, '/repo', { verifyPending: false })).toBe(false)
+    expect(calls).toBe(1)
+    expect(await runtime.processPermission(permission, '/repo', { verifyPending: false })).toBe(true)
+    expect(calls).toBe(2)
+  })
+
+  test("a delayed OC2 pending list cannot authorize a reply on a replacement kernel", async () => {
+    let scope = 'oc2:1'
+    let calls = 0
+    const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => scope,
+      getPolicy: () => ({ child: true }),
+      getSessions: () => new Map(),
+      getSession: async () => session('child'),
+      listPendingPermissions: async () => { scope = 'oc2:2'; return [permission] },
+      getPermissionState: async () => 'ok',
+      reply: async () => { calls += 1 },
+      wait: async () => {},
+    })
+    await runtime.reconcilePending('/repo')
+    expect(calls).toBe(0)
+  })
+
   test("loads missing child lineage and inherits the nearest enabled policy", async () => {
     let replyCalls = 0
     let getSessionCalls = 0
@@ -15,6 +52,7 @@ describe("VS Code permission auto-accept runtime", () => {
       return session(id, id === "child" ? "root" : undefined)
     })
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ root: true }),
       getSessions: () => new Map(),
       getSession,
@@ -33,6 +71,7 @@ describe("VS Code permission auto-accept runtime", () => {
     let replyCalls = 0
     const reply = mock(async () => { replyCalls += 1 })
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ root: true, child: false }),
       getSessions: () => new Map([["child", session("child", "root")]]),
       getSession: async () => session("root"),
@@ -50,6 +89,7 @@ describe("VS Code permission auto-accept runtime", () => {
     let replyCalls = 0
     const reply = mock(async () => { replyCalls += 1 })
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ root: true }),
       getSessions: () => new Map(),
       getSession: async () => { throw new Error("offline") },
@@ -70,6 +110,7 @@ describe("VS Code permission auto-accept runtime", () => {
       if (attempts < 2) throw new Error("transient")
     })
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),
@@ -90,6 +131,7 @@ describe("VS Code permission auto-accept runtime", () => {
     const stateDirectories: Array<string | undefined> = []
     const replyDirectories: Array<string | undefined> = []
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),
@@ -110,6 +152,7 @@ describe("VS Code permission auto-accept runtime", () => {
   test("reconciles existing pending permissions immediately after enablement", async () => {
     const replied: string[] = []
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ root: true, disabled: false }),
       getSessions: () => new Map([
         ["child", session("child", "root")],
@@ -134,6 +177,7 @@ describe("VS Code permission auto-accept runtime", () => {
     const replied: string[] = []
     let stateChecks = 0
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),
@@ -156,6 +200,7 @@ describe("VS Code permission auto-accept runtime", () => {
     let replyCalls = 0
     let stateChecks = 0
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),
@@ -178,6 +223,7 @@ describe("VS Code permission auto-accept runtime", () => {
     let stateChecks = 0
     let replyStarted = false
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),
@@ -203,6 +249,7 @@ describe("VS Code permission auto-accept runtime", () => {
     let replyCalls = 0
     let stateChecks = 0
     const runtime = createVSCodePermissionAutoAcceptRuntime({
+      getScope: () => 'test-runtime',
       getPolicy: () => ({ child: true }),
       getSessions: () => new Map(),
       getSession: async () => session("child"),

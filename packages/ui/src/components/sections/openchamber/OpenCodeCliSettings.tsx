@@ -12,7 +12,7 @@ import {
 } from '@/components/sections/shared/SettingsSection';
 import { isDesktopShell, requestFileAccess } from '@/lib/desktop';
 import { loadDesktopSettings, updateDesktopSettings } from '@/lib/persistence';
-import { reloadOpenCodeConfiguration } from '@/stores/useAgentsStore';
+import { recordDeferredOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
 import { isWindowsArm64 } from '@/lib/platform';
@@ -67,9 +67,6 @@ export const OpenCodeCliSettings: React.FC = () => {
     }
   }, []);
 
-  // The only setting left that OpenCode cannot pick up by itself: which binary
-  // runs. Everything else is watched by OpenCode and applies live, so this page
-  // owns the restart instead of a global pending-changes counter.
   const handleSaveAndReload = React.useCallback(async () => {
     setIsSaving(true);
     try {
@@ -82,20 +79,8 @@ export const OpenCodeCliSettings: React.FC = () => {
         ? trimmed.slice(1, -1).trim()
         : trimmed;
       await updateDesktopSettings({ opencodeBinary: unquoted });
-      await reloadOpenCodeConfiguration({
-        message: t('settings.openchamber.opencodeCli.actions.restartingOpenCode'),
-        mode: 'projects',
-        scopes: ['all'],
-      });
-    } catch (error) {
-      // SAFETY: reloadOpenCodeConfiguration is the only thrower here, and it
-      // tags the Error it raises with `requiresManualRestart` for exactly this
-      // case — an external OpenCode that OpenChamber may not restart.
-      if ((error as Error & { requiresManualRestart?: boolean })?.requiresManualRestart) {
-        toast.warning(t('settings.openchamber.opencodeCli.restart.manualRequired'));
-        return;
-      }
-      toast.error(t('settings.openchamber.opencodeCli.restart.failed'));
+      recordDeferredOpenCodeRestart('cli', { id: 'opencode-binary' });
+      toast.success(t('settings.view.pendingRestart.saved'));
     } finally {
       setIsSaving(false);
     }
@@ -167,9 +152,7 @@ export const OpenCodeCliSettings: React.FC = () => {
               disabled={isLoading || isSaving}
               className="shrink-0 !font-normal"
             >
-              {isSaving
-                ? t('settings.openchamber.opencodeCli.actions.restartingOpenCode')
-                : t('settings.openchamber.opencodeCli.actions.saveAndReload')}
+              {isSaving ? t('settings.common.actions.saving') : t('settings.common.actions.saveChanges')}
             </Button>
           </div>
         </SettingsInset>

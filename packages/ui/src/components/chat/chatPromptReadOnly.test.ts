@@ -6,12 +6,12 @@ import { withReviewSessionMarker } from '@/lib/sessionReviewMetadata';
 
 const session = (parentID?: string): Session => ({
     id: 'session',
+    slug: 'session',
     title: 'Session',
+    version: '1',
     projectID: 'project',
     directory: '/repo',
     parentID,
-    cost: 0,
-    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
     time: { created: 1, updated: 1 },
 });
 

@@ -1,5 +1,7 @@
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenCode } from '@opencode/client';
-import { buildAppliedResponse } from './config-mutation-response.js';
+import { z } from 'zod';
+import { buildDeferredRestartResponse } from './config-mutation-response.js';
 import { OPENCODE_CONFIG_DIR } from './shared.js';
 
 /**
@@ -26,6 +28,7 @@ export const registerSkillRoutes = (app, dependencies) => {
 
     getOpenCodeAuthHeaders,
     getOpenCodePort,
+    kernelRuntime,
     getSkillSources,
     discoverSkills,
     mergeDiscoveredSkills,
@@ -126,32 +129,57 @@ export const registerSkillRoutes = (app, dependencies) => {
   };
 
   const fetchOpenCodeDiscoveredSkills = async (workingDirectory) => {
-    if (!getOpenCodePort()) {
+    const runtime = kernelRuntime.get() ?? {};
+    if (runtime.generation !== 'oc1' && runtime.generation !== 'oc2') {
+      return [];
+    }
+    if (runtime.generation === 'oc1' && !getOpenCodePort()) {
       return [];
     }
 
     try {
-      const client = OpenCode.make({
-        baseUrl: buildOpenCodeUrl('/', '').replace(/\/$/, ''),
-        headers: {
-          ...getOpenCodeAuthHeaders(),
-          // v2 scopes a request with a header, not a `directory` option, and
-          // rejects non-ASCII header values, so the path is percent-encoded.
-          ...(workingDirectory ? { 'x-opencode-directory': encodeURIComponent(workingDirectory) } : {}),
-        },
-        fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(8_000) }),
-      });
+      let payload;
+      if (runtime.generation === 'oc2') {
+        if (!runtime.endpoint) throw new Error('OpenCode endpoint is not ready');
+        const headers = new Headers(getOpenCodeAuthHeaders());
+        if (workingDirectory) headers.set('x-opencode-directory', encodeURIComponent(workingDirectory));
+        const client = OpenCode.make({
+          baseUrl: runtime.endpoint,
+          headers,
+          fetch: (request) => fetch(request, { signal: AbortSignal.timeout(8_000) }),
+        });
+        const response = await client.skill.list(workingDirectory
+          ? { location: { directory: workingDirectory } }
+          : undefined);
+        payload = z.object({
+          data: z.array(z.object({
+            id: z.string(), name: z.string(), path: z.string(),
+            description: z.string().optional(), content: z.string(),
+          }).passthrough()),
+        }).passthrough().parse(response).data;
+      } else {
+        const client = createOpencodeClient({
+          baseUrl: buildOpenCodeUrl('/', '').replace(/\/$/, ''),
+          directory: workingDirectory || undefined,
+          headers: getOpenCodeAuthHeaders(),
+          fetch: (request) => fetch(request, { signal: AbortSignal.timeout(8_000) }),
+        });
+        const response = await client.app.skills(
+          workingDirectory ? { directory: workingDirectory } : undefined,
+        );
+        payload = response?.data;
+        if (!Array.isArray(payload)) return [];
+      }
 
-      const response = await client.skill.list();
-      const payload = response?.data;
-      if (!Array.isArray(payload)) {
-        return [];
+      const current = kernelRuntime.get();
+      if (current.generation !== runtime.generation || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
+        throw Object.assign(new Error('OpenCode runtime changed during skill discovery'), { code: 'runtime-changed' });
       }
 
       return payload
         .map((item) => {
           const name = typeof item?.name === 'string' ? item.name.trim() : '';
-          const location = typeof item?.location === 'string' ? item.location : '';
+          const location = runtime.generation === 'oc2' ? item.path : item.location;
           const description = typeof item?.description === 'string' ? item.description : '';
           const content = typeof item?.content === 'string' ? item.content : '';
           if (!name || !location) {
@@ -182,6 +210,11 @@ export const registerSkillRoutes = (app, dependencies) => {
         })
         .filter(Boolean);
     } catch (error) {
+      const current = kernelRuntime.get();
+      if (current.generation !== runtime.generation || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
+        throw Object.assign(new Error('OpenCode runtime changed during skill discovery'), { code: 'runtime-changed' });
+      }
+      if (runtime.generation === 'oc2' || error?.code === 'runtime-changed') throw error;
       console.error('Failed to list OpenCode skills:', error);
       return [];
     }
@@ -242,7 +275,23 @@ export const registerSkillRoutes = (app, dependencies) => {
       if (error) {
         return res.status(400).json({ error });
       }
-      const openCodeSkills = await fetchOpenCodeDiscoveredSkills(directory);
+      let openCodeSkills;
+      let partial = null;
+      const generation = kernelRuntime.get()?.generation;
+      if (generation !== 'oc1' && generation !== 'oc2') {
+        openCodeSkills = [];
+        partial = { source: 'opencode', reason: 'discovery-unavailable' };
+      } else {
+        try {
+          openCodeSkills = await fetchOpenCodeDiscoveredSkills(directory);
+        } catch (discoveryError) {
+          if (discoveryError?.code === 'runtime-changed' || kernelRuntime.get()?.generation !== 'oc2') {
+            throw discoveryError;
+          }
+          openCodeSkills = [];
+          partial = { source: 'opencode', reason: 'discovery-unavailable' };
+        }
+      }
       const localSkills = discoverSkills(directory);
       const skills = mergeDiscoveredSkills(openCodeSkills, localSkills);
 
@@ -268,7 +317,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       // OpenCode's own skill-list endpoint is not usable for this: on 1.18.14
       // it returns only global and builtin skills, omitting the project
       // `.agents`/`.claude` skills the agent demonstrably has.
-      res.json({
+      const result = {
         skills: enrichedSkills,
         externalSkills: {
           // `OPENCODE_DISABLE_CLAUDE_CODE` is the broad switch; the specific
@@ -277,7 +326,9 @@ export const registerSkillRoutes = (app, dependencies) => {
             || isEnvFlagEnabled(process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS),
           allDisabled: isEnvFlagEnabled(process.env.OPENCODE_DISABLE_EXTERNAL_SKILLS),
         },
-      });
+      };
+      if (partial) result.partial = partial;
+      res.json(result);
     } catch (error) {
       console.error('Failed to list skills:', error);
       res.status(500).json({ error: 'Failed to list skills' });
@@ -512,14 +563,14 @@ export const registerSkillRoutes = (app, dependencies) => {
 
       const installed = result.installed || [];
       const skipped = result.skipped || [];
-      const installedAny = installed.length > 0;
+      const requiresRestart = installed.length > 0;
 
       res.json({
         ok: true,
         installed,
         skipped,
-        ...(installedAny
-          ? buildAppliedResponse('Skills installed successfully.')
+        ...(requiresRestart
+          ? buildDeferredRestartResponse('Skills installed successfully. Restart OpenCode to apply.')
           : {
             requiresReload: false,
             message: 'No skills were installed',
@@ -604,8 +655,8 @@ export const registerSkillRoutes = (app, dependencies) => {
       console.log('[Server] Scope:', scope, 'Working directory:', directory);
 
       createSkill(skillName, { ...config, source: skillSource }, directory, scope);
-      res.json(buildAppliedResponse(
-        `Skill ${skillName} created successfully.`,
+      res.json(buildDeferredRestartResponse(
+        `Skill ${skillName} created successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
       console.error('Failed to create skill:', error);
@@ -627,11 +678,14 @@ export const registerSkillRoutes = (app, dependencies) => {
         console.log(`[Server] Renaming skill: ${skillName} -> ${newName}`);
         console.log('[Server] Working directory:', directory);
         renameSkill(skillName, newName, directory);
-        // OpenCode 2 watches the skills directories: the renamed folder is
-        // picked up like any other write, no restart and no client reload.
+        await refreshOpenCodeAfterConfigChange('skill rename');
+
         return res.json({
-          ...buildAppliedResponse(`Skill renamed to ${newName} successfully.`),
+          success: true,
           name: newName,
+          requiresReload: true,
+          message: `Skill renamed to ${newName} successfully. Reloading interface…`,
+          reloadDelayMs: clientReloadDelayMs,
         });
       }
 
@@ -639,8 +693,8 @@ export const registerSkillRoutes = (app, dependencies) => {
       console.log('[Server] Working directory:', directory);
 
       updateSkill(skillName, updates, directory, updates?.targetPath);
-      res.json(buildAppliedResponse(
-        `Skill ${skillName} updated successfully.`,
+      res.json(buildDeferredRestartResponse(
+        `Skill ${skillName} updated successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
       console.error('[Server] Failed to update skill:', error);
@@ -726,8 +780,8 @@ export const registerSkillRoutes = (app, dependencies) => {
       }
 
       deleteSkill(skillName, directory);
-      res.json(buildAppliedResponse(
-        `Skill ${skillName} deleted successfully.`,
+      res.json(buildDeferredRestartResponse(
+        `Skill ${skillName} deleted successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
       console.error('Failed to delete skill:', error);

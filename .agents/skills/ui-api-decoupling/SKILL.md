@@ -7,7 +7,7 @@ description: Use when creating or modifying OpenChamber shared UI data access, O
 
 ## Core Boundary
 
-- Official OpenCode API calls use `@opencode/client` (OpenCode 2.x, `/api/*` routes) through `opencodeClient`; only `packages/ui/src/lib/opencode/` may see wire types, everything else uses the domain model in `lib/opencode/model.ts`.
+- Official OpenCode API calls use generation-bound `opencodeClient` operations. Its OC1 adapter uses `@opencode-ai/sdk/v2`; its OC2 adapter uses `@opencode/client`. Keep wire types and projection inside `lib/opencode`.
 - OpenChamber-owned HTTP capabilities use `RuntimeAPIs` where runtime-specific behavior exists, otherwise explicit OpenChamber routes through `runtimeFetch`.
 - Browser/realtime consumers use shared runtime URL/socket helpers.
 - Shared UI never hardcodes localhost, ports, API origins, credentials, or one runtime's transport assumptions.
@@ -17,12 +17,19 @@ description: Use when creating or modifying OpenChamber shared UI data access, O
 
 | Need | Correct path |
 |---|---|
-| Official OpenCode endpoint | `opencodeClient` or its SDK client |
+| Official OpenCode endpoint | `opencodeClient` operation; an existing direct SDK escape must have an explicit generation guard and an interface-inventory row |
 | SDK gap for official OpenCode | Narrow documented wrapper in `opencodeClient` preserving request fidelity |
 | OpenChamber HTTP route | `runtimeFetch('/api/...')` |
 | Runtime-owned capability | Extend `RuntimeAPIs` and implement each applicable runtime |
 | Browser-owned authenticated URL | Runtime URL resolver and scoped URL auth |
 | SSE/WebSocket | Owning realtime transport; also load `relay-transport` |
+
+For changed OpenCode contracts, read the affected rows in
+`docs/maintenance/DUAL-KERNEL-INTERFACES.md` and their adoption evidence.
+Use the endpoint descriptor and epoch, not package names or an SDK error, to
+select a generation. Preserve OC1 behavior and gate genuinely OC2-only
+capabilities at their service boundary. Upstream intake is owned by
+`personal-upstream-sync` and its dual-kernel reference.
 
 ## Name The Surfaces Before Editing
 

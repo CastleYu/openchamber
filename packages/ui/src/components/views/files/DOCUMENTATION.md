@@ -1,5 +1,17 @@
 # File tree loading and visibility
 
+CSV and TSV files default to a table preview and retain the source editor via
+the toolbar toggle. The mode is remembered per path. The parser handles quoted
+delimiters, newlines and escaped quotes, retains at most 2,000 data rows, and
+reports the full row count and truncation. The preview uses the current draft;
+switching modes does not replace file content.
+
+TTF, OTF, WOFF and WOFF2 fonts use the existing runtime asset loader and remain
+binary, so they cannot enter autosave. The font specimen registers a temporary
+FontFace, removes it on source change or unmount, and reports load failures.
+These file previews use OpenChamber file APIs and do not depend on the OpenCode
+API generation.
+
 `FilesView` and `SidebarFilesTree` keep directory snapshots in component state.
 `DirectoryRequests` owns shared in-flight reads and supersession. Repeated
 same-path callers await the same request; an explicit mutation refresh can
@@ -41,45 +53,8 @@ offscreen dimensions cannot retain an old font size. Expanded child lists
 sit outside each row's containment, so expansion, scrolling, focus and menus keep
 their existing DOM structure. Reopening still refreshes directory contents.
 
-## Artifact previews
-
-`previews/` holds what the viewer shows instead of text: `ImageArtifact`
-(fit or 1:1, natural dimensions), `MediaArtifact` (native audio/video
-element, duration and dimensions once metadata loads, a stated failure when
-the runtime cannot decode the codec), `FontArtifact` (a specimen under a
-throwaway `FontFace` family removed when the tab closes), `TableArtifact`
-(CSV/TSV through `delimitedText.ts`, capped rows stated in the meta line),
-and `BinaryArtifact` (name, type, size, download; never a decode attempt).
-`FilesView.renderArtifactPreview` is the single switch both the docked and
-the fullscreen viewer use. SVG, Mermaid (`.mmd`) and delimited files are text
-with an artifact view: each has a per-path preview/source toggle, and opens
-in preview regardless of the text-first setting because an agent-produced
-artifact is opened to be looked at.
-
-Non-text artifacts the browser must own (PDF, audio, video, fonts) are loaded
-through `getRuntimeUrlResolver().authenticatedAsset('/api/fs/raw', …)` with
-the scoped URL token; the server streams byte ranges so playback can seek.
-Images keep the object-URL/data-URL path.
-
-`useMarkdownLocalAssets` makes a rendered Markdown file's relative images and
-links work: images are fetched through the runtime against the file's own
-directory (outside the workspace when the file is) and swapped for object
-URLs that are revoked with the preview; relative links open the target file
-through `useUIStore.openContextFile`, which the context panel and the mobile
-files surface both consume.
-
-An agent can ask for a file to be shown (`file.open` on the managed
-`openchamber` tool). The server broadcasts `openchamber:file-open-request`;
-`ContextPanel` answers it with `openContextFile`, `MobileApp` additionally
-opens the files drawer. VS Code has no shared file viewer and no managed
-tool, so the event never reaches it.
-
-## Uploads
-
-`useFileTreeUpload` owns uploads for both trees: `FilesView` (including
-mobile) and `SidebarFilesTree`. Files arrive through desktop drag-and-drop or
-through the system picker, which folder menus ("Upload Files") and the tree
-toolbar open. A single upload runs at a time, in batches of three. Existing
-names are never replaced silently: they collect into a replace-confirmation
-dialog, which is dropped when the workspace or runtime changes. The feature is
-present only when the runtime exposes `files.uploadFile`.
+Agent `file.open` requests use the OpenChamber control event stream and are
+validated in `openchamberEvents.ts`. The desktop context panel and mobile files
+drawer route the accepted path through the existing `openContextFile` action.
+The server reports no delivery when no control-stream client is connected;
+delivery is not proof that the user has inspected the file.

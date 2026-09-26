@@ -1,4 +1,3 @@
-import { OpenCodeCompatibilityGate } from '@/components/update/OpenCodeCompatibilityGate';
 import React from 'react';
 import { AppStartupOverlay } from '@/components/ui/AppStartupOverlay';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -47,6 +46,7 @@ import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-sw
 import { useAutoReviewStore } from '@/stores/useAutoReviewStore';
 import { resumeAutoReviewRun } from '@/lib/reviewFlow';
 import { SyncProvider } from '@/sync/sync-context';
+import { useOpenCodeSource } from '@/apps/useOpenCodeSource';
 import { useSync } from '@/sync/use-sync';
 import { ConfigUpdateOverlay } from '@/components/ui/ConfigUpdateOverlay';
 import { AboutDialog } from '@/components/ui/AboutDialog';
@@ -58,6 +58,8 @@ import { useLinearAuthStore } from '@/stores/useLinearAuthStore';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { McpOAuthCallbackPage } from '@/components/sections/mcp/McpOAuthCallbackPage';
+import { MCP_OAUTH_CALLBACK_PATH } from '@/components/sections/mcp/mcpOAuth';
 import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 import { useI18n } from '@/lib/i18n';
 import { applyMobileKeyboardMode } from '@/lib/mobileKeyboardMode';
@@ -191,6 +193,14 @@ const readEmbeddedSessionChatConfig = (): EmbeddedSessionChatConfig | null => {
   };
 };
 
+const isMcpOAuthCallbackPath = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.location.pathname === MCP_OAUTH_CALLBACK_PATH;
+};
+
 const EmbeddedSessionChatContent: React.FC<{
   embeddedSessionChat: EmbeddedSessionChatConfig;
   isVSCodeRuntime: boolean;
@@ -257,6 +267,7 @@ const EmbeddedSessionChatContent: React.FC<{
 };
 
 function App({ apis }: AppProps) {
+  const syncSource = useOpenCodeSource();
   React.useEffect(() => {
     markStartupTrace('App:mounted');
     if (startupTraceEnabled()) {
@@ -304,6 +315,7 @@ function App({ apis }: AppProps) {
   const appReadyDispatchedRef = React.useRef(false);
   const embeddedSessionChat = React.useMemo<EmbeddedSessionChatConfig | null>(() => readEmbeddedSessionChatConfig(), []);
   const embeddedBackgroundWorkEnabled = !embeddedSessionChat || isEmbeddedVisible;
+  const isMcpOAuthCallback = React.useMemo(() => isMcpOAuthCallbackPath(), []);
 
   React.useEffect(() => {
     setStreamPerfMemoryDebugEnabled(showMemoryDebug);
@@ -929,7 +941,7 @@ function App({ apis }: AppProps) {
   if (embeddedSessionChat) {
     return (
       <ErrorBoundary>
-        <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+        <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
           <RuntimeAPIProvider apis={apis}>
             <TooltipProvider delayDuration={300} skipDelayDuration={150}>
               <div className="h-full text-foreground bg-background">
@@ -944,6 +956,14 @@ function App({ apis }: AppProps) {
             </TooltipProvider>
           </RuntimeAPIProvider>
         </SyncProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  if (isMcpOAuthCallback) {
+    return (
+      <ErrorBoundary>
+        <McpOAuthCallbackPage />
       </ErrorBoundary>
     );
   }
@@ -967,7 +987,7 @@ function App({ apis }: AppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+      <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <FireworksProvider>
               <TooltipProvider delayDuration={300} skipDelayDuration={150}>
@@ -997,6 +1017,4 @@ function App({ apis }: AppProps) {
   );
 }
 
-export default function CompatibleApp(props: AppProps) {
-  return <OpenCodeCompatibilityGate><App {...props} /></OpenCodeCompatibilityGate>;
-}
+export default App;

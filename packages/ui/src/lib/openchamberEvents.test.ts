@@ -34,6 +34,26 @@ describe('openchamber events', () => {
     Reflect.deleteProperty(globalThis, 'EventSource');
   });
 
+  test('validates file-open requests before notifying the file surfaces', async () => {
+    const { subscribeOpenchamberEvents } = await import('./openchamberEvents');
+    type Event = Parameters<Parameters<typeof subscribeOpenchamberEvents>[0]>[0];
+    const events: Event[] = [];
+    const unsubscribe = subscribeOpenchamberEvents((event) => events.push(event));
+    try {
+      const source = MockEventSource.instances[0];
+      source.onmessage?.({ data: JSON.stringify({
+        type: 'openchamber:file-open-request',
+        properties: { path: '/repo/report.csv', directory: '/repo', sessionId: null },
+      }) });
+      source.onmessage?.({ data: JSON.stringify({
+        type: 'openchamber:file-open-request', properties: { directory: '/repo', sessionId: 'ses_1' },
+      }) });
+      expect(events).toEqual([{ type: 'file-open-request', path: '/repo/report.csv', directory: '/repo', sessionId: null }]);
+    } finally {
+      unsubscribe();
+    }
+  });
+
   test('does not open the server-only event stream in VS Code', async () => {
     Object.defineProperty(window, '__VSCODE_CONFIG__', {
       value: { workspaceFolder: 'C:/repo', workspaceFolders: [] },
@@ -143,31 +163,6 @@ describe('openchamber events', () => {
 
     expect(events).toEqual([
       { type: 'worktree-changed', directories: ['/repo', '/repo-linked'], changedAt: 456 },
-    ]);
-    unsubscribe();
-  });
-
-  test('dispatches an agent file-open request and drops one without a path', async () => {
-    const { subscribeOpenchamberEvents } = await import('./openchamberEvents');
-    const events: unknown[] = [];
-    const unsubscribe = subscribeOpenchamberEvents((event) => events.push(event));
-    const source = MockEventSource.instances[0];
-
-    source.onmessage?.({
-      data: JSON.stringify({
-        type: 'openchamber:file-open-request',
-        properties: { path: '/repo/out/report.csv', directory: '/repo', sessionId: null },
-      }),
-    });
-    source.onmessage?.({
-      data: JSON.stringify({
-        type: 'openchamber:file-open-request',
-        properties: { directory: '/repo', sessionId: 'ses_1' },
-      }),
-    });
-
-    expect(events).toEqual([
-      { type: 'file-open-request', path: '/repo/out/report.csv', directory: '/repo', sessionId: null },
     ]);
     unsubscribe();
   });

@@ -42,21 +42,38 @@ const makeJSONStorage = <S,>(): PersistStorage<S> => {
 };
 
 const providerResponse = (id: string) => ({
-  providers: [{ id, name: id, activation: 'enabled' as const, package: id }],
-  models: [{
-    id: `${id}/${id}-model`,
-    modelID: `${id}-model`,
-    providerID: id,
-    name: `${id}-model`,
-    capabilities: { tools: true, input: ['text'], output: ['text'] },
-    variants: [],
-    time: { released: 0 },
-    cost: [{ input: 0, output: 0, cache: { read: 0, write: 0 } }],
-    status: 'active' as const,
-    enabled: true,
-    limit: { context: 0, output: 0 },
-  }],
-  default: { providerID: id, id: `${id}-model` },
+  id,
+  name: id,
+  source: 'config' as const,
+  env: [],
+  options: {},
+  models: {
+    [`${id}-model`]: {
+      id: `${id}-model`,
+      name: `${id}-model`,
+      providerID: id,
+      api: { id: 'chat', url: '', npm: '' },
+      capabilities: {
+        temperature: true,
+        reasoning: false,
+        attachment: false,
+        toolcall: true,
+        input: { text: true, audio: false, image: false, video: false, pdf: false },
+        output: { text: true, audio: false, image: false, video: false, pdf: false },
+        interleaved: false,
+      },
+      cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+      limit: { context: 0, output: 0 },
+      options: {},
+      release_date: '',
+      status: 'active' as const,
+      headers: {},
+      attachment: false,
+      reasoning: false,
+      temperature: true,
+      tool_call: true,
+    },
+  },
 });
 
 const providerIdForDirectory = (directory: string | null | undefined): string =>
@@ -86,17 +103,18 @@ mock.module('@/stores/useProjectsStore', () => ({
 
 mock.module('@/lib/opencode/client', () => ({
   opencodeClient: {
+    getBoundRuntime: mock(() => null),
     setDirectory: mock(() => undefined),
     getDirectory: mock(() => DIRECTORY),
     checkHealth: mock(async () => true),
-    getProvidersForConfig: mock(async (directory?: string | null) => {
+    getProviderCatalog: mock(async (directory?: string | null) => {
       providerRequests.push(directory ?? null);
       const id = providerIdForDirectory(directory);
-      return providerResponse(id);
+      return { generation: 'oc1', providers: [providerResponse(id)], default: { default: id } };
     }),
-    listAgents: mock(async (directory?: string | null) => {
+    listTaggedAgents: mock(async (directory?: string | null) => {
       agentRequests.push(directory ?? null);
-      return [{ name: agentNameForDirectory(directory), mode: 'primary' }];
+      return { generation: 'oc1', value: [{ name: agentNameForDirectory(directory), mode: 'primary' }] };
     }),
     getConfig: mock(async () => ({})),
     clearConfigCache: mock(() => undefined),
@@ -116,6 +134,7 @@ mock.module('@/lib/runtime-fetch', () => ({
 mock.module('@/lib/persistence', () => ({
   loadDesktopSettings: mock(async () => ({})),
   updateDesktopSettings: mock(async () => undefined),
+  reportSettingsSaveState: mock(() => undefined),
 }));
 
 mock.module('@/lib/startupTrace', () => ({

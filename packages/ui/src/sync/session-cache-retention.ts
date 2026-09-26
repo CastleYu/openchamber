@@ -102,7 +102,7 @@ export class SessionCacheRetention {
         if (state.message === previous.message
           && state.session_status === previous.session_status
           && state.permission === previous.permission
-          && state.form === previous.form) return
+          && state.question === previous.question) return
         this.schedule(directory)
       })
       this.directories.set(directory, { store, seen, idleSince: new Map(), timer: null, unsubscribe })

@@ -4,7 +4,6 @@ import { routeMessage, useSessionUIStore } from '@/sync/session-ui-store';
 import { devtools } from 'zustand/middleware';
 import type { CreateMultiRunParams, CreateMultiRunResult } from '@/types/multirun';
 import { opencodeClient } from '@/lib/opencode/client';
-import { fetchSessionKnowledge, reportSessionKnowledgeDelivered } from '@/lib/sessionKnowledgeApi';
 import { getWorktreeSetupWaitEnabled, saveWorktreeSetupCommands } from '@/lib/openchamberConfig';
 import type { ProjectRef } from '@/lib/worktrees/worktreeManager';
 import { createWorktreeWithDefaults, resolveRootTrackingRemote } from '@/lib/worktrees/worktreeCreate';
@@ -121,9 +120,10 @@ export const useMultiRunStore = create<MultiRunStore>()(
 
       createMultiRun: async (params: CreateMultiRunParams) => {
         const runtimeKey = getRuntimeKey();
-        const client = opencodeClient.getSdkClient();
+        const client = opencodeClient;
+        const binding = client.getBoundRuntime();
         const assertCurrent = () => {
-          if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) throw new Error('Runtime changed');
+          if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) throw new Error('Runtime changed');
         };
         const groupName = params.name.trim();
         const { groups, agent, files, setupCommands } = params;
@@ -152,6 +152,8 @@ export const useMultiRunStore = create<MultiRunStore>()(
         set({ isLoading: true, error: null });
 
         try {
+          const generation = binding?.generation;
+          if (generation !== 'oc1' && generation !== 'oc2') throw new Error('OpenCode runtime is unavailable');
           const project = resolveActiveProject();
           if (!project) {
             set({ error: 'Select a project', isLoading: false });
@@ -220,14 +222,15 @@ export const useMultiRunStore = create<MultiRunStore>()(
               });
 
               try {
-                const createRun = (runDirectory: string) => createMultiRunSession({
-                  title: sessionTitle, directory: runDirectory,
+                const createRun = (runDirectory: string) => createMultiRunSession(client, {
+                  title: sessionTitle, directory: runDirectory, generation,
+                  selection: { model: { providerID: model.providerID, id: model.modelID, variant: model.variant }, agent },
                   identity: { group: membershipGroup, groupSlug, runGroup, providerID: model.providerID,
                     modelID: model.modelID, index: count > 1 ? index : undefined, role: 'run' },
-                  selection: { model: { providerID: model.providerID, id: model.modelID, variant: model.variant }, agent },
                 }, assertCurrent);
                 if (!shouldIsolateRuns) {
                   const session = await createRun(directory);
+                  assertCurrent();
                   registerMultiRunSession(session, directory);
 
                   createdRuns.push({
@@ -269,6 +272,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
                 }
 
                 const session = await createRun(worktreeMetadata.path);
+                assertCurrent();
                 registerMultiRunSession(session, worktreeMetadata.path);
 
                 useSessionUIStore.getState().setWorktreeMetadata(session.id, enrichedMetadata);
@@ -318,14 +322,9 @@ export const useMultiRunStore = create<MultiRunStore>()(
                 createdRuns.map(async (run) => {
                   try {
                     assertCurrent();
-                    // Each run is a fresh session, so it is owed the project's
-                    // standing context exactly as a composer send would be.
-                    const [text, knowledge] = await Promise.all([
-                      expandText(run.prompt).catch(() => run.prompt),
-                      fetchSessionKnowledge(run.worktreePath, run.sessionId),
-                    ]);
+                    const text = await expandText(run.prompt).catch(() => run.prompt);
                     assertCurrent();
-                    const route = await routeMessage({
+                    await routeMessage({
                       runtimeKey,
                       sessionId: run.sessionId,
                       directory: run.worktreePath,
@@ -335,13 +334,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
                       variant: run.variant,
                       agent,
                       files: filesForMessage,
-                      additionalParts: knowledge.text
-                        ? [{ text: knowledge.text, synthetic: true, systemContext: 'session-knowledge' }]
-                        : undefined,
                     });
-                    if (knowledge.text && route !== 'shell') {
-                      void reportSessionKnowledgeDelivered(run.worktreePath, run.sessionId, knowledge.signature);
-                    }
                   } catch (err) {
                     console.warn('[MultiRun] Failed to start run:', err);
                   }
@@ -356,7 +349,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
           const failedCount = groups.reduce((total, group) => total + group.models.length, 0) - sessionIds.length;
           return { groupSlug, groupKey: multiRunGroupKey(membershipGroup, groupSlug), sessionIds, firstSessionId, failedCount };
         } catch (error) {
-          if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) return null;
+          if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) return null;
           set({
             error: error instanceof Error ? error.message : 'Failed to create Multi-Run',
             isLoading: false,

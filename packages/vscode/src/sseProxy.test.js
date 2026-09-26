@@ -6,6 +6,8 @@ const { openSseProxy } = await import('./sseProxy');
 const createManager = () => ({
   getStatus: () => 'connected',
   getApiUrl: () => 'http://127.0.0.1:4096/',
+  getKernelRuntime: () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32' }),
+  refreshKernelRuntime: async () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32' }),
   getWorkingDirectory: () => '/repo',
   getOpenCodeAuthHeaders: () => ({ Authorization: 'Bearer test-token' }),
   onStatusChange: () => ({ dispose() {} }),
@@ -27,6 +29,39 @@ const createSseResponse = (chunks) => {
 };
 
 describe('VS Code SSE proxy', () => {
+  it('forwards OC2 wire frames through its API event route without an OC1 directory default', async () => {
+    const manager = createManager();
+    const descriptor = { generation: 'oc2', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '2.0.16' };
+    manager.getKernelRuntime = () => descriptor;
+    manager.refreshKernelRuntime = async () => descriptor;
+    const chunks = [];
+    let target;
+    const wire = 'id: evt_2\ndata: {"id":"evt_2","type":"session.updated","data":{"id":"ses_1"}}\n\n';
+    globalThis.fetch = mock(async (url) => {
+      target = String(url);
+      return createSseResponse([wire]);
+    });
+    const proxy = await openSseProxy({ manager, path: '/global/event', signal: new AbortController().signal, onChunk: (chunk) => chunks.push(chunk) });
+    await proxy.run;
+    expect(target).toBe('http://127.0.0.1:4096/api/event');
+    expect(chunks.join('')).toBe(wire);
+  });
+
+  it('does not deliver an old stream chunk after a same-generation epoch change', async () => {
+    const manager = createManager();
+    let epoch = 1;
+    manager.getKernelRuntime = () => ({ generation: 'oc2', endpoint: 'http://127.0.0.1:4096', epoch, version: '2.0.16' });
+    let upstream;
+    const body = new ReadableStream({ start(controller) { upstream = controller; } });
+    globalThis.fetch = mock(async () => new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
+    const chunks = [];
+    const proxy = await openSseProxy({ manager, path: '/event', signal: new AbortController().signal, onChunk: (chunk) => chunks.push(chunk) });
+    epoch = 2;
+    upstream.enqueue(new TextEncoder().encode('data: old\n\n'));
+    await expect(proxy.run).rejects.toThrow('connection changed');
+    expect(chunks).toEqual([]);
+  });
+
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
@@ -48,7 +83,7 @@ describe('VS Code SSE proxy', () => {
     const controller = new AbortController();
     const proxy = await openSseProxy({
       manager: createManager(),
-      path: '/api/event',
+      path: '/global/event',
       headers: { 'Last-Event-ID': 'evt-0' },
       signal: controller.signal,
       onChunk: (chunk) => received.push(chunk),
@@ -56,14 +91,14 @@ describe('VS Code SSE proxy', () => {
 
     await proxy.run;
 
-    expect(fetchInput).toBe('http://127.0.0.1:4096/api/event');
+    expect(fetchInput).toBe('http://127.0.0.1:4096/global/event');
     expect(fetchInit.headers.Authorization).toBe('Bearer test-token');
     expect(fetchInit.headers['Last-Event-ID']).toBe('evt-0');
     expect(proxy.headers['content-type']).toContain('text/event-stream');
     expect(received.join('')).toBe(upstreamChunks.join(''));
   });
 
-  it('keeps the caller\'s query on the single v2 event stream', async () => {
+  it('adds the active directory for directory-scoped event streams', async () => {
     let fetchInput;
     globalThis.fetch = mock((input) => {
       fetchInput = input;
@@ -72,16 +107,15 @@ describe('VS Code SSE proxy', () => {
 
     const proxy = await openSseProxy({
       manager: createManager(),
-      path: '/api/event?foo=bar',
+      path: '/event?foo=bar',
       signal: new AbortController().signal,
       onChunk: () => {},
     });
     await proxy.run;
 
     const url = new URL(fetchInput);
-    expect(url.pathname).toBe('/api/event');
+    expect(url.pathname).toBe('/event');
     expect(url.searchParams.get('foo')).toBe('bar');
-    // OpenCode 2.x has one global stream; every frame names its own directory.
-    expect(url.searchParams.get('directory')).toBeNull();
+    expect(url.searchParams.get('directory')).toBe('/repo');
   });
 });

@@ -2,13 +2,13 @@
 title: File previews and project controls
 ---
 
-Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-24. This is a retrospective summary, not a claim that every historical item is new in the next release.
+Cumulative official and personal update history from 1.22.0, including 1.22.0 itself. Reviewed on 2026-09-26. This is a retrospective summary, not a claim that every historical item is new in the next release.
 
-Official entries identify the community release or main-branch follow-up that introduced the behavior. Personal entries describe the cumulative fork changes. This integration includes official 1.24.2 and main through `0af1eb00c`, including its OpenCode 2.x migration. The published v2 preview remains a separate build, while main made its own 2.x transition. Historical behavior can be superseded by a later entry. This summary ends at 1.24.2-DIJIANG.3.7.
+Official entries identify the community release or main-branch follow-up that introduced the behavior. Personal entries describe the cumulative fork changes. This integration uses official 1.24.2 as its product baseline and OpenChamber v2.0.1 as the reference for selected dual-kernel changes. It preserves the OC1 path and adopts specific OC2 behavior; it does not claim the complete v2.0.1 product. The separate v2 preview remains marked not merged. Historical behavior can be superseded by a later entry. This summary ends at 1.24.2-DIJIANG.4.0.
 
 Two differences matter when reading this history. Official 1.23.1 removed automatic MCP reconnection, while this personal build retains managed reconnection with idle-release safeguards. Official desktop update improvements describe community builds; the personal build keeps notification-only updates. Portable refers to the executable, while settings and session data still use the established user directories.
 
-Official sources: [1.22.0](https://github.com/openchamber/openchamber/releases/tag/v1.22.0), [1.22.1](https://github.com/openchamber/openchamber/releases/tag/v1.22.1), [1.22.2](https://github.com/openchamber/openchamber/releases/tag/v1.22.2), [1.23.0](https://github.com/openchamber/openchamber/releases/tag/v1.23.0), [1.23.1](https://github.com/openchamber/openchamber/releases/tag/v1.23.1), [1.24.0–1.24.2](https://github.com/openchamber/openchamber/releases), [main since the previous integration](https://github.com/openchamber/openchamber/compare/83ec4fbde...0af1eb00c), and the [v2 preview](https://github.com/openchamber/openchamber/releases/tag/v2-preview). The preview paragraph records its published snapshot only; it does not describe unpublished branch work.
+Official sources: [1.22.0](https://github.com/openchamber/openchamber/releases/tag/v1.22.0), [1.22.1](https://github.com/openchamber/openchamber/releases/tag/v1.22.1), [1.22.2](https://github.com/openchamber/openchamber/releases/tag/v1.22.2), [1.23.0](https://github.com/openchamber/openchamber/releases/tag/v1.23.0), [1.23.1](https://github.com/openchamber/openchamber/releases/tag/v1.23.1), and the [v2 preview](https://github.com/openchamber/openchamber/releases/tag/v2-preview). The preview paragraph records its published snapshot only; it does not describe unpublished branch work.
 
 Personal sources: [the published 3.1 build](https://github.com/CastleYu/openchamber/releases/tag/v1.23.0-DIJIANG.3.1), [the cumulative difference from official 1.23.0](https://github.com/CastleYu/openchamber/compare/d073858d...9ab28d4a), and [file-opening behavior](../../../../docs/maintenance/FILE-OPENING-3.0.md). The audit covers 301 commits after the 1.22.0 tag through personal 3.1, comprising 229 official and 72 personal commits, plus the 46 official 1.23.1 commits. It also checks 69 PR descriptions and every App/VS Code bullet in the five stable release sources.
 
@@ -18,12 +18,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### New
 
-- Official main after 1.24.2 / OpenCode: Move the shared app to OpenCode 2.x, with the updated session and event API, managed OpenCode 2.0.15, and recovery for sessions created by the older CLI.
-- Official main after 1.24.2 / Files: Preview audio, video, CSV tables, fonts, and diagrams as artifacts; upload files from the folder menu or tree toolbar, and let the agent open a generated file in the app.
-- Official main after 1.24.2 / Extensions: Let an installed extension provide the agent's browser and show a live picture that you can take over and hand back.
-- Official main after 1.24.2 / Chat: Fork a session from an agent answer, start a session in an empty sidebar group, and sign in to OpenCode Go through the Console.
-- Official main after 1.24.2 / Themes: Add built-in Cursor and Osaka Jade Refined palettes.
-- Official main after 1.24.2 / Isolated spaces: Bring a project's code into a space while preserving its gatekeeper boundary.
+- Personal 4.0 / OpenCode: Keep the existing OC1 conversation path while adding generation-specific OpenCode 2 protocol support for core conversations. The feature is based on OpenChamber 1.24.2 and selected changes from v2.0.1, not the full v2.0.1 product.
 - Official main after 1.24.2 / Sidebar: Switch between Grouped and Timeline session views, and optionally show session activity spinners.
 - Official main after 1.24.2 / Permissions: Preview the file patch when an agent requests permission to edit a file.
 - Personal / Testing: DIJIANG regression coverage now documents its feature contracts and runners, with Windows process, file, update-policy and bilingual-history checks.
@@ -83,9 +78,6 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Improvements
 
-- Official main after 1.24.2 / Sessions: The sidebar opens and scrolls through large lists with less memory, while live subagent activity stays attached to its parent turn.
-- Official main after 1.24.2 / Desktop: Managed OpenCode and CLI upgrades recover from older installations, and the app opens a usable window sooner after a cold start.
-- Official main after 1.24.2 / Mobile: Selected-text comments use the composer with a quote preview; a rejected comment keeps its draft.
 - Official main after 1.24.2 / Startup: Desktop shows its first window while the main process loads; server integrations load on first use, and the global session list displays its first page before later pages finish.
 - Official main after 1.24.2 / Memory: Evict idle session histories as whole histories and stop pinned sessions from retaining every transcript's parts.
 - Official main after 1.24.2 / Files: Authenticated users can read explicitly requested outside-workspace files without a separate grant; OS permissions and write boundaries still apply.
@@ -160,12 +152,6 @@ App covers web, desktop and mobile only where the named feature is available. VS
 
 ### Fixes
 
-- Official main after 1.24.2 / Sessions: Archive and restore keep the whole session record; the sidebar recovers after startup failures and orders chats by their last turn.
-- Official main after 1.24.2 / Chat: Background subagents keep the parent turn open until they finish, live subagent links survive stale snapshots, and an explicit Steer remains a steer after blockers close.
-- Official main after 1.24.2 / Files: Relative Markdown images and links work in previews, heading links scroll within the document, and outside-folder previews load in browser and remote sessions.
-- Official main after 1.24.2 / Server: Graceful shutdown closes upgraded sockets and guest services, including service starts that race with shutdown.
-- Official main after 1.24.2 / Mobile: Settings help responds to taps, the project picker reaches long lists, and session rows keep their order while the drawer closes.
-- Official main after 1.24.2 / Markdown: Streaming parse failures no longer repeat the same parse on each render.
 - Official main after 1.24.2 / Sessions: Restored worktree sessions stay visible, and actions use the session's own directory with clearer failure messages.
 - Official main after 1.24.2 / Desktop: Startup recovery shows OpenCode failure diagnostics; SSH confirmations preserve input focus, and pairing imports report failures accurately.
 - Personal / Processes: Correct the Windows process-registry query and await record cleanup when a managed process exits. CLI recovery verifies Windows PID-file identity before stopping a process.
@@ -291,7 +277,7 @@ App covers web, desktop and mobile only where the named feature is available. VS
 - Official 1.23.1 / MCP: Removed OpenChamber's automatic reconnects, which could repeatedly start failed local servers. Failed connections now need manual reconnection.
 - Official 1.23.1 / Desktop: Updated Electron to 43.7.0.
 - Personal / Distribution: Windows x64 releases use a versioned portable executable; previous executables and existing settings, sessions and OpenCode data are retained during replacement (thanks to @CastleYu).
-- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.24.2-DIJIANG.3.7 (thanks to @CastleYu).
+- Personal / Versions: DIJIANG uses feature.fix numbering. Features and refactors advance the first number; fixes and optimizations advance the second. This summary ends at 1.23.0-DIJIANG.3.5 (thanks to @CastleYu).
 - Personal / Updates: Upstream releases produce a notice and link. App, web and CLI update paths cannot automatically download or replace the personal build; OpenCode's own updater is separate (thanks to @CastleYu).
 - Personal / Windows packaging: Local and CI builds use the same portable pipeline and record source/build metadata; this release provides an EXE, build information and SHA-256 checksums (thanks to @CastleYu).
 - Personal / Diagnostics: Optional DEBUG builds expose bounded process diagnostics. Normal release builds keep that endpoint disabled, and diagnostic events omit commands and credentials (thanks to @CastleYu).

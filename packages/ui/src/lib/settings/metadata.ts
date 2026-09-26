@@ -1,6 +1,7 @@
 import type { SidebarSection } from '@/constants/sidebar';
 import type { IconName } from '@/components/icon/icons';
 import { UPDATE_HISTORY_PAGE } from './updateHistory';
+import { opencodeClient } from '@/lib/opencode/client';
 
 export type SettingsPageSlug =
   | 'home'
@@ -8,6 +9,7 @@ export type SettingsPageSlug =
   | 'projects'
   | 'remote-instances'
   | 'providers'
+  | 'web-search'
   | 'usage'
   | 'agents'
   | 'behavior'
@@ -44,7 +46,7 @@ export interface SettingsRuntimeContext {
   isWeb: boolean;
   isDesktop: boolean;
   isMobile: boolean;
-  /** Whether this runtime has Jev routing, which needs the OpenChamber server. */
+  /** Whether this server build has Jev routing (`OPENCHAMBER_ROUTING_ENABLE`). */
   routingAvailable: boolean;
 }
 
@@ -59,6 +61,14 @@ export interface SettingsPageMeta {
 }
 
 export const SETTINGS_PAGE_METADATA: readonly SettingsPageMeta[] = [
+  {
+    slug: 'web-search',
+    title: 'Web search',
+    group: 'opencode',
+    kind: 'single',
+    keywords: ['web search', 'websearch', 'internet', 'exa', 'tavily', 'firecrawl'],
+    isAvailable: () => opencodeClient.getBoundRuntime()?.generation === 'oc2',
+  },
   {
     slug: 'home',
     title: 'Settings',
@@ -297,6 +307,8 @@ export function getSettingsNavIcon(slug: SettingsPageSlug): IconName | null {
 
     case 'providers':
       return 'cloud';
+    case 'web-search':
+      return 'global';
     case 'agents':
       return 'ai-agent';
     case 'behavior':

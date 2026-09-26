@@ -10,8 +10,8 @@ const membership = (id: string): MultiRunMembership => ({
   providerID: 'openrouter', modelID: 'vendor/model',
 });
 const session = (id: string, marker: MultiRunMembership | null = membership(id)): Session => {
-  const result: Session = { id, projectID: 'project', directory: '/repo', title: 'bench/openrouter/vendor/model',
-    cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, time: { created: 1, updated: 1 } };
+  const result: Session = { id, slug: id, projectID: 'project', directory: '/repo', title: 'bench/openrouter/vendor/model',
+    version: '1', time: { created: 1, updated: 1 } };
   if (marker) result.metadata = withMultiRunMembership({}, marker);
   return result;
 };

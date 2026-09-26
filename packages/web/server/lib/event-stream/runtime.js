@@ -10,7 +10,7 @@ import {
 } from './protocol.js';
 import { createGlobalMessageStreamHub } from './global-hub.js';
 import { createGlobalMessageStreamWsBridge } from './global-ws-bridge.js';
-import { acceptDirectoryMessageStreamWsConnection } from './directory-ws-bridge.js';
+import { acceptDirectoryMessageStreamWsConnection, acceptSharedDirectoryMessageStreamWsConnection } from './directory-ws-bridge.js';
 import {
   DEFAULT_UPSTREAM_RECONNECT_DELAY_MS,
   DEFAULT_UPSTREAM_STALL_TIMEOUT_MS,
@@ -59,6 +59,7 @@ export function createMessageStreamWsRuntime({
   isRequestOriginAllowed,
   rejectWebSocketUpgrade,
   buildOpenCodeUrl,
+  getKernelRuntime,
   getOpenCodeAuthHeaders,
   processForwardedEventPayload,
   wsClients,
@@ -82,6 +83,7 @@ export function createMessageStreamWsRuntime({
   const ownsGlobalHub = !globalEventHub;
   const globalHub = globalEventHub ?? createGlobalMessageStreamHub({
     buildOpenCodeUrl,
+    getKernelRuntime,
     getOpenCodeAuthHeaders,
     fetchImpl,
     upstreamStallTimeoutMs,
@@ -117,11 +119,21 @@ export function createMessageStreamWsRuntime({
       directorySockets.delete(socket);
     });
 
+    if (getKernelRuntime?.()?.generation === 'oc2') {
+      acceptSharedDirectoryMessageStreamWsConnection({ socket, requestedDirectory, requestedLastEventId, globalHub, wsClients, heartbeatIntervalMs });
+      return;
+    }
+    if (getKernelRuntime && getKernelRuntime()?.generation !== 'oc1') {
+      socket.close(1013, 'OpenCode generation unavailable');
+      return;
+    }
+
     acceptDirectoryMessageStreamWsConnection({
       socket,
       requestedLastEventId,
       requestedDirectory,
       buildOpenCodeUrl,
+      getKernelRuntime,
       getOpenCodeAuthHeaders,
       processForwardedEventPayload,
       wsClients,

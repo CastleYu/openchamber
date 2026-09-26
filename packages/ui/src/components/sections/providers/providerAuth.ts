@@ -1,129 +1,137 @@
-/**
- * Provider credential helpers.
- *
- * OpenCode v2 moved provider sign-in behind *integrations*: `GET /api/integration`
- * lists, per integration, the methods it accepts (`oauth`, `key`, `command`,
- * `env`) and the connections that are already live (a stored credential, or an
- * environment variable the server can see). There is no `auth.json` any more,
- * so "does this provider have credentials" is answered by its integration's
- * connections rather than by a local file.
- */
+export interface AuthMethod {
+  type?: string;
+  name?: string;
+  label?: string;
+  description?: string;
+  help?: string;
+  method?: number;
+  /** Inputs an OAuth method wants answered before authorize; see `provider-oauth.ts`. */
+  prompts?: unknown;
+  [key: string]: unknown;
+}
 
-import type { ConnectionInfo, IntegrationInfo, IntegrationKeyMethod, IntegrationOAuthMethod } from '@opencode/client';
+export interface OAuthAuthMethodEntry {
+  method: AuthMethod;
+  /** Index in the full provider auth-methods array (passed to oauth authorize/callback). */
+  methodIndex: number;
+}
 
-export type ProviderIntegration = IntegrationInfo;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
-/** Integrations are keyed by their own id; a provider matches on the same id. */
-export const findIntegrationForProvider = (
-  integrations: readonly IntegrationInfo[],
-  providerId: string,
-): IntegrationInfo | undefined => integrations.find((integration) => integration.id === providerId);
-
-/**
- * OpenCode Go bills through the OpenCode Console, so it signs in through the
- * Console's `opencode` integration; its own integration only accepts a
- * service-account key. OpenCode's own connect dialog makes the same mapping.
- * Returns the integration whose OAuth methods sign a provider in.
- */
-export const getSignInIntegrationId = (providerId: string): string =>
-  providerId === 'opencode-go' ? 'opencode' : providerId;
-
-/**
- * Connections that give a provider credentials: its own, plus the sign-in
- * integration's when the provider signs in elsewhere.
- */
-export const getProviderConnections = (
-  integrations: readonly IntegrationInfo[],
-  providerId: string,
-): ConnectionInfo[] | undefined => {
-  const own = findIntegrationForProvider(integrations, providerId)?.connections;
-  const signInId = getSignInIntegrationId(providerId);
-  if (signInId === providerId) return own;
-  const signIn = findIntegrationForProvider(integrations, signInId)?.connections;
-  if (!own && !signIn) return undefined;
-  return [...(own ?? []), ...(signIn ?? [])];
+export const normalizeAuthType = (method: AuthMethod): string => {
+  const raw = typeof method.type === 'string' ? method.type : '';
+  const label = `${method.name ?? ''} ${method.label ?? ''}`.toLowerCase();
+  const merged = `${raw} ${label}`.toLowerCase();
+  if (merged.includes('oauth')) return 'oauth';
+  if (merged.includes('api')) return 'api';
+  return raw.toLowerCase();
 };
 
-export const getOAuthMethods = (
-  integration: IntegrationInfo | undefined,
-): IntegrationOAuthMethod[] =>
-  (integration?.methods ?? []).filter((method): method is IntegrationOAuthMethod => method.type === 'oauth');
-
-export const getKeyMethod = (
-  integration: IntegrationInfo | undefined,
-): IntegrationKeyMethod | undefined =>
-  (integration?.methods ?? []).find((method): method is IntegrationKeyMethod => method.type === 'key');
+export const parseAuthPayload = (payload: unknown): Record<string, AuthMethod[]> => {
+  if (!isRecord(payload)) {
+    return {};
+  }
+  const result: Record<string, AuthMethod[]> = {};
+  for (const [providerId, value] of Object.entries(payload)) {
+    if (Array.isArray(value)) {
+      result[providerId] = value.filter((entry) => isRecord(entry)) as AuthMethod[];
+    }
+  }
+  return result;
+};
 
 /**
- * Show the API key form when the integration accepts a key, or when the
- * integration is unknown — a provider OpenCode has no integration for (a custom
- * one from opencode.json) is still keyed by an API key. OAuth-only integrations
- * must not get an API key prompt.
+ * Show the API key form when the provider declares API auth, or when auth
+ * methods are still unknown (empty). OAuth-only providers must not get an
+ * API key prompt.
  */
-export const shouldShowApiKeyAuth = (integration: IntegrationInfo | undefined): boolean =>
-  integration === undefined || getKeyMethod(integration) !== undefined;
+export const shouldShowApiKeyAuth = (methods: AuthMethod[]): boolean => {
+  if (methods.length === 0) {
+    return true;
+  }
+  return methods.some((method) => normalizeAuthType(method) === 'api');
+};
 
-/** Stored credentials, which are the only connections the user can remove. */
-export const getCredentialConnections = (
-  integration: IntegrationInfo | undefined,
-): Extract<ConnectionInfo, { type: 'credential' }>[] =>
-  (integration?.connections ?? []).filter(
-    (connection): connection is Extract<ConnectionInfo, { type: 'credential' }> => connection.type === 'credential',
-  );
+export const getOAuthAuthMethods = (methods: AuthMethod[]): OAuthAuthMethodEntry[] =>
+  methods
+    .map((method, methodIndex) => ({ method, methodIndex }))
+    .filter(({ method }) => normalizeAuthType(method) === 'oauth');
+
+export const requiresOpenCodeRestartAfterOAuth = (providerId: string): boolean =>
+  providerId !== 'claude-code';
 
 export interface ProviderCredentialInput {
+  /** Present when OpenCode reports an active credential (api/env/oauth). */
+  key?: string | null;
+  /** OpenChamber auth.json provenance for this provider. */
+  authSourceExists?: boolean | null;
   /**
-   * Connections the provider's integration reports. A stored credential or a
-   * resolved environment variable both count as a usable login.
-   */
-  connections?: readonly ConnectionInfo[];
-  /**
-   * Provider.options is shipped to the client for config-defined providers, so
-   * a custom provider whose key is written straight into opencode.json has no
-   * integration connection but is still logged in.
+   * Provider.options is shipped to the client for config-defined providers
+   * but never reaches `Provider.key` (upstream only sets `key` from a single
+   * resolved env var or an api-type auth.json entry). Treat a non-empty
+   * `options.apiKey` as a usable login, per
+   * `packages/web/server/lib/walkthrough/DOCUMENTATION.md:134`.
    */
   optionsApiKey?: string | null;
+  /**
+   * The provider declares environment variables it reads credentials from.
+   * Multi-variable providers (Bedrock, Azure, Vertex) never resolve a single
+   * `Provider.key` upstream, so without this signal they read as
+   * "Credentials missing" even when fully configured.
+   */
+  envDeclared?: boolean;
 }
 
 /**
- * Prefer authoritative credential signals: the server either reports a
- * connection for the integration or it does not. An inline `options.apiKey` is
- * the one case the server cannot see as a connection.
+ * Prefer authoritative credential signals. Declared env vars are the weakest of
+ * them — the array holds variable *names*, not values — but for providers whose
+ * credentials span several env vars it is the only signal OpenCode exposes.
  */
 export const providerHasCredentials = (input: ProviderCredentialInput): boolean => {
-  if ((input.connections?.length ?? 0) > 0) {
+  if (typeof input.key === 'string' && input.key.trim().length > 0) {
     return true;
   }
-  return typeof input.optionsApiKey === 'string' && input.optionsApiKey.trim().length > 0;
+  if (typeof input.optionsApiKey === 'string' && input.optionsApiKey.trim().length > 0) {
+    return true;
+  }
+  if (input.envDeclared === true) {
+    return true;
+  }
+  return input.authSourceExists === true;
 };
 
 export const shouldShowModelsSection = (input: {
   modelCount: number;
-  /** False while the integration list is still loading. */
-  integrationsLoaded: boolean;
+  sourcesLoaded: boolean;
   hasCredentials: boolean;
   /**
    * Config-defined custom providers (providerSources.custom present and parsed
    * via `isConfigDefinedCustomProvider`) are user-editable in place, so a
    * stale `Credentials missing` signal must not hide their models section.
+   * Optional for back-compat; defaults to `false`, restoring the pre-rewrite
+   * exemption that `requiresProviderAuth` carried via `providerAvailability.ts`.
    */
   isEditableCustomProvider?: boolean;
 }): boolean =>
   input.modelCount > 0 &&
-  (!input.integrationsLoaded || input.hasCredentials || Boolean(input.isEditableCustomProvider));
+  (!input.sourcesLoaded || input.hasCredentials || Boolean(input.isEditableCustomProvider));
 
 export const shouldAutoOpenAuthPanel = (input: {
-  integrationsLoaded: boolean;
+  sourcesLoaded: boolean;
   hasCredentials: boolean;
   userDismissed: boolean;
   /**
-   * Config-defined custom providers do not auto-open the auth panel: the
+   * Config-defined custom providers (providerSources.custom present and parsed
+   * via `isConfigDefinedCustomProvider`) do not auto-open the auth panel: the
    * provider is editable directly in the form, and a stale `Credentials
-   * missing` summary would be misleading.
+   * missing` summary would be misleading. Optional for back-compat; defaults to
+   * `false`, restoring the pre-rewrite exemption that `requiresProviderAuth`
+   * carried via `providerAvailability.ts`.
    */
   isEditableCustomProvider?: boolean;
 }): boolean =>
-  input.integrationsLoaded &&
+  input.sourcesLoaded &&
   !input.hasCredentials &&
   !input.userDismissed &&
   !input.isEditableCustomProvider;

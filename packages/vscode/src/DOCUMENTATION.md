@@ -17,7 +17,6 @@ Keep `bridge.ts` as a thin orchestration layer that delegates message handling t
 
 - `bridge-git-special-runtime.ts`
   - Specialized Git flows (`pr-description`, `conflict-details`) and generation helpers.
-  - Generation runs through OpenCode's `POST /api/experimental/generate`, which answers with the finished text. There is no throwaway session to create, poll and delete any more.
   - Generation model choice lives in `bridge-git-generation-model.ts`: request model first, then the user's small-model override (`smallModelUseDefault === false` plus `smallModelOverride` as `provider/model`) when the catalog has it, then the zen fallback. The old `gitProviderId`/`gitModelId` pair is no longer read.
 
 - `bridge-git-process-runtime.ts`
@@ -71,15 +70,16 @@ The webview build emits each worker as one self-contained file. VS Code webviews
 
 - `bridge-proxy-runtime.ts`
   - Proxy route handlers (`api:proxy`, `api:session:message`) with injected helper dependencies.
-  - The webview forwards the request path unchanged (`/api/<x>` → `/api/<x>`): OpenCode 2.x serves its own routes under `/api`, so nothing strips the prefix.
   - SSE routes are intentionally excluded from the generic proxy and use `sseProxy.ts`, whose upstream-only stall watchdog closes a quiet OpenCode stream so the webview can reconnect instead of trusting an open but silent response.
   - The webview allocates each SSE stream ID and installs its listener before requesting the upstream stream, so immediate OpenCode replay events cannot race the bridge start response.
-  - OpenCode 2.x has one global stream, `GET /api/event`. Every frame names its own `location.directory`, so the proxy no longer scopes the request to a directory.
+  - OC2 session GET responses overlay OpenChamber archive and pending metadata from the same scoped stores as the web server. OC1 responses pass through. A store read failure rejects the overlay rather than publishing an empty session state.
 
 - `bridge-config-runtime.ts`
   - Config and skills message handlers (`api:config/*`).
   - Includes OpenCode resolution diagnostics parity handler used by shared UI (`/api/config/opencode-resolution`).
   - OpenCode JSONC reads in `opencodeConfig.ts` fail closed on a partial or non-object `jsonc-parser` tree (`INVALID_JSONC`) so mutations cannot rewrite a `$schema`-only stub over an existing config. Comment-only files read as empty, while other content that yields no JSON value (YAML, plain text) fails closed. A broken layer is omitted from the merge and recorded on `layerErrors`; valid sibling layers still load, including plugin list/read via `getPluginConfigSources`. Writes still refuse to overwrite the broken file.
+  - OC1 keeps `opencodeConfig.ts` and its existing config paths. OC2 dispatches to `bridge-config-runtime-v2.ts` and `opencodeConfigV2.ts`, which emit native sections and `plugins`; the shape functions come from the web server's `config-v2.js`. An unknown generation rejects config mutations before either writer runs.
+  - OC2 plugin list records carry the actual declaring config file as `sourcePath`. Discovered `plugins/` files, `plugins/` package directories, and legacy `plugin/` entries carry their actual `absolutePath`; only files in the preferred `plugins/` directory are editable. Shared Settings matches those paths against OpenCode's runtime inventory. The OC1 list and writer keep their existing shape.
 
 - `bridge-project-setup-runtime.ts`
   - Extension-host side of `GET/PUT /api/projects/:projectId/config` (the webview handles the route locally and bridges `api:project-setup:get` / `api:project-setup:update`). Reads and writes the client-owned keys of `~/.config/openchamber/projects/<projectId>.json` (worktree setup commands, project actions, draft starters) with the rules in `project-setup.ts`, a mirror of the server's `packages/web/server/lib/projects/project-setup.js`; keep the two in sync. The file name follows the server's bounded rule (`projectConfigFileStemOf`, mirrored from `packages/web/server/lib/projects/project-id.js`): an id over 200 characters is stored as `path_sha256_<digest>.json` so a deeply nested checkout does not exceed the file name limit. A file an older build wrote under the long name is still read when the bounded one is missing and is removed once a write has moved its content. Writes to one file are chained; server-owned and unknown keys survive. The read also merges the team's optional `<workspace>/.openchamber/project.json` (checkout path decoded from the `path_<base64url>` id) by the same rules as the server, so the webview sees one view with `shared` / `personal` blocks. The shared UI (`openchamberConfig.ts`) no longer composes that path or reads it through the fs bridge.
@@ -95,19 +95,17 @@ The webview build emits each worker as one self-contained file. VS Code webviews
   - System/editor/provider/quota/notification/update-check message handlers.
   - Includes session activity snapshot bridge handler used by webview parity routes (`/api/session-activity`, and `/api/sessions/status`, where busy phases become the host status seed the shared UI reads for unopened directories).
   - Includes Zen utility model parity handler used by shared notification settings (`/api/zen/models`).
-  - Owns managed OpenCode upgrade status handlers and capability reporting.
+  - Owns managed OpenCode upgrade status and mutation handlers, including capability reporting, upgrade serialization, and process restart after a successful upgrade.
   - Provider handlers cover source lookup, disconnect (`DELETE /api/provider/:id/auth`), and custom provider upsert (`PUT /api/provider`; create/update OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages config with explicit `scope` for user/project/custom layers; requires `env` or stored auth; secrets via OpenCode auth API). Updates preserve existing provider, option, and retained-model fields that the form does not manage while honoring explicit model, header, and env removal. Legacy `providers` entries migrate to the canonical `provider` key when edited.
+  - OC2 provider source reads use the read-only OpenCode credential database and v2 config reader. OC2 credential deletion returns an explicit ownership error; config removal and upsert use the v2 writer. OC1 keeps `auth.json` and its existing config writes. Session archive/metadata bridge messages use OpenCode native updates on OC1 and OpenChamber scoped state on OC2.
+
+- `openchamberSessionState.ts`
+  - Reuses the web archive, metadata migration, and storage-scope stores. The first OC2 scope claims root state files; managed scope survives port changes, while external scopes use endpoint identity. OC1 never opens these files. Metadata migration runs before the first OC2 metadata read or write, and endpoint/epoch checks reject late writes. VS Code's OC2 HTTP adapter merges nested metadata patches before OpenCode's replacing PATCH.
   - Quota handlers keep managed exe.dev, Ollama Cloud, and Cursor credentials in the extension data directory with the same private-file contract as the web runtime. exe.dev uses one command-scoped usage token for the aggregate billing shared by every `exe-*` model provider.
   - `ollamaQuota.ts` owns the Ollama settings request and parser shared by credential validation and quota refresh. Both reject redirects, failed HTTP responses, and pages without parsed windows, with a 15-second request timeout. Validation finishes before the bridge writes a replacement cookie. Monthly dollar quotas and legacy session/weekly/premium quotas remain supported; zero extra-credit balances are omitted.
 
-- OpenCode v1 recovery
-  - `api:opencode/compatibility` is available even when managed startup rejects v1. The UI checks it before configuration and session bootstrap.
-  - `api:opencode/install-v2` runs the shared `v2-install.js` installer on macOS/Linux through the manager queue. Concurrent webviews share the operation. The extension selects the verified binary in the effective VS Code configuration scope, restarts, and requires connected v2 status before reporting success. Stop invalidates pending restart work.
-  - The webview bridge waits without its default 30-second timeout. External URLs and Windows use manual installation. Filesystem rollback, standard installation location and cross-process locking follow the web runtime's CLI migration contract.
-
 - `opencode-upgrade-runtime.ts`
-  - Owns managed-versus-external capability decisions and latest-version checks.
-  - Managed runtimes run the resolved CLI with `upgrade` through the manager's operation queue and the shared `packages/web/server/lib/opencode/cli-upgrade.js` executor. The queued action resolves the CLI with the same fallback as capability reporting; it does not require a live server process just to update the binary. OpenCode chooses its installer. Concurrent webviews share one installation; failures allow another attempt. The existing Reload action restarts the server afterwards. The bridge waits for command completion without its default 30-second timeout. External connections, missing CLIs, and the Windows ARM64 workaround reject upgrades before spawning. Version checks remain available for external connections.
+  - Owns managed-versus-external capability decisions, latest-version checks, serialized OpenCode self-upgrades, and restart-after-upgrade behavior.
 
 - `bridge-permission-auto-accept-runtime.ts`
   - Owns the persisted VS Code permission auto-accept policy and its GET/PUT bridge contract.
@@ -175,7 +173,7 @@ every surface reached only through those is unreachable.
 | Chat timeline | MOUNTED | `VSCodeLayout` → `ChatView` → `ChatContainer` → `MessageList` |
 | Composer | MOUNTED | `ChatContainer` → `ChatInput` (model/agent controls, autocomplete, attachments, dictation, GitHub issue/PR pickers, `ReviewFlowDialog`, `PendingChangesBar`) |
 | Work status panel | MOUNTED | `ChatContainer` → `WorkStatusPanel` |
-| Permission / form cards | MOUNTED | `ChatContainer` → `PermissionCard`, `FormCard` |
+| Permission / question cards | MOUNTED | `ChatContainer` → `PermissionCard`, `QuestionCard` |
 | Timeline dialog | MOUNTED | `ChatContainer` → `TimelineDialog` |
 | Tool output / inline diff preview | MOUNTED | `MessageList` → `ToolPart`, `ToolOutputDialog` (`DiffViewToggle`, not `DiffView`) |
 | Sessions sidebar | MOUNTED | `VSCodeLayout` → `SessionSidebar` with `mobileVariant hideDirectoryControls` |
@@ -239,91 +237,16 @@ requests to distant providers can connect. This is an extension-host process
 default, including other Node connections in that host. Address-family selection
 stays unchanged; runtimes without the setter retain their existing behavior.
 
-## OpenCode version requirement
-
-The extension requires OpenCode 2.x. `opencode.ts` runs `opencode --version` before
-spawning a managed server and refuses to start on anything else
-(`opencodeVersion.ts` parses the CLI's `opencode v2.0.2` line). A 1.x binary would
-start and serve a different API, leaving the user with a webview that loads and
-then fails every request, so the failure is reported up front instead.
-
-Readiness comes from the `server listening on <url>` line on stdout, confirmed
-by `GET /api/info` (OpenCode 2.0.8 removed `/api/health`). A 200 is the whole
-readiness answer; the payload carries `{ version, pid, urls, paths }` and no
-`healthy` field.
-
 ## Global OpenCode paths
 
 `opencodeConfigPaths.ts` owns the global config directory for config CRUD,
 skill discovery/install, global AGENTS.md, and quota config-file lookup. It
-resolves `OPENCODE_CONFIG_DIR`, else `$XDG_CONFIG_HOME/opencode`, else
-`~/.config/opencode` at extension startup (the same rule OpenCode 2 applies);
-only `opencode.json(c)` is a config file, the v1 `config.json` is not read. Project paths, the explicit
+resolves `$XDG_CONFIG_HOME/opencode` at extension startup, falling back to
+`~/.config/opencode` when unset or blank. Project paths, the explicit
 `OPENCODE_CONFIG` file layer, and the auth data directory stay separate.
 No files are migrated. The behavior GET bridge response includes the effective
 `path` for both existing and missing AGENTS.md files; shared Settings uses it
 in the warning.
-
-## OpenCode 2 config shapes
-
-`opencodeConfig.ts` is the extension-host mirror of the web server's
-`packages/web/server/lib/opencode/*` entity modules. Both must write identical
-files, so all the shape logic lives in one place: `opencode-config-v2.ts` is a
-thin re-export of `packages/web/server/lib/opencode/config-v2.js`, bundled in by
-esbuild the same way `provider-env-aliases.ts` is. Do not reimplement a
-conversion here — add it to the web module and it lands in both runtimes.
-
-Ownership and the v1 fallback policy are documented once, in
-`packages/web/server/lib/opencode/DOCUMENTATION.md` under "Entity routes
-(v2 shapes)". The short version:
-
-- Reads accept the v2 keys (`agents`, `commands`, `providers`, `mcp.servers`,
-  `plugins`, `permissions`) and fall back to the v1 keys OpenCode 2 still
-  decodes (`agent`, `command`, `provider`, `mcp.<name>`, `plugin`,
-  `permission`/`tools`). v2 wins when both exist.
-- Writes emit v2 only, into the v2 directory (`.opencode/agents/`,
-  `.opencode/commands/`, `.opencode/skills/<id>/`, `.opencode/plugins/`).
-- Files are never moved. Updating an entity that lives in a v1 file rewrites it
-  at its own path in v2 shape, and a v1 JSON entry moves to the v2 section key
-  inside the same file. Every mutation returns the `path` it wrote.
-
-Bridge surface (`bridge-config-runtime.ts`), matching the web routes:
-
-- `api:config/agents` — `GET` answers the `sources` envelope; `GET` with
-  `resource: "config"` answers `{ source, scope, path, legacy, config }` and
-  with `resource: "permissions"` answers `{ global, agent, effective, source,
-  path }`. `POST`/`PATCH` take an `AgentEntity` body (a v1 `permission` map and
-  the v1 `prompt` alias are still accepted) and report the written `path`.
-- `api:config/commands` — same, with `resource: "config"` and a `CommandEntity`;
-  `subtask` is accepted as the v1 name for `subagent`.
-- `api:config/mcp` — `McpEntity` bodies; entries carry `sectionKey` and
-  `legacy`.
-
-## Session archive and metadata
-
-OpenCode 2.x has no route that archives a session, so archive flags are
-OpenChamber-owned state. `openchamberSessionState.ts` keeps the same
-`sessions-archive.json` the OpenChamber server keeps, in the shared OpenChamber
-config directory (`~/.config/openchamber`, `%APPDATA%\openchamber` on
-Windows), which is also the web server's default data directory: a session
-archived from VS Code is archived in the desktop app on the same machine, and
-the other way round. Nothing is cached between calls because two processes can
-write the file; every write re-reads first and replaces the file atomically.
-
-Session metadata lives on the OpenCode record (`PATCH /api/session/{id}`,
-OpenCode 2.0.15+). OpenCode replaces the whole object, so a write reads the
-record, applies the JSON Merge Patch (RFC 7386) and writes the result, and
-features sharing the `openchamber` namespace do not erase each other. An entry
-an older version left in `sessions-metadata.json` is laid over the record on
-reads and pushed to OpenCode on that session's next write, then dropped from
-the file; the web server sweeps the rest.
-
-The webview answers `POST /api/openchamber/sessions/archive|unarchive` and
-`GET|POST /api/openchamber/sessions/:id/metadata` through the
-`api:sessions/*` bridge cases in `bridge-system-runtime.ts`, and
-`bridge-proxy-runtime.ts` folds `time.archived` and not-yet-migrated metadata
-onto every proxied `GET /api/session` and `GET /api/session/:id` response, the
-same overlay the web proxy applies.
 
 ## Extension localization
 
@@ -342,3 +265,26 @@ chosen one, from VS Code's display language, which the HTML exposes as
 `window.__OPENCHAMBER_HOST_LANGUAGE__`. The UI bundle reads the same value as
 its default locale (`detectInitialLocale`), so a fresh install in a supported
 language starts in that language on both the splash and the app.
+
+## Kernel selection and forwarding
+
+`OpenCodeManager` owns a per-instance kernel descriptor and exposes it through
+`api:opencode/runtime`. Managed readiness uses the same authoritative OC1 health
+and OC2 info detector as the web server. Credential changes and completed stops
+invalidate the descriptor. The webview binds this descriptor before sync starts.
+
+`kernelRequest.ts` selects the API prefix and captures endpoint/generation/epoch.
+The generic proxy and SSE proxy reject results from a replaced connection. OC2
+SSE frames stay in their original wire format for the shared UI adapter; OC1
+keeps directory defaults and its existing event vocabulary. Only extension-owned
+OC2 installations use CLI upgrade; OC1 retains HTTP upgrade, and external kernels
+remain outside the extension's upgrade ownership.
+
+The extension's session activity watcher keeps the two event contracts separate.
+OC1 reconciles `/session/status` and consumes `global.event`; OC2 reconciles
+`session.active` and consumes `event.subscribe`, including `session.execution.*`
+transitions. A changed kernel identity cannot publish a late status, event, or
+Git description result. The Git PR description helper retains the OC1 temporary
+session flow and uses OC2's `generate.text` operation without creating a session.
+The extension status command probes each kernel's own paths. An unknown kernel
+produces no OpenCode probes and reports its unknown generation.

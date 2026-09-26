@@ -3,6 +3,7 @@ import express from 'express';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { createServer } from 'node:http';
 import { registerSkillRoutes } from './skill-routes.js';
 import {
   createSkill,
@@ -28,7 +29,7 @@ const createTempProject = () => {
   return projectRoot;
 };
 
-const startSkillsApp = ({ projectRoot }) => {
+const startSkillsApp = ({ projectRoot, kernelRuntime = { get: () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:9', epoch: 1 }) } }) => {
   const app = express();
   app.use(express.json());
 
@@ -54,6 +55,7 @@ const startSkillsApp = ({ projectRoot }) => {
     buildOpenCodeUrl: () => 'http://127.0.0.1:9/',
     getOpenCodeAuthHeaders: () => ({}),
     getOpenCodePort: () => 0,
+    kernelRuntime,
     getSkillSources,
     discoverSkills,
     mergeDiscoveredSkills,
@@ -88,16 +90,30 @@ const startSkillsApp = ({ projectRoot }) => {
   };
 };
 
+const startKernel = async (handler) => {
+  const server = createServer(handler);
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  return {
+    endpoint: `http://127.0.0.1:${server.address().port}`,
+    close: () => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())),
+  };
+};
+
 describe('skill-routes directory soft fallback', () => {
   /** @type {string | null} */
   let projectRoot = null;
   /** @type {{ close: () => Promise<void> } | null} */
   let appHandle = null;
+  let kernelHandle = null;
 
   afterEach(async () => {
     if (appHandle) {
       await appHandle.close();
       appHandle = null;
+    }
+    if (kernelHandle) {
+      await kernelHandle.close();
+      kernelHandle = null;
     }
     if (projectRoot) {
       fs.rmSync(projectRoot, { recursive: true, force: true });
@@ -212,5 +228,101 @@ describe('skill-routes directory soft fallback', () => {
         force: true,
       });
     }
+  });
+
+  it('reads the OC2 skill.list envelope while retaining local skills', async () => {
+    projectRoot = createTempProject();
+    const localDir = path.join(projectRoot, '.agents', 'skills', 'local-skill');
+    fs.mkdirSync(localDir, { recursive: true });
+    fs.writeFileSync(path.join(localDir, 'SKILL.md'), '---\nname: local-skill\ndescription: local\n---\n\nLocal body\n');
+    const requests = [];
+    kernelHandle = await startKernel((req, res) => {
+      requests.push(req.url);
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({
+        location: { directory: projectRoot },
+        data: [{ id: 'remote-skill', name: 'remote-skill', path: path.join(projectRoot, '.opencode', 'skills', 'remote-skill', 'SKILL.md'), content: 'Remote body', description: 'remote' }],
+      }));
+    });
+    const kernelRuntime = { get: () => ({ generation: 'oc2', endpoint: kernelHandle.endpoint, epoch: 1 }) };
+    appHandle = startSkillsApp({ projectRoot, kernelRuntime });
+    const response = await fetch(`${appHandle.baseUrl}/api/config/skills?directory=${encodeURIComponent(projectRoot)}`);
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.partial).toBeUndefined();
+    expect(payload.skills.map((skill) => skill.name)).toEqual(expect.arrayContaining(['local-skill', 'remote-skill']));
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toContain('/api/skill?');
+    expect(requests[0]).toContain(encodeURIComponent(projectRoot));
+  });
+
+  it('marks OC2 discovery failure partial without erasing local skills', async () => {
+    projectRoot = createTempProject();
+    const localDir = path.join(projectRoot, '.agents', 'skills', 'local-skill');
+    fs.mkdirSync(localDir, { recursive: true });
+    fs.writeFileSync(path.join(localDir, 'SKILL.md'), '---\nname: local-skill\ndescription: local\n---\n\nLocal body\n');
+    kernelHandle = await startKernel((_req, res) => {
+      res.statusCode = 503;
+      res.end('unavailable');
+    });
+    const kernelRuntime = { get: () => ({ generation: 'oc2', endpoint: kernelHandle.endpoint, epoch: 1 }) };
+    appHandle = startSkillsApp({ projectRoot, kernelRuntime });
+    const response = await fetch(`${appHandle.baseUrl}/api/config/skills`);
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.partial).toEqual({ source: 'opencode', reason: 'discovery-unavailable' });
+    expect(payload.skills.map((skill) => skill.name)).toContain('local-skill');
+  });
+
+  it('marks a malformed OC2 skill envelope partial instead of empty success', async () => {
+    projectRoot = createTempProject();
+    kernelHandle = await startKernel((_req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ location: { directory: projectRoot }, data: { unexpected: true } }));
+    });
+    const kernelRuntime = { get: () => ({ generation: 'oc2', endpoint: kernelHandle.endpoint, epoch: 1 }) };
+    appHandle = startSkillsApp({ projectRoot, kernelRuntime });
+    const response = await fetch(`${appHandle.baseUrl}/api/config/skills`);
+    expect(response.status).toBe(200);
+    expect((await response.json()).partial).toEqual({ source: 'opencode', reason: 'discovery-unavailable' });
+  });
+
+  it('keeps local skills visible before the kernel generation is known', async () => {
+    projectRoot = createTempProject();
+    const localDir = path.join(projectRoot, '.agents', 'skills', 'offline-skill');
+    fs.mkdirSync(localDir, { recursive: true });
+    fs.writeFileSync(path.join(localDir, 'SKILL.md'), '---\nname: offline-skill\ndescription: offline\n---\n\nLocal body\n');
+    appHandle = startSkillsApp({ projectRoot, kernelRuntime: { get: () => ({ generation: 'unknown', endpoint: null, epoch: 1 }) } });
+    const response = await fetch(`${appHandle.baseUrl}/api/config/skills`);
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.skills.map((skill) => skill.name)).toContain('offline-skill');
+    expect(payload.partial).toEqual({ source: 'opencode', reason: 'discovery-unavailable' });
+    const detail = await fetch(`${appHandle.baseUrl}/api/config/skills/offline-skill`);
+    expect(detail.status).toBe(200);
+    expect((await detail.json()).exists).toBe(true);
+  });
+
+  it('does not present a stale OC2 skill response as a current listing', async () => {
+    projectRoot = createTempProject();
+    let release;
+    const waiting = new Promise((resolve) => { release = resolve; });
+    let started;
+    const startedPromise = new Promise((resolve) => { started = resolve; });
+    kernelHandle = await startKernel(async (_req, res) => {
+      started();
+      await waiting;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ location: { directory: projectRoot }, data: [] }));
+    });
+    let epoch = 1;
+    const kernelRuntime = { get: () => ({ generation: 'oc2', endpoint: kernelHandle.endpoint, epoch }) };
+    appHandle = startSkillsApp({ projectRoot, kernelRuntime });
+    const pending = fetch(`${appHandle.baseUrl}/api/config/skills`);
+    await startedPromise;
+    epoch = 2;
+    release();
+    const response = await pending;
+    expect(response.status).toBe(500);
   });
 });

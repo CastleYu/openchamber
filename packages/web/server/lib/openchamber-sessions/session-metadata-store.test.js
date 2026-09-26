@@ -59,8 +59,8 @@ const writeLegacy = (dataDir, content) => {
 const notFound = () => Object.assign(new Error('Session not found'), { _tag: 'SessionNotFoundError' });
 
 /**
- * OpenCode's side: records by session id. A `write` replaces the whole object,
- * which is what `PATCH /api/session/{id}` does with `metadata`.
+ * The kernel operation owns merge and serialization around OpenCode's
+ * replacement PATCH. This fake models the result of that operation.
  */
 const createFakeOpenCode = (records = {}) => {
   const sessions = new Map(Object.entries(records));
@@ -73,12 +73,17 @@ const createFakeOpenCode = (records = {}) => {
       if (fake.failRead) throw fake.failRead;
       return sessions.has(id) ? structuredClone(sessions.get(id)) : null;
     }),
-    write: vi.fn(async (id, metadata) => {
+    write: vi.fn(async (id, patch) => {
       // Yield first so concurrent writers really overlap.
       await Promise.resolve();
       if (fake.failWrite) throw fake.failWrite;
       if (!sessions.has(id)) throw notFound();
-      fake.writes.push([id, metadata]);
+      fake.writes.push([id, patch]);
+      sessions.set(id, mergeMetadataPatch(sessions.get(id), patch));
+    }),
+    writeLegacy: vi.fn(async (id, metadata) => {
+      if (fake.failWrite) throw fake.failWrite;
+      if (!sessions.has(id)) throw notFound();
       sessions.set(id, structuredClone(metadata));
     }),
   };
@@ -155,17 +160,17 @@ describe('createSessionMetadataStore', () => {
   });
 
   describe('legacy sessions-metadata.json', () => {
-    it('serves a legacy entry over the OpenCode record until it is migrated', async () => {
+    it('overlays a legacy entry until first read prepares that session', async () => {
       const openCode = createFakeOpenCode({ ses_1: { openchamber: { kind: 'review' } } });
       const dataDir = makeDataDir();
       writeLegacy(dataDir, { ses_1: { openchamber: { kind: 'review', goal: { id: 'g1' } } } });
       const { store } = makeStore(openCode, dataDir);
 
-      await expect(store.get('ses_1')).resolves.toEqual({ openchamber: { kind: 'review', goal: { id: 'g1' } } });
       await expect(store.listUnmigrated()).resolves.toEqual({
         ses_1: { openchamber: { kind: 'review', goal: { id: 'g1' } } },
       });
-      expect(openCode.read).not.toHaveBeenCalled();
+      await expect(store.get('ses_1')).resolves.toEqual({ openchamber: { kind: 'review', goal: { id: 'g1' } } });
+      await expect(store.listUnmigrated()).resolves.toEqual({});
     });
 
     it('migrates a legacy entry on its first write, merged with the patch', async () => {
@@ -207,11 +212,70 @@ describe('createSessionMetadataStore', () => {
       openCode.failWrite = new Error('connection refused');
       await expect(store.migrateLegacy()).resolves.toBe(1);
       expect(JSON.parse(fs.readFileSync(legacyFile(dataDir), 'utf8'))).toEqual({ ses_1: { a: 1 } });
-      await expect(store.get('ses_1')).resolves.toEqual({ a: 1 });
+      await expect(store.get('ses_1')).rejects.toThrow('connection refused');
 
       openCode.failWrite = null;
       await expect(store.migrateLegacy()).resolves.toBe(0);
       expect(openCode.sessions.get('ses_1')).toEqual({ a: 1 });
+    });
+
+    it('blocks only a session whose legacy file could not retire durably', async () => {
+      const openCode = createFakeOpenCode({ ses_1: {}, ses_2: {} });
+      const dataDir = makeDataDir();
+      writeLegacy(dataDir, { ses_1: { a: 1 } });
+      let failRetire = true;
+      const fsPromises = {
+        ...fs.promises,
+        rename: vi.fn(async (from, to) => {
+          if (failRetire && from === legacyFile(dataDir) && to.endsWith('.migrated')) {
+            throw Object.assign(new Error('disk is read-only'), { code: 'EACCES' });
+          }
+          return fs.promises.rename(from, to);
+        }),
+      };
+      const store = createSessionMetadataStore({ dataDir, openCode, fsPromises });
+
+      await expect(store.ensureMigrated('ses_1')).rejects.toThrow('disk is read-only');
+      await expect(store.listUnmigrated()).resolves.toEqual({ ses_1: { a: 1 } });
+      await expect(store.setSessionMetadata('ses_1', { b: 2 })).rejects.toThrow('disk is read-only');
+      expect(openCode.sessions.get('ses_1')).toEqual({ a: 1 });
+      expect(JSON.parse(fs.readFileSync(legacyFile(dataDir), 'utf8'))).toEqual({ ses_1: { a: 1 } });
+
+      await expect(store.setSessionMetadata('ses_2', { live: true })).resolves.toEqual({ live: true });
+      failRetire = false;
+      await expect(store.setSessionMetadata('ses_1', { b: 2 })).resolves.toEqual({ a: 1, b: 2 });
+      expect(fs.existsSync(legacyFile(dataDir))).toBe(false);
+    });
+
+    it('does not treat an unmovable malformed legacy file as empty state', async () => {
+      const openCode = createFakeOpenCode({ ses_1: {} });
+      const dataDir = makeDataDir();
+      writeLegacy(dataDir, '{bad-json');
+      const fsPromises = { ...fs.promises, rename: vi.fn(async () => {
+        throw Object.assign(new Error('backup failed'), { code: 'EACCES' });
+      }) };
+      const store = createSessionMetadataStore({ dataDir, openCode, fsPromises });
+      await expect(store.setSessionMetadata('ses_1', { a: 1 })).rejects.toThrow('backup failed');
+      expect(openCode.write).not.toHaveBeenCalled();
+      expect(fs.readFileSync(legacyFile(dataDir), 'utf8')).toBe('{bad-json');
+    });
+
+    it('lets another legacy session migrate when one OpenCode write fails', async () => {
+      const openCode = createFakeOpenCode({ ses_1: {}, ses_2: {} });
+      const dataDir = makeDataDir();
+      writeLegacy(dataDir, { ses_1: { a: 1 }, ses_2: { b: 2 } });
+      const originalWrite = openCode.writeLegacy;
+      openCode.writeLegacy = vi.fn(async (id, ...rest) => {
+        if (id === 'ses_1') throw new Error('ses_1 unavailable');
+        return originalWrite(id, ...rest);
+      });
+      const { store } = makeStore(openCode, dataDir);
+
+      await expect(store.ensureMigrated('ses_1')).rejects.toThrow('ses_1 unavailable');
+      await expect(store.ensureMigrated('ses_2')).resolves.toBeUndefined();
+      await expect(store.listUnmigrated()).resolves.toEqual({ ses_1: { a: 1 } });
+      expect(openCode.sessions.get('ses_2')).toEqual({ b: 2 });
+      expect(JSON.parse(fs.readFileSync(legacyFile(dataDir), 'utf8'))).toEqual({ ses_1: { a: 1 } });
     });
 
     it('does not push a legacy entry over a write that migrated it first', async () => {

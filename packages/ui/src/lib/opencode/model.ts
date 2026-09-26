@@ -1,5 +1,6 @@
 /**
- * OpenChamber's session domain model.
+ * Shared session, message and part model. Started from official OpenChamber
+ * v2.0.1 (63bd5070) and extended with real OC1 fields.
  *
  * This is the shape every store, reducer, and component works with. OpenCode
  * v2 wire types (`@opencode/client`) never leave the adapter layer: the
@@ -93,19 +94,56 @@ export type SessionStatus = SessionStatusWire
 
 export type SessionOutcome = "succeeded" | "failed" | "interrupted"
 
+export type TokenUsage = TokenUsageInfo & { total?: number }
+
+export type LegacySnapshotDiff = {
+  file?: string
+  patch?: string
+  additions: number
+  deletions: number
+  status?: "added" | "deleted" | "modified"
+}
+
+export type LegacyPermissionRuleset = Array<{
+  permission: string
+  pattern: string
+  action: "allow" | "deny" | "ask"
+}>
+
+export type SessionSummary = {
+  additions: number
+  deletions: number
+  files: number
+  diffs?: LegacySnapshotDiff[]
+}
+
+export type SessionRevertInfo = {
+  messageID: string
+  partID?: string
+  snapshot?: string
+  diff?: string
+  files?: SessionRevert["files"]
+}
+
 export type Session = {
   id: string
+  slug?: string
+  version?: string
   parentID?: string
   projectID: string
+  workspaceID?: string
   /** Absolute directory the session runs in (`location.directory` on the wire). */
   directory: string
+  path?: string
   /** Optional subdirectory inside `directory` the session is scoped to. */
   subpath?: string
   title: string
   agent?: string
   model?: ModelRef
-  cost: number
-  tokens: TokenUsageInfo
+  summary?: SessionSummary
+  share?: { url: string }
+  cost?: number
+  tokens?: TokenUsage
   outcome?: SessionOutcome
   time: {
     created: number
@@ -113,10 +151,12 @@ export type Session = {
     idle?: number
     viewed?: number
     archived?: number
+    compacting?: number
   }
   metadata?: Metadata
+  permission?: LegacyPermissionRuleset
   permissions?: PermissionRuleset
-  revert?: SessionRevert
+  revert?: SessionRevertInfo
   fork?: {
     sessionID: string
     boundary: SessionForkBoundary
@@ -129,6 +169,36 @@ export type Session = {
 
 export type StructuredError = SessionStructuredError
 
+export type LegacyMessageError =
+  | { name: "ProviderAuthError"; data: { providerID: string; message: string } }
+  | { name: "UnknownError"; data: { message: string; ref?: string } }
+  | { name: "MessageOutputLengthError"; data: Metadata }
+  | { name: "MessageAbortedError"; data: { message: string } }
+  | { name: "StructuredOutputError"; data: { message: string; retries: number } }
+  | { name: "ContextOverflowError"; data: { message: string; responseBody?: string } }
+  | { name: "ContentFilterError"; data: { message: string } }
+  | { name: "APIError"; data: {
+      message: string
+      statusCode?: number
+      isRetryable: boolean
+      responseHeaders?: Record<string, string>
+      responseBody?: string
+      metadata?: Record<string, string>
+    } }
+
+export type MessageError = StructuredError | LegacyMessageError
+
+export type MessageErrorDescription = { name: string; message: string; status?: number; retryable?: boolean }
+
+export const describeMessageError = (error: MessageError): MessageErrorDescription => {
+  if ("type" in error) return { name: error.type, message: error.message, status: error.status }
+  if (error.name === "MessageOutputLengthError") return { name: error.name, message: error.name }
+  if (error.name === "APIError") return {
+    name: error.name, message: error.data.message, status: error.data.statusCode, retryable: error.data.isRetryable,
+  }
+  return { name: error.name, message: error.data.message }
+}
+
 type MessageBase = {
   id: string
   sessionID: string
@@ -138,9 +208,15 @@ type MessageBase = {
 export type UserMessage = MessageBase & {
   role: "user"
   time: { created: number }
+  format?: { type: "text" } | { type: "json_schema"; schema: Metadata; retryCount?: number }
+  summary?: { title?: string; body?: string; diffs: LegacySnapshotDiff[] }
+  agent?: string
+  model?: { providerID: string; modelID: string; variant?: string }
+  system?: string
+  tools?: Record<string, boolean>
 }
 
-export type AssistantFinish = "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
+export type AssistantFinish = string
 
 export type AssistantMessage = MessageBase & {
   role: "assistant"
@@ -154,11 +230,16 @@ export type AssistantMessage = MessageBase & {
   agent: string
   providerID: string
   modelID: string
+  parentID?: string
+  mode?: string
+  path?: { cwd: string; root: string }
+  summary?: boolean
+  structured?: JsonValue
   variant?: string
   finish?: AssistantFinish
-  error?: StructuredError
+  error?: MessageError
   cost?: number
-  tokens?: TokenUsageInfo
+  tokens?: TokenUsage
   snapshot?: { start?: string; end?: string; files?: string[] }
   retry?: { attempt: number; at: number; error: StructuredError }
 }
@@ -267,24 +348,36 @@ export type TextPart = PartBase & {
   /** Set while the text is still streaming; `end` lands with the final text. */
   time?: { start: number; end?: number }
   metadata?: Metadata
+  synthetic?: boolean
+  ignored?: boolean
 }
 
 export type ReasoningPart = PartBase & {
   type: "reasoning"
   text: string
   time: { start: number; end?: number }
+  metadata?: Metadata
 }
+
+export type FilePartSource =
+  | { type: "file"; text: { value: string; start: number; end: number }; path: string }
+  | { type: "symbol"; text: { value: string; start: number; end: number }; path: string; range: {
+      start: { line: number; character: number }; end: { line: number; character: number }
+    }; name: string; kind: number }
+  | { type: "resource"; text: { value: string; start: number; end: number }; clientName: string; uri: string }
 
 export type FilePart = PartBase & {
   type: "file"
   mime: string
   filename?: string
   url: string
+  source?: FilePartSource
 }
 
 export type AgentPart = PartBase & {
   type: "agent"
   name: string
+  source?: { value: string; start: number; end: number }
 }
 
 /** Tool arguments as the model produced them. */
@@ -302,6 +395,7 @@ export type ToolStateRunning = {
   input: ToolInput
   metadata?: Metadata
   time: { start: number }
+  title?: string
 }
 
 export type ToolStateCompleted = {
@@ -310,8 +404,9 @@ export type ToolStateCompleted = {
   /** Concatenated text content of the tool result. */
   output: string
   metadata?: Metadata
-  time: { start: number; end: number }
   attachments?: FilePart[]
+  title?: string
+  time: { start: number; end: number; compacted?: number }
 }
 
 export type ToolStateError = {
@@ -335,9 +430,21 @@ export type ToolPart = PartBase & {
   state: ToolState
   /** The provider actually executed the call (false for replayed/synthetic calls). */
   executed?: boolean
+  metadata?: Metadata
 }
 
-export type Part = TextPart | ReasoningPart | FilePart | AgentPart | ToolPart
+export type SubtaskPart = PartBase & {
+  type: "subtask"; prompt: string; description: string; agent: string
+  model?: { providerID: string; modelID: string }; command?: string
+}
+export type StepStartPart = PartBase & { type: "step-start"; snapshot?: string }
+export type StepFinishPart = PartBase & { type: "step-finish"; reason: string; snapshot?: string; cost: number; tokens: TokenUsage }
+export type SnapshotPart = PartBase & { type: "snapshot"; snapshot: string }
+export type PatchPart = PartBase & { type: "patch"; hash: string; files: string[] }
+export type RetryPart = PartBase & { type: "retry"; attempt: number; error: Extract<LegacyMessageError, { name: "APIError" }>; time: { created: number } }
+export type CompactionPart = PartBase & { type: "compaction"; auto: boolean; overflow?: boolean; tail_start_id?: string }
+
+export type Part = TextPart | ReasoningPart | FilePart | AgentPart | ToolPart | SubtaskPart | StepStartPart | StepFinishPart | SnapshotPart | PatchPart | RetryPart | CompactionPart
 
 export type PartType = Part["type"]
 

@@ -1,12 +1,12 @@
 import { execFile, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readOpenCodeInfo, isSupportedOpenCodeVersion, requireOpenCodeV2, UnsupportedOpenCodeVersionError } from './compatibility.js';
 import net from 'node:net';
 import { stripAppImageArgv0Leak } from '../inherited-env.js';
 import { reapOrphanedProcesses, registerManagedProcess, unregisterManagedProcess } from './managed-process-registry.js';
 import { applyProviderEnvAliases } from './provider-env-aliases.js';
 import { recordStartupPerformance } from './startup-performance.js';
-import { topUpV1Migration } from './v1-migration-topup.js';
+import { OPENCODE_GENERATION } from './compatibility.js';
+import { probeManagedOpenCodeGeneration as probeManagedGeneration } from './managed-generation.js';
 
 const exec = promisify(execFile);
 const killWindowsTree = (pid, force) => exec('taskkill',
@@ -25,35 +25,11 @@ const HEALTH_CHECK_MAX_CONSECUTIVE_FAILURES = parsePositiveInt(
 );
 const HEALTH_CHECK_INTERVAL_OVERRIDE_MS = parsePositiveInt(process.env.OPENCHAMBER_OPENCODE_HEALTH_INTERVAL_MS, 0);
 const HEALTH_CHECK_RESULT_CACHE_MS = parsePositiveInt(process.env.OPENCHAMBER_OPENCODE_HEALTH_CACHE_MS, 750);
-const OPENCODE_HEALTH_PATH = '/api/info';
-const OPENCODE_REQUIRED_MAJOR_VERSION = 2;
-
-/**
- * OpenChamber talks to OpenCode 2.x only. v1 serves its routes without the
- * `/api` prefix, publishes a different event vocabulary and has no `plugins`
- * config key, so an older binary fails in a hundred small ways instead of one
- * clear one.
- *
- * The version comes from the health payload rather than from `opencode
- * --version`: it costs no extra process, and it also covers an external
- * OpenCode the user started themselves. `/api/info` only exists in 2.x (2.0.8
- * removed the older `/api/health`), so a 404 there is the same answer by
- * another route. A 200 is the readiness signal; the payload has no `healthy`
- * field, only `{ version, pid, urls, paths }`.
- */
-const OPENCODE_VERSION_REQUIREMENT_DETAIL =
-  `OpenChamber requires OpenCode ${OPENCODE_REQUIRED_MAJOR_VERSION}.x`;
-
-const classifyOpenCodeVersion = (version) => {
-  if (typeof version !== 'string') return { ok: true };
-  const match = version.match(/v?(\d+)\./);
-  if (!match) return { ok: true };
-  if (Number(match[1]) >= OPENCODE_REQUIRED_MAJOR_VERSION) return { ok: true };
-  return {
-    ok: false,
-    detail: `${OPENCODE_VERSION_REQUIREMENT_DETAIL}, found ${version.trim()}. Update OpenCode and start OpenChamber again.`,
-  };
-};
+const OPENCODE_HEALTH_PATH = '/global/health';
+const KERNEL_PATH = Object.freeze({
+  [OPENCODE_GENERATION.OC1]: { agent: '/agent', warmup: '/session/status' },
+  [OPENCODE_GENERATION.OC2]: { agent: '/api/agent', warmup: '/api/session' },
+});
 // Last-used directory plus the three most recently opened projects — deeper
 // tails are unlikely to be the user's first click and just add background work.
 const WARMUP_DIRECTORY_LIMIT = 4;
@@ -146,6 +122,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     buildManagedOpenCodePath,
     getManagedOpenCodeShellEnvSnapshot,
     getManagedOpenCodeEnv = async () => ({}),
+    probeManagedOpenCodeGeneration = probeManagedGeneration,
     getActiveSessionCount = () => 0,
     reapManagedOrphanedProcesses = reapOrphanedProcesses,
     registerManagedOpenCodeProcess = registerManagedProcess,
@@ -153,13 +130,26 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     terminateWindowsTree = killWindowsTree,
     getWarmupDirectories = async () => [],
     onOpenCodeRestarted = null,
+    kernelRuntime = null,
     managedStartupTimeoutMs = 30_000,
     now = Date.now,
-    topUpV1SessionMigration = topUpV1Migration,
-    checkOpenCodeBinary = requireOpenCodeV2,
   } = deps;
 
-  let managedPreflight = null;
+  const resolveReadyKernel = async () => {
+    const descriptor = await kernelRuntime.refresh();
+    if (descriptor.generation !== OPENCODE_GENERATION.OC1
+      && descriptor.generation !== OPENCODE_GENERATION.OC2) {
+      throw new Error(`OpenCode readiness: ${descriptor.generation}`);
+    }
+    return descriptor;
+  };
+
+  const activeGeneration = () => {
+    // Older embedders without the new dependency retain their OC1 contract.
+    const generation = kernelRuntime ? kernelRuntime.get().generation : OPENCODE_GENERATION.OC1;
+    if (!KERNEL_PATH[generation]) throw new Error(`OpenCode readiness: ${generation}`);
+    return generation;
+  };
 
   const killProcessOnPortWin32 = (port) => {
     try {
@@ -399,7 +389,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     return parts.length > 0 ? parts.join('\n\n') : 'No stdout/stderr captured';
   };
 
-  const createManagedOpenCodeServerProcess = async ({ resolvedBinary, hostname, port, timeout, cwd, env: processEnv, shellEnvKeysCount = 0 }) => {
+  const createManagedOpenCodeServerProcess = async ({ resolvedBinary, launchSpec: selectedLaunchSpec, hostname, port, timeout, cwd, env: processEnv, shellEnvKeysCount = 0 }) => {
     let binary = (resolvedBinary || process.env.OPENCODE_BINARY || 'opencode').trim() || 'opencode';
     const sourceBinary = binary;
     let args = ['serve', '--hostname', hostname, '--port', String(port)];
@@ -409,8 +399,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       throw new Error('Launching OpenCode through WSL is no longer supported. Install OpenCode natively on Windows and configure opencode.cmd or opencode.exe.');
     }
 
-    if (process.platform === 'win32' && !state.useWslForOpencode) {
-      const launchSpec = resolveManagedOpenCodeLaunchSpec(binary);
+    if (selectedLaunchSpec || (process.platform === 'win32' && !state.useWslForOpencode)) {
+      const launchSpec = selectedLaunchSpec ?? resolveManagedOpenCodeLaunchSpec(binary);
       if (launchSpec?.binary) {
         if (launchSpec.wrapperType) {
           console.log(`Launching OpenCode via ${launchSpec.wrapperType}: ${launchSpec.binary}`);
@@ -535,10 +525,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         stdout += chunk.toString();
         const lines = stdout.split('\n');
         for (const line of lines) {
-          // OpenCode 2.x prints `server listening on http://host:port` with no
-          // "opencode" prefix.
-          const match = line.match(/server listening on\s+(https?:\/\/\S+)/);
-          if (!match) continue;
+          if (!line.startsWith('opencode server listening')) continue;
+          const match = line.match(/on\s+(https?:\/\/[^\s]+)/);
+          if (!match) {
+            finish(reject, new Error(`Failed to parse server url from output: ${line}`));
+            return;
+          }
           attachRuntimeStderrCapture();
           finish(resolve, match[1]);
           return;
@@ -632,6 +624,14 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     }
 
     try {
+      if (kernelRuntime) {
+        const descriptor = await kernelRuntime.refresh();
+        const healthy = descriptor.generation === OPENCODE_GENERATION.OC1
+          || descriptor.generation === OPENCODE_GENERATION.OC2;
+        return { healthy, failure: healthy ? null : {
+          class: 'invalid_response', detail: `OpenCode readiness: ${descriptor.generation}`,
+        } };
+      }
       const response = await fetch(buildOpenCodeUrl(OPENCODE_HEALTH_PATH, ''), {
         method: 'GET',
         headers: {
@@ -645,9 +645,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           healthy: false,
           failure: {
             class: 'invalid_response',
-            detail: response.status === 404
-              ? `${OPENCODE_VERSION_REQUIREMENT_DETAIL}: this server has no /api/info, which every 2.x server serves.`
-              : `Info endpoint returned HTTP ${response.status ?? 'unknown'}`,
+            detail: `Health endpoint returned HTTP ${response.status ?? 'unknown'}`,
           },
         };
       }
@@ -659,15 +657,17 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           healthy: false,
           failure: {
             class: 'invalid_response',
-            detail: 'Info endpoint returned invalid JSON',
+            detail: 'Health endpoint returned invalid JSON',
           },
         };
       }
-      const version = classifyOpenCodeVersion(body?.version);
-      if (!version.ok) {
+      if (body?.healthy !== true) {
         return {
           healthy: false,
-          failure: { class: 'invalid_response', detail: version.detail },
+          failure: {
+            class: 'invalid_response',
+            detail: 'Health endpoint did not report healthy=true',
+          },
         };
       }
       return { healthy: true, failure: null };
@@ -687,6 +687,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     }
 
     try {
+      if (kernelRuntime) return await waitForReady(origin ?? `http://127.0.0.1:${port}`, 3000);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 3000);
       const base = origin ?? `http://127.0.0.1:${port}`;
@@ -699,8 +700,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         signal: controller.signal,
       });
       clearTimeout(timeout);
-      const info = await readOpenCodeInfo(response);
-      return info !== null && isSupportedOpenCodeVersion(info.version);
+      if (!response.ok) return false;
+      const body = await response.json().catch(() => null);
+      return body?.healthy === true;
     } catch {
       return false;
     }
@@ -740,9 +742,11 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
     await applyOpencodeBinaryFromSettings({ strict: true });
     const resolvedBinary = ensureOpencodeCliEnv();
-    const preflight = checkOpenCodeBinary(resolveManagedOpenCodeLaunchSpec(resolvedBinary));
-    managedPreflight = preflight.then(() => true, () => false);
-    await preflight;
+    const selectedKernel = await probeManagedOpenCodeGeneration({
+      resolvedBinary: resolvedBinary || process.env.OPENCODE_BINARY || 'opencode',
+      resolveManagedOpenCodeLaunchSpec,
+      useWslForOpencode: state.useWslForOpencode,
+    });
     recordStartupPerformance('opencode.binary.ready', {
       attempt,
       durationMs: performance.now() - phaseStartedAt,
@@ -759,7 +763,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     const shellEnv = typeof getManagedOpenCodeShellEnvSnapshot === 'function'
       ? getManagedOpenCodeShellEnvSnapshot() || {}
       : {};
-    const managedOpenCodeEnv = await getManagedOpenCodeEnv();
+    const managedOpenCodeEnv = await getManagedOpenCodeEnv(selectedKernel);
     recordStartupPerformance('opencode.environment.ready', {
       attempt,
       durationMs: performance.now() - phaseStartedAt,
@@ -767,23 +771,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     });
     phaseStartedAt = performance.now();
 
-    // Re-arm OpenCode's own V1 -> V2 session import for sessions a bundled
-    // OpenCode 1.x created after the migration already completed. Only for the
-    // managed process, only while it is not running, and never fatal.
-    try {
-      const topUp = topUpV1SessionMigration();
-      if (topUp && topUp.status !== 'skipped') {
-        console.log('[OpenCode] V1 session migration top-up:', topUp);
-      }
-    } catch (error) {
-      console.warn('[OpenCode] V1 session migration top-up failed:', error instanceof Error ? error.message : error);
-    }
-
     let serverInstance;
     try {
       if (state.isShuttingDown) throw new Error('OpenCode startup cancelled during shutdown');
       serverInstance = await createManagedOpenCodeServerProcess({
         resolvedBinary,
+        launchSpec: selectedKernel.launchSpec,
         hostname: env.ENV_CONFIGURED_OPENCODE_HOSTNAME,
         port: spawnPort,
         timeout: managedStartupTimeoutMs,
@@ -817,6 +810,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       if (ready) {
         setOpenCodePort(port);
         setDetectedOpenCodeApiPrefix(prefix);
+        if (kernelRuntime) await resolveReadyKernel();
 
         state.isOpenCodeReady = true;
         state.lastOpenCodeError = null;
@@ -851,14 +845,13 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   const startOpenCode = async () => {
-    managedPreflight = null;
     let lastError = null;
     for (let attempt = 1; attempt <= START_OPEN_CODE_MAX_ATTEMPTS; attempt += 1) {
       try {
         return await startOpenCodeOnce(attempt);
       } catch (error) {
         lastError = error;
-        if (state.isShuttingDown || error instanceof UnsupportedOpenCodeVersionError || error?.code === 'OPENCODE_BINARY_INVALID') {
+        if (state.isShuttingDown || error?.code === 'OPENCODE_BINARY_INVALID') {
           break;
         }
         if (attempt >= START_OPEN_CODE_MAX_ATTEMPTS) {
@@ -886,7 +879,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     }
 
     state.currentRestartPromise = (async () => {
-      managedPreflight = null;
+      kernelRuntime?.invalidate();
       state.isRestartingOpenCode = true;
       state.isOpenCodeReady = false;
       state.openCodeNotReadySince = Date.now();
@@ -901,6 +894,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           console.log(`External OpenCode server on port ${probePort} is healthy`);
           state.openCodeBaseUrl = probeOrigin ?? null;
           setOpenCodePort(probePort);
+          if (kernelRuntime) await resolveReadyKernel();
           state.isOpenCodeReady = true;
           state.lastOpenCodeError = null;
           state.openCodeNotReadySince = 0;
@@ -936,6 +930,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       if (!(await waitForPortRelease(portToKill, 5000))) {
         console.warn(`Timed out waiting for OpenCode port ${portToKill} to be released`);
       }
+      // Discovery may have reached the old process while close() was pending.
+      // Retire that identity even when the replacement reuses its port/password.
+      kernelRuntime?.invalidate();
 
       if (env.ENV_CONFIGURED_OPENCODE_PORT) {
         console.log(`Using OpenCode port from environment: ${env.ENV_CONFIGURED_OPENCODE_PORT}`);
@@ -1003,6 +1000,16 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     while (Date.now() < deadline) {
       let timeout = null;
       try {
+        if (kernelRuntime) {
+          const descriptor = await kernelRuntime.refresh();
+          if (descriptor.generation === OPENCODE_GENERATION.OC1
+            || descriptor.generation === OPENCODE_GENERATION.OC2) {
+            state.isOpenCodeReady = true;
+            state.lastOpenCodeError = null;
+            return;
+          }
+          throw new Error(`OpenCode readiness: ${descriptor.generation}`);
+        }
         const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
         const response = await fetch(buildOpenCodeUrl(OPENCODE_HEALTH_PATH, ''), {
@@ -1014,14 +1021,18 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         timeout = null;
 
         if (!response.ok) {
-          lastError = new Error(`OpenCode info endpoint responded with status ${response.status}`);
+          lastError = new Error(`OpenCode health endpoint responded with status ${response.status}`);
           await new Promise((resolve) => setTimeout(resolve, intervalMs));
           continue;
         }
 
-        const info = await readOpenCodeInfo(response);
-        if (!info) throw new Error('OpenCode did not return valid version information.');
-        if (!isSupportedOpenCodeVersion(info.version)) throw new UnsupportedOpenCodeVersionError(info.version);
+        const body = await response.json().catch(() => null);
+        if (body?.healthy !== true) {
+          lastError = new Error('OpenCode health endpoint returned unhealthy response');
+          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+          continue;
+        }
+
         state.isOpenCodeReady = true;
         state.lastOpenCodeError = null;
         return;
@@ -1054,16 +1065,17 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       try {
-        const response = await fetch(buildOpenCodeUrl('/api/agent'), {
+        const generation = activeGeneration();
+        const response = await fetch(buildOpenCodeUrl(KERNEL_PATH[generation].agent), {
           method: 'GET',
           headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
         });
 
         if (response.ok) {
-          // OpenCode 2.x answers `/api/*` with `{ location, data }`.
           const body = await response.json();
-          const agents = Array.isArray(body) ? body : body?.data;
-          if (Array.isArray(agents) && agents.some((agent) => agent?.id === agentName)) {
+          const agents = generation === OPENCODE_GENERATION.OC2 ? body?.data : body;
+          if (Array.isArray(agents) && agents.some((agent) =>
+            (generation === OPENCODE_GENERATION.OC2 ? agent?.id : agent?.name) === agentName)) {
             return;
           }
         }
@@ -1185,6 +1197,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         await waitForOpenCodeReady();
       } catch (error) {
         bootstrapError = error;
+        state.isOpenCodeReady = false;
         console.error(`OpenCode readiness check failed: ${error.message}`);
       }
     } catch (error) {
@@ -1233,10 +1246,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       try {
         const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), WARMUP_REQUEST_TIMEOUT_MS);
-        // Warming a directory is the point, not the answer: any directory-scoped
-        // read makes OpenCode initialise it. `/api/session` is the cheapest one
-        // that takes a directory (`/api/session/active` is global).
-        const url = `${buildOpenCodeUrl('/api/session', '')}?directory=${encodeURIComponent(directory)}&limit=1`;
+        const generation = activeGeneration();
+        const limitQuery = generation === OPENCODE_GENERATION.OC2 ? '&limit=1' : '';
+        const url = `${buildOpenCodeUrl(KERNEL_PATH[generation].warmup, '')}?directory=${encodeURIComponent(directory)}${limitQuery}`;
         await fetch(url, {
           method: 'GET',
           headers: { Accept: 'application/json', ...getOpenCodeAuthHeaders() },
@@ -1402,12 +1414,6 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   return {
-    getManagedOpenCodePreflight: async () => {
-      const preflight = managedPreflight;
-      if (!preflight || state.isExternalOpenCode || state.isShuttingDown) return false;
-      const compatible = await preflight;
-      return compatible && preflight === managedPreflight && !state.isExternalOpenCode && !state.isShuttingDown;
-    },
     killProcessOnPort,
     startOpenCode,
     restartOpenCode,

@@ -21,7 +21,6 @@ import { getRuntimeKey } from '@/lib/runtime-switch';
 import { renderMagicPrompt } from '@/lib/magicPrompts';
 import { AgentSelector } from './AgentSelector';
 import { ModelMultiSelect, generateInstanceId, type ModelSelectionWithId } from './ModelMultiSelect';
-import { listModelVariantIds, type ModelVariantSource } from '@/lib/modelVariants';
 
 const buildSourcePart = (source: FusionSource, text: string, index: number): string => {
   const title = source.session.title?.trim() || source.session.id;
@@ -93,8 +92,8 @@ export function MultiRunFusionDialog({
   }, [allSessions, open, parsed, excludedSources]);
 
   const selectedProvider = providers.find((provider) => provider.id === providerID);
-  const selectedProviderModel = selectedProvider?.models.find((model) => model.id === modelID) as { variants?: ModelVariantSource } | undefined;
-  const variantKeys = listModelVariantIds(selectedProviderModel?.variants);
+  const selectedProviderModel = selectedProvider?.models.find((model) => model.id === modelID);
+  const variantKeys = selectedProviderModel?.variants ? Object.keys(selectedProviderModel.variants) : [];
   const canStart = Boolean(parsed && sessionsReady && providerID && modelID && sources.length > 0 && !isStarting);
 
   const handleModelSelect = React.useCallback((model: ModelSelectionWithId) => {
@@ -109,13 +108,15 @@ export function MultiRunFusionDialog({
   const handleStart = async () => {
     if (!parsed || !canStart) return;
     const runtimeKey = getRuntimeKey();
-    const client = opencodeClient.getSdkClient();
+    const client = opencodeClient;
+    const binding = client.getBoundRuntime();
     const assertCurrent = () => {
-      if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) throw new Error('Runtime changed');
+      if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) throw new Error('Runtime changed');
     };
     setIsStarting(true);
     try {
-      const usableSources = await loadFusionOutputs(sources, parsed, assertCurrent);
+      if (binding?.generation !== 'oc1' && binding?.generation !== 'oc2') throw new Error('OpenCode runtime is unavailable');
+      const usableSources = await loadFusionOutputs(client, sources, parsed, binding.generation, assertCurrent);
 
       if (usableSources.length === 0) {
         toast.error(t('multirun.fusion.toast.noOutputs'));
@@ -129,12 +130,13 @@ export function MultiRunFusionDialog({
         renderMagicPrompt('session.fusion.visible'),
         renderMagicPrompt('session.fusion.instructions'),
       ]);
-      const fusionSession = await createMultiRunSession({
-        title: fusionTitle, directory,
+      const fusionSession = await createMultiRunSession(client, {
+        title: fusionTitle, directory, generation: binding.generation,
+        selection: { model: { providerID, id: modelID, variant: variant || undefined }, agent: agent || undefined },
         identity: { group: parsed.group, groupSlug: parsed.groupSlug, runGroup: parsed.runGroup,
           role: 'fusion', providerID, modelID },
-        selection: { model: { providerID, id: modelID, variant: variant || undefined }, agent: agent || undefined },
       }, assertCurrent);
+      assertCurrent();
       registerMultiRunSession(fusionSession, directory);
 
       useSessionUIStore.getState().setCurrentSession(fusionSession.id, directory);
@@ -145,18 +147,19 @@ export function MultiRunFusionDialog({
         runtimeKey,
         id: fusionSession.id,
         providerID,
-        model: { providerID, id: modelID, variant: variant || undefined },
+        modelID,
+        variant: variant || undefined,
         agent: agent || undefined,
         text: visiblePrompt,
-        context: [
-          { text: instructionsPrompt },
-          ...usableSources.map((item, index) => ({ text: buildSourcePart(item.source, item.text, index) })),
-          { text: '\n\n--- FUSION INPUTS END ---\nNow write the final fused answer.' },
+        additionalParts: [
+          { text: instructionsPrompt, synthetic: true },
+          ...usableSources.map((item, index) => ({ text: buildSourcePart(item.source, item.text, index), synthetic: true })),
+          { text: '\n\n--- FUSION INPUTS END ---\nNow write the final fused answer.', synthetic: true },
         ],
         directory,
       });
     } catch (error) {
-      if (getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== client) return;
+      if (getRuntimeKey() !== runtimeKey || client.getBoundRuntime() !== binding) return;
       console.error('[MultiRunFusion] Failed to start fusion', error);
       toast.error(t('multirun.fusion.toast.failed'));
     } finally {

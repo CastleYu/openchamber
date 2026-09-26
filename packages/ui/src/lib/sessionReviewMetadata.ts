@@ -1,24 +1,16 @@
 import type { Metadata, Session } from '@/lib/opencode/model';
+import { z } from 'zod';
 
 export type SessionMetadataRecord = Metadata;
 
-type OpenChamberMetadata = {
-  kind?: 'review';
-  originalSessionID?: string;
-  reviewSessionID?: string;
+const metadataSchema = z.record(z.string(), z.json());
+
+export const getSessionMetadata = (session: Session | null | undefined): SessionMetadataRecord => {
+  return session?.metadata ?? {};
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === 'object' && !Array.isArray(value));
-
-export const getSessionMetadata = (session: Session | null | undefined): SessionMetadataRecord => (
-  session?.metadata ?? {}
-);
-
-const getOpenChamberMetadata = (metadata: SessionMetadataRecord): OpenChamberMetadata => {
-  const value = metadata.openchamber;
-  return isRecord(value) ? value as OpenChamberMetadata : {};
-};
+const getOpenChamberMetadata = (metadata: SessionMetadataRecord): Metadata =>
+  metadataSchema.safeParse(metadata.openchamber).data ?? {};
 
 export const getReviewSessionID = (session: Session | null | undefined): string | null => {
   const value = getOpenChamberMetadata(getSessionMetadata(session)).reviewSessionID;

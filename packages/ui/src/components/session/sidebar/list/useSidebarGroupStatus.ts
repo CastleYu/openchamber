@@ -1,6 +1,5 @@
 import React from 'react';
 import type { ChildStoreManager } from '@/sync/child-store';
-import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { normalizePath } from '../utils';
 import type { SessionGroup } from '../types';
 import type { ProjectSection } from '../projects/sessionProjectRender';
@@ -18,14 +17,11 @@ export const useSidebarGroupStatus = ({
   chatGroup: SessionGroup | null;
   canGrantAccess: boolean;
 }) => {
-  const globalStatus = useGlobalSessionsStore((state) => state.status);
-  const hasLoadedGlobalSessions = useGlobalSessionsStore((state) => state.hasLoaded);
   const groups = React.useMemo(() => [
     ...sections.flatMap((section) => section.groups.map((group) => ({ key: `${section.project.id}:${group.id}`, group }))),
     ...(chatGroup ? [{ key: 'activity:chats', group: chatGroup }] : []),
   ].map(({ key, group }) => ({
     key,
-    archived: group.isArchivedBucket === true,
     directories: getSessionFolderScopes(group).map((scope) => normalizePath(scope.directory))
       .filter((directory): directory is string => Boolean(directory)),
   })), [chatGroup, sections]);
@@ -41,7 +37,7 @@ export const useSidebarGroupStatus = ({
     // The snapshot invalidates these reads; the directory stores own their state.
     void bootstrapSnapshot;
     const statuses = new Map<string, SessionSidebarGroupStatus>();
-    for (const { key, archived, directories: groupDirectories } of groups) {
+    for (const { key, directories: groupDirectories } of groups) {
       const failedDirectory = groupDirectories.find((directory) => (
         childStores.getBootstrapState(directory) === 'failed' || childStores.getInitializationState(directory) === 'failed'
       ));
@@ -54,19 +50,14 @@ export const useSidebarGroupStatus = ({
           canGrantAccess: failure === 'os-permission' && canGrantAccess,
         });
       } else {
-        // Unopened directories rely on the global list. A previous complete
-        // list keeps empty groups ready during background refreshes.
-        const complete = hasLoadedGlobalSessions || (!archived && groupDirectories.length > 0
-          && groupDirectories.every((directory) => childStores.getBootstrapState(directory) === 'complete'));
-        statuses.set(key, {
-          state: complete ? 'ready' : globalStatus === 'error' ? 'load-failed' : 'loading',
-          // A null directory retries the global list, without initializing a location.
-          directory: complete ? groupDirectories[0] ?? null : null,
-          canGrantAccess: false,
+        const loading = groupDirectories.some((directory) => {
+          const state = childStores.getBootstrapState(directory);
+          return state === 'queued' || state === 'running';
         });
+        statuses.set(key, { state: loading ? 'loading' : 'ready', directory: groupDirectories[0] ?? null, canGrantAccess: false });
       }
     }
     return statuses;
-  }, [bootstrapSnapshot, canGrantAccess, childStores, groups, globalStatus, hasLoadedGlobalSessions]);
+  }, [bootstrapSnapshot, canGrantAccess, childStores, groups]);
   return { groupStatusByKey, bootstrapSnapshot };
 };

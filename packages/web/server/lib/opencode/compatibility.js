@@ -1,88 +1,125 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { z } from 'zod';
 
-const execute = promisify(execFile);
-const versionSchema = z.string().regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);
+export const OPENCODE_GENERATION = Object.freeze({
+  OC1: 'oc1',
+  OC2: 'oc2',
+  UNSUPPORTED: 'unsupported',
+  UNREACHABLE: 'unreachable',
+  UNKNOWN: 'unknown',
+});
+
+export const MINIMUM_OPENCODE_V2_VERSION = '2.0.15';
+
+const PROBE_PATH = Object.freeze({
+  HEALTH: '/global/health',
+  INFO: '/api/info',
+});
+
+const AUTH_STATUS = new Set([401, 403]);
+const VERSION_RE = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+const versionSchema = z.string().regex(VERSION_RE);
 const infoSchema = z.object({ version: versionSchema });
-const legacyHealthSchema = z.object({ version: versionSchema, healthy: z.boolean() });
+const healthSchema = z.object({ version: versionSchema, healthy: z.literal(true) });
 
-/**
- * Oldest OpenCode OpenChamber runs against. 2.0.15 added `PATCH /api/session`
- * metadata, which now holds every OpenChamber per-session record.
- */
-const MINIMUM_OPENCODE_VERSION = '2.0.15';
-
-const releaseParts = (version) => version.split(/[-+]/, 1)[0].split('.').map(Number);
-
-const compareRelease = (left, right) => {
-  const a = releaseParts(left);
-  const b = releaseParts(right);
-  for (let index = 0; index < 3; index += 1) {
-    if (a[index] !== b[index]) return a[index] - b[index];
-  }
-  return 0;
+const parseVersion = (version) => {
+  if (!versionSchema.safeParse(version).success) return null;
+  const match = VERSION_RE.exec(version);
+  return {
+    value: version.startsWith('v') ? version.slice(1) : version,
+    major: Number(match[1]),
+    parts: match.slice(1, 4).map(Number),
+    prerelease: match[4],
+  };
 };
 
-const isOlderThanMinimum = (version) => versionSchema.safeParse(version).success
-  && compareRelease(version, MINIMUM_OPENCODE_VERSION) < 0;
-
-/** 2.x at or above the minimum. A future major is a contract OpenChamber has not met yet. */
-export const isSupportedOpenCodeVersion = (version) => versionSchema.safeParse(version).success
-  && releaseParts(version)[0] === 2
-  && !isOlderThanMinimum(version);
+export const isSupportedOpenCodeVersion = (version) => {
+  const parsed = parseVersion(version);
+  if (!parsed) return false;
+  if (parsed.major === 1) return true;
+  if (parsed.major !== 2) return false;
+  const minimum = parseVersion(MINIMUM_OPENCODE_V2_VERSION);
+  for (let index = 0; index < parsed.parts.length; index += 1) {
+    if (parsed.parts[index] !== minimum.parts[index]) {
+      return parsed.parts[index] > minimum.parts[index];
+    }
+  }
+  return !parsed.prerelease;
+};
 
 export const readOpenCodeInfo = async (response) => {
   if (!response.ok) return null;
-  const parsed = infoSchema.safeParse(await response.json().catch(() => null));
-  return parsed.success ? parsed.data : null;
+  const body = await response.json().catch(() => null);
+  const parsed = infoSchema.safeParse(body);
+  return parsed.success ? { version: parseVersion(parsed.data.version).value } : null;
 };
 
-export const readOpenCodeCliVersion = async (launch, options = {}) => {
-  const { stdout } = await execute(launch.binary, [...launch.args, '--version'], {
-    ...options, encoding: 'utf8', timeout: 15_000, maxBuffer: 16 * 1024, windowsHide: true,
-  });
-  const match = /^(?:opencode\s+v?)?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\s*$/.exec(stdout.trim());
-  if (!match) throw new Error('Could not determine the installed OpenCode version.');
-  return match[1];
+const readHealth = async (response) => {
+  if (!response.ok) return null;
+  const body = await response.json().catch(() => null);
+  const parsed = healthSchema.safeParse(body);
+  return parsed.success ? { version: parseVersion(parsed.data.version).value } : null;
 };
 
-export class UnsupportedOpenCodeVersionError extends Error {
-  constructor(version) {
-    super(`OpenCode ${version} is installed. OpenChamber requires OpenCode ${MINIMUM_OPENCODE_VERSION} or newer.`);
-    this.name = 'UnsupportedOpenCodeVersionError';
-    this.version = version;
+const normalizeEndpoint = (endpoint) => {
+  const url = new URL(endpoint);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError('OpenCode endpoint must use HTTP or HTTPS');
+  if (url.username || url.password) throw new TypeError('OpenCode endpoint credentials belong in headers');
+  const path = url.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
+  return `${url.origin}${path}`;
+};
+
+const probe = async (endpoint, path, headers, fetchImpl, signal) => {
+  try {
+    const requestHeaders = new Headers(headers);
+    requestHeaders.set('Accept', 'application/json');
+    const response = await fetchImpl(`${endpoint}${path}`, {
+      method: 'GET',
+      headers: requestHeaders,
+      redirect: 'error',
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000),
+    });
+    if (AUTH_STATUS.has(response.status)) return { kind: 'auth' };
+    return {
+      kind: 'response',
+      version: path === PROBE_PATH.HEALTH ? await readHealth(response) : await readOpenCodeInfo(response),
+    };
+  } catch {
+    return { kind: 'error' };
   }
-}
-
-export const requireOpenCodeV2 = async (launch, options) => {
-  const version = await readOpenCodeCliVersion(launch, options);
-  if (!isSupportedOpenCodeVersion(version)) throw new UnsupportedOpenCodeVersionError(version);
-  return version;
 };
 
-// External URLs have no local executable. A legacy probe identifies v1 only
-// from its JSON contract; neither HTML fallbacks nor auth failures imply v1.
-export const readExternalOpenCodeVersion = async (baseUrl, headers, fetchImpl = fetch) => {
-  const request = (pathname) => fetchImpl(new URL(pathname, baseUrl), {
-    headers: { ...headers, Accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(5000),
-  });
-  const response = await request('/api/info');
-  if (response.status === 401 || response.status === 403) return null;
-  const info = await readOpenCodeInfo(response);
-  if (info) return info.version;
-  const legacy = await request('/global/health');
-  if (!legacy.ok) return null;
-  const parsed = legacyHealthSchema.safeParse(await legacy.json().catch(() => null));
-  return parsed.success && parsed.data.version.startsWith('1.') ? parsed.data.version : null;
-};
+export const detectOpenCodeGeneration = async ({ endpoint, epoch, headers = {}, fetchImpl = fetch, signal } = {}) => {
+  let normalized;
+  try {
+    normalized = normalizeEndpoint(endpoint);
+  } catch {
+    return { generation: OPENCODE_GENERATION.UNKNOWN, endpoint: null, epoch, version: null };
+  }
 
-export const describeOpenCodeCompatibility = (version, installation, canInstall) => ({
-  state: version === null ? 'unavailable' : isSupportedOpenCodeVersion(version) ? 'compatible' : 'incompatible',
-  version,
-  installation,
-  minimumVersion: MINIMUM_OPENCODE_VERSION,
-  // The installer fetches the latest release, which clears both a 1.x CLI and
-  // a 2.x one older than the minimum.
-  canInstall: version !== null && isOlderThanMinimum(version) && installation === 'managed' && canInstall,
-});
+  const [health, info] = await Promise.all([
+    probe(normalized, PROBE_PATH.HEALTH, headers, fetchImpl, signal),
+    probe(normalized, PROBE_PATH.INFO, headers, fetchImpl, signal),
+  ]);
+  const result = (generation, version = null) => ({ generation, endpoint: normalized, epoch, version });
+
+  if (health.kind === 'auth' || info.kind === 'auth') return result(OPENCODE_GENERATION.UNKNOWN);
+  if (health.kind === 'error' && info.kind === 'error') return result(OPENCODE_GENERATION.UNREACHABLE);
+
+  const legacyVersion = health.version?.version ?? null;
+  const infoVersion = info.version?.version ?? null;
+  if (legacyVersion && infoVersion && legacyVersion !== infoVersion) {
+    return result(OPENCODE_GENERATION.UNKNOWN);
+  }
+  const version = infoVersion ?? legacyVersion;
+  if (!version) return result(OPENCODE_GENERATION.UNKNOWN);
+
+  const major = parseVersion(version).major;
+  if (major === 1 && legacyVersion) return result(OPENCODE_GENERATION.OC1, version);
+  if (major === 2 && infoVersion) {
+    return result(isSupportedOpenCodeVersion(version) ? OPENCODE_GENERATION.OC2 : OPENCODE_GENERATION.UNSUPPORTED, version);
+  }
+  if (major !== 1 && major !== 2) {
+    return result(OPENCODE_GENERATION.UNSUPPORTED, version);
+  }
+  return result(OPENCODE_GENERATION.UNKNOWN);
+};

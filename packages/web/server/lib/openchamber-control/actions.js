@@ -16,13 +16,13 @@ export const OPENCHAMBER_CONTROL_ACTION_DEFINITIONS = Object.freeze([
   { action: 'session.fork', title: 'Fork a session', description: 'Fork sessionId; messageId selects the boundary; prompt is optional' },
   { action: 'session.status', title: 'Check session status', description: 'Check sessionId status; directory defaults to the current session' },
   { action: 'session.messages', title: 'Read session messages', description: 'Read text-only messages and current sessionStatus for sessionId; directory and limit 10 are defaults' },
+  { action: 'file.open', title: 'Show a file to the user', description: 'Open path in the file panel so the user can see a result. The path may be absolute or relative to the session directory' },
   { action: 'schedule.status', title: 'Check scheduler status', description: 'Check scheduler status; no parameters', agentExposed: false },
   { action: 'schedule.list', title: 'List scheduled tasks', description: 'List tasks and scheduler status; scope with projectId or directory' },
   { action: 'schedule.create', title: 'Create a scheduled task', description: 'Create task; requires name, prompt, model, and one schedule selector' },
   { action: 'schedule.run', title: 'Run a scheduled task', description: 'Run taskId; scope with projectId or directory' },
   { action: 'schedule.delete', title: 'Delete a scheduled task', description: 'Delete taskId; scope with projectId or directory' },
   { action: 'schedule.toggle', title: 'Enable or disable a scheduled task', description: 'Enable or disable taskId; requires the disabled boolean' },
-  { action: 'file.open', title: 'Show a file to the user', description: 'Open path in the user\'s file panel, in front of whatever they had open, so they can look at a result you produced: a screenshot, report, CSV, recording, or generated page. Relative to the session directory. Use it only when seeing the file moves the work forward, not for every file you touch' },
 ]);
 
 const OPENCHAMBER_CONTROL_ACTIONS = Object.freeze(
@@ -31,6 +31,15 @@ const OPENCHAMBER_CONTROL_ACTIONS = Object.freeze(
 
 export const OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS = Object.freeze(
   OPENCHAMBER_CONTROL_ACTION_DEFINITIONS.filter(({ agentExposed }) => agentExposed !== false),
+);
+
+export const OPENCHAMBER_OC2_ACTIONS = Object.freeze(['file.open', 'notify.send']);
+
+export const OPENCHAMBER_LEGACY_AGENT_TOOL_ACTION_DEFINITIONS = Object.freeze(
+  OPENCHAMBER_AGENT_TOOL_ACTION_DEFINITIONS.filter(({ action }) => !OPENCHAMBER_OC2_ACTIONS.includes(action)),
+);
+export const OPENCHAMBER_LEGACY_AGENT_TOOL_ACTIONS = Object.freeze(
+  OPENCHAMBER_LEGACY_AGENT_TOOL_ACTION_DEFINITIONS.map(({ action }) => action),
 );
 
 export const OPENCHAMBER_AGENT_TOOL_ACTIONS = Object.freeze(
@@ -66,14 +75,22 @@ export const OPENCHAMBER_WEB_ACTIONS = Object.freeze(
  * reads as a complete fact is exactly the one whose conditions get lost.
  */
 export const OPENCHAMBER_MEMORY_ACTION_DEFINITIONS = Object.freeze([
-  { action: 'memory.read', title: 'Read a stored memory', description: 'Read the full text of one memory listed in the session index. The index shows titles only, and a title omits the conditions that decide how the memory applies, so read before acting rather than working from the title. Once read, an entry stays in your context; do not read it again in the same conversation. Requires title (as the index spells it) or memoryId; scope is optional and both stores are searched without it' },
+  { action: 'memory.read', title: 'Read a stored memory', description: 'Read the full text of one memory listed in the session index. The index shows titles only, and a title omits the conditions that decide how the memory applies, so read before acting rather than working from the title. Requires title (as the index spells it) or memoryId; scope is optional and both stores are searched without it' },
   { action: 'memory.list', title: 'List stored memories', description: 'List stored memory titles when the session index is missing or stale; scope is global, project, or both (default)' },
-  { action: 'memory.save', title: 'Remember something', description: 'Store a durable fact, preference, or reference; requires title and body, plus scope global (about the user) or project (about this codebase). Restating something already stored updates it. Do not store secrets, one-off task state, or anything the user asked you not to keep; when the user explicitly asks you to remember something, store it unless it is a secret' },
+  { action: 'memory.save', title: 'Remember something', description: 'Store a durable fact, preference, or reference; requires title and body, plus scope global (about the user) or project (about this codebase). Restating something already stored updates it. Do not store secrets, one-off task state, or anything the user asked you not to keep' },
   { action: 'memory.delete', title: 'Forget a memory', description: 'Delete a memory that turned out to be wrong or obsolete; requires memoryId and scope' },
 ]);
 
 export const OPENCHAMBER_MEMORY_ACTIONS = Object.freeze(
   OPENCHAMBER_MEMORY_ACTION_DEFINITIONS.map(({ action }) => action),
+);
+
+export const OPENCHAMBER_NOTIFY_ACTION_DEFINITIONS = Object.freeze([
+  { action: 'notify.send', title: 'Notify the user', description: 'Send the user a notification; requires title, body is optional. By default it appears only while the user is away from OpenChamber; set showWhenFocused only when it cannot wait' },
+]);
+
+export const OPENCHAMBER_NOTIFY_ACTIONS = Object.freeze(
+  OPENCHAMBER_NOTIFY_ACTION_DEFINITIONS.map(({ action }) => action),
 );
 
 /**
@@ -90,6 +107,7 @@ const ACTIONS_BY_TOOL = Object.freeze({
   openchamber: OPENCHAMBER_AGENT_TOOL_ACTIONS,
   openchamber_web: OPENCHAMBER_WEB_ACTIONS,
   openchamber_memory: OPENCHAMBER_MEMORY_ACTIONS,
+  openchamber_notify: OPENCHAMBER_NOTIFY_ACTIONS,
 });
 
 const bareName = (action) => {
@@ -136,4 +154,5 @@ export const OPENCHAMBER_ALL_ACTIONS = Object.freeze([
   ...OPENCHAMBER_CONTROL_ACTIONS,
   ...OPENCHAMBER_WEB_ACTIONS,
   ...OPENCHAMBER_MEMORY_ACTIONS,
+  ...OPENCHAMBER_NOTIFY_ACTIONS,
 ]);

@@ -1,11 +1,10 @@
 import type { Message, Part } from '@/lib/opencode/model';
-import { hasParts } from '@/lib/opencode/model';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import { getCurrentIntlLocale } from '@/lib/i18n';
 import { isVSCodeRuntime, openDesktopPath, revealDesktopPath, saveDesktopMarkdownFile } from '@/lib/desktop';
 import { getRevealLabelKey } from '@/lib/utils';
-import { readContextPart } from '@/lib/messages/contextParts';
 import { formatContextMessage, formatMessageText } from '@/lib/messages/messageMarkdown';
+import { readContextPart } from '@/lib/messages/contextParts';
 
 export type SessionMessageRecord = { info: Message; parts: Part[] };
 
@@ -40,8 +39,8 @@ function formatAssistantModel(record: SessionMessageRecord): string {
     return '';
   }
 
-  const providerID = record.info.providerID.trim();
-  const modelID = record.info.modelID.trim();
+  const providerID = typeof record.info.providerID === 'string' ? record.info.providerID.trim() : '';
+  const modelID = typeof record.info.modelID === 'string' ? record.info.modelID.trim() : '';
 
   if (providerID && modelID) {
     return `${providerID}/${modelID}`;
@@ -71,18 +70,12 @@ export function formatMessageRecordText(record: SessionMessageRecord): string {
 }
 
 function formatMessageAsMarkdown(record: SessionMessageRecord): string {
-  // Only the conversation roles carry parts. A synthetic message is either
-  // context the user attached to the next prompt — exported as Context, the
-  // way v1 exported it from inside the user message — or prompt plumbing a
-  // server plugin injected. Plumbing is not something the user wrote or the
-  // agent said, so it stays out of the transcript entirely.
   if (record.info.role === 'synthetic') {
     if (!readContextPart(record.info)) return '';
     const context = formatContextMessage(record.info).trim();
     return context ? `${formatMessageHeader(record)}\n\n${context}` : '';
   }
-  if (!hasParts(record.info)) return '';
-
+  if (record.info.role !== 'user' && record.info.role !== 'assistant') return '';
   const role = formatMessageHeader(record);
   const text = formatMessageRecordText(record);
 

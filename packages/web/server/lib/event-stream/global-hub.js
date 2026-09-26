@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { createUpstreamSseReader } from './upstream-reader.js';
 import { serializeMessageStreamWsEvent } from './protocol.js';
-import { translateWireEvent } from './translate-v2.js';
 import { createDeltaCoalescer, DELTA_COALESCE_WINDOW_MS } from './delta-coalescer.js';
+import { translateWireEvent } from './translate-v2.js';
 
 // Raised from 512 → 2048 to improve recovery after brief disconnects during
 // long-running agent sessions where many events accumulate quickly.
@@ -12,6 +12,7 @@ const MESSAGE_STREAM_GLOBAL_REPLAY_BYTES = 8 * 1024 * 1024;
 
 export function createGlobalMessageStreamHub({
   buildOpenCodeUrl,
+  getKernelRuntime,
   getOpenCodeAuthHeaders,
   fetchImpl = fetch,
   upstreamStallTimeoutMs,
@@ -43,6 +44,10 @@ export function createGlobalMessageStreamHub({
   let connected = false;
   let everConnected = false;
   let buildUrlFailed = false;
+  let connectionKey;
+  let attached;
+  const descriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+  const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}`;
 
   const notifySubscriber = (kind, subscriber, payload) => {
     try {
@@ -71,21 +76,19 @@ export function createGlobalMessageStreamHub({
       : `${replayIdPrefix}${String(++replaySequence).padStart(12, '0')}`;
     let serializedFrame;
     let translated;
+    const generation = attached?.generation;
     return {
       envelope,
       payload,
       directory,
       eventId,
+      translated() {
+        translated ??= generation === 'oc2' ? translateWireEvent(payload) : [payload];
+        return translated;
+      },
       serialize() {
         serializedFrame ??= serializeMessageStreamWsEvent(payload, { directory, eventId });
         return serializedFrame;
-      },
-      // Browser clients receive the raw wire payload and translate it
-      // themselves; server-side subscribers read this instead. Translating
-      // lazily keeps the cost off the WS fan-out path when nothing listens.
-      translated() {
-        translated ??= translateWireEvent(payload);
-        return translated;
       },
     };
   };
@@ -94,6 +97,9 @@ export function createGlobalMessageStreamHub({
   // replay buffer in the same step that delivers it, so a client's cursor
   // always names a frame the buffer can find.
   const commitEvent = (event) => {
+    // A timer or stop() may flush after the upstream epoch was retired.
+    // Same-identity stop still commits pending text for replay continuity.
+    if (connectionKey !== keyOf(descriptor())) return;
     const normalized = normalizeEvent(event);
     latestEventId = normalized.eventId;
     const serializedFrame = normalized.serialize();
@@ -104,7 +110,7 @@ export function createGlobalMessageStreamHub({
       replay.length = 0;
       replayBytes = 0;
     } else {
-      replay.push({ eventId: normalized.eventId, serializedFrame, bytes });
+      replay.push({ eventId: normalized.eventId, directory: normalized.directory, serializedFrame, bytes });
       replayBytes += bytes;
       while (replay.length > replayLimit || replayBytes > replayByteLimit) {
         replayBytes -= replay.shift().bytes;
@@ -124,36 +130,54 @@ export function createGlobalMessageStreamHub({
     }
 
     controller = new AbortController();
+    const readerController = controller;
     reader = createUpstreamSseReader({
-      signal: controller.signal,
+      signal: readerController.signal,
       stallTimeoutMs: upstreamStallTimeoutMs,
       reconnectDelayMs: upstreamReconnectDelayMs,
       fetchImpl,
       buildUrl: () => {
         buildUrlFailed = false;
         try {
-          return new URL(buildOpenCodeUrl('/api/event', ''));
+          const next = descriptor();
+          if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
+          const nextKey = keyOf(next);
+          if (connectionKey !== undefined && connectionKey !== nextKey) {
+            coalescer.flush();
+            replay.length = 0;
+            replayBytes = 0;
+            latestEventId = undefined;
+            notifyStatus({ type: 'identity-change' });
+          }
+          connectionKey = nextKey;
+          attached = next;
+          return new URL(buildOpenCodeUrl(next.generation === 'oc2' ? '/api/event' : '/global/event', ''));
         } catch {
           buildUrlFailed = true;
           throw new Error('OpenCode service unavailable');
         }
       },
       getHeaders: getOpenCodeAuthHeaders,
+      getConnectionKey: () => connectionKey,
       onConnect() {
+        if (controller !== readerController || readerController.signal.aborted) return;
         connected = true;
         const wasReady = everConnected;
         everConnected = true;
         notifyStatus({ type: 'connect', wasReady });
       },
       onDisconnect({ reason }) {
+        if (controller !== readerController) return;
         connected = false;
         notifyStatus({ type: 'disconnect', reason });
       },
       onEvent(event) {
+        if (controller !== readerController || readerController.signal.aborted) return;
+        if (keyOf(descriptor()) !== connectionKey) return;
         coalescer.push(event);
       },
       onError(error) {
-        if (controller?.signal.aborted) {
+        if (controller !== readerController || readerController.signal.aborted) {
           return;
         }
 
@@ -213,6 +237,8 @@ export function createGlobalMessageStreamHub({
       if (!eventId) {
         return [];
       }
+
+      if (connectionKey !== keyOf(descriptor())) return null;
 
       const index = replay.findIndex((entry) => entry.eventId === eventId);
       if (eventId === latestEventId) return [];

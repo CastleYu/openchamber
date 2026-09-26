@@ -1,7 +1,6 @@
 import { ensureChatsRootDirectory } from '@/lib/chatDirectories';
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import type { Session } from "@/lib/opencode/model"
-import type { SessionPage } from "@/lib/opencode/client"
 
 import { opencodeClient } from "@/lib/opencode/client"
 import { useGlobalSessionsStore } from "./useGlobalSessionsStore"
@@ -9,12 +8,12 @@ import { useGlobalSessionsStore } from "./useGlobalSessionsStore"
 type Deferred<T> = {
   promise: Promise<T>
   resolve: (value: T) => void
-  reject: (reason: unknown) => void
+  reject: (reason: Error) => void
 }
 
 const deferred = <T>(): Deferred<T> => {
   let resolve!: (value: T) => void
-  let reject!: (reason: unknown) => void
+  let reject!: (reason: Error) => void
   const promise = new Promise<T>((res, rej) => {
     resolve = res
     reject = rej
@@ -24,30 +23,28 @@ const deferred = <T>(): Deferred<T> => {
 
 let listRequest: Deferred<Session[]>
 
-// The store issues one paginated request per load/refresh scope and splits
-// active/archived client-side, so restored sessions (`time.archived`
-// falsy-but-present) stay visible in the active list. The mock serves that
-// single request.
-const listSessionsPage = async (): Promise<SessionPage> => ({
-  sessions: await listRequest.promise,
-  cursor: {},
-})
+// The store issues one inclusive (`archived: true`) paginated request per
+// load/refresh scope and splits active/archived client-side, so restored
+// sessions (`time.archived` falsy-but-present) stay visible in the active
+// list. The mock serves that single request.
 const originalListSessionsPage = opencodeClient.listSessionsPage
 
-const session = (id: string, title = id, archived?: number): Session => ({
-  id,
-  projectID: 'project',
-  directory: '',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  title,
-  time: { created: 1, updated: 1, ...(archived !== undefined ? { archived } : {}) },
-})
+const session = (id: string, title = id, archived?: number): Session => {
+  const value: Session = {
+    id,
+    projectID: "project",
+    directory: "/repo",
+    title,
+    time: { created: 1, updated: 1 },
+  };
+  if (archived !== undefined) value.time.archived = archived;
+  return value;
+}
 
 describe("global session mutation reconciliation", () => {
   beforeEach(() => {
     listRequest = deferred<Session[]>()
-    opencodeClient.listSessionsPage = listSessionsPage
+    opencodeClient.listSessionsPage = async () => ({ sessions: await listRequest.promise, cursor: {} })
     useGlobalSessionsStore.getState().resetForRuntimeSwitch()
   })
 
@@ -127,8 +124,8 @@ describe("global session mutation reconciliation", () => {
   })
 
   test("does not undo a move while refreshing the source directory", async () => {
-    const source = { ...session("moved"), directory: "/source" } as Session
-    const destination = { ...source, directory: "/destination" } as Session
+    const source = { ...session("moved"), directory: "/source" }
+    const destination = { ...source, directory: "/destination" }
     useGlobalSessionsStore.getState().applySnapshot([source], [])
     const refreshing = useGlobalSessionsStore.getState().refreshSessionsForDirectories(["/source"])
     useGlobalSessionsStore.getState().upsertSession(destination)
@@ -141,7 +138,7 @@ describe("global session mutation reconciliation", () => {
   })
 
   test("keeps a restore mutation newer than the directory refresh", async () => {
-    const archived = { ...session("restored", "restored", 5), directory: "/source" } as Session
+    const archived = { ...session("restored", "restored", 5), directory: "/source" }
     useGlobalSessionsStore.getState().applySnapshot([], [archived])
     const refreshing = useGlobalSessionsStore.getState().refreshSessionsForDirectories(["/source"])
     useGlobalSessionsStore.getState().upsertSession({ ...archived, time: { ...archived.time, archived: 0 } })
@@ -163,14 +160,8 @@ describe("paginated global session load", () => {
   const firstPage = Array.from({ length: PAGE_SIZE }, (_, index) => ({
     ...session(`page1-${index}`),
     time: { created: 1, updated: 1000 - index },
-  }) as Session)
-
-  // Two pages: a full first page that names a cursor, then a short last page.
-  const pagedListSessionsPage = async (options?: { cursor?: string }): Promise<SessionPage> => {
-    listCalls += 1
-    if (options?.cursor === undefined) return { sessions: firstPage, cursor: { next: "page-2" } }
-    return { sessions: await secondPage.promise, cursor: {} }
-  }
+  }))
+  const originalPagedListSessionsPage = opencodeClient.listSessionsPage
 
   const until = async (predicate: () => boolean): Promise<void> => {
     for (let attempt = 0; attempt < 200; attempt += 1) {
@@ -183,12 +174,18 @@ describe("paginated global session load", () => {
   beforeEach(() => {
     secondPage = deferred<Session[]>()
     listCalls = 0
-    opencodeClient.listSessionsPage = pagedListSessionsPage
+    opencodeClient.listSessionsPage = async (options) => {
+      listCalls += 1
+      return {
+        sessions: options?.cursor === undefined ? firstPage : await secondPage.promise,
+        cursor: options?.cursor === undefined ? { next: 'page-2' } : {},
+      }
+    }
     useGlobalSessionsStore.getState().resetForRuntimeSwitch()
   })
 
   afterEach(() => {
-    opencodeClient.listSessionsPage = originalListSessionsPage
+    opencodeClient.listSessionsPage = originalPagedListSessionsPage
   })
 
   test("shows the first page before pagination finishes", async () => {
@@ -201,7 +198,7 @@ describe("paginated global session load", () => {
     expect(partial.hasLoaded).toBe(false)
     expect(listCalls).toBe(2)
 
-    secondPage.resolve([{ ...session("page2-0"), time: { created: 1, updated: 400 } } as Session])
+    secondPage.resolve([{ ...session("page2-0"), time: { created: 1, updated: 400 } }])
     await loading
 
     const complete = useGlobalSessionsStore.getState()
@@ -249,7 +246,6 @@ describe("paginated global session load", () => {
     const state = useGlobalSessionsStore.getState()
     expect(state.activeSessions).toHaveLength(PAGE_SIZE)
     expect(state.status).toBe("error")
-    expect(state.hasLoaded).toBe(false)
   })
 
   test("drops the pages when the runtime switches mid-load", async () => {
@@ -257,7 +253,7 @@ describe("paginated global session load", () => {
     await until(() => useGlobalSessionsStore.getState().activeSessions.length > 0)
 
     useGlobalSessionsStore.getState().resetForRuntimeSwitch()
-    secondPage.resolve([{ ...session("page2-0"), time: { created: 1, updated: 400 } } as Session])
+    secondPage.resolve([{ ...session("page2-0"), time: { created: 1, updated: 400 } }])
     await loading
 
     const state = useGlobalSessionsStore.getState()
@@ -276,7 +272,7 @@ opencodeClient.getFilesystemHomeInfo = originalHomeInfo;
 describe("global snapshot authority", () => {
   beforeEach(() => {
     listRequest = deferred<Session[]>()
-    opencodeClient.listSessionsPage = listSessionsPage
+    opencodeClient.listSessionsPage = async () => ({ sessions: await listRequest.promise, cursor: {} })
     useGlobalSessionsStore.getState().resetForRuntimeSwitch()
   })
 

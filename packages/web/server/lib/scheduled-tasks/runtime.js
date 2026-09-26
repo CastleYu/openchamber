@@ -1,4 +1,4 @@
-import { OpenCode } from '@opencode/client';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { DateTime } from 'luxon';
 import { CronExpressionParser } from 'cron-parser';
 import { expandSnippets } from '../opencode/snippets.js';
@@ -247,6 +247,7 @@ export const formatScheduledSessionTitle = (task, nowMs = Date.now()) => {
 
 export const createScheduledTasksRuntime = (deps) => {
   const {
+    kernelOperations = null,
     projectConfigRuntime,
     listProjects,
     buildOpenCodeUrl,
@@ -255,26 +256,11 @@ export const createScheduledTasksRuntime = (deps) => {
     emitTaskRunEvent,
     setSessionAutoAccept,
     sessionKnowledgeRuntime = null,
-    // The goal record lives in OpenChamber's metadata store (OpenCode 2.x takes
-    // session metadata only at create time); without it goal mode cannot run.
-    persistSessionGoal = null,
     logger = console,
     maxGlobalConcurrency = DEFAULT_GLOBAL_CONCURRENCY,
     maxProjectConcurrency = DEFAULT_PROJECT_CONCURRENCY,
     maxRunDurationMs = DEFAULT_MAX_RUN_MS,
   } = deps;
-
-  // Every OpenCode route lives under /api in v2 and the client appends it, so
-  // the client only wants the origin. Directory scoping is a request header.
-  const openCodeOrigin = () => new URL(buildOpenCodeUrl('/api/info', '')).origin;
-  const createScopedClient = (directory) => OpenCode.make({
-    baseUrl: openCodeOrigin(),
-    headers: {
-      ...getOpenCodeAuthHeaders(),
-      ...(directory ? { 'x-opencode-directory': encodeURIComponent(directory) } : {}),
-    },
-    fetch,
-  });
 
   let started = false;
   const tasksByProject = new Map();
@@ -476,43 +462,75 @@ export const createScheduledTasksRuntime = (deps) => {
     return projectRunning < maxProjectConcurrency;
   };
 
-  // Never allowed to fail the run: a task that executes without its
-  // background is a lesser loss than a task that does not execute.
-  const resolveKnowledge = (sessionID, projectPath) => (sessionKnowledgeRuntime
-    ? sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
-      .catch(() => ({ text: '', signature: '' }))
-    : Promise.resolve({ text: '', signature: '' }));
+  const buildPromptAsyncPayload = (task, projectPath, knowledgeText = '') => ({
+    model: {
+      providerID: task.execution.providerID,
+      modelID: task.execution.modelID,
+    },
+    ...(task.execution.agent ? { agent: task.execution.agent } : {}),
+    ...(task.execution.variant ? { variant: task.execution.variant } : {}),
+    parts: [
+      // Standing project context first, so the prompt reads against it. A
+      // scheduled run has no UI to attach this, which is why it is asked for
+      // here rather than assembled by whoever is sending.
+      ...(knowledgeText ? [{ type: 'text', text: knowledgeText, synthetic: true }] : []),
+      {
+        type: 'text',
+        text: expandSnippets(task.execution.prompt, projectPath),
+      },
+      ...(task.execution.goalEnabled
+        ? [{ type: 'text', text: buildGoalIntroText(task.execution.goalTokenBudget), synthetic: true }]
+        : []),
+    ],
+  });
 
-  // Recorded only after the send is accepted, so a failed dispatch carries
-  // the context again on the next run.
-  const recordKnowledge = async (sessionID, projectPath, knowledge) => {
+  const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, projectPath, task, identity }) => {
+    // Never allowed to fail the run: a task that executes without its
+    // background is a lesser loss than a task that does not execute.
+    const knowledge = sessionKnowledgeRuntime
+      ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
+        .catch(() => ({ text: '', signature: '' }))
+      : { text: '', signature: '' };
+
+    if (kernelOperations) {
+      const body = buildPromptAsyncPayload(task, projectPath, knowledge.text);
+      const model = { id: body.model.modelID, providerID: body.model.providerID };
+      if (body.variant) model.variant = body.variant;
+      const request = identity.generation === 'oc1' ? { ...identity, body } : {
+        ...identity, model,
+        synthetics: body.parts.filter((part) => part.synthetic).map((part) => ({ text: part.text, resume: false })),
+        body: { text: body.parts.filter((part) => !part.synthetic).map((part) => part.text).join('\n') },
+      };
+      if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+      await kernelOperations.sendPrompt({ sessionID, directory: projectPath, request });
+      if (knowledge.text && sessionKnowledgeRuntime) {
+        await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
+      }
+      return;
+    }
+    const promptUrl = new URL(`${baseUrl}/session/${encodeURIComponent(sessionID)}/prompt_async`);
+    promptUrl.searchParams.set('directory', projectPath);
+    const response = await fetch(promptUrl.toString(), {
+      method: 'POST',
+      headers: {
+        ...authHeaders,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(buildPromptAsyncPayload(task, projectPath, knowledge.text)),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`prompt_async failed (${response.status})${body ? `: ${body}` : ''}`);
+    }
+
+    // Recorded only after the prompt is accepted, so a failed dispatch carries
+    // the context again on the next run.
     if (knowledge.text && sessionKnowledgeRuntime) {
       await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature)
         .catch(() => undefined);
     }
-  };
-
-  const runPrompt = async ({ client, sessionID, projectPath, task }) => {
-    const knowledge = await resolveKnowledge(sessionID, projectPath);
-
-    // A v2 prompt carries a single authored text. Standing project context and
-    // the goal briefing therefore travel as synthetic messages sent first, so
-    // the model still reads the prompt against them exactly as before. A
-    // synthetic message schedules execution unless `resume: false`: without
-    // it the model would start on the briefing alone, before the task arrived.
-    if (knowledge.text) {
-      await client.session.synthetic({ sessionID, text: knowledge.text, resume: false });
-    }
-    if (task.execution.goalEnabled) {
-      await client.session.synthetic({ sessionID, text: buildGoalIntroText(task.execution.goalTokenBudget), resume: false });
-    }
-
-    await client.session.prompt({
-      sessionID,
-      text: expandSnippets(task.execution.prompt, projectPath),
-    });
-
-    await recordKnowledge(sessionID, projectPath, knowledge);
   };
 
   const resolveScheduledCommand = async ({ client, projectPath, task }) => {
@@ -523,35 +541,56 @@ export const createScheduledTasksRuntime = (deps) => {
 
     let commands = [];
     try {
-      const response = await client.command.list({ location: { directory: projectPath } });
-      commands = Array.isArray(response?.data) ? response.data : [];
+      if (kernelOperations) commands = (await kernelOperations.listCommands({ directory: projectPath })).data;
+      else {
+        const response = await client.command.list({ directory: projectPath });
+        commands = Array.isArray(response?.data) ? response.data : [];
+      }
     } catch {
       return null;
     }
 
-    // v2 CommandInfo carries no template, so a goal objective distilled from
-    // the command body is no longer available; the goal falls back to the
-    // prompt text, which expandCommandGoalObjective already handles.
     const command = commands.find((candidate) => candidate?.name === parsed.command);
     return command ? { ...parsed, template: command.template } : null;
   };
 
-  const runScheduledCommand = async ({ client, sessionID, projectPath, command }) => {
-    // The command route takes no extra parts, so standing context goes in
-    // first as a synthetic message that does not start execution.
-    const knowledge = await resolveKnowledge(sessionID, projectPath);
-    if (knowledge.text) {
-      await client.session.synthetic({ sessionID, text: knowledge.text, resume: false });
+  const runScheduledCommand = async ({ client, projectPath, sessionID, task, command, identity }) => {
+    if (kernelOperations) {
+      const knowledge = identity.generation === 'oc2' && sessionKnowledgeRuntime
+        ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
+          .catch(() => ({ text: '', signature: '' }))
+        : { text: '', signature: '' };
+      const body = {
+        command: command.command, arguments: command.arguments,
+        model: `${task.execution.providerID}/${task.execution.modelID}`,
+      };
+      if (task.execution.agent) body.agent = task.execution.agent;
+      if (task.execution.variant) body.variant = task.execution.variant;
+      const model = { id: task.execution.modelID, providerID: task.execution.providerID };
+      if (task.execution.variant) model.variant = task.execution.variant;
+      const request = identity.generation === 'oc1' ? { ...identity, body } : {
+        ...identity,
+        model,
+        body: { name: command.command, text: command.arguments },
+      };
+      if (identity.generation === 'oc2' && task.execution.agent) request.agent = task.execution.agent;
+      if (identity.generation === 'oc2' && knowledge.text) request.synthetics = [{ text: knowledge.text, resume: false }];
+      await kernelOperations.sendCommand({ sessionID, directory: projectPath, request });
+      if (identity.generation === 'oc2' && knowledge.text && sessionKnowledgeRuntime) {
+        await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
+      }
+      return;
     }
-    // Agent, model and variant are session properties in v2 and were already
-    // set when the run created the session; the command body only carries text.
     await client.session.command({
       sessionID,
-      // OpenCode 2.0.8 renamed the command body field `command` to `name`.
-      name: command.command,
-      text: command.arguments,
+      directory: projectPath,
+      command: command.command,
+      arguments: command.arguments,
+      ...(task.execution.agent ? { agent: task.execution.agent } : {}),
+      model: `${task.execution.providerID}/${task.execution.modelID}`,
+      ...(task.execution.variant ? { variant: task.execution.variant } : {}),
     });
-    await recordKnowledge(sessionID, projectPath, knowledge);
+
   };
 
   const runTaskWithWatchdog = async (projectID, task, reason) => {
@@ -566,23 +605,18 @@ export const createScheduledTasksRuntime = (deps) => {
       await waitForOpenCodeReady(10_000, 250);
     }
 
-    const baseUrl = openCodeOrigin();
+    const identity = kernelOperations?.captureIdentity();
+    const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const authHeaders = getOpenCodeAuthHeaders();
-    const client = createScopedClient(projectPath);
-
-    // Agent, model and variant belong to the session in v2: a scheduled run
-    // fixes them here instead of repeating them on every prompt.
-    const session = await client.session.create({
-      title,
-      location: { directory: projectPath },
-      model: {
-        providerID: task.execution.providerID,
-        id: task.execution.modelID,
-        ...(task.execution.variant ? { variant: task.execution.variant } : {}),
-      },
-      ...(task.execution.agent ? { agent: task.execution.agent } : {}),
+    const client = kernelOperations ? null : createOpencodeClient({
+      baseUrl,
+      headers: authHeaders,
     });
-    const sessionID = session?.id;
+
+    const sessionResponse = kernelOperations
+      ? await kernelOperations.createSession({ directory: projectPath, title })
+      : await client.session.create({ directory: projectPath, title });
+    const sessionID = sessionResponse?.data?.id;
     if (!sessionID) {
       throw new Error('failed to create session');
     }
@@ -618,7 +652,7 @@ export const createScheduledTasksRuntime = (deps) => {
       await createSessionGoal({
         baseUrl,
         authHeaders,
-        persistSessionGoal,
+        kernelOperations,
         sessionID,
         directory: projectPath,
         objective: commandObjective ?? expandSnippets(task.execution.prompt, projectPath),
@@ -630,9 +664,16 @@ export const createScheduledTasksRuntime = (deps) => {
     }
 
     if (scheduledCommand) {
-      await runScheduledCommand({ client, sessionID, projectPath, command: scheduledCommand });
+      await runScheduledCommand({ client, projectPath, sessionID, task, command: scheduledCommand, identity });
     } else {
-      await runPrompt({ client, sessionID, projectPath, task });
+      await runPromptAsync({
+        baseUrl,
+        authHeaders,
+        sessionID,
+        projectPath,
+        task,
+        identity,
+      });
     }
 
     const finishedAt = Date.now();

@@ -19,7 +19,7 @@ const { ArchiveView } = await import('./ArchiveView');
 const initialUI = useUIStore.getState();
 const initialSessions = useGlobalSessionsStore.getState();
 const session = (id: string, title: string, archived = 2): Session => ({
-  id, title, projectID: 'project', cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, directory: '/workspace',
+  id, title, slug: id, projectID: 'project', version: '1', directory: '/workspace',
   time: { created: 1, updated: 1, archived },
 });
 

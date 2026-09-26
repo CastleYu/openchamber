@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Agent } from '@/lib/opencode/model';
+import type { Agent } from '@opencode-ai/sdk/v2';
 
 type BtwModelSelection = { providerId: string; modelId: string };
 export type BtwSelection = {

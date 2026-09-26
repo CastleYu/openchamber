@@ -1,4 +1,3 @@
-import { OpenCodeCompatibilityGate } from '@/components/update/OpenCodeCompatibilityGate';
 import React from 'react';
 import { UPDATE_HISTORY_PAGE } from '@/lib/settings/updateHistory';
 
@@ -12,6 +11,8 @@ import { AppStartupOverlay } from '@/components/ui/AppStartupOverlay';
 import { ChatView } from '@/components/views/ChatView';
 import { PlanView } from '@/components/views/PlanView';
 import { SettingsView } from '@/components/views/SettingsView';
+import { UsageStatsView } from '@/components/views/usage/UsageStatsView';
+import { useUsageStatsAvailable } from '@/components/views/usage/useUsageStatsAvailability';
 import { AppLinkConfirmDialog } from '@/components/chat/AppLinkConfirmDialog';
 import { SharedTrustConfirmDialog } from '@/components/projects/SharedTrustConfirmDialog';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -56,6 +57,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { useOpenCodeSource } from './useOpenCodeSource';
 
 import { SyncAppEffects } from './AppEffects';
 import { BusyDots } from '@/components/chat/message/parts/BusyDots';
@@ -83,6 +85,7 @@ import {
 } from './ipadSidebarResize';
 
 const MOBILE_SETTINGS_PAGES = [
+  'web-search',
   'general',
   'appearance',
   'chat',
@@ -118,7 +121,7 @@ const NATIVE_RESUME_SYNC_EVENT_THROTTLE_MS = 1_000;
     footer. Exactly one can be open at a time — opening another replaces it,
     closing returns to the chat. The sessions drawer and the workspace drawer
     (Changes / Files / Terminal / Notes / MCP) are separate layers. */
-type MobileSurface = 'instances' | 'settings' | 'update';
+type MobileSurface = 'instances' | 'settings' | 'usage' | 'update';
 
 const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onActiveConnectionDeleted }) => {
   const { t } = useI18n();
@@ -128,6 +131,10 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
   useTerminalSessionKeepalive();
   const [sessionsSheetOpen, setSessionsSheetOpen] = React.useState(false);
   const [activeSurface, setActiveSurface] = React.useState<MobileSurface | null>(null);
+  const statsAvailable = useUsageStatsAvailable();
+  React.useEffect(() => {
+    if (!statsAvailable && activeSurface === 'usage') setActiveSurface(null);
+  }, [activeSurface, statsAvailable]);
   // Phone right drawer with the workspace tabs; the tab persists across
   // open/close so the right-edge swipe reopens where the user left off.
   const [workspaceOpen, setWorkspaceOpen] = React.useState(false);
@@ -196,8 +203,6 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
     setWorkspaceOpen(true);
   }, []);
 
-  // The agent asked for a file to be shown: open the files drawer and stage
-  // the path the way a chat file link does, so the surface routes to it.
   React.useEffect(() => subscribeOpenchamberEvents((event) => {
     if (event.type !== 'file-open-request') return;
     const directory = event.directory ?? useDirectoryStore.getState().currentDirectory;
@@ -374,9 +379,10 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
       instanceLabel: showCapacitorOnlyFeatures ? getAutoConnectTargetLabel() : null,
       onOpenInstances: showCapacitorOnlyFeatures ? () => openSurface('instances') : undefined,
       onOpenSettings: () => openSettingsSurface('nav'),
+      onOpenUsage: statsAvailable ? () => openSurface('usage') : undefined,
       onOpenUpdate: showUpdateItem ? () => openSurface('update') : undefined,
     }),
-    [openSettingsSurface, openSurface, showCapacitorOnlyFeatures, showUpdateItem],
+    [openSettingsSurface, openSurface, showCapacitorOnlyFeatures, showUpdateItem, statsAvailable],
   );
 
   const openMcpCreateSettings = React.useCallback(() => {
@@ -401,14 +407,8 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
       oauthClientSecret: '',
       oauthScope: '',
       oauthRedirectUri: '',
-      oauthCallbackPort: '',
-      oauthAuthServerMetadataUrl: '',
-      protocol: 'legacy',
-      timeoutStartup: '',
-      timeoutCatalog: '',
-      timeoutExecution: '',
-      codemode: true,
-      disabled: false,
+      timeout: '',
+      enabled: true,
     };
 
     setMcpDraft(draft);
@@ -630,6 +630,19 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
           </MobileFullscreenSurface>
         ) : null}
 
+        {activeSurface === 'usage' && statsAvailable ? (
+          <MobileFullscreenSurface
+            open
+            variant={surfaceVariant}
+            dialogAlign="app"
+            onClose={closeSurface}
+            ariaLabel={t('usageStats.title')}
+            title={t('usageStats.title')}
+          >
+            <ErrorBoundary><UsageStatsView /></ErrorBoundary>
+          </MobileFullscreenSurface>
+        ) : null}
+
         {activeSurface === 'update' ? (
           <MobileFullscreenSurface
             open
@@ -651,7 +664,8 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
   );
 };
 
-function MobileAppContent({ apis }: MobileAppProps) {
+export function MobileApp({ apis }: MobileAppProps) {
+  const syncSource = useOpenCodeSource();
   const { t } = useI18n();
   const initializeApp = useConfigStore((state) => state.initializeApp);
   const isInitialized = useConfigStore((state) => state.isInitialized);
@@ -1314,7 +1328,7 @@ function MobileAppContent({ apis }: MobileAppProps) {
 
   return (
     <ErrorBoundary>
-      <SyncProvider key={runtimeEndpointEpoch} sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+      <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
           <TooltipProvider delayDuration={300} skipDelayDuration={150}>
             <div className="h-full bg-background text-foreground">
@@ -1340,15 +1354,4 @@ function MobileAppContent({ apis }: MobileAppProps) {
       </SyncProvider>
     </ErrorBoundary>
   );
-}
-
-export function MobileApp(props: MobileAppProps) {
-  const endpoint = React.useSyncExternalStore(
-    (notify) => subscribeRuntimeEndpointChanged(() => notify()),
-    getRuntimeApiBaseUrl,
-    getRuntimeApiBaseUrl,
-  );
-  // Native connection selection must mount before there is a server to probe.
-  if (isCapacitorMobileApp() && !endpoint) return <MobileAppContent {...props} />;
-  return <OpenCodeCompatibilityGate><MobileAppContent {...props} /></OpenCodeCompatibilityGate>;
 }

@@ -14,6 +14,14 @@ import {
   serializePreferencesDocument,
 } from './settings-files.js';
 
+const MANAGED_PLUGIN_SETTINGS_KEYS = new Set([
+  'agentControlToolEnabled',
+  'agentWebToolEnabled',
+  'agentMemoryToolEnabled',
+  'agentNotifyToolEnabled',
+  'optimizeSystemPrompt',
+]);
+
 const DEFAULT_NOTIFICATION_TEMPLATES = {
   completion: { title: '{agent_name} is ready', message: '{model_name} completed the task' },
   error: { title: 'Tool error', message: '{last_message}' },
@@ -39,13 +47,6 @@ const ensureNotificationTemplateShape = (templates) => {
 
   return { templates: next, changed };
 };
-
-/** Settings that decide which OpenChamber plugins the managed OpenCode loads. */
-const MANAGED_PLUGIN_SETTINGS_KEYS = new Set([
-  'agentControlToolEnabled',
-  'agentWebToolEnabled',
-  'agentMemoryToolEnabled',
-]);
 
 export const createSettingsRuntime = (deps) => {
   const {
@@ -1120,9 +1121,6 @@ export const createSettingsRuntime = (deps) => {
 
       const changedKeys = Object.keys(sanitized);
       await writeSettingsToDisk(next, { surface, changedKeys });
-      // OpenChamber's own OpenCode plugins live in a config file OpenCode
-      // watches, so flipping one of these switches takes effect in the running
-      // process instead of waiting for a restart.
       if (changedKeys.some((key) => MANAGED_PLUGIN_SETTINGS_KEYS.has(key))) {
         await Promise.resolve(onManagedPluginSettingsChanged(next)).catch((error) => {
           console.warn('Failed to refresh the managed OpenCode config:', error?.message ?? error);

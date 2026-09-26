@@ -37,9 +37,6 @@ export const buildKnowledgeSignature = ({ notes, plans, memory }) => {
     ...plans.map((plan) => `p:${plan.id}:${plan.title}`),
     ...memory.global.map((entry) => `mg:${entry.id}:${entry.updatedAt}`),
     ...memory.project.map((entry) => `mp:${entry.id}:${entry.updatedAt}`),
-    // Memory being on is itself worth telling a session: without it an empty
-    // store sends nothing, and an agent never told when to save never does.
-    ...(memory.enabled ? [`m:on:${memory.complete ? 'c' : 'p'}`] : []),
   ];
   return parts.length === 0 ? '' : parts.sort().join('|');
 };
@@ -51,45 +48,23 @@ const renderMemorySection = (entries) => entries
   .join('\n');
 
 /**
- * When to save, stated in every session where memory is on. The tool
- * description alone is read only when the agent already means to call it, so
- * agents told nothing here saved only when the user said "remember".
- */
-const MEMORY_SAVE_GUIDANCE = 'You have memory that persists across sessions, through the'
-  + ' openchamber_memory tool. Save to it in the moment, without asking first, when:'
-  + ' the user corrects how you work or states a preference; the user confirms that'
-  + ' a non-obvious approach worked; or you learn a project fact that took real'
-  + ' effort to find and is not in the code or docs. One fact per entry. The user'
-  + ' can review and remove what you save, so save when it fits and mention it'
-  + ' briefly.';
-
-/**
  * Titles only for memory, never bodies: an index carrying full text grows
  * without bound until it crowds out the conversation it was meant to inform.
  */
-const buildMemoryBlock = ({ global, project, enabled = false, complete = false }) => {
+const buildMemoryBlock = ({ global, project }) => {
   const sections = [];
   if (global.length > 0) sections.push(`### About the user\n\n${renderMemorySection(global)}`);
   if (project.length > 0) sections.push(`### About this project\n\n${renderMemorySection(project)}`);
-  if (sections.length === 0) {
-    if (!enabled) return '';
-    // "Empty" only when both scopes loaded: a failed read is not an empty store.
-    return complete
-      ? `${MEMORY_SAVE_GUIDANCE}\n\nNothing is stored yet.`
-      : MEMORY_SAVE_GUIDANCE;
-  }
+  if (sections.length === 0) return '';
 
   return [
-    ...(enabled ? [MEMORY_SAVE_GUIDANCE] : []),
-    'Stored memory from earlier sessions: only the titles are listed below.',
+    'You have stored memory from earlier sessions. Only the titles are listed below.',
     'A title is an abbreviation, not the memory. Read the entry with the'
       + ' openchamber_memory tool before you act on it: titles routinely leave out'
       + ' the conditions, exceptions and reasons that decide how the memory'
       + ' applies, and a title that looks self-explanatory is the most likely to'
       + ' be hiding them. Read every title that could bear on the task at hand;'
-      + ' you need not read the ones unrelated to what you are doing. Read each'
-      + ' entry once per conversation: what you read stays in your context, so do'
-      + ' not read it again on later turns unless your context was summarized.',
+      + ' you need not read the ones unrelated to what you are doing.',
     'Memory records what was true when it was written. Verify anything it says'
       + ' about files, flags or commands before relying on it.',
     ...sections,
@@ -137,20 +112,9 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
     agentMemoryRuntime,
     resolveProjectId,
     isAgentMemoryEnabled,
-    // Pins and the delivered-signature cursor live in OpenChamber's own session
-    // metadata store: OpenCode 2.x accepts session metadata only at create time.
-    readSessionMetadata = null,
-    persistSessionMetadata = null,
+    openCodeFetch = null,
+    kernelOperations = null,
   } = dependencies;
-
-  const requireMetadataStore = () => {
-    if (typeof readSessionMetadata !== 'function' || typeof persistSessionMetadata !== 'function') {
-      throw new Error('project knowledge needs a session metadata store');
-    }
-  };
-
-  /** The session shape the readers below expect, built from our own store. */
-  const readStoredSession = async (sessionId) => ({ metadata: await readSessionMetadata(sessionId) });
 
   /**
    * Everything the session should be carrying, read fresh. A failure in one
@@ -193,7 +157,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
       }
     }
 
-    let memory = { global: [], project: [], enabled: false, complete: false };
+    let memory = { global: [], project: [] };
     const memoryEnabled = typeof isAgentMemoryEnabled === 'function'
       ? await isAgentMemoryEnabled().catch(() => false)
       : true;
@@ -210,11 +174,9 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
         memory = {
           global: stored.globalFailed ? [] : visible(stored.global),
           project: stored.projectFailed ? [] : visible(stored.project),
-          enabled: true,
-          complete: !stored.globalFailed && !stored.projectFailed,
         };
       } catch {
-        memory = { global: [], project: [], enabled: true, complete: false };
+        memory = { global: [], project: [] };
       }
     }
 
@@ -286,34 +248,44 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
     return { text: buildKnowledgeText(collected), signature };
   };
 
+  const readSession = async (sessionId, directory) => (
+    kernelOperations
+      ? (await kernelOperations.getSession({ sessionID: sessionId, directory })).data
+      : openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory })
+  );
+
   /**
    * What this session still owes, read from its own stored signature.
    */
   const resolvePendingForSession = async (sessionId, directory) => {
-    const session = await readStoredSession(sessionId).catch(() => null);
+    const session = await readSession(sessionId, directory);
     return resolvePending(directory, readDeliveredSignature(session), readPins(session));
   };
 
   const collectSummaryForSession = async (sessionId, directory) => {
-    const session = await readStoredSession(sessionId).catch(() => null);
+    const session = await readSession(sessionId, directory);
     return collectSummary(directory, readPins(session));
   };
 
   const setPin = async (sessionId, directory, kind, id, pinned) => {
-    requireMetadataStore();
-    const pins = readPins(await readStoredSession(sessionId));
+    const fresh = await readSession(sessionId, directory);
+    const metadata = isRecord(fresh?.metadata) ? fresh.metadata : {};
+    const openchamber = isRecord(metadata.openchamber) ? metadata.openchamber : {};
+    const pins = readPins(fresh);
     const key = kind === 'note' ? 'notes' : 'plans';
     const next = new Set(pins[key]);
     if (pinned) next.add(id);
     else next.delete(id);
-    // Clearing the delivered signature is what makes the next send carry the
-    // changed pin set; the merge patch leaves neighbouring state alone.
-    await persistSessionMetadata(sessionId, directory, {
-      openchamber: {
-        [PINS_METADATA_KEY]: { ...pins, [key]: [...next] },
-        [KNOWLEDGE_METADATA_KEY]: '',
-      },
-    });
+    const nextMetadata = {
+          ...metadata,
+          openchamber: {
+            ...openchamber,
+            [PINS_METADATA_KEY]: { ...pins, [key]: [...next] },
+            [KNOWLEDGE_METADATA_KEY]: '',
+          },
+        };
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
     return { ...pins, [key]: [...next] };
   };
 
@@ -327,10 +299,15 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
    * drop whatever changed in between.
    */
   const recordDelivered = async (sessionId, directory, signature) => {
-    requireMetadataStore();
-    await persistSessionMetadata(sessionId, directory, {
-      openchamber: { [KNOWLEDGE_METADATA_KEY]: signature },
-    });
+    const fresh = await readSession(sessionId, directory);
+    const metadata = isRecord(fresh?.metadata) ? fresh.metadata : {};
+    const openchamber = isRecord(metadata.openchamber) ? metadata.openchamber : {};
+    const nextMetadata = {
+          ...metadata,
+          openchamber: { ...openchamber, [KNOWLEDGE_METADATA_KEY]: signature },
+        };
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
   };
 
   return {

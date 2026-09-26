@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part } from "@/lib/opencode/model"
+import type { AssistantMessage, Part, TextPart } from "@/lib/opencode/model"
 import {
   buildSessionContextUsage,
   computeCacheHitRate,
@@ -11,10 +11,31 @@ import {
   type ContextFillMessage,
 } from "./tokenUtils"
 
-const assistantMessage = (tokens: unknown): { info: Message; parts: Part[] } => ({
-  info: { tokens } as unknown as Message,
-  parts: [],
+const messageInfo = (): AssistantMessage => ({
+  id: 'assistant',
+  sessionID: 'session',
+  role: 'assistant',
+  time: { created: 1 },
+  agent: 'build',
+  providerID: 'provider',
+  modelID: 'model',
 })
+
+type TokenFixture = number | {
+  total?: number
+  input?: number
+  output?: number
+  reasoning?: number
+  cache?: { read?: number; write?: number }
+}
+
+type AssistantMessageRecord = { info: AssistantMessage; parts: Part[] }
+
+const assistantMessage = (tokens: TokenFixture): AssistantMessageRecord => {
+  const info = messageInfo()
+  Object.defineProperty(info, 'tokens', { value: tokens, enumerable: true })
+  return { info, parts: [] }
+}
 
 describe("computeCacheHitRate", () => {
   test("returns zero and hasInput=false for null input", () => {
@@ -163,15 +184,14 @@ describe("extractTokensFromMessage", () => {
   })
 
   test("prefers the reported total when tokens live on a part", () => {
-    const message: { info: Message; parts: Part[] } = {
-      info: {} as Message,
-      parts: [{ tokens: { total: 500, input: 2_000 } } as unknown as Part],
-    }
+    const part: TextPart = { id: 'part', sessionID: 'session', messageID: 'assistant', type: 'text', text: 'hello' }
+    Object.defineProperty(part, 'tokens', { value: { total: 500, input: 2_000 } })
+    const message = { info: messageInfo(), parts: [part] }
     expect(extractTokensFromMessage(message)).toBe(500)
   })
 
   test("returns 0 when neither info nor parts carry tokens", () => {
-    expect(extractTokensFromMessage({ info: {} as Message, parts: [] })).toBe(0)
+    expect(extractTokensFromMessage({ info: messageInfo(), parts: [] })).toBe(0)
   })
 })
 
@@ -181,12 +201,11 @@ const reply = (id: string, total: number): ContextFillMessage => ({
   tokens: { total, input: total, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
 })
 
-// OpenCode v2 records a compaction as its own `compaction` message with an
-// explicit lifecycle in `status`; v1 marked the assistant record `summary: true`.
 const compaction = (id: string, overrides: Partial<ContextFillMessage> = {}): ContextFillMessage => ({
   id,
-  role: "compaction",
-  status: "completed",
+  role: "assistant",
+  summary: true,
+  finish: "stop",
   tokens: { total: 81_605, input: 79_395, output: 1_694, reasoning: 0, cache: { read: 0, write: 0 } },
   ...overrides,
 })
@@ -208,18 +227,18 @@ describe("findLatestContextFill", () => {
   })
 
   test("a compaction still running leaves the previous reading in place", () => {
-    const running = compaction("summary", { status: "running", tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } } })
+    const running = compaction("summary", { finish: undefined, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } } })
     expect(findLatestContextFill([reply("before", 100), running])).toEqual({ state: "measured", index: 0, totalTokens: 100 })
   })
 
   test("an overflowing compaction that is completed but not yet marked failed keeps the previous reading", () => {
-    // OpenCode marks the record completed before it records the overflow error.
-    const overflowing = compaction("summary", { error: { type: "MessageOutputLengthError", message: "output too long" } })
+    // OpenCode writes time.completed before it records the overflow error and finish: "error".
+    const overflowing = compaction("summary", { finish: undefined })
     expect(findLatestContextFill([reply("before", 100), overflowing])).toEqual({ state: "measured", index: 0, totalTokens: 100 })
   })
 
   test("a failed compaction did not change the window, so the previous reading stands", () => {
-    const failed = compaction("summary", { status: "failed", error: { type: "MessageAbortedError", message: "aborted" } })
+    const failed = compaction("summary", { finish: "error", error: { name: "MessageAbortedError", data: { message: "aborted" } } })
     expect(findLatestContextFill([reply("before", 100), failed])).toEqual({ state: "measured", index: 0, totalTokens: 100 })
   })
 

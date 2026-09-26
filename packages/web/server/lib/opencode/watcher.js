@@ -5,6 +5,7 @@ export const createOpenCodeWatcherRuntime = (deps) => {
   const {
     waitForOpenCodePort,
     buildOpenCodeUrl,
+    getKernelRuntime,
     getOpenCodeAuthHeaders,
     onPayload,
     fetchImpl = fetch,
@@ -17,12 +18,6 @@ export const createOpenCodeWatcherRuntime = (deps) => {
   let reader = null;
   let unsubscribeEvent = null;
   let unsubscribeStatus = null;
-
-  // `onPayload` consumers speak the server's own event vocabulary, so the v2
-  // wire payload is translated here rather than in each consumer.
-  const emitTranslated = (payload) => {
-    for (const translated of translateWireEvent(payload)) onPayload(translated);
-  };
 
   const unwrapGlobalEventPayload = (eventData) => {
     if (!eventData || typeof eventData !== 'object') {
@@ -48,11 +43,10 @@ export const createOpenCodeWatcherRuntime = (deps) => {
 
     if (globalEventHub) {
       unsubscribeEvent = globalEventHub.subscribeEvent((event) => {
-        const payload = unwrapGlobalEventPayload(event.payload);
-        if (!payload || typeof payload !== 'object') {
-          return;
+        for (const value of event.translated()) {
+          const payload = unwrapGlobalEventPayload(value);
+          if (payload) onPayload(payload);
         }
-        emitTranslated(payload);
       });
       unsubscribeStatus = globalEventHub.subscribeStatus((status) => {
         if (signal.aborted) {
@@ -70,9 +64,15 @@ export const createOpenCodeWatcherRuntime = (deps) => {
       return;
     }
 
+    let attached;
     reader = createUpstreamSseReader({
       signal,
-      buildUrl: () => buildOpenCodeUrl('/api/event', ''),
+      buildUrl: () => {
+        attached = getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+        if (attached.generation !== 'oc1' && attached.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
+        return buildOpenCodeUrl(attached.generation === 'oc2' ? '/api/event' : '/global/event', '');
+      },
+      getConnectionKey: () => `${attached.endpoint}|${attached.epoch}|${attached.generation}`,
       getHeaders: getOpenCodeAuthHeaders,
       fetchImpl,
       stallTimeoutMs: upstreamStallTimeoutMs,
@@ -81,11 +81,12 @@ export const createOpenCodeWatcherRuntime = (deps) => {
         console.log('[PushWatcher] connected');
       },
       onEvent(event) {
+        const current = getKernelRuntime?.() ?? attached;
+        if (current.endpoint !== attached.endpoint || current.epoch !== attached.epoch || current.generation !== attached.generation) return;
         const payload = unwrapGlobalEventPayload(event.payload);
-        if (!payload || typeof payload !== 'object') {
-          return;
+        for (const value of attached.generation === 'oc2' ? translateWireEvent(payload) : [payload]) {
+          if (value) onPayload(value);
         }
-        emitTranslated(payload);
       },
       onError(error) {
         if (signal.aborted) {

@@ -1,7 +1,4 @@
 import type { MessageRecord } from '@/lib/messageCompletion';
-import type { ToolInput } from '@/lib/opencode/model';
-
-import { isSubagentTool, normalizeToolName } from '@/lib/opencode/tools';
 
 import { capToolOutputText } from '../toolRenderers';
 import { readTaskTagSessionIdFromOutput } from './taskSessionIdParser';
@@ -12,7 +9,7 @@ export type TaskToolSummaryEntry = {
     state?: {
         status?: string;
         title?: string;
-        input?: ToolInput;
+        input?: Record<string, unknown>;
     };
 };
 
@@ -22,11 +19,6 @@ const normalizeSessionIdCandidate = (value: unknown): string | undefined => {
     return trimmed.length > 0 ? trimmed : undefined;
 };
 
-/**
- * The child session a subagent call runs in. v2 puts it on the call's result
- * metadata as `sessionID`; `sessionId` stays accepted for the legacy
- * `<task_metadata>` block.
- */
 export const readTaskSessionIdFromRecord = (value: unknown): string | undefined => {
     if (!value || typeof value !== 'object') return undefined;
     const record = value as Record<string, unknown>;
@@ -61,10 +53,8 @@ export const normalizeTaskSummaryEntries = (value: unknown): TaskToolSummaryEntr
                 title: typeof record.state?.title === 'string'
                     ? record.state.title
                     : typeof record.title === 'string' ? record.title : undefined,
-                // SAFETY: the legacy <task_metadata> block is JSON, so an
-                // object value here is already a JSON record.
                 input: record.state?.input && typeof record.state.input === 'object'
-                    ? record.state.input as ToolInput
+                    ? record.state.input as Record<string, unknown>
                     : undefined,
             },
         });
@@ -113,15 +103,18 @@ const projectMessageSummaryEntries = (message: MessageRecord): TaskToolSummaryEn
     if (message.info.role === 'assistant') {
         for (const part of message.parts) {
             if (part.type !== 'tool') continue;
-            const toolName = normalizeToolName(part.tool);
-            if (!toolName || isSubagentTool(toolName)) continue;
-            const state = part.state as { status?: string; input?: ToolInput } | undefined;
+            const toolName = part.tool?.trim().toLowerCase();
+            if (!toolName || toolName === 'task' || toolName === 'todowrite' || toolName === 'todoread') continue;
+            const state = part.state as { status?: string; title?: string; input?: unknown } | undefined;
             entries.push({
                 id: part.id,
                 tool: part.tool,
                 state: {
                     status: state?.status,
-                    input: state?.input,
+                    title: state?.title,
+                    input: state?.input && typeof state.input === 'object'
+                        ? state.input as Record<string, unknown>
+                        : undefined,
                 },
             });
         }

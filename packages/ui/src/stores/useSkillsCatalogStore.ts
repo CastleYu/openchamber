@@ -18,6 +18,7 @@ import { opencodeClient } from '@/lib/opencode/client';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { startConfigUpdate } from '@/lib/configUpdate';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { noteDeferredRestartFromPayload } from '@/lib/opencode/deferredRestart';
 
 const FALLBACK_SOURCES: SkillsCatalogSource[] = [
   {
@@ -368,6 +369,11 @@ export const useSkillsCatalogStore = create<SkillsCatalogState>()(
           if (payload.requiresManualRestart) {
             void get().loadCatalog({ refresh: true });
             return payload;
+          }
+
+          if (noteDeferredRestartFromPayload(payload, 'skills')) {
+            void get().loadCatalog({ refresh: true });
+            return { ...payload, restartDeferred: true };
           }
 
           if (payload.requiresReload) {

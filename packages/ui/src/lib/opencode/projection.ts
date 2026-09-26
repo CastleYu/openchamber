@@ -1,5 +1,6 @@
 /**
- * Projection of OpenCode v2 wire shapes into the OpenChamber domain model.
+ * OC2 internal wire projection, copied from official OpenChamber v2.0.1
+ * (63bd5070). Its output needs an adapter before reaching OC1 stores.
  *
  * Two consumers share this module: the client wrapper (projected pages of
  * sessions and messages) and the event reducer (one event at a time). Both
@@ -480,6 +481,7 @@ export function mergeConfigDocuments(entries: readonly ConfigEntry[]): Config {
   const merged: Record<string, Config[keyof Config]> = {}
   for (const entry of entries) {
     if (!isDocument(entry)) continue
+    // SAFETY: entries come from a typed Config document; Object.entries only erases its key/value association.
     for (const [key, value] of Object.entries(entry.info) as Array<[keyof Config, Config[keyof Config]]>) {
       if (value === undefined) continue
       const previous = merged[key]

@@ -1,18 +1,3 @@
-import { normalizeToolName } from '@/lib/opencode/tools';
-import {
-  isEditTool,
-  isPatchTool,
-  isShellTool,
-  isSubagentTool,
-  isWriteTool,
-} from '@/lib/opencode/tools';
-
-/** v2 file tools report `path`; the other keys cover MCP and plugin tools. */
-const readInputPath = (input: Record<string, unknown> | undefined): string | null => {
-  const value = input?.path ?? input?.filePath ?? input?.file_path ?? input?.sourcePath;
-  return typeof value === 'string' && value.length > 0 ? value : null;
-};
-
 export interface ToolMetadata {
   displayName: string;
   icon?: string;
@@ -33,7 +18,7 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
     category: 'file',
     outputLanguage: 'auto',
     inputFields: [
-      { key: 'path', label: 'File Path', type: 'file' },
+      { key: 'filePath', label: 'File Path', type: 'file' },
       { key: 'offset', label: 'Start Line', type: 'text' },
       { key: 'limit', label: 'Lines to Read', type: 'text' }
     ]
@@ -43,7 +28,7 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
     category: 'file',
     outputLanguage: 'auto',
     inputFields: [
-      { key: 'path', label: 'File Path', type: 'file' },
+      { key: 'filePath', label: 'File Path', type: 'file' },
       { key: 'content', label: 'Content', type: 'code' }
     ]
   },
@@ -52,13 +37,22 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
     category: 'file',
     outputLanguage: 'diff',
     inputFields: [
-      { key: 'path', label: 'File Path', type: 'file' },
+      { key: 'filePath', label: 'File Path', type: 'file' },
       { key: 'oldString', label: 'Find', type: 'code' },
       { key: 'newString', label: 'Replace', type: 'code' },
       { key: 'replaceAll', label: 'Replace All', type: 'text' }
     ]
   },
-  patch: {
+  multiedit: {
+    displayName: 'Multi-Edit',
+    category: 'file',
+    outputLanguage: 'diff',
+    inputFields: [
+      { key: 'filePath', label: 'File Path', type: 'file' },
+      { key: 'edits', label: 'Edits', type: 'code', language: 'json' }
+    ]
+  },
+  apply_patch: {
     displayName: 'Apply Patch',
     category: 'file',
     outputLanguage: 'diff',
@@ -67,26 +61,14 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
     ]
   },
 
-  // OpenCode 2 Code Mode: one tool whose input is a short JS script that calls
-  // the MCP and integration tools as functions.
-  execute: {
-    displayName: 'Script',
-    category: 'code',
-    outputLanguage: 'json',
-    inputFields: [
-      { key: 'code', label: 'Script', type: 'code', language: 'javascript' }
-    ]
-  },
-
-  shell: {
+  bash: {
     displayName: 'Shell Command',
     category: 'system',
     outputLanguage: 'text',
     inputFields: [
       { key: 'command', label: 'Command', type: 'command', language: 'bash' },
       { key: 'description', label: 'Description', type: 'text' },
-      { key: 'timeout', label: 'Timeout (ms)', type: 'text' },
-      { key: 'background', label: 'Background', type: 'text' }
+      { key: 'timeout', label: 'Timeout (ms)', type: 'text' }
     ]
   },
 
@@ -97,9 +79,7 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
     inputFields: [
       { key: 'pattern', label: 'Pattern', type: 'pattern' },
       { key: 'path', label: 'Directory', type: 'file' },
-      { key: 'include', label: 'Include Pattern', type: 'pattern' },
-      { key: 'literal', label: 'Literal Match', type: 'text' },
-      { key: 'caseSensitive', label: 'Case Sensitive', type: 'text' }
+      { key: 'include', label: 'Include Pattern', type: 'pattern' }
     ]
   },
   glob: {
@@ -111,14 +91,24 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
       { key: 'path', label: 'Directory', type: 'file' }
     ]
   },
-  subagent: {
+  list: {
+    displayName: 'List Directory',
+    category: 'file',
+    outputLanguage: 'text',
+    inputFields: [
+      { key: 'path', label: 'Directory', type: 'file' },
+      { key: 'ignore', label: 'Ignore Patterns', type: 'pattern' }
+    ]
+  },
+
+    task: {
     displayName: 'Agent Task',
     category: 'ai',
     outputLanguage: 'markdown',
     inputFields: [
       { key: 'description', label: 'Task', type: 'text' },
       { key: 'prompt', label: 'Instructions', type: 'text' },
-      { key: 'agent', label: 'Agent', type: 'text' }
+      { key: 'subagent_type', label: 'Agent Type', type: 'text' }
     ]
   },
 
@@ -153,40 +143,26 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
      ]
    },
 
+   todowrite: {
+     displayName: 'Update Todo List',
+     category: 'system',
+     outputLanguage: 'json',
+     inputFields: [
+       { key: 'todos', label: 'Todo Items', type: 'code', language: 'json' }
+     ]
+   },
+   todoread: {
+     displayName: 'Read Todo List',
+     category: 'system',
+     outputLanguage: 'json',
+     inputFields: []
+   },
    skill: {
      displayName: 'Load Skill',
      category: 'ai',
      outputLanguage: 'markdown',
      inputFields: [
-       { key: 'id', label: 'Skill', type: 'text' }
-     ]
-   },
-   // The `opencode` namespace: OpenCode managing itself.
-   session_rename: {
-     displayName: 'Rename Session',
-     category: 'system',
-     outputLanguage: 'json',
-     inputFields: [
-       { key: 'title', label: 'Title', type: 'text' },
-       { key: 'sessionID', label: 'Session', type: 'text' }
-     ]
-   },
-   session_move: {
-     displayName: 'Move Session',
-     category: 'system',
-     outputLanguage: 'json',
-     inputFields: [
-       { key: 'directory', label: 'Directory', type: 'file' },
-       { key: 'sessionID', label: 'Session', type: 'text' }
-     ]
-   },
-   models: {
-     displayName: 'Search Models',
-     category: 'system',
-     outputLanguage: 'json',
-     inputFields: [
-       { key: 'search', label: 'Search', type: 'text' },
-       { key: 'provider', label: 'Provider', type: 'text' }
+       { key: 'name', label: 'Skill Name', type: 'text' }
      ]
    },
     question: {
@@ -197,6 +173,19 @@ const TOOL_METADATA: Record<string, ToolMetadata> = {
          { key: 'questions', label: 'Questions', type: 'code', language: 'json' }
        ]
      },
+
+    lsp: {
+      displayName: 'LSP',
+      category: 'code',
+      outputLanguage: 'json',
+      inputFields: [
+        { key: 'operation', label: 'Operation', type: 'text' },
+        { key: 'filePath', label: 'File Path', type: 'file' },
+        { key: 'line', label: 'Line', type: 'text' },
+        { key: 'character', label: 'Character', type: 'text' },
+        { key: 'query', label: 'Query', type: 'text' }
+      ]
+    },
 
     openchamber: {
       displayName: 'OpenChamber',
@@ -257,8 +246,7 @@ function formatUnknownToolDisplayName(toolName: string): string {
 }
 
 export function getToolMetadata(toolName: string): ToolMetadata {
-  // Namespaced tools (`opencode.session_rename`) are keyed by their last segment.
-  return TOOL_METADATA[toolName] || TOOL_METADATA[normalizeToolName(toolName)] || {
+  return TOOL_METADATA[toolName] || {
     displayName: formatUnknownToolDisplayName(toolName),
     category: 'system',
     outputLanguage: 'text',
@@ -275,8 +263,8 @@ export function detectToolOutputLanguage(
 
   if (metadata.outputLanguage === 'auto') {
 
-    const filePath = readInputPath(input);
-    if (filePath) {
+    if (input?.filePath || input?.file_path || input?.sourcePath) {
+      const filePath = (input.filePath || input.file_path || input.sourcePath) as string;
       const language = getLanguageFromExtension(filePath);
       if (language) return language;
     }
@@ -735,36 +723,6 @@ export function isSvgFile(filePath: string): boolean {
   return filePath.toLowerCase().endsWith('.svg');
 }
 
-// Playable in a browser media element: the viewer plays these instead of
-// offering a download. What a runtime's engine cannot decode (an HEVC .mov,
-// a .mkv) still opens; the element reports the failure and the viewer says so.
-const AUDIO_EXTENSIONS = ['mp3', 'm4a', 'aac', 'wav', 'flac', 'ogg', 'oga', 'opus', 'weba'];
-const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'ogv', 'mkv'];
-const FONT_EXTENSIONS = ['ttf', 'otf', 'woff', 'woff2'];
-
-export function isAudioFile(filePath: string): boolean {
-  return AUDIO_EXTENSIONS.includes(getFileExtension(filePath));
-}
-
-export function isVideoFile(filePath: string): boolean {
-  return VIDEO_EXTENSIONS.includes(getFileExtension(filePath));
-}
-
-export function isFontFile(filePath: string): boolean {
-  return FONT_EXTENSIONS.includes(getFileExtension(filePath));
-}
-
-/** Comma- or tab-separated text the viewer can lay out as a table. */
-export function isDelimitedTableFile(filePath: string): boolean {
-  const ext = getFileExtension(filePath);
-  return ext === 'csv' || ext === 'tsv';
-}
-
-export function isMermaidFile(filePath: string): boolean {
-  const ext = getFileExtension(filePath);
-  return ext === 'mmd' || ext === 'mermaid';
-}
-
 /** Known non-text extensions that must not be opened or saved as UTF-8 text. */
 const BINARY_FILE_EXTENSIONS = new Set([
   // Documents / office
@@ -775,9 +733,9 @@ const BINARY_FILE_EXTENSIONS = new Set([
   // Images (svg is text and is excluded via isSvgFile)
   ...IMAGE_EXTENSIONS.filter((ext) => ext !== 'svg'),
   // Audio / video
-  ...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS, 'wma', 'avi', 'wmv',
+  'mp3', 'mp4', 'm4a', 'aac', 'flac', 'ogg', 'wav', 'wma', 'avi', 'mov', 'mkv', 'webm', 'wmv',
   // Fonts
-  ...FONT_EXTENSIONS, 'eot',
+  'ttf', 'otf', 'woff', 'woff2', 'eot',
   // Native / bytecode
   'exe', 'dll', 'so', 'dylib', 'bin', 'class', 'o', 'a', 'lib', 'wasm', 'node',
   // Databases / locks / misc binary
@@ -863,33 +821,53 @@ export function formatToolInput(input: Record<string, unknown>, toolName: string
     return typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : null);
   };
 
-  if (isShellTool(toolName)) {
+  if (toolName === 'bash') {
     const cmd = getString('command');
     if (cmd) return cmd;
   }
 
-  if (isSubagentTool(toolName)) {
+  if (toolName === 'lsp') {
+    const operation = getString('operation') || 'lsp';
+    const filePath = getString('filePath') || getString('file_path') || getString('path');
+    const line = getString('line');
+    const character = getString('character');
+    const query = getString('query');
+    const position = line && character ? ` (Line: ${line}; Character: ${character})` : '';
+
+    if (operation === 'workspaceSymbol') {
+      return query ? `Operation: ${operation} (Query: "${query}")` : `Operation: ${operation}`;
+    }
+
+    const summary = `Operation: ${operation}${position}`;
+    if (filePath) {
+      return `${summary}\n${filePath}`;
+    }
+
+    return summary;
+  }
+
+  if (toolName === 'task') {
     const prompt = getString('prompt');
     if (prompt) return prompt;
     const desc = getString('description');
     if (desc) return desc;
   }
 
-  if (isPatchTool(toolName) && typeof input === 'object') {
+  if (toolName === 'apply_patch' && typeof input === 'object') {
     const patchText = getString('patchText') || getString('patch_text') || getString('patch');
     if (patchText) {
       return patchText;
     }
   }
 
-  if (isEditTool(toolName) && typeof input === 'object') {
-    const filePath = readInputPath(input);
+  if ((toolName === 'edit' || toolName === 'multiedit') && typeof input === 'object') {
+    const filePath = getString('filePath') || getString('file_path') || getString('path');
     if (filePath) {
       return `File path: ${filePath}`;
     }
   }
 
-  if (isWriteTool(toolName) && typeof input === 'object') {
+  if (toolName === 'write' && typeof input === 'object') {
 
     const content = getString('content');
     if (content) {

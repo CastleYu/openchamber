@@ -6,39 +6,14 @@ const previous = getRuntimeUrlResolver()
 beforeEach(() => {
   configureRuntimeUrlResolver({ apiBaseUrl: "https://status.test" })
   opencodeClient.reconnectToRuntimeBaseUrl()
+  opencodeClient.bindRuntime({ generation: 'oc1', endpoint: 'https://status.test', epoch: 1, version: '1.18.32' })
 })
 afterEach(() => {
   setRuntimeUrlResolver(previous)
   opencodeClient.reconnectToRuntimeBaseUrl()
 })
 
-describe("v2 status and cancellation HTTP boundary", () => {
-  test("directory bootstrap blocking reads each spend one HTTP request", async () => {
-    const requests: Array<{ path: string; directory: string | null }> = []
-    const fetch = spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
-      const url = new URL(input instanceof Request ? input.url : input.toString())
-      const headers = new Headers(input instanceof Request ? input.headers : init?.headers)
-      requests.push({ path: url.pathname, directory: headers.get("x-opencode-directory") })
-      return Response.json({ data: [] })
-    })
-    try {
-      const options = { directories: ["C:/Tree with spaces"], includeGlobal: false }
-      expect(await opencodeClient.listPendingForms(options)).toEqual([])
-      expect(await opencodeClient.listPendingPermissions(options)).toEqual([])
-      expect(requests).toEqual([
-        { path: "/api/form", directory: encodeURIComponent("C:/Tree with spaces") },
-        { path: "/api/permission/request", directory: encodeURIComponent("C:/Tree with spaces") },
-      ])
-      requests.length = 0
-      await opencodeClient.listPendingForms({ directories: options.directories })
-      expect(requests).toHaveLength(2)
-      expect(requests[0].directory).toBeNull()
-      expect(requests[1].directory).toBe(encodeURIComponent("C:/Tree with spaces"))
-    } finally {
-      fetch.mockRestore()
-    }
-  })
-
+describe("directory status HTTP boundary", () => {
   test("the SDK Request's caller signal cancels a queued command read", async () => {
     const controller = new AbortController()
     const reason = new Error("runtime changed")
@@ -54,10 +29,10 @@ describe("v2 status and cancellation HTTP boundary", () => {
     })
     try {
       const sdk = createRuntimeOpencodeClient({ baseUrl: "https://status.test/api", requestTimeoutMs: 1_000 })
-      const request = sdk.command.list(undefined, { signal: controller.signal })
+      const request = sdk.command.list({ directory: "/repo" }, { signal: controller.signal })
       await ready
       controller.abort(reason)
-      expect(await request.catch((error: Error) => error)).toMatchObject({ reason: "Transport", cause: reason })
+      expect(await request.then((result) => result.error, (error) => error)).toBe(reason)
     } finally {
       controller.abort()
       fetch.mockRestore()
@@ -81,10 +56,10 @@ describe("v2 status and cancellation HTTP boundary", () => {
     })
     try {
       const sdk = createRuntimeOpencodeClient({ baseUrl: "https://status.test/api", requestTimeoutMs: 1_000 })
-      const request = sdk.command.list(undefined, { signal: controller.signal })
+      const request = sdk.command.list({ directory: "/repo" }, { signal: controller.signal })
       await new Promise((resolve) => setTimeout(resolve, 0))
       controller.abort(reason)
-      expect(await request.catch((error: Error) => error)).toMatchObject({ cause: reason })
+      expect(await request.then((result) => result.error, (error) => error)).toBe(reason)
     } finally {
       controller.abort()
       fetch.mockRestore()
@@ -113,7 +88,7 @@ describe("v2 status and cancellation HTTP boundary", () => {
     })
     try {
       const sdk = createRuntimeOpencodeClient({ baseUrl: "https://status.test/api", requestTimeoutMs: 20 })
-      const error = await sdk.command.list().then(() => undefined, (failure: Error) => failure)
+      const error = await sdk.command.list({ directory: "/repo" }).then((result) => result.error, (failure) => failure)
       expect(calls).toBe(1)
       expect(aborted).toBe(true)
       expect(error).toBeDefined()
@@ -129,32 +104,29 @@ describe("v2 status and cancellation HTTP boundary", () => {
   test("rejects invalid status bodies instead of granting empty idle authority", async () => {
     const fetch = spyOn(globalThis, "fetch")
     try {
-      for (const body of [null, [], { session: { type: "unknown" } }, { session: {} }, { "": { type: "running" } }]) {
-        fetch.mockImplementation(async () => Response.json({ data: body }))
-        expect(await opencodeClient.getActiveSessionStatuses()).toBeNull()
+      for (const body of [null, [], { session: { type: "unknown" } }, { session: { type: "retry" } }, { "": { type: "busy" } }]) {
+        fetch.mockImplementation(async () => Response.json(body))
+        expect(await opencodeClient.getSessionStatusForDirectory("/workspace")).toBeNull()
       }
-      fetch.mockImplementation(async () => Response.json({ data: {} }))
-      expect(await opencodeClient.getActiveSessionStatuses()).toEqual({})
+      fetch.mockImplementation(async () => Response.json({}))
+      expect(await opencodeClient.getSessionStatusForDirectory("/workspace")).toEqual({})
     } finally {
       fetch.mockRestore()
     }
   })
 
-  test("reads v2 activity globally even when the selected directory is a Windows root", async () => {
+  test("preserves Windows root addressing and valid retry fields through the real SDK", async () => {
     const requests: URL[] = []
-    const status = { session: { type: "running" } }
+    const status = { session: { type: "retry", attempt: 2, message: "Retrying", next: 1234 } }
     const fetch = spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       requests.push(new URL(input instanceof Request ? input.url : input.toString()))
-      return Response.json({ data: status })
+      return Response.json(status)
     })
     try {
-      opencodeClient.setDirectory("c:\\")
-      expect(await opencodeClient.getActiveSessionStatuses()).toEqual({ session: { type: "busy" } })
+      expect(await opencodeClient.getSessionStatusForDirectory("c:\\")).toEqual(status)
       expect(requests).toHaveLength(1)
-      expect(requests[0].pathname).toBe("/api/session/active")
-      expect(requests[0].searchParams.has("directory")).toBe(false)
+      expect(requests[0].searchParams.get("directory")).toBe("C:/")
     } finally {
-      opencodeClient.setDirectory(undefined)
       fetch.mockRestore()
     }
   })

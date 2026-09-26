@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import type { SyncEvent } from "@/lib/opencode/events"
+import type { Event } from "@opencode-ai/sdk/v2/client"
 import type { Session } from "@/lib/opencode/model"
 import { ChildStoreManager } from "../child-store"
 import { createEventRoutingIndex, handleEvent } from "../sync-context"
@@ -14,9 +14,8 @@ import { useGlobalSessionsStore } from "@/stores/useGlobalSessionsStore"
 
 const session = (id: string, directory: string, parentID?: string): Session => {
   const record: Session = {
-    id, directory, projectID: "project", title: id,
-    time: { created: 1, updated: 1 }, cost: 0,
-    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+    id, slug: id, directory, projectID: "project", title: id, version: "1",
+    time: { created: 1, updated: 1 },
   }
   if (parentID) record.parentID = parentID
   return record
@@ -52,10 +51,10 @@ describe("events for directories without a store", () => {
 
   test("a turn finishing in an unopened directory records an unread notification", () => {
     const routingIndex = createEventRoutingIndex()
-    const idle: SyncEvent = { type: "session.idle", properties: { sessionID: "ses_far" } }
-    const error: SyncEvent = {
-      type: "session.error",
-      properties: { sessionID: "ses_far", error: { type: "UnknownError", message: "boom" } },
+    const idle: Event = { id: "e1", type: "session.idle", properties: { sessionID: "ses_far" } }
+    const error: Event = {
+      id: "e2", type: "session.error",
+      properties: { sessionID: "ses_far", error: { name: "UnknownError", data: { message: "boom" } } },
     }
 
     handleEvent("/far", idle, childStores, routingIndex, getRuntimeKey())
@@ -70,16 +69,25 @@ describe("events for directories without a store", () => {
 
   test("a subtask finishing in an unopened directory is not a notification", () => {
     const routingIndex = createEventRoutingIndex()
-    handleEvent("/far", { type: "session.idle", properties: { sessionID: "ses_far_child" } },
+    handleEvent("/far", { id: "e1", type: "session.idle", properties: { sessionID: "ses_far_child" } },
       childStores, routingIndex, getRuntimeKey())
 
     expect(useNotificationStore.getState().list).toEqual([])
   })
 
+  test('OC1 keeps its immediate parent outcome notification while a child is active', () => {
+    const routing = createEventRoutingIndex()
+    handleEvent('/far', { id: 'child-busy', type: 'session.status', properties: { sessionID: 'ses_far_child', status: { type: 'busy' } } }, childStores, routing, getRuntimeKey())
+    handleEvent('/far', { id: 'parent-idle', type: 'session.idle', properties: { sessionID: 'ses_far' } }, childStores, routing, getRuntimeKey())
+    expect(useNotificationStore.getState().list).toHaveLength(1)
+    handleEvent('/far', { id: 'child-idle', type: 'session.idle', properties: { sessionID: 'ses_far_child' } }, childStores, routing, getRuntimeKey())
+    expect(useNotificationStore.getState().list).toHaveLength(1)
+  })
+
   test("a directory-less status event for a cached session is not filed into the only open store", () => {
     const routingIndex = createEventRoutingIndex()
     const open = childStores.getChild("/open")!
-    handleEvent("global", { type: "session.status", properties: { sessionID: "ses_far", status: { type: "busy" } } },
+    handleEvent("global", { id: "e1", type: "session.status", properties: { sessionID: "ses_far", status: { type: "busy" } } },
       childStores, routingIndex, getRuntimeKey())
 
     expect(open.getState().session_status.ses_far).toBeUndefined()
@@ -89,7 +97,7 @@ describe("events for directories without a store", () => {
   test("a directory-less event for an unknown session still uses the single-store fallback", () => {
     const routingIndex = createEventRoutingIndex()
     const open = childStores.getChild("/open")!
-    handleEvent("global", { type: "session.status", properties: { sessionID: "ses_new", status: { type: "busy" } } },
+    handleEvent("global", { id: "e1", type: "session.status", properties: { sessionID: "ses_new", status: { type: "busy" } } },
       childStores, routingIndex, getRuntimeKey())
 
     expect(open.getState().session_status.ses_new).toEqual({ type: "busy" })

@@ -1,16 +1,28 @@
-export type OpenCodeCompatibility = {
-  state: 'unavailable' | 'compatible' | 'incompatible';
+export const OPENCODE_GENERATION: Readonly<{
+  OC1: 'oc1';
+  OC2: 'oc2';
+  UNSUPPORTED: 'unsupported';
+  UNREACHABLE: 'unreachable';
+  UNKNOWN: 'unknown';
+}>;
+
+export const MINIMUM_OPENCODE_V2_VERSION: '2.0.15';
+
+export type OpenCodeGeneration = typeof OPENCODE_GENERATION[keyof typeof OPENCODE_GENERATION];
+
+export interface OpenCodeGenerationDescriptor {
+  generation: OpenCodeGeneration;
+  endpoint: string | null;
+  epoch: string | number;
   version: string | null;
-  installation: 'managed' | 'external' | 'bundled';
-  minimumVersion: string;
-  canInstall: boolean;
-};
-type Launch = { binary: string; args: string[] };
-type CliOptions = { cwd?: string; env?: NodeJS.ProcessEnv };
+}
+
 export function isSupportedOpenCodeVersion(version: string): boolean;
 export function readOpenCodeInfo(response: Response): Promise<{ version: string } | null>;
-export function readOpenCodeCliVersion(launch: Launch, options?: CliOptions): Promise<string>;
-export class UnsupportedOpenCodeVersionError extends Error { version: string; constructor(version: string); }
-export function requireOpenCodeV2(launch: Launch, options?: CliOptions): Promise<string>;
-export function readExternalOpenCodeVersion(baseUrl: string, headers: Record<string, string>, fetchImpl?: typeof fetch): Promise<string | null>;
-export function describeOpenCodeCompatibility(version: string | null, installation: OpenCodeCompatibility['installation'], canInstall: boolean): OpenCodeCompatibility;
+export function detectOpenCodeGeneration(options: {
+  endpoint: string;
+  epoch: string | number;
+  headers?: HeadersInit;
+  fetchImpl?: typeof fetch;
+  signal?: AbortSignal;
+}): Promise<OpenCodeGenerationDescriptor>;

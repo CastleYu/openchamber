@@ -16,43 +16,39 @@ describe('event stream protocol helpers', () => {
     expect(MESSAGE_STREAM_DIRECTORY_WS_PATH).toBe('/api/event/ws');
   });
 
-  it('reads the event id and directory out of a v2 payload', () => {
-    // OpenCode 2.x sends no `id:` line: the id is `payload.id` and the
-    // directory is `payload.location.directory`.
+  it('parses wrapped SSE payloads with event id and directory', () => {
     const envelope = parseSseEventEnvelope(
-      'data: {"id":"evt_1","type":"session.renamed","location":{"directory":"/tmp/project"},"data":{"sessionID":"s1"}}\n'
-    );
-
-    expect(envelope.eventId).toBe('evt_1');
-    expect(envelope.directory).toBe('/tmp/project');
-    expect(envelope.payload.type).toBe('session.renamed');
-  });
-
-  it('parses a wrapped payload, preferring the wrapper directory', () => {
-    const envelope = parseSseEventEnvelope(
+      'id: evt-1\n' +
       'event: message\n' +
-      'data: {"directory":"/tmp/project","payload":{"id":"evt_1","type":"session.renamed"}}\n'
+      'data: {"directory":"/tmp/project","payload":{"type":"session.updated"}}\n'
     );
 
     expect(envelope).toEqual({
-      eventId: 'evt_1',
+      eventId: 'evt-1',
       directory: '/tmp/project',
-      payload: { id: 'evt_1', type: 'session.renamed' },
+      payload: { type: 'session.updated' },
     });
   });
 
-  it('has no directory when the payload carries no location', () => {
+  it('derives directory from payload properties when not wrapped', () => {
     const envelope = parseSseEventEnvelope(
       'data: {"type":"openchamber:notification","properties":{"directory":"/tmp/project"}}\n'
     );
 
     expect(envelope).toEqual({
       eventId: null,
-      directory: null,
+      directory: '/tmp/project',
       payload: {
         type: 'openchamber:notification',
         properties: { directory: '/tmp/project' },
       },
+    });
+  });
+
+  it('keeps the OC2 wire event and reads its location directory', () => {
+    const wire = { id: 'wire-1', type: 'session.execution.started', location: { directory: '/work' }, data: { sessionID: 's1' } };
+    expect(parseSseEventEnvelope(`id: wire-1\ndata: ${JSON.stringify(wire)}\n`)).toEqual({
+      eventId: 'wire-1', directory: '/work', payload: wire,
     });
   });
 

@@ -1,11 +1,6 @@
 import React from 'react';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getSelectableModelId, useConfigStore, type ProviderModel, type ProviderWithModelList } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
-import type { Model, Provider } from '@/lib/opencode/model';
-
-// The config store regroups OpenCode v2's flat model list under its provider.
-type ProviderModel = Model;
-type ProviderWithModelList = Provider & { models: ProviderModel[] };
 
 export interface ModelListItem {
   provider: ProviderWithModelList;
@@ -29,8 +24,7 @@ export const useModelLists = () => {
       .map(({ providerID, modelID }) => {
         const provider = providers.find((p) => p.id === providerID);
         if (!provider) return null;
-        const providerModels = Array.isArray(provider.models) ? provider.models : [];
-        const model = providerModels.find((m: ProviderModel) => m.modelID === modelID);
+        const model = provider.models.find((m) => getSelectableModelId(m) === modelID);
         if (!model) return null;
         if (isHidden(providerID, modelID)) return null;
         return { provider, model, providerID, modelID };
@@ -43,8 +37,7 @@ export const useModelLists = () => {
       .map(({ providerID, modelID }) => {
         const provider = providers.find((p) => p.id === providerID);
         if (!provider) return null;
-        const providerModels = Array.isArray(provider.models) ? provider.models : [];
-        const model = providerModels.find((m: ProviderModel) => m.modelID === modelID);
+        const model = provider.models.find((m) => getSelectableModelId(m) === modelID);
         if (!model) return null;
         if (isHidden(providerID, modelID)) return null;
         return { provider, model, providerID, modelID };

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
+import type { AssistantMessage } from '@/lib/opencode/model';
 import { switchRuntimeEndpoint } from './runtime-switch';
 
 import {
@@ -7,6 +8,7 @@ import {
   releaseAutoReviewForward,
   hasFinalReviewMarker,
   isAutoReviewRuntimeCurrent,
+  isExpectedAutoReviewAssistantParent,
   stripFinalReviewMarker,
 } from './reviewFlow';
 import type { AutoReviewRun } from '@/stores/useAutoReviewStore';
@@ -37,6 +39,15 @@ describe('reviewFlow auto-review helpers', () => {
     expect(stripFinalReviewMarker(text)).toBe(text);
   });
 
+  test('requires assistant parent to match the auto-sent user message when provided', () => {
+    const matching: AssistantMessage = { id: 'msg_assistant_1', parentID: 'msg_user_auto', sessionID: 'review', role: 'assistant', time: { created: 1 }, agent: 'reviewer', providerID: 'provider', modelID: 'model' };
+    const unrelated: AssistantMessage = { id: 'msg_assistant_2', parentID: 'msg_user_manual', sessionID: 'review', role: 'assistant', time: { created: 1 }, agent: 'reviewer', providerID: 'provider', modelID: 'model' };
+
+    expect(isExpectedAutoReviewAssistantParent(matching, 'msg_user_auto')).toBe(true);
+    expect(isExpectedAutoReviewAssistantParent(unrelated, 'msg_user_auto')).toBe(false);
+    expect(isExpectedAutoReviewAssistantParent(unrelated)).toBe(true);
+  });
+
   test('runtime guard rejects runs from a stale runtime', () => {
     expect(isAutoReviewRuntimeCurrent('runtime-a')).toBe(true);
     switchRuntimeEndpoint({ apiBaseUrl: 'http://runtime-b.test', runtimeKey: 'runtime-b' });
@@ -59,7 +70,7 @@ describe('reviewFlow auto-review helpers', () => {
 
     const key = claimAutoReviewForward(run, 'msg_assistant_review');
 
-    expect(typeof key).toBe('string');
+    expect(key).not.toBeNull();
     expect(claimAutoReviewForward(run, 'msg_assistant_review')).toBeNull();
 
     releaseAutoReviewForward(key!);

@@ -19,7 +19,7 @@ import type { FormField, FormValue } from '@opencode/client';
  * a reply only when every external field answers `true`, so it records that
  * the user has seen the step with the link.
  */
-export type FieldValue = {
+type FieldValue = {
     text: string;
     number: number | null;
     boolean: boolean;
@@ -31,7 +31,7 @@ export type FieldValue = {
 export type FormValues = Record<string, FieldValue>;
 
 /** Fields whose value the user edits; `external` only links out. */
-export type AnswerableField = Exclude<FormField, { type: 'external' }>;
+type AnswerableField = Exclude<FormField, { type: 'external' }>;
 
 export const isAnswerableField = (field: FormField): field is AnswerableField => field.type !== 'external';
 
@@ -41,7 +41,7 @@ export const isAnswerableField = (field: FormField): field is AnswerableField =>
  * starting value or a bound, so they read as absent.
  */
 export const toFiniteNumber = (value: number | 'Infinity' | '-Infinity' | 'NaN' | undefined): number | null => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    if (value === undefined || value === 'Infinity' || value === '-Infinity' || value === 'NaN' || !Number.isFinite(value)) return null;
     return value;
 };
 
@@ -64,7 +64,7 @@ export type InitialFormValuesOptions = {
 };
 
 /** The card's starting state: every field seeded from its declared default. */
-export function initialFormValues(fields: readonly FormField[], options: InitialFormValuesOptions = {}): FormValues {
+export function initialFormValues(fields: readonly FormField[], options: InitialFormValuesOptions = {}) {
     const values: FormValues = {};
     for (const field of fields) {
         const value = emptyValue();
@@ -104,7 +104,7 @@ export function initialFormValues(fields: readonly FormField[], options: Initial
 export const valueOf = (values: FormValues, key: string): FieldValue => values[key] ?? emptyValue();
 
 /** The answer a single field contributes, or `undefined` when it has none yet. */
-export function fieldAnswer(field: AnswerableField, values: FormValues): FormValue | undefined {
+function fieldAnswer(field: AnswerableField, values: FormValues): FormValue | undefined {
     const value = valueOf(values, field.key);
     switch (field.type) {
         case 'string': {

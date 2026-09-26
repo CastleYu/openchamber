@@ -1,7 +1,8 @@
-import { buildAppliedResponse } from './config-mutation-response.js';
+import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
 
 export const registerConfigEntityRoutes = (app, dependencies) => {
   const {
+    getGeneration = () => 'oc1',
     resolveProjectDirectory,
     resolveOptionalProjectDirectory,
     getAgentSources,
@@ -28,13 +29,17 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     expandSnippets,
   } = dependencies;
 
+  const complete = (message, details) => getGeneration() === 'oc2'
+    ? buildAppliedResponse(message.replace(/\. Restart OpenCode to apply\.?$/, '.'), details)
+    : buildDeferredRestartResponse(message);
+
   // Persist to disk immediately; OpenCode restart is deferred to an explicit
   // Apply & Restart so settings edits do not interrupt live sessions.
   const completeMcpMutation = async (res, action, name, applyChange) => {
     const result = applyChange();
     const past = action === 'delete' ? 'deleted' : `${action}d`;
-    return res.json(buildAppliedResponse(
-      `MCP server "${name}" ${past}.`,
+    return res.json(complete(
+      `MCP server "${name}" ${past}. Restart OpenCode to apply.`,
       result,
     ));
   };
@@ -81,16 +86,13 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
   });
 
   app.get('/api/config/agents/:name/permissions', async (req, res) => {
+    if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
     try {
-      const agentName = req.params.name;
       const { directory, error } = await resolveProjectDirectory(req);
-      if (!directory) {
-        return res.status(400).json({ error });
-      }
-      res.json(getAgentPermissions(agentName, directory));
+      if (!directory) return res.status(400).json({ error });
+      return res.json(getAgentPermissions(req.params.name, directory));
     } catch (error) {
-      console.error('Failed to get agent permissions:', error);
-      res.status(500).json({ error: 'Failed to get agent permissions' });
+      return res.status(500).json({ error: error.message || 'Failed to get agent permissions' });
     }
   });
 
@@ -108,8 +110,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Scope:', scope, 'Working directory:', directory);
 
       const created = createAgent(agentName, config, directory, scope);
-      res.json(buildAppliedResponse(
-        `Agent ${agentName} created successfully.`,
+      res.json(complete(
+        `Agent ${agentName} created successfully. Restart OpenCode to apply.`,
         created,
       ));
     } catch (error) {
@@ -135,8 +137,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
       console.log(`[Server] Agent ${agentName} updated successfully`);
 
-      res.json(buildAppliedResponse(
-        `Agent ${agentName} updated successfully.`,
+      res.json(complete(
+        `Agent ${agentName} updated successfully. Restart OpenCode to apply.`,
         updated,
       ));
     } catch (error) {
@@ -156,8 +158,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
       const scope = req.body?.scope;
       deleteAgent(agentName, directory, scope);
-      res.json(buildAppliedResponse(
-        `Agent ${agentName} deleted successfully.`,
+      res.json(complete(
+        `Agent ${agentName} deleted successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
       console.error('Failed to delete agent:', error);
@@ -207,7 +209,9 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       }
       console.log(`[API:POST /api/config/mcp] Creating MCP server: ${name}`);
 
-      await completeMcpMutation(res, 'create', name, () => createMcpConfig(name, config, directory, scope));
+      await completeMcpMutation(res, 'create', name, () => {
+        createMcpConfig(name, config, directory, scope);
+      });
     } catch (error) {
       console.error('[API:POST /api/config/mcp/:name] Failed:', error);
       res.status(500).json({ error: error.message || 'Failed to create MCP server' });
@@ -224,7 +228,9 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       }
       console.log(`[API:PATCH /api/config/mcp] Updating MCP server: ${name}`);
 
-      await completeMcpMutation(res, 'update', name, () => updateMcpConfig(name, updates, directory));
+      await completeMcpMutation(res, 'update', name, () => {
+        updateMcpConfig(name, updates, directory);
+      });
     } catch (error) {
       console.error('[API:PATCH /api/config/mcp/:name] Failed:', error);
       if (error?.message === `MCP server "${req.params.name}" not found`) {
@@ -243,7 +249,9 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       }
       console.log(`[API:DELETE /api/config/mcp] Deleting MCP server: ${name}`);
 
-      await completeMcpMutation(res, 'delete', name, () => deleteMcpConfig(name, directory));
+      await completeMcpMutation(res, 'delete', name, () => {
+        deleteMcpConfig(name, directory);
+      });
     } catch (error) {
       console.error('[API:DELETE /api/config/mcp/:name] Failed:', error);
       res.status(500).json({ error: error.message || 'Failed to delete MCP server' });
@@ -276,16 +284,13 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
   });
 
   app.get('/api/config/commands/:name/config', async (req, res) => {
+    if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
     try {
-      const commandName = req.params.name;
       const { directory, error } = await resolveProjectDirectory(req);
-      if (!directory) {
-        return res.status(400).json({ error });
-      }
-      res.json(getCommandConfig(commandName, directory));
+      if (!directory) return res.status(400).json({ error });
+      return res.json(getCommandConfig(req.params.name, directory));
     } catch (error) {
-      console.error('Failed to get command config:', error);
-      res.status(500).json({ error: 'Failed to get command configuration' });
+      return res.status(500).json({ error: error.message || 'Failed to get command configuration' });
     }
   });
 
@@ -303,8 +308,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log('[Server] Scope:', scope, 'Working directory:', directory);
 
       const created = createCommand(commandName, config, directory, scope);
-      res.json(buildAppliedResponse(
-        `Command ${commandName} created successfully.`,
+      res.json(complete(
+        `Command ${commandName} created successfully. Restart OpenCode to apply.`,
         created,
       ));
     } catch (error) {
@@ -330,8 +335,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
       console.log(`[Server] Command ${commandName} updated successfully`);
 
-      res.json(buildAppliedResponse(
-        `Command ${commandName} updated successfully.`,
+      res.json(complete(
+        `Command ${commandName} updated successfully. Restart OpenCode to apply.`,
         updated,
       ));
     } catch (error) {
@@ -350,8 +355,8 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       }
 
       deleteCommand(commandName, directory);
-      res.json(buildAppliedResponse(
-        `Command ${commandName} deleted successfully.`,
+      res.json(complete(
+        `Command ${commandName} deleted successfully. Restart OpenCode to apply.`,
       ));
     } catch (error) {
       console.error('Failed to delete command:', error);

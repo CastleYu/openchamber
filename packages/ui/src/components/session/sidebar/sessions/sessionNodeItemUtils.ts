@@ -5,8 +5,6 @@ import { normalizePath } from '@/lib/pathNormalization';
 import { isChatDirectoryPath } from '@/lib/chatDirectories';
 import { resolveGlobalSessionDirectory } from '@/stores/useGlobalSessionsStore';
 import { getPinnedSessionKey } from '@/stores/useSessionPinnedStore';
-import { getGitHubPrStatusKey } from '@/stores/useGitHubPrStatusStore';
-import type { WorktreeMetadata } from '@/types/worktree';
 import type { SessionNode } from '../types';
 
 /**
@@ -83,7 +81,7 @@ export const nodeContainsSessionId = (node: SessionNode, sessionId: string | nul
   return false;
 };
 
-export type FormBadgeSessionScope = {
+export type QuestionBadgeSessionScope = {
   directory: string;
   sessionIDs: string[];
 };
@@ -121,11 +119,11 @@ export const getSessionWorktreeMenuDisabled = ({
  * stay correct for worktree/subtask sessions without bootstrapping their
  * directory stores.
  */
-export const selectFormBadgeSessionScopes = (
+export const selectQuestionBadgeSessionScopes = (
   node: SessionNode,
   isExpanded: boolean,
   fallbackDirectory: string | null,
-): FormBadgeSessionScope[] => {
+): QuestionBadgeSessionScope[] => {
   const sessionIDsByDirectory = new Map<string, string[]>();
   const visit = (current: SessionNode): void => {
     const directory = resolveGlobalSessionDirectory(current.session)
@@ -360,37 +358,6 @@ export const selectRowBadgeVisibilityClass = (input: {
 }): string => {
   if (input.actionsAlwaysVisible) return '';
   return `transition-opacity duration-150 ${input.menuOpen ? 'opacity-0' : input.hideOnHoverClass}`;
-};
-
-/**
- * Branch line for a row's tooltip and recent-list marker. An explicit
- * `secondaryMeta` means the owning projection already filtered the branch
- * (Recent and Timeline hide HEAD; Recent also hides a branch equal to the
- * project label), so a null `branchLabel` there is a deliberate filter and
- * must not fall through to the raw worktree branch. Project and Chats rows
- * pass no `secondaryMeta` and keep the worktree fallback.
- */
-export const resolveTooltipBranchLabel = (
-  secondaryMeta: { projectLabel?: string | null; branchLabel?: string | null } | null | undefined,
-  worktreeBranch: string | null | undefined,
-): string | null => (
-  secondaryMeta
-    ? (secondaryMeta.branchLabel ?? null)
-    : (worktreeBranch ?? null)
-);
-
-/**
- * GitHub PR lookup key for a row. The row's worktree is the only source of
- * the directory/branch pair; VS Code renders no PR badges.
- */
-export const resolveSessionPrLookupKey = (
-  worktree: WorktreeMetadata | null | undefined,
-  isVSCode: boolean,
-): string | null => {
-  if (isVSCode) return null;
-  const branch = worktree?.branch?.trim();
-  const directory = normalizePath(worktree?.path ?? null);
-  return branch && directory ? getGitHubPrStatusKey(directory, branch) : null;
 };
 
 /**

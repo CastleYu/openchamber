@@ -2,13 +2,48 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createGlobalMessageStreamHub } from './global-hub.js';
 
+it('keeps OC2 browser wire events raw and resets replay across kernel identities', async () => {
+  let runtime = { generation: 'oc1', endpoint: 'http://one', epoch: 1 };
+  const urls = [];
+  const received = [];
+  const statuses = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (path) => `http://127.0.0.1${path}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    upstreamReconnectDelayMs: 60_000,
+    fetchImpl: async (url) => {
+      urls.push(url);
+      const wire = runtime.generation === 'oc2'
+        ? { id: 'v2-1', type: 'session.execution.started', location: { directory: '/work' }, data: { sessionID: 's1' } }
+        : { type: 'session.updated', properties: { info: { id: 's1' } } };
+      return createSseResponse({ blocks: [`id: ${runtime.generation}-event\ndata: ${JSON.stringify(wire)}\n\n`] });
+    },
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  hub.subscribeStatus((status) => statuses.push(status.type));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(received).toHaveLength(1));
+    expect(received[0].translated()).toEqual([received[0].payload]);
+    hub.stop();
+    runtime = { generation: 'oc2', endpoint: 'http://two', epoch: 2 };
+    hub.start();
+    await waitForAssertion(() => expect(received).toHaveLength(2));
+    expect(urls).toEqual(['http://127.0.0.1/global/event', 'http://127.0.0.1/api/event']);
+    expect(received[1].payload.type).toBe('session.execution.started');
+    expect(received[1].translated().some((event) => event.type === 'session.status')).toBe(true);
+    expect(hub.replayAfter('oc1-event')).toBeNull();
+    expect(statuses).toContain('identity-change');
+  } finally { hub.stop(); }
+});
+
 it('bounds a contiguous replay suffix by UTF-8 bytes and event count', async () => {
-  // v2 carries the event id inside the payload; there are no `id:` SSE lines.
-  const blocks = Array.from({ length: 8 }, (_, i) => `data: ${JSON.stringify({ id: `e${i}`, type: 'message', properties: { text: '界'.repeat(40) } })}\n\n`);
+  const blocks = Array.from({ length: 8 }, (_, i) => `id: e${i}\ndata: ${JSON.stringify({ type: 'message', properties: { text: '界'.repeat(40) } })}\n\n`);
   const received = [];
   const hub = createGlobalMessageStreamHub({
     buildOpenCodeUrl: path => `http://127.0.0.1:4096${path}`,
-    getOpenCodeAuthHeaders: () => ({}), replayLimit: 3, replayByteLimit: 600,
+    getOpenCodeAuthHeaders: () => ({}), replayLimit: 3, replayByteLimit: 550,
     upstreamReconnectDelayMs: 60_000,
     fetchImpl: async () => createSseResponse({ blocks }),
   });
@@ -20,8 +55,8 @@ it('bounds a contiguous replay suffix by UTF-8 bytes and event count', async () 
     expect(hub.replayAfter('e5')).toBeNull();
     const tail = hub.replayAfter('e6');
     expect(tail.map(entry => entry.eventId)).toEqual(['e7']);
-    expect(Buffer.byteLength(tail[0].serializedFrame) * 2).toBeLessThanOrEqual(600);
-    expect(Buffer.byteLength(tail[0].serializedFrame) * 3).toBeGreaterThan(600);
+    expect(Buffer.byteLength(tail[0].serializedFrame) * 2).toBeLessThanOrEqual(550);
+    expect(Buffer.byteLength(tail[0].serializedFrame) * 3).toBeGreaterThan(550);
   } finally { hub.stop(); }
 });
 
@@ -63,10 +98,67 @@ async function waitForAssertion(assertion) {
   throw lastError;
 }
 
-const deltaBlock = (id, text, ordinal = 1) => `id: ${id}\ndata: ${JSON.stringify({
-  id, type: 'session.text.delta',
-  data: { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal, delta: text },
+const deltaBlock = (id, text, partID = 'prt_a') => `id: ${id}\ndata: ${JSON.stringify({
+  id, type: 'message.part.delta',
+  properties: { sessionID: 'ses_1', messageID: 'msg_1', partID, field: 'text', delta: text },
 })}\n\n`;
+
+it('does not commit a buffered OC1 delta after its kernel epoch retires', async () => {
+  let runtime = { generation: 'oc1', endpoint: 'http://one.test', epoch: 1 };
+  let upstream;
+  const received = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (pathname) => `${runtime.endpoint}${pathname}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    deltaCoalesceWindowMs: 1000,
+    fetchImpl: async () => new Response(new ReadableStream({ start(controller) { upstream = controller; } })),
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(upstream).toBeTruthy());
+    upstream.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'first' } })}\n\n`));
+    await waitForAssertion(() => expect(received.map((event) => event.payload.properties?.delta)).toEqual(['first']));
+    upstream.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'pending-old' } })}\n\n`));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    runtime = { ...runtime, epoch: 2 };
+    hub.stop();
+    expect(received.map((event) => event.payload.properties?.delta)).toEqual(['first']);
+    expect(hub.replayAfter(received[0].eventId)).toBeNull();
+  } finally {
+    hub.stop();
+    try { upstream?.close(); } catch { /* Stream may already be canceled. */ }
+  }
+});
+
+it('commits a buffered OC1 delta when stopping within the same kernel epoch', async () => {
+  const runtime = { generation: 'oc1', endpoint: 'http://one.test', epoch: 1 };
+  let upstream;
+  const received = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: (pathname) => `${runtime.endpoint}${pathname}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    deltaCoalesceWindowMs: 1000,
+    fetchImpl: async () => new Response(new ReadableStream({ start(controller) { upstream = controller; } })),
+  });
+  hub.subscribeEvent((event) => received.push(event));
+  try {
+    hub.start();
+    await waitForAssertion(() => expect(upstream).toBeTruthy());
+    upstream.enqueue(new TextEncoder().encode(deltaBlock('first', 'first')));
+    await waitForAssertion(() => expect(received).toHaveLength(1));
+    upstream.enqueue(new TextEncoder().encode(deltaBlock('pending', 'pending')));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    hub.stop();
+    expect(received.map((event) => event.payload.properties.delta)).toEqual(['first', 'pending']);
+    expect(hub.replayAfter(received[0].eventId)).toHaveLength(1);
+  } finally {
+    hub.stop();
+    try { upstream?.close(); } catch { /* Stream may already be canceled. */ }
+  }
+});
 
 const createDeltaHub = ({ blocks, deltaCoalesceWindowMs }) => createGlobalMessageStreamHub({
   buildOpenCodeUrl: (pathname) => `http://127.0.0.1:4096${pathname}`,
@@ -76,15 +168,15 @@ const createDeltaHub = ({ blocks, deltaCoalesceWindowMs }) => createGlobalMessag
   fetchImpl: async () => createSseResponse({ blocks }),
 });
 
-// What a browser holds after applying frames in order: text per stream
-// ordinal, and the text each stream had when a snapshot barrier passed.
+// What a browser holds after applying frames in order: text per part, and the
+// text each part had when a snapshot barrier passed.
 const applyFrames = (frames) => {
   const text = {};
   const barriers = [];
   for (const frame of frames) {
     const payload = frame.payload;
-    if (payload.type === 'session.text.delta') {
-      text[payload.data.ordinal] = (text[payload.data.ordinal] ?? '') + payload.data.delta;
+    if (payload.type === 'message.part.delta') {
+      text[payload.properties.partID] = (text[payload.properties.partID] ?? '') + payload.properties.delta;
     } else {
       barriers.push({ id: payload.id, seen: { ...text } });
     }
@@ -100,7 +192,7 @@ describe('delta coalescing in the global hub', () => {
     hub.subscribeEvent((event) => received.push(event));
     try {
       hub.start();
-      await waitForAssertion(() => expect(applyFrames(received).text[1]).toBe(words.join('')));
+      await waitForAssertion(() => expect(applyFrames(received).text.prt_a).toBe(words.join('')));
       expect(received.length).toBeLessThanOrEqual(3);
       expect(received.at(-1).eventId).toBe('e0119');
     } finally { hub.stop(); }
@@ -110,9 +202,9 @@ describe('delta coalescing in the global hub', () => {
     const blocks = [];
     let id = 0;
     const nextId = () => `e${String(id++).padStart(4, '0')}`;
-    for (let index = 0; index < 40; index += 1) blocks.push(deltaBlock(nextId(), `a${index}.`, index % 3 === 0 ? 2 : 1));
+    for (let index = 0; index < 40; index += 1) blocks.push(deltaBlock(nextId(), `a${index}.`, index % 3 === 0 ? 'prt_b' : 'prt_a'));
     const snapshotId = nextId();
-    blocks.push(`id: ${snapshotId}\ndata: ${JSON.stringify({ id: snapshotId, type: 'session.text.ended', data: { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, text: '' } })}\n\n`);
+    blocks.push(`id: ${snapshotId}\ndata: ${JSON.stringify({ id: snapshotId, type: 'message.part.updated', properties: { part: { id: 'prt_a', messageID: 'msg_1' } } })}\n\n`);
     for (let index = 0; index < 40; index += 1) blocks.push(deltaBlock(nextId(), `b${index}.`));
 
     const hub = createDeltaHub({ blocks });
@@ -122,13 +214,13 @@ describe('delta coalescing in the global hub', () => {
       hub.start();
       const expectedA = [...Array(40).keys()].filter((index) => index % 3 !== 0).map((index) => `a${index}.`).join('')
         + [...Array(40).keys()].map((index) => `b${index}.`).join('');
-      await waitForAssertion(() => expect(applyFrames(received).text[1]).toBe(expectedA));
+      await waitForAssertion(() => expect(applyFrames(received).text.prt_a).toBe(expectedA));
       expect(received.length).toBeLessThan(blocks.length / 4);
 
       const complete = applyFrames(received);
       // The snapshot barrier saw exactly the text that arrived before it.
       expect(complete.barriers).toHaveLength(1);
-      expect(complete.barriers[0].seen[1]).toBe([...Array(40).keys()].filter((index) => index % 3 !== 0).map((index) => `a${index}.`).join(''));
+      expect(complete.barriers[0].seen.prt_a).toBe([...Array(40).keys()].filter((index) => index % 3 !== 0).map((index) => `a${index}.`).join(''));
 
       // A socket that drops after any frame reconnects with that frame's id.
       for (let cut = 0; cut < received.length; cut += 1) {
@@ -140,17 +232,17 @@ describe('delta coalescing in the global hub', () => {
     } finally { hub.stop(); }
   });
 
-  // OpenCode sends no SSE ids at all. Before the hub numbered such events
+  // OpenCode 1.18 sends no SSE ids at all. Before the hub numbered such events
   // itself the replay buffer stayed empty and every reconnect lost its gap.
   it('numbers id-less upstream events so a reconnect resumes from any cursor', async () => {
-    const idless = (type, data) => `data: ${JSON.stringify({ type, data })}\n\n`;
+    const idless = (type, properties) => `data: ${JSON.stringify({ type, properties })}\n\n`;
     const blocks = [];
     for (let index = 0; index < 30; index += 1) {
-      blocks.push(idless('session.text.delta', { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, delta: `a${index}.` }));
+      blocks.push(idless('message.part.delta', { sessionID: 'ses_1', messageID: 'msg_1', partID: 'prt_a', field: 'text', delta: `a${index}.` }));
     }
-    blocks.push(idless('session.text.ended', { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, text: '' }));
+    blocks.push(idless('message.part.updated', { part: { id: 'prt_a', messageID: 'msg_1' } }));
     for (let index = 0; index < 30; index += 1) {
-      blocks.push(idless('session.text.delta', { sessionID: 'ses_1', assistantMessageID: 'msg_1', ordinal: 1, delta: `b${index}.` }));
+      blocks.push(idless('message.part.delta', { sessionID: 'ses_1', messageID: 'msg_1', partID: 'prt_a', field: 'text', delta: `b${index}.` }));
     }
 
     const hub = createDeltaHub({ blocks });
@@ -159,7 +251,7 @@ describe('delta coalescing in the global hub', () => {
     try {
       hub.start();
       const expected = [...Array(30).keys()].map((index) => `a${index}.`).join('') + [...Array(30).keys()].map((index) => `b${index}.`).join('');
-      await waitForAssertion(() => expect(applyFrames(received).text[1]).toBe(expected));
+      await waitForAssertion(() => expect(applyFrames(received).text.prt_a).toBe(expected));
 
       const ids = received.map((event) => event.eventId);
       expect(ids.every((eventId) => typeof eventId === 'string' && eventId.length > 0)).toBe(true);
@@ -199,7 +291,7 @@ describe('delta coalescing in the global hub', () => {
     hub.stop();
 
     const tail = hub.replayAfter('e0').map((entry) => JSON.parse(entry.serializedFrame));
-    expect(applyFrames(tail).text[1]).toBe('two three');
+    expect(applyFrames(tail).text.prt_a).toBe('two three');
     expect(tail.at(-1).eventId).toBe('e2');
   });
 
@@ -217,7 +309,7 @@ describe('delta coalescing in the global hub', () => {
 
       hub.flushPending();
 
-      expect(applyFrames(received).text[1]).toBe('one two three');
+      expect(applyFrames(received).text.prt_a).toBe('one two three');
       expect(hub.replayAfter('e2')).toEqual([]);
     } finally { hub.stop(); }
   });
@@ -233,7 +325,7 @@ describe('createGlobalMessageStreamHub', () => {
       upstreamReconnectDelayMs: 100,
       fetchImpl: async () => createSseResponse({
         blocks: [
-          'data: {"id":"evt-1","type":"session.updated","properties":{}}\n\n',
+          'id: evt-1\ndata: {"type":"session.updated","properties":{}}\n\n',
         ],
       }),
     });
@@ -295,7 +387,7 @@ describe('createGlobalMessageStreamHub', () => {
       upstreamReconnectDelayMs: 100,
       fetchImpl: async () => createSseResponse({
         blocks: [
-          'data: {"id":"evt-1","type":"session.updated","properties":{}}\n\n',
+          'id: evt-1\ndata: {"type":"session.updated","properties":{}}\n\n',
         ],
       }),
     });

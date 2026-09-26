@@ -1,7 +1,5 @@
 export type DisplayModel = Record<string, unknown> & {
   id?: unknown;
-  /** v2 catalog models carry the bare id here; `id` is provider-qualified. */
-  modelID?: unknown;
   name?: unknown;
 };
 
@@ -256,10 +254,7 @@ const getProviderModel = (provider: DisplayProvider, modelId: string): DisplayMo
   }
 
   if (Array.isArray(models)) {
-    // Callers hold the bare model id an assistant message reports, which v2
-    // exposes as `modelID`; `id` is the provider-qualified form.
-    return models.find((model) => normalizeString(model.modelID) === modelId)
-      ?? models.find((model) => normalizeString(model.id) === modelId);
+    return models.find((model) => normalizeString(model.id) === modelId);
   }
 
   return models[modelId];

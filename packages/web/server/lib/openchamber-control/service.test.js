@@ -10,10 +10,8 @@ const createService = (overrides = {}) => {
   const client = {
     session: {
       list: vi.fn(async () => ({ data: [] })),
-      active: vi.fn(async () => ({})),
-    },
-    message: {
-      list: vi.fn(async () => ({ data: [] })),
+      status: vi.fn(async () => ({ data: {} })),
+      messages: vi.fn(async () => ({ data: [] })),
     },
   };
   const sessionService = {
@@ -50,6 +48,37 @@ const createService = (overrides = {}) => {
 };
 
 describe('OpenChamber control service', () => {
+  const oc2 = { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://test', epoch: 1 }) };
+  it('delivers notifications through the injected OC2 runtime', async () => {
+    const notifyUser = vi.fn(async () => ({ status: 200, body: { delivered: true } }));
+    const { service } = createService({ notifyUser, kernelOperations: oc2 });
+    await expect(service.execute('notify.send', { title: 'Done' }, '/repo', { contextSessionId: 'ses_1' }))
+      .resolves.toEqual({ delivered: true });
+    expect(notifyUser).toHaveBeenCalledWith({ title: 'Done', body: undefined, showWhenFocused: undefined,
+      sessionId: 'ses_1', directory: '/repo' });
+  });
+
+  it('passes file.open to the connected viewer and reports unavailable viewers', async () => {
+    const request = vi.fn(async () => ({ path: '/repo/out.csv', size: 3, opened: true }));
+    const { service } = createService({ fileOpen: { request }, kernelOperations: oc2 });
+    await expect(service.execute('file.open', { path: 'out.csv' }, '/repo', { contextSessionId: 'ses_1' }))
+      .resolves.toEqual({ path: '/repo/out.csv', size: 3, opened: true });
+    expect(request).toHaveBeenCalledWith({ path: 'out.csv', directory: '/repo', sessionId: 'ses_1' });
+    await expect(createService({ kernelOperations: oc2 }).service.execute('file.open', { path: 'out.csv' }, '/repo'))
+      .rejects.toMatchObject({ statusCode: 503 });
+  });
+  it('rejects new agent actions before delivery on OC1', async () => {
+    const notifyUser = vi.fn();
+    const request = vi.fn();
+    const { service } = createService({ notifyUser, fileOpen: { request },
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc1', endpoint: 'http://test', epoch: 1 }) } });
+    for (const action of ['notify.send', 'file.open']) {
+      await expect(service.execute(action, { title: 'Done', path: 'out.csv' }, '/repo'))
+        .rejects.toMatchObject({ statusCode: 501 });
+    }
+    expect(notifyUser).not.toHaveBeenCalled();
+    expect(request).not.toHaveBeenCalled();
+  });
   it('serves project and model projections without an HTTP or CLI round trip', async () => {
     const { service } = createService();
     await expect(service.execute('projects.list')).resolves.toEqual({
@@ -139,12 +168,20 @@ describe('OpenChamber control service', () => {
   });
 
   it('resolves the target session directory from the global session list when send omits it', async () => {
-    const { service, sessionService, client } = createService();
-    client.session.list.mockResolvedValue({
-      data: [
-        { id: 'ses_other', location: { directory: '/repo/worktrees/other' } },
-        { id: 'ses_target', location: { directory: '/repo/worktrees/target' } },
-      ],
+    const { service, sessionService, client } = createService({
+      createClient: () => ({
+        ...client,
+        experimental: {
+          session: {
+            list: vi.fn(async () => ({
+              data: [
+                { id: 'ses_other', directory: '/repo/worktrees/other' },
+                { id: 'ses_target', directory: '/repo/worktrees/target' },
+              ],
+            })),
+          },
+        },
+      }),
     });
     sessionService.send.mockResolvedValue({ sessionId: 'ses_target', directory: '/repo/worktrees/target', promptDispatched: true });
 
@@ -154,7 +191,12 @@ describe('OpenChamber control service', () => {
   });
 
   it('falls back to the context directory when the session is not in the global list', async () => {
-    const { service, sessionService } = createService();
+    const { service, sessionService, client } = createService({
+      createClient: () => ({
+        ...client,
+        experimental: { session: { list: vi.fn(async () => ({ data: [] })) } },
+      }),
+    });
     sessionService.send.mockResolvedValue({ sessionId: 'ses_unknown', directory: '/repo', promptDispatched: true });
 
     await service.execute('session.send', { sessionId: 'ses_unknown', prompt: 'Continue' }, '/repo');
@@ -174,11 +216,11 @@ describe('OpenChamber control service', () => {
       promptDispatched: true,
       baselineAssistantMessageId: 'msg_old',
     });
-    client.session.active.mockResolvedValue({});
-    client.message.list
-      .mockResolvedValueOnce({ data: [{ id: 'msg_old', type: 'assistant', time: { completed: 900 }, content: [{ type: 'text', text: 'old' }] }] })
-      .mockResolvedValueOnce({ data: [{ id: 'msg_new', type: 'assistant', time: { completed: 1500 }, content: [{ type: 'text', text: 'done' }] }] })
-      .mockResolvedValueOnce({ data: [{ id: 'msg_new', type: 'assistant', time: { completed: 1500 }, content: [{ type: 'text', text: 'done' }] }] });
+    client.session.status.mockResolvedValue({ data: { ses_1: { type: 'idle' } } });
+    client.session.messages
+      .mockResolvedValueOnce({ data: [{ info: { id: 'msg_old', role: 'assistant', time: { completed: 900 } }, parts: [{ type: 'text', text: 'old' }] }] })
+      .mockResolvedValueOnce({ data: [{ info: { id: 'msg_new', role: 'assistant', time: { completed: 1500 } }, parts: [{ type: 'text', text: 'done' }] }] })
+      .mockResolvedValueOnce({ data: [{ info: { id: 'msg_new', role: 'assistant', time: { completed: 1500 } }, parts: [{ type: 'text', text: 'done' }] }] });
 
     await expect(service.execute('session.create', {
       directory: '/repo',
@@ -190,38 +232,25 @@ describe('OpenChamber control service', () => {
       sessionStatus: { type: 'idle' },
       lastAssistantMessage: expect.objectContaining({ id: 'msg_new', text: 'done' }),
     }));
-    expect(client.session.active).toHaveBeenCalledTimes(2);
+    expect(client.session.status).toHaveBeenCalledTimes(2);
   });
 
-  it('filters sessions archived in OpenChamber state and adds global statuses', async () => {
-    const { service, client } = createService({
-      archiveStore: { isArchived: (id) => (id === 'ses_archived' ? 100 : null) },
-    });
+  it('filters archived sessions and adds directory-scoped statuses', async () => {
+    const { service, client } = createService();
     client.session.list.mockResolvedValue({ data: [
-      { id: 'ses_active', location: { directory: '/repo' }, time: {} },
-      { id: 'ses_archived', location: { directory: '/repo' }, time: {} },
-      { id: 'ses_other', location: { directory: '/other' }, time: {} },
+      { id: 'ses_active', directory: '/repo', time: {} },
+      { id: 'ses_archived', directory: '/repo', time: { archived: 100 } },
+      { id: 'ses_other', directory: '/other', time: {} },
     ] });
-    client.session.active.mockResolvedValue({ ses_active: { type: 'running' } });
+    client.session.status
+      .mockResolvedValueOnce({ data: { ses_active: { type: 'busy' } } })
+      .mockRejectedValueOnce(new Error('unavailable'));
 
     await expect(service.execute('session.list', { limit: 10, withStatus: true })).resolves.toEqual({
       sessions: [
-        { id: 'ses_active', location: { directory: '/repo' }, time: {}, status: { type: 'busy' } },
-        { id: 'ses_other', location: { directory: '/other' }, time: {}, status: { type: 'idle' } },
+        { id: 'ses_active', directory: '/repo', time: {}, status: { type: 'busy' } },
+        { id: 'ses_other', directory: '/other', time: {}, status: { type: 'unknown' } },
       ],
-      limit: 10,
-      directory: null,
-      archived: 'excluded',
-    });
-  });
-
-  it('reports unknown status when the active-session read fails', async () => {
-    const { service, client } = createService();
-    client.session.list.mockResolvedValue({ data: [{ id: 'ses_active', location: { directory: '/repo' }, time: {} }] });
-    client.session.active.mockRejectedValue(new Error('unavailable'));
-
-    await expect(service.execute('session.list', { limit: 10, withStatus: true })).resolves.toEqual({
-      sessions: [{ id: 'ses_active', location: { directory: '/repo' }, time: {}, status: { type: 'unknown' } }],
       limit: 10,
       directory: null,
       archived: 'excluded',
@@ -234,15 +263,15 @@ describe('OpenChamber control service', () => {
     expect(client.session.list).not.toHaveBeenCalled();
   });
 
-  it('projects only ordered text content from session messages', async () => {
+  it('projects only ordered text parts from session messages', async () => {
     const { service, client } = createService();
-    client.message.list.mockResolvedValue({ data: [
+    client.session.messages.mockResolvedValue({ data: [
       {
-        id: 'msg_assistant', type: 'assistant', model: { providerID: 'openai', id: 'gpt-5.4-mini' }, time: { created: 20, completed: 30 },
-        content: [{ type: 'reasoning', text: 'hidden' }, { type: 'text', text: 'First ' }, { type: 'tool' }, { type: 'text', text: 'answer' }],
+        info: { id: 'msg_assistant', role: 'assistant', providerID: 'openai', modelID: 'gpt-5.4-mini', time: { created: 20, completed: 30 } },
+        parts: [{ type: 'reasoning', text: 'hidden' }, { type: 'text', text: 'First ' }, { type: 'tool' }, { type: 'text', text: 'answer' }],
       },
-      { id: 'msg_user', type: 'user', time: { created: 10 }, text: 'Question' },
-      { id: 'msg_tool', type: 'assistant', time: { created: 15 }, content: [{ type: 'tool' }] },
+      { info: { id: 'msg_user', role: 'user', time: { created: 10 } }, parts: [{ type: 'text', text: 'Question' }] },
+      { info: { id: 'msg_tool', role: 'assistant', time: { created: 15 } }, parts: [{ type: 'tool' }] },
     ] });
 
     await expect(service.execute('session.messages', {
@@ -265,32 +294,6 @@ describe('OpenChamber control service', () => {
   it('rejects actions outside the fixed contract', async () => {
     const { service } = createService();
     await expect(service.execute('session.delete')).rejects.toThrow('Unsupported OpenChamber action');
-  });
-});
-
-describe('file.open', () => {
-  it('hands the path, the session directory and the session to the file viewer', async () => {
-    const request = vi.fn(async () => ({ path: '/repo/out.csv', size: 3, opened: true }));
-    const { service } = createService({ fileOpen: { request } });
-
-    const result = await service.execute('file.open', { path: 'out.csv' }, '/repo', { contextSessionId: 'ses_1' });
-
-    expect(request).toHaveBeenCalledWith({ path: 'out.csv', directory: '/repo', sessionId: 'ses_1' });
-    expect(result).toEqual({ path: '/repo/out.csv', size: 3, opened: true });
-  });
-
-  it('lets an explicit directory win over the session directory', async () => {
-    const request = vi.fn(async () => ({ path: '/other/out.csv', size: 3, opened: true }));
-    const { service } = createService({ fileOpen: { request } });
-
-    await service.execute('file.open', { path: 'out.csv', directory: '/other' }, '/repo');
-
-    expect(request).toHaveBeenCalledWith({ path: 'out.csv', directory: '/other', sessionId: null });
-  });
-
-  it('answers 503 when this server has no file viewer wired', async () => {
-    const { service } = createService({});
-    await expect(service.execute('file.open', { path: 'out.csv' }, '/repo')).rejects.toMatchObject({ statusCode: 503 });
   });
 });
 

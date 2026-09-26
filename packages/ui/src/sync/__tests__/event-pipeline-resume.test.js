@@ -35,15 +35,18 @@ describe('createEventPipeline — system resume reconnect', () => {
     const firstHold = new Promise((resolve) => { releaseFirstStream = resolve; });
 
     const sdk = {
-      event: {
+      global: {
         // Accept options with signal so the mock generator can abort.
-        subscribe: (options) => {
+        event: async (options) => {
           const callIndex = sdkCallIndex++;
           eventCalls.push(callIndex);
           const signal = options?.signal;
           if (callIndex === 0) {
-            return (async function* () {
-                yield { id: 'evt_1', created: 1000, location: { directory: '/repo' }, type: 'session.status', data: { sessionID: 's1', status: { type: 'idle' } } };
+            return {
+              stream: (async function* () {
+                yield {
+                  payload: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } },
+                };
                 // Wait for either the hold promise or abort signal.
                 await Promise.race([
                   firstHold,
@@ -54,12 +57,17 @@ describe('createEventPipeline — system resume reconnect', () => {
                     });
                   }),
                 ]);
-              })();
+              })(),
+            };
           }
-          return (async function* () {
-              yield { id: 'evt_1', created: 1000, location: { directory: '/repo' }, type: 'session.status', data: { sessionID: 's1', status: { type: 'idle' } } };
+          return {
+            stream: (async function* () {
+              yield {
+                payload: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } },
+              };
               await new Promise(() => {});
-            })();
+            })(),
+          };
         },
       },
     };

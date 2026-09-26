@@ -43,8 +43,8 @@ describe('createEventPipeline — permanent server errors', () => {
 
     let sdkCallIndex = 0;
     const sdk = {
-      event: {
-        subscribe: () => {
+      global: {
+        event: async () => {
           const idx = sdkCallIndex++;
           if (idx <= 1) {
             // First two attempts: permanent 404. Under the old code these
@@ -57,10 +57,17 @@ describe('createEventPipeline — permanent server errors', () => {
             error.status = 404;
             throw error;
           }
-          return (async function* () {
-              yield { id: 'evt_1', created: 1000, location: { directory: '/repo' }, type: 'session.status', data: { sessionID: 's1', status: { type: 'idle' } } };
+          return {
+            stream: (async function* () {
+              yield {
+                payload: {
+                  type: 'session.status',
+                  properties: { sessionID: 's1', status: { type: 'idle' } },
+                },
+              };
               await new Promise(() => {});
-            })();
+            })(),
+          };
         },
       },
     };
@@ -129,18 +136,25 @@ describe('createEventPipeline — permanent server errors', () => {
 
     let sdkCallIndex = 0;
     const sdk = {
-      event: {
-        subscribe: () => {
+      global: {
+        event: async () => {
           const idx = sdkCallIndex++;
           if (idx === 0) {
             const error = new Error('Rate limited');
             error.status = 429;
             throw error;
           }
-          return (async function* () {
-              yield { id: 'evt_1', created: 1000, location: { directory: '/repo' }, type: 'session.status', data: { sessionID: 's1', status: { type: 'idle' } } };
+          return {
+            stream: (async function* () {
+              yield {
+                payload: {
+                  type: 'session.status',
+                  properties: { sessionID: 's1', status: { type: 'idle' } },
+                },
+              };
               await new Promise(() => {});
-            })();
+            })(),
+          };
         },
       },
     };

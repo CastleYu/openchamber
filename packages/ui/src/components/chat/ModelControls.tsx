@@ -1,11 +1,8 @@
-import { OPENCODE_TOOLS } from '@/lib/opencode/tools';
 import React from 'react';
 import { focusChatInput } from './composer/editor/dom';
 import { MobileModelButton } from './MobileModelButton';
 import type { EditPermissionMode } from '@/stores/types/sessionTypes';
 import type { ModelMetadata } from '@/types';
-import type { Agent, PermissionRuleset } from '@/lib/opencode/model';
-import type { PermissionEffect } from '@opencode/client';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,7 +29,8 @@ import { getEditModeColors } from '@/lib/permissions/editModeColors';
 import { cn } from '@/lib/utils';
 import { matchesRankQuery, rankByQuery } from '@/lib/search/fuzzySearch';
 import { useContextStore } from '@/stores/contextStore';
-import { useConfigStore, isStaleAutoSelection } from '@/stores/useConfigStore';
+import { getSelectableModelId, getSelectableModelVariants, useConfigStore } from '@/stores/useConfigStore';
+import { agentModelId, agentVariant, agentPrompt, agentTemperature, agentTopP, agentPermission } from './agentSelectionView';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { useSelectionStore } from '@/sync/selection-store';
 import { useSession, useSessionMessages, useSessionRenderable } from '@/sync/sync-context';
@@ -53,11 +51,11 @@ import {
 } from '@/lib/messages/userModelChoice';
 import { getSyncParts } from '@/sync/sync-refs';
 import type { BtwSelection } from '@/stores/useBtwStore';
-import { listModelVariantIds, type ModelVariantSource } from '@/lib/modelVariants';
 
 type IconComponent = IconName;
 
-type ProviderModel = Record<string, unknown> & { id?: string; name?: string };
+type ProviderModel = ModelPickerEntry['model'];
+type PermissionSummary = { mode: EditPermissionMode; label: string };
 
 type MobileVariantTarget = { providerId: string; modelId: string };
 
@@ -84,45 +82,6 @@ const AgentDescriptionTooltip: React.FC<{
             </TooltipContent>
         </Tooltip>
     );
-};
-
-/**
- * Sampling knobs an agent sets.
- *
- * v2 folded them into the provider request body, which is free-form JSON, so
- * each one is read back with an explicit check rather than trusted.
- */
-const agentSampling = (agent: Agent, key: 'temperature' | 'topP'): number | undefined => {
-    const value = agent.request?.body?.[key];
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-};
-
-const agentTemperature = (agent: Agent): number | undefined => agentSampling(agent, 'temperature');
-const agentTopP = (agent: Agent): number | undefined => agentSampling(agent, 'topP');
-
-/**
- * The effect a ruleset gives an action, most specific rule last.
- *
- * v2 rules are `{ action, resource, effect }`: `action` is the capability
- * ("edit", "shell"), `resource` the pattern it applies to. A wildcard rule for
- * the action wins over the catch-all `*` rule.
- */
-const resolveWildcardPermissionEffect = (rules: PermissionRuleset, action: string): PermissionEffect | undefined => {
-    for (let i = rules.length - 1; i >= 0; i -= 1) {
-        const rule = rules[i];
-        if (rule.action === action && rule.resource === '*') {
-            return rule.effect;
-        }
-    }
-
-    for (let i = rules.length - 1; i >= 0; i -= 1) {
-        const rule = rules[i];
-        if (rule.action === '*' && rule.resource === '*') {
-            return rule.effect;
-        }
-    }
-
-    return undefined;
 };
 
 interface CapabilityDefinition {
@@ -591,17 +550,17 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     const models = Array.isArray(currentProvider?.models) ? currentProvider.models : [];
 
     const visibleProviders = React.useMemo(() => {
-        const result: typeof providers = [];
+        const result: Array<{ id: string; name: string; models: Array<ProviderModel & { id: string }> }> = [];
         for (const provider of providers) {
             const providerModels = Array.isArray(provider.models) ? provider.models : [];
-            const visibleModels = providerModels.filter((model: ProviderModel) => {
-                const modelId = typeof model?.id === 'string' ? model.id : '';
+            const visibleModels = providerModels.filter((model) => {
+                const modelId = getSelectableModelId(model);
                 return !hiddenModels.some(
                     (item) => item.providerID === String(provider.id) && item.modelID === modelId
                 );
             });
             if (visibleModels.length > 0) {
-                result.push({ ...provider, models: visibleModels });
+                result.push({ id: provider.id, name: provider.name, models: visibleModels.map((model) => ({ ...model, id: getSelectableModelId(model) })) });
             }
         }
         return result;
@@ -613,7 +572,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     );
 
     const currentModelForMetadata = currentModelId
-        ? models.find((model: ProviderModel) => model.id === currentModelId)
+        ? models.find((model) => getSelectableModelId(model) === currentModelId)
         : undefined;
     const currentMetadata = currentProviderId && currentModelId && currentModelForMetadata
         ? mergeModelMetadataWithLiveModel(currentProviderId, currentModelForMetadata, getModelMetadata(currentProviderId, currentModelId))
@@ -646,19 +605,9 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
     // Compute from current model each render to avoid stale variants
     // in draft/session transitions.
-    // `getCurrentModelVariants()` builds a new array each call. The effort
-    // effect below depends on this list, and a fresh identity on every store
-    // tick (a form event, a status ping) re-ran it and briefly re-applied the
-    // inherited effort over the user's pick — the picker flickered. Keyed on
-    // the content so identity only changes when the variants do.
-    const rawAvailableVariants = selection
-        ? listModelVariantIds(currentProvider?.models.find((model) => model.id === currentModelId)?.variants)
+    const availableVariants = selection
+        ? (currentModelForMetadata ? getSelectableModelVariants(currentModelForMetadata) : [])
         : getCurrentModelVariants();
-    const availableVariantsKey = rawAvailableVariants.join('\u0000');
-    const availableVariants = React.useMemo(
-        () => (availableVariantsKey ? availableVariantsKey.split('\u0000') : []),
-        [availableVariantsKey],
-    );
     const hasVariants = availableVariants.length > 0;
 
     const costRows = [
@@ -684,10 +633,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     );
     const currentSessionMessagesFromSync = useSessionMessages(currentSessionId ?? '', currentSessionDirectory ?? undefined);
     const currentSessionRecord = useSession(currentSessionId ?? undefined, currentSessionDirectory ?? undefined);
-    // OpenCode 2 keeps the selection on the session record itself (`model`
-    // with its variant, and `agent`), and that is what the next prompt runs
-    // on, so it is the authority when a session opens. The last assistant
-    // reply is the fallback for a record that has no selection yet.
+    // OC2 owns the next-prompt selection on the session. OC1 records have no
+    // model field and continue restoring their last user-message selection.
     const sessionRecordChoice = React.useMemo(() => {
         const model = currentSessionRecord?.model;
         if (!currentSessionRecord || !model?.providerID || !model.id) return null;
@@ -699,6 +646,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             variant: model.variant?.trim() || undefined,
         };
     }, [currentSessionRecord]);
+    // Skip synthetic subagent-completion nudges — restoring from them resets a
+    // manual model override back to the agent default (issue #2404).
     const latestLoadedUserChoice = React.useMemo(() => {
         if (selection) return null;
         if (sessionRecordChoice) return sessionRecordChoice;
@@ -759,10 +708,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
     const getModelVariantOptions = React.useCallback((providerId: string, modelId: string) => {
         const provider = providers.find((entry) => entry.id === providerId);
-        // SAFETY: the catalog model's `variants` is v2's `{ id, settings }[]`
-        // (or the v1 keyed object on an older record); only the ids are read.
-        const model = provider?.models.find((entry) => entry.id === modelId) as { variants?: ModelVariantSource } | undefined;
-        return listModelVariantIds(model?.variants);
+        const model = provider?.models.find((entry) => getSelectableModelId(entry) === modelId);
+        return model ? getSelectableModelVariants(model) : [];
     }, [providers]);
 
     const resolveInheritedVariantForModel = React.useCallback((providerId: string, modelId: string, agentName?: string | null) => {
@@ -779,13 +726,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
         const effectiveAgentName = agentName ?? uiAgentName ?? currentAgentName;
         const agent = effectiveAgentName ? agents.find((candidate) => candidate.name === effectiveAgentName) : undefined;
-        const agentVariant = (
+        const inheritedAgentVariant = (
             agent?.model?.providerID === providerId
-            && agent.model.id === modelId
-        ) ? agent.model?.variant : undefined;
+            && agentModelId(agent) === modelId
+        ) ? agentVariant(agent) : undefined;
         const candidates = currentSessionId
-            ? [agentVariant, settingsDefaultVariant, currentInherited]
-            : [currentInherited, agentVariant, settingsDefaultVariant];
+            ? [inheritedAgentVariant, settingsDefaultVariant, currentInherited]
+            : [currentInherited, inheritedAgentVariant, settingsDefaultVariant];
         return candidates.find((candidate) => candidate !== undefined && variantOptions.includes(candidate));
     }, [agents, currentAgentName, currentModelId, currentProviderId, currentSessionId, currentVariantSelection, effectiveCurrentVariant, getModelVariantOptions, settingsDefaultVariant, uiAgentName]);
 
@@ -910,8 +857,6 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             return;
         }
 
-        // The session record needs no loaded transcript; a message-derived
-        // choice does, so a partial snapshot is never treated as authoritative.
         const snapshotReady = hasRenderableCurrentSessionSnapshot || Boolean(sessionRecordChoice);
         if (!contextHydrated || providers.length === 0 || !snapshotReady || !latestLoadedUserChoice?.providerID || !latestLoadedUserChoice.modelID) {
             return;
@@ -936,16 +881,15 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
         // Until the routing state has loaded, Auto cannot be applied yet, so
         // the restore stays pending instead of letting history overwrite it.
         const savedSessionModel = getSessionModelSelection(currentSessionId);
-        const savedAuto = Boolean(savedSessionModel) && isAutoModel(savedSessionModel!.providerId, savedSessionModel!.modelId);
-        if (savedAuto && isStaleAutoSelection(savedSessionModel!.providerId, savedSessionModel!.modelId)) {
-            // Auto saved under a server that could route; this one cannot.
-            useConfigStore.getState().dropStaleAutoSelection();
-        } else if (savedAuto) {
+        if (savedSessionModel && isAutoModel(savedSessionModel.providerId, savedSessionModel.modelId)) {
             if (!autoReady) return;
             tryApplyModelSelection(AUTO_PROVIDER_ID, AUTO_MODEL_ID, currentAgentName || undefined);
             latestLoadedUserChoiceRestoreRef.current = restoreKey;
             return;
-        } else if (shouldPreserveManualModelOverride({
+        }
+
+        // Manual session override wins over historical / synthetic message metadata.
+        if (shouldPreserveManualModelOverride({
             selectionSource: useConfigStore.getState().selectionSource,
             savedSessionModel,
             candidate: latestLoadedUserChoice,
@@ -1065,13 +1009,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                     if (currentAgentName !== savedAgentName) {
                         setAgent(savedAgentName);
                     }
-                    if (savedAgent?.model?.providerID && savedAgent.model.id) {
+                    if (savedAgent?.model?.providerID && agentModelId(savedAgent)) {
                         return 'resolved';
                     }
                 }
             }
 
-            if (savedSessionModel && !isStaleAutoSelection(savedSessionModel.providerId, savedSessionModel.modelId)) {
+            if (savedSessionModel) {
                 const result = tryApplyModelSelection(savedSessionModel.providerId, savedSessionModel.modelId, savedAgentName ?? undefined);
                 if (result === 'applied') {
                     if (savedAgentName && currentAgentName !== savedAgentName) {
@@ -1141,8 +1085,9 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                 setAgent(fallbackAgent.name);
             }
 
-            if (fallbackAgent.model?.providerID && fallbackAgent.model?.id) {
-                tryApplyModelSelection(fallbackAgent.model.providerID, fallbackAgent.model.id, fallbackAgent.name);
+            const fallbackModelId = agentModelId(fallbackAgent);
+            if (fallbackAgent.model?.providerID && fallbackModelId) {
+                tryApplyModelSelection(fallbackAgent.model.providerID, fallbackModelId, fallbackAgent.name);
             }
         };
 
@@ -1576,14 +1521,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
     const renderMobileAgentTooltip = () => {
         if (!isCompact || mobileTooltipOpen !== 'agent' || !currentAgent) return null;
 
-        const hasCustomPrompt = Boolean(currentAgent.system && currentAgent.system.trim().length > 0);
-        const hasModelConfig = currentAgent.model?.providerID && currentAgent.model?.id;
+        const prompt = agentPrompt(currentAgent);
+        const hasCustomPrompt = Boolean(prompt?.trim());
+        const hasModelConfig = currentAgent.model?.providerID && agentModelId(currentAgent);
         const hasTemperatureOrTopP = agentTemperature(currentAgent) !== undefined || agentTopP(currentAgent) !== undefined;
 
-        const summarizePermission = (permissionName: string): { mode: EditPermissionMode; label: string } => {
-            const rules = currentAgent.permissions ?? [];
-            const hasCustom = rules.some((rule) => rule.action === permissionName && rule.resource !== '*');
-            const action = resolveWildcardPermissionEffect(rules, permissionName) ?? 'ask';
+        const summarizePermission = (permissionName: string): PermissionSummary => {
+            const { custom: hasCustom, effect: action } = agentPermission(currentAgent, permissionName);
 
             if (hasCustom) {
                 return { mode: 'ask', label: t('chat.modelControls.permissionLabel.custom') };
@@ -1595,8 +1539,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
         };
 
         const editPermissionSummary = summarizePermission('edit');
-        const bashPermissionSummary = summarizePermission(OPENCODE_TOOLS.shell);
-        const webfetchPermissionSummary = summarizePermission(OPENCODE_TOOLS.webfetch);
+        const bashPermissionSummary = summarizePermission('bash');
+        const webfetchPermissionSummary = summarizePermission('webfetch');
 
         return (
             <MobileOverlayPanel
@@ -1632,7 +1576,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                             <div className="typography-micro text-muted-foreground mb-1">{t('chat.modelControls.model')}</div>
                             {hasModelConfig && (
                                 <div className="typography-meta text-foreground font-medium mb-1">
-                                    {currentAgent.model!.providerID} / {currentAgent.model!.id}
+                                    {currentAgent.model!.providerID} / {agentModelId(currentAgent)}
                                 </div>
                             )}
                             {hasTemperatureOrTopP && (
@@ -1736,9 +1680,9 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                 : matchesModelSearch(provider.name, normalizedQuery) || matchesModelSearch(provider.id, normalizedQuery);
             const matchingModels = normalizedQuery.length === 0
                 ? providerModels
-                : providerModels.filter((model: ProviderModel) => {
+                : providerModels.filter((model) => {
                     const name = getModelDisplayName(model);
-                    const id = typeof model.id === 'string' ? model.id : '';
+                    const id = model.id ?? '';
                     return matchesModelSearch(name, normalizedQuery) || matchesModelSearch(id, normalizedQuery);
                 });
             const resolvedModels = matchesProvider && normalizedQuery.length > 0 ? providerModels : matchingModels;
@@ -2079,8 +2023,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                                     <div className="flex flex-col border-t border-border/30">
                                         {providerModels.map((model: ProviderModel) => renderMobileModelRow({
                                             model,
-                                            providerId: provider.id as string,
-                                            modelId: model.id as string,
+                                            providerId: provider.id,
+                                            modelId: model.id ?? '',
                                             showProviderLogo: false,
                                         }))}
                                     </div>
@@ -2331,8 +2275,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
             const { providerID, modelID } = selectedItem;
             const canonicalProvider = useConfigStore.getState().providers.find((provider) => provider.id === providerID);
-            const canonicalModel = canonicalProvider?.models.find((model) => model.id === modelID) as { variants?: ModelVariantSource } | undefined;
-            const variantKeys = canonicalModel?.variants ? listModelVariantIds(canonicalModel.variants) : getModelVariantOptions(providerID, modelID);
+            const canonicalModel = canonicalProvider?.models.find((model) => getSelectableModelId(model) === modelID);
+            const variantKeys = canonicalModel ? getSelectableModelVariants(canonicalModel) : getModelVariantOptions(providerID, modelID);
             if (variantKeys.length === 0) return false;
 
             e.preventDefault();
@@ -2632,14 +2576,13 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             );
         }
 
-        const hasCustomPrompt = Boolean(currentAgent.system && currentAgent.system.trim().length > 0);
-        const hasModelConfig = currentAgent.model?.providerID && currentAgent.model?.id;
+        const prompt = agentPrompt(currentAgent);
+        const hasCustomPrompt = Boolean(prompt?.trim());
+        const hasModelConfig = currentAgent.model?.providerID && agentModelId(currentAgent);
         const hasTemperatureOrTopP = agentTemperature(currentAgent) !== undefined || agentTopP(currentAgent) !== undefined;
 
-        const summarizePermission = (permissionName: string): { mode: EditPermissionMode; label: string } => {
-            const rules = currentAgent.permissions ?? [];
-            const hasCustom = rules.some((rule) => rule.action === permissionName && rule.resource !== '*');
-            const action = resolveWildcardPermissionEffect(rules, permissionName) ?? 'ask';
+        const summarizePermission = (permissionName: string): PermissionSummary => {
+            const { custom: hasCustom, effect: action } = agentPermission(currentAgent, permissionName);
 
             if (hasCustom) {
                                 return { mode: 'ask', label: t('chat.modelControls.permissionLabel.custom') };
@@ -2651,8 +2594,8 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
         };
 
         const editPermissionSummary = summarizePermission('edit');
-        const bashPermissionSummary = summarizePermission(OPENCODE_TOOLS.shell);
-        const webfetchPermissionSummary = summarizePermission(OPENCODE_TOOLS.webfetch);
+        const bashPermissionSummary = summarizePermission('bash');
+        const webfetchPermissionSummary = summarizePermission('webfetch');
 
         return (
             <TooltipContent align="start" sideOffset={8} className="max-w-[280px]">
@@ -2684,7 +2627,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                             <span className="typography-meta font-semibold uppercase tracking-wide text-muted-foreground/90">{t('chat.modelControls.model')}</span>
                             {hasModelConfig ? (
                                 <span className="typography-meta text-foreground">
-                                    {currentAgent.model!.providerID} / {currentAgent.model!.id}
+                                    {currentAgent.model!.providerID} / {agentModelId(currentAgent)}
                                 </span>
                             ) : (
                                 <span className="typography-meta text-muted-foreground">{t('chat.modelControls.modeValue.none')}</span>

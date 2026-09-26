@@ -27,6 +27,7 @@ export const createStartupPipelineRuntime = (dependencies) => {
       getOpenCodeAuthHeaders,
       globalEventHub,
       processForwardedEventPayload,
+      getKernelRuntime,
       messageStreamWsClients,
       triggerHealthCheck,
       upstreamStallTimeoutMs,
@@ -88,6 +89,7 @@ export const createStartupPipelineRuntime = (dependencies) => {
     });
 
     const messageStreamRuntime = createMessageStreamWsRuntime({
+      getKernelRuntime,
       server,
       uiAuthController,
       isRequestOriginAllowed,

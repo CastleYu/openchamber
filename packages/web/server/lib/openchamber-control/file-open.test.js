@@ -9,7 +9,7 @@ const file = { isFile: () => true, size: 42 };
 describe('createFileOpenRequester', () => {
   it('resolves a relative path against the session directory and tells the clients', async () => {
     const directory = path.resolve('repo');
-    const target = path.join(directory, 'out', 'report.csv');
+    const target = path.resolve(directory, 'out/report.csv');
     const emit = vi.fn(() => 2);
     const stat = vi.fn(async () => file);
     const requester = createFileOpenRequester({ emit, stat });
@@ -23,14 +23,13 @@ describe('createFileOpenRequester', () => {
 
   it('keeps an absolute path outside the project, which is where screenshots and recordings often land', async () => {
     const target = path.join(os.tmpdir(), 'shot.png');
-    const directory = path.resolve('repo');
     const emit = vi.fn(() => 1);
     const requester = createFileOpenRequester({ emit, stat: async () => file });
 
-    const result = await requester.request({ path: target, directory, sessionId: null });
+    const result = await requester.request({ path: target, directory: path.resolve('repo'), sessionId: null });
 
     expect(result.path).toBe(target);
-    expect(emit).toHaveBeenCalledWith({ path: target, directory, sessionId: null });
+    expect(emit).toHaveBeenCalledWith({ path: target, directory: path.resolve('repo'), sessionId: null });
   });
 
   it('refuses a relative path when no directory is known, instead of guessing one', async () => {

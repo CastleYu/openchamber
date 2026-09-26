@@ -35,9 +35,9 @@ it('delivers oversized events live, but reports a replay gap instead of replayin
     fetchImpl: async (_url, options) => createSseResponse({
       signal: options.signal, holdOpen: true,
       blocks: [
-        'data: {"id":"first","type":"first","properties":{}}\n\n',
-        `data: ${JSON.stringify({ id: 'large', type: 'large', properties: { text: '界'.repeat(1024) } })}\n\n`,
-        'data: {"id":"last","type":"last","properties":{}}\n\n',
+        'id: first\ndata: {"type":"first","properties":{}}\n\n',
+        `id: large\ndata: ${JSON.stringify({ type: 'large', properties: { text: '界'.repeat(1024) } })}\n\n`,
+        'id: last\ndata: {"type":"last","properties":{}}\n\n',
       ],
     }),
   });
@@ -210,7 +210,7 @@ describe('message stream websocket runtime', () => {
           signal: options.signal,
           holdOpen: true,
           blocks: [
-            'data: {"id":"evt-1","type":"server.connected","data":{}}\n\n',
+            'id: evt-1\ndata: {"type":"server.connected","properties":{}}\n\n',
           ],
         });
       },
@@ -228,13 +228,13 @@ describe('message stream websocket runtime', () => {
     expect(secondSocket.sent).toContainEqual({ type: 'ready', scope: 'global' });
     expect(firstSocket.sent).toContainEqual({
       type: 'event',
-      payload: { id: 'evt-1', type: 'server.connected', data: {} },
+      payload: { type: 'server.connected', properties: {} },
       eventId: 'evt-1',
       directory: 'global',
     });
     expect(secondSocket.sent).toContainEqual({
       type: 'event',
-      payload: { id: 'evt-1', type: 'server.connected', data: {} },
+      payload: { type: 'server.connected', properties: {} },
       eventId: 'evt-1',
       directory: 'global',
     });
@@ -268,8 +268,8 @@ describe('message stream websocket runtime', () => {
             signal: options.signal,
             holdOpen: true,
             blocks: [
-              'data: {"id":"evt-1","type":"server.connected","data":{}}\n\n',
-              'data: {"id":"evt-2","type":"session.renamed","location":{"directory":"/tmp/project"},"data":{"sessionID":"s1","title":"t"}}\n\n',
+              'id: evt-1\ndata: {"type":"server.connected","properties":{}}\n\n',
+              'id: evt-2\ndata: {"type":"session.updated","properties":{"directory":"/tmp/project"}}\n\n',
             ],
           });
         }
@@ -296,7 +296,7 @@ describe('message stream websocket runtime', () => {
     expect(secondSocket.sent).toContainEqual({ type: 'ready', scope: 'global' });
     expect(secondSocket.sent).toContainEqual({
       type: 'event',
-      payload: { id: 'evt-2', type: 'session.renamed', location: { directory: '/tmp/project' }, data: { sessionID: 's1', title: 't' } },
+      payload: { type: 'session.updated', properties: { directory: '/tmp/project' } },
       eventId: 'evt-2',
       directory: '/tmp/project',
     });
@@ -328,7 +328,7 @@ describe('message stream websocket runtime', () => {
           signal: options.signal,
           holdOpen: true,
           blocks: [
-            'data: {"id":"evt-1","type":"server.connected","data":{}}\n\n',
+            'id: evt-1\ndata: {"type":"server.connected","properties":{}}\n\n',
           ],
         });
       },
@@ -488,7 +488,7 @@ describe('message stream websocket runtime', () => {
             signal: options.signal,
             holdOpen: true,
             blocks: [
-              'data: {"id":"evt-1","type":"server.connected","data":{}}\n\n',
+              'id: evt-1\ndata: {"type":"server.connected","properties":{}}\n\n',
             ],
           });
         }
@@ -497,7 +497,7 @@ describe('message stream websocket runtime', () => {
           signal: options.signal,
           holdOpen: true,
           blocks: [
-            'data: {"id":"evt-2","type":"server.connected","data":{}}\n\n',
+            'id: evt-2\ndata: {"type":"server.connected","properties":{}}\n\n',
           ],
         });
       },
@@ -534,9 +534,7 @@ describe('message stream websocket runtime', () => {
       buildOpenCodeUrl: (path) => `http://127.0.0.1:4096${path}`,
       getOpenCodeAuthHeaders: () => ({}),
       processForwardedEventPayload(payload, emitSynthetic) {
-        // The bridge forwards the RAW v2 payload; the synthetic frames the UI
-        // also expects are derived from it in `index.js`.
-        if (payload.type === 'session.renamed') {
+        if (payload.type === 'session.updated') {
           emitSynthetic({ type: 'openchamber:session-status', sessionID: 'ses_1' });
         }
       },
@@ -546,7 +544,7 @@ describe('message stream websocket runtime', () => {
         signal: options.signal,
         holdOpen: true,
         blocks: [
-          'data: {"id":"evt-1","type":"session.renamed","location":{"directory":"/tmp/project"},"data":{"sessionID":"s1","title":"t"}}\n\n',
+          'id: evt-1\ndata: {"type":"session.updated","properties":{"directory":"/tmp/project"}}\n\n',
         ],
       }),
     });
@@ -558,7 +556,7 @@ describe('message stream websocket runtime', () => {
 
     expect(socket.sent).toContainEqual({
       type: 'event',
-      payload: { id: 'evt-1', type: 'session.renamed', location: { directory: '/tmp/project' }, data: { sessionID: 's1', title: 't' } },
+      payload: { type: 'session.updated', properties: { directory: '/tmp/project' } },
       eventId: 'evt-1',
       directory: '/tmp/project',
     });

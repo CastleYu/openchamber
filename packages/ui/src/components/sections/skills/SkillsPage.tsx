@@ -7,16 +7,10 @@ import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
 import { toast } from '@/components/ui';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
 import { selectSkillsForDirectory, useSkillsStore, type SkillConfig, type SkillScope, type SupportingFile, type PendingFile } from '@/stores/useSkillsStore';
+import { usePendingOpenCodeRestartStore } from '@/stores/usePendingOpenCodeRestartStore';
 import { useShallow } from 'zustand/react/shallow';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
-import {
-  useAutosave,
-  AUTOSAVE_SAVED,
-  AUTOSAVE_UNCHANGED,
-  autosaveFailed,
-  type AutosaveResult,
-} from '@/components/sections/shared/SettingsAutosave';
 import {
   SettingsSection,
   SettingsFieldRow,
@@ -166,7 +160,7 @@ const SkillsInstalledPage: React.FC = () => {
   const [skillEditorMode, setSkillEditorMode] = React.useState<'edit' | 'preview'>('edit');
   const [supportingFiles, setSupportingFiles] = React.useState<SupportingFile[]>([]);
   const [pendingFiles, setPendingFiles] = React.useState<PendingFile[]>([]);
-  const [isCreating, setIsCreating] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   
   const [originalDescription, setOriginalDescription] = React.useState('');
@@ -181,6 +175,10 @@ const SkillsInstalledPage: React.FC = () => {
   const [deleteFilePath, setDeleteFilePath] = React.useState<string | null>(null);
   const [isDeletingFile, setIsDeletingFile] = React.useState(false);
   
+  const hasSkillChanges = isNewSkill
+    ? (draftName.trim() !== '' || description.trim() !== '' || instructions.trim() !== '' || pendingFiles.length > 0)
+    : (description !== originalDescription || instructions !== originalInstructions);
+
   const hasFileChanges = editingFilePath 
     ? newFileContent !== originalFileContent
     : newFileName.trim() !== '';
@@ -219,49 +217,32 @@ const SkillsInstalledPage: React.FC = () => {
     }
   }, [t]);
 
-  const skillEditorKey = JSON.stringify([settingsDirectory, selectedSkillName, selectedSkill?.path, isNewSkill]);
-  const hydratedSkill = React.useRef<string | null>(null);
-  const currentEditor = React.useRef({ key: skillEditorKey, markdown: skillMarkdown });
-  currentEditor.current = { key: skillEditorKey, markdown: skillMarkdown };
-  const savedMarkdown = React.useRef('');
-
   React.useEffect(() => {
-    let cancelled = false;
-    const hydrateText = (nextDescription: string, nextInstructions: string) => {
-      if (currentEditor.current.key !== skillEditorKey) return;
-      const markdown = buildSkillMarkdown(nextDescription, nextInstructions);
-      const dirty = hydratedSkill.current === skillEditorKey
-        && currentEditor.current.markdown !== savedMarkdown.current;
-      hydratedSkill.current = skillEditorKey;
-      savedMarkdown.current = markdown;
-      if (!dirty) {
-        setDescription(nextDescription);
-        setInstructions(nextInstructions);
-        setSkillMarkdown(markdown);
-      }
-    };
     const loadSkillDetails = async () => {
       if (isNewSkill && skillDraft) {
-        setIsLoading(false);
         const nextDescription = skillDraft.description || '';
         const nextInstructions = skillDraft.instructions || '';
         setDraftName(skillDraft.name || '');
         setDraftScope(skillDraft.scope || 'user');
         setDraftSource(skillDraft.source === 'agents' ? 'agents' : 'opencode');
-        hydrateText(nextDescription, nextInstructions);
+        setDescription(nextDescription);
+        setInstructions(nextInstructions);
+        setSkillMarkdown(buildSkillMarkdown(nextDescription, nextInstructions));
         setOriginalDescription('');
         setOriginalInstructions('');
         setSupportingFiles([]);
         setPendingFiles(skillDraft.pendingFiles || []);
       } else if (selectedSkillName && selectedSkill) {
-        setIsLoading(hydratedSkill.current !== skillEditorKey);
+        setIsLoading(true);
         try {
           const detail = await getSkillDetail(selectedSkillName, settingsDirectory);
-          if (!cancelled && currentEditor.current.key === skillEditorKey && detail) {
+          if (detail) {
             const md = detail.sources.md;
             const nextDescription = md.description || '';
             const nextInstructions = md.instructions || '';
-            hydrateText(nextDescription, nextInstructions);
+            setDescription(nextDescription);
+            setInstructions(nextInstructions);
+            setSkillMarkdown(buildSkillMarkdown(nextDescription, nextInstructions));
             setOriginalDescription(nextDescription);
             setOriginalInstructions(nextInstructions);
             setSupportingFiles(md.supportingFiles || []);
@@ -269,14 +250,13 @@ const SkillsInstalledPage: React.FC = () => {
         } catch (error) {
           console.error('Failed to load skill details:', error);
         } finally {
-          if (!cancelled) setIsLoading(false);
+          setIsLoading(false);
         }
       }
     };
 
-    void loadSkillDetails();
-    return () => { cancelled = true; };
-  }, [selectedSkill, isNewSkill, selectedSkillName, settingsDirectory, skills, skillDraft, getSkillDetail, skillEditorKey]);
+    loadSkillDetails();
+  }, [selectedSkill, isNewSkill, selectedSkillName, settingsDirectory, skills, skillDraft, getSkillDetail]);
 
   const editorFontSize = useUIStore((state) => state.editorFontSize);
 
@@ -323,105 +303,78 @@ const SkillsInstalledPage: React.FC = () => {
     setInstructions(parsed.instructions);
   }, []);
 
-  const skillNameError = (skillName: string): string | null => {
-    if (!skillName) return t('settings.skills.page.toast.skillNameRequired');
-    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(skillName) || skillName.length > 64) {
-      return t('settings.skills.page.toast.invalidSkillName');
-    }
-    return null;
-  };
+  const handleSave = async () => {
+    const skillName = isNewSkill ? draftName.trim().replace(/\s+/g, '-').toLowerCase() : selectedSkillName?.trim();
 
-  // An existing skill writes itself; a new one is only created once the user
-  // confirms it, so an abandoned draft never reaches disk.
-  const save = React.useCallback(async (): Promise<AutosaveResult> => {
-    const skillName = selectedSkillName?.trim();
-    if (isNewSkill || isReadOnlySkill || !skillName) return AUTOSAVE_UNCHANGED;
-    if (description === originalDescription && instructions === originalInstructions) {
-      return AUTOSAVE_UNCHANGED;
-    }
-    if (!description.trim()) {
-      return autosaveFailed(t('settings.skills.page.toast.descriptionRequired'));
-    }
-
-    const success = await updateSkill(skillName, {
-      name: skillName,
-      description: description.trim(),
-      instructions: instructions.trim() || undefined,
-      targetPath: selectedSkill?.path,
-    }, settingsDirectory);
-    if (!success) {
-      return autosaveFailed(t('settings.skills.page.toast.updateSkillFailed'));
-    }
-
-    if (currentEditor.current.key === skillEditorKey) {
-      savedMarkdown.current = buildSkillMarkdown(description, instructions);
-      setOriginalDescription(description);
-      setOriginalInstructions(instructions);
-    }
-    return AUTOSAVE_SAVED;
-  }, [
-    description,
-    instructions,
-    isNewSkill,
-    isReadOnlySkill,
-    originalDescription,
-    originalInstructions,
-    selectedSkill?.path,
-    selectedSkillName,
-    settingsDirectory,
-    skillEditorKey,
-    t,
-    updateSkill,
-  ]);
-
-  const autosave = useAutosave(save);
-
-  const handleCreate = async () => {
-    const skillName = draftName.trim().replace(/\s+/g, '-').toLowerCase();
-    const nameError = skillNameError(skillName);
-    if (nameError) {
-      toast.error(nameError);
+    if (!skillName) {
+      toast.error(t('settings.skills.page.toast.skillNameRequired'));
       return;
     }
+
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(skillName) || skillName.length > 64) {
+      toast.error(t('settings.skills.page.toast.invalidSkillName'));
+      return;
+    }
+
     if (!description.trim()) {
       toast.error(t('settings.skills.page.toast.descriptionRequired'));
       return;
     }
-    if (skills.some((s) => s.name === skillName)) {
+
+    if (isNewSkill && skills.some((s) => s.name === skillName)) {
       toast.error(t('settings.skills.page.toast.skillExists'));
       return;
     }
 
-    setIsCreating(true);
+    setIsSaving(true);
+
     try {
       const config: SkillConfig = {
         name: skillName,
         description: description.trim(),
         instructions: instructions.trim() || undefined,
-        scope: draftScope,
-        source: draftSource,
-        supportingFiles: pendingFiles.length > 0 ? pendingFiles : undefined,
+        scope: isNewSkill ? draftScope : undefined,
+        source: isNewSkill ? draftSource : undefined,
+        targetPath: !isNewSkill ? selectedSkill?.path : undefined,
+        supportingFiles: isNewSkill && pendingFiles.length > 0 ? pendingFiles : undefined,
       };
-      const success = await createSkill(config, settingsDirectory);
-      if (success) {
-        setSkillDraft(null);
-        setPendingFiles([]);
-        setSelectedSkill(skillName);
-        toast.success(t('settings.skills.page.toast.skillCreated'));
+
+      let success: boolean;
+      if (isNewSkill) {
+        success = await createSkill(config, settingsDirectory);
+        if (success) {
+          setSkillDraft(null);
+          setPendingFiles([]);
+          setSelectedSkill(skillName);
+        }
       } else {
-        toast.error(t('settings.skills.page.toast.createSkillFailed'));
+        success = await updateSkill(skillName, config, settingsDirectory);
+        if (success) {
+          setOriginalDescription(description.trim());
+          setOriginalInstructions(instructions.trim());
+        }
+      }
+
+      if (success) {
+        const deferred = usePendingOpenCodeRestartStore.getState().changes.some(
+          (change) => change.scope === 'skills' && change.id.startsWith(`skills:${skillName}:`),
+        );
+        toast.success(
+          deferred
+            ? t('settings.view.pendingRestart.saved')
+            : isNewSkill
+              ? t('settings.skills.page.toast.skillCreated')
+              : t('settings.skills.page.toast.skillUpdated'),
+        );
+      } else {
+        toast.error(isNewSkill ? t('settings.skills.page.toast.createSkillFailed') : t('settings.skills.page.toast.updateSkillFailed'));
       }
     } catch (error) {
-      console.error('Error creating skill:', error);
+      console.error('Error saving skill:', error);
       toast.error(t('settings.skills.page.toast.saveUnexpectedError'));
     } finally {
-      setIsCreating(false);
+      setIsSaving(false);
     }
-  };
-
-  const handleCancelCreate = () => {
-    setSkillDraft(null);
-    setSelectedSkill(null);
   };
 
   const handleAddFile = () => {
@@ -581,7 +534,7 @@ const SkillsInstalledPage: React.FC = () => {
               location: locationLabelText(locationValueFrom(selectedSkill.scope, selectedSkill.source)),
             })
           : t('settings.skills.page.subtitle.newSkill')}
-        onBlurCapture={autosave.onBlurCapture}
+        showSaveStatus={false}
       >
 
 
@@ -675,14 +628,6 @@ const SkillsInstalledPage: React.FC = () => {
                 'overflow-hidden rounded-md border border-[var(--surface-subtle)] bg-background',
                 SKILL_EDITOR_HEIGHT_CLASS,
               )}
-              onKeyDown={(event) => {
-                // The editor fills the section, so leaving it to save is a
-                // chore; the usual shortcut writes it where you are.
-                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-                  event.preventDefault();
-                  autosave.requestSave();
-                }
-              }}
             >
               {skillEditorMode === 'preview' ? (
                 <ScrollableOverlay outerClassName="h-full" className="h-full">
@@ -762,29 +707,16 @@ const SkillsInstalledPage: React.FC = () => {
             })()}
         </SettingsSection>
 
-        {isNewSkill && (
-          <SettingsSection>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => void handleCreate()}
-                disabled={isCreating || !draftName.trim() || !description.trim()}
-                size="xs"
-                className="!font-normal"
-              >
-                {isCreating ? t('settings.common.actions.saving') : t('settings.skills.page.actions.createSkill')}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleCancelCreate}
-                disabled={isCreating}
-                size="xs"
-                className="!font-normal"
-              >
-                {t('settings.common.actions.cancel')}
-              </Button>
-            </div>
-          </SettingsSection>
-        )}
+        <SettingsSection>
+          <Button
+            onClick={handleSave}
+            disabled={isReadOnlySkill || isSaving || !hasSkillChanges}
+            size="xs"
+            className="!font-normal"
+          >
+            {isSaving ? t('settings.common.actions.saving') : isNewSkill ? t('settings.skills.page.actions.createSkill') : t('settings.common.actions.saveChanges')}
+          </Button>
+        </SettingsSection>
       </SettingsPageLayout>
 
 
@@ -821,19 +753,8 @@ const SkillsInstalledPage: React.FC = () => {
       </Dialog>
 
       <Dialog open={isFileDialogOpen} onOpenChange={(open) => {
-        if (open) {
-          setIsFileDialogOpen(true);
-          return;
-        }
-        // Editing an existing supporting file has no Save button: closing the
-        // dialog writes it. A brand new file is only created on confirm, so
-        // closing it away leaves nothing behind.
-        if (editingFilePath !== null && newFileContent !== originalFileContent) {
-          void handleSaveFile();
-          return;
-        }
-        setIsFileDialogOpen(false);
-        setEditingFilePath(null);
+        setIsFileDialogOpen(open);
+        if (!open) setEditingFilePath(null);
       }}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
@@ -882,31 +803,19 @@ const SkillsInstalledPage: React.FC = () => {
             </div>
           )}
           <DialogFooter className="mt-4">
-            {editingFilePath ? (
-              <Button
-                size="sm"
-                onClick={() => void handleSaveFile()}
-                disabled={isLoadingFile}
-              >
-                {t('settings.common.actions.close')}
-              </Button>
-            ) : (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsFileDialogOpen(false);
-                    setEditingFilePath(null);
-                  }}
-                >
-                  {t('settings.common.actions.cancel')}
-                </Button>
-                <Button size="sm" onClick={() => void handleSaveFile()} disabled={isLoadingFile || !hasFileChanges}>
-                  {t('settings.skills.page.actions.createFile')}
-                </Button>
-              </>
-            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setIsFileDialogOpen(false);
+                setEditingFilePath(null);
+              }}
+            >
+              {t('settings.common.actions.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleSaveFile} disabled={isLoadingFile || !hasFileChanges}>
+              {editingFilePath ? t('settings.common.actions.saveChanges') : t('settings.skills.page.actions.createFile')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -16,16 +16,13 @@ type StatusSnapshot = Record<string, SessionStatus | undefined>
 let respondWithSnapshot: () => Promise<StatusSnapshot | null> = () => Promise.resolve({ ses_1: { type: "idle" } })
 const statusSnapshotCalls: string[] = []
 let runtimeKey = "test-runtime"
-// The v2 status snapshot is global; the tests still assert which directory
-// asked for it, so the directory under test is recorded alongside each call.
-const pollingDirectory = "/test/project"
 let sdkIdentity = {}
 
 mock.module("@/lib/opencode/client", () => ({
   opencodeClient: {
     getSdkClient: () => sdkIdentity,
-    getActiveSessionStatuses: mock(() => {
-      statusSnapshotCalls.push(pollingDirectory)
+    getSessionStatusForDirectory: mock((directory: string) => {
+      statusSnapshotCalls.push(directory)
       return respondWithSnapshot()
     }),
   },

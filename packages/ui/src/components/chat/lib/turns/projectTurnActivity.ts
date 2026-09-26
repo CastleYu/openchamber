@@ -1,4 +1,3 @@
-import { isQuestionTool, normalizeToolName, type ToolName } from '@/lib/opencode/tools';
 import { ACTIVITY_STANDALONE_TOOL_NAMES } from './constants';
 import type {
     ChatMessageEntry,
@@ -7,8 +6,8 @@ import type {
     TurnPartRecord,
 } from './types';
 
-const isStandaloneTool = (toolName: ToolName): boolean => {
-    return ACTIVITY_STANDALONE_TOOL_NAMES.has(normalizeToolName(toolName));
+const isStandaloneTool = (toolName: unknown): boolean => {
+    return typeof toolName === 'string' && ACTIVITY_STANDALONE_TOOL_NAMES.has(toolName.toLowerCase());
 };
 
 const getPartEndTime = (part: unknown): number | undefined => {
@@ -104,7 +103,9 @@ export const projectTurnActivity = (input: ProjectActivityInput): ProjectActivit
         // collapsible Activity group — the context stays invisible until the
         // turn completes (OPE-199). Keep it inline like OpenCode.
         const messageHasQuestion = message.parts.some((part) => (
-            part.type === 'tool' && isQuestionTool(part.tool)
+            part.type === 'tool'
+            && typeof part.tool === 'string'
+            && part.tool === 'question'
         ));
         const messageIsCompactionSummary = isCompactionSummaryMessage(message);
 
@@ -116,9 +117,9 @@ export const projectTurnActivity = (input: ProjectActivityInput): ProjectActivit
                 : undefined;
             const partId = part.id ?? `${message.info.id}-part-${partIndex}-${part.type}`;
 
-            // SAFETY: a tool part always carries a string `tool` name; this
-            // view only reads it and tolerates its absence.
-            const toolName = isTool ? (part as { tool?: string }).tool : undefined;
+            const toolName = isTool
+                ? (part as { tool?: unknown }).tool
+                : undefined;
             const standaloneTool = isTool && isStandaloneTool(toolName);
             if (standaloneTool) {
                 const toolPartId = partId;

@@ -1,4 +1,4 @@
-import type { SyncEvent } from "@/lib/opencode/events"
+import type { Event } from "@opencode-ai/sdk/v2/client"
 import { subscribeRuntimeEndpointWillChange } from "@/lib/runtime-switch"
 
 const BULK_ARCHIVE_ECHO_TTL_MS = 30_000
@@ -32,19 +32,18 @@ export const releaseBulkArchiveEchoes = (runtimeKey: string, sessionIds: Iterabl
 }
 
 export const shouldConsumeBulkArchiveEcho = (
-  event: SyncEvent,
+  event: Event,
   runtimeKey: string,
   now = Date.now(),
 ): boolean => {
-  if (event.type !== "session.patched") return false
-  const { sessionID, patch } = event.properties
+  if (event.type !== "session.updated") return false
   const runtimeEchoes = pendingEchoes.get(runtimeKey)
-  const expected = runtimeEchoes?.get(sessionID)
+  const expected = runtimeEchoes?.get(event.properties.info.id)
   if (!expected) return false
   if (expected.expiresAt < now) {
-    runtimeEchoes?.delete(sessionID)
+    runtimeEchoes?.delete(event.properties.info.id)
     if (runtimeEchoes?.size === 0) pendingEchoes.delete(runtimeKey)
     return false
   }
-  return patch.time?.archived === expected.archivedAt
+  return event.properties.info.time.archived === expected.archivedAt
 }

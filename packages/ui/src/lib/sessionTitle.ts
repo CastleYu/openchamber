@@ -5,12 +5,7 @@ import { excerptMarkdown, formatContextMessage, formatMessageText } from './mess
 import { runtimeFetch } from './runtime-fetch';
 
 type MessageRecord = { info: Message; parts: Part[] };
-type TitleTurn = {
-  user: MessageRecord;
-  /** Context items OpenChamber attached ahead of this prompt. */
-  context: SyntheticMessage[];
-  assistant: { info: AssistantMessage; parts: Part[] };
-};
+type TitleTurn = { user: MessageRecord; context?: SyntheticMessage[]; assistant: { info: AssistantMessage; parts: Part[] } };
 
 // Adapted from OpenCode's agent/prompt/title.txt for recent completed turns.
 const TITLE_SYSTEM_PROMPT = [
@@ -27,71 +22,61 @@ const TITLE_SYSTEM_PROMPT = [
   'Examples: debug 500 errors in production → Debugging production 500 errors; add dark mode to App.tsx → Dark mode in App.',
 ].join('\n');
 
-/**
- * Input is chronological. v2 messages carry no parent id, so a turn is a user
- * message plus the last assistant message before the next user message; the
- * synthetic messages that precede a prompt are its attached context.
- */
+/** Explicit parent IDs win; parentless OC2 steps belong to the preceding user turn. */
 export function collectSessionTitleTurns(records: readonly MessageRecord[], revertMessageID?: string): TitleTurn[] {
   const boundary = revertMessageID ? records.findIndex((record) => record.info.id === revertMessageID) : -1;
   if (revertMessageID && boundary < 0) return [];
   const end = boundary < 0 ? records.length : boundary;
-
-  const turns: TitleTurn[] = [];
+  const answers = new Map<string, TitleTurn['assistant']>();
+  const userByAssistant = new Map<string, string>();
+  const contextByUser = new Map<string, SyntheticMessage[]>();
   let pendingContext: SyntheticMessage[] = [];
-  let user: MessageRecord | undefined;
-  let userContext: SyntheticMessage[] = [];
-  let answer: TitleTurn['assistant'] | undefined;
-
-  const hasText = (parts: readonly Part[]): boolean =>
-    parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
-
-  const closeTurn = () => {
-    if (!user || !answer) return;
-    if (answer.info.finish !== 'stop' || !answer.info.time.completed || answer.info.error) return;
-    if (!hasText(user.parts) && userContext.length === 0) return;
-    if (!hasText(answer.parts)) return;
-    turns.push({ user, context: userContext, assistant: answer });
-  };
-
+  let userID: string | undefined;
   for (let index = 0; index < end; index += 1) {
-    const record = records[index];
-    const { info } = record;
-    if (info.role === 'synthetic') {
-      // Only context the user attached counts as part of the prompt. Server
-      // plugins inject their own synthetic prompts ("returning user", memory
-      // recall); titling from those describes the plugin, not the request.
-      if (readContextPart(info)) pendingContext.push(info);
-      continue;
-    }
+    const info = records[index].info;
+    if (info.role === 'synthetic' && readContextPart(info)) pendingContext.push(info);
     if (info.role === 'user') {
-      closeTurn();
-      user = record;
-      userContext = pendingContext;
+      userID = info.id;
+      if (pendingContext.length) contextByUser.set(info.id, pendingContext);
       pendingContext = [];
-      answer = undefined;
-      continue;
     }
-    if (info.role === 'assistant' && user) {
-      // A later assistant record replaces an earlier one: only the final
-      // response of the turn is a title candidate.
-      answer = { info, parts: record.parts };
+    else if (info.role === 'assistant') {
+      const parent = info.parentID ?? userID;
+      if (parent) userByAssistant.set(info.id, parent);
     }
   }
-  closeTurn();
-
-  return turns.slice(-3);
+  const turns: TitleTurn[] = [];
+  for (let index = end - 1; index >= 0; index -= 1) {
+    const { info, parts } = records[index];
+    if (info.role === 'assistant') {
+      // Only the latest assistant record for this user can finish its turn.
+      const parent = userByAssistant.get(info.id);
+      if (!parent || answers.has(parent)) continue;
+      answers.set(parent, { info, parts });
+      continue;
+    }
+    if (info.role !== 'user') continue;
+    const answer = answers.get(info.id);
+    if (!answer || answer.info.finish !== 'stop' || !answer.info.time.completed || answer.info.error || answer.info.summary) continue;
+    const hasUserContent = parts.some((part) => part.type === 'text' && !part.ignored
+      && ((!part.synthetic && part.text.trim()) || readContextPart(part)));
+    const context = contextByUser.get(info.id);
+    if ((!hasUserContent && !context?.length) || !answer.parts.some((part) => part.type === 'text' && !part.ignored && !part.synthetic && part.text.trim())) continue;
+    turns.push({ user: records[index], ...(context ? { context } : {}), assistant: answer });
+    if (turns.length === 3) break;
+  }
+  return turns.reverse();
 }
 
 export function formatSessionTitleContext(turns: readonly TitleTurn[]): string {
   return turns.map((turn) => [
     '**User**',
     excerptMarkdown([
-      ...turn.context.map((item) => formatContextMessage(item, 2000)),
-      formatMessageText(turn.user.parts, { user: true, fieldLimit: 2000 }),
-    ].map((block) => block.trim()).filter(Boolean).join('\n\n'), 4000),
+      ...(turn.context ?? []).map((message) => formatContextMessage(message, 2000)),
+      formatMessageText(turn.user.parts, { user: true, excludeSynthetic: true, fieldLimit: 2000 }),
+    ].filter(Boolean).join('\n\n'), 4000),
     '**Assistant final response**',
-    excerptMarkdown(formatMessageText(turn.assistant.parts, { fieldLimit: 4000 }), 4000),
+    excerptMarkdown(formatMessageText(turn.assistant.parts, { excludeSynthetic: true, fieldLimit: 4000 }), 4000),
   ].join('\n\n')).join('\n\n---\n\n');
 }
 

@@ -6,10 +6,10 @@ import { collectSessionSubtreeIds, runSessionSubtreeAction, type SessionSubtreeS
 
 const session = (id: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
   title: id,
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  version: '1',
   directory: '/workspace',
   time: { created: 1, updated: 1 },
 });

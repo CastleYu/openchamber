@@ -1,5 +1,11 @@
 # Scheduled Tasks module
 
+The server injects `kernelOperations` for OpenCode session creation, command
+lookup and dispatch. OC1 keeps its prompt body. OC2 selects model and agent
+on the session, admits non-resuming context before the prompt or command, and
+sends the authored text through the OC2 request body. Each run captures an
+epoch before creating its session; a later kernel switch rejects dispatch.
+
 Server-owned scheduled task runtime and routes for OpenChamber-only automation.
 
 ## Scope
@@ -188,7 +194,3 @@ project write lock on every `syncProject` when the project path is known:
   - `POST /api/projects/:projectId/scheduled-tasks/:taskId/run`
   - `GET /api/openchamber/scheduled-tasks/status`
   - `GET /api/openchamber/events`
-
-The shared `/api/openchamber/events` stream also carries web notifications.
-Its connection ownership and browser capability flag stay unchanged. Delivery
-and duplicate handling are documented in `../notifications/DOCUMENTATION.md`.

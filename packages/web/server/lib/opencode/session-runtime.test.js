@@ -12,26 +12,26 @@ describe('session runtime', () => {
     runtimes.length = 0;
   });
 
-  it('keeps pending permission requests and forms until they are answered', () => {
+  it('keeps pending permission and question requests until they are answered', () => {
     const runtime = createSessionRuntime({
       writeSseEvent() {},
       getNotificationClients: () => new Set(),
       broadcastEvent: () => {},
     });
     runtimes.push(runtime);
-    const permission = { id: 'perm-1', sessionID: 'session-1', action: 'bash', resources: ['rm *'], metadata: {} };
-    const form = { id: 'form-1', sessionID: 'session-2', title: 'Pick one', fields: {} };
+    const permission = { id: 'perm-1', sessionID: 'session-1', permission: 'bash', patterns: ['rm *'], metadata: {}, always: [] };
+    const question = { id: 'q-1', sessionID: 'session-2', questions: [{ header: 'Pick', question: 'Which?', options: [] }] };
 
     runtime.processOpenCodeSsePayload({ type: 'permission.asked', properties: permission });
     runtime.processOpenCodeSsePayload({ type: 'permission.asked', properties: permission });
-    runtime.processOpenCodeSsePayload({ type: 'form.created', properties: { sessionID: 'session-2', form } });
+    runtime.processOpenCodeSsePayload({ type: 'question.asked', properties: question });
     expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({
-      'session-1': { permissions: [permission], forms: [] },
-      'session-2': { permissions: [], forms: [form] },
+      'session-1': { permissions: [permission], questions: [] },
+      'session-2': { permissions: [], questions: [question] },
     });
 
     runtime.processOpenCodeSsePayload({ type: 'permission.replied', properties: { sessionID: 'session-1', requestID: 'perm-1' } });
-    runtime.processOpenCodeSsePayload({ type: 'form.settled', properties: { sessionID: 'session-2' } });
+    runtime.processOpenCodeSsePayload({ type: 'question.rejected', properties: { sessionID: 'session-2' } });
     expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({});
   });
 
@@ -43,12 +43,12 @@ describe('session runtime', () => {
     });
     runtimes.push(runtime);
     const ask = (sessionID, id) => runtime.processOpenCodeSsePayload({
-      type: 'permission.asked', properties: { id, sessionID, action: 'edit', resources: [], metadata: {} },
+      type: 'permission.asked', properties: { id, sessionID, permission: 'edit', patterns: [], metadata: {}, always: [] },
     });
 
     ask('session-1', 'perm-1');
     ask('session-2', 'perm-2');
-    runtime.processOpenCodeSsePayload({ type: 'session.deleted', properties: { sessionID: 'session-1', info: { id: 'session-1' } } });
+    runtime.processOpenCodeSsePayload({ type: 'session.deleted', properties: { info: { id: 'session-1' } } });
     expect(Object.keys(runtime.getPendingBlockingRequestsSnapshot())).toEqual(['session-2']);
 
     runtime.interruptBusySessionsAfterRestart();

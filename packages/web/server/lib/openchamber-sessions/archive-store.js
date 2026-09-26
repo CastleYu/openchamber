@@ -13,13 +13,12 @@
 
 import fsDefault from 'node:fs';
 import pathDefault from 'node:path';
+import { z } from 'zod';
 
 const ARCHIVE_FILE_NAME = 'sessions-archive.json';
 
 const asNonEmptyString = (value) => {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  return z.string().trim().min(1).safeParse(value).data ?? null;
 };
 
 const asTimestamp = (value) => (Number.isSafeInteger(value) && value > 0 ? value : null);
@@ -79,7 +78,7 @@ export const createArchiveStore = ({
 
   const parseStored = (raw) => {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    if (!z.object({}).passthrough().safeParse(parsed).success) {
       throw new Error('archive file is not a JSON object');
     }
     const result = new Map();
@@ -115,7 +114,12 @@ export const createArchiveStore = ({
       // the next archive, and whatever this process already knows stays in
       // memory rather than collapsing to "nothing archived".
       const backup = `${filePath}.corrupt-${now()}`;
-      await fsPromises.rename(filePath, backup).catch(() => undefined);
+      try {
+        await fsPromises.rename(filePath, backup);
+      } catch (backupError) {
+        console.warn('[openchamber-sessions] could not preserve malformed archive file:', backupError?.message ?? backupError);
+        return { ok: false, stored: null };
+      }
       console.warn(
         `[openchamber-sessions] archive file was unreadable and was moved to ${backup}: ${error?.message ?? error}`,
       );
@@ -157,14 +161,16 @@ export const createArchiveStore = ({
   };
 
   /** Applies a batch and rolls the memory back when the file write fails. */
-  const applyBatch = async (ids, archivedAt) => {
+  const applyBatch = async (ids, archivedAt, guard) => {
     const targets = asIdList(ids);
     if (targets.length === 0) return { applied: [], failedIds: [] };
-    return runExclusive(() => applyBatchExclusive(targets, archivedAt));
+    return runExclusive(() => applyBatchExclusive(targets, archivedAt, guard));
   };
 
-  const applyBatchExclusive = async (targets, archivedAt) => {
+  const applyBatchExclusive = async (targets, archivedAt, guard) => {
+    guard?.();
     const loadResult = await load();
+    guard?.();
     if (!loadResult.ok || !writable) {
       return { applied: [], failedIds: targets };
     }
@@ -175,12 +181,14 @@ export const createArchiveStore = ({
     for (const id of targets) entries.set(id, archivedAt);
 
     try {
+      guard?.();
       await persist();
     } catch (error) {
       for (const [id, restore] of previous) {
         if (restore === undefined) entries.delete(id);
         else entries.set(id, restore.value);
       }
+      if (error?.statusCode === 409 || error?.code === 'runtime-changed') throw error;
       console.warn('[openchamber-sessions] failed to persist archive state:', error?.message ?? error);
       return { applied: [], failedIds: targets };
     }
@@ -189,7 +197,8 @@ export const createArchiveStore = ({
   };
 
   const getAll = async () => {
-    await load();
+    const result = await load();
+    if (!result.ok) throw new Error('Session archive state is unavailable');
     return snapshot();
   };
 
@@ -202,7 +211,7 @@ export const createArchiveStore = ({
       const sessionID = asNonEmptyString(id);
       if (!sessionID) return false;
       await load();
-      return typeof entries.get(sessionID) === 'number';
+      return asTimestamp(entries.get(sessionID)) !== null;
     },
     archivedAt: async (id) => {
       const sessionID = asNonEmptyString(id);
@@ -210,13 +219,13 @@ export const createArchiveStore = ({
       await load();
       return entries.get(sessionID) ?? null;
     },
-    archive: async (ids, archivedAt) => {
+    archive: async (ids, archivedAt, guard) => {
       const stamp = asTimestamp(archivedAt) ?? now();
-      const { applied, failedIds } = await applyBatch(ids, stamp);
+      const { applied, failedIds } = await applyBatch(ids, stamp, guard);
       return { archived: applied.map((id) => ({ id, archivedAt: stamp })), failedIds };
     },
-    unarchive: async (ids) => {
-      const { applied, failedIds } = await applyBatch(ids, null);
+    unarchive: async (ids, guard) => {
+      const { applied, failedIds } = await applyBatch(ids, null, guard);
       return { restored: applied.map((id) => ({ id, archivedAt: null })), failedIds };
     },
     filePath,

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Agent } from '@/lib/opencode/model';
+import type { AgentWithExtras } from '@/stores/useAgentsStore';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,7 +21,7 @@ interface AgentSelectorProps {
     agentName: string;
     onChange: (agentName: string) => void;
     className?: string;
-    filter?: (agent: Agent) => boolean;
+    filter?: (agent: AgentWithExtras) => boolean;
     dropdownPortalToBody?: boolean;
     directory?: string;
 }

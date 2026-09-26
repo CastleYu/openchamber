@@ -165,12 +165,10 @@ describe('updateAgent frontmatter preservation', () => {
     expect(content.match(/^---\r?\n/g)).toHaveLength(1);
 
     const parsed = parseMdFile(agentPath);
-    // `temperature` is a v1 field: reading accepts it, writing moves it under
-    // the v2 `request.body` overlay.
     expect(parsed.frontmatter).toEqual({
       description: 'Strategy agent',
       model: 'openai/gpt-5',
-      request: { body: { temperature: 0.7 } },
+      temperature: 0.7,
     });
     expect(parsed.body).toBe('');
   });
@@ -198,7 +196,7 @@ describe('updateAgent frontmatter preservation', () => {
     expect(parsed.frontmatter).toEqual({
       description: 'Updated strategy agent',
       mode: 'primary',
-      request: { body: { temperature: 0.7 } },
+      temperature: 0.7,
     });
     expect(parsed.body).toBe('Body of strateg.');
   });
@@ -374,12 +372,10 @@ describe('readConfigFile / writeConfig JSONC safety (issue #2923)', () => {
         }),
       ]);
 
-      updateMcpConfig('openproject', { disabled: true }, projectDir);
+      updateMcpConfig('openproject', { enabled: false }, projectDir);
       const rewritten = JSON.parse(fs.readFileSync(custom, 'utf8'));
       expect(rewritten.plugin).toEqual(['opencode-see-image']);
-      // The v1 `mcp.<name>` entry is rewritten in place into `mcp.servers`.
-      expect(rewritten.mcp.openproject).toBeUndefined();
-      expect(rewritten.mcp.servers.openproject.disabled).toBe(true);
+      expect(rewritten.mcp.openproject.enabled).toBe(false);
       expect(fs.readFileSync(projectFile, 'utf8')).toBe(PARTIAL_PARSE_CONFIG);
       expect(fs.existsSync(`${projectFile}.openchamber.backup`)).toBe(false);
     } finally {

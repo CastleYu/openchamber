@@ -10,11 +10,11 @@ const DIRECTORY = '/workspace/catalog';
 
 const makeSession = (id: string, directory: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
   directory,
   title: id,
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  version: '1',
   time: { created: 1, updated: 1 },
 });
 

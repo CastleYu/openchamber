@@ -1,4 +1,5 @@
-import { readOpenCodeInfo, isSupportedOpenCodeVersion } from './compatibility.js';
+import { detectOpenCodeGeneration, OPENCODE_GENERATION } from './compatibility.js';
+
 export const createOpenCodeNetworkRuntime = (deps) => {
   const {
     state,
@@ -47,21 +48,17 @@ export const createOpenCodeNetworkRuntime = (deps) => {
       try {
         const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), 3000);
-        // OpenCode 2.0.8 replaced `/api/health` with `/api/info`: a 200 is the
-        // readiness signal, the payload carries no `healthy` field.
-        const response = await fetch(`${url.replace(/\/+$/, '')}/api/info`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            ...getOpenCodeAuthHeaders(),
-          },
+        const descriptor = await detectOpenCodeGeneration({
+          endpoint: url,
+          epoch: 0,
+          headers: getOpenCodeAuthHeaders(),
           signal: controller.signal,
         });
         clearTimeout(timeout);
         timeout = null;
 
-        const info = await readOpenCodeInfo(response);
-        if (info && isSupportedOpenCodeVersion(info.version)) return true;
+        if (descriptor.generation === OPENCODE_GENERATION.OC1
+          || descriptor.generation === OPENCODE_GENERATION.OC2) return true;
       } catch {
       } finally {
         if (timeout) {

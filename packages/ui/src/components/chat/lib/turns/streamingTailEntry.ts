@@ -24,7 +24,7 @@ type BuildLiveStreamingEntryOptions = {
     livePartsByMessageId: Readonly<Record<string, Part[]>>;
     showTextJustificationActivity: boolean;
     showTurnChangedFiles: boolean;
-    mergeHiddenUserTurns?: boolean;
+    mergeHiddenUserTurns?: { planModeEnabled: boolean };
 };
 
 const withLiveParts = (

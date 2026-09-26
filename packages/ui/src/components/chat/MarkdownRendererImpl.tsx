@@ -2,7 +2,7 @@ import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import React from 'react';
 import morphdom from 'morphdom';
 import { renderMermaidASCII, renderMermaidSVG, THEMES } from 'beautiful-mermaid';
-import type { Part } from '@/lib/opencode/model';
+import type { Part } from '@opencode-ai/sdk/v2';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { openExternalUrl } from '@/lib/url';

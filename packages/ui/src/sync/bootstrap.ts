@@ -1,18 +1,52 @@
-import type { Project } from "@/lib/opencode/model"
-import { opencodeClient } from "@/lib/opencode/client"
+import type { OpencodeClient, Project } from "@opencode-ai/sdk/v2/client"
+import type { SyncSource } from "./source"
+import type { BootstrapPath } from "@/lib/opencode/operations"
+import { z } from "zod"
 import { retry } from "./retry"
 import type { GlobalState, State } from "./types"
 import { runtimeFetch } from "../lib/runtime-fetch"
-import { emitSyncConfigChanged } from "./sync-refs"
+import { emitSyncConfigChanged, emitTaggedSyncConfigChanged } from "./sync-refs"
 import { warmChatsRootDirectory } from "../lib/chatDirectories"
 import { runBackgroundNetworkTask } from "../lib/background-network"
+import { sessionStatusSnapshotSchema } from "../lib/opencode/session-status"
 import {
   readDirectoryStatusSnapshot,
-  readDirectoryFormSnapshot,
+  readDirectoryQuestionSnapshot,
   readDirectoryPermissionSnapshot,
+  readDomainStatusSnapshot,
+  readDomainInputSnapshot,
+  readDomainPermissionSnapshot,
   type DirectoryRecoverySource,
 } from "./directory-recovery-snapshots"
 
+const sdkErrorMessage = z.object({ message: z.string() })
+
+function hasLegacyPath(path: BootstrapPath): path is Required<Pick<BootstrapPath, "directory" | "state" | "config" | "worktree" | "home">> {
+  return typeof path.state === "string" && typeof path.config === "string"
+    && typeof path.worktree === "string" && typeof path.home === "string"
+}
+
+/**
+ * SDK returns `{ data, error, response }` without throwing on non-2xx.
+ * The silent `x.data!` / `x.data ?? []` pattern lets HTTP 5xx warmup
+ * errors become empty state. Wrap into a real Error so retry() fires.
+ */
+function unwrap<T>(
+  result: { data?: T; error?: unknown; response?: { status?: number } },
+  name: string,
+): T {
+  if (result.error) {
+    const status = result.response?.status
+    const parsed = sdkErrorMessage.safeParse(result.error)
+    const message = parsed.success ? parsed.data.message : String(result.error)
+    throw Object.assign(new Error(`${name} failed${status ? ` (${status})` : ""}: ${message}`), { status })
+  }
+  if (result.data === undefined || result.data === null) {
+    // No error + no data: ambiguous, treat as transient so retry fires.
+    throw Object.assign(new Error(`${name} returned no data`), { status: 503 })
+  }
+  return result.data
+}
 
 function projectID(directory: string, projects: Project[]) {
   return projects.find(
@@ -24,16 +58,39 @@ function projectID(directory: string, projects: Project[]) {
 // Bootstrap global state
 // ---------------------------------------------------------------------------
 
-export async function bootstrapGlobal(set: (patch: Partial<GlobalState>) => void) {
+/**
+ * Deliberately does not call `project.list()`: it enumerates every project the
+ * OpenCode server knows about while the visible directory is still
+ * bootstrapping. `bootstrapDirectory` resolves its own project and
+ * `project.updated` events keep `projects` current.
+ */
+export async function bootstrapGlobal(
+  sdk: OpencodeClient | SyncSource,
+  set: (patch: Partial<GlobalState>) => void,
+) {
+  const source = "generation" in sdk ? sdk : null
+  const legacyClient = (): OpencodeClient => {
+    if ("generation" in sdk) throw new Error("OC1 SDK used by OC2 bootstrap")
+    return sdk
+  }
   const results = await Promise.allSettled([
     // Sync chat classification needs the chats root before session lists load;
     // it resolves alongside the other bootstrap calls, not ahead of them.
     warmChatsRootDirectory(),
     retry(async () => {
-      const [location, home] = await Promise.all([opencodeClient.getLocation(), opencodeClient.getFilesystemHome()])
-      set({ path: { directory: location.directory, worktree: location.project.directory, home: home ?? "" } })
+      if (source) {
+        const pathInfo = await source.bootstrap.getBootstrapPath(null)
+        set({ pathInfo, ...(source.generation === "oc1" && hasLegacyPath(pathInfo) ? { path: pathInfo } : {}) })
+      }
+      else set({ path: unwrap(await legacyClient().path.get(), "path.get") })
     }),
-    retry(() => opencodeClient.getConfig().then((config) => set({ config }))),
+    retry(async () => {
+      if (source) {
+        const configTagged = await source.bootstrap.getTaggedConfig(null)
+        set({ configTagged, ...(configTagged.generation === "oc1" ? { config: configTagged.value } : {}) })
+      }
+      else set({ config: unwrap(await legacyClient().global.config.get(), "global.config.get") })
+    }),
   ])
 
   const errors = results
@@ -48,7 +105,7 @@ export async function bootstrapGlobal(set: (patch: Partial<GlobalState>) => void
   if (errors.length === results.length) {
     let message = errors[0] instanceof Error ? errors[0].message : String(errors[0])
     try {
-      const healthRes = await runtimeFetch("/health", { signal: AbortSignal.timeout(4000) })
+      const healthRes = await runtimeFetch('/health', { signal: AbortSignal.timeout(4000) })
       if (healthRes.ok) {
         const health = await healthRes.json()
         if (health.lastOpenCodeError) {
@@ -72,13 +129,13 @@ export async function bootstrapGlobal(set: (patch: Partial<GlobalState>) => void
 
 type DirectoryBootstrapInput = {
   directory: string
+  sdk: OpencodeClient | SyncSource
   store: DirectoryRecoverySource
   set: (patch: Partial<State>) => void
   isStale?: () => boolean
   global: {
     config: State["config"]
     projects: Project[]
-    path: GlobalState["path"]
   }
   loadSessions: (directory: string) => Promise<void> | void
 }
@@ -104,7 +161,12 @@ export function bootstrapDirectory(input: DirectoryBootstrapInput) {
 }
 
 async function initializeDirectory(input: DirectoryBootstrapInput): Promise<BootstrapResult> {
-  const { directory, store, set, global: g } = input
+  const { directory, sdk, store, set, global: g } = input
+  const source = "generation" in sdk ? sdk : null
+  const legacyClient = (): OpencodeClient => {
+    if ("generation" in sdk) throw new Error("OC1 SDK used by OC2 bootstrap")
+    return sdk
+  }
   const read = <T>(request: () => Promise<T>) => retry(() => runBackgroundNetworkTask(() => {
     if (input.isStale?.()) throw new Error("Directory initialization superseded")
     return request()
@@ -120,53 +182,102 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
   const seededProject = projectID(directory, g.projects)
   if (seededProject) commit({ project: seededProject })
   if (Object.keys(state.config ?? {}).length === 0 && Object.keys(g.config ?? {}).length > 0) {
-    if (commit({ config: g.config })) emitSyncConfigChanged(directory, g.config)
+    const seededConfig = g.config
+    if (commit({ config: seededConfig })) emitSyncConfigChanged(directory, seededConfig)
   }
   commit({ status: "partial" })
   if (input.isStale?.()) return "stale"
 
-  // Queue live recovery first. Each read commits independently and a failing
-  // config read cannot suppress pending form or permission recovery.
+  // Queue live recovery first. Each read commits independently and failures in
+  // config/MCP cannot suppress pending questions or permission recovery.
   const critical = Promise.allSettled([
     read(async () => {
-      const session_status = await readDirectoryStatusSnapshot(store, async () => {
-        const statuses = await opencodeClient.getActiveSessionStatuses()
-        if (statuses === null) throw new Error("session.active failed")
-        return statuses
-      })
+      const session_status = source
+        ? await readDomainStatusSnapshot(store, () => source.status(directory))
+        : await readDirectoryStatusSnapshot(store, async () => (
+          sessionStatusSnapshotSchema.parse(unwrap(await legacyClient().session.status({ directory }), "session.status"))
+        ))
       commit({ session_status, sessionStatusReady: true })
     }),
     read(async () => {
-      const form = await readDirectoryFormSnapshot(store, () => (
-        opencodeClient.listPendingForms({ directories: [directory], includeGlobal: false })
-      ))
-      commit({ form })
+      if (source) {
+        const pendingInput = await readDomainInputSnapshot(store, () => source.inputs(directory))
+        commit({ pendingInput })
+      } else {
+        const question = await readDirectoryQuestionSnapshot(store, async () => (
+          unwrap(await legacyClient().question.list({ directory }), "question.list")
+        ))
+        commit({ question })
+      }
     }),
     read(async () => {
-      const permission = await readDirectoryPermissionSnapshot(store, () => (
-        opencodeClient.listPendingPermissions({ directories: [directory], includeGlobal: false })
-      ))
-      commit({ permission })
+      if (source) {
+        const pendingPermission = await readDomainPermissionSnapshot(store, () => source.permissions(directory))
+        commit({ pendingPermission })
+      } else {
+        const permission = await readDirectoryPermissionSnapshot(store, async () => (
+          unwrap(await legacyClient().permission.list({ directory }), "permission.list")
+        ))
+        commit({ permission })
+      }
     }),
-    read(() => opencodeClient.getConfig(directory).then((config) => {
-      if (commit({ config })) emitSyncConfigChanged(directory, config)
-    })),
-    read(() =>
-      opencodeClient.getLocation(directory).then((location) => {
-        commit({
-          project: location.project.id,
-          path: { directory: location.directory, worktree: location.project.directory, home: g.path.home },
-        })
+    seededProject
+      ? Promise.resolve()
+      : read(async () => {
+        const project = source ? await source.bootstrap.getCurrentProject(directory) : unwrap(await legacyClient().project.current({ directory }), "project.current")
+        commit({ project: project.id })
       }),
-    ),
+    read(async () => {
+      if (source) {
+        const configTagged = await source.bootstrap.getTaggedConfig(directory)
+        if (commit({ configTagged })) emitTaggedSyncConfigChanged(directory, configTagged)
+        if (configTagged.generation === "oc1") {
+          if (commit({ config: configTagged.value })) emitSyncConfigChanged(directory, configTagged.value)
+        }
+      } else {
+        const config = unwrap(await legacyClient().config.get({ directory }), "config.get")
+        if (commit({ config })) emitSyncConfigChanged(directory, config)
+      }
+    }),
+    read(async () => {
+      if (source) {
+        const data = await source.bootstrap.getBootstrapPath(directory)
+        commit({ pathInfo: data, ...(source.generation === "oc1" && hasLegacyPath(data) ? { path: data } : {}) })
+        const next = projectID(data.directory, g.projects)
+        if (next) commit({ project: next })
+      } else {
+        const data = unwrap(await legacyClient().path.get({ directory }), "path.get")
+        commit({ path: data })
+        const next = projectID(data.directory, g.projects)
+        if (next) commit({ project: next })
+      }
+    }),
   ])
-  // MCP status and the command list are deliberately not read here. Reading
-  // MCP state initializes the directory's whole stdio server fleet as an
-  // OpenCode side effect, and listing commands enumerates MCP prompts, which
-  // touches that same state. Both surfaces fetch on demand through their own
-  // stores (useMcpStore, useCommandsStore) instead.
   const enrichment = Promise.allSettled([
-    read(() => opencodeClient.getVcs(directory).then((vcs) => commit({ vcs }))),
+    // MCP status and the command list are deliberately not read here. Reading
+    // MCP state initializes the directory's whole stdio server fleet as an
+    // OpenCode side effect, and listing commands enumerates MCP prompts,
+    // which touches that same state. The sidebar declares bootstrap demand
+    // for every known project directory, so either read launched one full
+    // fleet per project at startup. Both surfaces fetch on demand through
+    // their own stores (useMcpStore, useCommandsStore) instead.
+    source?.generation === "oc2"
+      ? Promise.resolve(commit({ lspAvailability: "unsupported" }))
+      : read(async () => {
+        const lsp = source ? await source.bootstrap.getLspStatus(directory) : unwrap(await legacyClient().lsp.status({ directory }), "lsp.status")
+        commit({ lsp, lspAvailability: "supported" })
+      }),
+    read(async () => {
+      if (source) {
+        const vcs = await source.bootstrap.getVcs(directory)
+        commit({ vcs: { branch: vcs.branch, default_branch: vcs.defaultBranch } })
+      }
+      else {
+        const result = await legacyClient().vcs.get({ directory })
+        if (result.error) throw new Error(`vcs.get failed: ${String(result.error)}`)
+        if (result.data) commit({ vcs: result.data })
+      }
+    }),
   ])
   const [results, enrichmentResults] = await Promise.all([critical, enrichment])
   if (input.isStale?.()) return "stale"

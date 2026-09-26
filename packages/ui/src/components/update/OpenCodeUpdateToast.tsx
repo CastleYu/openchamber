@@ -9,7 +9,6 @@ import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-sw
 import { updateDesktopSettings } from '@/lib/persistence';
 import { getDeferredSafeStorage } from '@/stores/utils/safeStorage';
 import {
-  isOpenCodeUpgradeSupported,
   resolveOpenCodeUpdateVersion,
   resolveOpenCodeUpgradeStatusVersion,
   shouldShowOpenCodeUpdateToast,
@@ -92,9 +91,7 @@ export const OpenCodeUpdateToast: React.FC = () => {
   }, [reloadOpenCode, t]);
 
   React.useEffect(() => {
-    // Managed CLI installations upgrade through the host. External runtimes
-    // keep the informational toast because the host cannot run their CLI.
-    const showUpdateAvailableToast = (version: string, supported: boolean) => {
+    const showUpdateAvailableToast = (version: string) => {
       // Upstream setting wins over our dedup logic: if user disabled
       // OpenCode update notifications, dismiss any active toast and bail
       // before consulting dedup state.
@@ -112,30 +109,23 @@ export const OpenCodeUpdateToast: React.FC = () => {
       }
       seenVersionsRef.current.add(version);
 
-      const dismiss = {
-        label: t('opencodeUpdate.toast.actions.dismiss'),
-        onClick: () => {
-          getDeferredSafeStorage().setItem(UPDATE_TOAST_DISMISSED_VERSION_KEY, version);
-          void updateDesktopSettings({ openCodeUpdateToastDismissedVersion: version });
-          toast.dismiss(UPDATE_TOAST_ID);
+      toast.info(t('opencodeUpdate.toast.available.title'), {
+        id: UPDATE_TOAST_ID,
+        description: t('opencodeUpdate.toast.available.description', { version }),
+        duration: Infinity,
+        action: {
+          label: t('opencodeUpdate.toast.actions.update'),
+          onClick: runUpgrade,
         },
-      };
-      // The toast wrapper adds an "OK" action when none is given, so the
-      // informational variant makes Dismiss its only button.
-      toast.info(t('opencodeUpdate.toast.available.title'), supported
-        ? {
-          id: UPDATE_TOAST_ID,
-          description: t('opencodeUpdate.toast.available.description', { version }),
-          duration: Infinity,
-          action: { label: t('opencodeUpdate.toast.actions.update'), onClick: runUpgrade },
-          cancel: dismiss,
-        }
-        : {
-          id: UPDATE_TOAST_ID,
-          description: t('opencodeUpdate.toast.available.manualDescription', { version }),
-          duration: Infinity,
-          action: dismiss,
-        });
+        cancel: {
+          label: t('opencodeUpdate.toast.actions.dismiss'),
+          onClick: () => {
+            getDeferredSafeStorage().setItem(UPDATE_TOAST_DISMISSED_VERSION_KEY, version);
+            void updateDesktopSettings({ openCodeUpdateToastDismissedVersion: version });
+            toast.dismiss(UPDATE_TOAST_ID);
+          },
+        },
+      });
     };
 
     let cancelled = false;
@@ -148,7 +138,7 @@ export const OpenCodeUpdateToast: React.FC = () => {
         const status = await response.json().catch(() => null) as OpenCodeUpgradeStatusLike | null;
         const version = resolveOpenCodeUpgradeStatusVersion(status);
         if (!cancelled && runtimeKey === getRuntimeKey() && version) {
-          showUpdateAvailableToast(version, isOpenCodeUpgradeSupported(status));
+          showUpdateAvailableToast(version);
         }
       } catch {
         const delay = CHECK_RETRY_DELAYS_MS[attempt];

@@ -183,7 +183,6 @@ export const RoutingPage: React.FC = () => {
   const available = useRoutingStore((state) => state.available);
   const autoReady = useRoutingStore((state) => state.autoReady);
   const tokenPresent = useRoutingStore((state) => state.tokenPresent);
-  const jevSource = useRoutingStore((state) => state.jevSource);
   const serverConfig = useRoutingStore((state) => state.config);
   const builtins = useRoutingStore((state) => state.builtins);
   const loaded = useRoutingStore((state) => state.loaded);
@@ -346,7 +345,9 @@ export const RoutingPage: React.FC = () => {
   const enabledCount = draft?.categories.filter((category) => category.enabled).length ?? 0;
   const removedBuiltins = builtins.filter((builtin) => !draft?.categories.some((category) => category.id === builtin.id));
 
-  const readinessText = !draft?.enabled
+  const readinessText = !tokenPresent
+    ? t('settings.routing.status.noToken')
+    : !draft?.enabled
       ? t('settings.routing.status.disabled')
       : !draft.fallback
         ? t('settings.routing.status.noFallback')
@@ -367,16 +368,10 @@ export const RoutingPage: React.FC = () => {
         <p className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.routing.unavailable')}</p>
       ) : (
         <>
-          <SettingsSection title={t('settings.routing.access.title')} divider={false}>
+          <SettingsSection title={t('settings.routing.token.title')} divider={false}>
             <div className={SETTINGS_FIELDS_STACK_CLASS}>
-              <p className={SETTINGS_HELPER_CLASS}>{t('settings.routing.access.intro')}</p>
               <p className={SETTINGS_HELPER_CLASS}>
-                {jevSource === 'typesafe' ? t('settings.routing.access.usingKey') : (
-                  <>
-                    <strong className="font-semibold">{t('settings.routing.access.usingFree')}</strong>{' '}
-                    {t('settings.routing.access.usingFreeDetails')}
-                  </>
-                )}
+                {tokenPresent ? t('settings.routing.token.present') : t('settings.routing.token.missing')}
               </p>
               <SettingsFieldRow
                 settingsItem="routing.token"

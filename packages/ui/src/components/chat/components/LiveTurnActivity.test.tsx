@@ -6,12 +6,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { OpenCode } from '@opencode/client';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import type { Part, AssistantMessage } from '@/lib/opencode/model';
 import { I18nProvider, useI18nStore } from '@/lib/i18n';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { SyncProvider } from '@/sync/sync-context';
+import { sourceFromSdk } from '@/sync/__tests__/source-fixture';
 import { useUIStore } from '@/stores/useUIStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { projectTurnRecords } from '../lib/turns/projectTurnRecords';
@@ -45,18 +46,15 @@ const runtimeApis: RuntimeAPIs = {
     get settings() { return unavailable(); },
     get permissions() { return unavailable(); },
     get notifications() { return unavailable(); },
+    get tools() { return unavailable(); },
 };
-const sdk = OpenCode.make({ baseUrl: 'http://localhost', fetch: async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } }) });
+const sdk = createOpencodeClient({ baseUrl: 'http://localhost', fetch: async () => new Response('[]', { headers: { 'Content-Type': 'application/json' } }) });
 let MessageBody: typeof import('../message/MessageBody').default;
 
-const changedFilesTrigger = (container: HTMLElement): HTMLButtonElement | null =>
-    Array.from(container.querySelectorAll<HTMLButtonElement>('[data-fixture-message="final"] button[aria-expanded]'))
-        .find((button) => button.textContent?.startsWith('Show more')) ?? null;
-
-function assistant(id: string, parts: Part[], finish?: AssistantMessage['finish']): ChatMessageEntry {
+function assistant(id: string, parts: Part[], finish?: string): ChatMessageEntry {
     const info: AssistantMessage = {
-        id, sessionID: 'session', role: 'assistant', time: { created: 2, completed: finish ? 3 : undefined },
-        modelID: 'model', providerID: 'provider', agent: 'build',
+        id, sessionID: 'session', role: 'assistant', parentID: 'user', time: { created: 2, completed: finish ? 3 : undefined },
+        modelID: 'model', providerID: 'provider', mode: 'build', agent: 'build', path: { cwd: '/project', root: '/project' },
         cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, finish,
     };
     return { info, parts };
@@ -66,11 +64,11 @@ function text(id: string, content: string): Part {
 }
 const readPart: Part = {
     type: 'tool', tool: 'read', id: 'read', callID: 'read', sessionID: 'session', messageID: 'progress',
-    state: { status: 'completed', input: { filePath: '/project/source.ts' }, output: 'code', metadata: {}, time: { start: 1, end: 2 } },
+    state: { status: 'completed', input: { filePath: '/project/source.ts' }, output: 'code', title: 'Read', metadata: {}, time: { start: 1, end: 2 } },
 };
 function turn(messages: ChatMessageEntry[]): TurnRecord {
     return projectTurnRecords([{
-        info: { id: 'user', sessionID: 'session', role: 'user', time: { created: 1 } },
+        info: { id: 'user', sessionID: 'session', role: 'user', time: { created: 1 }, agent: 'build', model: { providerID: 'provider', modelID: 'model' } },
         parts: [text('request', 'Request')],
     }, ...messages]).turns[0];
 }
@@ -100,7 +98,7 @@ function Harness({ record, retired = false, changedFiles, isLatestTurn = true }:
         </div>
     );
     return <RuntimeAPIContext.Provider value={runtimeApis}>
-        <SyncProvider sdk={sdk} directory="/project">
+        <SyncProvider source={sourceFromSdk(sdk)} directory="/project">
             <I18nProvider>
                 <LiveTurnActivity turn={record} hasLaterAssistant={retired} expanded={expanded}
                     onToggle={() => setExpanded((value) => !value)} renderMessage={renderMessage} />
@@ -199,7 +197,7 @@ describe('live Activity with the real message body', () => {
     test('keeps file statistics visible when expanded and uses an ASCII minus', async () => {
         const edit: Part = {
             type: 'tool', tool: 'edit', id: 'edit', callID: 'edit', sessionID: 'session', messageID: 'progress',
-            state: { status: 'completed', input: { filePath: '/project/source.ts' }, output: '',
+            state: { status: 'completed', input: { filePath: '/project/source.ts' }, output: '', title: 'Edit',
                 metadata: { diff: '@@ -1,1 +1,2 @@\n-old\n+new\n+added' }, time: { start: 1, end: 2 } },
         };
         await act(async () => root.render(<Harness record={turn([
@@ -220,7 +218,7 @@ describe('live Activity with the real message body', () => {
             const files = Array.from({ length: count }, (_, index) => ({ file: `src/file-${index}.ts`, additions: 1, deletions: 0 }));
             await act(async () => root.render(<Harness record={record} changedFiles={files} />));
             expect(container.querySelectorAll('button[aria-label^="Open src/file-"]')).toHaveLength(Math.min(count, 4));
-            const trigger = changedFilesTrigger(container);
+            const trigger = container.querySelector<HTMLButtonElement>('[data-fixture-message="final"] button[aria-expanded]');
             if (count <= 4) {
                 expect(trigger).toBeNull();
             } else {
@@ -235,7 +233,7 @@ describe('live Activity with the real message body', () => {
         const record = turn([assistant('final', [text('answer', 'Done')], 'stop')]);
         const files = Array.from({ length: 100 }, (_, index) => ({ file: `src/file-${index}.ts`, additions: 1, deletions: 0 }));
         await act(async () => root.render(<Harness record={record} changedFiles={files} />));
-        const trigger = changedFilesTrigger(container);
+        const trigger = container.querySelector<HTMLButtonElement>('[data-fixture-message="final"] button[aria-expanded]');
         if (!trigger) throw new Error('Missing changed-file disclosure');
         trigger.focus();
         await act(async () => trigger.click());
@@ -279,7 +277,7 @@ describe('live Activity with the real message body', () => {
         expect(container.textContent).not.toContain('file-0.ts');
         await act(async () => root.render(<Harness record={turn([assistant('final', final.parts, 'stop')])} changedFiles={files} isLatestTurn={false} />));
         expect(container.textContent).toContain('file-0.ts');
-        await act(async () => changedFilesTrigger(container)?.click());
+        await act(async () => container.querySelector<HTMLButtonElement>('[data-fixture-message="final"] button[aria-expanded]')?.click());
         expect(container.textContent).toContain('file-4.ts');
         expect(container.querySelectorAll('button[aria-label^="Open src/file-"]')).toHaveLength(0);
     });

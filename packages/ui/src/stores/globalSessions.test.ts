@@ -1,178 +1,148 @@
+import { describe, expect, test } from 'bun:test';
 import { ensureChatsRootDirectory } from '@/lib/chatDirectories';
 import { opencodeClient } from '@/lib/opencode/client';
-import { describe, expect, test } from 'bun:test'
-import type { SessionListOptions, SessionPage } from '@/lib/opencode/client'
-import type { Session } from '@/lib/opencode/model'
-import { OpenCode } from '@opencode/client'
+import type { Session } from '@/lib/opencode/model';
+import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived, type SessionPager } from './globalSessions';
 
-import {
-  filterManagedChatsForRuntime,
-  listGlobalSessionPages,
-  splitGlobalSessionsByArchived,
-  type SessionPageLister,
-} from './globalSessions'
-
-const makeSession = (session: Partial<Session> & { id: string }): Session => ({
-  projectID: 'project',
-  directory: '/repo',
-  title: session.id,
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  time: { created: 1, updated: 1 },
-  ...session,
-})
-
-const pager = (pages: SessionPage[], calls?: SessionListOptions[]): SessionPageLister => {
-  let index = 0
-  return async (options) => {
-    calls?.push(options)
-    const page = pages[Math.min(index, pages.length - 1)]
-    index += 1
-    if (!page) throw new Error('no page')
-    return page
-  }
-}
+type Page = Awaited<ReturnType<SessionPager['listSessionsPage']>>;
+type Options = Parameters<SessionPager['listSessionsPage']>[0];
+const session = (id: string, updated = 1, archived?: number): Session => {
+  const value: Session = { id, projectID: 'project', directory: '/repo', title: id, time: { created: 1, updated } };
+  if (archived !== undefined) value.time.archived = archived;
+  return value;
+};
+const pager = (...pages: Page[]): SessionPager => {
+  let index = 0;
+  return { listSessionsPage: async () => {
+    const page = pages[index++];
+    if (!page) throw new Error('Unexpected extra page request');
+    return page;
+  } };
+};
+const ids = (items: Session[]) => items.map((item) => item.id);
+const load = (client: SessionPager, archived = false, pageSize = 500) => listGlobalSessionPages(client, { archived, pageSize });
 
 describe('managed Chats runtime visibility', () => {
-  const chat = makeSession({ id: 'chat', directory: '/home/user/.config/openchamber/chats/2026-08-21/session-a' })
-  const project = makeSession({ id: 'project', directory: '/workspace/project' })
-
+  const chat = { ...session('chat'), directory: '/home/user/.config/openchamber/chats/2026-08-21/session-a' };
+  const project = session('project');
   test('VS Code rejects managed Chats before they enter global state', () => {
-    expect(filterManagedChatsForRuntime([chat, project], true)).toEqual([project])
-  })
-
+    expect(filterManagedChatsForRuntime([chat, project], true)).toEqual([project]);
+  });
   test('other runtimes retain managed Chats', () => {
-    expect(filterManagedChatsForRuntime([chat, project], false)).toEqual([chat, project])
-  })
-})
+    expect(filterManagedChatsForRuntime([chat, project], false)).toEqual([chat, project]);
+  });
+});
 
 describe('listGlobalSessionPages', () => {
-  test('uses the next cursor from the SDK HTTP response rather than guessing from session timestamps', async () => {
-    const cursors: Array<string | null> = []
-    const apiClient = OpenCode.make({
-      baseUrl: 'https://sessions.test',
-      fetch: async (request) => {
-        const url = new URL(request instanceof Request ? request.url : request.toString())
-        const cursor = url.searchParams.get('cursor')
-        cursors.push(cursor)
-        return cursor === null
-          ? Response.json({ data: [
-            makeSession({ id: 'first', time: { created: 1, updated: 20 } }),
-            makeSession({ id: 'second', time: { created: 1, updated: 10 } }),
-          ], cursor: { next: 'opaque-8' } })
-          : Response.json({ data: [makeSession({ id: 'last', time: { created: 1, updated: 5 } })], cursor: {} })
-      },
-    })
-    const sessions = await listGlobalSessionPages(async ({ cursor, limit }) => {
-      const response = await apiClient.session.list({ cursor, limit })
-      return { sessions: response.data.map((session) => makeSession(session)), cursor: { next: response.cursor.next ?? undefined } }
-    }, { pageSize: 2 })
-    expect(cursors).toEqual([null, 'opaque-8'])
-    expect(sessions.map((session) => session.id)).toEqual(['first', 'second', 'last'])
-  })
-
-  test('sanitizes session list records before returning them', async () => {
-    const listPage = pager([
-      {
-        sessions: [
-          makeSession({
-            id: 'ses_1',
-            directory: '/repo/app',
-            title: 'Alpha',
-            metadata: { openchamber: { kind: 'review', originalSessionID: 'ses_original' } },
-            permissions: [{ action: 'edit', resource: '**', effect: 'ask' }],
-            revert: { messageID: 'msg_1', snapshot: 'abc123', files: [{ file: 'x', patch: '@@', additions: 1, deletions: 0, status: 'modified' }] },
-          }),
-        ],
-        cursor: {},
-      },
-    ])
-
-    const sessions = await listGlobalSessionPages(listPage, { pageSize: 500 })
-
-    expect(sessions[0]?.metadata).toEqual({
-      openchamber: { kind: 'review', originalSessionID: 'ses_original' },
-    })
-    expect(sessions[0]?.permissions).toBe(undefined)
-    expect(sessions[0]?.revert).toEqual({ messageID: 'msg_1' })
-  })
-
-  test('walks the cursor until the server stops offering one', async () => {
-    const calls: SessionListOptions[] = []
-    const listPage = pager([
-      { sessions: [makeSession({ id: 'ses_root' }), makeSession({ id: 'ses_child_1' })], cursor: { next: 'c1' } },
-      { sessions: [makeSession({ id: 'ses_child_2' })], cursor: {} },
-    ], calls)
-
-    const sessions = await listGlobalSessionPages(listPage, { directory: '/repo', pageSize: 2 })
-
+  test('passes opaque cursors without deriving them from timestamps', async () => {
+    const calls: Options[] = [];
+    const client: SessionPager = { listSessionsPage: async (options) => {
+      calls.push(options);
+      return options?.cursor === undefined
+        ? { sessions: [session('first', 20), session('second', 10)], cursor: { next: 'opaque:8/next' } }
+        : { sessions: [session('last', 5)], cursor: {} };
+    } };
+    expect(ids(await load(client, false, 2))).toEqual(['first', 'second', 'last']);
+    expect(calls.map((call) => call?.cursor)).toEqual([undefined, 'opaque:8/next']);
+    expect(calls[0]?.global).toBe(true);
+  });
+  test('sanitizes list details while retaining metadata', async () => {
+    const record: Session = {
+      ...session('ses_1'), metadata: { openchamber: { kind: 'review', originalSessionID: 'ses_original' } },
+      permission: [{ permission: 'todowrite', pattern: '*', action: 'allow' }],
+      revert: { messageID: 'msg_1', snapshot: 'abc123', diff: 'diff --git a/x b/x' },
+      summary: { additions: 5, deletions: 3, files: 2, diffs: [{ file: 'x', patch: '@@ -1 +1 @@', additions: 5, deletions: 3 }] },
+    };
+    const [result] = await load(pager({ sessions: [record], cursor: {} }));
+    expect(result.metadata).toEqual(record.metadata);
+    expect(result.permission).toBe(undefined);
+    expect(result.revert).toEqual({ messageID: 'msg_1' });
+    expect(result.summary).toEqual({ additions: 5, deletions: 3, files: 2 });
+  });
+  test('preserves directory and root scope across pages', async () => {
+    const calls: Options[] = [];
+    const client: SessionPager = { listSessionsPage: async (options) => {
+      calls.push(options);
+      return options?.cursor === undefined
+        ? { sessions: [session('root'), session('child1')], cursor: { next: '10' } }
+        : { sessions: [session('child2')], cursor: {} };
+    } };
+    const result = await listGlobalSessionPages(client, { directory: '/repo', archived: false, roots: false, pageSize: 2 });
     expect(calls).toEqual([
-      { directory: '/repo', limit: 2 },
-      { directory: '/repo', limit: 2, cursor: 'c1' },
-    ])
-    expect(sessions.map((session) => session.id)).toEqual(['ses_root', 'ses_child_1', 'ses_child_2'])
-  })
-
-  test('asks for every directory when no directory is given', async () => {
-    const calls: SessionListOptions[] = []
-    await listGlobalSessionPages(pager([{ sessions: [makeSession({ id: 'ses_1' })], cursor: {} }], calls), { pageSize: 50 })
-
-    expect(calls).toEqual([{ global: true, limit: 50 }])
-  })
-
-  test('reports each page to onPage as it arrives', async () => {
-    const pages: string[][] = []
-    const listPage = pager([
-      { sessions: [makeSession({ id: 'ses_1' })], cursor: { next: 'c1' } },
-      { sessions: [makeSession({ id: 'ses_2' })], cursor: {} },
-    ])
-
-    await listGlobalSessionPages(listPage, {
-      pageSize: 1,
-      onPage: (sessions) => pages.push(sessions.map((session) => session.id)),
-    })
-
-    expect(pages).toEqual([['ses_1'], ['ses_2']])
-  })
-
-  test('dedupes by id and stops when a page repeats known ids', async () => {
-    const calls: SessionListOptions[] = []
-    const repeated = { sessions: [makeSession({ id: 'ses_1' }), makeSession({ id: 'ses_2' })], cursor: { next: 'c1' } }
-    const listPage = pager([repeated, { ...repeated, cursor: { next: 'c2' } }], calls)
-
-    const sessions = await listGlobalSessionPages(listPage, { pageSize: 2 })
-
-    expect(calls).toHaveLength(2)
-    expect(sessions.map((session) => session.id)).toEqual(['ses_1', 'ses_2'])
-  })
-
-  test('retries a failed page before treating the load as failed', async () => {
-    let calls = 0
-    const listPage: SessionPageLister = async () => {
-      calls += 1
-      if (calls === 1) throw new Error('warming up')
-      return { sessions: [makeSession({ id: 'ses_1' })], cursor: {} }
-    }
-
-    const sessions = await listGlobalSessionPages(listPage, { pageSize: 500 })
-
-    expect(calls).toBe(2)
-    expect(sessions.map((session) => session.id)).toEqual(['ses_1'])
-  })
-})
+      { global: false, directory: '/repo', archived: false, roots: false, limit: 2 },
+      { global: false, directory: '/repo', archived: false, roots: false, limit: 2, cursor: '10' },
+    ]);
+    expect(ids(result)).toEqual(['root', 'child1', 'child2']);
+  });
+  test('narrows inclusive archived pages', async () => {
+    expect(ids(await load(pager({ sessions: [session('active'), session('archived', 10, 15)], cursor: {} }), true))).toEqual(['archived']);
+  });
+  test('keeps every active-page record', async () => {
+    expect(ids(await load(pager({ sessions: [session('a'), session('b')], cursor: {} })))).toEqual(['a', 'b']);
+  });
+  test('keeps inclusive records when narrowing is disabled', async () => {
+    const result = await listGlobalSessionPages(pager({ sessions: [session('active'), session('archived', 10, 15), session('restored', 5, 0)], cursor: {} }), { archived: true, narrowToArchived: false, pageSize: 500 });
+    expect(ids(result)).toEqual(['active', 'archived', 'restored']);
+  });
+  test('continues after a full page with no archived records', async () => {
+    const result = await load(pager(
+      { sessions: [session('a'), session('b')], cursor: { next: 'next' } },
+      { sessions: [session('archived', 10, 12)], cursor: {} },
+    ), true, 2);
+    expect(ids(result)).toEqual(['archived']);
+  });
+  test('reports only accepted records to onPage', async () => {
+    const pages: string[][] = [];
+    await listGlobalSessionPages(pager({ sessions: [session('active'), session('archived', 10, 12)], cursor: {} }), {
+      archived: true, pageSize: 500, onPage: (items) => pages.push(ids(items)),
+    });
+    expect(pages).toEqual([['archived']]);
+  });
+  test('does not notify onPage when every record was filtered', async () => {
+    const pages: Session[][] = [];
+    const result = await listGlobalSessionPages(pager({ sessions: [session('active')], cursor: {} }), {
+      archived: true, pageSize: 500, onPage: (items) => pages.push(items),
+    });
+    expect(result).toEqual([]);
+    expect(pages).toEqual([]);
+  });
+  test('dedupes records and stops pages containing only known IDs', async () => {
+    const records = [session('a', 30, 31), session('b', 20, 21)];
+    expect(ids(await load(pager(
+      { sessions: records, cursor: { next: 'first' } },
+      { sessions: records, cursor: { next: 'second' } },
+    ), true, 2))).toEqual(['a', 'b']);
+  });
+  test('stops repeated cursors even when a page has new records', async () => {
+    expect(ids(await load(pager(
+      { sessions: [session('a')], cursor: { next: 'loop' } },
+      { sessions: [session('b')], cursor: { next: 'loop' } },
+    ), false, 1))).toEqual(['a', 'b']);
+  });
+  test('follows an authoritative cursor even after a short page', async () => {
+    expect(ids(await load(pager(
+      { sessions: [session('a')], cursor: { next: 'next' } },
+      { sessions: [session('b')], cursor: {} },
+    ), false, 100))).toEqual(['a', 'b']);
+  });
+  test('retries rejected adapter requests', async () => {
+    let calls = 0;
+    const client: SessionPager = { listSessionsPage: async () => {
+      if (++calls === 1) throw new Error('warming up');
+      return { sessions: [session('ready')], cursor: {} };
+    } };
+    expect(ids(await load(client))).toEqual(['ready']);
+    expect(calls).toBe(2);
+  });
+});
 
 describe('splitGlobalSessionsByArchived', () => {
-  test('classifies restored (falsy archived) records as active', () => {
-    const { active, archived } = splitGlobalSessionsByArchived([
-      makeSession({ id: 'ses_active', time: { created: 1, updated: 20 } }),
-      makeSession({ id: 'ses_archived', time: { created: 1, updated: 10, archived: 15 } }),
-      makeSession({ id: 'ses_restored', time: { created: 1, updated: 5, archived: 0 } }),
-    ])
-
-    expect(active.map((session) => session.id)).toEqual(['ses_active', 'ses_restored'])
-    expect(archived.map((session) => session.id)).toEqual(['ses_archived'])
-  })
-})
+  test('classifies restored records as active', () => {
+    const result = splitGlobalSessionsByArchived([session('active'), session('archived', 10, 15), session('restored', 5, 0)]);
+    expect(ids(result.active)).toEqual(['active', 'restored']);
+    expect(ids(result.archived)).toEqual(['archived']);
+  });
+});
 
 const originalHomeInfo = opencodeClient.getFilesystemHomeInfo;
 opencodeClient.getFilesystemHomeInfo = async () => ({ home: '/home/user' });

@@ -116,14 +116,16 @@ export const fetchOpenCodeSkillsFromApi = async (
   }
 
   try {
-    const url = new URL('/api/skill', apiUrl);
+    const base = apiUrl.endsWith('/') ? apiUrl : `${apiUrl}/`;
+    const url = new URL('skill', base);
+    if (workingDirectory) {
+      url.searchParams.set('directory', workingDirectory);
+    }
 
-    // OpenCode 2.x resolves the directory from this header, not a query param.
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        ...(workingDirectory ? { 'x-opencode-directory': encodeURIComponent(workingDirectory) } : {}),
         ...(ctx?.manager?.getOpenCodeAuthHeaders() || {}),
       },
       signal: AbortSignal.timeout(8_000),
@@ -133,13 +135,12 @@ export const fetchOpenCodeSkillsFromApi = async (
       return null;
     }
 
-    const payload = await response.json() as { data?: unknown } | null;
-    const skills = payload?.data;
-    if (!Array.isArray(skills)) {
+    const payload = await response.json();
+    if (!Array.isArray(payload)) {
       return null;
     }
 
-    return skills
+    return payload
       .map((item) => {
         const name = typeof item?.name === 'string' ? item.name.trim() : '';
         const location = typeof item?.location === 'string' ? item.location : '';

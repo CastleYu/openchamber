@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { I18nKey } from '@/lib/i18n/store';
 import { buildSettingsSearchResults } from './search';
+import { opencodeClient } from '@/lib/opencode/client';
 
 const t = (key: I18nKey): string => key;
 
@@ -18,6 +19,17 @@ const runtimeCtx = {
 };
 
 describe('settings search', () => {
+  test('notify follows the active kernel and is absent from VS Code', () => {
+    for (const generation of ['oc1', 'oc2', 'oc1'] as const) {
+      opencodeClient.bindRuntime({ generation, endpoint: 'http://notify.test', epoch: generation === 'oc2' ? 2 : 3, version: generation === 'oc2' ? '2.0.16' : '1.18.32' });
+      for (const isVSCode of [false, true]) {
+        const results = buildSettingsSearchResults({ query: 'notify', runtimeCtx: { ...runtimeCtx, isVSCode }, t, getPageTitle: page => page });
+        expect(results.some(result => result.id === 'sessions.agent-notify-tool')).toBe(generation === 'oc2' && !isVSCode);
+        const search = buildSettingsSearchResults({ query: 'websearch', runtimeCtx: { ...runtimeCtx, isVSCode }, t, getPageTitle: page => page });
+        expect(search.some(result => result.id === 'web-search.provider')).toBe(generation === 'oc2');
+      }
+    }
+  });
   test('finds update history on every surface', () => {
     for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isVSCode: true }, { ...runtimeCtx, isMobile: true }]) {
       const results = buildSettingsSearchResults({ query: 'DIJIANG', runtimeCtx: context, t, getPageTitle: page => page });

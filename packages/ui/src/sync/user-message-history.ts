@@ -1,4 +1,4 @@
-import type { Message, Part } from "@/lib/opencode/model"
+import type { Message, Part } from '@/lib/opencode/model'
 import type { State } from './types';
 import { messagesBefore } from './message-ordering';
 

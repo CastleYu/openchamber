@@ -10,6 +10,9 @@ export const createServerUtilsRuntime = (dependencies) => {
     openCodeReadyGraceMs,
     longRequestTimeoutMs,
     getRuntime,
+    getKernelRuntime,
+    getArchivedSessions,
+    getStoredSessionMetadata,
     getOpenCodeAuthHeaders,
     buildOpenCodeUrl,
     ensureOpenCodeApiPrefix,
@@ -22,8 +25,6 @@ export const createServerUtilsRuntime = (dependencies) => {
     setOpenCodeNotReadySince,
     clearLastOpenCodeError,
     getLoginShellPath,
-    getArchivedSessions = null,
-    getStoredSessionMetadata = null,
   } = dependencies;
 
   const setOpenCodePort = (port) => {
@@ -193,21 +194,22 @@ export const createServerUtilsRuntime = (dependencies) => {
       throw new Error(`Failed to fetch ${invalidMessage} (status ${response.status})`);
     }
 
-    // OpenCode 2.x answers `/api/*` with `{ location, data }`.
-    const body = await response.json().catch(() => null);
-    const payload = Array.isArray(body) ? body : body?.data;
+    const payload = await response.json().catch(() => null);
     if (!Array.isArray(payload)) {
       throw new Error(`Invalid ${invalidMessage} payload from OpenCode`);
     }
     return payload;
   };
 
-  const fetchAgentsSnapshot = () => fetchArraySnapshot('/api/agent', 'agents snapshot');
-  const fetchProvidersSnapshot = () => fetchArraySnapshot('/api/provider', 'providers snapshot');
-  const fetchModelsSnapshot = () => fetchArraySnapshot('/api/model', 'models snapshot');
+  const fetchAgentsSnapshot = () => fetchArraySnapshot('/agent', 'agents snapshot');
+  const fetchProvidersSnapshot = () => fetchArraySnapshot('/provider', 'providers snapshot');
+  const fetchModelsSnapshot = () => fetchArraySnapshot('/model', 'models snapshot');
 
   const setupProxy = (app) => {
     registerOpenCodeProxy(app, {
+      getKernelRuntime,
+      getArchivedSessions,
+      getStoredSessionMetadata,
       fs,
       os,
       path,
@@ -219,8 +221,6 @@ export const createServerUtilsRuntime = (dependencies) => {
       ensureOpenCodeApiPrefix,
       getSseUpstreamStallTimeoutMs: getUpstreamStallTimeoutMs,
       getUiNotificationClients,
-      getArchivedSessions,
-      getStoredSessionMetadata,
     });
   };
 

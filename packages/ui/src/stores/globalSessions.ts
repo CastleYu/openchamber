@@ -1,5 +1,4 @@
-import type { Session } from "@/lib/opencode/model";
-import type { SessionListOptions, SessionPage } from "@/lib/opencode/client";
+import type { Session } from '@/lib/opencode/model';
 import { runSessionListNetworkTask } from '@/lib/background-network';
 import { retry } from "@/sync/retry";
 import { stripSessionListDetails } from "@/sync/sanitize";
@@ -20,14 +19,30 @@ export const filterManagedChatsForRuntime = (sessions: Session[], vscode: boolea
         : sessions
 );
 
-/** OpenChamber owns archive state; a session is archived when it carries a timestamp. */
+export type SessionPager = {
+    listSessionsPage(options?: {
+        global?: boolean; directory?: string | null; archived?: boolean; roots?: boolean;
+        limit?: number; cursor?: string; signal?: AbortSignal;
+    }): Promise<{ sessions: Session[]; cursor: { next?: string } }>;
+};
+
+/**
+ * OpenCode's `archived` query flag means "also include archived sessions", not
+ * "return only archived sessions": the server simply drops its
+ * `time_archived IS NULL` condition. Callers that ask for the archived list
+ * expect archived-only records, so narrow the response here, at the data
+ * boundary, instead of leaving every consumer to re-derive it.
+ */
 const isArchivedSession = (session: GlobalSessionRecord): boolean => Boolean(session.time?.archived);
 
 /**
- * Split a session list into active and archived buckets. Restored sessions
- * carry `time.archived === 0` (see `UNARCHIVED_TIMESTAMP` in
- * `sync/session-actions.ts`), so the truthiness check classifies them as
- * active.
+ * Split an inclusive (`archived: true`) session page stream into active and
+ * archived buckets. Restored sessions carry `time.archived === 0` (see
+ * `UNARCHIVED_TIMESTAMP` in `sync/session-actions.ts`); the truthiness check
+ * classifies them as active even though the server's own
+ * `time_archived IS NULL` filter would still exclude them, which is why the
+ * global cache must split client-side instead of issuing an
+ * `archived: false` request for its active list.
  */
 export const splitGlobalSessionsByArchived = <T extends GlobalSessionRecord>(
     sessions: T[],
@@ -41,20 +56,18 @@ export const splitGlobalSessionsByArchived = <T extends GlobalSessionRecord>(
     return { active, archived };
 };
 
-/** One page request. Injected so callers and tests can supply their own transport. */
-export type SessionPageLister = (options: SessionListOptions) => Promise<SessionPage>;
-
-/**
- * Walks every page of a session list and returns the records.
- *
- * v2 lists sessions newest-first and pages by an opaque cursor; it has no
- * archived filter, so callers take the whole list and split it with
- * `splitGlobalSessionsByArchived`.
- */
 export async function listGlobalSessionPages(
-    listPage: SessionPageLister,
+    apiClient: SessionPager,
     options: {
         directory?: string;
+        archived: boolean;
+        /**
+         * When `archived` is true, narrow results to records carrying a truthy
+         * `time.archived` (default true). Pass false to receive the inclusive
+         * server response unfiltered, e.g. to split active/archived locally.
+         */
+        narrowToArchived?: boolean;
+        roots?: boolean;
         pageSize: number;
         onPage?: (sessions: GlobalSessionRecord[]) => void;
     },
@@ -62,22 +75,37 @@ export async function listGlobalSessionPages(
     const all: GlobalSessionRecord[] = [];
     const seenIds = new Set<string>();
     let cursor: string | undefined;
-    const operation = options.directory ? "bootstrap.sessions.all" : "global-sessions.all";
-
+    const seenCursors = new Set<string>();
+    const narrowToArchived = options.narrowToArchived !== false;
+    let operation: string;
+    if (!options.directory) {
+        operation = `global-sessions.${options.archived ? (narrowToArchived ? "archived" : "all") : "active"}`;
+    } else if (options.roots === true) {
+        operation = "bootstrap.sessions.roots";
+    } else if (options.archived) {
+        operation = narrowToArchived ? "bootstrap.sessions.archived" : "bootstrap.sessions.all";
+    } else {
+        operation = "bootstrap.sessions.all";
+    }
     while (true) {
         let attempts = 0;
         const finishPerformanceEvent = startSessionLoadPerformanceEvent({
             operation,
             caller: cursor === undefined ? "initial-page" : "pagination",
         });
-        const page = await retry(
+        const { nextCursor, payload } = await retry(
             () => runSessionListNetworkTask(async () => {
                 attempts += 1;
-                return await listPage({
-                    ...(options.directory ? { directory: options.directory } : { global: true }),
+                const response = await apiClient.listSessionsPage({
+                    global: !options.directory,
+                    ...(options.directory ? { directory: options.directory } : {}),
+                    archived: options.archived,
+                    ...(options.roots !== undefined ? { roots: options.roots } : {}),
                     limit: options.pageSize,
                     ...(cursor !== undefined ? { cursor } : {}),
                 });
+                const payload = response.sessions.map((session) => stripSessionListDetails(session));
+                return { nextCursor: response.cursor.next, payload };
             }),
             { attempts: 3, delay: 500, retryIf: () => true },
         ).catch((error) => {
@@ -85,16 +113,23 @@ export async function listGlobalSessionPages(
             throw error;
         });
 
-        const payload = page.sessions.map((session) => stripSessionListDetails(session) as GlobalSessionRecord);
         finishPerformanceEvent("complete", {
             retryCount: Math.max(0, attempts - 1),
             recordCount: payload.length,
         });
+        if (payload.length === 0) break;
 
+        // `appended` tracks pagination progress over the raw response, while
+        // `accepted` holds the records this call actually returns. Filtering
+        // must not feed the pagination guards below, otherwise a page that is
+        // full upstream but mostly non-archived would look like a last page.
+        let appended = 0;
         const accepted: GlobalSessionRecord[] = [];
         for (const session of payload) {
             if (!session?.id || seenIds.has(session.id)) continue;
             seenIds.add(session.id);
+            appended += 1;
+            if (options.archived && narrowToArchived && !isArchivedSession(session)) continue;
             all.push(session);
             accepted.push(session);
         }
@@ -102,10 +137,12 @@ export async function listGlobalSessionPages(
             options.onPage?.(accepted);
         }
 
-        const next = page.cursor.next;
-        // No next cursor, or a page that added nothing new: stop rather than spin.
-        if (!next || next === cursor || accepted.length === 0) break;
-        cursor = next;
+        // Protocol adapters own cursor meaning; OC2 cursors are opaque strings.
+        if (nextCursor === undefined || seenCursors.has(nextCursor)) break;
+        // Every id in this page already seen — stop to avoid spinning.
+        if (appended === 0) break;
+        seenCursors.add(nextCursor);
+        cursor = nextCursor;
     }
 
     return all;

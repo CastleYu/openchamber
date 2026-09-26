@@ -1,5 +1,4 @@
 import React from 'react';
-import type { McpServerStatus } from '@/lib/opencode/model';
 
 import {
   DropdownMenu,
@@ -17,19 +16,23 @@ import { cn } from '@/lib/utils';
 import { useDeviceInfo } from '@/lib/device';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useMcpConfigStore } from '@/stores/useMcpConfigStore';
-import { computeMcpHealth, useMcpStore } from '@/stores/useMcpStore';
-import { describeMcpFailure } from '@/components/sections/mcp/mcpFailureHints';
+import { computeMcpHealth, useMcpStore, type McpStatusMap } from '@/stores/useMcpStore';
+import { opencodeClient } from '@/lib/opencode/client';
+import { McpOAuthDialog } from '@/components/sections/mcp/McpOAuthDialog';
+import { describeMcpFailure, type McpFailureHintKey } from '@/components/sections/mcp/mcpFailureHints';
 import { McpIcon } from '@/components/icons/McpIcon';
 import { Icon } from "@/components/icon/Icon";
 import { useI18n, type I18nKey } from '@/lib/i18n';
 import { toast } from 'sonner';
+import { startMcpAuthorization } from '@/components/sections/mcp/startMcpAuthorization';
+
+type McpDropdownTranslate = (key: I18nKey | McpFailureHintKey, params?: { error?: string; cause?: string }) => string;
 
 const statusTooltip = (
-  server: McpServerStatus | undefined,
-  t: (key: I18nKey, params?: { error?: string; cause?: string }) => string
+  status: McpStatusMap[string] | undefined,
+  t: McpDropdownTranslate
 ): string => {
-  if (!server) return t('mcpDropdown.status.unknown');
-  const status = server.status;
+  if (!status) return t('mcpDropdown.status.unknown');
   switch (status.status) {
     case 'connected':
       return t('mcpDropdown.status.connected');
@@ -42,18 +45,21 @@ const statusTooltip = (
     }
     case 'needs_auth':
       return t('mcpDropdown.status.needsAuth');
+    case 'needs_client_registration':
+      return t('mcpDropdown.status.needsRegistration', { error: status.error });
     default:
       return status.status;
   }
 };
 
-const statusTone = (server: McpServerStatus | undefined): 'default' | 'success' | 'warning' | 'error' => {
-  switch (server?.status.status) {
+const statusTone = (status: McpStatusMap[string] | undefined): 'default' | 'success' | 'warning' | 'error' => {
+  switch (status?.status) {
     case 'connected':
       return 'success';
     case 'failed':
       return 'error';
     case 'needs_auth':
+    case 'needs_client_registration':
       return 'warning';
     default:
       return 'default';
@@ -71,11 +77,18 @@ interface McpDropdownContentProps {
   listClassName?: string;
   hideHeader?: boolean;
   mobileListDensity?: boolean;
+  onOAuthRequested?: (name: string) => void;
 }
 
-export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, className, headerAction, listClassName, hideHeader = false, mobileListDensity = false }) => {
+export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, className, headerAction, listClassName, hideHeader = false, mobileListDensity = false, onOAuthRequested }) => {
   const { t } = useI18n();
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
+  const runtimeKey = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
+    () => '',
+  );
+  const generation = opencodeClient.getBoundRuntime()?.generation;
   const directory = currentDirectory ?? null;
   const status = useMcpStore((state) => state.getStatusForDirectory(directory));
   const refresh = useMcpStore((state) => state.refresh);
@@ -85,6 +98,7 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
   const loadMcpConfigs = useMcpConfigStore((state) => state.loadMcpConfigs);
   const [isSpinning, setIsSpinning] = React.useState(false);
   const [busyName, setBusyName] = React.useState<string | null>(null);
+  const [authName, setAuthName] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     void refresh({ directory, silent: true });
@@ -92,7 +106,7 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
 
   React.useEffect(() => {
     void loadMcpConfigs({ force: true });
-  }, [loadMcpConfigs]);
+  }, [loadMcpConfigs, runtimeKey]);
 
   React.useEffect(() => {
     if (!active) return;
@@ -156,7 +170,7 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
         {sortedNames.map((serverName) => {
           const serverStatus = status[serverName];
           const tone = statusTone(serverStatus);
-          const isConnected = serverStatus?.status.status === 'connected';
+          const isConnected = serverStatus?.status === 'connected';
           const isBusy = busyName === serverName;
           const tooltip = statusTooltip(serverStatus, t);
 
@@ -201,13 +215,32 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
                 onCheckedChange={async (checked) => {
                   setBusyName(serverName);
                   try {
-                    if (checked) {
-                      await connect(serverName, directory);
-                    } else {
+                    if (!checked) {
                       await disconnect(serverName, directory);
+                      return;
                     }
+                    // Reconnecting a server that is waiting on authorization
+                    // just repeats the attempt that produced `needs_auth`;
+                    // the user has to visit the provider first.
+                    const entryStatus = status?.[serverName]?.status;
+                    if (entryStatus === 'needs_auth' || entryStatus === 'needs_client_registration') {
+                      if (generation === 'oc2') {
+                        if (onOAuthRequested) onOAuthRequested(serverName);
+                        else setAuthName(serverName);
+                        return;
+                      }
+                      const { opened } = await startMcpAuthorization({
+                        name: serverName,
+                        directory,
+                      });
+                      if (!opened) {
+                        toast.error(t('mcpDropdown.toast.authorizeOpenFailed'));
+                      }
+                      return;
+                    }
+                    await connect(serverName, directory);
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : t('mcpDropdown.status.unknownError'));
+                    toast.error(error instanceof Error ? error.message : t('mcpDropdown.toast.authorizeFailed'));
                   } finally {
                     setBusyName(null);
                   }
@@ -224,6 +257,7 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
         )}
         </div>
       </div>
+      {!onOAuthRequested && <McpOAuthDialog name={authName} directory={directory} onClose={() => setAuthName(null)} />}
     </div>
   );
 };
@@ -231,6 +265,13 @@ export const McpDropdownContent: React.FC<McpDropdownContentProps> = ({ active, 
 export const McpDropdown: React.FC<McpDropdownProps> = ({ headerIconButtonClass }) => {
   const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
+  const [oauthName, setOauthName] = React.useState<string | null>(null);
+  const runtimeKey = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
+    () => '',
+  );
+  React.useEffect(() => { setOauthName(null); }, [runtimeKey]);
   const [tooltipOpen, setTooltipOpen] = React.useState(false);
   const blockTooltipRef = React.useRef(false);
   const { isMobile } = useDeviceInfo();
@@ -306,7 +347,7 @@ export const McpDropdown: React.FC<McpDropdownProps> = ({ headerIconButtonClass 
       {sortedNames.map((serverName) => {
         const serverStatus = status[serverName];
         const tone = statusTone(serverStatus);
-        const isConnected = serverStatus?.status.status === 'connected';
+        const isConnected = serverStatus?.status === 'connected';
         const isBusy = busyName === serverName;
         const tooltip = statusTooltip(serverStatus, t);
 
@@ -450,6 +491,7 @@ export const McpDropdown: React.FC<McpDropdownProps> = ({ headerIconButtonClass 
 
   // Desktop: use DropdownMenu
   return (
+    <>
     <DropdownMenu open={open} onOpenChange={handleDropdownOpenChange}>
       <Tooltip open={open ? false : tooltipOpen} onOpenChange={handleTooltipOpenChange}>
         <TooltipTrigger asChild>
@@ -463,8 +505,10 @@ export const McpDropdown: React.FC<McpDropdownProps> = ({ headerIconButtonClass 
       </Tooltip>
 
       <DropdownMenuContent align="end" className="w-72">
-        <McpDropdownContent active={open} />
+        <McpDropdownContent active={open} onOAuthRequested={(name) => { setOpen(false); setOauthName(name); }} />
       </DropdownMenuContent>
     </DropdownMenu>
+    <McpOAuthDialog name={oauthName} directory={directory} onClose={() => setOauthName(null)} />
+    </>
   );
 };

@@ -9,8 +9,8 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useNotificationStore } from '@/sync/notification-store';
 
 const session = (id: string, parentID?: string): Session => ({
-  id, parentID, projectID: 'project', directory: '/project', title: id, cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, time: { created: 1, updated: 1 },
+  id, parentID, slug: id, projectID: 'project', directory: '/project',
+  title: id, version: '1', time: { created: 1, updated: 1 },
 });
 
 const Harness = () => {

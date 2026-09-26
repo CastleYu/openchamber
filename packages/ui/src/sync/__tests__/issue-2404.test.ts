@@ -1,14 +1,10 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { Message, Part, TextPart } from '@/lib/opencode/model'
+import type { Message, Part } from '@/lib/opencode/model'
 
 import {
   findLatestUserModelChoice,
   shouldPreserveManualModelOverride,
 } from '@/lib/messages/userModelChoice'
-
-const textPart = (id: string, messageID: string, text: string): TextPart => ({
-  id, sessionID: 'ses_2404', messageID, type: 'text', text,
-})
 
 /**
  * Regression for openchamber/openchamber#2404:
@@ -69,29 +65,48 @@ describe('issue #2404 model override persistence across delegated subtask', () =
     // Parent already has the real user prompt (sent with override B) plus a
     // synthetic subagent-completion nudge that carries the agent default A.
     const messages: Message[] = [
-      { id: 'u-real', sessionID: sessionId, role: 'user', time: { created: 1 } },
+      {
+        id: 'u-real',
+        sessionID: sessionId,
+        role: 'user',
+        time: { created: 1 },
+        agent: agentName,
+        model: manualOverride,
+      } as Message,
       {
         id: 'a1',
         sessionID: sessionId,
         role: 'assistant',
         time: { created: 2 },
-        agent: agentName,
+        parentID: 'u-real',
         providerID: manualOverride.providerID,
         modelID: manualOverride.modelID,
-      },
-      // The subagent-completion nudge is a synthetic message in v2 and carries
-      // no model of its own.
+      } as Message,
       {
         id: 'u-nudge',
         sessionID: sessionId,
-        role: 'synthetic',
+        role: 'user',
         time: { created: 3 },
-        text: 'Subagent finished.',
-      },
+        agent: agentName,
+        model: agentDefault,
+      } as Message,
     ]
     const partsById: Record<string, Part[]> = {
-      'u-real': [textPart('p-real', 'u-real', 'Delegate a subtask')],
-      a1: [textPart('p-a1', 'a1', 'Delegating now.')],
+      'u-real': [{
+        id: 'p-real',
+        sessionID: sessionId,
+        messageID: 'u-real',
+        type: 'text',
+        text: 'Delegate a subtask',
+      } as Part],
+      'u-nudge': [{
+        id: 'p-nudge',
+        sessionID: sessionId,
+        messageID: 'u-nudge',
+        type: 'text',
+        text: 'Subagent finished.',
+        synthetic: true,
+      } as Part],
     }
 
     const latestChoice = findLatestUserModelChoice(messages, (id) => partsById[id])
@@ -138,27 +153,39 @@ describe('issue #2404 model override persistence across delegated subtask', () =
     createSessionWithAgentDefault()
     // No setManualModelOverride — stay on agent default through subtask completion.
     const messages: Message[] = [
-      { id: 'u-real', sessionID: sessionId, role: 'user', time: { created: 1 } },
       {
-        id: 'a1',
+        id: 'u-real',
         sessionID: sessionId,
-        role: 'assistant',
-        time: { created: 2 },
+        role: 'user',
+        time: { created: 1 },
         agent: agentName,
-        providerID: agentDefault.providerID,
-        modelID: agentDefault.modelID,
-      },
+        model: agentDefault,
+      } as Message,
       {
         id: 'u-nudge',
         sessionID: sessionId,
-        role: 'synthetic',
-        time: { created: 3 },
-        text: 'Subagent finished.',
-      },
+        role: 'user',
+        time: { created: 2 },
+        agent: agentName,
+        model: agentDefault,
+      } as Message,
     ]
     const partsById: Record<string, Part[]> = {
-      'u-real': [textPart('p-real', 'u-real', 'Delegate a subtask')],
-      a1: [textPart('p-a1', 'a1', 'Delegating now.')],
+      'u-real': [{
+        id: 'p-real',
+        sessionID: sessionId,
+        messageID: 'u-real',
+        type: 'text',
+        text: 'Delegate a subtask',
+      } as Part],
+      'u-nudge': [{
+        id: 'p-nudge',
+        sessionID: sessionId,
+        messageID: 'u-nudge',
+        type: 'text',
+        text: 'Subagent finished.',
+        synthetic: true,
+      } as Part],
     }
 
     const latestChoice = findLatestUserModelChoice(messages, (id) => partsById[id])

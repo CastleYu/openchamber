@@ -3,6 +3,7 @@ import { createVSCodeFilesAPI } from './files';
 import { createVSCodeSettingsAPI } from './settings';
 import { createVSCodeDiagnosticsAPI } from './diagnostics';
 import { createVSCodePermissionsAPI } from './permissions';
+import { createVSCodeToolsAPI } from './tools';
 import { createVSCodeEditorAPI } from './editor';
 import { createVSCodeGitAPI } from './git';
 import { createVSCodeActionsAPI } from './vscode';
@@ -35,6 +36,7 @@ export const createVSCodeAPIs = (): RuntimeAPIs => ({
   permissions: createVSCodePermissionsAPI(),
   notifications: createVSCodeNotificationsAPI(),
   github: createVSCodeGitHubAPI(),
+  tools: createVSCodeToolsAPI(),
   editor: createVSCodeEditorAPI(),
   vscode: createVSCodeActionsAPI(),
 });

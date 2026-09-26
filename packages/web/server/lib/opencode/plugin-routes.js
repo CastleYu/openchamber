@@ -3,7 +3,7 @@ import os from 'os';
 
 import { getNpmInfo as defaultGetNpmInfo } from './npm-registry.js';
 import { isExactSemver as defaultIsExactSemver, isPathSpec as defaultIsPathSpec, parseNpmSpec as defaultParseNpmSpec, parsePathSpec as defaultParsePathSpec } from './plugin-spec.js';
-import { buildAppliedResponse } from './config-mutation-response.js';
+import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
 
 const ENTRY_EXISTS_CODES = new Set(['ENTRY_EXISTS', 'EEXIST']);
 const FILE_EXISTS_CODES = new Set(['FILE_EXISTS', 'EEXIST']);
@@ -12,6 +12,7 @@ const BAD_REQUEST_CODES = new Set(['INVALID_FILENAME', 'INVALID_SCOPE', 'INVALID
 
 export const registerPluginRoutes = (app, dependencies) => {
   const {
+    getKernelRuntime = () => ({ generation: 'oc1' }),
     resolveOptionalProjectDirectory,
     listPluginEntries,
     getPluginEntry,
@@ -32,8 +33,15 @@ export const registerPluginRoutes = (app, dependencies) => {
   } = dependencies;
 
   const parsedKindForSpec = (spec) => (isPathSpec(spec) ? 'path' : 'npm');
+  const requestKernels = new WeakMap();
 
   const resolveDirectory = async (req, res) => {
+    const selected = getKernelRuntime();
+    if (selected.generation !== 'oc1' && selected.generation !== 'oc2') {
+      res.status(503).json({ error: 'OpenCode is not ready for plugin configuration' });
+      return null;
+    }
+    requestKernels.set(res, selected);
     const { directory, error } = await resolveOptionalProjectDirectory(req);
     if (error) {
       res.status(400).json({ error });
@@ -43,12 +51,17 @@ export const registerPluginRoutes = (app, dependencies) => {
   };
 
   const completePluginMutation = async (res, operation, _noun, applyChange) => {
+    const selected = requestKernels.get(res);
+    const current = getKernelRuntime();
+    if (!selected || selected.generation !== current.generation || selected.endpoint !== current.endpoint || selected.epoch !== current.epoch) {
+      return res.status(409).json({ error: 'OpenCode changed during plugin configuration' });
+    }
     applyChange();
 
     const pastTense = operation.replace(/ion$/, 'ed').replace(/update$/, 'updated');
-    return res.json(buildAppliedResponse(
-      `Plugin ${pastTense}.`,
-    ));
+    return res.json(selected.generation === 'oc2'
+      ? buildAppliedResponse(`Plugin ${pastTense}.`)
+      : buildDeferredRestartResponse(`Plugin ${pastTense}. Restart OpenCode to apply.`));
   };
 
   const validateEntryId = (id) => {

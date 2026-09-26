@@ -3,39 +3,42 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { randomUUID } from 'crypto';
-import { getProviderSources, upsertProviderConfig } from './opencodeConfig';
-import { getProviderAuth } from './opencodeAuth';
-import { OpenCode } from '@opencode/client';
-import { asSessionId, asSessionIdList, asSessionMetadata, asTimestamp, parseJson, type JsonValue, type SessionMetadataOnOpenCode, type SessionStateStore } from './openchamberSessionState';
-import type { OpenCodeManager } from './opencode';
+import { createOpencodeClient } from '@opencode-ai/sdk/v2';
+import { asSessionId, asSessionIdList, asSessionMetadata, asTimestamp, mergeMetadataPatch, parseJson, type JsonValue, type SessionStateStore } from './openchamberSessionState';
+import { removeProviderConfig, getProviderSources, upsertProviderConfig } from './opencodeConfig';
+import { getProviderAuth, removeProviderAuth } from './opencodeAuth';
+import * as v2Config from './opencodeConfigV2';
+import * as v2Auth from './opencodeAuthV2';
 import { fetchQuotaForProvider, listConfiguredQuotaProviders } from './quotaProviders';
 import { credentialStatus, deleteCredential, importCursorCredential, normalizeCredential, readCredential, validateCredential, writeCredential, type ManagedProvider } from './quotaCredentials';
 import { getSessionActivitySnapshot } from './sessionActivityWatcher';
 import { getOpenCodeUpgradeStatus, upgradeManagedOpenCode } from './opencode-upgrade-runtime';
+import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response';
 import { normalizeWindowsDriveLetter, pathsEqualWithNormalizedDriveLetter } from './pathUtils';
 import { resolveWorkspaceFolders } from './workspaceResolver';
+import { resolveKernelRequest } from './kernelRequest';
 import type { BridgeContext, BridgeResponse } from './bridge';
 
-const isSessionNotFound = (error: Error): boolean => error.name === 'SessionNotFoundError';
-
-/** Session metadata on the OpenCode instance this window manages. */
-const sessionMetadataOnOpenCode = (manager: OpenCodeManager | undefined): SessionMetadataOnOpenCode => {
+const legacyClient = (ctx: BridgeContext | undefined) => {
+  const manager = ctx?.manager;
   const apiUrl = manager?.getApiUrl();
   if (!manager || !apiUrl) throw new Error('OpenCode is not available');
-  const client = OpenCode.make({ baseUrl: apiUrl.replace(/\/+$/, ''), headers: manager.getOpenCodeAuthHeaders() });
-  return {
-    read: async (sessionID) => {
-      try {
-        const session = await client.session.get({ sessionID });
-        // Round-trip through JSON: the wire type is opaque JSON, the store's is `JsonValue`.
-        return asSessionMetadata(parseJson(JSON.stringify(session.metadata ?? {})) ?? undefined) ?? {};
-      } catch (error) {
-        if (error instanceof Error && isSessionNotFound(error)) return null;
-        throw error;
-      }
-    },
-    write: (sessionID, metadata) => client.session.update({ sessionID, metadata }),
+  const identity = manager.getKernelRuntime();
+  if (identity.generation !== 'oc1') throw new Error('OpenCode 1 is not active');
+  const client = createOpencodeClient({ baseUrl: apiUrl.replace(/\/+$/, ''), headers: manager.getOpenCodeAuthHeaders(), throwOnError: true });
+  const check = () => {
+    const current = manager.getKernelRuntime();
+    if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+      throw new Error('OpenCode connection changed during session state operation');
+    }
   };
+  return { client, check };
+};
+const providerGeneration = async (ctx: BridgeContext | undefined): Promise<'oc1' | 'oc2'> => {
+  let selected = ctx?.manager?.getKernelRuntime().generation;
+  if (selected !== 'oc1' && selected !== 'oc2') selected = (await ctx?.manager?.refreshKernelRuntime())?.generation;
+  if (selected !== 'oc1' && selected !== 'oc2') throw new Error('OpenCode kernel is not ready');
+  return selected;
 };
 
 type BridgeMessageInput = {
@@ -46,7 +49,7 @@ type BridgeMessageInput = {
 
 type SystemRuntimeDeps = {
   resolveUserPath: (value: string, baseDirectory: string) => string;
-  sessionState: SessionStateStore;
+  sessionState?: SessionStateStore;
   fetchModelsMetadata: () => Promise<unknown>;
   updateCheckUrl: string;
   clientReloadDelayMs: number;
@@ -274,26 +277,19 @@ export async function handleSystemBridgeMessage(
       }
     }
 
+    case 'api:opencode/runtime': {
+      if (!ctx?.manager) return { id, type, success: false, error: 'OpenCode manager unavailable' };
+      const descriptor = await ctx.manager.refreshKernelRuntime();
+      return { id, type, success: true, data: descriptor };
+    }
+
     case 'api:opencode/version': {
       try {
         const apiUrl = ctx?.manager?.getApiUrl();
-        if (!apiUrl) {
+        if (!apiUrl || !ctx?.manager) {
           return { id, type, success: true, data: { version: null, error: 'OpenCode manager unavailable' } };
         }
-        const base = `${apiUrl.replace(/\/+$/, '')}/`;
-        // OpenCode 2.0.8 replaced `/api/health` with `/api/info`.
-        const response = await fetch(new URL('api/info', base).toString(), {
-          method: 'GET',
-          headers: { Accept: 'application/json', ...ctx?.manager?.getOpenCodeAuthHeaders() },
-        });
-        const health = await response.json().catch(() => null) as { version?: unknown; error?: unknown } | null;
-        if (!response.ok) {
-          const message = typeof health?.error === 'string' ? health.error : response.statusText || 'Failed to read OpenCode version';
-          return { id, type, success: true, data: { version: null, error: message } };
-        }
-        const version = typeof health?.version === 'string' && health.version.trim().length > 0
-          ? health.version.trim().replace(/^v/, '')
-          : null;
+        const version = (await ctx.manager.refreshKernelRuntime()).version;
         return { id, type, success: true, data: { version } };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -301,22 +297,13 @@ export async function handleSystemBridgeMessage(
       }
     }
 
-    case 'api:opencode/compatibility': {
-      return { id, type, success: true, data: await ctx?.manager?.getCompatibility() };
-    }
-
-    case 'api:opencode/install-v2': {
-      if (!ctx?.manager) return { id, type, success: false, error: 'OpenCode manager is unavailable.' };
-      await ctx.manager.installV2();
-      return { id, type, success: true, data: { success: true } };
-    }
-
     case 'api:opencode/upgrade-status': {
       return { id, type, success: true, data: await getOpenCodeUpgradeStatus(ctx?.manager) };
     }
 
     case 'api:opencode/upgrade': {
-      return { id, type, success: true, data: await upgradeManagedOpenCode(ctx?.manager) };
+      const target = (payload as { target?: unknown } | undefined)?.target;
+      return { id, type, success: true, data: await upgradeManagedOpenCode(ctx?.manager, target) };
     }
 
     case 'api:session-activity:get': {
@@ -452,45 +439,159 @@ export async function handleSystemBridgeMessage(
       }
     }
 
-    // OpenChamber-owned session state. OpenCode 2.x has no route that sets
-    // `time.archived` or rewrites metadata after creation; the web server keeps
-    // both in files, and the extension host keeps the same files (see
-    // openchamberSessionState.ts). The proxy runtime folds them back onto
-    // session reads.
-    case 'api:sessions/archive': {
-      const { ids, archivedAt } = (payload || {}) as { ids?: JsonValue; archivedAt?: JsonValue };
-      const targets = asSessionIdList(ids);
-      if (targets.length === 0) return { id, type, success: false, error: 'ids must be a non-empty array of session ids' };
-      return { id, type, success: true, data: await deps.sessionState.archive(targets, asTimestamp(archivedAt)) };
-    }
-
+    case 'api:sessions/archive':
     case 'api:sessions/unarchive': {
-      const { ids } = (payload || {}) as { ids?: JsonValue };
-      const targets = asSessionIdList(ids);
-      if (targets.length === 0) return { id, type, success: false, error: 'ids must be a non-empty array of session ids' };
-      return { id, type, success: true, data: await deps.sessionState.unarchive(targets) };
-    }
-
-    case 'api:sessions/metadata:get': {
-      const sessionId = asSessionId(((payload || {}) as { sessionId?: JsonValue }).sessionId);
-      if (!sessionId) return { id, type, success: false, error: 'a session id is required' };
+      const body = (payload || {}) as { ids?: JsonValue; archivedAt?: JsonValue; directory?: string };
+      const ids = asSessionIdList(body.ids);
+      if (ids.length === 0) return { id, type, success: false, error: 'ids must be a non-empty array of session ids' };
       try {
-        return { id, type, success: true, data: { metadata: await deps.sessionState.getMetadata(sessionId, sessionMetadataOnOpenCode(ctx?.manager)) } };
+        const generation = ctx?.manager?.getKernelRuntime().generation;
+        if (generation === 'oc2') {
+          if (!deps.sessionState) throw new Error('Session state store is unavailable');
+          const data = type === 'api:sessions/archive'
+            ? await deps.sessionState.archive(ids, asTimestamp(body.archivedAt))
+            : await deps.sessionState.unarchive(ids);
+          return { id, type, success: true, data };
+        }
+        if (generation !== 'oc1') throw new Error('OpenCode kernel is not ready');
+        const { client, check } = legacyClient(ctx);
+        const manager = ctx?.manager;
+        if (!manager) throw new Error('OpenCode is not available');
+        const directory = body.directory || manager.getWorkingDirectory();
+        const stamp = asTimestamp(body.archivedAt) ?? Date.now();
+        const archived: Array<{ id: string; archivedAt: number }> = [];
+        const restored: Array<{ id: string; archivedAt: null }> = [];
+        const failedIds: string[] = [];
+        for (const sessionID of ids) {
+          try {
+            check();
+            if (type === 'api:sessions/archive') {
+              const response = await client.session.update({ sessionID, directory, time: { archived: stamp } });
+              check();
+              if (!response.data?.id) throw new Error('OpenCode did not return the updated session');
+              archived.push({ id: sessionID, archivedAt: stamp });
+            } else {
+              // The OC1 SDK type omits the nullable archive reset accepted by
+              // the session PATCH route, so keep this one wire call explicit.
+              const selected = await resolveKernelRequest(manager, `/api/session/${encodeURIComponent(sessionID)}?directory=${encodeURIComponent(directory ?? '')}`);
+              const response = await fetch(selected.url, { method: 'PATCH',
+                headers: { ...manager.getOpenCodeAuthHeaders(), 'content-type': 'application/json' },
+                body: JSON.stringify({ time: { archived: null } }) });
+              selected.assertCurrent();
+              if (!response.ok) throw new Error(`OpenCode unarchive failed (${response.status})`);
+              restored.push({ id: sessionID, archivedAt: null });
+            }
+          } catch (error) {
+            check();
+            failedIds.push(sessionID);
+          }
+        }
+        return { id, type, success: true, data: type === 'api:sessions/archive'
+          ? { archived, failedIds, directory } : { restored, failedIds, directory } };
       } catch (error) {
         return { id, type, success: false, error: error instanceof Error ? error.message : String(error) };
       }
     }
 
+    case 'api:sessions/metadata:get':
     case 'api:sessions/metadata:set': {
-      const body = (payload || {}) as { sessionId?: JsonValue; patch?: JsonValue };
+      const body = (payload || {}) as { sessionId?: JsonValue; patch?: JsonValue; directory?: string };
       const sessionId = asSessionId(body.sessionId);
       if (!sessionId) return { id, type, success: false, error: 'a session id is required' };
-      const patch = asSessionMetadata(body.patch);
-      if (!patch) return { id, type, success: false, error: 'patch must be an object' };
+      const patch = type === 'api:sessions/metadata:set' ? asSessionMetadata(body.patch) : null;
+      if (type === 'api:sessions/metadata:set' && !patch) return { id, type, success: false, error: 'patch must be an object' };
       try {
-        return { id, type, success: true, data: { metadata: await deps.sessionState.setMetadata(sessionId, patch, sessionMetadataOnOpenCode(ctx?.manager)) } };
+        const generation = ctx?.manager?.getKernelRuntime().generation;
+        const directory = body.directory || ctx?.manager?.getWorkingDirectory() || '';
+        if (generation === 'oc2') {
+          if (!deps.sessionState) throw new Error('Session state store is unavailable');
+          const metadata = patch
+            ? await deps.sessionState.setMetadata(sessionId, patch, directory)
+            : await deps.sessionState.getMetadata(sessionId, directory);
+          return { id, type, success: true, data: { metadata } };
+        }
+        if (generation !== 'oc1') throw new Error('OpenCode kernel is not ready');
+        const { client, check } = legacyClient(ctx);
+        const response = await client.session.get({ sessionID: sessionId, directory });
+        check();
+        if (!response.data) throw new Error(`session ${sessionId} was not found`);
+        const current = asSessionMetadata(parseJson(JSON.stringify(response.data.metadata ?? {})) ?? undefined);
+        if (!current) throw new Error('OpenCode session metadata is malformed');
+        if (!patch) return { id, type, success: true, data: { metadata: current } };
+        const metadata = mergeMetadataPatch(current, patch);
+        check();
+        await client.session.update({ sessionID: sessionId, directory, metadata });
+        check();
+        return { id, type, success: true, data: { metadata } };
       } catch (error) {
         return { id, type, success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
+
+    case 'api:provider/auth:delete': {
+      const { providerId, scope, directory } = (payload || {}) as { providerId?: string; scope?: string; directory?: string };
+      if (!providerId) {
+        return { id, type, success: false, error: 'Provider ID is required' };
+      }
+      const normalizedScope = typeof scope === 'string' ? scope : 'auth';
+      const workingDirectory = typeof directory === 'string' && directory.trim().length > 0
+        ? directory.trim()
+        : ctx?.manager?.getWorkingDirectory();
+      try {
+        const generation = await providerGeneration(ctx);
+        if (generation === 'oc2') {
+          if (normalizedScope === 'auth') {
+            return { id, type, success: false, error: 'OpenCode 2 owns provider credentials. Disconnect through OpenCode credential settings.' };
+          }
+          if (!['user', 'project', 'custom', 'all'].includes(normalizedScope)) {
+            return { id, type, success: false, error: 'Invalid scope' };
+          }
+          const scopes: Array<'user' | 'project' | 'custom'> = normalizedScope === 'all'
+            ? ['user', 'project', 'custom'] : [normalizedScope as 'user' | 'project' | 'custom'];
+          let removed = false;
+          for (const target of scopes) {
+            if (target === 'project' && !workingDirectory) continue;
+            removed = v2Config.removeProviderConfig(providerId, workingDirectory, target) || removed;
+          }
+          return { id, type, success: true, data: { removed,
+            ...buildAppliedResponse(removed ? 'Provider configuration removed. Credentials are managed separately by OpenCode.' : 'Provider was not configured.',
+              { credentialsRemoved: false }) } };
+        }
+        let removed = false;
+        if (normalizedScope === 'auth') {
+          removed = removeProviderAuth(providerId);
+        } else if (normalizedScope === 'user' || normalizedScope === 'project' || normalizedScope === 'custom') {
+          removed = removeProviderConfig(providerId, workingDirectory, normalizedScope);
+        } else if (normalizedScope === 'all') {
+          const authRemoved = removeProviderAuth(providerId);
+          const userRemoved = removeProviderConfig(providerId, workingDirectory, 'user');
+          const projectRemoved = workingDirectory
+            ? removeProviderConfig(providerId, workingDirectory, 'project')
+            : false;
+          const customRemoved = removeProviderConfig(providerId, workingDirectory, 'custom');
+          removed = authRemoved || userRemoved || projectRemoved || customRemoved;
+        } else {
+          return { id, type, success: false, error: 'Invalid scope' };
+        }
+
+        return {
+          id,
+          type,
+          success: true,
+          data: {
+            removed,
+            ...(removed
+              ? buildDeferredRestartResponse(`Provider ${providerId} disconnected successfully. Restart OpenCode to apply.`)
+              : {
+                success: true,
+                requiresReload: false,
+                message: `Provider ${providerId} was not configured.`,
+              }),
+          },
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { id, type, success: false, error: errorMessage };
       }
     }
 
@@ -500,13 +601,17 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Provider ID is required' };
       }
       try {
+        const generation = await providerGeneration(ctx);
         const workingDirectory = typeof directory === 'string' && directory.trim().length > 0
           ? directory.trim()
           : ctx?.manager?.getWorkingDirectory();
-        const sources = getProviderSources(providerId, workingDirectory);
-        const auth = getProviderAuth(providerId);
+        const sources = generation === 'oc2'
+          ? v2Config.getProviderSources(providerId, workingDirectory)
+          : getProviderSources(providerId, workingDirectory);
+        const auth = generation === 'oc2' ? v2Auth.getProviderAuth(providerId) : getProviderAuth(providerId);
         sources.auth.exists = Boolean(auth);
-        return { id, type, success: true, data: { providerId, sources } };
+        const config = generation === 'oc2' ? v2Config.getStoredProviderConfig(providerId, workingDirectory) : undefined;
+        return { id, type, success: true, data: { providerId, sources, ...(config ? { config } : {}) } };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return { id, type, success: false, error: errorMessage };
@@ -541,17 +646,20 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Invalid scope' };
       }
       try {
+        const generation = await providerGeneration(ctx);
         const workingDirectory = typeof directory === 'string' && directory.trim().length > 0
           ? directory.trim()
           : ctx?.manager?.getWorkingDirectory();
-        const result = upsertProviderConfig(
+        const writeConfig = generation === 'oc2' ? v2Config.upsertProviderConfig : upsertProviderConfig;
+        const storedAuth = generation === 'oc2' ? v2Auth.getProviderAuth(providerId) : getProviderAuth(providerId);
+        const result = writeConfig(
           providerId,
           config,
           workingDirectory,
           normalizedScope,
-          { hasStoredAuth: Boolean(getProviderAuth(providerId)) },
+          { hasStoredAuth: Boolean(storedAuth) },
         );
-        await ctx?.manager?.restart();
+        if (generation === 'oc1') await ctx?.manager?.restart();
         return {
           id,
           type,
@@ -561,8 +669,8 @@ export async function handleSystemBridgeMessage(
             providerId: result.providerId,
             path: result.path,
             config: result.config,
-            requiresReload: true,
-            reloadDelayMs: deps.clientReloadDelayMs,
+            requiresReload: generation === 'oc1',
+            ...(generation === 'oc1' ? { reloadDelayMs: deps.clientReloadDelayMs } : {}),
           },
         };
       } catch (error) {

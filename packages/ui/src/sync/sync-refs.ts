@@ -5,8 +5,8 @@
  * session-actions) use them to read child-store domain data without hooks.
  */
 
-import type { OpenCodeClient } from "@opencode/client"
-import type { Config } from "@/lib/opencode/model"
+import type { Config } from "@opencode-ai/sdk/v2/client"
+import type { TaggedConfig } from "@/lib/opencode/operations"
 import type { ChildStoreManager } from "./child-store"
 import { getSessionMaterializationStatus } from "./materialization"
 import type { State } from "./types"
@@ -15,13 +15,14 @@ let _childStores: ChildStoreManager | null = null
 let _directory: string = ""
 let _registerSessionDirectory: ((sessionID: string, directory: string) => void) | null = null
 const configListeners = new Set<(directory: string, config: Config) => void>()
+const taggedConfigListeners = new Set<(directory: string, config: TaggedConfig) => void>()
 let cachedSessionManager: ChildStoreManager | null = null
 let cachedSessionSlices = new Map<string, State["session"]>()
 let cachedSessionsById = new Map<string, State["session"][number]>()
 let cachedSessionDirectoryById = new Map<string, string>()
 
 export function setSyncRefs(
-  _sdk: OpenCodeClient,
+  _source: object,
   childStores: ChildStoreManager,
   directory: string,
   registerSessionDirectory?: (sessionID: string, directory: string) => void,
@@ -109,6 +110,20 @@ export function getDirectoryState(directory?: string): State | undefined {
 export function getSyncConfig(directory?: string): Config | undefined {
   const config = getDirectoryState(directory)?.config
   return config && Object.keys(config).length > 0 ? config : undefined
+}
+
+export function getTaggedSyncConfig(directory?: string): TaggedConfig | undefined {
+  return getDirectoryState(directory)?.configTagged
+}
+
+export function subscribeToTaggedSyncConfigChanges(listener: (directory: string, config: TaggedConfig) => void): () => void {
+  taggedConfigListeners.add(listener)
+  return () => taggedConfigListeners.delete(listener)
+}
+
+export function emitTaggedSyncConfigChanged(directory: string, config: TaggedConfig): void {
+  if (!directory) return
+  for (const listener of taggedConfigListeners) listener(directory, config)
 }
 
 export function subscribeToSyncConfigChanges(listener: (directory: string, config: Config) => void): () => void {

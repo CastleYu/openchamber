@@ -14,7 +14,6 @@ import { formatDirectoryName, formatPathForDisplay } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { resolveGlobalSessionDirectory } from '@/stores/useGlobalSessionsStore';
 import { getWorktreeFirstSeenAt } from './worktreeFirstSeen';
-import { buildProjectWorktreeIndex } from '../worktreeIndex';
 
 type Args = {
   homeDirectory: string | null;
@@ -101,7 +100,13 @@ export const useSessionGrouping = (args: Args) => {
         childrenMap.set(parentID, collection);
       });
 
-      const worktreeByPath = buildProjectWorktreeIndex(availableWorktrees, normalizedProjectRoot);
+      const worktreeByPath = new Map<string, WorktreeMetadata>();
+      availableWorktrees.forEach((meta) => {
+        if (meta.path) {
+          const normalized = normalizePath(meta.path) ?? meta.path;
+          worktreeByPath.set(normalized, meta);
+        }
+      });
 
       const getSessionWorktree = (session: Session): WorktreeMetadata | null => {
         const sessionDirectory = normalizePath((session as Session & { directory?: string | null }).directory ?? null);

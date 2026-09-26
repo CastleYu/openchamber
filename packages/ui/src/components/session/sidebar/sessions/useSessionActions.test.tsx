@@ -10,10 +10,10 @@ import { installHookTestDom } from '../test-utils/testDom';
 
 const session = (id: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
   title: id,
+  version: '1',
   directory: '/workspace',
   time: { created: 1, updated: 1 },
 });
@@ -63,6 +63,8 @@ describe('explicit session row behavior', () => {
         editingOccurrenceKey: 'project:session:same-session',
         editTitle,
         setEditTitle,
+        copiedSessionId: null,
+        setCopiedSessionId: () => undefined,
       });
       capture.editingId = editingId;
       capture.editingRowKey = editingRowKey;
@@ -128,6 +130,8 @@ describe('explicit session row behavior', () => {
         editingOccurrenceKey: 'project:session:root',
         editTitle,
         setEditTitle,
+        copiedSessionId: null,
+        setCopiedSessionId: () => undefined,
       });
       return null;
     };

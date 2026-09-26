@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { McpServerStatus } from '@/lib/opencode/model';
+import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import type { McpStatus } from '@opencode-ai/sdk/v2';
+import type { McpCatalog } from '@/lib/opencode/operations';
 
 type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void };
 const deferred = <T>(): Deferred<T> => {
@@ -8,16 +9,12 @@ const deferred = <T>(): Deferred<T> => {
   return { promise, resolve };
 };
 
-let mcpStatusResponse: Deferred<McpServerStatus[]> = deferred();
+type McpStatusResult = McpCatalog;
+let mcpStatusResponse: Deferred<McpStatusResult> = deferred();
 const opencodeModule = await import('@/lib/opencode/client');
-// Derived from the real client rather than spread from it: the client is a
-// class instance, so a spread drops every prototype method the other modules
-// loaded in this process call at import time.
-// SAFETY: `Object.create` returns `any`; the object delegates to the real
-// client for everything the two overrides below do not define.
-const opencodeClientStub = Object.create(opencodeModule.opencodeClient) as typeof opencodeModule.opencodeClient;
-opencodeClientStub.listMcpServers = () => mcpStatusResponse.promise;
-mock.module('@/lib/opencode/client', () => ({ ...opencodeModule, opencodeClient: opencodeClientStub }));
+const catalogSpy = spyOn(opencodeModule.opencodeClient, 'getMcpCatalog')
+  .mockImplementation(() => mcpStatusResponse.promise);
+afterAll(() => catalogSpy.mockRestore());
 
 let skillsResponse: Deferred<Response> = deferred();
 const runtimeFetchModule = await import('@/lib/runtime-fetch');
@@ -29,9 +26,13 @@ mock.module('@/lib/runtime-fetch', () => ({
 const { useMcpStore } = await import('./useMcpStore');
 const { useSkillsStore } = await import('./useSkillsStore');
 
-const connectedServer = (name: string): McpServerStatus[] => ([
-  { name, status: { status: 'connected' } },
-]);
+const mcpStatusResult = (data: Record<string, McpStatus>): McpStatusResult => ({
+  generation: 'oc1', value: data,
+});
+
+const connectedServer = (name: string): Record<string, McpStatus> => ({
+  [name]: { status: 'connected' },
+});
 
 describe('instance-scoped stores reject responses from the previous instance', () => {
   beforeEach(() => {
@@ -45,7 +46,7 @@ describe('instance-scoped stores reject responses from the previous instance', (
     const refresh = useMcpStore.getState().refresh({ directory: '/repo', silent: true });
 
     useMcpStore.getState().resetForRuntimeSwitch();
-    mcpStatusResponse.resolve(connectedServer('from-instance-a'));
+    mcpStatusResponse.resolve(mcpStatusResult(connectedServer('from-instance-a')));
     await refresh;
 
     expect(useMcpStore.getState().getStatusForDirectory('/repo')).toEqual({});
@@ -53,7 +54,7 @@ describe('instance-scoped stores reject responses from the previous instance', (
 
   test('an MCP status that arrives with no switch is stored', async () => {
     const refresh = useMcpStore.getState().refresh({ directory: '/repo', silent: true });
-    mcpStatusResponse.resolve(connectedServer('server-a'));
+    mcpStatusResponse.resolve(mcpStatusResult(connectedServer('server-a')));
     await refresh;
 
     expect(Object.keys(useMcpStore.getState().getStatusForDirectory('/repo'))).toEqual(['server-a']);

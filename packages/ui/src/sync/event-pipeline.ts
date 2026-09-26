@@ -1,11 +1,9 @@
 /**
- * Event Pipeline — transport connection, translation, coalescing, and batched flush.
+ * Event Pipeline — transport connection, event coalescing, and batched flush.
  *
- * Wire events (OpenCode v2 `/api/event`, or the OpenChamber server's WebSocket
- * bridge of that stream) are translated into `SyncEvent`s here and coalesced
- * per directory before the reducer sees them. This module must not make
- * state-dependent decisions about event validity: deciding whether a delta is
- * already represented by a full part snapshot belongs in the reducer.
+ * This module must not make state-dependent decisions about event validity.
+ * For example, deciding whether a delta is already represented by a full part
+ * snapshot belongs in the reducer, which has access to the current state.
  *
  * Plain closure API:
  *   const { cleanup } = createEventPipeline({ sdk, onEvents })
@@ -14,17 +12,17 @@
  * Abort controller created once at init, cleaned up via returned cleanup fn.
  */
 
-import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client"
+import type { Event, OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { z } from "zod"
+import type { SessionStatus } from "@/lib/opencode/model"
+import { parseV2Event, projectV2Event, type DomainEvent } from "@/lib/opencode/events"
+import type { SyncSource } from "./source"
+import { projectResources } from '@/lib/performance/projectResources';
 import { opencodeClient } from "@/lib/opencode/client"
-import { GLOBAL_EVENT_DIRECTORY, routeWireEvent, syncEventSessionID, type SyncEvent } from "@/lib/opencode/events"
-import { projectResources } from "@/lib/performance/projectResources"
-import type { Metadata } from "@/lib/opencode/model"
 import { getRuntimeUrlResolver } from "@/lib/runtime-url"
 import { clearRuntimeUrlAuthToken, refreshRuntimeUrlAuthToken } from "@/lib/runtime-auth"
 import { type RelayTunnelWebSocket } from "@/lib/relay/tunnel-client"
 import { openRuntimeWebSocket } from "@/lib/relay/runtime-socket"
-import { isVSCodeRuntime } from "@/lib/desktop"
 import { syncDebug } from "./debug"
 import { countSyncPerformance } from "./performance-diagnostics"
 
@@ -52,24 +50,22 @@ const RETRY_BACKOFF_BASE_MS = 250
 const RETRY_BACKOFF_CAP_VISIBLE_MS = 5_000
 const RETRY_BACKOFF_CAP_HIDDEN_OR_OFFLINE_MS = 60_000
 const RETRY_BACKOFF_MAX_EXPONENT = 8
-
 type EventPipelineDelivery = {
-  onEvent: (directory: string, payload: SyncEvent) => void
-  onEvents?: never
-} | {
-  onEvent?: never
-  onEvents: (directory: string, payloads: readonly SyncEvent[]) => void
+  onEvent?: (directory: string, payload: Event) => void
+  onEvents?: (directory: string, payloads: readonly Event[]) => void
+  onDomainEvents?: (directory: string, payloads: readonly DomainEvent[]) => void
 }
 
 export type EventPipelineInput = {
-  sdk: OpenCodeClient
+  sdk?: OpencodeClient
+  source?: Pick<SyncSource, "generation" | "events">
   now?: () => number
   flushFrameMs?: number
   flushTimer?: {
     schedule: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>
     cancel: (timer: ReturnType<typeof setTimeout>) => void
   }
-  routeDirectory?: (directory: string, payload: SyncEvent) => string
+  routeDirectory?: (directory: string, payload: Event) => string
   /** Called after stream reconnects (visibility restore or heartbeat timeout). */
   onReconnect?: (details: { replayReset: boolean }) => void
   /** Called when the stream disconnects (heartbeat timeout, network error, or transport failure). */
@@ -87,130 +83,152 @@ export type EventPipeline = {
   reconnect: (reason?: string) => void
 }
 
-// Frames the OpenChamber server sends on `/api/global/event/ws`. `payload` is
-// the wire event as OpenCode published it; the server adds replay metadata.
-const wsFrameSchema = z.object({
-  type: z.enum(["ready", "event", "error", "backpressure"]),
-  replayReset: z.boolean().optional(),
-  payload: z.unknown().optional(),
-  eventId: z.string().optional(),
-  directory: z.string().optional(),
-  message: z.string().optional(),
-})
-
-// OpenChamber's own session-status bridge rides the same stream. It predates
-// OpenCode's `session.status` and carries the status in `properties`.
-const openchamberStatusSchema = z.object({
-  type: z.literal("openchamber:session-status"),
-  properties: z.object({
-    sessionID: z.string().min(1).optional(),
-    sessionId: z.string().min(1).optional(),
-    status: z.enum(["idle", "busy", "retry"]),
-    metadata: z.object({ attempt: z.number(), message: z.string(), next: z.number() }).partial().optional(),
-  }),
-})
-
-// OpenChamber owns archive state; its server announces changes on the stream.
-const openchamberArchivedSchema = z.object({
-  type: z.literal("openchamber:session-archived"),
-  properties: z.object({ sessionID: z.string().min(1), archivedAt: z.number().nullable() }),
-})
-
-const openchamberMetadataSchema = z.object({
-  type: z.literal("openchamber:session-metadata"),
-  properties: z.object({ sessionID: z.string().min(1), metadata: z.record(z.string(), z.unknown()) }),
-})
-
-const openchamberNotificationSchema = z.object({
-  type: z.literal("openchamber:notification"),
-  properties: z
-    .object({
-      kind: z.string(),
-      sessionId: z.string(),
-      directory: z.string(),
-      title: z.string(),
-      body: z.string(),
-      tag: z.string(),
-      requireHidden: z.boolean(),
-      desktopNotificationDelivered: z.boolean(),
-      desktopStdoutActive: z.boolean(),
-    })
-    .partial(),
-})
-
-const openchamberAutoAcceptSchema = z.object({
-  type: z.literal("openchamber:permission-auto-accept.updated"),
-  properties: z.object({ sessions: z.record(z.string(), z.boolean()), revision: z.number().optional() }),
-})
-
-// The wire event contract is generated from the server; the stream is trusted
-// once its shape matches. Only the discriminator and location are checked here
-// because the translator narrows on `type` for everything else.
-const wireEventSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  location: z.object({ directory: z.string() }).partial().optional(),
-})
-
-function translateOpenchamberArchived(payload: unknown): SyncEvent | null {
-  const parsed = openchamberArchivedSchema.safeParse(payload)
-  if (!parsed.success) return null
-  const { sessionID, archivedAt } = parsed.data.properties
-  return { type: "session.patched", properties: { sessionID, patch: { time: { archived: archivedAt } } } }
+type MessageStreamWsFrame = {
+  type: "ready" | "event" | "error" | "backpressure"
+  replayReset?: boolean
+  payload?: unknown
+  eventId?: string
+  directory?: string
+  message?: string
+  scope?: "global" | "directory"
 }
 
-function translateOpenchamberNative(payload: unknown): SyncEvent | null {
-  const metadata = openchamberMetadataSchema.safeParse(payload)
-  if (metadata.success) {
-    const { sessionID } = metadata.data.properties
-    // SAFETY: the server serialises this object from JSON, so every value is a JsonValue.
-    const value = metadata.data.properties.metadata as Metadata
-    return { type: "session.patched", properties: { sessionID, patch: { metadata: value } } }
-  }
-  const notification = openchamberNotificationSchema.safeParse(payload)
-  if (notification.success) return { type: "openchamber.notification", properties: notification.data.properties }
-  const autoAccept = openchamberAutoAcceptSchema.safeParse(payload)
-  if (autoAccept.success) return { type: "openchamber.permission-auto-accept", properties: autoAccept.data.properties }
-  return null
-}
-
-function translateOpenchamberStatus(payload: unknown): SyncEvent | null {
-  const parsed = openchamberStatusSchema.safeParse(payload)
-  if (!parsed.success) return null
-  const { sessionID, sessionId, status, metadata } = parsed.data.properties
-  const id = sessionID ?? sessionId
-  if (!id) return null
-  if (status === "retry") {
-    if (metadata?.attempt === undefined || metadata.message === undefined || metadata.next === undefined) return null
-    return {
-      type: "session.status",
-      properties: { sessionID: id, status: { type: "retry", attempt: metadata.attempt, message: metadata.message, next: metadata.next } },
+const normalizeOpenChamberSessionStatus = (payload: Event): Event | null => {
+  const record = payload as unknown as {
+    id?: unknown
+    type?: unknown
+    properties?: {
+      sessionID?: unknown
+      sessionId?: unknown
+      status?: unknown
+      metadata?: {
+        attempt?: unknown
+        message?: unknown
+        next?: unknown
+      }
     }
   }
-  return { type: "session.status", properties: { sessionID: id, status: { type: status } } }
+
+  if (record.type !== "openchamber:session-status") return null
+
+  const sessionID = typeof record.properties?.sessionID === "string" && record.properties.sessionID.length > 0
+    ? record.properties.sessionID
+    : typeof record.properties?.sessionId === "string" && record.properties.sessionId.length > 0
+      ? record.properties.sessionId
+      : ""
+  const rawStatus = typeof record.properties?.status === "string" ? record.properties.status : ""
+  if (!sessionID || !rawStatus) return null
+
+  let status: SessionStatus | null = null
+  if (rawStatus === "idle" || rawStatus === "busy") {
+    status = { type: rawStatus }
+  } else if (rawStatus === "retry") {
+    const metadata = record.properties?.metadata
+    if (
+      typeof metadata?.attempt === "number"
+      && typeof metadata.message === "string"
+      && typeof metadata.next === "number"
+    ) {
+      status = {
+        type: "retry",
+        attempt: metadata.attempt,
+        message: metadata.message,
+        next: metadata.next,
+      }
+    }
+  }
+  if (!status) return null
+
+  return {
+    id: typeof record.id === "string" && record.id.length > 0
+      ? record.id
+      : `openchamber-status-${sessionID}-${Date.now()}`,
+    type: "session.status",
+    properties: {
+      sessionID,
+      status,
+    },
+  } as Event
 }
 
-/**
- * Turns one raw stream payload into routed sync events. `frameDirectory` is
- * the directory the server bridge attached, used when the event itself does
- * not name a location.
- */
-function translatePayload(payload: unknown, frameDirectory: string | undefined): Array<{ directory: string; event: SyncEvent }> {
-  const bridged = translateOpenchamberStatus(payload) ?? translateOpenchamberArchived(payload) ?? translateOpenchamberNative(payload)
-  if (bridged) return [{ directory: frameDirectory ?? GLOBAL_EVENT_DIRECTORY, event: bridged }]
-  if (!wireEventSchema.safeParse(payload).success) return []
-  // SAFETY: the discriminator and location were validated above; the rest of
-  // the shape is the server's generated contract, narrowed per `type` by the
-  // translator.
-  const routed = routeWireEvent(payload as OpenCodeEvent)
-  if (!frameDirectory) return routed
-  return routed.map((entry) => (entry.directory === GLOBAL_EVENT_DIRECTORY ? { ...entry, directory: frameDirectory } : entry))
+const normalizeEventType = (payload: Event): Event => {
+  const normalizedOpenChamberStatus = normalizeOpenChamberSessionStatus(payload)
+  if (normalizedOpenChamberStatus) {
+    return normalizedOpenChamberStatus
+  }
+
+  const type = (payload as { type?: unknown }).type
+  if (typeof type !== "string") {
+    return payload
+  }
+
+  const match = /^(.*)\.(\d+)$/.exec(type)
+  if (!match || !match[1]) {
+    return payload
+  }
+
+  return {
+    ...payload,
+    type: match[1] as Event["type"],
+  } as unknown as Event
+}
+
+function resolveEventDirectory(event: unknown, payload: Event): string {
+  const directDirectory =
+    typeof event === "object" && event !== null && typeof (event as { directory?: unknown }).directory === "string"
+      ? (event as { directory: string }).directory
+      : null
+
+  if (directDirectory && directDirectory.length > 0) {
+    return directDirectory
+  }
+
+  const properties =
+    typeof payload.properties === "object" && payload.properties !== null
+      ? (payload.properties as Record<string, unknown>)
+      : null
+  const propertyDirectory = typeof properties?.directory === "string" ? properties.directory : null
+  if (propertyDirectory && propertyDirectory.length > 0) {
+    return propertyDirectory
+  }
+
+  // session.created / session.updated carry directory inside properties.info
+  const info =
+    typeof properties?.info === "object" && properties.info !== null
+      ? (properties.info as Record<string, unknown>)
+      : null
+  const infoDirectory = typeof info?.directory === "string" ? info.directory : null
+  if (infoDirectory && infoDirectory.length > 0) {
+    return infoDirectory
+  }
+
+  return "global"
+}
+
+function resolveEventPayload(payload: unknown): Event | null {
+  if (!payload || typeof payload !== "object") {
+    return null
+  }
+
+  const record = payload as { type?: unknown; payload?: unknown }
+  if (typeof record.type === "string") {
+    return payload as Event
+  }
+
+  if (record.payload && typeof record.payload === "object" && typeof (record.payload as { type?: unknown }).type === "string") {
+    return record.payload as Event
+  }
+
+  return null
 }
 
 function buildGlobalEventWsUrl(lastEventId?: string): string {
   let baseUrl = "/api"
   try {
-    baseUrl = opencodeClient.getBaseUrl()
+    const client = opencodeClient as { getBaseUrl?: () => string }
+    if (typeof client.getBaseUrl === "function") {
+      baseUrl = client.getBaseUrl()
+    }
   } catch {
     baseUrl = "/api"
   }
@@ -233,8 +251,9 @@ function openGlobalEventSocket(lastEventId?: string): RelayTunnelWebSocket {
 }
 
 type DirectoryQueue = {
-  queue: SyncEvent[]
-  buffer: SyncEvent[]
+  queue: Event[]
+  buffer: Event[]
+  domain: DomainEvent[]
   coalesced: Map<string, number>
   timer: ReturnType<typeof setTimeout> | undefined
   last: number
@@ -245,47 +264,11 @@ type AttemptAbortReason =
   | `${"ws" | "sse"}_${string}`
   | null
 
-/** Key under which repeated events for the same entity collapse into one. */
-function coalesceKey(event: SyncEvent): string | undefined {
-  switch (event.type) {
-    case "session.status":
-      return `session.status:${event.properties.sessionID}`
-    case "session.patched":
-      return `session.patched:${event.properties.sessionID}`
-    case "message.patched":
-      return `message.patched:${event.properties.sessionID}:${event.properties.messageID}`
-    case "message.part.delta":
-      return `message.part.delta:${event.properties.messageID}:${event.properties.partID}:${event.properties.field}`
-    case "vcs.branch.updated":
-      return "vcs.branch.updated"
-    default:
-      return undefined
-  }
-}
-
-/** Merges a later event into the queued one it coalesces with. */
-function mergeCoalesced(previous: SyncEvent, next: SyncEvent): SyncEvent {
-  if (previous.type === "message.part.delta" && next.type === "message.part.delta") {
-    return { ...next, properties: { ...next.properties, delta: previous.properties.delta + next.properties.delta } }
-  }
-  if (previous.type === "session.patched" && next.type === "session.patched") {
-    const time = previous.properties.patch.time || next.properties.patch.time
-      ? { time: { ...previous.properties.patch.time, ...next.properties.patch.time } }
-      : {}
-    return { ...next, properties: { ...next.properties, patch: { ...previous.properties.patch, ...next.properties.patch, ...time } } }
-  }
-  if (previous.type === "message.patched" && next.type === "message.patched") {
-    const time = previous.properties.patch.time || next.properties.patch.time
-      ? { time: { ...previous.properties.patch.time, ...next.properties.patch.time } }
-      : {}
-    return { ...next, properties: { ...next.properties, patch: { ...previous.properties.patch, ...next.properties.patch, ...time } } }
-  }
-  return next
-}
-
 export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const {
     sdk,
+    source,
+    onDomainEvents,
     onEvent,
     onEvents,
     onReconnect,
@@ -298,13 +281,18 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     wsReadyTimeoutMs = DEFAULT_WS_READY_TIMEOUT_MS,
   } = input
   const now = input.now ?? Date.now
-  const flushTimer = input.flushTimer ?? { schedule: setTimeout, cancel: clearTimeout }
+  const flushTimer = input.flushTimer ?? {
+    schedule: (callback: () => void, ms: number) => setTimeout(callback, ms),
+    cancel: (handle: ReturnType<typeof setTimeout>) => clearTimeout(handle),
+  }
   const abort = new AbortController()
   let disconnected = false
   let lastEventId: string | undefined
   let wsFallbackUntil = 0
 
   const directories = new Map<string, DirectoryQueue>()
+  const seenDomain = new Set<string>()
+  const seenDomainOrder: string[] = []
 
   const getOrCreateDir = (directory: string): DirectoryQueue => {
     let d = directories.get(directory)
@@ -312,12 +300,32 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     d = {
       queue: [],
       buffer: [],
+      domain: [],
       coalesced: new Map(),
       timer: undefined,
       last: 0,
     }
     directories.set(directory, d)
     return d
+  }
+
+  const key = (payload: Event): string | undefined => {
+    if (payload.type === "session.status") {
+      const props = payload.properties as { sessionID: string }
+      return `session.status:${props.sessionID}`
+    }
+    if (payload.type === "session.updated") {
+      const props = payload.properties as { info?: { id?: string } }
+      return props.info?.id ? `session.updated:${props.info.id}` : undefined
+    }
+    if (payload.type === "lsp.updated") {
+      return "lsp.updated"
+    }
+    if (payload.type === "message.part.delta") {
+      const props = payload.properties as { messageID: string; partID: string; field: string }
+      return `message.part.delta:${props.messageID}:${props.partID}:${props.field}`
+    }
+    return undefined
   }
 
   const flushDir = (directory: string) => {
@@ -327,9 +335,11 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       flushTimer.cancel(d.timer)
       d.timer = undefined
     }
-    if (d.queue.length === 0) return
+    if (d.queue.length === 0 && d.domain.length === 0) return
 
     const events = d.queue
+    const domainEvents = d.domain
+    d.domain = []
     d.queue = d.buffer
     d.buffer = events
     d.queue.length = 0
@@ -340,11 +350,12 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     for (let index = 0; index < events.length; index += 1) {
       countSyncPerformance("pipelineDeliveredEvents")
     }
-    if (onEvents) {
+    if (events.length && onEvents) {
       onEvents(directory, events)
-    } else if (onEvent) {
+    } else if (events.length && onEvent) {
       for (const payload of events) onEvent(directory, payload)
     }
+    if (domainEvents.length) onDomainEvents?.(directory, domainEvents)
 
     d.buffer.length = 0
   }
@@ -359,10 +370,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     const d = getOrCreateDir(directory)
     if (d.timer) return
     const elapsed = now() - d.last
-    const flushFrameMs = Math.max(
-      projectResources.frame(directory) * 2,
-      now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : (input.flushFrameMs ?? FLUSH_FRAME_MS),
-    )
+    const flushFrameMs = Math.max(projectResources.frame(directory), now() < backpressureUntil ? BACKPRESSURE_FLUSH_FRAME_MS : (input.flushFrameMs ?? FLUSH_FRAME_MS))
     d.timer = flushTimer.schedule(() => flushDir(directory), Math.max(0, flushFrameMs - elapsed))
   }
 
@@ -378,16 +386,14 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     typeof document !== "undefined" && document.visibilityState !== "visible"
 
   // Extract an HTTP status code from anywhere it might be hiding on the
-  // error object. Our client normaliser stashes it on `.status`; raw
-  // fetch failures may carry `.response.status`.
+  // error object. The SDK's unwrap pattern stashes it on `.status`; raw
+  // fetch failures may carry `.response.status`; some SDKs also use `.code`.
   const extractStatus = (error: unknown): number | undefined => {
     if (!error || typeof error !== "object") return undefined
     const direct = (error as { status?: unknown }).status
     if (typeof direct === "number") return direct
     const fromResponse = (error as { response?: { status?: unknown } }).response?.status
     if (typeof fromResponse === "number") return fromResponse
-    const fromCause = (error as { cause?: { status?: unknown } }).cause?.status
-    if (typeof fromCause === "number") return fromCause
     return undefined
   }
 
@@ -462,7 +468,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
 
   let streamErrorLogged = false
   let attempt: AbortController | undefined
-  let lastEventAt = Date.now()
+  let lastEventAt = now()
   let heartbeat: ReturnType<typeof setTimeout> | undefined
   let activeTransport: "ws" | "sse" = transport === "ws" ? "ws" : "sse"
   let attemptAbortReason: AttemptAbortReason = null
@@ -488,9 +494,10 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     onReconnect?.({ replayReset })
   }
 
-  const enqueueEvent = (directory: string, event: SyncEvent) => {
+  const enqueueEvent = (directory: string, payload: Event) => {
     countSyncPerformance("pipelineRawEvents")
-    const routedDirectory = routeDirectory?.(directory, event) || directory
+    const normalizedPayload = normalizeEventType(payload)
+    const routedDirectory = routeDirectory?.(directory, normalizedPayload) || directory
     const d = getOrCreateDir(routedDirectory)
 
     // A full part snapshot is a coalescing barrier for that part's deltas:
@@ -498,52 +505,88 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     // snapshot starts a fresh queue entry instead of merging into a delta
     // queued before the snapshot, which the snapshot would then overwrite and
     // drop the later delta's text. The already-queued delta event stays.
-    if (event.type === "message.part.updated") {
-      const deltaPrefix = `message.part.delta:${event.properties.part.messageID}:${event.properties.part.id}:`
-      for (const key of d.coalesced.keys()) {
-        if (key.startsWith(deltaPrefix)) d.coalesced.delete(key)
-      }
-    }
-
-    if (
-      event.type === "session.idle"
-      || event.type === "session.error"
-      || event.type === "session.created"
-      || event.type === "session.deleted"
-    ) {
-      const sessionID = syncEventSessionID(event)
-      if (sessionID) {
-        d.coalesced.delete(`session.status:${sessionID}`)
-        if (event.type === "session.created" || event.type === "session.deleted") {
-          d.coalesced.delete(`session.patched:${sessionID}`)
+    if (normalizedPayload.type === "message.part.updated") {
+      const part = (normalizedPayload.properties as { part?: { id?: unknown; messageID?: unknown } }).part
+      const messageID = typeof part?.messageID === "string" ? part.messageID : undefined
+      const partID = typeof part?.id === "string" ? part.id : undefined
+      if (messageID && partID) {
+        const deltaPrefix = `message.part.delta:${messageID}:${partID}:`
+        for (const coalesceKey of d.coalesced.keys()) {
+          if (coalesceKey.startsWith(deltaPrefix)) {
+            d.coalesced.delete(coalesceKey)
+          }
         }
       }
     }
 
-    const key = coalesceKey(event)
-    if (key) {
-      const index = d.coalesced.get(key)
-      if (index !== undefined) {
-        d.queue[index] = mergeCoalesced(d.queue[index], event)
-        countSyncPerformance("pipelineCoalescedEvents")
-        syncDebug.pipeline.coalesced(event.type, key)
-        return
+    if (
+      normalizedPayload.type === "session.idle"
+      || normalizedPayload.type === "session.error"
+      || normalizedPayload.type === "session.created"
+      || normalizedPayload.type === "session.deleted"
+    ) {
+      const properties = normalizedPayload.properties as {
+        sessionID?: unknown
+        info?: { id?: unknown }
       }
-      d.coalesced.set(key, d.queue.length)
+      const sessionID = typeof properties.sessionID === "string"
+        ? properties.sessionID
+        : typeof properties.info?.id === "string"
+          ? properties.info.id
+          : undefined
+      if (sessionID) {
+        d.coalesced.delete(`session.status:${sessionID}`)
+        if (normalizedPayload.type === "session.created" || normalizedPayload.type === "session.deleted") {
+          d.coalesced.delete(`session.updated:${sessionID}`)
+        }
+      }
     }
 
-    d.queue.push(event)
+    const k = key(normalizedPayload)
+    if (k) {
+      const i = d.coalesced.get(k)
+      if (i !== undefined) {
+        if (normalizedPayload.type === "message.part.delta") {
+          const prev = d.queue[i] as unknown as { properties: { delta: string } }
+          const inc = normalizedPayload.properties as { delta: string }
+          d.queue[i] = {
+            ...normalizedPayload,
+            properties: {
+              ...(normalizedPayload.properties as object),
+              delta: prev.properties.delta + inc.delta,
+            },
+          } as unknown as Event
+        } else {
+          d.queue[i] = normalizedPayload
+        }
+        countSyncPerformance("pipelineCoalescedEvents")
+        syncDebug.pipeline.coalesced(normalizedPayload.type, k)
+        return
+      }
+      d.coalesced.set(k, d.queue.length)
+    }
+
+    d.queue.push(normalizedPayload)
     scheduleDir(routedDirectory)
   }
 
-  const enqueuePayload = (payload: unknown, frameDirectory: string | undefined) => {
-    for (const { directory, event } of translatePayload(payload, frameDirectory)) {
-      enqueueEvent(directory, event)
+  const enqueueDomain = (directory: string, payload: DomainEvent) => {
+    if (seenDomain.has(payload.eventID)) return
+    seenDomain.add(payload.eventID)
+    seenDomainOrder.push(payload.eventID)
+    if (seenDomainOrder.length > 1024) {
+      const expired = seenDomainOrder.shift()
+      if (expired) seenDomain.delete(expired)
     }
+    countSyncPerformance("pipelineRawEvents")
+    const target = payload.directory || directory
+    const d = getOrCreateDir(target)
+    d.domain.push(payload)
+    scheduleDir(target)
   }
 
   const resetHeartbeat = () => {
-    lastEventAt = Date.now()
+    lastEventAt = now()
     if (heartbeat) clearTimeout(heartbeat)
     heartbeat = setTimeout(() => {
       attemptAbortReason = `${activeTransport}_heartbeat_timeout`
@@ -558,25 +601,69 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   }
 
   const runSseAttempt = async (signal: AbortSignal) => {
-    // Keepalive comments carry no event but prove the socket is alive.
-    const events = sdk.event.subscribe({ signal, onActivity: resetHeartbeat })
+    if (source) {
+      let yielded = now()
+      let connected = false
+      for await (const event of source.events(signal, lastEventId)) {
+        if (!connected) {
+          markConnected()
+          resetHeartbeat()
+          connected = true
+        }
+        resetHeartbeat()
+        streamErrorLogged = false
+        if (event.generation === "oc1") {
+          const payload = resolveEventPayload(event.value)
+          if (payload) {
+            lastEventId = payload.id
+            enqueueEvent(resolveEventDirectory(event.value, payload), payload)
+          }
+        } else {
+          lastEventId = event.value.eventID
+          enqueueDomain(event.value.directory ?? "global", event.value)
+        }
+        if (now() - yielded < STREAM_YIELD_MS) continue
+        yielded = now()
+        await wait(0)
+      }
+      return
+    }
+    if (!sdk) throw new Error("Event pipeline source is not configured")
+    const events = await sdk.global.event({
+      signal,
+      ...(lastEventId && lastEventId.length > 0 ? { headers: { "Last-Event-ID": lastEventId } } : {}),
+      onSseEvent: (event: { id?: unknown }) => {
+        resetHeartbeat()
+        if (typeof event.id === "string" && event.id.length > 0) {
+          lastEventId = event.id
+        }
+      },
+      onSseError: (error: unknown) => {
+        if (isAbortError(error)) return
+        if (streamErrorLogged) return
+        streamErrorLogged = true
+        console.error("[event-pipeline] SSE stream error", error)
+      },
+    })
 
-    let connected = false
-    let yielded = Date.now()
+    markConnected()
+
+    let yielded = now()
     resetHeartbeat()
 
-    for await (const event of events) {
+    for await (const event of events.stream) {
       resetHeartbeat()
       streamErrorLogged = false
-      if (!connected) {
-        connected = true
-        markConnected()
+
+      const payload = resolveEventPayload((event as { payload?: Event }).payload ?? event)
+      if (!payload) {
+        continue
       }
+      const directory = resolveEventDirectory(event, payload)
+      enqueueEvent(directory, payload)
 
-      enqueuePayload(event, undefined)
-
-      if (Date.now() - yielded < STREAM_YIELD_MS) continue
-      yielded = Date.now()
+      if (now() - yielded < STREAM_YIELD_MS) continue
+      yielded = now()
       await wait(0)
     }
   }
@@ -595,7 +682,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     } catch (error) {
       const wrapped = error instanceof Error ? error : new Error("Message stream WebSocket auth token unavailable")
       if (transport === "auto") {
-        wsFallbackUntil = Date.now() + WS_FALLBACK_WINDOW_MS
+        wsFallbackUntil = now() + WS_FALLBACK_WINDOW_MS
         ;(wrapped as Error & { code?: string }).code = "WS_FALLBACK"
       }
       ;(wrapped as Error & { reason?: string }).reason = "ws_auth_token_unavailable"
@@ -611,7 +698,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       const socket: RelayTunnelWebSocket = openGlobalEventSocket(lastEventId)
       const setFallbackCode = (error: Error, force = false) => {
         if ((force || !opened) && transport === "auto") {
-          wsFallbackUntil = Date.now() + WS_FALLBACK_WINDOW_MS
+          wsFallbackUntil = now() + WS_FALLBACK_WINDOW_MS
           ;(error as Error & { code?: string }).code = "WS_FALLBACK"
         }
       }
@@ -675,23 +762,24 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
         resetHeartbeat()
         streamErrorLogged = false
 
-        let raw: unknown
+        let frame: MessageStreamWsFrame | null = null
         try {
-          raw = JSON.parse(String(messageEvent.data))
+          frame = JSON.parse(String(messageEvent.data)) as MessageStreamWsFrame
         } catch (error) {
           console.warn("[event-pipeline] Failed to parse WS frame", error)
           return
         }
-        const parsed = wsFrameSchema.safeParse(raw)
-        if (!parsed.success) return
-        const frame = parsed.data
+
+        if (!frame || typeof frame.type !== "string") {
+          return
+        }
 
         if (frame.type === "ready") {
           // The retained suffix no longer covers our cursor. The normal
           // reconnect callback repairs authoritative state; retire that cursor.
           if (frame.replayReset === true) lastEventId = undefined
           opened = true
-          readyAt = Date.now()
+          readyAt = now()
           if (readyTimer) {
             clearTimeout(readyTimer)
             readyTimer = undefined
@@ -715,14 +803,36 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
         }
 
         if (frame.type === "backpressure") {
-          backpressureUntil = Date.now() + BACKPRESSURE_MODE_MS
+          backpressureUntil = now() + BACKPRESSURE_MODE_MS
           return
         }
 
-        if (frame.eventId) {
-          lastEventId = frame.eventId
+        if (frame.type !== "event") {
+          return
         }
-        enqueuePayload(frame.payload, frame.directory)
+
+        if (source?.generation === "oc2") {
+          const json = z.json().safeParse(frame.payload)
+          if (!json.success) return
+          const wire = parseV2Event(json.data)
+          if (!wire) return
+          const projected = projectV2Event(wire)
+          if (projected) {
+            if (typeof frame.eventId === "string" && frame.eventId.length > 0) lastEventId = frame.eventId
+            enqueueDomain(frame.directory ?? projected.directory ?? "global", projected)
+          }
+          return
+        }
+
+        const payload = resolveEventPayload(frame.payload)
+        if (!payload) return
+        if (typeof frame.eventId === "string" && frame.eventId.length > 0) lastEventId = frame.eventId
+
+        const directory = resolveEventDirectory(
+          { directory: frame.directory, payload },
+          payload,
+        )
+        enqueueEvent(directory, payload)
       }
 
       socket.onerror = () => {
@@ -750,7 +860,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
 
         // If the WS stream connects (ready) but then drops quickly, prefer SSE for a while.
         // This avoids tight reconnect loops with repeated console spam.
-        const livedMs = readyAt > 0 ? Date.now() - readyAt : 0
+        const livedMs = readyAt > 0 ? now() - readyAt : 0
         const unstableAfterReady = opened && livedMs > 0 && livedMs < 2_000
         setFallbackCode(error, unstableAfterReady)
         settleReject(error)
@@ -759,8 +869,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   }
 
   const resolveTransport = (): "ws" | "sse" => {
-    // The VS Code webview bridges only HTTP/SSE; there is no WebSocket bridge.
-    if (typeof WebSocket !== "function" || isVSCodeRuntime()) {
+    if (typeof WebSocket !== "function") {
       return "sse"
     }
     if (transport === "ws") {
@@ -769,13 +878,13 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     if (transport === "sse") {
       return "sse"
     }
-    return wsFallbackUntil > Date.now() ? "sse" : "ws"
+    return wsFallbackUntil > now() ? "sse" : "ws"
   }
 
   void (async () => {
     while (!abort.signal.aborted) {
       attempt = new AbortController()
-      lastEventAt = Date.now()
+      lastEventAt = now()
       attemptAbortReason = null
       let retryDelayMs = reconnectDelayMs
       const currentTransport = resolveTransport()
@@ -863,7 +972,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const onVisibility = () => {
     if (typeof document === "undefined") return
     if (document.visibilityState !== "visible") return
-    if (Date.now() - lastEventAt < heartbeatTimeoutMs) return
+    if (now() - lastEventAt < heartbeatTimeoutMs) return
     attempt?.abort()
   }
 

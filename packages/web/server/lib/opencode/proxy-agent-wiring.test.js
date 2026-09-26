@@ -60,6 +60,16 @@ const coldState = () => ({ port: null, baseUrl: null });
 const agentsFromCalls = () => createProxyMiddlewareMock.mock.calls.map(([options]) => options.agent);
 
 describe('OpenCode API proxy agent wiring', () => {
+  it('uses the mounted OC1 path and restores /api for OC2', () => {
+    const state = managedState();
+    state.generation = 'oc1';
+    registerOpenCodeProxy(createStubApp(), { ...createStubDeps(state), getKernelRuntime: () => ({ generation: state.generation }) });
+    const [options] = createProxyMiddlewareMock.mock.calls[0];
+    expect(options.pathRewrite('/session?limit=10')).toBe('/session?limit=10');
+    state.generation = 'oc2';
+    expect(options.pathRewrite('/session?limit=10')).toBe('/api/session?limit=10');
+    expect(options.pathRewrite('/')).toBe('/api');
+  });
   beforeEach(() => {
     createProxyMiddlewareMock.mockReset();
     createProxyMiddlewareMock.mockImplementation(() => (_req, _res, next) => next?.());
@@ -79,14 +89,12 @@ describe('OpenCode API proxy agent wiring', () => {
     }
   });
 
-  it('resolves an agent for the API proxy', () => {
-    // v1 also built a long-deadline proxy for the interactive provider/MCP
-    // OAuth callbacks; v2 has neither route, so there is one proxy left.
+  it('shares one agent instance across the API and OAuth proxies', () => {
     registerOpenCodeProxy(createStubApp(), createStubDeps(managedState()));
 
     const agents = agentsFromCalls();
 
-    expect(agents.length).toBeGreaterThan(0);
+    expect(agents.length).toBeGreaterThan(1);
     expect(agents.every(Boolean)).toBe(true);
     expect(new Set(agents).size).toBe(1);
   });

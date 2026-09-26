@@ -21,6 +21,7 @@ mock.module('./hooks/useSessionActions', () => ({
     setEditingId: (id: string | null) => void;
     setEditTitle: (title: string) => void;
   }) => ({
+    copiedSessionId: null,
     handleSaveEdit: () => undefined,
     handleCancelEdit: () => undefined,
     handleSessionSelect: () => undefined,
@@ -28,7 +29,10 @@ mock.module('./hooks/useSessionActions', () => ({
       args.setEditingId(id);
       args.setEditTitle(title);
     },
+    handleShareSession: () => undefined,
+    handleCopyShareUrl: () => undefined,
     handleCopySessionId: () => undefined,
+    handleUnshareSession: () => undefined,
     handleDeleteSession: () => undefined,
     handleRestoreSession: () => undefined,
   }),
@@ -43,10 +47,10 @@ const noopStartSessionWorktreeMenuLoad: SessionTreeItemProps['startSessionWorktr
 
 const session = (id: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
   title: 'Shared title',
+  version: '1',
   directory: '/workspace',
   time: { created: 1, updated: 1 },
 });
@@ -64,6 +68,7 @@ describe('SessionTreeItem public behavior', () => {
       const [editingRowKey, setEditingRowKey] = React.useState<string | null>(null);
       const [editTitle, setEditTitle] = React.useState('');
       const [menuKey, setMenuKey] = React.useState<string | null>(null);
+      const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
       const rows = [
         { renderContext: 'project' as const, groupDirectory: '/workspace', rowKey: 'project:session:same-session' },
         { renderContext: 'recent' as const, groupDirectory: '/workspace', rowKey: 'recent:session:same-session' },
@@ -83,6 +88,7 @@ describe('SessionTreeItem public behavior', () => {
         editTitle={editTitle}
         setEditTitle={setEditTitle}
         toggleParent={noop}
+        copiedSessionId={copiedSessionId}
         openSidebarMenuKey={menuKey}
         setOpenSidebarMenuKey={setMenuKey}
         allowReselect={false}
@@ -90,6 +96,7 @@ describe('SessionTreeItem public behavior', () => {
         deleteSessionConfirm={null}
         setDeleteSessionConfirm={noop}
         startFolderRename={noop}
+        setCopiedSessionId={setCopiedSessionId}
         startSessionWorktreeMenuLoad={noopStartSessionWorktreeMenuLoad}
         mobileVariant={false}
         alwaysShowActions={false}

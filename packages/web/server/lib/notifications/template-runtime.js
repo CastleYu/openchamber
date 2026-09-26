@@ -1,8 +1,8 @@
 import { summarizeText as summarizeSharedText } from '../text/summarization.js';
-import { unwrapOpenCodeResponse } from '../opencode/response-envelope.js';
 
 export const createNotificationTemplateRuntime = (deps) => {
   const {
+    kernelOperations = null,
     readSettingsFromDisk,
     buildOpenCodeUrl,
     getOpenCodeAuthHeaders,
@@ -16,6 +16,15 @@ export const createNotificationTemplateRuntime = (deps) => {
 
   const sessionTitleCache = new Map();
   const sessionInfoCache = new Map();
+  const cacheKey = (sessionId) => {
+    if (!kernelOperations) return sessionId;
+    try {
+      const identity = kernelOperations.captureIdentity();
+      return `${identity.endpoint}\0${identity.epoch}\0${sessionId}`;
+    } catch {
+      return null;
+    }
+  };
 
   const createTimeoutSignal = (timeoutMs) => {
     const controller = new AbortController();
@@ -137,7 +146,14 @@ export const createNotificationTemplateRuntime = (deps) => {
     if (!sessionId) return '';
 
     try {
-      const url = buildOpenCodeUrl(`/api/session/${encodeURIComponent(sessionId)}/message`, '');
+      if (kernelOperations) {
+        const page = (await kernelOperations.listMessages({ sessionID: sessionId, limit: 5 })).data;
+        const ordered = page.order === 'asc' ? [...page.items].reverse() : page.items;
+        const target = ordered.find((item) => item.role === 'assistant' && item.id === messageId)
+          ?? ordered.find((item) => item.role === 'assistant' && item.finish === 'stop');
+        return target?.text?.slice(0, maxLength) ?? '';
+      }
+      const url = buildOpenCodeUrl(`/session/${encodeURIComponent(sessionId)}/message`, '');
       const response = await fetch(`${url}?limit=5`, {
         method: 'GET',
         headers: {
@@ -149,23 +165,26 @@ export const createNotificationTemplateRuntime = (deps) => {
 
       if (!response.ok) return '';
 
-      // v2 pages messages as `{ data, cursor }`, newest first, and a message is
-      // a flat record: an assistant one carries `content[]`, not `parts`.
-      const page = await response.json().catch(() => null);
-      const messages = Array.isArray(page?.data) ? page.data : null;
-      if (!messages) return '';
+      const messages = await response.json().catch(() => null);
+      if (!Array.isArray(messages)) return '';
 
       let target = null;
       if (messageId) {
-        target = messages.find((message) => message?.id === messageId && message?.type === 'assistant');
+        target = messages.find((message) => message?.info?.id === messageId && message?.info?.role === 'assistant');
       }
       if (!target) {
-        target = messages.find((message) => message?.type === 'assistant' && message?.finish === 'stop') ?? null;
+        for (let i = messages.length - 1; i >= 0; i -= 1) {
+          const message = messages[i];
+          if (message?.info?.role === 'assistant' && message?.info?.finish === 'stop') {
+            target = message;
+            break;
+          }
+        }
       }
 
-      if (!target || !Array.isArray(target.content)) return '';
+      if (!target || !Array.isArray(target.parts)) return '';
 
-      return extractTextFromParts(target.content, maxLength);
+      return extractTextFromParts(target.parts, maxLength);
     } catch {
       return '';
     }
@@ -173,12 +192,13 @@ export const createNotificationTemplateRuntime = (deps) => {
 
   const cacheSessionTitle = (sessionId, title) => {
     if (typeof sessionId === 'string' && sessionId.length > 0 && typeof title === 'string' && title.length > 0) {
-      sessionTitleCache.set(sessionId, title);
+      const key = cacheKey(sessionId);
+      if (key) sessionTitleCache.set(key, title);
     }
   };
 
   const getCachedSessionTitle = (sessionId) => {
-    return sessionTitleCache.get(sessionId) ?? null;
+    return sessionTitleCache.get(cacheKey(sessionId)) ?? null;
   };
 
   const maybeCacheSessionInfoFromEvent = (payload) => {
@@ -192,14 +212,19 @@ export const createNotificationTemplateRuntime = (deps) => {
 
   const fetchSessionInfo = async (sessionId) => {
     if (!sessionId) return null;
-
-    const cached = sessionInfoCache.get(sessionId);
+    const key = cacheKey(sessionId);
+    const cached = key ? sessionInfoCache.get(key) : null;
     if (cached && Date.now() - cached.at < SESSION_INFO_CACHE_TTL_MS) {
       return cached.data;
     }
 
     try {
-      const url = buildOpenCodeUrl(`/api/session/${encodeURIComponent(sessionId)}`, '');
+      if (kernelOperations) {
+        const data = (await kernelOperations.getSession({ sessionID: sessionId })).data;
+        if (key) sessionInfoCache.set(key, { data, at: Date.now() });
+        return data;
+      }
+      const url = buildOpenCodeUrl(`/session/${encodeURIComponent(sessionId)}`, '');
       const response = await fetch(url, {
         method: 'GET',
         headers: { Accept: 'application/json' },
@@ -209,9 +234,9 @@ export const createNotificationTemplateRuntime = (deps) => {
         console.warn(`[Notification] fetchSessionInfo: ${response.status} for session ${sessionId}`);
         return null;
       }
-      const data = unwrapOpenCodeResponse(await response.json().catch(() => null));
+      const data = await response.json().catch(() => null);
       if (data && typeof data === 'object') {
-        sessionInfoCache.set(sessionId, { data, at: Date.now() });
+        if (key) sessionInfoCache.set(key, { data, at: Date.now() });
         return data;
       }
       return null;

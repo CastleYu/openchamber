@@ -507,25 +507,20 @@ export const ContextPanel: React.FC = () => {
 
   // Lets an agent's browser.open create the tab it needs when none is open yet.
   // Registered from the panel because opening a tab is panel state, not
-  // something the browser view itself can do before it exists. Background on
-  // purpose: an agent working a page must not pop the panel open or steal the
-  // active tab while the user reads something else. The tab appears in the
-  // strip; browser.capture shows it only for the moment of the screenshot.
+  // something the browser view itself can do before it exists. Reveal the
+  // panel so Electron gives the webview a composited surface; capturePage()
+  // cannot capture the zero-width webview inside a closed panel.
   React.useEffect(() => {
     if (!effectiveDirectory) return;
-    return registerBrowserOpener((url) => openContextBrowser(effectiveDirectory, url, { reveal: false }));
+    return registerBrowserOpener((url) => openContextBrowser(effectiveDirectory, url));
   }, [effectiveDirectory, openContextBrowser]);
-  // The agent asked for a file to be shown. It opens in front of whatever tab
-  // the user had, on purpose: the agent is pointing at a result, and the prior
-  // tab is one click away.
+  const reorderContextPanelTabs = useUIStore((state) => state.reorderContextPanelTabs);
   const openContextFile = useUIStore((state) => state.openContextFile);
   React.useEffect(() => subscribeOpenchamberEvents((event) => {
     if (event.type !== 'file-open-request') return;
     const directory = event.directory ?? effectiveDirectory;
-    if (!directory) return;
-    openContextFile(directory, event.path);
+    if (directory) openContextFile(directory, event.path);
   }), [effectiveDirectory, openContextFile]);
-  const reorderContextPanelTabs = useUIStore((state) => state.reorderContextPanelTabs);
   const setSelectedFilePath = useFilesViewTabsStore((state) => state.setSelectedPath);
   const contextEditorTreeVisible = useUIStore((state) => state.contextEditorTreeVisible);
   const contextEditorTreeWidth = useUIStore((state) => state.contextEditorTreeWidth);
@@ -1386,13 +1381,10 @@ export const ContextPanel: React.FC = () => {
         {browserTabs.map((tab) => (
           <div
             key={tab.id}
-            // Invisible rather than display:none, so a background tab the agent
-            // is working keeps its layout and its snapshots read a real page.
             className={cn(
               'absolute inset-0',
-              activeTab?.id !== tab.id && 'invisible pointer-events-none'
+              activeTab?.id !== tab.id && 'hidden'
             )}
-            aria-hidden={activeTab?.id !== tab.id || undefined}
           >
             <BrowserPane initialUrl={tab.targetPath ?? ''} directory={directoryKey} tabID={tab.id} />
           </div>

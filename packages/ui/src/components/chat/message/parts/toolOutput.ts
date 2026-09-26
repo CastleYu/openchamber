@@ -1,3 +1,5 @@
+import { isShellTool } from '../toolKinds';
+
 const MAX_SYNTHETIC_TERMINAL_CELLS = 100_000;
 
 interface TerminalRenderBudget {
@@ -156,4 +158,3 @@ export const getToolOutput = (
 export const getStreamingOutputAppend = (previous: string, next: string): string | undefined => {
     return next.startsWith(previous) ? next.slice(previous.length) : undefined;
 };
-import { isShellTool } from '@/lib/opencode/tools';

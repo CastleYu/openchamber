@@ -1,5 +1,4 @@
-import type { Session } from '@/lib/opencode/model';
-import type { Part } from '@/lib/opencode/model';
+import type { Part, Session } from '@/lib/opencode/model';
 import { notifyGitStatusInvalidated } from '@/lib/gitStatusInvalidation';
 import type { WorktreeMetadata } from '@/types/worktree';
 

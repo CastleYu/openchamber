@@ -2,8 +2,9 @@ import React from 'react';
 import type { Message, Part } from '@/lib/opencode/model';
 import { WorkerHighlightedCode } from '@/components/code/WorkerHighlightedCode';
 
+import { deriveMessageRole } from '@/components/chat/message/messageRole';
 import { Icon } from "@/components/icon/Icon";
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getSelectableModelId, useConfigStore, type ProviderWithModelList } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { computeCacheHitRate, findLatestContextFill } from '@/stores/utils/tokenUtils';
@@ -22,18 +23,6 @@ import { formatDateTimeForPreference } from '@/lib/timeFormat';
 import { ScrollableOverlay } from '@/components/ui/ScrollableOverlay';
 
 type SessionMessage = { info: Message; parts: Part[] };
-
-type ProviderModelLike = {
-  id?: string;
-  name?: string;
-  limit?: { context?: number };
-};
-
-type ProviderLike = {
-  id?: string;
-  name?: string;
-  models?: ProviderModelLike[];
-};
 
 type TokenBreakdown = {
   input: number;
@@ -74,31 +63,10 @@ const toNonNegativeNumber = (value: unknown): number => {
   return value;
 };
 
-const extractTokenBreakdown = (message: SessionMessage): TokenBreakdown => {
-  const tokenCandidate = (message.info as { tokens?: unknown }).tokens;
-  const source =
-    tokenCandidate !== undefined
-      ? tokenCandidate
-      : (message.parts.find((part) => (part as { tokens?: unknown }).tokens !== undefined) as { tokens?: unknown } | undefined)?.tokens;
-
-  if (typeof source === 'number') {
-    return {
-      ...EMPTY_BREAKDOWN,
-      total: toNonNegativeNumber(source),
-    };
-  }
-
-  if (!source || typeof source !== 'object') {
-    return EMPTY_BREAKDOWN;
-  }
-
-  const breakdown = source as {
-    total?: unknown;
-    input?: unknown;
-    output?: unknown;
-    reasoning?: unknown;
-    cache?: { read?: unknown; write?: unknown };
-  };
+const extractTokenBreakdown = (message: SessionMessage): TokenBreakdown | null => {
+  const breakdown = (message.info.role === 'assistant' ? message.info.tokens : undefined)
+    ?? message.parts.find((part) => part.type === 'step-finish')?.tokens;
+  if (!breakdown) return null;
 
   const input = toNonNegativeNumber(breakdown.input);
   const output = toNonNegativeNumber(breakdown.output);
@@ -201,8 +169,10 @@ const addBuckets = (target: ContextBuckets, value: ContextBuckets): ContextBucke
 });
 
 const deriveRoleBucket = (message: SessionMessage): 'user' | 'assistant' | 'tool' | 'other' => {
-  if (message.info.role === 'user') return 'user';
-  if (message.info.role === 'assistant') return 'assistant';
+  const roleInfo = deriveMessageRole(message.info);
+  if (roleInfo.isUser) return 'user';
+  if (roleInfo.role === 'assistant') return 'assistant';
+  if (roleInfo.role === 'tool') return 'tool';
   return 'other';
 };
 
@@ -247,12 +217,12 @@ const formatDateTime = (timestamp: number | null, timeFormatPreference: TimeForm
 };
 
 const resolveProviderAndModel = (
-  providers: ProviderLike[],
+  providers: ProviderWithModelList[],
   providerID: string,
   modelID: string,
 ): { providerName: string; modelName: string; contextLimit: number | null } => {
   const provider = providers.find((entry) => entry.id === providerID);
-  const model = provider?.models?.find((entry) => entry.id === modelID);
+  const model = provider?.models.find((entry) => getSelectableModelId(entry) === modelID);
 
   return {
     providerName: provider?.name || providerID || '-',
@@ -313,8 +283,8 @@ export const ContextPanelContent: React.FC = () => {
   const viewModel = React.useMemo(() => {
     const currentSession = currentSessionId ? sessions.find((session) => session.id === currentSessionId) ?? null : null;
 
-    const assistantMessages = sessionMessages.filter((entry) => entry.info.role === 'assistant');
-    const userMessages = sessionMessages.filter((entry) => entry.info.role === 'user');
+    const assistantMessages = sessionMessages.filter((entry) => deriveMessageRole(entry.info).role === 'assistant');
+    const userMessages = sessionMessages.filter((entry) => deriveMessageRole(entry.info).isUser);
 
     // After a compaction the fill is unknown until a response reports tokens;
     // the compaction record itself still supplies the last-turn breakdown.
@@ -322,7 +292,8 @@ export const ContextPanelContent: React.FC = () => {
     const contextMessage = contextFill ? sessionMessages[contextFill.index] ?? null : null;
     const isCompacted = contextFill?.state === 'compacted';
 
-    const tokenBreakdown = contextMessage ? extractTokenBreakdown(contextMessage) : EMPTY_BREAKDOWN;
+    const measuredTokens = contextMessage ? extractTokenBreakdown(contextMessage) : null;
+    const tokenBreakdown = measuredTokens ?? EMPTY_BREAKDOWN;
 
     // Cache hit rate for the last assistant message. `input` is the non-cached portion
     // (total input - cache.read - cache.write per SDK's session.ts:getUsage),
@@ -332,29 +303,28 @@ export const ContextPanelContent: React.FC = () => {
       cache: { read: tokenBreakdown.cacheRead, write: tokenBreakdown.cacheWrite },
     });
 
-    const totalAssistantCost = assistantMessages.reduce((sum, message) => {
-      const cost = toNonNegativeNumber((message.info as { cost?: unknown }).cost);
-      return sum + cost;
+    const totalAssistantCost = assistantMessages.reduce<number | null>((sum, message) => {
+      if (sum === null || message.info.role !== 'assistant' || message.info.cost === undefined) return null;
+      return sum + message.info.cost;
     }, 0);
 
-    const latestAssistantInfo = (contextMessage?.info ?? null) as (Message & { providerID?: string; modelID?: string }) | null;
+    const latestAssistantInfo = contextMessage?.info.role === 'assistant' ? contextMessage.info : null;
     const providerModel = resolveProviderAndModel(
-      providers as ProviderLike[],
+      providers,
       latestAssistantInfo?.providerID || '',
       latestAssistantInfo?.modelID || '',
     );
 
     const contextLimit = providerModel.contextLimit;
-    const usagePercent = isCompacted
+    const usagePercent = isCompacted || !measuredTokens
       ? null
       : contextLimit && contextLimit > 0
         ? Math.min(999, (tokenBreakdown.total / contextLimit) * 100)
         : 0;
 
-    // OpenCode v2 delivers instruction text as its own `system` message
-    // instead of hanging a `system` string off the first user message.
-    const systemMessage = [...sessionMessages].reverse().find((entry) => entry.info.role === 'system');
-    const systemPrompt = systemMessage?.info.role === 'system' ? systemMessage.info.text : '';
+    const systemPrompt = ([...sessionMessages].reverse().find(
+      (entry) => deriveMessageRole(entry.info).isUser && typeof (entry.info as { system?: unknown }).system === 'string',
+    )?.info as { system?: string } | undefined)?.system || '';
 
     const computedBreakdown = computeContextBreakdown(sessionMessages, systemPrompt);
 
@@ -378,6 +348,8 @@ export const ContextPanelContent: React.FC = () => {
       lastActivityAt: (lastMessageTs ?? currentSession?.time?.created ?? null) as number | null,
       providerModel,
       tokenBreakdown,
+      hasTokenUsage: measuredTokens !== null,
+      isCompacted,
       usagePercent,
       cacheHitRate,
       totalAssistantCost,
@@ -447,7 +419,7 @@ export const ContextPanelContent: React.FC = () => {
           </div>
           <div className="mt-1.5 typography-micro font-medium tabular-nums text-foreground/80">
             {viewModel.usagePercent === null
-              ? t('contextUsage.compacted.description')
+              ? viewModel.isCompacted ? t('contextUsage.compacted.description') : '—'
               : t('contextSidebar.context.percentUsed', { percent: viewModel.usagePercent.toFixed(1) })}
           </div>
         </div>
@@ -458,7 +430,7 @@ export const ContextPanelContent: React.FC = () => {
             { label: t('contextSidebar.stats.messages'), value: formatNumber(viewModel.messagesCount) },
             { label: t('contextSidebar.stats.user'), value: formatNumber(viewModel.userMessagesCount) },
             { label: t('contextSidebar.stats.assistant'), value: formatNumber(viewModel.assistantMessagesCount) },
-            { label: t('contextSidebar.stats.cost'), value: formatMoney(viewModel.totalAssistantCost) },
+            { label: t('contextSidebar.stats.cost'), value: viewModel.totalAssistantCost === null ? '—' : formatMoney(viewModel.totalAssistantCost) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg bg-[var(--surface-elevated)]/70 px-3 py-2.5">
               <div className="typography-micro text-muted-foreground/70">{item.label}</div>
@@ -486,7 +458,7 @@ export const ContextPanelContent: React.FC = () => {
               <div key={item.label}>
                 <div className="typography-micro text-muted-foreground/70">{item.label}</div>
                 <div className="mt-0.5 typography-ui-label tabular-nums text-foreground">
-                  {item.value !== null && item.value !== undefined
+                  {viewModel.hasTokenUsage && item.value !== null && item.value !== undefined
                     ? item.format === 'percent'
                       ? `${item.value.toFixed(1)}%`
                       : formatNumber(item.value)
@@ -533,7 +505,8 @@ export const ContextPanelContent: React.FC = () => {
           <div className="typography-micro text-muted-foreground">{t('contextSidebar.section.rawMessages')}</div>
           <div className="mt-2.5 space-y-1">
             {[...sessionMessages].reverse().map((message) => {
-              const role = message.info.role;
+              const roleInfo = deriveMessageRole(message.info);
+              const role = roleInfo.role;
               const isAssistant = role === 'assistant';
               const isUser = role === 'user';
               const isExpanded = expandedRawMessages[message.info.id] === true;

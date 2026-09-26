@@ -40,7 +40,6 @@ import { replaceWithCaret } from './documentEdits';
 import type { ComposerEditorViewStore } from './viewStore';
 import { composerEditorTheme, composerSelectionExtension } from './theme';
 import { handleComposerHostMouseDown } from './hostMouseDown';
-import { getComposerHeightLimit } from './heightLimit';
 import { restoreDeferredEnterModifiers } from '../keyboardPolicy';
 
 export interface ComposerSelection {
@@ -131,6 +130,7 @@ export interface ComposerEditorProps {
     'aria-label'?: string;
     'data-testid'?: string;
 }
+
 
 /**
  * The text inserted by a transaction, used to tell a typed `@` from a pasted
@@ -442,14 +442,12 @@ export const ComposerEditor = React.forwardRef<ComposerEditorHandle, ComposerEdi
                     getComputedStyle(view.contentDOM).lineHeight || '',
                 );
                 if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
-                const cap = getComposerHeightLimit({
-                    maxLinesHeight: lineHeight * maxLines,
-                    boundHeight: boundEl?.clientHeight,
-                    surroundingHeight: branch
-                        ? branch.offsetHeight - view.scrollDOM.offsetHeight
-                        : undefined,
-                    boundGapPx,
-                });
+                let cap = lineHeight * maxLines;
+                if (boundEl && branch) {
+                    const chrome = branch.offsetHeight - view.scrollDOM.offsetHeight;
+                    const available = boundEl.clientHeight - chrome - boundGapPx;
+                    if (available > 0) cap = Math.min(cap, available);
+                }
                 const next = `${cap}px`;
                 // The scroller growing re-fires the observer with an unchanged
                 // result; writing only on change keeps that loop silent.

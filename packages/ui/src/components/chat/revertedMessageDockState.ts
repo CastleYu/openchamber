@@ -1,9 +1,9 @@
-import type { Message, Part, UserMessage } from '@/lib/opencode/model';
+import type { Message, Part } from '@/lib/opencode/model';
 import type { State } from '@/sync/types';
 import { findMessageIndex } from '@/sync/message-ordering';
 
 type RevertedMessageRecord = {
-    message: UserMessage;
+    message: Message & { role: 'user' };
     parts: Part[];
 };
 
@@ -20,7 +20,7 @@ export const EMPTY_REVERTED_MESSAGE_DOCK_STATE: RevertedMessageDockState = {
     records: EMPTY_REVERTED_RECORDS,
 };
 
-const isUserMessage = (message: Message): message is UserMessage => {
+const isUserMessage = (message: Message): message is Message & { role: 'user' } => {
     return message.role === 'user';
 };
 
@@ -45,7 +45,7 @@ export const buildRevertedMessageDockState = (
     }
 
     const session = state.session.find((item) => item.id === sessionId);
-    const revertMessageID = session?.revert?.messageID;
+    const revertMessageID = (session as { revert?: { messageID?: string } } | undefined)?.revert?.messageID;
     if (!revertMessageID) {
         return EMPTY_REVERTED_MESSAGE_DOCK_STATE;
     }

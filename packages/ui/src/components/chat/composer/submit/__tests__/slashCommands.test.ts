@@ -56,6 +56,7 @@ describe('findMagicPromptCommand', () => {
         expect(findMagicPromptCommand('undo')).toBeNull();
         expect(findMagicPromptCommand('timeline')).toBeNull();
         expect(findMagicPromptCommand('compact')).toBeNull();
+        expect(findMagicPromptCommand('fork')).toBeNull();
     });
 
     test('an unknown name finds nothing', () => {
@@ -70,6 +71,14 @@ describe('planLocalSlashCommand', () => {
             kind: 'action',
             attachedContext: 'retain',
         });
+    });
+
+    test('/fork text is a local session action and retains existing attachments', () => {
+        expect(planLocalSlashCommand('/fork another approach', 'normal', true, true)).toEqual({
+            command: { name: 'fork', argument: 'another approach' },
+            kind: 'action', attachedContext: 'retain',
+        });
+        expect(planLocalSlashCommand('/fork another approach', 'normal', false, false)).toBeNull();
     });
 
     test('prompt commands send attached context instead of disabling command parsing', () => {

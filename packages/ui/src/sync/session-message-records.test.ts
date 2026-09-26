@@ -1,49 +1,32 @@
 import { describe, expect, test } from 'bun:test';
-import type { Message, Part, Session } from '@/lib/opencode/model';
+import type { Message, Part } from '@/lib/opencode/model'
 
 import { buildSessionMessageRecordsSnapshot } from './sync-context';
 import { INITIAL_STATE, type State } from './types';
 
-// v2 messages carry no `parentID`; the argument is kept only so the fixtures
-// still read as "this reply belongs to that prompt".
-const message = (id: string, role: 'user' | 'assistant', _parentID?: string, created = 1): Message =>
-  role === 'user'
-    ? { id, role, sessionID: 'ses_1', time: { created } }
-    : { id, role, sessionID: 'ses_1', time: { created }, agent: 'build', providerID: 'provider', modelID: 'model' };
+const message = (id: string, role: 'user' | 'assistant', parentID?: string, created = 1): Message => ({
+  id,
+  role,
+  sessionID: 'ses_1',
+  ...(parentID ? { parentID } : {}),
+  time: { created },
+} as Message);
 
 const textPart = (id: string, text: string): Part => ({
   id,
-  sessionID: 'ses_1',
-  messageID: 'msg_1',
   type: 'text',
   text,
-});
+} as Part);
 
 const taskPart = (id: string, sessionId?: string): Part => ({
   id,
-  sessionID: 'ses_1',
-  messageID: 'msg_1',
   type: 'tool',
-  callID: id,
   tool: 'task',
   state: {
     status: 'running',
-    input: {},
-    time: { start: 1 },
     metadata: sessionId ? { sessionId } : {},
   },
-});
-
-const session = (overrides: Partial<Session> = {}): Session => ({
-  id: 'ses_1',
-  projectID: 'proj_1',
-  directory: '/repo',
-  title: 'Session',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-  time: { created: 1, updated: 1 },
-  ...overrides,
-});
+} as unknown as Part);
 
 const state = (partial: Partial<State>): State => ({
   ...INITIAL_STATE,
@@ -58,7 +41,7 @@ describe('buildSessionMessageRecordsSnapshot', () => {
 
     const snapshot = buildSessionMessageRecordsSnapshot(
       state({
-        session: [session({ revert: { messageID: marker.id } })],
+        session: [{ id: 'ses_1', revert: { messageID: marker.id } } as State['session'][number]],
         message: { ses_1: [before, marker, after] },
       }),
       'ses_1',

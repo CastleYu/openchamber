@@ -13,10 +13,10 @@ type FixtureSession = Session & { parentID?: string };
 const session = (id: string, parentID?: string): Session => {
   const value: FixtureSession = {
     id,
+    slug: id,
     projectID: 'project',
-    cost: 0,
-    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
     title: id,
+    version: '1',
     directory: '/workspace',
     time: { created: 1, updated: 1 },
   };
@@ -147,6 +147,8 @@ describe('useSessionGrouping malformed hierarchy fallbacks', () => {
         setEditTitle: () => undefined,
         editingId: null,
         editTitle: '',
+        copiedSessionId: null,
+        setCopiedSessionId: () => undefined,
       }).handleDeleteSession;
       return null;
     };

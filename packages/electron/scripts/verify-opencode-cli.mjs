@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseOpenCodeCliVersion, readPinnedOpenCodeCliVersion } from './opencode-cli-version.mjs';
+import { parseOpenCodeCliVersion, resolveOpenCodeCliVersion } from './opencode-cli-version.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const electronRoot = path.resolve(__dirname, '..');
@@ -75,7 +75,7 @@ const main = () => {
   const mode = process.argv[2];
   if (mode !== '--staged' && mode !== '--packaged') usage();
 
-  const expectedVersion = readPinnedOpenCodeCliVersion();
+  const expectedVersion = resolveOpenCodeCliVersion();
   if (mode === '--staged') {
     assertBinary(path.join(electronRoot, 'resources', 'opencode-cli', binaryName()), expectedVersion);
     return;

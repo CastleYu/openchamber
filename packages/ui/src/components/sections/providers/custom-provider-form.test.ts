@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  buildIntegrationKeyRequest,
+  buildAuthSetRequest,
   buildProviderUpsertRequest,
   isConfigDefinedCustomProvider,
   isCustomOpenAICompatibleProvider,
@@ -69,16 +69,16 @@ describe('validateCustomProvider', () => {
       name: 'Custom Provider',
       apiKey: 'sk-secret',
       config: {
-        package: 'aisdk:@ai-sdk/openai-compatible',
+        npm: '@ai-sdk/openai-compatible',
         name: 'Custom Provider',
-        settings: {
+        options: {
           baseURL: 'https://api.example.com/v1',
-        },
-        headers: {
-          'X-Test': 'enabled',
+          headers: {
+            'X-Test': 'enabled',
+          },
         },
         models: {
-          'model-a': { modelID: 'model-a', name: 'Model A' },
+          'model-a': { name: 'Model A' },
         },
       },
     });
@@ -104,7 +104,7 @@ describe('validateCustomProvider', () => {
       existingProviderIDs: new Set(),
     });
 
-    expect(result.result?.config.package).toBe('aisdk:@ai-sdk/openai');
+    expect(result.result?.config.npm).toBe('@ai-sdk/openai');
   });
 
   test('rejects missing credentials', () => {
@@ -200,7 +200,7 @@ describe('validateCustomProvider', () => {
 });
 
 describe('request construction', () => {
-  test('builds integration key and provider upsert requests', () => {
+  test('builds auth.set and provider upsert requests', () => {
     const validated = validateCustomProvider({
       form: baseForm(),
       t,
@@ -208,9 +208,9 @@ describe('request construction', () => {
     });
     const plan = validated.result!;
 
-    expect(buildIntegrationKeyRequest(plan)).toEqual({
-      integrationID: 'custom-provider',
-      key: 'sk-test',
+    expect(buildAuthSetRequest(plan)).toEqual({
+      providerID: 'custom-provider',
+      auth: { type: 'api', key: 'sk-test' },
     });
     expect(buildProviderUpsertRequest(plan)).toEqual({
       providerID: 'custom-provider',
@@ -231,14 +231,14 @@ describe('request construction', () => {
     expect(buildProviderUpsertRequest(plan, { scope: 'custom' }).scope).toBe('custom');
   });
 
-  test('omits the integration key request when using env credentials', () => {
+  test('omits auth.set when using env credentials', () => {
     const validated = validateCustomProvider({
       form: baseForm({ apiKey: '{env:MY_KEY}' }),
       t,
       existingProviderIDs: new Set(),
     });
 
-    expect(buildIntegrationKeyRequest(validated.result!)).toBeNull();
+    expect(buildAuthSetRequest(validated.result!)).toBeNull();
   });
 });
 
@@ -316,7 +316,7 @@ describe('provider edit helpers', () => {
     expect(state.headers[0]).toEqual({ row: state.headers[0].row, key: 'X-Campus', value: '1' });
   });
 
-  test('prefills the protocol from a v1 model api.npm', () => {
+  test('prefills the protocol from a custom provider model', () => {
     const state = providerToCustomFormState({
       id: 'responses-api',
       options: { baseURL: 'https://api.example.com/v1' },
@@ -324,31 +324,6 @@ describe('provider edit helpers', () => {
     });
 
     expect(state.protocol).toBe('openai-responses');
-  });
-
-  test('reads a v2 provider: package, settings, headers, modelID', () => {
-    const state = providerToCustomFormState({
-      id: 'campus-llm',
-      name: 'Campus LLM',
-      env: ['CAMPUS_KEY'],
-      package: 'aisdk:@ai-sdk/anthropic',
-      settings: { baseURL: 'https://llm.example.edu/v1' },
-      headers: { 'X-Campus': '1' },
-      models: { fast: { modelID: 'fast-model', name: 'Fast' } },
-    });
-
-    expect(state.protocol).toBe('anthropic-messages');
-    expect(state.baseURL).toBe('https://llm.example.edu/v1');
-    expect(state.headers[0]).toEqual({ row: state.headers[0].row, key: 'X-Campus', value: '1' });
-    expect(state.models[0]).toEqual({ row: state.models[0].row, id: 'fast-model', name: 'Fast' });
-  });
-
-  test('a v2 provider with only a known package still reads as custom', () => {
-    expect(isCustomOpenAICompatibleProvider({
-      id: 'campus-llm',
-      package: 'aisdk:@ai-sdk/openai-compatible',
-      models: [],
-    })).toBe(true);
   });
 
   test('requires a config-layer source before treating a provider as editable custom', () => {

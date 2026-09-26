@@ -19,31 +19,31 @@ import {
 import { toast } from '@/components/ui';
 import { Icon } from "@/components/icon/Icon";
 import type { IconName } from "@/components/icon/icons";
+import { reloadOpenCodeConfiguration } from '@/stores/useAgentsStore';
+import type { ConfigChangeScope } from '@/lib/configSync';
+import { recordDeferredOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { cn } from '@/lib/utils';
 import type { ModelMetadata } from '@/types';
 import { getCurrentIntlLocale, useI18n } from '@/lib/i18n';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { opencodeClient } from '@/lib/opencode/client';
-import type { IntegrationInfo } from '@opencode/client';
-import type { Provider } from '@/lib/opencode/model';
-import { z } from 'zod';
+import { ProvidersPageV2 } from './ProvidersPageV2';
 import { requiresProviderAuth, shouldLoadAvailableProviders } from './providerAvailability';
 import {
+  getOAuthAuthMethods,
+  parseAuthPayload,
   providerHasCredentials,
+  requiresOpenCodeRestartAfterOAuth,
   shouldAutoOpenAuthPanel,
   shouldShowApiKeyAuth,
   shouldShowModelsSection,
-  findIntegrationForProvider,
-  getCredentialConnections,
-  getOAuthMethods,
-  getProviderConnections,
-  getSignInIntegrationId,
+  type AuthMethod,
+  type OAuthAuthMethodEntry,
 } from './providerAuth';
 import { CustomProviderForm } from './CustomProviderForm';
-
-import { ProviderOAuthMethods } from './ProviderOAuthMethods';
+import { ProviderOAuthMethods, type ProviderOAuthMethod } from './ProviderOAuthMethods';
 import {
-  buildIntegrationKeyRequest,
+  buildAuthSetRequest,
   buildProviderUpsertRequest,
   CUSTOM_PROVIDER_ID,
   isConfigDefinedCustomProvider,
@@ -53,6 +53,14 @@ import {
   type CustomProviderPersistPlan,
   type ProviderConfigScope,
 } from './custom-provider-form';
+
+/**
+ * Providers whose credentials come from several env vars (Bedrock, Azure,
+ * Vertex) never get a single resolved `Provider.key` from OpenCode, so the
+ * declared env list is the only signal that they are configured at all.
+ */
+const providerDeclaresEnv = (provider: { env?: string[] } | undefined): boolean =>
+  Array.isArray(provider?.env) && provider.env.some((name) => name.trim().length > 0);
 
 const formatCompactNumber = (value: number) => new Intl.NumberFormat(getCurrentIntlLocale(), {
   notation: 'compact',
@@ -85,6 +93,7 @@ interface ProviderSourceInfo {
 }
 
 interface ProviderSources {
+  auth: ProviderSourceInfo;
   user: ProviderSourceInfo;
   project: ProviderSourceInfo;
   custom?: ProviderSourceInfo;
@@ -92,6 +101,16 @@ interface ProviderSources {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
+
+const toOAuthMethods = (
+  entries: OAuthAuthMethodEntry[],
+  fallbackLabel: (index: number) => string,
+): ProviderOAuthMethod[] =>
+  entries.map(({ method, methodIndex }) => ({
+    index: methodIndex,
+    label: method.label || method.name || fallbackLabel(methodIndex),
+    prompts: method.prompts,
+  }));
 
 const normalizeProviderEntry = (entry: unknown): ProviderOption | null => {
   if (typeof entry === 'string') {
@@ -139,22 +158,13 @@ const parseProvidersPayload = (payload: unknown): ProviderOption[] => {
   });
 };
 
-/**
- * An API key written straight into the provider entry. OpenCode 2 keeps request
- * settings under `settings`, an open record whose typed keys (timeout,
- * compaction, transport since 2.0.10) never include the key itself, so it is
- * read as a free-form entry and kept only when it is a string.
- */
-const providerApiKeySetting = z.string();
-const readProviderApiKeySetting = (provider: Pick<Provider, 'settings'> | undefined): string | null =>
-  providerApiKeySetting.safeParse(provider?.settings?.apiKey).data ?? null;
-
-export const ProvidersPage: React.FC = () => {
+const ProvidersPageV1: React.FC = () => {
   const { t } = useI18n();
   // Settings browses whichever project its own selector points at; the app
   // stays where it is.
   const settingsDirectory = useSettingsDirectory();
-  const providers = useConfigStore((state) => selectProvidersForDirectory(state, settingsDirectory));
+  const providers = useConfigStore((state) => selectProvidersForDirectory(state, settingsDirectory))
+    .filter((provider) => provider.generation === 'oc1');
   const selectedProviderId = useConfigStore((state) => state.selectedProviderId);
   const setSelectedProvider = useConfigStore((state) => state.setSelectedProvider);
   const getModelMetadata = useConfigStore((state) => state.getModelMetadata);
@@ -163,7 +173,7 @@ export const ProvidersPage: React.FC = () => {
   const hideAllModels = useUIStore((state) => state.hideAllModels);
   const showAllModels = useUIStore((state) => state.showAllModels);
 
-  const [integrations, setIntegrations] = React.useState<IntegrationInfo[] | null>(null);
+  const [authMethodsByProvider, setAuthMethodsByProvider] = React.useState<Record<string, AuthMethod[]>>({});
   const [authLoading, setAuthLoading] = React.useState(false);
   const [apiKeyInputs, setApiKeyInputs] = React.useState<Record<string, string>>({});
   const [authBusyKey, setAuthBusyKey] = React.useState<string | null>(null);
@@ -178,9 +188,6 @@ export const ProvidersPage: React.FC = () => {
   // Bumped after auth writes so the source snapshot is refetched even when the
   // selected provider id is unchanged (OAuth/API key success path).
   const [providerSourcesRevision, setProviderSourcesRevision] = React.useState(0);
-  // Bumped after a credential write so the integration snapshot (which owns the
-  // "connected" signal in v2) is refetched even when the selection is unchanged.
-  const [integrationsRevision, setIntegrationsRevision] = React.useState(0);
   const [showAuthPanel, setShowAuthPanel] = React.useState(false);
   const [authPanelDismissedForId, setAuthPanelDismissedForId] = React.useState<string | null>(null);
   const [editingCustomProviderId, setEditingCustomProviderId] = React.useState<string | null>(null);
@@ -214,15 +221,18 @@ export const ProvidersPage: React.FC = () => {
 
     let isMounted = true;
 
-    const loadIntegrations = async () => {
+    const loadAuthMethods = async () => {
       setAuthLoading(true);
       try {
-        const { data } = await opencodeClient.getSdkClient().integration.list();
+        const result = await opencodeClient.getSdkClient().provider.auth();
+        if (result.error) {
+          throw new Error(`provider.auth failed: ${String(result.error)}`);
+        }
         if (!isMounted) return;
-        setIntegrations(data);
+        setAuthMethodsByProvider(parseAuthPayload(result.data));
       } catch (error) {
         if (!isMounted) return;
-        console.error('Failed to load provider integrations:', error);
+        console.error('Failed to load provider auth methods:', error);
         toast.error(t('settings.providers.page.toast.authMethodsLoadFailed'));
       } finally {
         if (isMounted) {
@@ -231,12 +241,12 @@ export const ProvidersPage: React.FC = () => {
       }
     };
 
-    loadIntegrations();
+    loadAuthMethods();
 
     return () => {
       isMounted = false;
     };
-  }, [selectedProviderId, integrationsRevision, t]);
+  }, [selectedProviderId, t]);
 
   React.useEffect(() => {
     if (!shouldLoadAvailableProviders(isAddMode)) {
@@ -249,15 +259,12 @@ export const ProvidersPage: React.FC = () => {
       setAvailableLoading(true);
       setAvailableError(null);
       try {
-        // v2's provider list is what is configured or connected right now;
-        // the providers a user can still sign in to are the integrations.
-        // MCP servers with OAuth register as integrations too and are not
-        // providers, so they are left out.
-        const { data } = await opencodeClient.getSdkClient().integration.list();
+        const result = await opencodeClient.getSdkClient().provider.list();
+        if (result.error) {
+          throw new Error(`provider.list failed: ${String(result.error)}`);
+        }
         if (!isMounted) return;
-        setAvailableProviders(parseProvidersPayload(
-          data.filter((integration) => !integration.id.startsWith('mcp_') && integration.connections.length === 0),
-        ));
+        setAvailableProviders(parseProvidersPayload(result.data));
       } catch (error) {
         if (!isMounted) return;
         console.error('Failed to load available providers:', error);
@@ -335,20 +342,22 @@ export const ProvidersPage: React.FC = () => {
       return;
     }
     const sources = providerSources[selectedProviderId];
-    if (!sources || integrations === null) {
+    if (!sources) {
       return;
     }
     const provider = providers.find((entry) => entry.id === selectedProviderId);
     const hasCreds = providerHasCredentials({
-      connections: getProviderConnections(integrations, selectedProviderId),
-      optionsApiKey: readProviderApiKeySetting(provider),
+      key: provider?.key,
+      authSourceExists: sources.auth.exists,
+      optionsApiKey: (provider as { options?: { apiKey?: string | null } } | undefined)?.options?.apiKey ?? null,
+      envDeclared: providerDeclaresEnv(provider),
     });
     const isEditableCustomProvider = Boolean(
       provider && isConfigDefinedCustomProvider(provider, sources)
     );
     if (
       shouldAutoOpenAuthPanel({
-        integrationsLoaded: true,
+        sourcesLoaded: true,
         hasCredentials: hasCreds,
         userDismissed: authPanelDismissedForId === selectedProviderId,
         isEditableCustomProvider,
@@ -356,7 +365,7 @@ export const ProvidersPage: React.FC = () => {
     ) {
       setShowAuthPanel(true);
     }
-  }, [selectedProviderId, providerSources, providers, integrations, authPanelDismissedForId]);
+  }, [selectedProviderId, providerSources, providers, authPanelDismissedForId]);
 
   React.useEffect(() => {
     if (!selectedProviderId || selectedProviderId === ADD_PROVIDER_ID) {
@@ -405,26 +414,54 @@ export const ProvidersPage: React.FC = () => {
     setProviderSourcesRevision((revision) => revision + 1);
   }, []);
 
-  const refreshIntegrations = React.useCallback(() => {
-    setIntegrationsRevision((revision) => revision + 1);
-  }, []);
-
   const markAuthWriteSucceeded = React.useCallback((providerId: string) => {
-    // Optimistically record a connection so a providers refresh that has not yet
-    // landed cannot reopen the panel / hide models with a stale
-    // "Credentials missing" summary before the integration refetch arrives.
-    setIntegrations((prev) => (prev ?? []).map((integration) => (
-      integration.id === providerId && integration.connections.length === 0
-        ? { ...integration, connections: [{ type: 'credential', id: `pending:${providerId}`, label: providerId, method: 'key' }] }
-        : integration
-    )));
+    // Optimistically mark auth present so a providers refresh that has not yet
+    // stamped provider.key cannot reopen the panel / hide models with a stale
+    // "Credentials missing" summary before the source refetch lands.
+    setProviderSources((prev) => {
+      const existing = prev[providerId];
+      return {
+        ...prev,
+        [providerId]: {
+          auth: { exists: true, path: existing?.auth.path ?? null },
+          user: existing?.user ?? { exists: false, path: null },
+          project: existing?.project ?? { exists: false, path: null },
+          ...(existing?.custom ? { custom: existing.custom } : {}),
+        },
+      };
+    });
     setAuthPanelDismissedForId(null);
     setShowAuthPanel(false);
     setSelectedProvider(providerId);
     refreshProviderSources();
-    refreshIntegrations();
-  }, [refreshIntegrations, refreshProviderSources, setSelectedProvider]);
+  }, [refreshProviderSources, setSelectedProvider]);
 
+  // The mutation above already persisted to disk. If OpenCode is externally
+  // managed (e.g. the user is running a separate `opencode serve` they have to
+  // restart themselves), reloadOpenCodeConfiguration throws with
+  // `requiresManualRestart`. Surface the restart guidance instead of a
+  // misleading "mutation failed" toast and ensure the deferred-restart
+  // payload is recorded so the Settings page can show pending-restart
+  // guidance consistently across providers, API keys, custom providers,
+  // and disconnects.
+  const applyConfigReloadOrRecordDeferred = React.useCallback(
+    async (scope: ConfigChangeScope, idForDeferred?: string) => {
+      try {
+        await reloadOpenCodeConfiguration({ scopes: [scope], mode: 'active' });
+        return 'reloaded';
+      } catch (error) {
+        const requiresManual = (error as Error & { requiresManualRestart?: boolean })?.requiresManualRestart === true;
+        if (requiresManual) {
+          if (idForDeferred) {
+            recordDeferredOpenCodeRestart(scope, { id: idForDeferred });
+          }
+          return 'manual-restart';
+        }
+        throw error;
+      }
+    },
+    [],
+  );
   const selectedProvider = providers.find((provider) => provider.id === selectedProviderId);
   const selectedSources = selectedProviderId ? providerSources[selectedProviderId] : undefined;
 
@@ -439,15 +476,21 @@ export const ProvidersPage: React.FC = () => {
     setAuthBusyKey(busyKey);
 
     try {
-      await opencodeClient.getSdkClient().integration.connect.key({
-        integrationID: providerId,
-        key: apiKey,
+      const result = await opencodeClient.getSdkClient().auth.set({
+        providerID: providerId,
+        auth: { type: 'api', key: apiKey },
       });
+      if (result.error) {
+        throw new Error(t('settings.providers.page.toast.apiKeySaveFailed'));
+      }
 
       toast.success(t('settings.providers.page.toast.apiKeySaved'));
       setApiKeyInputs((prev) => ({ ...prev, [providerId]: '' }));
-      // OpenCode owns the credential and announces the catalog change itself
-      // (`credential.updated` → catalog refresh); nothing to reload here.
+      // Mutation succeeded: the auth key is on disk. The reload can fail with
+      // requiresManualRestart when OpenCode is externally managed; the helper
+      // records the deferred-restart payload instead of throwing a misleading
+      // "mutation failed" toast.
+      await applyConfigReloadOrRecordDeferred('providers', providerId);
       markAuthWriteSucceeded(providerId);
     } catch (error) {
       console.error('Failed to save API key:', error);
@@ -466,9 +509,12 @@ export const ProvidersPage: React.FC = () => {
     try {
       // Auth first so a failed key write cannot leave an orphan config that
       // blocks create validation, and so PUT can pass hasStoredAuth for literal keys.
-      const keyRequest = buildIntegrationKeyRequest(plan);
-      if (keyRequest) {
-        await opencodeClient.getSdkClient().integration.connect.key(keyRequest);
+      const authRequest = buildAuthSetRequest(plan);
+      if (authRequest) {
+        const authResult = await opencodeClient.getSdkClient().auth.set(authRequest);
+        if (authResult.error) {
+          throw new Error(t('settings.providers.page.toast.apiKeySaveFailed'));
+        }
       }
 
       const upsertBody = buildProviderUpsertRequest(plan, {
@@ -489,7 +535,7 @@ export const ProvidersPage: React.FC = () => {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        if (keyRequest) {
+        if (authRequest) {
           setCustomAuthFailureHint(t('settings.providers.page.custom.authFailure.configAfterAuth'));
         }
         throw new Error(payload?.error || t('settings.providers.page.toast.customProviderSaveFailed'));
@@ -502,7 +548,10 @@ export const ProvidersPage: React.FC = () => {
       setEditingCustomScope(null);
       setCustomAuthFailureHint(null);
       setLastCustomPersistId(null);
-      // OpenCode watches its config file and rebuilds the catalog on its own.
+      // Mutation succeeded; route through the helper so an externally managed
+      // OpenCode does not produce a misleading "save failed" toast for a write
+      // that already persisted.
+      await applyConfigReloadOrRecordDeferred('providers', plan.providerID);
       markAuthWriteSucceeded(plan.providerID);
     } catch (error) {
       console.error('Failed to save custom provider:', error);
@@ -516,8 +565,14 @@ export const ProvidersPage: React.FC = () => {
     }
   };
 
+  const oauthMethodFallbackLabel = (index: number) =>
+    t('settings.providers.page.auth.oauthMethodFallback', { index: String(index + 1) });
+
   const handleOAuthConnected = (providerId: string) => {
     setShowAuthPanel(false);
+    if (requiresOpenCodeRestartAfterOAuth(providerId)) {
+      recordDeferredOpenCodeRestart('providers', { id: providerId });
+    }
     // Optimistic mark + sources refetch so the page does not stick on a stale
     // "Credentials missing" summary while the providers refresh lands.
     markAuthWriteSucceeded(providerId);
@@ -528,21 +583,26 @@ export const ProvidersPage: React.FC = () => {
     setAuthBusyKey(busyKey);
 
     try {
-      // v2 keeps credentials in OpenCode, one record per stored login; the
-      // provider is disconnected once every one of them is gone. Env-backed
-      // connections are not removable from here — they live in the environment.
-      const credentials = getCredentialConnections(
-        findIntegrationForProvider(integrations ?? [], providerId),
+      const response = await runtimeFetch(
+        `/api/provider/${encodeURIComponent(providerId)}/auth?scope=all${settingsDirectory ? `&directory=${encodeURIComponent(settingsDirectory)}` : ''}`,
+        {
+          method: 'DELETE',
+          headers: { Accept: 'application/json' },
+        },
       );
-      const sdk = opencodeClient.getSdkClient();
-      for (const credential of credentials) {
-        await sdk.credential.remove({ credentialID: credential.id });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || t('settings.providers.page.toast.providerDisconnectFailed'));
       }
 
       toast.success(t('settings.providers.page.toast.providerDisconnected'));
+      // Use the helper so an externally managed OpenCode that requires a manual
+      // restart records the deferred-restart guidance instead of toasting a
+      // misleading "disconnect failed" for a write that already persisted.
+      await applyConfigReloadOrRecordDeferred('providers', providerId);
       setAuthPanelDismissedForId(null);
       refreshProviderSources();
-      refreshIntegrations();
     } catch (error) {
       console.error('Failed to disconnect provider:', error);
       toast.error(t('settings.providers.page.toast.providerDisconnectFailed'));
@@ -725,11 +785,12 @@ export const ProvidersPage: React.FC = () => {
               ) : (
                 <>
                   {(() => {
-                    const candidateIntegration = findIntegrationForProvider(integrations ?? [], candidateProviderId);
-                    const candidateOAuthMethods = getOAuthMethods(
-                      findIntegrationForProvider(integrations ?? [], getSignInIntegrationId(candidateProviderId)),
+                    const candidateAuthMethods = authMethodsByProvider[candidateProviderId] ?? [];
+                    const candidateOAuthMethods = toOAuthMethods(
+                      getOAuthAuthMethods(candidateAuthMethods),
+                      oauthMethodFallbackLabel,
                     );
-                    const showApiKey = shouldShowApiKeyAuth(candidateIntegration);
+                    const showApiKey = shouldShowApiKeyAuth(candidateAuthMethods);
 
                     return (
                       <>
@@ -767,7 +828,7 @@ export const ProvidersPage: React.FC = () => {
                         {candidateOAuthMethods.length > 0 ? (
                           <ProviderOAuthMethods
                             key={candidateProviderId}
-                            integrationId={getSignInIntegrationId(candidateProviderId)}
+                            providerId={candidateProviderId}
                             methods={candidateOAuthMethods}
                             onConnected={() => handleOAuthConnected(candidateProviderId)}
                             className={cn(showApiKey && 'border-t border-[var(--surface-subtle)] pt-2')}
@@ -797,23 +858,25 @@ export const ProvidersPage: React.FC = () => {
   }
 
   const providerModels = Array.isArray(selectedProvider.models) ? selectedProvider.models : [];
-  const selectedIntegration = findIntegrationForProvider(integrations ?? [], selectedProvider.id);
-  const oauthAuthMethods = getOAuthMethods(
-    findIntegrationForProvider(integrations ?? [], getSignInIntegrationId(selectedProvider.id)),
+  const providerAuthMethods = authMethodsByProvider[selectedProvider.id] ?? [];
+  const oauthAuthMethods = toOAuthMethods(
+    getOAuthAuthMethods(providerAuthMethods),
+    oauthMethodFallbackLabel,
   );
-  const showApiKeyAuth = shouldShowApiKeyAuth(selectedIntegration);
-  const integrationsLoaded = integrations !== null;
+  const showApiKeyAuth = shouldShowApiKeyAuth(providerAuthMethods);
   const sourcesLoaded = Boolean(selectedSources);
   const isEditableCustomProvider = sourcesLoaded
     && isConfigDefinedCustomProvider(selectedProvider, selectedSources);
   const hasCredentials = providerHasCredentials({
-    connections: getProviderConnections(integrations ?? [], selectedProvider.id),
-    optionsApiKey: readProviderApiKeySetting(selectedProvider),
+    key: selectedProvider.key,
+    authSourceExists: selectedSources?.auth.exists,
+    optionsApiKey: (selectedProvider as { options?: { apiKey?: string | null } }).options?.apiKey ?? null,
+    envDeclared: providerDeclaresEnv(selectedProvider),
   });
-  const authStatusIncomplete = requiresProviderAuth(integrationsLoaded, hasCredentials, isEditableCustomProvider);
+  const authStatusIncomplete = requiresProviderAuth(sourcesLoaded, hasCredentials, isEditableCustomProvider);
   const showModelsSection = shouldShowModelsSection({
     modelCount: providerModels.length,
-    integrationsLoaded,
+    sourcesLoaded,
     hasCredentials,
     isEditableCustomProvider,
   });
@@ -950,7 +1013,7 @@ export const ProvidersPage: React.FC = () => {
                 {oauthAuthMethods.length > 0 && (
                   <ProviderOAuthMethods
                     key={selectedProvider.id}
-                    integrationId={getSignInIntegrationId(selectedProvider.id)}
+                    providerId={selectedProvider.id}
                     methods={oauthAuthMethods}
                     onConnected={() => handleOAuthConnected(selectedProvider.id)}
                     className={cn(showApiKeyAuth && 'border-t border-[var(--surface-subtle)] pt-2')}
@@ -967,14 +1030,14 @@ export const ProvidersPage: React.FC = () => {
       >
             <div className="flex flex-col gap-2 py-1.5 @xl:flex-row @xl:items-center @xl:justify-between @xl:gap-8">
               <div className="flex min-w-0 flex-col">
-                {(hasCredentials || selectedSources?.user.exists || selectedSources?.project.exists || selectedSources?.custom?.exists) ? (
+                {selectedSources && (selectedSources.auth.exists || selectedSources.user.exists || selectedSources.project.exists || selectedSources.custom?.exists) ? (
                   <span className="typography-meta text-muted-foreground">
                     {t('settings.providers.page.connectionDetails.configuredIn')}{' '}
                     {[
-                      hasCredentials ? t('settings.providers.page.connectionDetails.source.authCredentials') : null,
-                      selectedSources?.user.exists ? t('settings.providers.page.connectionDetails.source.userConfig') : null,
-                      selectedSources?.project.exists ? t('settings.providers.page.connectionDetails.source.projectConfig') : null,
-                      selectedSources?.custom?.exists ? t('settings.providers.page.connectionDetails.source.customConfig') : null,
+                      selectedSources.auth.exists ? t('settings.providers.page.connectionDetails.source.authCredentials') : null,
+                      selectedSources.user.exists ? t('settings.providers.page.connectionDetails.source.userConfig') : null,
+                      selectedSources.project.exists ? t('settings.providers.page.connectionDetails.source.projectConfig') : null,
+                      selectedSources.custom?.exists ? t('settings.providers.page.connectionDetails.source.customConfig') : null,
                     ].filter(Boolean).join(', ')}
                   </span>
                 ) : (
@@ -1112,4 +1175,15 @@ export const ProvidersPage: React.FC = () => {
       ) : null}
     </SettingsPageLayout>
   );
+};
+
+export const ProvidersPage: React.FC = () => {
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  if (generation === 'oc2') return <ProvidersPageV2 />;
+  if (generation === 'oc1') return <ProvidersPageV1 />;
+  return null;
 };

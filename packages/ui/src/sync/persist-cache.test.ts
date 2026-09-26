@@ -67,10 +67,9 @@ const session = (
   projectID: "project",
   directory: sessionDirectory,
   title,
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  version: "1",
   time: { created: updated - 1, updated },
-})
+} as Session)
 
 beforeEach(async () => {
   storage = new TestStorage()
@@ -120,16 +119,6 @@ describe("persisted directory sessions", () => {
     const expectedIds = new Set(Array.from({ length: 50 }, (_, index) => session(index, index).id))
     expect(cached).toHaveLength(50)
     expect(cachedIds).toEqual(expectedIds)
-  })
-
-  test("drops cached records another build wrote without the fields the stores read", () => {
-    const key = `${storage.key(0) ?? ""}`
-    persistSessions(directory, [session(1, 1)])
-    const written = [...storage.values.keys()].find((item) => item.endsWith(".sessions")) ?? key
-    const stale = { ...session(2, 2), time: undefined }
-    storage.setItem(written, JSON.stringify([session(1, 1), stale, { id: "ses_003" }, "junk"]))
-
-    expect(readDirCache(directory).sessions?.map((item) => item.id)).toEqual(["ses_001"])
   })
 
   test("persists authoritative empty instead of resurrecting legacy sessions", () => {

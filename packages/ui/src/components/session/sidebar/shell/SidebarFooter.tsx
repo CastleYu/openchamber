@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Icon } from "@/components/icon/Icon";
 import { useI18n } from '@/lib/i18n';
+import { useUsageStatsAvailable } from '@/components/views/usage/useUsageStatsAvailability';
 
 type Props = {
   onOpenSettings: () => void;
+  onOpenUsage: () => void;
   onOpenShortcuts: () => void;
   onOpenAbout: () => void;
   onOpenUpdate: () => void;
@@ -17,6 +19,7 @@ const footerButtonClassName = 'inline-flex h-8 w-8 items-center justify-center r
 
 export function SidebarFooter({
   onOpenSettings,
+  onOpenUsage,
   onOpenShortcuts,
   onOpenAbout,
   onOpenUpdate,
@@ -24,6 +27,7 @@ export function SidebarFooter({
   showUpdateButton = true,
 }: Props): React.ReactNode {
   const { t } = useI18n();
+  const statsAvailable = useUsageStatsAvailable();
 
   if (!showRuntimeButtons && !showUpdateButton) {
     return null;
@@ -41,6 +45,14 @@ export function SidebarFooter({
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={4}><p>{t('sessions.sidebar.footer.actions.settings')}</p></TooltipContent>
           </Tooltip>
+          {statsAvailable ? <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" onClick={onOpenUsage} className={footerButtonClassName} aria-label={t('usageStats.openAction')}>
+                <Icon name="bar-chart-2" className="h-4.5 w-4.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}><p>{t('usageStats.openAction')}</p></TooltipContent>
+          </Tooltip> : null}
           <Tooltip>
             <TooltipTrigger asChild>
               <button type="button" onClick={onOpenShortcuts} className={footerButtonClassName} aria-label={t('sessions.sidebar.footer.actions.shortcuts')}>

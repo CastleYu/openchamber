@@ -7,10 +7,10 @@ import { installHookTestDom } from '../test-utils/testDom';
 
 const session = (id: string): Session => ({
   id,
+  slug: id,
   projectID: 'project',
-  cost: 0,
-  tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
   title: id,
+  version: '1',
   directory: '/workspace',
   time: { created: 1, updated: 1 },
 });

@@ -12,10 +12,11 @@ const sessionWithProjectMetadata = (
   project: SessionWithProjectMetadata['project'],
 ): SessionWithProjectMetadata => ({
   id: 'session',
+  slug: 'session',
   projectID,
   directory: '/workspace',
   title: 'Session',
-  cost: 0, tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+  version: '1',
   time: { created: 1, updated: 1 },
   project,
 });

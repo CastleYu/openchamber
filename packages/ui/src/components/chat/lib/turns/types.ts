@@ -10,6 +10,7 @@ type TurnActivityKind = 'tool' | 'reasoning' | 'justification';
 export interface TurnMessageRecord {
     messageId: string;
     role: string;
+    parentMessageId?: string;
     message: ChatMessageEntry;
     order: number;
 }
@@ -128,8 +129,7 @@ export interface TurnGroupingContext {
     diffStats?: TurnDiffStats;
     changedFiles?: TurnChangedFile[];
     userMessageCreatedAt?: number;
-    /** Model variant ("thinking" etc.) the turn ran with, read off its assistant messages. */
-    assistantVariant?: string;
+    userMessageVariant?: string;
     isWorking: boolean;
     isGroupExpanded?: boolean;
     toggleGroup?: () => void;

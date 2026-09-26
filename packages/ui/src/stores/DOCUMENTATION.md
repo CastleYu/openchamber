@@ -6,6 +6,15 @@ Update metadata may set `notifyOnly` for a personal runtime. `useUpdateStore` pr
 
 `packages/ui/src/stores` contains app-level Zustand stores for persistent UI state, runtime state, and feature caches.
 
+`usePluginsStore` keeps the configured plugin list separate from the OC2
+runtime inventory returned by official `plugin.list` and `plugin.check`.
+The inventory is scoped by endpoint, kernel epoch, generation and directory;
+a failed read marks status unknown, while only a successful complete inventory
+can mark a configured plugin as not reported. Registry-based version updates
+remain available on OC1. OC2 package updates use the exact reported target
+and refresh the inventory after installation; config entries keep their
+`sourcePath` so relative local specs resolve against the declaring file.
+
 Not all state in the UI belongs here.
 
 Use a store when state is:
@@ -18,6 +27,24 @@ Use a store when state is:
 Do not put high-frequency local component state here just because it is convenient.
 
 ## Architecture
+
+`useWebSearchStore` owns the OC2 web-search Settings snapshot. Its identity
+includes the runtime descriptor and directory; a failed refresh preserves the
+same-scope snapshot, and a kernel change invalidates writes from an old page.
+OC1 has no web-search provider-settings request. Search result parsing and
+first-use consent shapes live in `lib/opencode/websearch.ts`; the consent card
+uses the existing form answer/cancel actions.
+
+The page follows the Settings project selector without changing the chat's
+directory. `catalogRefresh.ts` reloads an already opened search snapshot after
+OC2 config, credential or web-search announcements. SDK requests reject a
+changed runtime binding; a late project read cannot overwrite another scope.
+
+The historical Stats view keeps OC2 `session.stats` reports in
+`components/views/usage/usageStatsStore.ts`, keyed by runtime, range and project.
+The cache is in memory and clears on runtime switch. An old read cannot fill
+the new runtime; a failed refresh keeps the last successful report and shows
+an error instead of zero usage. OC1 has no historical Stats request or entry.
 
 ### Project resource modes
 
@@ -49,21 +76,6 @@ applies to web/mobile/VS Code visibility; only desktop can enter a native tray.
 
 There are multiple store categories in this directory.
 
-### Catalog refresh
-
-`catalogRefresh.ts` re-reads the lists Settings and the composer show — agents,
-commands, skills, MCP servers, plugins, providers — when OpenCode reports that
-it rebuilt a catalog. The sync layer calls it from `reloadCatalog`; see
-`packages/ui/src/sync/DOCUMENTATION.md` for the kind-to-list table. There is no
-pending-restart queue: config mutations take effect as soon as OpenCode has
-re-read the file, and only the OpenCode binary path restarts the server.
-
-Plugin catalogs carry `loadedDirectory` and `loadedRuntimeKey`, the owner of
-the installed list. The editor waits for that directory's catalog before hydrating a draft;
-plugin IDs alone are not unique across projects. Catalog requests and their
-TTL caches are scoped by runtime and directory. A response for a superseded
-owner cannot replace the catalog or finish the current owner's loading state.
-
 ### Feature cache / query stores
 
 PR status reads share the aggregate background-network budget as well as their PR-specific cap. Command discovery gates each scope/config read, including body decoding, rather than only gating the initial SDK list. Command reads have a bounded deadline and abort on runtime reset. Reset clears server-derived command caches and invalidates late reads and mutation responses while preserving unsaved command drafts.
@@ -89,20 +101,6 @@ and generation checks prevent their completions from changing the next runtime.
 request, including JSON body delivery. Compact usage cards and Settings display
 refresh errors alongside retained data. The mobile popover makes at most one
 refresh attempt per opening, so a failed first load cannot create a retry loop.
-
-`useSmallModelStore` answers one question: can OpenChamber's background model
-(the Small Model) run right now? `GET /api/small-model` says `available: false`
-on, for instance, a fresh install on OpenCode's free tier, where chat works but
-a stateless generation has nothing to run on. Session renaming, the session goal
-and the walkthrough depend on it, so their entry points read the store through
-`hooks/useSmallModelAvailability` and show a disabled control with the reason
-instead of failing after the click. Cached per runtime + directory for a
-minute, refetched only while the control that asks is open; a config change
-(provider login, settings save) or a runtime switch drops every answer. A failed
-or malformed fetch keeps the previous answer: an unreachable server is not
-evidence that the model went away. Callers with a graceful fallback (a note kept
-verbatim, a reply spoken in full) do not consult it; they silence the 404 on
-`requestSmallModel` instead.
 
 ### UI state stores
 
@@ -159,6 +157,12 @@ so a delayed or lost handshake cannot hide an already-materialized transcript
 (busy subagents would otherwise show only the working-status row).
 
 ### Session / project coordination stores
+
+Session cache contracts use `lib/opencode/model.ts`. OC1 wire records retain
+their actual IDs and optional fields through `v1/projection.ts`; OC2 uses its
+own projection into the same domain. Consumers must not require an OC1-only
+slug or fabricate one for OC2. Token/context helpers preserve OC1 summary
+compaction and recognize OC2 compaction lifecycle records separately.
 
 `useMultiRunStore` creates ID-bound multi-run members. `useAgentGroupsStore`
 projects those identities for selection and group deletion, retaining failed
@@ -231,7 +235,6 @@ User-visible session ordering is also not owned by the global cache array order.
 
 Global refresh rules:
 
-- `hasLoaded` means a complete global snapshot has succeeded in the current runtime. Root lookup failure, partial pages, fallback data, and directory-only refreshes cannot establish it. Once established, it survives background loading and failure until runtime reset, so known empty groups do not flash loading on each poll. `status` still describes the current request and gates authoritative cleanup. Loading includes chats-root lookup, so that wait is visible too.
 - The OpenCode `archived` list flag means "also include archived sessions": the server only drops its `time_archived IS NULL` condition. The global cache therefore loads with one inclusive request (`archived: true`) and splits active/archived client-side via `splitGlobalSessionsByArchived` — an `archived: false` request cannot be truthful because the server filter excludes restored sessions (`time.archived` falsy-but-present, see "Restore (unarchive) contract" in `sync/DOCUMENTATION.md`). For callers that still want only archived records, `listGlobalSessionPages` narrows inclusive responses at the data boundary (default `narrowToArchived`), so the archived cache never holds active sessions and no consumer has to re-derive that. Pagination progress stays measured on the raw response, so a page that is full upstream but filtered out here is not mistaken for the last page.
 - The full load paints as it paginates: the first accepted page is merged into the visible lists immediately while the remaining pages keep loading, so a workspace with thousands of sessions is not blank until the last page arrives. That merge is an upsert (never a replacement), leaves `status` at `loading` and `hasLoaded` false, overlays mutations newer than the load baseline, and is excluded from the managed-chats snapshot write — only the complete snapshot is authoritative, persists, and raises ordering baselines.
 - Per-directory refresh issues one inclusive request per directory (previously two), bounded to two requests across callers and prioritizing the current directory.
@@ -444,32 +447,6 @@ Each of them therefore keeps two things:
 - a flat mirror (`agents`, `commands`, `skills`, `mcpServers`, `providers`) that
   tracks the **active** project only.
 
-#### What they hold: OpenCode 2 entity shapes
-
-The mutation payloads these stores send are the v2 entities documented in
-`packages/web/server/lib/opencode/DOCUMENTATION.md` ("Entity routes (v2
-shapes)"). Agents carry `system`, `steps`, `request.body.temperature` /
-`top_p`, a joined `provider/model#variant` string and an ordered `permissions`
-rule list; commands carry `template` and `subagent`; MCP servers carry
-`disabled`, `codemode` and `timeout: { startup, catalog, execution }`.
-
-Two rules follow from the routes:
-
-- **The list is not the config.** `opencodeClient.listAgents` answers OpenCode's
-  RESOLVED `AgentInfo` (built-in defaults and global config already merged), and
-  the v2 `CommandInfo` carries only a name and a description. Anything that
-  edits, duplicates or renames an entity reads its own stored entry instead:
-  `useAgentsStore.fetchAgentEntity` / `fetchAgentPermissions`, and the
-  per-command `…/config` read inside `useCommandsStore.loadCommands`.
-- **`request` and `permissions` are replaced wholesale by a PATCH.** A caller
-  must send the full block it wants persisted; sending only the field it changed
-  drops the rest.
-
-Config reads also report `legacy: true` when the entity's file still uses v1
-spellings, and mutations answer with the `path` they wrote. The stores surface
-`legacy` and `path` on the entity so a page can show the quiet note; no file is
-ever moved.
-
 Thinking variants keep the effective value in `currentVariant` so existing send
 paths capture a stable configuration. `currentVariantSelection` says where that
 value came from: a string is an effort chosen in the picker or by the shortcut,
@@ -502,6 +479,17 @@ project in Settings cannot change what chat sees. Components select through
 `selectAgentsForDirectory` / `selectCommandsForDirectory` /
 `selectSkillsForDirectory` / `selectMcpServersForDirectory` /
 `selectProvidersForDirectory`, which return stored arrays.
+
+Agent entries keep their OC1 or OC2 generation tag. The OC2 settings editor
+reads each agent's stored config and ordered permission rules from the
+OpenChamber config routes; the resolved runtime agent is used only for hints.
+`useMcpConfigStore` likewise keeps each server's original generation shape:
+OC1 uses `enabled`, a numeric timeout and camel-case OAuth fields; OC2 uses
+`disabled`, startup/catalog/execution timeouts and snake-case OAuth fields.
+The OC2 writer preserves fields outside the editor, including OAuth callback
+metadata. The OC2 editor also writes explicit Code Mode and protocol choices;
+their defaults remove the corresponding override. Its directory cache key
+includes the bound runtime instance.
 
 Command discovery compares responses only with the requested directory's cache.
 A first successful response always creates that entry, even when empty or

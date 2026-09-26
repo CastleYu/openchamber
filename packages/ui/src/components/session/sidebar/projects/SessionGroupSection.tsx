@@ -77,6 +77,7 @@ export type SessionGroupSectionProps = {
   editingId: string | null;
   editingRowKey: string | null;
   editTitle: string;
+  copiedSessionId: string | null;
   openSidebarMenuKey: string | null;
   onToggleCollapsedGroup: (groupKey: string) => void;
   dragHandleProps?: SortableDragHandleProps | null;
@@ -102,6 +103,7 @@ export type SessionGroupSectionProps = {
   | 'deleteSessionConfirm'
   | 'setDeleteSessionConfirm'
   | 'startFolderRename'
+  | 'setCopiedSessionId'
   | 'startSessionWorktreeMenuLoad'
   | 'onEditProject'
 >;
@@ -200,6 +202,10 @@ const areGroupPropsEqual = (prev: SessionGroupSectionProps, next: SessionGroupSe
   }
   if (prev.editingRowKey !== next.editingRowKey) return false;
   if (prev.editTitle !== next.editTitle && groupContainsSessionId(next.group, next.editingId)) return false;
+  if (prev.copiedSessionId !== next.copiedSessionId
+    && (groupContainsSessionId(next.group, prev.copiedSessionId) || groupContainsSessionId(next.group, next.copiedSessionId))) {
+    return false;
+  }
   if (prev.openSidebarMenuKey !== next.openSidebarMenuKey) {
     const archived = next.group.isArchivedBucket === true;
     const previousMenuSessionId = resolveMenuOpenSessionId(next.group.sessions, prev.openSidebarMenuKey, 'project', archived);
@@ -243,6 +249,7 @@ const areGroupPropsEqual = (prev: SessionGroupSectionProps, next: SessionGroupSe
     && prev.deleteSessionConfirm === next.deleteSessionConfirm
     && prev.setDeleteSessionConfirm === next.setDeleteSessionConfirm
     && prev.startFolderRename === next.startFolderRename
+    && prev.setCopiedSessionId === next.setCopiedSessionId
     && prev.startSessionWorktreeMenuLoad === next.startSessionWorktreeMenuLoad
     && prev.setFolderRenameDraft === next.setFolderRenameDraft
     && prev.clearFolderRename === next.clearFolderRename
@@ -283,6 +290,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
     editingRowKey,
     openSidebarMenuKey,
     editTitle,
+    copiedSessionId,
     folderRename,
     setFolderRenameDraft,
     clearFolderRename,
@@ -713,6 +721,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
               editingId={editingId}
               editingRowKey={editingRowKey}
                editTitle={editTitle}
+               copiedSessionId={copiedSessionId}
               openSidebarMenuKey={openSidebarMenuKey}
               mobileVariant={mobileVariant}
               alwaysShowActions={alwaysShowActions}
@@ -733,6 +742,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
                deleteSessionConfirm={props.deleteSessionConfirm}
               setDeleteSessionConfirm={props.setDeleteSessionConfirm}
               startFolderRename={props.startFolderRename}
+              setCopiedSessionId={props.setCopiedSessionId}
               startSessionWorktreeMenuLoad={props.startSessionWorktreeMenuLoad}
              />)}
           </SessionFolderItem>
@@ -834,6 +844,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
     editingId={editingId}
     editingRowKey={editingRowKey}
      editTitle={editTitle}
+     copiedSessionId={copiedSessionId}
     openSidebarMenuKey={openSidebarMenuKey}
     mobileVariant={mobileVariant}
     alwaysShowActions={alwaysShowActions}
@@ -854,6 +865,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
      deleteSessionConfirm={props.deleteSessionConfirm}
      setDeleteSessionConfirm={props.setDeleteSessionConfirm}
      startFolderRename={props.startFolderRename}
+     setCopiedSessionId={props.setCopiedSessionId}
      startSessionWorktreeMenuLoad={props.startSessionWorktreeMenuLoad}
    />;
 
@@ -882,13 +894,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
       {totalSessions === 0 && allFoldersForGroup.length === 0 ? (
         // pl-[26px] lines the text up with the worktree sub-header label
         // (gutter + icon + gap).
-        !group.isArchivedBucket && !bootstrapLoading && !bootstrapFailureNotice && group.directory && !group.emptyMessage ? (
-          <Button variant="link" size="xs" className="w-full justify-start pl-[26px] text-left font-normal normal-case text-muted-foreground/70 underline-offset-auto hover:text-foreground hover:underline" onClick={() => {
-              if (projectId && projectId !== activeProjectId) setActiveProjectIdOnly(projectId);
-              if (mobileVariant) setSessionSwitcherOpen(false);
-              openNewSessionDraft({ selectedProjectId: projectId, directoryOverride: group.directory, target: group.draftTarget });
-          }}>{t('sessions.sidebar.group.empty.startSession')}</Button>
-        ) : <div className="py-1 pl-[26px] text-left typography-micro text-muted-foreground">
+        <div className="py-1 pl-[26px] text-left typography-micro text-muted-foreground">
           {group.isArchivedBucket
             ? t('sessions.sidebar.group.empty.noArchivedSessions')
             : bootstrapLoading

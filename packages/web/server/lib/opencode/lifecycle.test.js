@@ -129,6 +129,7 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
     getManagedOpenCodeShellEnvSnapshot: vi.fn(() => ({
       PATH: '/home/user/.bun/bin:/usr/local/bin:/usr/bin',
       SHELL_ONLY: 'yes',
+      OPENCODE_PASSWORD: 'shell-password',
       OPENCODE_SERVER_PASSWORD: 'shell-password',
     })),
     ...overrides,
@@ -167,6 +168,36 @@ describe('OpenCode lifecycle', () => {
     } finally {
       await runtime.testState.openCodeProcess.close();
     }
+  });
+
+  it('accepts the OC2 readiness line without the opencode prefix', async () => {
+    const child = createMockChild();
+    spawnMock.mockImplementationOnce(() => {
+      queueMicrotask(() => {
+        child.stdout.emit('data', 'server listening on http://127.0.0.1:45678\n');
+      });
+      return child;
+    });
+
+    const runtime = createRuntime();
+    const server = await runtime.startOpenCode();
+
+    expect(server.url).toBe('http://127.0.0.1:45678');
+    await server.close();
+  });
+
+  it('does not accept an arbitrary line that merely contains "server listening"', async () => {
+    const child = createMockChild();
+    spawnMock.mockImplementation(() => {
+      queueMicrotask(() => {
+        child.stdout.emit('data', 'verbose: server listening on http://127.0.0.1:45678\n');
+      });
+      return child;
+    });
+
+    const runtime = createRuntime({ managedStartupTimeoutMs: 10 });
+
+    await expect(runtime.startOpenCode()).rejects.toThrow('Timeout waiting for OpenCode to start');
   });
 
   it.each(['oc1', 'oc2'])('uses the selected %s descriptor for readiness', async (generation) => {
@@ -355,7 +386,7 @@ describe('OpenCode lifecycle', () => {
         ENV_SKIP_OPENCODE_START: true,
       },
       reapManagedOrphanedProcesses: vi.fn(async () => ({ reaped: 0 })),
-      getWarmupDirectories: vi.fn(async () => ['/tmp/worktree-a', '/tmp/project-b']),
+      getWarmupDirectories: vi.fn(async () => ['/tmp/worktree-a', '/tmp/project-b', '/tmp/project-c', '/tmp/project-d', '/tmp/project-e']),
     });
 
     await runtime.bootstrapOpenCodeAtStartup();
@@ -367,7 +398,34 @@ describe('OpenCode lifecycle', () => {
     expect(warmupUrls).toEqual([
       'http://127.0.0.1:45678/session/status?directory=%2Ftmp%2Fworktree-a',
       'http://127.0.0.1:45678/session/status?directory=%2Ftmp%2Fproject-b',
+      'http://127.0.0.1:45678/session/status?directory=%2Ftmp%2Fproject-c',
+      'http://127.0.0.1:45678/session/status?directory=%2Ftmp%2Fproject-d',
     ]);
+  });
+
+  it('warms one directory on OC2 even outside Desktop', async () => {
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => ({ generation: 'oc2', endpoint, epoch, version: '2.0.18' }),
+    });
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ healthy: true }) }));
+    globalThis.fetch = fetchMock;
+    const runtime = createRuntime({
+      kernelRuntime,
+      env: {
+        ENV_CONFIGURED_OPENCODE_PORT: 45678,
+        ENV_CONFIGURED_OPENCODE_HOST: null,
+        ENV_EFFECTIVE_PORT: 45678,
+        ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1',
+        ENV_SKIP_OPENCODE_START: true,
+      },
+      reapManagedOrphanedProcesses: vi.fn(async () => ({ reaped: 0 })),
+      getWarmupDirectories: vi.fn(async () => ['/tmp/worktree-a', '/tmp/project-b']),
+    });
+    await runtime.bootstrapOpenCodeAtStartup();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const warmupUrls = fetchMock.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/api/session?'));
+    expect(warmupUrls).toEqual(['http://127.0.0.1:45678/api/session?directory=%2Ftmp%2Fworktree-a&limit=1']);
   });
 
   it('warms only the most recent directory on the Desktop runtime', async () => {
@@ -606,6 +664,109 @@ describe('OpenCode lifecycle', () => {
     expect(onOpenCodeRestarted).toHaveBeenCalledTimes(1);
   });
 
+  it('does not demote a resolved kernel on one slow re-probe', async () => {
+    let mode = 'oc2';
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => (mode === 'transient'
+        ? { generation: 'unreachable', endpoint, epoch, version: null }
+        : { generation: 'oc2', endpoint, epoch, version: '2.0.20' }),
+    });
+    await kernelRuntime.refresh();
+    const before = kernelRuntime.get();
+    mode = 'transient';
+    const close = vi.fn(async () => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runtime = createRuntime({ kernelRuntime }, {
+      openCodePort: 45678,
+      openCodeProcess: { pid: process.pid, exitCode: null, signalCode: null, close },
+      isOpenCodeReady: true,
+    });
+
+    await runtime.triggerHealthCheck();
+
+    expect(close).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+    expect(kernelRuntime.get()).toEqual(before);
+    expect(runtime.testState.lastOpenCodeHealthFailure.class).toBe('invalid_response');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('(1/20)'));
+    warn.mockRestore();
+  });
+
+  it('demotes a resolved kernel only after the consecutive-failure budget is spent', async () => {
+    let mode = 'oc2';
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => (mode === 'transient'
+        ? { generation: 'unreachable', endpoint, epoch, version: null }
+        : { generation: 'oc2', endpoint, epoch, version: '2.0.20' }),
+    });
+    await kernelRuntime.refresh();
+    const before = kernelRuntime.get();
+    mode = 'transient';
+    const close = vi.fn(async () => {});
+    const replacement = createMockChild();
+    spawnMock.mockImplementationOnce(() => {
+      // The replacement comes up healthy, so the restart re-resolves the kernel.
+      mode = 'oc2';
+      queueMicrotask(() => replacement.stdout.emit('data', 'server listening on http://127.0.0.1:45678\n'));
+      return replacement;
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let now = 1;
+    const runtime = createRuntime({ kernelRuntime, now: () => now }, {
+      openCodePort: 45678,
+      openCodeProcess: { pid: process.pid, exitCode: null, signalCode: null, close },
+      isOpenCodeReady: true,
+    });
+
+    for (let attempt = 0; attempt < 19; attempt += 1) {
+      await runtime.triggerHealthCheck();
+      now += 15_000;
+    }
+    expect(close).not.toHaveBeenCalled();
+    now += 15_000;
+
+    await runtime.triggerHealthCheck();
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(kernelRuntime.get().epoch).toBeGreaterThan(before.epoch);
+    warn.mockRestore();
+  });
+
+  it('restarts immediately when the resolved kernel process has exited', async () => {
+    let mode = 'oc2';
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => (mode === 'transient'
+        ? { generation: 'unreachable', endpoint, epoch, version: null }
+        : { generation: 'oc2', endpoint, epoch, version: '2.0.20' }),
+    });
+    await kernelRuntime.refresh();
+    const before = kernelRuntime.get();
+    mode = 'transient';
+    const close = vi.fn(async () => {});
+    const replacement = createMockChild();
+    spawnMock.mockImplementationOnce(() => {
+      mode = 'oc2';
+      queueMicrotask(() => replacement.stdout.emit('data', 'server listening on http://127.0.0.1:45678\n'));
+      return replacement;
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runtime = createRuntime({ kernelRuntime }, {
+      openCodePort: 45678,
+      openCodeProcess: { pid: null, exitCode: 1, signalCode: null, close },
+    });
+
+    await runtime.triggerHealthCheck();
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(kernelRuntime.get().epoch).toBeGreaterThan(before.epoch);
+    warn.mockRestore();
+  });
+
   it('retains post-listen stderr and exited process diagnostics across restart', async () => {
     const firstChild = createMockChild();
     const replacement = createMockChild();
@@ -773,6 +934,7 @@ describe('OpenCode lifecycle', () => {
     expect(args).toEqual(['serve', '--hostname', '127.0.0.1', '--port', '45678']);
     expect(options.env.PATH).toBe('/home/user/.bun/bin:/usr/local/bin:/usr/bin');
     expect(options.env.SHELL_ONLY).toBe('yes');
+    expect(options.env.OPENCODE_PASSWORD).toBe('password');
     expect(options.env.OPENCODE_SERVER_PASSWORD).toBe('password');
     expect(server.exitCode).toBeNull();
     expect(server.signalCode).toBeNull();
@@ -945,6 +1107,7 @@ describe('OpenCode lifecycle', () => {
       OPENCODE_CONFIG_CONTENT: '{"plugin":["file:///tool.js"]}',
       OPENCHAMBER_AGENT_TOOL_TOKEN: 'ephemeral',
       PATH: '/untrusted/path',
+      OPENCODE_PASSWORD: 'untrusted-password',
       OPENCODE_SERVER_PASSWORD: 'untrusted-password',
     }));
 
@@ -956,6 +1119,7 @@ describe('OpenCode lifecycle', () => {
     expect(options.env.OPENCODE_CONFIG_CONTENT).toBe('{"plugin":["file:///tool.js"]}');
     expect(options.env.OPENCHAMBER_AGENT_TOOL_TOKEN).toBe('ephemeral');
     expect(options.env.PATH).toBe('/home/user/.bun/bin:/usr/local/bin:/usr/bin');
+    expect(options.env.OPENCODE_PASSWORD).toBe('password');
     expect(options.env.OPENCODE_SERVER_PASSWORD).toBe('password');
 
     await server.close();

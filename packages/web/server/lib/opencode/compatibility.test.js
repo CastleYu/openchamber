@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   detectOpenCodeGeneration,
   isSupportedOpenCodeVersion,
+  supportsCredentialApi,
   OPENCODE_GENERATION,
   readOpenCodeInfo,
 } from './compatibility.js';
@@ -29,6 +30,22 @@ const health = (version, healthy = true) => ({ body: { healthy, version } });
 const info = (version) => ({ body: { version } });
 
 describe('OpenCode generation detection', () => {
+  it('uses each generation credential and accepts only its authenticated protocol response', async () => {
+    for (const generation of ['oc1', 'oc2']) {
+      const calls = [];
+      const fetchImpl = async (url, options) => {
+        calls.push([new URL(url).pathname, options.headers.get('Authorization')]);
+        if (generation === 'oc1' && url.endsWith('/global/health')) return Response.json({ healthy: true, version: '1.18.32' });
+        if (generation === 'oc2' && url.endsWith('/api/info')) return Response.json({ version: '2.0.20' });
+        return new Response(null, { status: 401 });
+      };
+      const result = await detectOpenCodeGeneration({ endpoint: 'http://kernel.test', epoch: 1, fetchImpl,
+        headersForGeneration: (candidate) => ({ Authorization: candidate === 'oc1' ? 'Basic legacy-fixture' : 'Basic current-fixture' }) });
+      expect(result.generation).toBe(generation);
+      expect(calls).toContainEqual(['/global/health', 'Basic legacy-fixture']);
+      expect(calls).toContainEqual(['/api/info', 'Basic current-fixture']);
+    }
+  });
   it('accepts OC1 health even when its /api/info fallback is HTML', async () => {
     const requests = [];
     const endpoint = await serve({
@@ -44,16 +61,16 @@ describe('OpenCode generation detection', () => {
   });
 
   it('identifies OC2 from matching valid info and health versions', async () => {
-    const endpoint = await serve({ '/global/health': health('2.0.16'), '/api/info': info('2.0.16') });
+    const endpoint = await serve({ '/global/health': health('2.0.20'), '/api/info': info('2.0.20') });
     expect(await detectOpenCodeGeneration({ endpoint: `${endpoint}/api/`, epoch: 'next' }))
-      .toEqual({ generation: OPENCODE_GENERATION.OC2, endpoint, epoch: 'next', version: '2.0.16' });
+      .toEqual({ generation: OPENCODE_GENERATION.OC2, endpoint, epoch: 'next', version: '2.0.20' });
   });
 
   it('identifies OC2 when legacy health is absent', async () => {
     const requests = [];
-    const endpoint = await serve({ '/api/info': info('2.0.16') }, requests);
+    const endpoint = await serve({ '/api/info': info('2.0.20') }, requests);
     expect(await detectOpenCodeGeneration({ endpoint, epoch: 3, headers: new Headers({ Authorization: 'Bearer fixture' }) }))
-      .toEqual({ generation: OPENCODE_GENERATION.OC2, endpoint, epoch: 3, version: '2.0.16' });
+      .toEqual({ generation: OPENCODE_GENERATION.OC2, endpoint, epoch: 3, version: '2.0.20' });
     expect(requests.every((request) => request.auth === 'Bearer fixture')).toBe(true);
   });
 
@@ -64,18 +81,18 @@ describe('OpenCode generation detection', () => {
   });
 
   it('rejects conflicting valid endpoints', async () => {
-    const conflict = await serve({ '/global/health': health('1.18.32'), '/api/info': info('2.0.16') });
+    const conflict = await serve({ '/global/health': health('1.18.32'), '/api/info': info('2.0.20') });
     expect((await detectOpenCodeGeneration({ endpoint: conflict, epoch: 1 })).generation)
       .toBe(OPENCODE_GENERATION.UNKNOWN);
   });
 
   it('accepts OC2 info when the old health path has no generation evidence', async () => {
-    const malformed = await serve({ '/global/health': { body: { version: '2.0.16' } }, '/api/info': info('2.0.16') });
+    const malformed = await serve({ '/global/health': { body: { version: '2.0.20' } }, '/api/info': info('2.0.20') });
     expect((await detectOpenCodeGeneration({ endpoint: malformed, epoch: 1 })).generation)
       .toBe(OPENCODE_GENERATION.OC2);
     const html = await serve({
       '/global/health': { type: 'text/html', body: '<html>OpenCode</html>' },
-      '/api/info': info('2.0.16'),
+      '/api/info': info('2.0.20'),
     });
     expect((await detectOpenCodeGeneration({ endpoint: html, epoch: 2 })).generation)
       .toBe(OPENCODE_GENERATION.OC2);
@@ -108,7 +125,11 @@ describe('OpenCode generation detection', () => {
       .toBe(OPENCODE_GENERATION.UNSUPPORTED);
     expect(isSupportedOpenCodeVersion('1.0.0')).toBe(true);
     expect(isSupportedOpenCodeVersion('2.0.15')).toBe(true);
-    expect(isSupportedOpenCodeVersion('2.0.14')).toBe(false);
+    expect(isSupportedOpenCodeVersion('2.0.18')).toBe(true);
+    expect(isSupportedOpenCodeVersion('2.0.20')).toBe(true);
+    expect(supportsCredentialApi('2.0.18')).toBe(false);
+    expect(supportsCredentialApi('2.0.20')).toBe(true);
+    expect(supportsCredentialApi(null)).toBe(false);
   });
 
   it('keeps prereleases below the minimum stable release', async () => {
@@ -116,8 +137,9 @@ describe('OpenCode generation detection', () => {
     expect((await detectOpenCodeGeneration({ endpoint, epoch: 1 })).generation)
       .toBe(OPENCODE_GENERATION.UNSUPPORTED);
     expect(isSupportedOpenCodeVersion('2.0.15-rc.1+build.2')).toBe(false);
-    expect(isSupportedOpenCodeVersion('2.0.15+build.2')).toBe(true);
-    expect(isSupportedOpenCodeVersion('2.0.16-rc.1')).toBe(true);
+    expect(supportsCredentialApi('2.0.20-rc.1')).toBe(false);
+    expect(isSupportedOpenCodeVersion('2.0.20+build.2')).toBe(true);
+    expect(isSupportedOpenCodeVersion('2.0.21-rc.1')).toBe(true);
   });
 
   it('reports unreachable for connection failure and unknown for invalid responses', async () => {
@@ -134,7 +156,7 @@ describe('OpenCode generation detection', () => {
 
   it('keeps descriptors bound to the probed endpoint and epoch', async () => {
     const oc1 = await serve({ '/global/health': health('1.18.32'), '/api/info': { status: 404, body: {} } });
-    const oc2 = await serve({ '/global/health': health('2.0.16'), '/api/info': info('2.0.16') });
+    const oc2 = await serve({ '/global/health': health('2.0.20'), '/api/info': info('2.0.20') });
     const first = await detectOpenCodeGeneration({ endpoint: oc1, epoch: 1 });
     const second = await detectOpenCodeGeneration({ endpoint: oc2, epoch: 2 });
     expect(first).toMatchObject({ endpoint: oc1, epoch: 1, generation: OPENCODE_GENERATION.OC1 });
@@ -143,7 +165,7 @@ describe('OpenCode generation detection', () => {
 
   it('reads info only when its JSON version is valid', async () => {
     expect(await readOpenCodeInfo(new Response('<html>OpenCode</html>'))).toBeNull();
-    expect(await readOpenCodeInfo(Response.json({ version: '2.0.16' }))).toEqual({ version: '2.0.16' });
+    expect(await readOpenCodeInfo(Response.json({ version: '2.0.20' }))).toEqual({ version: '2.0.20' });
     expect(await readOpenCodeInfo(Response.json({ version: 'not a version' }))).toBeNull();
   });
 });

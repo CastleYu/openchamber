@@ -3,6 +3,14 @@
 ## Purpose
 This module contains tunnel provider orchestration for OpenChamber, including provider registry/service wiring, managed remote token config lifecycle, and tunnel HTTP route registration.
 
+Enterprise mode refuses external tunnel creation at both the HTTP route and
+the shared start function used by startup. The refusal happens before tokens
+or runtime state are changed. Status remains readable and reports the mode.
+Public tunnel creation also requires an effective UI password. The startup and
+HTTP paths share this check before provider tokens or process state are touched.
+`tunnel-wiring-runtime.initialize` receives `uiPasswordConfigured` from the
+server's resolved UI password; it does not receive the password itself.
+
 ## Entrypoints and structure
 - `packages/web/server/lib/tunnels/index.js`: tunnel service orchestration.
 - `packages/web/server/lib/tunnels/executable-search.js`: cross-platform executable discovery, including Windows Store app aliases.

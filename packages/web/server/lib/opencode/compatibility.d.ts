@@ -18,11 +18,13 @@ export interface OpenCodeGenerationDescriptor {
 }
 
 export function isSupportedOpenCodeVersion(version: string): boolean;
+export function supportsCredentialApi(version: string | null | undefined): boolean;
 export function readOpenCodeInfo(response: Response): Promise<{ version: string } | null>;
 export function detectOpenCodeGeneration(options: {
   endpoint: string;
   epoch: string | number;
   headers?: HeadersInit;
+  headersForGeneration?: (generation: 'oc1' | 'oc2') => HeadersInit;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
 }): Promise<OpenCodeGenerationDescriptor>;

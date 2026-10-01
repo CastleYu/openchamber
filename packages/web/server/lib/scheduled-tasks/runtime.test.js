@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import os from 'os';
 import path from 'path';
-import { mkdtemp, rm, mkdir, writeFile } from 'fs/promises';
+import { mkdtemp, rm, mkdir, writeFile, readdir } from 'fs/promises';
 import {
   computeNextRunAt,
   expandCommandGoalObjective,
@@ -10,6 +10,7 @@ import {
   createScheduledTasksRuntime,
 } from './runtime.js';
 import { createProjectConfigRuntime } from '../projects/project-config.js';
+import { createChatsScope } from './chats-scope.js';
 
 describe('scheduled-tasks runtime helpers', () => {
   it.each([
@@ -131,6 +132,84 @@ describe('scheduled-tasks runtime helpers', () => {
     expect(expandCommandGoalObjective('Move $1 to $2', '"src old" dist extra')).toBe('Move src old to dist extra');
     expect(expandCommandGoalObjective('Review the requested scope.', 'auth module'))
       .toBe('Review the requested scope.\n\nauth module');
+  });
+});
+
+describe('scheduled chat scope with the dual-kernel operations', () => {
+  const task = {
+    id: 'task-chat', name: 'Digest', enabled: true,
+    schedule: { kind: 'daily', times: ['08:00'], timezone: 'UTC' },
+    execution: { prompt: 'Summarize', providerID: 'openai', modelID: 'gpt-5' },
+    state: { createdAt: 1, updatedAt: 1 },
+  };
+
+  const setup = async (generation = 'oc2', failCreate = false) => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'oc-scheduled-chat-'));
+    const chatsScope = createChatsScope(path.join(root, 'chats'));
+    const createSession = vi.fn(async ({ directory }) => {
+      if (failCreate) throw new Error('session create failed');
+      return { data: { id: `ses_${path.basename(directory)}` } };
+    });
+    const sendPrompt = vi.fn(async () => ({}));
+    const config = {
+      listScheduledTasks: vi.fn(async () => [task]),
+      reconcileLoopTasks: vi.fn(async () => [task]),
+      updateScheduledTaskState: vi.fn(async () => ({ task })),
+      updateScheduledTaskStateIf: vi.fn(async () => ({ task })),
+    };
+    const runtime = createScheduledTasksRuntime({
+      kernelOperations: {
+        captureIdentity: () => ({ generation, endpoint: 'http://local', epoch: 1 }),
+        createSession,
+        sendPrompt,
+      },
+      projectConfigRuntime: config,
+      listProjects: async () => [{ id: 'project', path: path.join(root, 'project') }],
+      chatsScope,
+      buildOpenCodeUrl: () => 'http://local/',
+      getOpenCodeAuthHeaders: () => ({}),
+      waitForOpenCodeReady: async () => {},
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
+    });
+    return { root, chatsScope, runtime, config, createSession, sendPrompt };
+  };
+
+  it('gives each OC2 run a fresh directory and skips project loop discovery', async () => {
+    const fixture = await setup();
+    try {
+      await fixture.runtime.start();
+      expect(fixture.config.reconcileLoopTasks).not.toHaveBeenCalledWith(fixture.chatsScope.id, expect.anything());
+      const first = await fixture.runtime.runNow(fixture.chatsScope.id, task.id);
+      const second = await fixture.runtime.runNow(fixture.chatsScope.id, task.id);
+      expect(first.ok).toBe(true);
+      expect(second.ok).toBe(true);
+      expect(first.directory).not.toBe(second.directory);
+      expect(fixture.createSession.mock.calls.map(([request]) => request.directory)).toEqual([first.directory, second.directory]);
+      expect(fixture.sendPrompt.mock.calls.map(([request]) => request.directory)).toEqual([first.directory, second.directory]);
+    } finally {
+      fixture.runtime.stop();
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses the new chat scope on OC1 and removes a failed OC2 creation directory', async () => {
+    for (const [generation, failCreate] of [['oc1', false], ['oc2', true]]) {
+      const fixture = await setup(generation, failCreate);
+      try {
+        await fixture.runtime.start();
+        const result = await fixture.runtime.runNow(fixture.chatsScope.id, task.id);
+        expect(result.ok).toBe(false);
+        expect(fixture.createSession).toHaveBeenCalledTimes(generation === 'oc1' ? 0 : 1);
+        if (generation === 'oc2') {
+          const dates = await readdir(fixture.chatsScope.root);
+          expect(dates).toHaveLength(1);
+          expect(await readdir(path.join(fixture.chatsScope.root, dates[0]))).toEqual([]);
+        }
+      } finally {
+        fixture.runtime.stop();
+        await rm(fixture.root, { recursive: true, force: true });
+      }
+    }
   });
 });
 

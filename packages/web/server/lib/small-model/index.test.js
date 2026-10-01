@@ -9,7 +9,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 const TEMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'small-model-settings-'));
 process.env.OPENCHAMBER_DATA_DIR = TEMP_DATA_DIR;
 
-vi.mock('../opencode/auth.js', () => ({ readAuthFile: vi.fn() }));
+vi.mock('../opencode/auth.js', () => ({ readOpenCodeCredentials: vi.fn() }));
 vi.mock('../opencode/shared.js', () => ({
   readConfig: vi.fn(),
   readConfigLayers: vi.fn(),
@@ -28,18 +28,22 @@ vi.mock('./call.js', () => ({
 }));
 vi.mock('./runtime-providers.js', () => ({
   getRuntimeProviderSnapshot: vi.fn(async () => null),
+  getRuntimeGeneration: vi.fn(() => 'oc1'),
+  getRuntimeDefaultModel: vi.fn(async () => null),
 }));
 
 const { generateSmallModelText, describeSmallModel, listAuthenticatedProviders } = await import('./index.js');
-const { readAuthFile } = await import('../opencode/auth.js');
-const { getRuntimeProviderSnapshot } = await import('./runtime-providers.js');
+const { readOpenCodeCredentials } = await import('../opencode/auth.js');
+const { getRuntimeDefaultModel, getRuntimeGeneration, getRuntimeProviderSnapshot } = await import('./runtime-providers.js');
 const { readConfigLayers } = await import('../opencode/shared.js');
 const { getModelCatalog } = await import('./catalog.js');
 const { callSmallModel } = await import('./call.js');
 
 describe('unsupported small-model providers', () => {
   beforeEach(() => {
-    readAuthFile.mockReturnValue({
+    getRuntimeGeneration.mockReturnValue('oc1');
+    getRuntimeDefaultModel.mockResolvedValue(null);
+    readOpenCodeCredentials.mockReturnValue({
       'claude-code': {
         type: 'oauth',
         access: 'claude-cli-managed',
@@ -67,6 +71,26 @@ describe('unsupported small-model providers', () => {
     expect(await listAuthenticatedProviders()).not.toContain('claude-code');
   });
 
+  it('allows an explicit Claude Code model on OC2 and lists its login', async () => {
+    getRuntimeGeneration.mockReturnValue('oc2');
+    callSmallModel.mockResolvedValue('summary');
+    expect(await generateSmallModelText({ prompt: 'summarize this', model: 'claude-code/haiku' }))
+      .toMatchObject({ text: 'summary', providerID: 'claude-code', modelID: 'haiku' });
+    expect(callSmallModel).toHaveBeenCalledTimes(1);
+    expect(await listAuthenticatedProviders()).toContain('claude-code');
+  });
+
+  it('uses the OC2 default model instead of a different logged-in provider', async () => {
+    getRuntimeGeneration.mockReturnValue('oc2');
+    readOpenCodeCredentials.mockReturnValue({ other: { type: 'api', key: 'other-key' }, chosen: { type: 'api', key: 'chosen-key' } });
+    getModelCatalog.mockResolvedValue({ other: { models: { m: { id: 'm', family: 'gpt-nano', release_date: '2026-01-01' } } } });
+    getRuntimeDefaultModel.mockResolvedValue({ providerID: 'chosen', modelID: 'default-model', source: 'default' });
+    callSmallModel.mockResolvedValue('default result');
+    const generated = await generateSmallModelText({ prompt: 'summarize this', directory: '/proj' });
+    expect(generated).toMatchObject({ providerID: 'chosen', modelID: 'default-model', source: 'default' });
+    expect(getRuntimeDefaultModel).toHaveBeenCalledWith('/proj');
+  });
+
   // A plugin can publish an OpenAI-compatible endpoint for Claude Code, but it
   // is a façade over the Claude Agent SDK: every call spawns the CLI and
   // spends the user's Claude subscription. The refusal is about that cost, so
@@ -89,7 +113,7 @@ describe('unsupported small-model providers', () => {
 
 describe('provider availability for the model pickers', () => {
   beforeEach(() => {
-    readAuthFile.mockReturnValue({ openai: { type: 'api', key: 'sk-test' } });
+    readOpenCodeCredentials.mockReturnValue({ openai: { type: 'api', key: 'sk-test' } });
     readConfigLayers.mockReturnValue({ mergedConfig: {} });
     getModelCatalog.mockResolvedValue({});
     getRuntimeProviderSnapshot.mockResolvedValue(null);
@@ -153,7 +177,7 @@ const request = (overrides = {}) => ({
 
 describe('generateSmallModelText — oversized input', () => {
   beforeEach(() => {
-    readAuthFile.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
+    readOpenCodeCredentials.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
     readConfigLayers.mockReturnValue({ mergedConfig: {} });
     getModelCatalog.mockResolvedValue(CATALOG);
     callSmallModel.mockReset();
@@ -213,7 +237,7 @@ describe('generateSmallModelText — oversized input', () => {
 
 describe('describeSmallModel — capability reporting', () => {
   beforeEach(() => {
-    readAuthFile.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
+    readOpenCodeCredentials.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
     readConfigLayers.mockReturnValue({ mergedConfig: { small_model: 'anthropic/claude-haiku-4-5' } });
     getModelCatalog.mockResolvedValue(CATALOG);
   });
@@ -237,7 +261,7 @@ describe('describeSmallModel — capability reporting', () => {
   });
 
   it('reports hasLogin false when the resolved provider has no usable credential', async () => {
-    readAuthFile.mockReturnValue({});
+    readOpenCodeCredentials.mockReturnValue({});
 
     const described = await describeSmallModel({ directory: '/proj' });
 
@@ -270,7 +294,7 @@ describe('describeSmallModel — capability reporting', () => {
 // the model's context and the failure looks like a truncation bug.
 describe('output budget and input reserve', () => {
   beforeEach(() => {
-    readAuthFile.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
+    readOpenCodeCredentials.mockReturnValue({ anthropic: { type: 'api', key: 'sk-ant' } });
     readConfigLayers.mockReturnValue({ mergedConfig: {} });
     getModelCatalog.mockResolvedValue({
       anthropic: {

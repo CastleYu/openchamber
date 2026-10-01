@@ -40,6 +40,11 @@ other runtime API.
      and as a final utility fallback.
   4. Last resort: the session's own model (`preferredModelID`) when no small
      model resolves anywhere — costlier, but always valid.
+  OC1 retains this fallback order. OC2 stops after the caller's provider,
+  then asks the generation-bound kernel operation for OpenCode's default
+  model. It never selects a different login merely because it appears first
+  in the auth file. Explicit request, OpenChamber setting, and OpenCode
+  `small_model` choices still take priority.
 - Input clamp: the prompt is measured against the resolved model's catalog
   `limit.context` (minus an output reserve, ~4 chars/token estimate;
   conservative default when the model is not in the catalog). `onOverflow`
@@ -192,12 +197,11 @@ left to the call. A provider whose protocol lives in a plugin's `fetch` stays
 selectable and fails when used — which is what it did before this resolution
 existed.
 
-Claude Code is refused unconditionally. A plugin can publish an
-OpenAI-compatible endpoint for it, but that endpoint is a façade over the
-Claude Agent SDK, which spawns the Claude Code CLI per request and spends the
-user's Claude subscription rate limit. Paying that for a session title or a
-summary is the wrong trade, so an available endpoint does not lift the
-refusal — the cost is the reason, not the transport.
+OC1 refuses Claude Code for background small-model calls. On OC2, an explicit
+Claude Code selection can use a plugin endpoint and appears in the picker when
+OpenCode reports a usable login. The runtime generation comes from the same
+server connection that supplies provider state. No generation is treated as
+OC1 until the server wires that connection.
 
 The result is served as `authenticatedProviders` on `GET /api/small-model`.
 The field name predates the runtime resolution; it now means "callable", which

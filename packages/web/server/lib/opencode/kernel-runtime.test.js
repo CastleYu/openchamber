@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
+import { createKernelOperations } from './kernel-operations.js';
 
 const ready = (endpoint, epoch, version = '1.18.32') => ({
   generation: 'oc1', endpoint, epoch, version,
@@ -104,5 +105,77 @@ describe('backend kernel identity', () => {
     const after = await runtime.refresh();
     expect(after.epoch).toBeGreaterThan(before.epoch);
     expect(after.version).toBe(version);
+  });
+});
+
+describe('backend kernel re-probe', () => {
+  const buildRuntime = (detect) => createKernelRuntime({
+    getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}), detect,
+  });
+  const result = (generation, endpoint, epoch, version = null) => ({ generation, endpoint, epoch, version });
+
+  it('preserves a resolved kernel and its epoch through one transient re-probe', async () => {
+    let mode = 'oc2';
+    const runtime = buildRuntime(async ({ endpoint, epoch }) => (mode === 'transient'
+      ? result('unreachable', endpoint, epoch)
+      : result(mode, endpoint, epoch, mode === 'oc2' ? '2.0.20' : '1.18.32')));
+    const before = await runtime.refresh();
+    expect(before.generation).toBe('oc2');
+    mode = 'transient';
+
+    const probe = await runtime.reprobe();
+
+    expect(probe.preserved).toBe(true);
+    expect(probe.generation).toBe('unreachable');
+    expect(runtime.get()).toEqual(before);
+    expect(runtime.get().epoch).toBe(before.epoch);
+    // The preserved descriptor still satisfies the kernel-operations readiness
+    // guard, so in-flight operations do not start returning 503.
+    const operations = createKernelOperations({ getRuntime: runtime.get, getHeaders: () => ({}) });
+    expect(() => operations.captureIdentity()).not.toThrow();
+    expect(operations.captureIdentity().generation).toBe('oc2');
+  });
+
+  it('keeps the resolved kernel through repeated transient re-probes', async () => {
+    let mode = 'oc1';
+    const runtime = buildRuntime(async ({ endpoint, epoch }) => (mode === 'transient'
+      ? result('unknown', endpoint, epoch)
+      : result(mode, endpoint, epoch, '1.18.32')));
+    const before = await runtime.refresh();
+    mode = 'transient';
+
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      expect((await runtime.reprobe()).preserved).toBe(true);
+    }
+
+    expect(runtime.get().generation).toBe('oc1');
+    expect(runtime.get().epoch).toBe(before.epoch);
+  });
+
+  it('updates when a re-probe identifies a different generation', async () => {
+    let mode = 'oc1';
+    const runtime = buildRuntime(async ({ endpoint, epoch }) => result(
+      mode, endpoint, epoch, mode === 'oc1' ? '1.18.32' : '2.0.20',
+    ));
+    const before = await runtime.refresh();
+    mode = 'oc2';
+
+    const probe = await runtime.reprobe();
+
+    expect(probe.preserved).toBe(false);
+    expect(runtime.get().generation).toBe('oc2');
+    expect(runtime.get().version).toBe('2.0.20');
+    expect(runtime.get().epoch).toBeGreaterThan(before.epoch);
+  });
+
+  it('does not resurrect a resolved kernel after an explicit invalidation', async () => {
+    const runtime = buildRuntime(async ({ endpoint, epoch }) => result('unreachable', endpoint, epoch));
+    await runtime.refresh();
+    runtime.invalidate();
+
+    const probe = await runtime.reprobe();
+
+    expect(probe.preserved).toBe(false);
+    expect(runtime.get().generation).toBe('unreachable');
   });
 });

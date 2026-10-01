@@ -15,6 +15,17 @@ Server-owned scheduled task runtime and routes for OpenChamber-only automation.
 - Runtime orchestration and execution is owned by `packages/web/server/lib/scheduled-tasks/runtime.js`.
 - This module is OpenChamber feature logic; it is intentionally separate from OpenCode proxy/runtime internals.
 
+## Chats scope
+
+OC2 can schedule tasks in chats outside a project. The public `projectId` is
+`openchamber:chats`; `chats-scope.js` maps it to the chats root's path id for
+storage and maps run events back to the public id. Each run creates a fresh
+`<chats root>/<yyyy-mm-dd>/session-<uuid>` directory and returns it beside the
+session id. If session creation fails, the empty directory is removed. The
+chats root never discovers `.agents/loops`: user loops already run once per
+project. OC1 project scheduling keeps its existing path; the new Chats scope
+rejects OC1 execution.
+
 ## Cross-instance occurrence claiming
 
 Multiple OpenChamber server processes can share the same on-disk project config

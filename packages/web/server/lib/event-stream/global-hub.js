@@ -9,6 +9,48 @@ import { translateWireEvent } from './translate-v2.js';
 // long-running agent sessions where many events accumulate quickly.
 const MESSAGE_STREAM_GLOBAL_REPLAY_LIMIT = 2048;
 const MESSAGE_STREAM_GLOBAL_REPLAY_BYTES = 8 * 1024 * 1024;
+// A stream that opens during desktop startup connects before lifecycle has
+// finished detecting which OpenCode generation is running. Waiting a bounded
+// moment for the descriptor keeps that normal race from being reported as a
+// stream failure.
+const DEFAULT_KERNEL_READY_TIMEOUT_MS = 5_000;
+const KERNEL_READY_POLL_INTERVAL_MS = 25;
+
+const isKernelGenerationReady = (descriptor) =>
+  descriptor?.generation === 'oc1' || descriptor?.generation === 'oc2';
+
+const delay = (ms, signal) => new Promise((resolve) => {
+  if (signal?.aborted) {
+    resolve();
+    return;
+  }
+  const finish = () => {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', finish);
+    resolve();
+  };
+  const timer = setTimeout(finish, Math.max(0, ms));
+  signal?.addEventListener('abort', finish, { once: true });
+});
+
+// The kernel descriptor is the readiness signal this module can observe:
+// lifecycle detection flips it from `unknown` to `oc1`/`oc2` once OpenCode
+// answers. Poll it so a stream that connects during startup waits for the real
+// generation instead of throwing "unavailable" while detection is in flight.
+export const waitForKernelReady = async (getKernelRuntime, {
+  timeoutMs = DEFAULT_KERNEL_READY_TIMEOUT_MS,
+  pollIntervalMs = KERNEL_READY_POLL_INTERVAL_MS,
+  signal,
+} = {}) => {
+  if (!getKernelRuntime) return undefined;
+  const deadline = Date.now() + Math.max(0, timeoutMs);
+  let descriptor = getKernelRuntime();
+  while (!isKernelGenerationReady(descriptor) && Date.now() < deadline && !signal?.aborted) {
+    await delay(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())), signal);
+    descriptor = getKernelRuntime();
+  }
+  return descriptor;
+};
 
 export function createGlobalMessageStreamHub({
   buildOpenCodeUrl,
@@ -20,11 +62,13 @@ export function createGlobalMessageStreamHub({
   replayLimit = MESSAGE_STREAM_GLOBAL_REPLAY_LIMIT,
   replayByteLimit = MESSAGE_STREAM_GLOBAL_REPLAY_BYTES,
   deltaCoalesceWindowMs = DELTA_COALESCE_WINDOW_MS,
+  kernelReadyTimeoutMs = DEFAULT_KERNEL_READY_TIMEOUT_MS,
 }) {
   if (!Number.isSafeInteger(replayLimit) || replayLimit < 0 || !Number.isSafeInteger(replayByteLimit) || replayByteLimit < 0) {
     throw new RangeError('Replay limits must be nonnegative safe integers');
   }
   const eventSubscribers = new Set();
+  const spaceSubscribers = new Set();
   const statusSubscribers = new Set();
   const replay = [];
   let replayBytes = 0;
@@ -41,6 +85,7 @@ export function createGlobalMessageStreamHub({
 
   let controller = null;
   let reader = null;
+  let startSequence = 0;
   let connected = false;
   let everConnected = false;
   let buildUrlFailed = false;
@@ -74,14 +119,16 @@ export function createGlobalMessageStreamHub({
     const eventId = typeof envelope?.eventId === 'string' && envelope.eventId.length > 0
       ? envelope.eventId
       : `${replayIdPrefix}${String(++replaySequence).padStart(12, '0')}`;
+    const spaceId = typeof envelope?.spaceId === 'string' && envelope.spaceId.length > 0 ? envelope.spaceId : null;
     let serializedFrame;
     let translated;
-    const generation = attached?.generation;
+    const generation = spaceId === null ? attached?.generation : 'oc2';
     return {
       envelope,
       payload,
       directory,
       eventId,
+      spaceId,
       translated() {
         translated ??= generation === 'oc2' ? translateWireEvent(payload) : [payload];
         return translated;
@@ -99,7 +146,8 @@ export function createGlobalMessageStreamHub({
   const commitEvent = (event) => {
     // A timer or stop() may flush after the upstream epoch was retired.
     // Same-identity stop still commits pending text for replay continuity.
-    if (connectionKey !== keyOf(descriptor())) return;
+    const eventKey = event.envelope?.kernelKey ?? connectionKey;
+    if (eventKey !== keyOf(descriptor())) return;
     const normalized = normalizeEvent(event);
     latestEventId = normalized.eventId;
     const serializedFrame = normalized.serialize();
@@ -118,6 +166,7 @@ export function createGlobalMessageStreamHub({
     }
 
     for (const subscriber of Array.from(eventSubscribers)) {
+      if (normalized.spaceId !== null && !spaceSubscribers.has(subscriber)) continue;
       notifySubscriber('event', subscriber, normalized);
     }
   };
@@ -125,74 +174,88 @@ export function createGlobalMessageStreamHub({
   const coalescer = createDeltaCoalescer({ emit: commitEvent, windowMs: deltaCoalesceWindowMs });
 
   const start = () => {
-    if (reader) {
+    if (reader || controller) {
       return;
     }
 
     controller = new AbortController();
     const readerController = controller;
-    reader = createUpstreamSseReader({
-      signal: readerController.signal,
-      stallTimeoutMs: upstreamStallTimeoutMs,
-      reconnectDelayMs: upstreamReconnectDelayMs,
-      fetchImpl,
-      buildUrl: () => {
-        buildUrlFailed = false;
-        try {
-          const next = descriptor();
-          if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
-          const nextKey = keyOf(next);
-          if (connectionKey !== undefined && connectionKey !== nextKey) {
-            coalescer.flush();
-            replay.length = 0;
-            replayBytes = 0;
-            latestEventId = undefined;
-            notifyStatus({ type: 'identity-change' });
+    const startToken = ++startSequence;
+    void (async () => {
+      await waitForKernelReady(getKernelRuntime, {
+        timeoutMs: kernelReadyTimeoutMs,
+        signal: readerController.signal,
+      });
+      if (startToken !== startSequence
+        || controller !== readerController
+        || readerController.signal.aborted) {
+        return;
+      }
+
+      reader = createUpstreamSseReader({
+        signal: readerController.signal,
+        stallTimeoutMs: upstreamStallTimeoutMs,
+        reconnectDelayMs: upstreamReconnectDelayMs,
+        fetchImpl,
+        buildUrl: () => {
+          buildUrlFailed = false;
+          try {
+            const next = descriptor();
+            if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
+            const nextKey = keyOf(next);
+            if (connectionKey !== undefined && connectionKey !== nextKey) {
+              coalescer.flush();
+              replay.length = 0;
+              replayBytes = 0;
+              latestEventId = undefined;
+              notifyStatus({ type: 'identity-change' });
+            }
+            connectionKey = nextKey;
+            attached = next;
+            return new URL(buildOpenCodeUrl(next.generation === 'oc2' ? '/api/event' : '/global/event', ''));
+          } catch {
+            buildUrlFailed = true;
+            throw new Error('OpenCode service unavailable');
           }
-          connectionKey = nextKey;
-          attached = next;
-          return new URL(buildOpenCodeUrl(next.generation === 'oc2' ? '/api/event' : '/global/event', ''));
-        } catch {
-          buildUrlFailed = true;
-          throw new Error('OpenCode service unavailable');
-        }
-      },
-      getHeaders: getOpenCodeAuthHeaders,
-      getConnectionKey: () => connectionKey,
-      onConnect() {
-        if (controller !== readerController || readerController.signal.aborted) return;
-        connected = true;
-        const wasReady = everConnected;
-        everConnected = true;
-        notifyStatus({ type: 'connect', wasReady });
-      },
-      onDisconnect({ reason }) {
-        if (controller !== readerController) return;
-        connected = false;
-        notifyStatus({ type: 'disconnect', reason });
-      },
-      onEvent(event) {
-        if (controller !== readerController || readerController.signal.aborted) return;
-        if (keyOf(descriptor()) !== connectionKey) return;
-        coalescer.push(event);
-      },
-      onError(error) {
-        if (controller !== readerController || readerController.signal.aborted) {
-          return;
-        }
+        },
+        getHeaders: getOpenCodeAuthHeaders,
+        getConnectionKey: () => connectionKey,
+        onConnect() {
+          if (controller !== readerController || readerController.signal.aborted) return;
+          connected = true;
+          const wasReady = everConnected;
+          everConnected = true;
+          notifyStatus({ type: 'connect', wasReady });
+        },
+        onDisconnect({ reason }) {
+          if (controller !== readerController) return;
+          connected = false;
+          notifyStatus({ type: 'disconnect', reason });
+        },
+        onEvent(event) {
+          if (controller !== readerController || readerController.signal.aborted) return;
+          if (keyOf(descriptor()) !== connectionKey) return;
+          coalescer.push(event);
+        },
+        onError(error) {
+          if (controller !== readerController || readerController.signal.aborted) {
+            return;
+          }
 
-        notifyStatus({
-          type: everConnected ? 'error' : 'initial-error',
-          error,
-          buildUrlFailed,
-        });
-      },
-    });
+          notifyStatus({
+            type: everConnected ? 'error' : 'initial-error',
+            error,
+            buildUrlFailed,
+          });
+        },
+      });
 
-    void reader.start();
+      void reader.start();
+    })();
   };
 
   const stop = () => {
+    startSequence += 1;
     connected = false;
     // Text that already arrived belongs in the retained replay suffix.
     coalescer.flush();
@@ -215,11 +278,16 @@ export function createGlobalMessageStreamHub({
     hasConnected() {
       return everConnected;
     },
-    subscribeEvent(subscriber) {
+    subscribeEvent(subscriber, { spaces = false } = {}) {
       eventSubscribers.add(subscriber);
+      if (spaces) spaceSubscribers.add(subscriber);
       return () => {
         eventSubscribers.delete(subscriber);
+        spaceSubscribers.delete(subscriber);
       };
+    },
+    injectEvent({ payload, directory, spaceId }) {
+      coalescer.push({ envelope: { directory, spaceId, kernelKey: keyOf(descriptor()) }, payload });
     },
     subscribeStatus(subscriber) {
       statusSubscribers.add(subscriber);

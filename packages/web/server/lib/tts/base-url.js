@@ -1,3 +1,5 @@
+import { isEnterpriseMode } from '../enterprise-mode.js';
+
 const LOCAL_BASE_URL_HOSTS = new Set([
   'localhost',
   '127.0.0.1',
@@ -45,6 +47,10 @@ export const normalizeCustomOpenAIBaseURL = (value) => {
 
   if (parsed.username || parsed.password) {
     return { error: 'Custom server URL must not include credentials' };
+  }
+
+  if (isEnterpriseMode() && !isAllowedLocalHost(parsed.hostname)) {
+    return { error: 'In enterprise mode a custom speech server has to run on this machine.' };
   }
 
   const isDesktop = (process.env.OPENCHAMBER_RUNTIME || '').trim().toLowerCase() === 'desktop';

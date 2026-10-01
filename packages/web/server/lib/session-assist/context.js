@@ -64,6 +64,7 @@ function readMessage({ info, parts }) {
   }
   return {
     id: info.id, role: info.role, parentID: info.parentID,
+    created: Number.isFinite(info.time?.created) ? info.time.created : null,
     providerID: info.providerID, modelID: info.modelID,
     complete: info.role === 'assistant' && info.finish === 'stop' && Boolean(info.time?.completed) && !info.error && !info.summary,
     summary: Boolean(info.summary),
@@ -72,7 +73,7 @@ function readMessage({ info, parts }) {
   };
 }
 
-function collectTurns(messages) {
+function collectTurns(messages, limit = TURN_LIMIT) {
   const turns = [];
   let active = null;
   let parents = new Set();
@@ -90,7 +91,39 @@ function collectTurns(messages) {
       active.complete = message.complete && Boolean(message.text);
     }
   }
-  return turns.slice(-TURN_LIMIT);
+  return turns.slice(-limit);
+}
+
+const settledTurns = (messages) => collectTurns(messages, Infinity)
+  .filter((turn) => turn.complete)
+  .slice(-TURN_LIMIT);
+
+/** Completed turns before a newly sent request; incomplete tails are excluded. */
+export async function loadSettledTurns({ readPage, signal }) {
+  let messages = [];
+  let before;
+  const cursors = new Set();
+  const ids = new Set();
+  for (let pageNumber = 0; pageNumber < MAX_PAGES; pageNumber += 1) {
+    signal.throwIfAborted();
+    const page = await readPage({ limit: PAGE_SIZE, before });
+    signal.throwIfAborted();
+    if (!Array.isArray(page?.data)) throw new Error('Session message page is unavailable');
+    const older = [];
+    for (const record of page.data) {
+      if (!record?.info?.id || ids.has(record.info.id)) continue;
+      ids.add(record.info.id);
+      older.push(readMessage(record));
+    }
+    messages = older.concat(messages);
+    const settled = settledTurns(messages);
+    const next = page.response?.headers?.get('x-next-cursor');
+    if (settled.length === TURN_LIMIT || !next) return settled;
+    if (cursors.has(next)) throw new Error('Session message pagination made no progress');
+    cursors.add(next);
+    before = next;
+  }
+  return settledTurns(messages);
 }
 
 /** Failure is thrown; null means no eligible final answer within bounded history. */

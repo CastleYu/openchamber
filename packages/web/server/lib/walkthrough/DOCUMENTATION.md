@@ -1,5 +1,9 @@
 # Walkthrough
 
+On OC2, an optional `providerID` from the composer keeps model selection on
+that provider after an explicit model choice. OC1 and requests without the ID
+keep the existing selection chain. Read and generate routes validate it.
+
 Generates a guided, ordered reading path through a diff: the small model groups
 related hunks into stops and chapters and explains each group, and the UI
 renders those stops interleaved with the code they describe.

@@ -3,6 +3,12 @@
 ## Purpose
 This module provides server-side Text-to-Speech services using OpenAI's TTS API. The historical shared text summarization endpoint now lives in `packages/web/server/lib/text/` as an API-compatible stub because the previous Zen model provider is unavailable.
 
+Enterprise mode refuses the cloud voice token and cloud TTS routes. Custom
+speech and transcription endpoints must use a host on this machine, even on
+desktop or when remote custom URLs are otherwise allowed. The shared URL
+validator also protects the dictation WebSocket provider and STT proxy. Local
+macOS `say` and local dictation synthesis remain available.
+
 ## Entrypoints and structure
 - `packages/web/server/lib/tts/index.js`: Public entrypoint imported by `packages/web/server/index.js`.
 - `packages/web/server/lib/tts/routes.js`: Express route registration for `/api/voice/*`, `/api/tts/*`, and `/api/stt/*` endpoints.

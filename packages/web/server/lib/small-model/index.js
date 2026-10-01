@@ -1,13 +1,13 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { readAuthFile } from '../opencode/auth.js';
+import { readOpenCodeCredentials } from '../opencode/auth.js';
 import { readConfigLayers } from '../opencode/shared.js';
 import { getModelCatalog } from './catalog.js';
 import { resolveSmallModel, parseModelRef, isUsableAuthEntry, getAuthEntryForProvider } from './resolve.js';
 import { DEDICATED_WIRE_FORMAT_PROVIDERS, callSmallModel, resolveProviderLogin } from './call.js';
 import { readMergedSettingsSync } from '../opencode/settings-files.js';
-import { getRuntimeProviderSnapshot } from './runtime-providers.js';
+import { getRuntimeDefaultModel, getRuntimeGeneration, getRuntimeProviderSnapshot } from './runtime-providers.js';
 
 // Never a small model, whatever the transport looks like. A plugin can publish
 // an OpenAI-compatible endpoint for Claude Code, but it is a façade over the
@@ -93,6 +93,20 @@ const readConfiguredSmallModel = (workingDirectory) => {
   }
 };
 
+const resolveForRuntime = async ({ auth, catalog, directory, explicitModel, preferredProviderID, preferredModelID }) => {
+  const explicit = parseModelRef(explicitModel);
+  if (explicit) return { ...explicit, source: 'request' };
+  const oc2 = getRuntimeGeneration() === 'oc2';
+  const selected = resolveSmallModel({
+    auth, catalog,
+    settingsSmallModel: readSmallModelSettingsOverride(),
+    configSmallModel: readConfiguredSmallModel(directory),
+    preferredProviderID, preferredModelID,
+    allowCrossProvider: !oc2,
+  });
+  return selected ?? (oc2 ? getRuntimeDefaultModel(directory) : null);
+};
+
 /**
  * Generates text with the user's small model, resolved and authenticated
  * entirely server-side from the OpenCode config and auth store.
@@ -102,20 +116,10 @@ export async function generateSmallModelText({ prompt, system, maxOutputTokens, 
     throw Object.assign(new Error('prompt is required'), { statusCode: 400 });
   }
 
-  const auth = readAuthFile();
+  const auth = await readOpenCodeCredentials();
   const catalog = await getModelCatalog().catch(() => ({}));
 
-  const explicit = parseModelRef(model);
-  const resolved = explicit
-    ? { ...explicit, source: 'request' }
-    : resolveSmallModel({
-      auth,
-      catalog,
-      settingsSmallModel: readSmallModelSettingsOverride(),
-      configSmallModel: readConfiguredSmallModel(directory),
-      preferredProviderID,
-      preferredModelID,
-    });
+  const resolved = await resolveForRuntime({ auth, catalog, directory, explicitModel: model, preferredProviderID, preferredModelID });
 
   if (!resolved) {
     throw Object.assign(
@@ -124,7 +128,7 @@ export async function generateSmallModelText({ prompt, system, maxOutputTokens, 
     );
   }
 
-  if (resolved.providerID === CLAUDE_CODE_PROVIDER) {
+  if (resolved.providerID === CLAUDE_CODE_PROVIDER && getRuntimeGeneration() !== 'oc2') {
     throw Object.assign(
       new Error('Claude Code cannot be used for background small-model actions. Choose another Small Model in Settings → Sessions.'),
       { statusCode: 422, code: 'small-model-provider-unsupported' },
@@ -192,7 +196,7 @@ export async function generateSmallModelText({ prompt, system, maxOutputTokens, 
  */
 export async function listAuthenticatedProviders() {
   try {
-    const auth = readAuthFile();
+    const auth = await readOpenCodeCredentials();
     const ids = new Set(
       Object.keys(auth || {}).filter((providerID) => isUsableAuthEntry(auth[providerID])),
     );
@@ -208,9 +212,10 @@ export async function listAuthenticatedProviders() {
     } catch {
       // The auth.json set below stands on its own.
     }
-    ids.delete(CLAUDE_CODE_PROVIDER);
+    if (getRuntimeGeneration() !== 'oc2') ids.delete(CLAUDE_CODE_PROVIDER);
     return Array.from(ids);
-  } catch {
+  } catch (error) {
+    if (getRuntimeGeneration() === 'oc2') throw error;
     return [];
   }
 }
@@ -265,21 +270,11 @@ const resolveReserveTokens = (outputReserveTokens, limits) => (
 );
 
 export async function describeSmallModel({ directory, preferredProviderID, preferredModelID, outputReserveTokens, overrideModel } = {}) {
-  const auth = readAuthFile();
+  const auth = await readOpenCodeCredentials();
   const catalog = await getModelCatalog().catch(() => ({}));
   // A caller with its own model setting (the diff walkthrough) outranks the
   // small-model chain entirely — it asked for this model on purpose.
-  const explicit = parseModelRef(overrideModel);
-  const resolved = explicit
-    ? { ...explicit, source: 'request' }
-    : resolveSmallModel({
-      auth,
-      catalog,
-      settingsSmallModel: readSmallModelSettingsOverride(),
-      configSmallModel: readConfiguredSmallModel(directory),
-      preferredProviderID,
-      preferredModelID,
-    });
+  const resolved = await resolveForRuntime({ auth, catalog, directory, explicitModel: overrideModel, preferredProviderID, preferredModelID });
   if (!resolved) return resolved;
 
   const entry = catalog?.[resolved.providerID]?.models?.[resolved.modelID];

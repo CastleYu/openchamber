@@ -1,3 +1,5 @@
+import { OPENCODE_GENERATION } from './compatibility.js';
+
 export const createHmrStateRuntime = (dependencies) => {
   const {
     globalThisLike,
@@ -22,6 +24,7 @@ export const createHmrStateRuntime = (dependencies) => {
         isShuttingDown: false,
         signalsAttached: false,
         userProvidedOpenCodePassword: undefined,
+        userProvidedOpenCodePasswordV2: undefined,
         openCodeAuthPassword: null,
         openCodeAuthSource: null,
       };
@@ -30,6 +33,9 @@ export const createHmrStateRuntime = (dependencies) => {
   };
 
   const ensureUserProvidedOpenCodePassword = (hmrState) => {
+    if (typeof hmrState.userProvidedOpenCodePasswordV2 === 'undefined') {
+      hmrState.userProvidedOpenCodePasswordV2 = processLike.env.OPENCODE_PASSWORD?.trim() || null;
+    }
     if (typeof hmrState.userProvidedOpenCodePassword !== 'undefined') {
       return;
     }
@@ -39,7 +45,9 @@ export const createHmrStateRuntime = (dependencies) => {
     hmrState.userProvidedOpenCodePassword = initialPassword || null;
   };
 
-  const getUserProvidedOpenCodePassword = (hmrState) => (
+  const getUserProvidedOpenCodePassword = (hmrState, generation = OPENCODE_GENERATION.OC1) => (
+    generation === OPENCODE_GENERATION.OC2 && hmrState.userProvidedOpenCodePasswordV2
+      ? hmrState.userProvidedOpenCodePasswordV2 :
     typeof hmrState.userProvidedOpenCodePassword === 'string' && hmrState.userProvidedOpenCodePassword.length > 0
       ? hmrState.userProvidedOpenCodePassword
       : null

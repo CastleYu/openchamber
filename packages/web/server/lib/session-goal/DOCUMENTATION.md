@@ -136,14 +136,15 @@ before touching the filesystem). Rationale: metadata rides every
       one new recovery attempt over the same transcript; the continuation
       consumes that permission, so another truncation blocks again. Resume
       does not bypass assistant errors or the token budget;
-   - otherwise, small-model audit of the objective + the last assistant turn
-     only — no conversation history and no continuation prompts
-     (`restrictToPreferredProvider`, session's own provider/model preferred):
-     JSON `{verdict: continue|complete|blocked, note}`. The audit is the SOLE
-     termination authority besides the hard stops above — the working agent
-     has no channel to settle its own goal. `complete` settles; `blocked`
-     increments `blockedStreak` and settles only after 3 consecutive blocked
-     verdicts, so a one-off snag cannot end the goal. Audit failure/absence
+   - otherwise, check the objective against the last assistant turn, without
+     conversation history or continuation prompts. OC1 keeps its original
+     small-model JSON `{verdict: continue|complete|blocked, note}` and settles
+     a `blocked` verdict after three consecutive checks. OC2 asks the three
+     questions in `audit.js`. It sends this text to Jev only when the user
+     explicitly chose the classifier as goal checker; otherwise the small
+     model answers. If Jev fails, the small model answers instead. OC2 settles
+     a `blocked` verdict immediately. Both generations keep the same hard
+     stops and check the captured kernel epoch before writes. Audit failure/absence
      tolerates ONE consecutive unaudited continuation (`auditFailStreak`); a
      second consecutive failure settles the goal as `blocked` ("progress
      audit unavailable") — resumable, and settling resets the streak so

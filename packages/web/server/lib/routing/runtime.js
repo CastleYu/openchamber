@@ -8,16 +8,34 @@
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { z } from 'zod';
 import { isRoutingFeatureAvailable } from './feature-flag.js';
-import { AUTO_MODEL_REF, BUILTIN_CATEGORIES, isAutoModel } from './defaults.js';
+import { AUTO_MODEL_REF, BUILTIN_CATEGORIES, ZEN_JEV_PROMOTION_ACTIVE, isAutoModel } from './defaults.js';
 import { createRoutingStore, parseEffectiveConfig } from './store.js';
 import { buildPermissionRequest, buildRoutingRequest, createJevClient, decidePermission, decideRouting, jevEndpoint } from './jev.js';
 import { loadRoutingHistory, turnsToHistory } from './history.js';
+import { CLASSIFIER_SOURCES, classifierEndpoint, legacyClassifier, normalizeCustomEndpointUrl, resolveClassifier } from './classifier.js';
+import { readOpenCodeCredentials } from '../opencode/auth.js';
 
 const HISTORY_TIMEOUT_MS = 2500;
 /** A held permission is remembered so reconnect reconciliation does not re-ask Jev. */
 const PERMISSION_DECISION_TTL_MS = 15 * 60 * 1000;
 
 const errorMessage = (error) => (error instanceof Error ? error.message : String(error));
+const customEndpointInputSchema = z.object({
+  url: z.string().trim().min(1).max(2000),
+  model: z.string().trim().min(1).max(200),
+  key: z.string().trim().max(4000).nullable().optional(),
+});
+const apiKeySchema = z.object({ type: z.literal('api'), key: z.string().min(1) });
+export const readOpenCodeKeys = async ({ readAuth = readOpenCodeCredentials, env = process.env } = {}) => {
+  let auth = {};
+  try { auth = await readAuth(); } catch { /* An unreadable credential store leaves environment keys available. */ }
+  const saved = (id) => apiKeySchema.safeParse(auth?.[id]).data?.key ?? null;
+  return {
+    zenKey: saved('opencode'),
+    openrouterKey: saved('openrouter') ?? env.OPENROUTER_API_KEY ?? null,
+    vercelKey: saved('vercel') ?? env.AI_GATEWAY_API_KEY ?? null,
+  };
+};
 
 const textPartSchema = z.object({ type: z.literal('text'), text: z.string(), synthetic: z.boolean().optional() });
 const commandBodySchema = z.object({ command: z.string(), arguments: z.string().optional() });
@@ -54,12 +72,26 @@ export function createRoutingRuntime({
   fetchImpl = fetch,
   store = createRoutingStore({ dataDir }),
   jev = createJevClient({ fetchImpl }),
+  readProviderKeys = () => readOpenCodeKeys(),
+  zenPromotionActive = ZEN_JEV_PROMOTION_ACTIVE,
+  enterpriseMode = () => false,
+  readPinnedEndpoint = () => null,
   now = Date.now,
 }) {
   const permissionDecisions = new Map();
   const autoSessions = new Map();
   const identityKey = (identity) => `${identity.generation}\0${identity.endpoint}\0${identity.epoch}`;
-  const currentIdentity = () => kernelOperations?.captureIdentity() ?? null;
+  let lastIdentityKey = '';
+  const currentIdentity = () => {
+    const identity = kernelOperations?.captureIdentity() ?? null;
+    const key = identity ? identityKey(identity) : '';
+    if (key !== lastIdentityKey) {
+      lastIdentityKey = key;
+      permissionDecisions.clear();
+      autoSessions.clear();
+    }
+    return identity;
+  };
   const generation = () => currentIdentity()?.generation ?? 'oc1';
   const assertIdentity = (expected) => {
     if (!expected) return;
@@ -77,17 +109,41 @@ export function createRoutingRuntime({
 
   const enabledCategories = (config) => config.categories.filter((category) => category.enabled);
 
+  const resolveAccess = async () => {
+    const [typesafeKey, selected, savedEndpoint] = await Promise.all([
+      store.readToken(), store.readClassifierSource(), store.readCustomEndpoint(),
+    ]);
+    const pinned = readPinnedEndpoint();
+    const customEndpoint = pinned ?? savedEndpoint;
+    const keys = { typesafeKey, customEndpoint, ...(await readProviderKeys()) };
+    const choice = enterpriseMode() ? (pinned && selected === 'custom' ? 'custom' : 'off') : selected;
+    const classification = resolveClassifier({ selected: choice, ...keys, zenPromotionActive });
+    const endpoint = classification.effective ? classifierEndpoint(classification.effective, keys) : null;
+    return { typesafeKey, classification, endpoint, customEndpoint, pinned: Boolean(pinned) };
+  };
+
   /** What the client needs to decide whether to offer Auto and what the settings page shows. */
   const describe = async () => {
     const current = generation() === 'oc2';
     const available = current || isRoutingFeatureAvailable();
     if (!available) return { available: false, autoReady: false, tokenPresent: false, config: null, builtins: [] };
-    const [config, token] = await Promise.all([store.readConfig(), store.readToken()]);
-    const tokenPresent = Boolean(token);
-    const autoReady = config.enabled && (current || tokenPresent) && Boolean(config.fallback) && enabledCategories(config).length >= 2;
+    const [config, access] = await Promise.all([store.readConfig(), current ? resolveAccess() : store.readToken()]);
+    const tokenPresent = current ? Boolean(access.typesafeKey) : Boolean(access);
+    const autoReady = config.enabled && (current ? Boolean(access.endpoint) : tokenPresent)
+      && Boolean(config.fallback) && enabledCategories(config).length >= 2;
     // Built-in text travels with the config so "Reset" in Settings restores the shipped wording.
     const result = { available, autoReady, tokenPresent, config, builtins: BUILTIN_CATEGORIES };
-    if (current) result.jevSource = jevEndpoint(token).source;
+    if (current) {
+      result.jevAvailable = Boolean(access.endpoint);
+      result.jevSource = access.classification.effective === 'typesafe' ? 'typesafe' : 'zen-free';
+      result.classifier = legacyClassifier(access.classification);
+      result.classification = access.classification;
+      result.customEndpoint = access.customEndpoint ? {
+        url: access.customEndpoint.url, model: access.customEndpoint.model,
+        keyPresent: Boolean(access.customEndpoint.key), pinned: access.pinned,
+      } : null;
+      result.enterpriseMode = enterpriseMode();
+    }
     return result;
   };
 
@@ -151,6 +207,27 @@ export function createRoutingRuntime({
     };
   };
 
+  const withKnownVariant = async (selection, directory, identity) => {
+    const variant = selection.model.variant;
+    if (identity?.generation !== 'oc2' || !variant || !kernelOperations?.getSelectionCatalog) return selection;
+    let models;
+    try {
+      models = (await kernelOperations.getSelectionCatalog({ directory })).data.models;
+      assertIdentity(identity);
+    } catch (error) {
+      console.warn('[routing] model catalog unavailable, keeping the saved variant:', errorMessage(error));
+      return selection;
+    }
+    const { providerID, id } = selection.model;
+    const entry = models.find((model) => model.providerID === providerID && model.modelID === id);
+    if (!entry || entry.variants?.some((known) => known.id === variant)) return selection;
+    return {
+      ...selection,
+      model: { providerID, id },
+      decision: { ...selection.decision, variant: null },
+    };
+  };
+
   const noteModelSelection = (sessionId, model, directory) => {
     if (!sessionId) return false;
     const identity = currentIdentity();
@@ -182,8 +259,9 @@ export function createRoutingRuntime({
       catch (error) { console.warn('[routing] history unavailable, routing on the request alone:', errorMessage(error)); }
       assertIdentity(identity);
       try {
-        const token = await store.readToken();
-        const { answers, ms } = await jev.ask(buildRoutingRequest({ categories: enabledCategories(config), history, request: (requestText ?? '').trim() }), token);
+        const access = await resolveAccess();
+        if (!access.endpoint) throw new Error('No classification provider is selected');
+        const { answers, ms } = await jev.ask(buildRoutingRequest({ categories: enabledCategories(config), history, request: (requestText ?? '').trim() }), access.endpoint);
         assertIdentity(identity);
         const result = decideRouting(answers.category, { categories: enabledCategories(config), minConfidence: config.minConfidence });
         decision.category = result.category?.id ?? null;
@@ -197,6 +275,7 @@ export function createRoutingRuntime({
         decision.error = errorMessage(error);
       }
     }
+    selection = await withKnownVariant(selection, directory, identity);
     Object.assign(decision, selection.decision);
     broadcast('openchamber:routing.decision', decision);
     return { model: selection.model, agent: selection.agent, decision };
@@ -268,10 +347,14 @@ export function createRoutingRuntime({
     const cached = permissionDecisions.get(permission.id);
     if (cached && now() - cached.at < PERMISSION_DECISION_TTL_MS) return cached.result;
     const state = await describe();
-    if (!state.available || !state.config?.enabled || !state.config.safetyNet.enabled || !state.tokenPresent) return { action: 'accept' };
+    const oc2 = generation() === 'oc2';
+    if (!oc2 && (!state.available || !state.config?.enabled || !state.config.safetyNet.enabled || !state.tokenPresent)) return { action: 'accept' };
+    if (oc2 && !state.jevAvailable) return { action: 'hold', unavailable: true };
     let result;
     try {
-      const token = await store.readToken();
+      const access = oc2 ? await resolveAccess() : null;
+      if (oc2 && !access.endpoint) return { action: 'hold', unavailable: true };
+      const token = oc2 ? access.endpoint : await store.readToken();
       const { answers } = await jev.ask(buildPermissionRequest(permission), token);
       const verdict = decidePermission(answers, { threshold: state.config.safetyNet.threshold });
       result = verdict.hold
@@ -283,7 +366,7 @@ export function createRoutingRuntime({
         });
       }
     } catch (error) {
-      result = { action: 'accept', skipped: errorMessage(error) };
+      result = { action: oc2 ? 'hold' : 'accept', skipped: errorMessage(error) };
       broadcast('openchamber:routing.safety-skipped', {
         permissionId: permission.id, sessionId: permission.sessionID, directory: directory ?? null, error: result.skipped,
       });
@@ -305,12 +388,52 @@ export function createRoutingRuntime({
   const setToken = async (token) => {
     const parsed = z.string().trim().min(1).max(4000).safeParse(token);
     if (!parsed.success) throw Object.assign(new Error('A Jev API key is required'), { status: 400 });
+    if (generation() === 'oc2' && enterpriseMode()) {
+      throw Object.assign(new Error('Classification provider is restricted by enterprise policy'), { status: 403 });
+    }
     await store.writeToken(parsed.data);
+    if (generation() === 'oc2') await store.writeClassifierSource('typesafe');
     return publishUpdated();
   };
 
   const clearToken = async () => {
     await store.clearToken();
+    return publishUpdated();
+  };
+
+  const legacySafetyNetEnabled = async () => {
+    try { return (await store.readConfig()).safetyNet.enabled === true ? 'safety' : 'auto'; }
+    catch { return 'auto'; }
+  };
+
+  const setClassifierSource = async (source) => {
+    if (generation() !== 'oc2') throw Object.assign(new Error('Classification sources require OpenCode 2'), { status: 404 });
+    if (!CLASSIFIER_SOURCES.includes(source)) throw Object.assign(new Error('Unknown classification provider'), { status: 400 });
+    if (enterpriseMode() && source !== 'off' && !(source === 'custom' && readPinnedEndpoint())) {
+      throw Object.assign(new Error('Classification provider is restricted by enterprise policy'), { status: 403 });
+    }
+    await store.writeClassifierSource(source);
+    return publishUpdated();
+  };
+
+  const setCustomEndpoint = async (input) => {
+    if (generation() !== 'oc2') throw Object.assign(new Error('Custom classification requires OpenCode 2'), { status: 404 });
+    if (readPinnedEndpoint()) throw Object.assign(new Error('Custom endpoint is set by the administrator'), { status: 409 });
+    if (enterpriseMode()) throw Object.assign(new Error('Custom endpoint is restricted by enterprise policy'), { status: 403 });
+    const parsed = customEndpointInputSchema.safeParse(input);
+    if (!parsed.success) throw Object.assign(new Error('A URL and model are required'), { status: 400 });
+    const previous = await store.readCustomEndpoint();
+    const endpoint = { url: normalizeCustomEndpointUrl(parsed.data.url), model: parsed.data.model };
+    const key = parsed.data.key === undefined || parsed.data.key === '' ? previous?.key : parsed.data.key;
+    if (key) endpoint.key = key;
+    await store.writeCustomEndpoint(endpoint);
+    await store.writeClassifierSource('custom');
+    return publishUpdated();
+  };
+
+  const clearCustomEndpoint = async () => {
+    if (readPinnedEndpoint()) throw Object.assign(new Error('Custom endpoint is set by the administrator'), { status: 409 });
+    await store.clearCustomEndpoint();
     return publishUpdated();
   };
 
@@ -324,5 +447,6 @@ export function createRoutingRuntime({
   };
 
   return { generation, describe, resolvePromptBody, noteModelSelection, isAutoSession, resolveAutoSelection, routeSend,
-    evaluatePermission, forgetPermission, heldPermissions, updateConfig, setToken, clearToken };
+    evaluatePermission, forgetPermission, heldPermissions, updateConfig, setToken, clearToken,
+    legacySafetyNetEnabled, setClassifierSource, setCustomEndpoint, clearCustomEndpoint };
 }

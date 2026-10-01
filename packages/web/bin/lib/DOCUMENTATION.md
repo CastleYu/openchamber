@@ -59,6 +59,7 @@ Command modules implement user-facing commands and preserve output contracts acr
   - Emits a **pairing v2** link (`openchamber://connect?v=2&p=<base64url>`): it creates a one-time pairing session in the shared store (`client-pairing-sessions.json`) and encodes the pairing id + secret + transport candidates. The client redeems the secret over whichever candidate connects first (`/api/client-auth/pairing/redeem`). No standalone token is embedded — the QR itself is the single-use credential.
   - The default form advertises the resolved server URL as a direct (lan/tunnel) candidate and folds in a relay candidate when the host relay is enabled, so one link works on-LAN and off-network.
   - `--relay` builds a relay-only pairing link (the sole candidate is the relay transport), for sharing with a device that is not on the host's network — no server URL, no auto-start. The relay endpoint follows `OPENCHAMBER_RELAY_URL` / the stored setting / the default, matching the running host; the host must be running with the relay enabled to serve the redeem over the tunnel.
+  - A machine-pinned relay URL takes precedence over the stored setting so the pairing offer names the host's actual relay.
 
 - `commands-update.js`
   - Implements `openchamber update`.
@@ -69,6 +70,7 @@ Command modules implement user-facing commands and preserve output contracts acr
   - Implements `openchamber tunnel` and its subcommands: `profile`, `providers`, `ready`, `doctor`, `status`, `start`, `stop`, and `completion`.
   - Owns tunnel-specific command flow, interactive prompt decisions, managed-local/managed-remote startup, QR display rules, tunnel start/stop API calls, and tunnel profile command handling.
   - Receives `serveCommand` and `stopCommand` by dependency injection. Do not reach back into `cli.js` command globals from this module.
+  - Auto-started tunnel instances receive a generated UI password when none was supplied; human, quiet, and JSON output each return it once. An already-running passwordless instance must be restarted with protection before a public tunnel can start.
 
 ## Shared Helper Modules
 

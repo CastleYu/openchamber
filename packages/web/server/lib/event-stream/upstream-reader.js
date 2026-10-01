@@ -149,7 +149,7 @@ export function createUpstreamSseReader({
               response,
             });
             await cancelResponseBody(response);
-            await waitForReconnectDelay(reconnectDelayMs, signal);
+            await waitForReconnectDelay(resolveTimeoutMs(reconnectDelayMs, DEFAULT_UPSTREAM_RECONNECT_DELAY_MS), signal);
             continue;
           }
 
@@ -224,7 +224,7 @@ export function createUpstreamSseReader({
         }
 
         if (!stopped && !signal?.aborted) {
-          await waitForReconnectDelay(reconnectDelayMs, signal);
+          await waitForReconnectDelay(resolveTimeoutMs(reconnectDelayMs, DEFAULT_UPSTREAM_RECONNECT_DELAY_MS), signal);
         }
       }
     })().finally(() => {

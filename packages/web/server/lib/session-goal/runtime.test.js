@@ -610,7 +610,7 @@ describe('session goal kernel operations', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  const setup = (generation, generate) => {
+  const setup = (generation, generate, checker = 'small-model') => {
     const active = { ...session, metadata: { openchamber: { goal: { ...goal } } } };
     let identity = { generation, endpoint: 'http://opencode.test', epoch: 1 };
     const raw = generation === 'oc1'
@@ -631,21 +631,71 @@ describe('session goal kernel operations', () => {
       sendPrompt: vi.fn(async () => ({ accepted: true })),
     };
     const notify = vi.fn();
+    const jev = { ask: vi.fn(async () => ({ answers: {
+      all_done: { noul: 0.95 }, remaining: { noul: 0.02 }, needs_user: { noul: 0.01 },
+    } })) };
+    const classifierEndpoint = vi.fn(async () => ({ url: 'https://jev.test', model: 'jev', headers: {} }));
     const runtime = createSessionGoalRuntime({ kernelOperations: ops,
       buildOpenCodeUrl: (pathname) => `http://opencode.test${pathname}`,
       getOpenCodeAuthHeaders: () => ({}),
       getSmallModelService: async () => ({ generateSmallModelText: generate }),
+      classifierEndpoint, jev, getChecker: () => checker,
       emitGoalNotification: notify, isEnabled: () => true, idleQuietMs: 10 });
-    return { runtime, ops, notify, switchEpoch: () => { identity = { ...identity, epoch: 2 }; } };
+    return { runtime, ops, notify, jev, classifierEndpoint, switchEpoch: () => { identity = { ...identity, epoch: 2 }; } };
   };
 
   it.each(['oc1', 'oc2'])('keeps the %s agent, model and variant for continuation', async (generation) => {
-    const { runtime, ops } = setup(generation, async () => ({ text: '{"verdict":"continue","note":"More work"}', providerID: 'provider', modelID: 'model' }));
+    const { runtime, ops } = setup(generation, async () => ({ text: generation === 'oc1'
+      ? '{"verdict":"continue","note":"More work"}'
+      : '{"all_done":false,"remaining":true,"needs_user":false}', providerID: 'provider', modelID: 'model' }));
     await runIdleTick(runtime);
     expect(ops.sendPrompt).toHaveBeenCalledTimes(1);
     const request = ops.sendPrompt.mock.calls[0][0].request;
     if (generation === 'oc1') expect(request.body).toMatchObject({ agent: 'review', variant: 'high', model: { providerID: 'provider', modelID: 'model' } });
     else expect(request).toMatchObject({ agent: 'review', model: { providerID: 'provider', id: 'model', variant: 'high' } });
+    runtime.stop();
+  });
+
+  it('uses Jev only after the OC2 checker is explicitly selected', async () => {
+    const generate = vi.fn(async () => ({ text: '{"all_done":false,"remaining":true,"needs_user":false}', providerID: 'provider', modelID: 'model' }));
+    const selected = setup('oc2', generate, 'classifier');
+    await runIdleTick(selected.runtime);
+    expect(selected.classifierEndpoint).toHaveBeenCalledTimes(1);
+    expect(selected.jev.ask).toHaveBeenCalledTimes(1);
+    expect(generate).not.toHaveBeenCalled();
+    expect(selected.ops.sendPrompt).not.toHaveBeenCalled();
+    selected.runtime.stop();
+
+    const defaulted = setup('oc2', generate);
+    await runIdleTick(defaulted.runtime);
+    expect(defaulted.classifierEndpoint).not.toHaveBeenCalled();
+    expect(defaulted.jev.ask).not.toHaveBeenCalled();
+    expect(generate).toHaveBeenCalledTimes(1);
+    defaulted.runtime.stop();
+  });
+
+  it('falls back to the OC2 small model when the selected classifier cannot answer', async () => {
+    const generate = vi.fn(async () => ({
+      text: '{"all_done":false,"remaining":true,"needs_user":false}', providerID: 'provider', modelID: 'model',
+    }));
+    const { runtime, jev, ops } = setup('oc2', generate, 'classifier');
+    jev.ask.mockRejectedValueOnce(new Error('Jev unavailable'));
+    await runIdleTick(runtime);
+    expect(jev.ask).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(ops.sendPrompt).toHaveBeenCalledTimes(1);
+    runtime.stop();
+  });
+
+  it('falls back when resolving the selected classifier fails before any transcript leaves', async () => {
+    const generate = vi.fn(async () => ({
+      text: '{"all_done":false,"remaining":true,"needs_user":false}', providerID: 'provider', modelID: 'model',
+    }));
+    const { runtime, classifierEndpoint, jev } = setup('oc2', generate, 'classifier');
+    classifierEndpoint.mockRejectedValueOnce(new Error('No endpoint'));
+    await runIdleTick(runtime);
+    expect(jev.ask).not.toHaveBeenCalled();
+    expect(generate).toHaveBeenCalledTimes(1);
     runtime.stop();
   });
 

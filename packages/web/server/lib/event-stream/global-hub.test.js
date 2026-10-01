@@ -2,6 +2,48 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createGlobalMessageStreamHub } from './global-hub.js';
 
+it('delivers early Space events only to opted-in subscribers and uses the OC2 translator', () => {
+  const events = [];
+  const hostEvents = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => ({ generation: 'oc2', endpoint: 'http://host', epoch: 1 }),
+    buildOpenCodeUrl: path => `http://host${path}`,
+    getOpenCodeAuthHeaders: () => ({}),
+  });
+  hub.subscribeEvent(event => hostEvents.push(event));
+  hub.subscribeEvent(event => events.push(event), { spaces: true });
+  hub.injectEvent({
+    spaceId: 'abcdef123456', directory: '/spaces/abcdef123456/project',
+    payload: { id: 'space-event', type: 'session.execution.started', data: { sessionID: 'space-session' } },
+  });
+  expect(hostEvents).toHaveLength(0);
+  expect(events).toHaveLength(1);
+  expect(events[0].spaceId).toBe('abcdef123456');
+  expect(events[0].translated().some(event => event.type === 'session.status')).toBe(true);
+});
+
+it('discards a buffered Space delta when the host kernel epoch retires', () => {
+  let runtime = { generation: 'oc2', endpoint: 'http://host', epoch: 1 };
+  const events = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => runtime,
+    buildOpenCodeUrl: path => `http://host${path}`,
+    getOpenCodeAuthHeaders: () => ({}),
+    deltaCoalesceWindowMs: 1000,
+  });
+  hub.subscribeEvent(event => events.push(event), { spaces: true });
+  const inject = delta => hub.injectEvent({
+    spaceId: 'abcdef123456', directory: '/spaces/abcdef123456/project',
+    payload: { type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta } },
+  });
+  inject('first');
+  inject('retired');
+  runtime = { ...runtime, epoch: 2 };
+  hub.flushPending();
+  expect(events.map(event => event.payload.properties.delta)).toEqual(['first']);
+  hub.stop();
+});
+
 it('keeps OC2 browser wire events raw and resets replay across kernel identities', async () => {
   let runtime = { generation: 'oc1', endpoint: 'http://one', epoch: 1 };
   const urls = [];
@@ -375,6 +417,64 @@ describe('createGlobalMessageStreamHub', () => {
     } finally {
       hub.stop();
       warnSpy.mockRestore();
+    }
+  });
+
+  it('waits for the kernel generation before opening the upstream stream', async () => {
+    let runtime = { generation: 'unknown', endpoint: null, epoch: 0 };
+    const urls = [];
+    const statuses = [];
+    const received = [];
+    const hub = createGlobalMessageStreamHub({
+      getKernelRuntime: () => runtime,
+      buildOpenCodeUrl: (pathname) => `http://127.0.0.1${pathname}`,
+      getOpenCodeAuthHeaders: () => ({}),
+      kernelReadyTimeoutMs: 1000,
+      upstreamReconnectDelayMs: 60_000,
+      fetchImpl: async (url) => {
+        urls.push(String(url));
+        return createSseResponse({
+          blocks: ['id: ready-1\ndata: {"type":"server.connected","properties":{}}\n\n'],
+        });
+      },
+    });
+    hub.subscribeEvent((event) => received.push(event));
+    hub.subscribeStatus((status) => statuses.push(status));
+    try {
+      hub.start();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      expect(urls).toHaveLength(0);
+      runtime = { generation: 'oc1', endpoint: 'http://127.0.0.1', epoch: 1 };
+      await waitForAssertion(() => expect(received).toHaveLength(1));
+      expect(statuses.some((status) => status.type === 'initial-error')).toBe(false);
+    } finally {
+      hub.stop();
+    }
+  });
+
+  it('keeps the existing error behaviour after the kernel readiness timeout', async () => {
+    const statuses = [];
+    let fetchCalls = 0;
+    const hub = createGlobalMessageStreamHub({
+      getKernelRuntime: () => ({ generation: 'unknown', endpoint: null, epoch: 0 }),
+      buildOpenCodeUrl: (pathname) => `http://127.0.0.1${pathname}`,
+      getOpenCodeAuthHeaders: () => ({}),
+      kernelReadyTimeoutMs: 30,
+      upstreamReconnectDelayMs: 60_000,
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return createSseResponse();
+      },
+    });
+    hub.subscribeStatus((status) => statuses.push(status));
+    try {
+      hub.start();
+      await waitForAssertion(() => {
+        expect(statuses.some((status) => status.type === 'initial-error' && status.buildUrlFailed === true)).toBe(true);
+      });
+      expect(fetchCalls).toBe(0);
+    } finally {
+      hub.stop();
     }
   });
 

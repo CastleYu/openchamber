@@ -25,14 +25,17 @@
  * @property {number} [nextResetTime]
  * @property {Array<{modelCode: string, usage: number}>} [usageDetails]
  */
-import { readAuthFile } from '../../opencode/auth.js';
+import { readOpenCodeCredentials } from '../../opencode/auth.js';
 import { readConfigLayers } from '../../opencode/shared.js';
 import {
   getAuthEntry,
   normalizeAuthEntry,
   buildResult,
   toUsageWindow,
+  toNumber,
+  asNonEmptyString,
   resolveWindowSeconds,
+  resolveWindowLabel,
   normalizeTimestamp
 } from '../utils/index.js';
 
@@ -40,8 +43,26 @@ export const providerId = 'zhipuai-coding-plan';
 export const providerName = 'Zhipu AI Coding Plan';
 const aliases = ['zhipuai-coding-plan', 'zhipuai', 'zhipu'];
 
-function getApiKey() {
-  const auth = readAuthFile();
+const formatCreditAmount = (value) => value < 1000 ? value.toLocaleString('en-US') : `${Math.round(value / 100) / 10}k`;
+const formatCreditValueLabel = (limit) => {
+  const used = toNumber(limit?.currentValue);
+  const total = toNumber(limit?.usage);
+  return used === null || total === null ? null : `${formatCreditAmount(used)} / ${formatCreditAmount(total)} credits`;
+};
+const resolveUsedPercent = (limit) => {
+  const percentage = toNumber(limit?.percentage);
+  if (percentage !== null) return percentage;
+  const used = toNumber(limit?.currentValue);
+  const total = toNumber(limit?.usage);
+  return used === null || total === null || total <= 0 ? null : Math.round((used / total) * 100);
+};
+const envelopeError = (payload) => {
+  const code = payload?.code;
+  if (payload?.success !== false && !(code !== undefined && code !== null && code !== 200)) return null;
+  return asNonEmptyString(payload?.msg) ?? `API error: ${code ?? 'unknown'}`;
+};
+
+function getApiKey(auth) {
   const entry = normalizeAuthEntry(getAuthEntry(auth, aliases));
   const apiKeyFromAuth = entry?.key ?? entry?.token;
 
@@ -65,12 +86,12 @@ function getApiKey() {
   return null;
 }
 
-export const isConfigured = () => {
-  return Boolean(getApiKey());
+export const isConfigured = (auth) => {
+  return Boolean(getApiKey(auth));
 };
 
 export const fetchQuota = async () => {
-  const apiKey = getApiKey();
+  const apiKey = getApiKey(await readOpenCodeCredentials());
 
   if (!apiKey) {
     return buildResult({
@@ -102,27 +123,27 @@ export const fetchQuota = async () => {
     }
 
     const payload = await response.json();
+    const failure = envelopeError(payload);
+    if (failure) {
+      return buildResult({ providerId, providerName, ok: false, configured: true, error: failure });
+    }
     const limits = Array.isArray(payload?.data?.limits) ? payload.data.limits : [];
-
-    const tokensLimit = limits.find((limit) => limit?.type === 'TOKENS_LIMIT');
-    const mcpToolsTimeLimit = limits.find((limit) => limit?.type === 'TIME_LIMIT');
 
     const windows = {};
 
-    // Handle TOKENS_LIMIT (5-hour window for token usage)
-    if (tokensLimit) {
-      const windowSeconds = resolveWindowSeconds(tokensLimit);
-      const resetAt = tokensLimit?.nextResetTime ? normalizeTimestamp(tokensLimit.nextResetTime) : null;
-      const usedPercent = typeof tokensLimit?.percentage === 'number' ? tokensLimit.percentage : null;
-
-      windows['Tokens'] = toUsageWindow({
-        usedPercent,
+    for (const limit of limits.filter((entry) => entry?.type === 'TOKENS_LIMIT' || entry?.type === 'CREDIT_LIMIT')) {
+      const windowSeconds = resolveWindowSeconds(limit);
+      const resetAt = limit?.nextResetTime ? normalizeTimestamp(limit.nextResetTime) : null;
+      windows[resolveWindowLabel(windowSeconds)] = toUsageWindow({
+        usedPercent: resolveUsedPercent(limit),
         windowSeconds,
-        resetAt
+        resetAt,
+        valueLabel: formatCreditValueLabel(limit)
       });
     }
 
     // Handle TIME_LIMIT (MCP tools monthly window)
+    const mcpToolsTimeLimit = limits.find((limit) => limit?.type === 'TIME_LIMIT');
     if (mcpToolsTimeLimit) {
       // TIME_LIMIT unit=5 means 1 month (30 days)
       const monthSeconds = 30 * 24 * 60 * 60;
@@ -141,7 +162,8 @@ export const fetchQuota = async () => {
       providerName,
       ok: true,
       configured: true,
-      usage: { windows }
+      usage: { windows },
+      planLabel: asNonEmptyString(payload?.data?.level)
     });
   } catch (error) {
     return buildResult({

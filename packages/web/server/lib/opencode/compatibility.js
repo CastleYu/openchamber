@@ -9,6 +9,7 @@ export const OPENCODE_GENERATION = Object.freeze({
 });
 
 export const MINIMUM_OPENCODE_V2_VERSION = '2.0.15';
+const CREDENTIAL_API_VERSION = '2.0.20';
 
 const PROBE_PATH = Object.freeze({
   HEALTH: '/global/health',
@@ -42,6 +43,17 @@ export const isSupportedOpenCodeVersion = (version) => {
     if (parsed.parts[index] !== minimum.parts[index]) {
       return parsed.parts[index] > minimum.parts[index];
     }
+  }
+  return !parsed.prerelease;
+};
+
+/** OpenCode 2.0.20 first exposes stored credentials through its own API. */
+export const supportsCredentialApi = (version) => {
+  const parsed = parseVersion(version);
+  if (!parsed || parsed.major !== 2) return false;
+  const minimum = parseVersion(CREDENTIAL_API_VERSION);
+  for (let index = 0; index < parsed.parts.length; index += 1) {
+    if (parsed.parts[index] !== minimum.parts[index]) return parsed.parts[index] > minimum.parts[index];
   }
   return !parsed.prerelease;
 };
@@ -88,7 +100,7 @@ const probe = async (endpoint, path, headers, fetchImpl, signal) => {
   }
 };
 
-export const detectOpenCodeGeneration = async ({ endpoint, epoch, headers = {}, fetchImpl = fetch, signal } = {}) => {
+export const detectOpenCodeGeneration = async ({ endpoint, epoch, headers = {}, headersForGeneration, fetchImpl = fetch, signal } = {}) => {
   let normalized;
   try {
     normalized = normalizeEndpoint(endpoint);
@@ -97,12 +109,12 @@ export const detectOpenCodeGeneration = async ({ endpoint, epoch, headers = {}, 
   }
 
   const [health, info] = await Promise.all([
-    probe(normalized, PROBE_PATH.HEALTH, headers, fetchImpl, signal),
-    probe(normalized, PROBE_PATH.INFO, headers, fetchImpl, signal),
+    probe(normalized, PROBE_PATH.HEALTH, headersForGeneration?.(OPENCODE_GENERATION.OC1) ?? headers, fetchImpl, signal),
+    probe(normalized, PROBE_PATH.INFO, headersForGeneration?.(OPENCODE_GENERATION.OC2) ?? headers, fetchImpl, signal),
   ]);
   const result = (generation, version = null) => ({ generation, endpoint: normalized, epoch, version });
 
-  if (health.kind === 'auth' || info.kind === 'auth') return result(OPENCODE_GENERATION.UNKNOWN);
+  if ((health.kind === 'auth' || info.kind === 'auth') && !headersForGeneration) return result(OPENCODE_GENERATION.UNKNOWN);
   if (health.kind === 'error' && info.kind === 'error') return result(OPENCODE_GENERATION.UNREACHABLE);
 
   const legacyVersion = health.version?.version ?? null;

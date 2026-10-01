@@ -2,6 +2,8 @@ import { createRequire } from 'node:module';
 
 import { isAgentMemoryFeatureAvailable } from '../agent-memory/feature-flag.js';
 import { isRoutingFeatureAvailable } from '../routing/feature-flag.js';
+import { isPermissionMode } from '../permission-auto-accept/modes.js';
+import { idleStopSchema } from '../spaces/idle-stop.js';
 
 // Generated from packages/ui/src/lib/settings/registry.ts by
 // `bun run settings-registry:generate`; `registry.test.ts` fails when stale.
@@ -9,6 +11,7 @@ import { isRoutingFeatureAvailable } from '../routing/feature-flag.js';
 // `createRequire` (import attributes differ across the Node versions we run on).
 const settingsRegistry = createRequire(import.meta.url)('./settings-registry.json');
 const MERMAID_STYLES = new Set(['openchamber', 'native', 'forest', 'neutral', 'hand-drawn', 'github-light', 'github-dark', 'nord', 'tokyo-night']);
+const WORKTREE_SORT_ORDERS = new Set(['recent', 'manual', 'a-z']);
 
 /**
  * Whether a client may persist this key through PUT /api/config/settings:
@@ -271,8 +274,10 @@ export const createSettingsHelpers = (dependencies) => {
       const sessions = {};
       const sourceSessions = candidate.permissionAutoAccept.sessions;
       if (sourceSessions && typeof sourceSessions === 'object' && !Array.isArray(sourceSessions)) {
-        for (const [sessionId, enabled] of Object.entries(sourceSessions)) {
-          if (sessionId && typeof enabled === 'boolean') sessions[sessionId] = enabled;
+        // A mode, or a boolean from a policy written before the modes existed;
+        // the permission runtime converts those on its first read.
+        for (const [sessionId, mode] of Object.entries(sourceSessions)) {
+          if (sessionId && (typeof mode === 'boolean' || isPermissionMode(mode))) sessions[sessionId] = mode;
         }
       }
       result.permissionAutoAccept = {
@@ -282,6 +287,15 @@ export const createSettingsHelpers = (dependencies) => {
           ? candidate.permissionAutoAccept.revision
           : 0,
       };
+    }
+    if (isPermissionMode(candidate.permissionDefaultMode)) {
+      result.permissionDefaultMode = candidate.permissionDefaultMode;
+    }
+    if (typeof candidate.messageSearchEnabled === 'boolean') {
+      result.messageSearchEnabled = candidate.messageSearchEnabled;
+    }
+    if (typeof candidate.messageSearchReasoningEnabled === 'boolean') {
+      result.messageSearchReasoningEnabled = candidate.messageSearchReasoningEnabled;
     }
     if (typeof candidate.desktopUiPassword === 'string') {
       result.desktopUiPassword = candidate.desktopUiPassword.trim();
@@ -303,6 +317,9 @@ export const createSettingsHelpers = (dependencies) => {
     }
     if (SIDEBAR_PROJECT_SORT_ORDER_VALUES.has(candidate.sidebarProjectSortOrder)) {
       result.sidebarProjectSortOrder = candidate.sidebarProjectSortOrder;
+    }
+    if (WORKTREE_SORT_ORDERS.has(candidate.sidebarWorktreeSortOrder)) {
+      result.sidebarWorktreeSortOrder = candidate.sidebarWorktreeSortOrder;
     }
     if (typeof candidate.sidebarShowRecentSection === 'boolean') {
       result.sidebarShowRecentSection = candidate.sidebarShowRecentSection;
@@ -410,8 +427,17 @@ export const createSettingsHelpers = (dependencies) => {
     if (typeof candidate.sessionSuggestionEnabled === 'boolean') {
       result.sessionSuggestionEnabled = candidate.sessionSuggestionEnabled;
     }
+    if (typeof candidate.sessionWorkEnabled === 'boolean') {
+      result.sessionWorkEnabled = candidate.sessionWorkEnabled;
+    }
+    if (typeof candidate.sessionWorkAutoOpen === 'boolean') {
+      result.sessionWorkAutoOpen = candidate.sessionWorkAutoOpen;
+    }
     if (typeof candidate.sessionGoalEnabled === 'boolean') {
       result.sessionGoalEnabled = candidate.sessionGoalEnabled;
+    }
+    if (candidate.sessionGoalChecker === 'classifier' || candidate.sessionGoalChecker === 'small-model') {
+      result.sessionGoalChecker = candidate.sessionGoalChecker;
     }
     if (typeof candidate.sessionGoalDefaultBudgetEnabled === 'boolean') {
       result.sessionGoalDefaultBudgetEnabled = candidate.sessionGoalDefaultBudgetEnabled;
@@ -614,6 +640,15 @@ export const createSettingsHelpers = (dependencies) => {
     }
     if (typeof candidate.optimizeSystemPrompt === 'boolean') {
       result.optimizeSystemPrompt = candidate.optimizeSystemPrompt;
+    }
+    if (typeof candidate.agentToolsCodeMode === 'boolean') {
+      result.agentToolsCodeMode = candidate.agentToolsCodeMode;
+    }
+    if (typeof candidate.isolatedSpacesEnabled === 'boolean') {
+      result.isolatedSpacesEnabled = candidate.isolatedSpacesEnabled;
+    }
+    if (idleStopSchema.safeParse(candidate.isolatedSpacesIdleStop).success) {
+      result.isolatedSpacesIdleStop = { ...candidate.isolatedSpacesIdleStop };
     }
     if (typeof candidate.openCodeUpdateToastDismissedVersion === 'string') {
       const version = candidate.openCodeUpdateToastDismissedVersion.trim();
@@ -1068,7 +1103,8 @@ export const createSettingsHelpers = (dependencies) => {
             desktopLanAccessActive: process.env.OPENCHAMBER_DESKTOP_LAN_ACCESS_ACTIVE === 'true',
             desktopLanAccessBlockedReason:
               process.env.OPENCHAMBER_DESKTOP_LAN_ACCESS_BLOCKED_REASON === 'missing-password'
-                ? 'missing-password'
+                || process.env.OPENCHAMBER_DESKTOP_LAN_ACCESS_BLOCKED_REASON === 'enterprise-mode'
+                ? process.env.OPENCHAMBER_DESKTOP_LAN_ACCESS_BLOCKED_REASON
                 : null,
           }
         : {}),

@@ -9,7 +9,7 @@ import {
   readConfigLayers,
   writeConfig,
 } from './shared-v2.js';
-import { findWebSearchProjectOverride, writeWebSearchSelection } from './config-v2.js';
+import { findWebSearchProjectOverride, writeWarmingEnabled, writeWebSearchSelection } from './config-v2.js';
 
 const PROJECT_CONFIG_NAMES = Object.freeze([
   path.join('.opencode', 'opencode.jsonc'),
@@ -28,6 +28,15 @@ export function setWebSearchSelection(selection) {
   const layers = requireReadableLayers(readConfigLayers(null));
   const target = getJsonWriteTarget(layers, AGENT_SCOPE.USER);
   const changed = writeWebSearchSelection(target.config, selection);
+  if (changed) writeConfig(target.config, target.path);
+  return { path: target.path, changed };
+}
+
+/** OC2's watched user configuration owns session warming. */
+export function setWarmingEnabled(enabled) {
+  const layers = requireReadableLayers(readConfigLayers(null));
+  const target = getJsonWriteTarget(layers, AGENT_SCOPE.USER);
+  const changed = writeWarmingEnabled(target.config, enabled);
   if (changed) writeConfig(target.config, target.path);
   return { path: target.path, changed };
 }

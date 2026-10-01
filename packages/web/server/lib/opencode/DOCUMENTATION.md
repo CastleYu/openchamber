@@ -14,8 +14,11 @@ This module provides OpenCode server integration utilities for the web server ru
   directory plugins; a user-owned config path retains the environment-based
   fallback. Only managed OC2 settings changes refresh this managed file.
 - Configuration entity/provider routes select their writers from the current
-  backend descriptor. OC2 credential inspection uses the read-only database view
-  in `auth-v2.js`; credential deletion belongs to OpenCode's credential API.
+  backend descriptor. OC2 2.0.15–2.0.19 credential inspection uses the retained
+  read-only database view in `auth-v2-legacy.js`. OC2 2.0.20 and newer use
+  OpenCode's authenticated credential API through `auth-v2.js`; a failed API
+  read never falls back to stale storage. Credential deletion belongs to
+  OpenCode's credential API.
   Unknown generations and provider requests spanning a connection change cannot
   fall through to OC1 configuration or credential writes.
 - `websearch-config.js` owns OC2 `GET/PUT /api/config/websearch`. The GET
@@ -126,13 +129,25 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/ui-auth/ui-passkeys.js`: UI passkey storage and WebAuthn registration/authentication helpers (outside OpenCode module).
 
 ## Public exports (auth.js)
+- `configureOpenCodeCredentials(getRuntime, source)`: Binds the current kernel
+  descriptor and OC2 API reader. The reader coalesces by endpoint and epoch.
+- `readOpenCodeCredentials()`: Reads the OC1 file, the retained pre-2.0.20 OC2
+  database owner, or the 2.0.20+ OC2 API according to the known version. A
+  failed read throws; the descriptor is checked again before returning.
 - `readAuthFile()`: Reads and parses `~/.local/share/opencode/auth.json`.
 - `writeAuthFile(auth)`: Writes auth file with automatic backup.
 - `removeProviderAuth(providerId)`: Removes a provider's auth entry.
-- `getProviderAuth(providerId)`: Returns auth for a specific provider or null.
+- `getProviderAuth(providerId)`: Async, returns the selected kernel's stored
+  auth for one provider or null. OC2 environment keys are not counted here.
 - `listProviderAuths()`: Returns list of provider IDs with configured auth.
 - `AUTH_FILE`: Auth file path constant.
 - `OPENCODE_DATA_DIR`: OpenCode data directory path constant.
+
+The generic proxy refuses `GET` and `HEAD /api/credential` in both enterprise
+and ordinary mode: OpenCode 2.0.20 returns raw secrets there. Enterprise mode
+also refuses `POST /api/credential`; account activation and removal stay
+available. The server reads the credential API privately with its own auth
+headers, never through the client proxy.
 
 ## Public exports (providers.js)
 - `getProviderSources(providerId, workingDirectory)`: Resolves which OpenCode config layers define a provider.
@@ -145,7 +160,7 @@ This module provides OpenCode server integration utilities for the web server ru
 - `AGENT_SCOPE`, `COMMAND_SCOPE`, `SKILL_SCOPE`: Scope constants with USER and PROJECT values.
 - `ensureDirs()`: Creates required OpenCode directories.
 - `parseMdFile(filePath)`, `writeMdFile(filePath, frontmatter, body)`: Markdown file operations with YAML frontmatter.
-- `getConfigPaths(workingDirectory)`, `readConfigLayers(workingDirectory)`, `readConfig(workingDirectory)`: Config file operations with layer merging (user, project, custom). `readConfigLayers` isolates `INVALID_JSONC` per layer: a broken file is omitted from the merge (`{}` for that layer only), recorded on `layerErrors`, and does not block valid sibling layers. Writes still refuse to overwrite the broken file.
+- `getConfigPaths(workingDirectory)`, `readConfigLayers(workingDirectory)`, `readConfig(workingDirectory)`: Config file operations with layer merging. OC1 keeps its existing user, project, custom order. OC2 reads both global `opencode.json` and `opencode.jsonc` when present: the JSONC file overrides the primary user file, followed by project and custom. A named entry is edited in its winning file; new user entries still go to the primary file. `readConfigLayers` isolates `INVALID_JSONC` per layer: a broken file is omitted from the merge (`{}` for that layer only), recorded on `layerErrors`, and does not block valid sibling layers. Writes still refuse to overwrite the broken file.
 - `readConfigFile(filePath)`: Reads one config file. Missing, whitespace-only, and comment-only files return `{}`; a comment-only file is recognized by `ValueExpected` being the only parse error. A `jsonc-parser` error that produces a partial or non-object tree throws `INVALID_JSONC` — partial parse trees must never be treated as authoritative (avoids rewriting a `$schema`-only stub over a full config). Content that yields no JSON value for any other reason (YAML, plain text) also throws instead of reading as empty.
 - `readConfigLayer(filePath)`: Same parse as `readConfigFile`, but isolates `INVALID_JSONC` to `{ config: {}, error }` so plugin/MCP/agent readers can skip one broken layer without aborting valid siblings. Writes still refuse to overwrite the broken file.
 - `writeConfig(config, filePath)`: Writes config with automatic backup. Refuses to overwrite an existing non-empty file that fails the same JSONC parse check.
@@ -166,7 +181,7 @@ This module provides OpenCode server integration utilities for the web server ru
   - `POST /api/opencode/upgrade` (enforces the active runtime's upgrade capability, serializes supported OpenCode upgrades, then restarts managed OpenCode so the new binary is active)
   - `GET /api/opencode/upgrade-status` (returns version availability plus the authoritative `upgrade.supported`, `upgrade.manager`, and `upgrade.reason` capability)
   - `POST /api/opencode/directory` (validates and activates an existing project directory; `{ create: true }` explicitly creates the requested project directory before activation, including outside the previously active workspace)
-  - `GET /api/provider/:providerId/source`
+  - `GET /api/provider/:providerId/source` (directory-scoped layer sources and stored provider `config`, with `apiKey` removed; OC1 reads its original user/project/custom layers, OC2 includes the user JSONC override; a runtime switch before reply fails)
   - `PUT /api/provider` (create/update custom OpenAI-compatible provider config in OpenCode user/project/custom layers via `scope`; secrets stay in auth via the OpenCode auth API)
   - `DELETE /api/provider/:providerId/auth`
 - Owns lazy auth library loading for provider auth checks/removal.

@@ -20,6 +20,7 @@ import path from 'path';
 import { z } from 'zod';
 
 import { GOAL_OBJECTIVE_CHAR_LIMIT, readObjective } from './objectives.js';
+import { buildJevAuditRequest, buildSmallModelAuditPrompt, decideProgress, readJevAnswers, readSmallModelAnswers } from './audit.js';
 import { readMergedSettingsSync } from '../opencode/settings-files.js';
 import { readDescendantActivity } from '../opencode/descendant-activity.js';
 
@@ -32,6 +33,10 @@ const OPENCHAMBER_SETTINGS_FILE = path.join(
 
 const isSessionGoalEnabled = () => (
   readMergedSettingsSync({ fs, path, settingsFilePath: OPENCHAMBER_SETTINGS_FILE }).sessionGoalEnabled !== false
+);
+const goalChecker = () => (
+  readMergedSettingsSync({ fs, path, settingsFilePath: OPENCHAMBER_SETTINGS_FILE }).sessionGoalChecker === 'classifier'
+    ? 'classifier' : 'small-model'
 );
 
 const IDLE_QUIET_MS = 15_000;
@@ -231,13 +236,13 @@ const parseGoalMetadata = (session) => {
   };
 };
 
-const messagePartsToText = (message) => {
+const messagePartsToText = (message, limit = TRANSCRIPT_PART_CHAR_LIMIT) => {
   const parts = Array.isArray(message?.parts) ? message.parts : [];
   return parts
     .map((part) => (part?.type === 'text' && typeof part.text === 'string' ? part.text : ''))
     .filter(Boolean)
     .join('\n')
-    .slice(0, TRANSCRIPT_PART_CHAR_LIMIT);
+    .slice(0, limit);
 };
 
 // OpenCode reports tokens per message, and each turn's cache.read carries
@@ -310,6 +315,9 @@ export const createSessionGoalRuntime = ({
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   getSmallModelService,
+  classifierEndpoint = async () => null,
+  jev = null,
+  getChecker = goalChecker,
   emitGoalNotification,
   isEnabled = isSessionGoalEnabled,
   idleQuietMs = IDLE_QUIET_MS,
@@ -451,8 +459,12 @@ export const createSessionGoalRuntime = ({
       ...(tokensBaseline !== undefined ? { tokensBaseline } : {}),
       ...(tokensCommitted !== undefined ? { tokensCommitted } : {}),
       ...(lastAccountedMessageID ? { lastAccountedMessageID } : {}),
-      ...(evaluationProviderID ? { evaluationProviderID } : {}),
-      ...(evaluationModelID ? { evaluationModelID } : {}),
+      ...(identity?.generation === 'oc2' && evaluationModelID !== undefined
+        ? { evaluationProviderID: evaluationProviderID ?? '', evaluationModelID }
+        : {
+            ...(evaluationProviderID ? { evaluationProviderID } : {}),
+            ...(evaluationModelID ? { evaluationModelID } : {}),
+          }),
     }), identity);
     if (!written) return;
     console.log(`[session-goal] ${sessionId} settled as ${status}${statusReason ? ` (${statusReason})` : ''}`);
@@ -528,6 +540,50 @@ export const createSessionGoalRuntime = ({
       if (Number(error?.statusCode) !== 404) {
         console.warn('[session-goal] audit failed:', error?.message || error);
       }
+      return null;
+    }
+  };
+
+  const runAuditV2 = async ({ goal, assistantText, directory, lastAssistantInfo, identity }) => {
+    const input = { objective: goal.objective, answer: assistantText };
+    const sameRuntime = () => {
+      const current = kernelOperations.captureIdentity();
+      return current.generation === identity.generation && current.endpoint === identity.endpoint && current.epoch === identity.epoch;
+    };
+    if (getChecker() === 'classifier' && jev && sameRuntime()) {
+      let endpoint;
+      try { endpoint = await classifierEndpoint(); } catch { endpoint = null; }
+      if (!sameRuntime()) return null;
+      if (endpoint) {
+        try {
+          const { answers } = await jev.ask(buildJevAuditRequest(input), endpoint);
+          if (!sameRuntime()) return null;
+          const scores = readJevAnswers(answers);
+          if (scores) return { verdict: decideProgress(scores), note: '', evaluationProviderID: '', evaluationModelID: endpoint.model };
+        } catch (error) {
+          console.warn('[session-goal] classification progress check failed:', error?.message || error);
+        }
+      }
+    }
+    if (!sameRuntime()) return null;
+    let service;
+    try { service = await getSmallModelService(); } catch { return null; }
+    if (!sameRuntime()) return null;
+    try {
+      const generated = await service.generateSmallModelText({
+        prompt: buildSmallModelAuditPrompt(input),
+        directory,
+        sessionID: lastAssistantInfo?.sessionID,
+        preferredProviderID: lastAssistantInfo?.providerID,
+        preferredModelID: lastAssistantInfo?.modelID,
+        restrictToPreferredProvider: true,
+      });
+      if (!sameRuntime()) return null;
+      const scores = readSmallModelAnswers(generated?.text);
+      if (!scores) return null;
+      return { verdict: decideProgress(scores), note: '', evaluationProviderID: generated.providerID, evaluationModelID: generated.modelID };
+    } catch (error) {
+      if (Number(error?.statusCode) !== 404) console.warn('[session-goal] small-model progress check failed:', error?.message || error);
       return null;
     }
   };
@@ -718,7 +774,7 @@ export const createSessionGoalRuntime = ({
       tokensUsed = Math.max(goal.tokensUsed, tokensCommitted + segmentCurrent);
     }
 
-    const assistantText = messagePartsToText(lastAssistant);
+    const assistantText = messagePartsToText(lastAssistant, identity?.generation === 'oc2' ? Infinity : TRANSCRIPT_PART_CHAR_LIMIT);
 
     // --- Terminal conditions, cheapest first ---
 
@@ -796,7 +852,10 @@ export const createSessionGoalRuntime = ({
     if (lastAssistantInfo.summary === true || abortedTail || lengthTail) {
       blockedStreak = goal.blockedStreak;
     } else {
-      audit = await runAudit({ goal: { ...goal, objective: effectiveObjective }, assistantText, directory, lastAssistantInfo: executionInfo ?? lastAssistantInfo });
+      const auditInput = { goal: { ...goal, objective: effectiveObjective }, assistantText, directory, lastAssistantInfo: executionInfo ?? lastAssistantInfo };
+      audit = identity?.generation === 'oc2'
+        ? await runAuditV2({ ...auditInput, identity })
+        : await runAudit(auditInput);
 
       // Audit unavailable: tolerate one consecutive failure (transient
       // hiccup), then stop the goal instead of continuing blind. Blocked is
@@ -824,6 +883,14 @@ export const createSessionGoalRuntime = ({
 
       if (audit?.verdict === 'blocked') {
         blockedStreak = goal.blockedStreak + 1;
+        if (identity?.generation === 'oc2') {
+          await settleGoal({
+            sessionId, directory, goal, status: 'blocked', statusReason: 'blocked per progress check', note: '',
+            tokensUsed, tokensBaseline, tokensCommitted, lastAccountedMessageID, identity,
+            evaluationProviderID: audit.evaluationProviderID, evaluationModelID: audit.evaluationModelID,
+          });
+          return;
+        }
         console.warn('[session-goal:diagnostic] blocked audit streak', {
           sessionId,
           blockedStreak,
@@ -842,19 +909,22 @@ export const createSessionGoalRuntime = ({
     // --- Continue: persist accounting first, then re-prompt ---
     // Order matters: if the write lands and the prompt fails, the goal just
     // waits for the next idle tick; the reverse could double-charge a turn.
-    const written = await writeGoal(sessionId, directory, goal.id, (current) => ({
-      tokensUsed,
-      tokensBaseline,
-      tokensCommitted,
-      lastAccountedMessageID,
-      turnsUsed: current.turnsUsed + 1,
-      blockedStreak,
-      auditFailStreak,
-      statusReason: '',
-      ...(audit?.note ? { note: audit.note } : {}),
-      ...(audit?.evaluationProviderID ? { evaluationProviderID: audit.evaluationProviderID } : {}),
-      ...(audit?.evaluationModelID ? { evaluationModelID: audit.evaluationModelID } : {}),
-    }), identity);
+    const written = await writeGoal(sessionId, directory, goal.id, (current) => {
+      const patch = {
+        tokensUsed, tokensBaseline, tokensCommitted, lastAccountedMessageID,
+        turnsUsed: current.turnsUsed + 1, blockedStreak, auditFailStreak, statusReason: '',
+      };
+      if (identity?.generation === 'oc2' && audit) {
+        patch.note = '';
+        patch.evaluationProviderID = audit.evaluationProviderID;
+        patch.evaluationModelID = audit.evaluationModelID;
+      } else if (audit) {
+        if (audit.note) patch.note = audit.note;
+        if (audit.evaluationProviderID) patch.evaluationProviderID = audit.evaluationProviderID;
+        if (audit.evaluationModelID) patch.evaluationModelID = audit.evaluationModelID;
+      }
+      return patch;
+    }, identity);
     if (!written) {
       console.log('[session-goal] goal changed during tick, dropping continuation');
       return;

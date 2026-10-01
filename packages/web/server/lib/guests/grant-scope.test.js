@@ -27,6 +27,14 @@ describe('guestGrantScope', () => {
     expect(guestGrantScope({ integration: { name: 'L', description: 'x', host: { provider: 'linear' } } }))
       .toEqual({ apiOrigin: 'https://api.linear.app' });
   });
+
+  test('stores the exact origin list with the capability grant', () => {
+    const approved = guestGrantScope({ origins: ['https://z.example', 'https://a.example'] });
+    expect(approved).toEqual({ origins: ['https://a.example', 'https://z.example'] });
+    const widened = guestGrantScope({ origins: ['https://a.example', 'https://z.example', 'https://new.example'] });
+    expect(effectiveGrants(['origins'], approved, widened)).toEqual([]);
+    expect(effectiveGrants(['origins'], undefined, approved)).toEqual([]);
+  });
 });
 
 describe('effectiveGrants', () => {

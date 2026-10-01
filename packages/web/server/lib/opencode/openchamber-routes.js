@@ -1,5 +1,7 @@
 import { PERSONAL_BUILD } from '../personal-build.js';
 
+import { publicEnterprisePolicy } from '../enterprise-mode.js';
+
 const SYSTEMD_SERVICE_UNIT_PATTERN = /^[A-Za-z0-9:_.@-]+\.service$/;
 
 function resolveSystemdServiceUnit(environment) {
@@ -73,6 +75,32 @@ export const registerOpenChamberRoutes = (app, dependencies) => {
   } = dependencies;
 
   let desktopRestartError = null;
+
+  /**
+   * How this server was launched, read from its instance file. A foreground
+   * server outside systemd has no process that can restart it after an
+   * install, so it cannot update itself.
+   */
+  const readLaunchState = async () => {
+    const currentPort = server.address()?.port || 3000;
+    const instanceFilePath = path.join(openchamberDataDir, 'run', `openchamber-${currentPort}.json`);
+    let storedOptions = { port: currentPort, daemon: true };
+    try {
+      const content = await fs.promises.readFile(instanceFilePath, 'utf8');
+      storedOptions = JSON.parse(content);
+    } catch {
+    }
+    const launchMode = storedOptions.launchMode === 'foreground' ? 'foreground' : 'daemon';
+    const isForegroundService = launchMode === 'foreground';
+    const systemdServiceUnit = isForegroundService ? resolveSystemdServiceUnit(process.env) : null;
+    return { storedOptions, launchMode, isForegroundService, systemdServiceUnit };
+  };
+
+  // Whether an administrator turned on enterprise mode, and by which source.
+  // Pinned endpoints and keys never leave the server.
+  app.get('/api/openchamber/enterprise-policy', (_req, res) => {
+    res.json(publicEnterprisePolicy());
+  });
 
   app.get('/api/openchamber/update-check', async (req, res) => {
     try {

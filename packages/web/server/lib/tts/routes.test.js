@@ -16,6 +16,23 @@ const createApp = (sayTTSCapability = null) => {
 };
 
 describe('tts routes', () => {
+  it('keeps cloud speech unavailable in enterprise mode and allows local speech', async () => {
+    const previous = process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    try {
+      const app = createApp();
+      const token = await request(app).post('/api/voice/token').send({});
+      const cloud = await request(app).post('/api/tts/speak').send({ text: 'private words' });
+      const status = await request(app).get('/api/tts/status');
+      expect(token.status).toBe(403);
+      expect(cloud.status).toBe(403);
+      expect(status.body).toMatchObject({ available: false, enterpriseMode: true });
+    } finally {
+      if (previous === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+      else process.env.OPENCHAMBER_ENTERPRISE_MODE = previous;
+    }
+  });
+
   it('waits for the authoritative macOS say capability', async () => {
     let resolveCapability;
     const capability = new Promise((resolve) => {
@@ -99,6 +116,7 @@ describe('tts routes', () => {
 describe('normalizeCustomOpenAIBaseURL', () => {
   const originalRuntime = process.env.OPENCHAMBER_RUNTIME;
   const originalAllowRemote = process.env.OPENCHAMBER_ALLOW_REMOTE_OPENAI_COMPAT_URLS;
+  const originalEnterprise = process.env.OPENCHAMBER_ENTERPRISE_MODE;
 
   afterEach(() => {
     // Restore env vars after each test
@@ -112,6 +130,16 @@ describe('normalizeCustomOpenAIBaseURL', () => {
     } else {
       process.env.OPENCHAMBER_ALLOW_REMOTE_OPENAI_COMPAT_URLS = originalAllowRemote;
     }
+    if (originalEnterprise === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    else process.env.OPENCHAMBER_ENTERPRISE_MODE = originalEnterprise;
+  });
+
+  it('refuses remote hosts despite desktop and explicit remote allowance in enterprise mode', () => {
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    process.env.OPENCHAMBER_RUNTIME = 'desktop';
+    process.env.OPENCHAMBER_ALLOW_REMOTE_OPENAI_COMPAT_URLS = 'true';
+    expect(normalizeCustomOpenAIBaseURL('https://speech.example.com/v1').error).toMatch(/enterprise mode/);
+    expect(normalizeCustomOpenAIBaseURL('http://localhost:9000/v1').value).toBe('http://localhost:9000/v1');
   });
 
   it('rejects remote URLs when OPENCHAMBER_RUNTIME is not set (web)', () => {

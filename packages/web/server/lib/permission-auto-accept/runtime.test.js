@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPermissionAutoAcceptRuntime } from './runtime.js';
 
-const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermission, onPermissionReplied, kernelOperations } = {}) => {
+const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermission, onPermissionReplied, kernelOperations, modeStore: providedModeStore } = {}) => {
   let settings = stored ?? { permissionAutoAccept: { sessions: {} } };
+  let modePolicy = { sessions: {}, revision: 0 };
   let eventHandler;
   let statusHandler;
   const runtime = createPermissionAutoAcceptRuntime({
@@ -14,6 +15,10 @@ const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermiss
     getOpenCodeAuthHeaders: () => ({}),
     readSettingsFromDiskMigrated: async () => settings,
     persistSettings: async (changes) => { settings = { ...settings, ...changes }; },
+    modeStore: providedModeStore ?? {
+      read: async () => modePolicy,
+      write: async (next) => { modePolicy = next; },
+    },
     fetchImpl: fetchImpl ?? vi.fn(async () => new Response('[]')),
     retryDelaysMs,
     evaluatePermission,
@@ -24,6 +29,7 @@ const createRuntime = ({ stored, fetchImpl, retryDelaysMs = [0], evaluatePermiss
   return {
     runtime,
     getSettings: () => settings,
+    getModes: () => modePolicy,
     emit: (payload, directory = '/project') => eventHandler({ payload, directory }),
     connect: () => statusHandler({ type: 'connect' }),
   };
@@ -34,6 +40,97 @@ const flush = async () => {
 };
 
 describe('permission auto-accept runtime', () => {
+  it('does not let a broken OC2 mode file block OC1 policy', async () => {
+    const kernelOperations = { captureIdentity: () => ({ generation: 'oc1', endpoint: 'http://oc1', epoch: 1 }) };
+    const modeStore = { read: vi.fn(async () => { throw new Error('bad modes'); }), write: vi.fn() };
+    const { runtime } = createRuntime({ kernelOperations, modeStore, stored: { permissionAutoAccept: { sessions: { root: true } } } });
+    await expect(runtime.load()).resolves.toEqual({ sessions: { root: true }, revision: 0 });
+    expect(modeStore.read).not.toHaveBeenCalled();
+  });
+
+  it('defers the initial policy load until the kernel generation is ready, then loads once', async () => {
+    let descriptor = { generation: 'unknown', endpoint: null, epoch: 0 };
+    const readSettings = vi.fn(async () => ({ permissionAutoAccept: { sessions: { root: true } } }));
+    const fetchImpl = vi.fn(async () => new Response('[]'));
+    const runtime = createPermissionAutoAcceptRuntime({
+      globalEventHub: {
+        subscribeEvent() { return () => {}; },
+        subscribeStatus() { return () => {}; },
+      },
+      getKernelRuntime: () => descriptor,
+      buildOpenCodeUrl: (path) => `http://opencode.test${path}`,
+      getOpenCodeAuthHeaders: () => ({}),
+      readSettingsFromDiskMigrated: readSettings,
+      persistSettings: async () => {},
+      modeStore: { read: async () => ({ sessions: {}, revision: 0 }), write: async () => {} },
+      fetchImpl,
+      retryDelaysMs: [0],
+    });
+
+    runtime.start();
+    await flush();
+    expect(readSettings).not.toHaveBeenCalled();
+
+    descriptor = { generation: 'oc1', endpoint: 'http://oc1', epoch: 1 };
+    await vi.waitFor(() => expect(readSettings).toHaveBeenCalledTimes(1));
+    await runtime.load();
+    expect(readSettings).toHaveBeenCalledTimes(1);
+  });
+  it('keeps OC1 booleans while storing OC2 modes under a separate key', async () => {
+    let generation = 'oc2';
+    const kernelOperations = {
+      captureIdentity: () => ({ generation, endpoint: 'http://kernel', epoch: 1 }),
+      listPendingPermissions: async () => ({ data: [] }),
+      replyPermission: vi.fn(),
+    };
+    const stored = { permissionAutoAccept: { sessions: { old: true }, revision: 3 } };
+    const { runtime, getSettings, getModes } = createRuntime({ stored, kernelOperations });
+    await runtime.setSessionPolicy('new', 'safety');
+    expect(getSettings().permissionAutoAccept).toEqual(stored.permissionAutoAccept);
+    expect(getModes().sessions).toEqual({ new: 'safety' });
+    expect(await runtime.load()).toMatchObject({ sessions: { old: true, new: true }, modes: { old: 'auto', new: 'safety' } });
+    generation = 'oc1';
+    await runtime.setSessionPolicy('old', false);
+    expect(getSettings().permissionAutoAccept.sessions).toEqual({ old: false });
+    expect(getModes().sessions).toEqual({ new: 'safety' });
+  });
+
+  it('holds OC2 safety requests when classification fails and replies through kernel operations in auto mode', async () => {
+    const identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
+    const kernelOperations = {
+      captureIdentity: () => identity,
+      listPendingPermissions: async () => ({ data: [] }),
+      replyPermission: vi.fn(async () => ({ data: true })),
+    };
+    const evaluatePermission = vi.fn(async () => { throw new Error('classifier unavailable'); });
+    const { runtime } = createRuntime({ kernelOperations, evaluatePermission });
+    await runtime.setSessionPolicy('root', 'safety');
+    await expect(runtime.processPermission({ id: 'held', sessionID: 'root' }, '/repo')).resolves.toBe(false);
+    expect(await runtime.isPermissionAutoAnswered('root', '/repo', 'held')).toBe(false);
+    expect(kernelOperations.replyPermission).not.toHaveBeenCalled();
+    await runtime.setSessionPolicy('root', 'auto');
+    await expect(runtime.processPermission({ id: 'accepted', sessionID: 'root' }, '/repo')).resolves.toBe(true);
+    expect(evaluatePermission).toHaveBeenCalledTimes(1);
+    expect(kernelOperations.replyPermission).toHaveBeenCalledWith(expect.objectContaining({
+      requestID: 'accepted', decision: 'once', expectedIdentity: identity,
+    }));
+  });
+
+  it('applies an OC2 default only to newly created root sessions', async () => {
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }),
+      listPendingPermissions: async () => ({ data: [] }),
+    };
+    const { runtime, emit, getModes } = createRuntime({
+      kernelOperations,
+      stored: { permissionAutoAccept: { sessions: {} }, permissionDefaultMode: 'safety' },
+    });
+    await runtime.load();
+    emit({ type: 'session.created', properties: { info: { id: 'root' } } });
+    emit({ type: 'session.created', properties: { info: { id: 'child', parentID: 'root' } } });
+    await flush();
+    expect(getModes().sessions).toEqual({ root: 'safety' });
+  });
   it('replies through OC2 kernel operations without calling old HTTP routes', async () => {
     const identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
     const kernelOperations = {

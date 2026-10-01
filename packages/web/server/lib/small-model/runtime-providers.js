@@ -24,6 +24,8 @@
 // explains nothing; one that fails on use says why. So this module reports
 // what it knows and leaves the verdict to the call itself.
 
+import { z } from 'zod';
+
 const SNAPSHOT_TTL_MS = 30_000;
 const SNAPSHOT_TIMEOUT_MS = 5_000;
 
@@ -38,6 +40,22 @@ let connection = null;
 let snapshot = null;
 let snapshotAt = 0;
 let inflight = null;
+
+/** The bound kernel generation; OC1 is the conservative default before wiring. */
+export const getRuntimeGeneration = () => connection?.getGeneration?.() ?? 'oc1';
+
+const defaultModelSchema = z.object({ providerID: z.string().min(1), id: z.string().min(1) });
+
+/** The OC2 default model is an explicit runtime selection, not an auth-order guess. */
+export const getRuntimeDefaultModel = async (directory) => {
+  if (getRuntimeGeneration() !== 'oc2' || !connection?.getDefaultModel) return null;
+  const result = await connection.getDefaultModel(directory);
+  if (result?.generation !== 'oc2') throw new Error('Default model came from another OpenCode generation');
+  if (result.data === null) return null;
+  const parsed = defaultModelSchema.safeParse(result.data);
+  if (!parsed.success) throw new Error('OpenCode returned an invalid default model');
+  return { providerID: parsed.data.providerID, modelID: parsed.data.id, source: 'default' };
+};
 
 /**
  * Wires this module to the running OpenCode instance. Called once at server

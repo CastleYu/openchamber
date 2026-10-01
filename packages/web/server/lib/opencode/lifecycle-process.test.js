@@ -16,6 +16,11 @@ const createRuntime = (waitForReady, state) => createOpenCodeLifecycleRuntime({
   applyOpencodeBinaryFromSettings: async () => {},
   ensureLocalOpenCodeServerPassword: async () => 'fixture-only',
   resolveManagedOpenCodeLaunchSpec: (binary) => ({ binary, args: [] }),
+  // Node runs the fixture's `serve` file, but its own --version is not an OpenCode version.
+  // The real probe remains covered by managed-generation.test.js.
+  probeManagedOpenCodeGeneration: ({ resolvedBinary, resolveManagedOpenCodeLaunchSpec }) => ({
+    generation: 'oc1', version: '1.2.27', launchSpec: resolveManagedOpenCodeLaunchSpec(resolvedBinary),
+  }),
   normalizeApiPrefix: (value) => value,
   setOpenCodePort() {}, setDetectedOpenCodeApiPrefix() {},
   waitForReady,

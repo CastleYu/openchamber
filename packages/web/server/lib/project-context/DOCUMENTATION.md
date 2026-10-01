@@ -127,9 +127,11 @@ and I/O failures are `500`.
   data on disk.
 - **Writes are serialized per project** through an in-process lock, and land via
   write-to-temp + rename so a crash cannot leave a half-written file.
-- **`readContext` never takes the lock.** Every mutator calls it while already
-  holding the lock, so locking there would deadlock. The legacy migration it can
-  trigger is safe unlocked: both writes are atomic renames of identical content.
+- **`readContext` never takes the write lock.** Every mutator calls it while
+  already holding that lock. Concurrent reads share one legacy migration
+  promise per project, so Windows sees only one pair of atomic renames for the
+  same files. A failed migration propagates to all waiters and clears the
+  pending promise; malformed stored data remains a failure.
 - **Plan create writes markdown before the manifest entry**; delete removes the
   manifest entry before the file. Either partial failure leaves an unreferenced
   markdown file, which is inert. The reverse order would leave a manifest entry

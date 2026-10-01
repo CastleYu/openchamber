@@ -225,6 +225,7 @@ const SESSION_LIST_ALLOWED_FIELDS = [
   'projectID',
   'workspaceID',
   'directory',
+  'location',
   'path',
   'parentID',
   'title',
@@ -239,7 +240,7 @@ const SESSION_LIST_ALLOWED_FIELDS = [
   'project',
 ];
 
-const sanitizeSessionListItem = (session) => {
+export const sanitizeSessionListItem = (session) => {
   if (!session || typeof session !== 'object' || Array.isArray(session)) {
     return session;
   }
@@ -301,6 +302,11 @@ export const registerOpenCodeProxy = (app, deps) => {
     WORKTREE_READY_TIMEOUT_MS = 5 * 60 * 1000,
     getArchivedSessions = null,
     getStoredSessionMetadata = null,
+    // Isolated spaces, when the feature's switch is on: the merged session list, and the hub
+    // whose space events the global SSE stream carries beside the host's. Both absent means
+    // the host's own answers go out exactly as before spaces.
+    mergeSpaceSessionList = null,
+    spaceEventHub = null,
   } = deps;
 
   if (app.get('opencodeProxyConfigured')) {
@@ -526,6 +532,7 @@ export const registerOpenCodeProxy = (app, deps) => {
     let heartbeatTimer = null;
     let upstreamStallTimer = null;
     let didUpstreamStall = false;
+    let unsubscribeSpaceEvents = null;
     let writeQueue = Promise.resolve(true);
     const sseBoundary = createSseBoundaryTracker();
     const retire = () => {
@@ -638,6 +645,26 @@ export const registerOpenCodeProxy = (app, deps) => {
         return writeQueue;
       };
 
+      // The events of isolated spaces ride the global stream too, one block each, written
+      // only between the upstream's own blocks so a block of the host's is never cut.
+      // A directory in the query or in the header scopes the stream to the host's one directory.
+      const isGlobalStream = !new URL(requestUrl, 'http://localhost').searchParams.get('directory') && !req.get('x-opencode-directory');
+      const pendingSpaceBlocks = [];
+      const flushSpaceBlocks = async () => {
+        while (pendingSpaceBlocks.length > 0 && sseBoundary.isAtBoundary() && !abortController.signal.aborted) {
+          const canContinue = await enqueueSseWrite(pendingSpaceBlocks.shift());
+          if (!canContinue) return false;
+        }
+        return true;
+      };
+      if (generation === 'oc2' && spaceEventHub && isGlobalStream) {
+        unsubscribeSpaceEvents = spaceEventHub.subscribeEvent((event) => {
+          if (!isCurrent() || event.spaceId === null) return;
+          pendingSpaceBlocks.push(`data: ${JSON.stringify(event.payload)}\n\n`);
+          void flushSpaceBlocks();
+        }, { spaces: true });
+      }
+
       scheduleHeartbeat();
       resetUpstreamStallTimer();
 
@@ -654,6 +681,9 @@ export const registerOpenCodeProxy = (app, deps) => {
           sseBoundary.observe(value);
           const canContinue = await enqueueSseWrite(value);
           if (!canContinue) {
+            break;
+          }
+          if (!await flushSpaceBlocks()) {
             break;
           }
         }
@@ -676,6 +706,7 @@ export const registerOpenCodeProxy = (app, deps) => {
       }
     } finally {
       directSseRetireCallbacks.delete(retire);
+      unsubscribeSpaceEvents?.();
       if (heartbeatTimer) {
         clearTimeout(heartbeatTimer);
         heartbeatTimer = null;
@@ -762,7 +793,15 @@ export const registerOpenCodeProxy = (app, deps) => {
       }
 
       res.setHeader('content-type', result.contentType);
-      res.json(generation === 'oc2' ? await overlayResponse(result.payload, true) : sanitizeSessionListPayload(result.payload));
+      const hostList = generation === 'oc2'
+        ? await overlayResponse(Array.isArray(result.payload?.data)
+          ? { ...result.payload, data: sanitizeSessionListPayload(result.payload.data) }
+          : sanitizeSessionListPayload(result.payload), true)
+        : sanitizeSessionListPayload(result.payload);
+      const listQuery = new URL(upstreamPath, 'http://localhost').searchParams;
+      const scopedToDirectory = Boolean(listQuery.get('directory') || req.get('x-opencode-directory'));
+      const wantsSpaces = generation === 'oc2' && typeof mergeSpaceSessionList === 'function' && !listQuery.get('cursor') && !scopedToDirectory;
+      res.json(wantsSpaces ? await mergeSpaceSessionList(hostList) : hostList);
     } catch (error) {
       if (isAbortError(error)) {
         return;
@@ -1014,17 +1053,18 @@ export const registerOpenCodeProxy = (app, deps) => {
   // `apiProxy` and `interactiveOAuthProxy`.
   const resolveOpenCodeProxyAgent = createOpenCodeProxyAgentResolver(resolveProxyTarget);
 
-  const createApiProxy = (timeoutMs) => createProxyMiddleware({
+  const createApiProxy = (timeoutMs, mounted = true) => createProxyMiddleware({
     target: resolveProxyTarget(),
     get agent() {
       return resolveOpenCodeProxyAgent();
     },
     changeOrigin: true,
-    // Express removes the /api mount prefix before http-proxy-middleware sees
-    // this path. OpenCode 2 serves under /api; OpenCode 1 does not.
-    pathRewrite: (proxiedPath) => isOc2()
-      ? `/api${proxiedPath === '/' ? '' : proxiedPath}`
-      : proxiedPath,
+    // Mounted middleware sees a stripped path; direct OAuth routes see the full path.
+    // OpenCode 2 serves under /api and OpenCode 1 serves from the root.
+    pathRewrite: (proxiedPath) => {
+      const kernelPath = mounted ? proxiedPath : proxiedPath.replace(/^\/api(?=\/|$)/, '') || '/';
+      return isOc2() ? `/api${kernelPath === '/' ? '' : kernelPath}` : kernelPath;
+    },
     timeout: timeoutMs,
     proxyTimeout: timeoutMs,
     // Dynamic target — port can change after restart
@@ -1074,7 +1114,7 @@ export const registerOpenCodeProxy = (app, deps) => {
   });
 
   const apiProxy = createApiProxy(PROXY_REQUEST_TIMEOUT_MS);
-  const interactiveOAuthProxy = createApiProxy(INTERACTIVE_OAUTH_TIMEOUT_MS);
+  const interactiveOAuthProxy = createApiProxy(INTERACTIVE_OAUTH_TIMEOUT_MS, false);
 
   // Best-effort fallback for stale clients still sending symlink paths.
   // Settings and project selection normalize at source; this cached async path

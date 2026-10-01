@@ -4,6 +4,8 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 
+const STDERR_TAIL_BYTES = 4096;
+
 const CLONE_TIMEOUT_MS = 60_000;
 
 const PRIVATE_IPV4 = [
@@ -176,9 +178,9 @@ export const parseGitInstallUrl = (value) => {
 
 /**
  * Run one git command without a terminal. Resolves `{ ok: true, stdout }` on
- * exit 0 and `{ ok: false }` on a non-zero exit, a spawn error, or the
- * timeout (the child is killed). Never rejects. `stdout` is captured only
- * when `capture` is set so a clone's progress is not buffered.
+ * exit 0 and `{ ok: false, stderr }` on a non-zero exit, a spawn error, or
+ * the timeout (the child is killed). Never rejects. `stdout` is captured only
+ * when `capture` is set so clone progress is not buffered; stderr keeps its tail.
  */
 export const runGit = (args, { gitBinary = 'git', cwd, timeoutMs = CLONE_TIMEOUT_MS, capture = false, env = {} } = {}) => (
   new Promise((resolve) => {
@@ -208,6 +210,11 @@ export const runGit = (args, { gitBinary = 'git', cwd, timeoutMs = CLONE_TIMEOUT
     if (capture && child.stdout) {
       child.stdout.on('data', (chunk) => chunks.push(chunk));
     }
+    let stderrTail = Buffer.alloc(0);
+    child.stderr?.on('data', (chunk) => {
+      const joined = Buffer.concat([stderrTail, chunk]);
+      stderrTail = joined.subarray(Math.max(0, joined.length - STDERR_TAIL_BYTES));
+    });
     let settled = false;
     const finish = (result) => {
       if (settled) {
@@ -226,7 +233,9 @@ export const runGit = (args, { gitBinary = 'git', cwd, timeoutMs = CLONE_TIMEOUT
     });
     child.on('close', (exit) => {
       clearTimeout(timer);
-      finish(exit === 0 ? { ok: true, stdout: Buffer.concat(chunks).toString('utf8') } : { ok: false });
+      finish(exit === 0
+        ? { ok: true, stdout: Buffer.concat(chunks).toString('utf8') }
+        : { ok: false, stderr: stderrTail.toString('utf8') });
     });
   })
 );
@@ -261,8 +270,10 @@ export const prepareGuestGitNetwork = async (source, { gitIdentityId, lookup } =
     const profile = getProfile(gitIdentityId);
     if (!profile) return null;
     if (profile.sshKey) {
-      const ssh = process.env.GIT_SSH ? quoteSshPath(process.env.GIT_SSH) : 'ssh';
-      sshCommand = `${ssh} -i ${quoteSshPath(profile.sshKey)} -o IdentitiesOnly=yes`;
+      // A selected key replaces Git's configured command, but keeps an explicitly selected
+      // SSH executable from the host. GIT_SSH is a path, never a command with arguments.
+      const sshBinary = process.env.GIT_SSH?.trim();
+      sshCommand = `${sshBinary ? quoteSshPath(sshBinary) : 'ssh'} -i ${quoteSshPath(profile.sshKey)} -o IdentitiesOnly=yes`;
     }
   }
   const ssh = parseSshGitUrl(source);
@@ -282,6 +293,17 @@ export const prepareGuestGitNetwork = async (source, { gitIdentityId, lookup } =
   return sshCommand ? { args, env: { GIT_SSH_COMMAND: sshCommand } } : { args };
 };
 
+export const runGitNetwork = async (args, options) => {
+  const result = await runGit(args, options);
+  if (result.ok) return result;
+  const supported = /Unsupported SSL backend[\s\S]*?Supported SSL backends:\s*([\w-]+)/i.exec(result.stderr ?? '')?.[1];
+  const retried = supported ? await runGit(['-c', `http.sslBackend=${supported}`, ...args], options) : result;
+  if (!retried.ok) {
+    console.warn('[guests] git network command failed:', (retried.stderr ?? '').trim() || 'no output');
+  }
+  return retried;
+};
+
 export const cloneGitRepository = async (source, dest, { gitBinary = 'git', timeoutMs = CLONE_TIMEOUT_MS, ref, lookup, gitIdentityId } = {}) => {
   if (ref !== undefined && !isGitRef(ref)) {
     return { ok: false, code: 'clone-failed' };
@@ -295,6 +317,6 @@ export const cloneGitRepository = async (source, dest, { gitBinary = 'git', time
     args.push('--branch', ref);
   }
   args.push('--', source, dest);
-  const result = await runGit(args, { gitBinary, timeoutMs, env: network.env });
+  const result = await runGitNetwork(args, { gitBinary, timeoutMs, env: network.env });
   return result.ok ? { ok: true } : { ok: false, code: 'clone-failed' };
 };

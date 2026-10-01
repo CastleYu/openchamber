@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import {
   getServiceStatus,
+  beginGuestServiceHost,
+  beginGuestServiceShutdown,
   proxyGuestServiceRequest,
   readServicePid,
   stopAllGuestServices,
@@ -37,6 +39,11 @@ http.createServer((req, res) => {
     res.end(JSON.stringify({ pong: true }));
     return;
   }
+  if (req.url === '/headers') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ viewer: req.headers['x-surface-viewer'], authenticated: req.headers.authorization === \`Bearer \${token}\` }));
+    return;
+  }
   res.writeHead(404);
   res.end('missing');
 }).listen(port, '127.0.0.1');
@@ -44,6 +51,8 @@ http.createServer((req, res) => {
   await writeExtensionStore(persistPath, { paths: [packageRoot], sources: {}, capabilityGrants: {} });
   return { dir, persistPath, packageRoot };
 };
+
+beforeEach(() => beginGuestServiceHost());
 
 afterEach(async () => {
   await stopAllGuestServices();
@@ -128,6 +137,22 @@ describe('guest service proxy', () => {
       expect(getServiceStatus('docker')).toBe('ready');
       await stopGuestService('docker');
       expect(getServiceStatus('docker')).toBe('stopped');
+    } finally {
+      await cleanupFixture(dir);
+    }
+  });
+
+  test('forwards host viewer headers without letting them replace service authentication', async () => {
+    const { dir, persistPath, packageRoot } = await writeFixture();
+    try {
+      await setCapabilityGrants('docker', persistPath, ['service']);
+      const result = await proxyGuestServiceRequest({
+        guestId: 'docker', packageRoot,
+        service: { entry: 'service/main.js' }, granted: ['service'], persistPath,
+        method: 'GET', path: '/headers',
+        headers: { 'x-surface-viewer': 'viewer-1', authorization: 'Bearer attacker-value' },
+      });
+      expect(JSON.parse(result.body)).toEqual({ viewer: 'viewer-1', authenticated: true });
     } finally {
       await cleanupFixture(dir);
     }
@@ -358,6 +383,63 @@ describe('restart after the process died', () => {
       expect(await proxyGuestServiceRequest(params)).toEqual({ status: 200, body: '{"pong":true}' });
     } finally {
       await cleanupFixture(dir);
+    }
+  });
+});
+
+describe('host shutdown', () => {
+  const request = (fixture) => ({
+    guestId: 'docker', packageRoot: fixture.packageRoot,
+    service: { entry: 'service/main.js' }, granted: ['service'],
+    persistPath: fixture.persistPath, method: 'GET', path: '/ping',
+  });
+
+  test('rejects new service requests, drains the child, and permits a later host lifecycle', async () => {
+    const fixture = await writeFixture();
+    try {
+      expect((await proxyGuestServiceRequest(request(fixture))).status).toBe(200);
+      const pid = readServicePid('docker');
+      beginGuestServiceShutdown();
+      const stopping = stopAllGuestServices();
+      await expect(proxyGuestServiceRequest(request(fixture))).rejects.toMatchObject({ code: 'NO_SERVICE' });
+      await stopping;
+      expect(readServicePid('docker')).toBeNull();
+      expect(() => process.kill(pid, 0)).toThrow();
+      await expect(proxyGuestServiceRequest(request(fixture))).rejects.toMatchObject({ code: 'NO_SERVICE' });
+      beginGuestServiceHost();
+      expect((await proxyGuestServiceRequest(request(fixture))).status).toBe(200);
+    } finally {
+      await cleanupFixture(fixture.dir);
+    }
+  });
+
+  test('drains a start blocked before spawn and prevents it entering a new host', async () => {
+    const fixture = await writeFixture();
+    const entered = Promise.withResolvers();
+    const release = Promise.withResolvers();
+    const access = fs.access.bind(fs);
+    const pausedAccess = spyOn(fs, 'access').mockImplementation(async (...args) => {
+      if (args[0] === path.join(fixture.packageRoot, 'service/main.js')) {
+        entered.resolve();
+        await release.promise;
+      }
+      return access(...args);
+    });
+    try {
+      const pending = proxyGuestServiceRequest(request(fixture)).catch((error) => error);
+      await entered.promise;
+      beginGuestServiceShutdown();
+      const stopping = stopAllGuestServices();
+      expect(() => beginGuestServiceHost()).toThrow();
+      release.resolve();
+      await expect(pending).resolves.toMatchObject({ code: 'NO_SERVICE' });
+      await stopping;
+      expect(readServicePid('docker')).toBeNull();
+      expect(getServiceStatus('docker')).toBe('stopped');
+    } finally {
+      release.resolve();
+      pausedAccess.mockRestore();
+      await cleanupFixture(fixture.dir);
     }
   });
 });

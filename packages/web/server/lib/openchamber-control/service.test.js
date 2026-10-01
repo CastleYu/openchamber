@@ -5,6 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 
 import { createOpenChamberControlService } from './service.js';
+import { OpenChamberControlError } from './error.js';
 
 const createService = (overrides = {}) => {
   const client = {
@@ -16,6 +17,10 @@ const createService = (overrides = {}) => {
   };
   const sessionService = {
     create: vi.fn(async () => ({ sessionId: 'ses_1', directory: '/repo', promptDispatched: false })),
+    resolveDirectory: vi.fn(async ({ projectId }) => {
+      if (projectId === 'project-1') return '/repo';
+      throw new OpenChamberControlError('Project not found', 404);
+    }),
     send: vi.fn(),
     fork: vi.fn(),
   };
@@ -48,6 +53,22 @@ const createService = (overrides = {}) => {
 };
 
 describe('OpenChamber control service', () => {
+  it('resolves projectId for session reads and rejects an unknown or ambiguous scope', async () => {
+    const { service, client, sessionService } = createService();
+    client.session.list.mockResolvedValue({ data: [{ id: 'ses_repo', directory: '/repo', time: {} }] });
+    await expect(service.execute('session.list', { projectId: ' project-1 ' }, '/other'))
+      .resolves.toMatchObject({ directory: '/repo', sessions: [{ id: 'ses_repo' }] });
+    expect(sessionService.resolveDirectory).toHaveBeenCalledWith({ projectId: 'project-1' });
+    expect(client.session.list).toHaveBeenCalledWith({ directory: '/repo' });
+    await expect(service.execute('session.list', { projectId: 'missing' }, '/other'))
+      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.execute('session.status', { projectId: 'missing' }, '/other'))
+      .rejects.toMatchObject({ statusCode: 400, message: 'sessionId is required' });
+    for (const action of ['session.list', 'session.status', 'session.create', 'session.send', 'session.fork']) {
+      await expect(service.execute(action, { projectId: 'project-1', directory: '/other', sessionId: 'ses_repo' }))
+        .rejects.toMatchObject({ statusCode: 400, message: 'Provide only one of projectId or directory' });
+    }
+  });
   const oc2 = { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://test', epoch: 1 }) };
   it('delivers notifications through the injected OC2 runtime', async () => {
     const notifyUser = vi.fn(async () => ({ status: 200, body: { delivered: true } }));
@@ -357,5 +378,24 @@ describe('browser capture', () => {
     expect(request).toHaveBeenLastCalledWith('browser.capture', {}, expect.objectContaining({
       context: { directory, sessionId: null },
     }));
+  });
+});
+
+describe('browser tab targeting', () => {
+  it('forwards OC2 tab IDs and rejects them on OC1 while retaining untargeted actions', async () => {
+    const request = vi.fn(async () => ({ url: 'https://example.test', title: 'Example', tabs: [] }));
+    const oc2 = createService({ browserControl: { request },
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://test', epoch: 1 }) } }).service;
+    await oc2.execute('browser.snapshot', { tabId: 'tab-1' }, '/repo');
+    expect(request).toHaveBeenLastCalledWith('browser.snapshot', { tabId: 'tab-1' }, expect.anything());
+    await expect(oc2.execute('browser.snapshot', { tabId: 'a'.repeat(129) }, '/repo')).rejects.toMatchObject({ statusCode: 400 });
+
+    request.mockClear();
+    const oc1 = createService({ browserControl: { request },
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc1', endpoint: 'http://test', epoch: 1 }) } }).service;
+    await expect(oc1.execute('browser.snapshot', { tabId: 'tab-1' }, '/repo')).rejects.toMatchObject({ statusCode: 409 });
+    expect(request).not.toHaveBeenCalled();
+    await oc1.execute('browser.snapshot', {}, '/repo');
+    expect(request).toHaveBeenCalledWith('browser.snapshot', {}, expect.anything());
   });
 });

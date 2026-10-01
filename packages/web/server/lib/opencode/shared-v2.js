@@ -280,17 +280,22 @@ function readConfigLayer(filePath) {
 function readConfigLayers(workingDirectory) {
   const { userPaths, projectPath, customPath } = getConfigPaths(workingDirectory);
   const userPath = getPrimaryUserConfigPath(userPaths);
+  const userOverridePath = userPaths.find((candidate) => candidate !== userPath && fs.existsSync(candidate)) ?? null;
   const userLayer = readConfigLayer(userPath);
+  const userOverrideLayer = readConfigLayer(userOverridePath);
   const projectLayer = readConfigLayer(projectPath);
   const customLayer = readConfigLayer(customPath);
   const mergedConfig = mergeConfigs(
-    mergeConfigs(userLayer.config, projectLayer.config),
+    mergeConfigs(mergeConfigs(userLayer.config, userOverrideLayer.config), projectLayer.config),
     customLayer.config,
   );
 
   const layerErrors = [];
   if (userLayer.error) {
     layerErrors.push({ path: userPath, code: userLayer.error.code, message: userLayer.error.message });
+  }
+  if (userOverrideLayer.error && userOverridePath) {
+    layerErrors.push({ path: userOverridePath, code: userOverrideLayer.error.code, message: userOverrideLayer.error.message });
   }
   if (projectLayer.error && projectPath) {
     layerErrors.push({ path: projectPath, code: projectLayer.error.code, message: projectLayer.error.message });
@@ -301,10 +306,11 @@ function readConfigLayers(workingDirectory) {
 
   return {
     userConfig: userLayer.config,
+    userOverrideConfig: userOverrideLayer.config,
     projectConfig: projectLayer.config,
     customConfig: customLayer.config,
     mergedConfig,
-    paths: { userPath, projectPath, customPath },
+    paths: { userPath, userOverridePath, projectPath, customPath },
     layerErrors,
   };
 }
@@ -319,6 +325,9 @@ function getConfigForPath(layers, targetPath) {
   }
   if (layers.paths.customPath && targetPath === layers.paths.customPath) {
     return layers.customConfig;
+  }
+  if (layers.paths.userOverridePath && targetPath === layers.paths.userOverridePath) {
+    return layers.userOverrideConfig;
   }
   if (layers.paths.projectPath && targetPath === layers.paths.projectPath) {
     return layers.projectConfig;
@@ -382,7 +391,7 @@ function lookupSectionEntry(config, sectionKind, entryName) {
 }
 
 function getJsonEntrySource(layers, sectionKind, entryName) {
-  const { userConfig, projectConfig, customConfig, paths } = layers;
+  const { userConfig, userOverrideConfig, projectConfig, customConfig, paths } = layers;
   const found = (config, filePath) => {
     const entry = lookupSectionEntry(config, sectionKind, entryName);
     if (entry.value === undefined) return null;
@@ -405,6 +414,12 @@ function getJsonEntrySource(layers, sectionKind, entryName) {
   if (paths.projectPath && !getLayerError(layers, paths.projectPath)) {
     const project = found(projectConfig, paths.projectPath);
     if (project) return project;
+  }
+
+  if (paths.userOverridePath) {
+    throwIfLayerError(layers, paths.userOverridePath);
+    const userOverride = found(userOverrideConfig, paths.userOverridePath);
+    if (userOverride) return userOverride;
   }
 
   throwIfLayerError(layers, paths.userPath);

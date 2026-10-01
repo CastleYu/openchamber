@@ -62,7 +62,8 @@ export const createContextObligatoryRuntime = ({
     const recent = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: MESSAGE_FETCH_LIMIT })).data.items;
     assertIdentity(identity);
     const summary = recent.find((message) => message.role === 'compaction' && message.raw?.status === 'completed');
-    if (!summary?.id || !summary.completed) return;
+    // OC2 marks a completed compaction with status; it may omit time.completed.
+    if (!summary?.id) return;
     if (state.openchamber.context_obligatory_last_compaction_message_id === summary.id) return;
 
     const fetched = await Promise.allSettled(state.messages.map(async (pinned) => {

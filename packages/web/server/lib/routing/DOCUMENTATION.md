@@ -1,5 +1,9 @@
 # Routing
 
+OC1 retains the feature flag, global safety switch, and prompt-body model rewrite. OC2 selects a classification source explicitly. With no selection, Jev is off even if a TypeSafe key exists; Auto uses the fallback without sending conversation text to Jev. OC2 `safety` permission checks hold on missing or failed classification, while OC1 keeps its prior accept-on-failure behavior.
+
+`classification.json` stores the selected provider. `classifier-endpoint.json` stores a custom endpoint and optional key with restricted file permissions. The routing runtime takes `enterpriseMode` and `readPinnedEndpoint` callbacks from server composition; that caller owns the policy connection. Direct `/api/routing/classifier` and `/api/routing/classifier/custom` requests reject OC1.
+
 ## Purpose
 
 Jev model routing and the permission safety net. With the `openchamber/auto`
@@ -9,9 +13,7 @@ it with that category's model, thinking variant and agent. With the safety net
 on, the same call decides whether an auto-accepted permission should stay on
 screen for the user instead.
 
-Dark by default: `OPENCHAMBER_ROUTING_ENABLE` (`feature-flag.js`, read per call)
-gates the routes, the request rewrite, the settings page and the Auto row. VS
-Code has no OpenChamber server and never offers Auto.
+For OC1, `OPENCHAMBER_ROUTING_ENABLE` (`feature-flag.js`, read per call) gates the routes, request rewrite, Settings and Auto row. OC2 can show Routing without that flag, but Jev starts Off until a source is selected. VS Code has no OpenChamber server and never offers Auto.
 
 ## Files
 
@@ -24,6 +26,7 @@ Code has no OpenChamber server and never offers Auto.
   `toStoredConfig` is its inverse. A missing file is the defaults, a malformed
   one throws.
 - `jev.js` — request builders, answer parsing, the HTTP call with a timeout.
+- `classifier.js` — source selection, endpoint construction and custom URL validation.
 - `history.js` — the last three settled turns through session assist's
   `loadAssistContext` (text parts only, attached quotes included, no files or
   tool payloads), each user message cut to its head and each answer to head
@@ -38,8 +41,11 @@ from Jev and switches the OC2 session model and agent before the prompt goes
 upstream. OC1 still rewrites the prompt body. A runtime switch invalidates
 the server mark and rejects a late selection write. Server restart loses the
 OC2 mark, so callers must send the sentinel again when resuming Auto.
-OC2 uses the Zen-hosted free Jev model when no TypeSafe key is saved; a saved
-key keeps the TypeSafe endpoint. OC1 retains its flag and key requirements.
+OC2 sends to the selected usable source only. OC1 retains its flag and key requirements.
+When an OC2 Auto choice names a thinking variant absent from that model's
+authoritative catalog entry, `routeSend` omits the variant and uses the model
+default. A missing catalog or unknown model keeps the configured variant.
+The catalog read uses `kernelOperations` and retains its runtime epoch check.
 - `routes.js` — `/api/routing` (GET, PUT), `/api/routing/token` (PUT, DELETE)
   and `registerRoutingPromptRewrite`.
 
@@ -56,20 +62,15 @@ key keeps the TypeSafe endpoint. OC1 retains its flag and key requirements.
   session mark for the current runtime identity, and routes each following
   prompt or command before forwarding it. It also drops an Auto model from
   session creation so the first send can select a real model.
-- Every failure keeps the user's own behaviour. A Jev error, timeout, unknown
-  category or low confidence routes to the fallback model; the decision carries
-  the reason. A safety-net failure accepts the permission exactly as auto-accept
-  would have and broadcasts `openchamber:routing.safety-skipped` with the error.
+- A Jev error, timeout, unknown category or low confidence routes to the fallback model; the decision carries the reason. OC1 safety-net failure accepts as before. OC2 safety-net failure holds the permission and broadcasts `openchamber:routing.safety-skipped`.
 - A category without a model uses the fallback model *and* variant; a variant
   only travels with the model it was chosen for. A category agent replaces the
   composer's agent; an empty one keeps it.
-- Auto is offered (`autoReady`) only with the flag, `enabled`, a saved key, a
-  fallback model and at least two enabled categories.
+- OC1 Auto needs the flag, `enabled`, a saved key, a fallback model and two enabled categories. OC2 Auto needs `enabled`, a selected usable classifier, a fallback model and two enabled categories.
 - Held permission decisions are cached for 15 minutes per request id so
   reconnect reconciliation in `permission-auto-accept` does not re-ask Jev;
   `permission.replied` forgets them.
-- The rewrite parses JSON only while the flag is set, so a build without it
-  leaves the proxy stream untouched.
+- The OC1 rewrite parses JSON only while the flag is set. The OC2 rewrite parses only requests for Auto-marked sessions; ordinary proxy streams stay untouched.
 
 ## Events
 

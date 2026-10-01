@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../opencode/auth.js', () => ({
-  readAuthFile: () => ({ 'kimi-for-coding': { key: 'test-token' } }),
+  readOpenCodeCredentials: async () => ({ 'kimi-for-coding': { key: 'test-token' } }),
 }));
 
-import { fetchQuota } from './kimi.js';
+import { fetchQuota, isConfigured } from './kimi.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -18,6 +18,19 @@ const mockResponse = (body, init = {}) => ({
 });
 
 describe('Kimi for Coding quota provider', () => {
+  it('prefers the China plan key and retains legacy/global fallback order', async () => {
+    const sent = [];
+    const fetchImpl = async (_url, init) => {
+      sent.push(init.headers.Authorization);
+      return mockResponse({ usage: null, limits: [] });
+    };
+    const cn = { 'kimi-for-coding': { key: 'old' }, 'kimi-code-plan-cn': { key: 'cn' } };
+    expect(isConfigured(cn)).toBe(true);
+    await fetchQuota({ readAuth: () => cn, fetchImpl });
+    await fetchQuota({ readAuth: () => ({ 'kimi-code-plan-global': { key: 'global' } }), fetchImpl });
+    await fetchQuota({ readAuth: () => ({ 'kimi-code-plan-cn': { key: '  ', token: 'token' } }), fetchImpl });
+    expect(sent).toEqual(['Bearer cn', 'Bearer global', 'Bearer token']);
+  });
   it('computes weekly usedPercent from the used field (live API shape, no remaining field)', async () => {
     // Captured from GET https://api.kimi.com/coding/v1/usages — the weekly
     // `usage` block only ever includes `used`, never `remaining`.
@@ -78,7 +91,7 @@ describe('Kimi for Coding quota provider', () => {
   });
 
   it('reports not configured when no credentials are stored', async () => {
-    vi.doMock('../../opencode/auth.js', () => ({ readAuthFile: () => ({}) }));
+    vi.doMock('../../opencode/auth.js', () => ({ readOpenCodeCredentials: async () => ({}) }));
     vi.resetModules();
     const { fetchQuota: fetchQuotaFresh } = await import('./kimi.js');
 

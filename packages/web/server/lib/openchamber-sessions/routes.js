@@ -780,6 +780,19 @@ export const createOpenChamberSessionService = (dependencies) => {
     return { metadata };
   };
 
+  const updateMetadata = async (sessionID, decide, { directory = '' } = {}) => {
+    const identity = oc2();
+    const result = await kernelOperations.updateSession({
+      sessionID, directory, decideMetadata: decide, expectedIdentity: identity,
+    });
+    current(identity);
+    const metadata = result.data.metadata ?? {};
+    if (result.metadataChanged) {
+      broadcastGlobalUiEvent?.({ type: 'openchamber:session-metadata', properties: { sessionID, metadata } });
+    }
+    return { metadata, changed: result.metadataChanged === true };
+  };
+
   const create = async (payload = {}) => {
     const identity = kernelOperations.captureIdentity();
     const title = asNonEmptyString(payload.title);
@@ -1042,12 +1055,25 @@ export const createOpenChamberSessionService = (dependencies) => {
     }
   };
 
+  const resolveDirectory = async (payload) => {
+    const resolved = await resolveRequestedDirectory({
+      payload,
+      readSettingsFromDiskMigrated,
+      sanitizeProjects,
+      validateDirectoryPath,
+    });
+    if (!resolved.ok) throw new OpenChamberControlError(resolved.error, resolved.status || 400);
+    return resolved.directory;
+  };
+
   return {
     create,
+    resolveDirectory,
     archive,
     unarchive,
     getMetadata,
     setMetadata,
+    updateMetadata,
     getArchivedSessions,
     getStoredSessionMetadata,
     prepareSessionMetadata,

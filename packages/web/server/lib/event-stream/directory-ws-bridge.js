@@ -1,5 +1,6 @@
 import { sendMessageStreamWsEvent, sendMessageStreamWsFrame, sendSerializedMessageStreamWsFrame } from './protocol.js';
 import { createUpstreamSseReader } from './upstream-reader.js';
+import { waitForKernelReady } from './global-hub.js';
 
 export function acceptSharedDirectoryMessageStreamWsConnection({ socket, requestedDirectory, requestedLastEventId, globalHub, wsClients, heartbeatIntervalMs }) {
   let ready = false;
@@ -65,7 +66,7 @@ export function acceptDirectoryMessageStreamWsConnection({
   let upstreamConnected = false;
   let streamReady = false;
   let reader = null;
-  const generation = getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+  const resolveDescriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
 
   const cleanup = () => {
     if (!controller.signal.aborted) {
@@ -131,6 +132,13 @@ export function acceptDirectoryMessageStreamWsConnection({
         cleanup();
       };
 
+      // A directory socket can reach this OC1 bridge while the generation is
+      // still being detected during startup. Wait for the descriptor rather
+      // than failing immediately; a generation that settles on OC2 keeps the
+      // existing "generation unavailable" behaviour below.
+      await waitForKernelReady(getKernelRuntime, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+
       reader = createUpstreamSseReader({
         initialLastEventId: requestedLastEventId,
         signal: controller.signal,
@@ -141,7 +149,7 @@ export function acceptDirectoryMessageStreamWsConnection({
           buildUrlFailed = false;
           let targetUrl;
           try {
-            if (generation.generation !== 'oc1') throw new Error('OpenCode generation unavailable');
+            if (resolveDescriptor().generation !== 'oc1') throw new Error('OpenCode generation unavailable');
             targetUrl = new URL(buildOpenCodeUrl('/event', ''));
           } catch {
             buildUrlFailed = true;
@@ -155,7 +163,10 @@ export function acceptDirectoryMessageStreamWsConnection({
           return targetUrl;
         },
         getHeaders: getOpenCodeAuthHeaders,
-        getConnectionKey: () => `${generation.endpoint}|${generation.epoch}|${generation.generation}`,
+        getConnectionKey: () => {
+          const current = resolveDescriptor();
+          return `${current.endpoint}|${current.epoch}|${current.generation}`;
+        },
         onConnect() {
           if (!streamReady) {
             sendMessageStreamWsFrame(socket, {

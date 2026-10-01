@@ -10,10 +10,13 @@ const isAllowedSsePath = (pathname) => {
     || pathname === '/api/notifications/stream';
 };
 
+const SPACE_WS_PATH = /^\/api\/spaces\/[0-9a-f]{12}\/(?:terminal\/ws|event\/ws|global\/event\/ws)$/;
+
 const isAllowedWebSocketPath = (pathname) => {
   return pathname === '/api/event/ws'
     || pathname === '/api/global/event/ws'
-    || pathname === '/api/terminal/ws';
+    || pathname === '/api/terminal/ws'
+    || SPACE_WS_PATH.test(pathname);
 };
 
 const normalizeBaseUrl = (value) => {

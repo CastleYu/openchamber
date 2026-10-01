@@ -71,6 +71,7 @@ data/
 workspaces/
 *.pid
 .worktrees/
+.codex-temp/
 
 # OpenChamber app runtime state (sessions db, screenshots)
 .openchamber/screenshots/

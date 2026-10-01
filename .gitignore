@@ -1,6 +1,13 @@
 # Agent memory
 .graymatter/
 
+# Local agent tooling, test artifacts, and conversation exports
+/.codex-temp/
+/Temp/
+/.playwright-mcp/
+/.codegraph/
+/opencode-import-*.json
+
 # Logs
 logs
 *.log

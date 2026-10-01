@@ -1,5 +1,9 @@
 # Context Obligatory Messages
 
+OC2 uses completed compaction status for restoration because its compaction
+record may omit the completion timestamp. OC1 retains the timestamp check.
+Both paths retain captured runtime epoch checks.
+
 Messages explicitly pinned by the user are stored under
 `session.metadata.openchamber.context_obligatory_messages` as `{ id, createdAt,
 role }`. The UI uses a fresh-read metadata merge when pinning or unpinning.

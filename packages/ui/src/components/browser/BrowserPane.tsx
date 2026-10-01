@@ -81,6 +81,34 @@ const DEV_SERVER_RETRY_DELAY_MS = 600;
  * spinner.
  */
 const GATEWAY_WAIT_MS = 20_000;
+/** How long an agent action waits for a freshly mounted view to get a page. */
+const VIEW_READY_TIMEOUT_MS = 15_000;
+
+/**
+ * Puts a stage where the compositor draws it but the user cannot see it, for a
+ * screenshot, and returns what undoes that. A stage already on screen is left
+ * alone. Style overrides only: moving the node would reload its webview.
+ */
+const revealStageForCapture = (stage: HTMLElement | null): (() => void) => {
+  if (!stage) return () => {};
+  const rect = stage.getBoundingClientRect();
+  const insideWindow = rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth;
+  if (insideWindow && stage.checkVisibility({ opacityProperty: true, visibilityProperty: true })) {
+    return () => {};
+  }
+  const previousStyle = stage.style.cssText;
+  Object.assign(stage.style, {
+    position: 'fixed',
+    top: `${rect.top}px`,
+    left: `${Math.max(0, Math.min(rect.left, window.innerWidth - rect.width))}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    visibility: 'visible',
+    opacity: '0',
+    pointerEvents: 'none',
+  });
+  return () => { stage.style.cssText = previousStyle; };
+};
 
 const WebviewBrowser: React.FC<BrowserPaneProps> = ({ initialUrl, directory, tabID }) => {
   const { t } = useI18n();
@@ -284,6 +312,29 @@ const WebviewBrowser: React.FC<BrowserPaneProps> = ({ initialUrl, directory, tab
     return () => window.removeEventListener('keydown', handler, true);
   }, [annotationHost, isAnnotating]);
 
+  // A tab woken for an agent action mounts its view first and its page a
+  // moment later; scripts cannot run in the page until its document exists.
+  // A failed load settles it too, so the action reports that failure promptly.
+  const pageReachedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!webviewElement) return;
+    const onSettled = () => { pageReachedRef.current = true; };
+    webviewElement.addEventListener('dom-ready', onSettled);
+    webviewElement.addEventListener('did-fail-load', onSettled);
+    return () => {
+      webviewElement.removeEventListener('dom-ready', onSettled);
+      webviewElement.removeEventListener('did-fail-load', onSettled);
+    };
+  }, [webviewElement]);
+
+  const waitForView = React.useCallback(async (): Promise<WebviewElement | null> => {
+    const deadline = Date.now() + VIEW_READY_TIMEOUT_MS;
+    while (!(webviewRef.current && pageReachedRef.current) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return webviewRef.current;
+  }, []);
+
   // Agent-driven actions. Waiting for the page to settle after a navigation is
   // deliberate: a snapshot taken mid-load describes a page that no longer
   // exists by the time the agent reads it.
@@ -311,7 +362,7 @@ const WebviewBrowser: React.FC<BrowserPaneProps> = ({ initialUrl, directory, tab
     action: string,
     parameters: Record<string, unknown>,
   ): Promise<unknown> => {
-    const webview = webviewRef.current;
+    const webview = await waitForView();
     if (!webview) throw new Error('The browser panel is not ready');
 
     // Showing the bar when the agent sizes the page keeps the change visible:
@@ -341,38 +392,33 @@ const WebviewBrowser: React.FC<BrowserPaneProps> = ({ initialUrl, directory, tab
     }
 
     if (action === 'browser.capture') {
-      // A user may close the panel after browser.open. Chromium then removes
-      // the zero-width webview's composited surface and capturePage() fails
-      // with UnknownVizError. Reveal this existing browser tab again and let
-      // the layout paint before asking Electron for the image.
-      useUIStore.getState().openContextBrowser(directory, webview.getURL());
-      const surfaceDeadline = Date.now() + 1_200;
-      let previousWidth = 0;
-      let stableSamples = 0;
-      while (stableSamples < 2 && Date.now() < surfaceDeadline) {
-        const width = webview.getBoundingClientRect().width;
-        stableSamples = width >= 2 && Math.abs(width - previousWidth) < 0.5
-          ? stableSamples + 1
-          : 0;
-        previousWidth = width;
-        await new Promise((resolve) => setTimeout(resolve, 50));
+      // Agents work the browser in the background, but Chromium keeps no
+      // composited surface for a webview that is hidden, clipped away by a
+      // closed panel, or outside the window, so capturePage() fails with
+      // UnknownVizError. A fully transparent one is still composited: for the
+      // capture, the stage is pinned inside the window at its own size and
+      // made visible at zero opacity. The panel itself never moves.
+      const restoreStage = revealStageForCapture(stageRef.current);
+      try {
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+        // Wait for a settled page first: a screenshot of a half-painted layout is
+        // worse than none, because it looks like a finished one.
+        await waitForIdle();
+        const capture = await annotationHost.capturePage();
+        if (!capture) throw new Error('The page could not be captured');
+        let title = '';
+        try { title = webview.getTitle() || ''; } catch { title = ''; }
+        return {
+          ...capture,
+          url: toDisplayUrl(webview.getURL()),
+          title,
+          viewport: viewportSummary(viewportRef.current),
+        };
+      } finally {
+        restoreStage();
       }
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
-      // Wait for a settled page first: a screenshot of a half-painted layout is
-      // worse than none, because it looks like a finished one.
-      await waitForIdle();
-      const capture = await annotationHost.capturePage();
-      if (!capture) throw new Error('The page could not be captured');
-      let title = '';
-      try { title = webview.getTitle() || ''; } catch { title = ''; }
-      return {
-        ...capture,
-        url: toDisplayUrl(webview.getURL()),
-        title,
-        viewport: viewportSummary(viewportRef.current),
-      };
     }
 
     if (action === 'browser.resize') {
@@ -471,11 +517,21 @@ const WebviewBrowser: React.FC<BrowserPaneProps> = ({ initialUrl, directory, tab
       await waitForIdle();
     }
     return result;
-  }, [annotationHost, directory, loadUrl, waitForIdle]);
+  }, [annotationHost, loadUrl, waitForIdle, waitForView]);
+
+  const describeTab = React.useCallback(() => {
+    const webview = webviewRef.current;
+    if (!webview) return { title: '', url: '' };
+    try {
+      return { title: webview.getTitle() || '', url: toDisplayUrl(webview.getURL()) };
+    } catch {
+      return { title: '', url: '' };
+    }
+  }, []);
 
   React.useEffect(
-    () => registerBrowserController({ run: runControlAction }),
-    [runControlAction],
+    () => registerBrowserController({ tabId: tabID, describe: describeTab, run: runControlAction }),
+    [describeTab, runControlAction, tabID],
   );
 
   // Leaving the tab must not strand an overlay or live style overrides on the page.

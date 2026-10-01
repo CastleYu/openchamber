@@ -81,10 +81,12 @@ export const useTurnRecords = (
         });
     }, [messages, options.showTextJustificationActivity, options.showTurnChangedFiles, options.sessionKey, options.planModeEnabled]);
 
+    // A notice following a turn makes that turn historical instead of live.
+    const lastMessageId = messages[messages.length - 1]?.info.id;
+    const tailIsTurn = !lastMessageId || !projection.ungroupedMessageIds.has(lastMessageId);
+
     const staticTurns = React.useMemo(() => {
-        const nextStatic = projection.turns.length <= 1
-            ? []
-            : projection.turns.slice(0, -1);
+        const nextStatic = tailIsTurn ? projection.turns.slice(0, -1) : projection.turns;
         const previousStatic = staticTurnsRef.current;
 
         if (previousStatic.length === nextStatic.length) {
@@ -102,10 +104,10 @@ export const useTurnRecords = (
 
         staticTurnsRef.current = nextStatic;
         return nextStatic;
-    }, [projection.turns]);
+    }, [projection.turns, tailIsTurn]);
 
     const streamingTurn = React.useMemo(() => {
-        const nextStreamingTurn = projection.turns.length === 0
+        const nextStreamingTurn = projection.turns.length === 0 || !tailIsTurn
             ? undefined
             : projection.turns[projection.turns.length - 1];
         if (streamingTurnRef.current === nextStreamingTurn) {
@@ -113,7 +115,7 @@ export const useTurnRecords = (
         }
         streamingTurnRef.current = nextStreamingTurn;
         return nextStreamingTurn;
-    }, [projection.turns]);
+    }, [projection.turns, tailIsTurn]);
 
     return {
         projection,

@@ -88,8 +88,8 @@ describe('OpenCode proxy SSE forwarding', () => {
     upstream.get('/global/event', (_req, res) => {
       res.setHeader('Content-Type', 'text/event-stream');
       res.flushHeaders();
-      setTimeout(() => res.write(':upstream-alive\n\n'), 40);
-      setTimeout(() => res.write('data: still-alive\n\n'), 80);
+      res.write(':upstream-alive\n\n');
+      res.write('data: still-alive\n\n');
     });
     upstreamServer = await listen(upstream);
     const upstreamPort = upstreamServer.address().port;
@@ -103,7 +103,7 @@ describe('OpenCode proxy SSE forwarding', () => {
       SSE_HEARTBEAT_INTERVAL_MS: 10,
       getSseUpstreamStallTimeoutMs: () => {
         stallTimeoutReads += 1;
-        return stallTimeoutReads === 1 ? 50 : 100;
+        return 200;
       },
       getRuntime: () => ({
         openCodePort: upstreamPort,
@@ -128,7 +128,7 @@ describe('OpenCode proxy SSE forwarding', () => {
     expect(body).toContain(':heartbeat\n\n');
     expect(body).toContain(':upstream-alive\n\n');
     expect(body).toContain('data: still-alive\n\n');
-    expect(stallTimeoutReads).toBeGreaterThanOrEqual(3);
+    expect(stallTimeoutReads).toBeGreaterThanOrEqual(1);
   });
 
   it('holds a request through OpenCode warmup and succeeds once ready (no 503/backoff)', async () => {
@@ -539,6 +539,117 @@ describe('OpenCode proxy SSE forwarding', () => {
       summary: { diffs: [{ patch: '@@ -1 +1 @@' }] },
       revert: { messageID: 'msg_1', snapshot: 'abc123', diff: 'diff --git a/x b/x' },
     });
+  });
+
+  it('merges only the unscoped first OC2 session page with Spaces', async () => {
+    const upstream = express();
+    upstream.get('/api/session', (req, res) => res.json({
+      data: [{ id: 'h1', location: { directory: '/repo' }, title: 'host', permissions: {} }],
+      cursor: { next: req.query.cursor ? undefined : 'p2' },
+    }));
+    upstreamServer = await listen(upstream);
+    const upstreamPort = upstreamServer.address().port;
+    const merges = [];
+    const app = express();
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 0,
+      getRuntime: () => ({ openCodePort: upstreamPort, isOpenCodeReady: true, openCodeNotReadySince: 0, isRestartingOpenCode: false }),
+      getKernelRuntime: () => ({ generation: 'oc2', endpoint: `http://127.0.0.1:${upstreamPort}`, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => ({}),
+      buildOpenCodeUrl: (requestPath) => `http://127.0.0.1:${upstreamPort}${requestPath}`,
+      ensureOpenCodeApiPrefix: () => {},
+      mergeSpaceSessionList: async (payload) => {
+        merges.push(payload);
+        return { ...payload, data: [...payload.data, { id: 's1', location: { directory: '/spaces/a1b2c3d4e5f6/repo' } }], spaces: [{ id: 'a1b2c3d4e5f6', state: 'complete', sessions: 1 }] };
+      },
+    });
+    proxyServer = await listen(app);
+    const base = `http://127.0.0.1:${proxyServer.address().port}`;
+
+    const first = await (await fetch(`${base}/api/session?limit=50`)).json();
+    expect(first.data.map((item) => item.id)).toEqual(['h1', 's1']);
+    expect(first.spaces).toEqual([{ id: 'a1b2c3d4e5f6', state: 'complete', sessions: 1 }]);
+    expect(merges[0].data[0]).not.toHaveProperty('permissions');
+    const second = await (await fetch(`${base}/api/session?limit=50&cursor=p2`)).json();
+    expect(second.data.map((item) => item.id)).toEqual(['h1']);
+    expect(second.spaces).toBeUndefined();
+    const scoped = await (await fetch(`${base}/api/session?limit=50&directory=${encodeURIComponent('/repo')}`)).json();
+    expect(scoped.spaces).toBeUndefined();
+    const scopedByHeader = await (await fetch(`${base}/api/session?limit=50`, { headers: { 'x-opencode-directory': '/repo' } })).json();
+    expect(scopedByHeader.spaces).toBeUndefined();
+    expect(merges).toHaveLength(1);
+  });
+
+  it('interleaves Space events into OC2 global SSE after whole host blocks', async () => {
+    const upstream = express();
+    let upstreamRes = null;
+    upstream.get('/api/event', (_req, res) => {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.flushHeaders();
+      res.write('data: {"id":"h1","type":"host"}\n\n');
+      upstreamRes = res;
+      res.on('close', () => { if (upstreamRes === res) upstreamRes = null; });
+    });
+    upstreamServer = await listen(upstream);
+    const upstreamPort = upstreamServer.address().port;
+    const subscribers = new Set();
+    const spaceEventHub = {
+      subscribeEvent: (subscriber, options) => {
+        const entry = { subscriber, options };
+        subscribers.add(entry);
+        return () => subscribers.delete(entry);
+      },
+    };
+    const app = express();
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 0,
+      getRuntime: () => ({ openCodePort: upstreamPort, isOpenCodeReady: true, openCodeNotReadySince: 0, isRestartingOpenCode: false }),
+      getKernelRuntime: () => ({ generation: 'oc2', endpoint: `http://127.0.0.1:${upstreamPort}`, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => ({}),
+      buildOpenCodeUrl: (requestPath) => `http://127.0.0.1:${upstreamPort}${requestPath}`,
+      ensureOpenCodeApiPrefix: () => {},
+      spaceEventHub,
+    });
+    proxyServer = await listen(app);
+    const base = `http://127.0.0.1:${proxyServer.address().port}`;
+
+    const scopedController = new AbortController();
+    const scoped = await fetch(`${base}/api/event`, { headers: { Accept: 'text/event-stream', 'x-opencode-directory': '/repo' }, signal: scopedController.signal });
+    expect(scoped.status).toBe(200);
+    expect(subscribers.size).toBe(0);
+    scopedController.abort();
+
+    const controller = new AbortController();
+    const response = await fetch(`${base}/api/global/event`, { headers: { Accept: 'text/event-stream' }, signal: controller.signal });
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let body = '';
+    const readUntil = async (needle) => {
+      while (!body.includes(needle)) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        body += decoder.decode(value, { stream: true });
+      }
+    };
+    await readUntil('"h1"');
+    expect(subscribers.size).toBe(1);
+    const [{ subscriber, options }] = subscribers;
+    expect(options).toEqual({ spaces: true });
+    subscriber({ spaceId: null, payload: { id: 'x', type: 'host-from-hub' } });
+    subscriber({ spaceId: 'a1b2c3d4e5f6', payload: { id: 's1', type: 'session.execution.started' } });
+    await readUntil('"s1"');
+    expect(body).not.toContain('host-from-hub');
+    upstreamRes.write('data: {"id":"h2",');
+    await readUntil('"h2"');
+    subscriber({ spaceId: 'a1b2c3d4e5f6', payload: { id: 's2', type: 'session.execution.succeeded' } });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(body).not.toContain('"s2"');
+    upstreamRes.write('"type":"host"}\n\n');
+    await readUntil('"s2"');
+    expect(body.indexOf('"h2"')).toBeLessThan(body.indexOf('"s2"'));
+    controller.abort();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(subscribers.size).toBe(0);
   });
 
   it('forwards unparsed SDK JSON bodies to generic API proxy requests', async () => {

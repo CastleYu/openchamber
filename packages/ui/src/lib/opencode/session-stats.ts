@@ -40,6 +40,27 @@ export interface UsageModel {
   cost: number
 }
 
+interface UsageToolTotals {
+  calls: number
+  succeeded: number
+  failed: number
+  unfinished: number
+}
+
+interface UsageToolUsage {
+  name: string
+  calls: number
+  succeeded: number
+  failed: number
+  unfinished: number
+  durationP50: number | null
+}
+
+export type UsageTools =
+  | { mode: 'none' }
+  | { mode: 'summary'; totals: UsageToolTotals }
+  | { mode: 'detail'; totals: UsageToolTotals; usage: UsageToolUsage[] }
+
 export interface UsageStats {
   range: { from: number; to: number }
   sessions: number
@@ -48,6 +69,7 @@ export interface UsageStats {
   steps: number
   tokens: UsageTokens
   cost: number
+  tools: UsageTools
   activeDays: number
   /** Longest run of consecutive active days inside the range. */
   streak: number
@@ -74,6 +96,29 @@ const toTokens = (tokens: SessionStatsInfo["tokens"]): UsageTokens => ({
   total: tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write,
 })
 
+const toTools = (tools: SessionStatsInfo['tools']): UsageTools => {
+  if (tools.mode === 'none') return { mode: 'none' }
+  const totals = {
+    calls: tools.totals.calls,
+    succeeded: tools.totals.succeeded,
+    failed: tools.totals.failed,
+    unfinished: tools.totals.unfinished,
+  }
+  if (tools.mode === 'summary') return { mode: 'summary', totals }
+  return {
+    mode: 'detail',
+    totals,
+    usage: tools.usage.map((tool) => ({
+      name: tool.name,
+      calls: tool.calls,
+      succeeded: tool.succeeded,
+      failed: tool.failed,
+      unfinished: tool.unfinished,
+      durationP50: tool.durationP50 ?? null,
+    })),
+  }
+}
+
 const toUsageStats = (info: SessionStatsInfo): UsageStats => ({
   range: { from: info.range.from, to: info.range.to },
   sessions: info.sessions,
@@ -82,6 +127,7 @@ const toUsageStats = (info: SessionStatsInfo): UsageStats => ({
   steps: info.steps,
   tokens: toTokens(info.tokens),
   cost: info.cost,
+  tools: toTools(info.tools),
   activeDays: info.activeDays,
   streak: info.streak,
   activity: info.activity.map((day) => ({ date: day.date, steps: day.steps })),
@@ -117,6 +163,21 @@ export async function fetchUsageStats(query: UsageStatsQuery, signal?: AbortSign
   )
   assertSameRuntime(runtime)
   return toUsageStats(info)
+}
+
+/** Detailed tool-call counts are requested separately so ordinary reports do not scan every call. */
+export async function fetchUsageTools(query: UsageStatsQuery, signal?: AbortSignal, runtime = assertUsageStatsRuntime()): Promise<UsageTools> {
+  assertSameRuntime(runtime)
+  const client = createV2RuntimeClient({
+    baseUrl: opencodeClient.getBaseUrl(),
+    assertProtocol: () => assertSameRuntime(runtime),
+  })
+  const info = await client.session.stats(
+    { from: query.from, to: query.to, project: query.projectID, timezone: query.timezone, tools: 'detail' },
+    { signal },
+  )
+  assertSameRuntime(runtime)
+  return toTools(info.tools)
 }
 
 /** The OpenCode project id a directory belongs to, for the `project` filter. */

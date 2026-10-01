@@ -62,17 +62,22 @@ afterEach(async () => {
 });
 
 describe('session assist runtime', () => {
-  const kernelFixture = (afterGenerate = () => {}) => {
-    const identity = { generation: 'oc2', endpoint: 'http://opencode.test', epoch: 1 };
+  const kernelFixture = (afterGenerate = () => {}, evaluateTurn = null, lineage = null, generation = 'oc2') => {
+    const identity = { generation, endpoint: 'http://opencode.test', epoch: 1 };
     const session = { id: 'session', directory: '/project', time: {}, metadata: { openchamber: {} } };
-    const user = { id: 'user', role: 'user', text: 'Fix this', created: 1, raw: { id: 'user', type: 'user', text: 'Fix this', time: { created: 1 } } };
+    const user = { id: 'user', role: 'user', text: 'Fix this', created: 1, raw: generation === 'oc1'
+      ? { info: { id: 'user', role: 'user', time: { created: 1 } }, parts: [{ type: 'text', text: 'Fix this' }] }
+      : { id: 'user', type: 'user', text: 'Fix this', time: { created: 1 } } };
     const assistant = { id: 'answer', role: 'assistant', text: 'Fixed', created: 2, completed: 3, finish: 'stop',
-      model: { providerID: 'test-provider', id: 'test-model' }, raw: { id: 'answer', type: 'assistant', model: { providerID: 'test-provider', id: 'test-model' }, finish: 'stop', time: { created: 2, completed: 3 }, content: [{ type: 'text', text: 'Fixed' }] } };
+      model: generation === 'oc1' ? { providerID: 'test-provider', modelID: 'test-model' } : { providerID: 'test-provider', id: 'test-model' },
+      raw: generation === 'oc1'
+        ? { info: { id: 'answer', role: 'assistant', parentID: 'user', providerID: 'test-provider', modelID: 'test-model', finish: 'stop', time: { created: 2, completed: 3 } }, parts: [{ type: 'text', text: 'Fixed' }] }
+        : { id: 'answer', type: 'assistant', model: { providerID: 'test-provider', id: 'test-model' }, finish: 'stop', time: { created: 2, completed: 3 }, content: [{ type: 'text', text: 'Fixed' }] } };
     const idle = { id: 'idle', role: 'idle', created: 4, raw: { id: 'idle', type: 'idle', time: { created: 4 } } };
     const state = { items: [idle, assistant, user] };
     const ops = {
-      captureIdentity: () => identity,
-      getSession: vi.fn(async () => ({ data: session })),
+      captureIdentity: () => ({ ...identity }),
+      getSession: vi.fn(async () => ({ ...identity, data: session })),
       listActiveStatuses: vi.fn(async () => ({ data: {} })),
       listChildren: vi.fn(async () => ({ data: [] })),
       listMessages: vi.fn(async () => ({ data: { order: 'desc', items: state.items, cursor: { next: null } } })),
@@ -82,9 +87,10 @@ describe('session assist runtime', () => {
     const runtime = createSessionAssistRuntime({ kernelOperations: ops,
       buildOpenCodeUrl: () => identity.endpoint, getOpenCodeAuthHeaders: () => ({}),
       getTargets: () => ({ recap: true, suggestion: false }), quietMs: 1,
+      evaluateTurn, lineage,
       getSmallModelService: async () => ({ describeSmallModel: async () => ({ inputCharBudget: 64_000 }), generateSmallModelText: generate }),
     });
-    return { runtime, ops, generate };
+    return { runtime, ops, generate, session, identity };
   };
 
   it('accepts an OC2 assistant followed by idle', async () => {
@@ -92,7 +98,128 @@ describe('session assist runtime', () => {
     runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
     await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
     expect(generate).toHaveBeenCalledTimes(1);
+    const write = ops.updateSession.mock.calls[0][0];
+    expect(write.expectedIdentity).toMatchObject({ generation: 'oc2', epoch: 1 });
+    expect(write.decideMetadata({ openchamber: { concurrent: 'keep' } })).toMatchObject({
+      openchamber: { assist: { forMessageID: 'answer' } },
+    });
+    runtime.stop();
+  });
+
+  it('retires only its own OC2 assist on busy, once, through the metadata queue', async () => {
+    const { runtime, ops } = kernelFixture();
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    const assist = ops.updateSession.mock.calls[0][0].decideMetadata({}).openchamber.assist;
+    const busy = { type: 'session.status', properties: { sessionID: 'session', status: { type: 'busy' } } };
+    runtime.processPayload(busy);
+    runtime.processPayload(busy);
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(2));
+    const clear = ops.updateSession.mock.calls[1][0];
+    expect(clear.expectedIdentity).toMatchObject({ generation: 'oc2', epoch: 1 });
+    expect(clear.decideMetadata({ openchamber: { assist, note: 'keep' } })).toEqual({ openchamber: { assist: null } });
+    expect(clear.decideMetadata({ openchamber: { assist: { ...assist, generatedAt: assist.generatedAt + 1 } } })).toBeNull();
+    runtime.stop();
+  });
+
+  it('queues retirement behind an assist write still in flight', async () => {
+    const { runtime, ops } = kernelFixture();
+    let finishWrite;
+    ops.updateSession.mockImplementationOnce(() => new Promise((resolve) => { finishWrite = resolve; }));
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    runtime.processPayload({ type: 'session.status', properties: { sessionID: 'session', status: { type: 'busy' } } });
+    expect(ops.updateSession).toHaveBeenCalledTimes(1);
+    finishWrite({});
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(2));
+    runtime.stop();
+  });
+
+  it('retires a stored assist for a newer user message, not an old replay', async () => {
+    const { runtime, ops } = kernelFixture();
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    const user = (created) => ({ type: 'message.updated', properties: {
+      info: { id: `user-${created}`, role: 'user', sessionID: 'session', time: { created } },
+    } });
+    runtime.processPayload(user(1));
+    await pause();
+    expect(ops.updateSession).toHaveBeenCalledTimes(1);
+    runtime.processPayload(user(5));
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(2));
+    runtime.stop();
+  });
+
+  it('does not retire a stored assist on a different runtime epoch', async () => {
+    const { runtime, ops, identity } = kernelFixture();
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    identity.epoch = 2;
+    runtime.processPayload({ type: 'session.status', properties: { sessionID: 'session', status: { type: 'busy' } } });
+    await pause();
+    expect(ops.updateSession).toHaveBeenCalledTimes(1);
+    runtime.stop();
+  });
+
+  it('retires an OC1 assist without erasing unrelated metadata', async () => {
+    const { runtime, ops, session } = kernelFixture(() => {}, null, null, 'oc1');
+    runtime.processPayload({ type: 'session.status', properties: {
+      sessionID: 'session', status: { type: 'idle' }, directory: '/project',
+    } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    session.metadata = { ...ops.updateSession.mock.calls[0][0].metadata, outside: 'keep',
+      openchamber: { ...ops.updateSession.mock.calls[0][0].metadata.openchamber, note: 'keep' } };
+    runtime.processPayload({ type: 'session.status', properties: { sessionID: 'session', status: { type: 'busy' } } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(2));
+    expect(ops.updateSession.mock.calls[1][0].metadata).toEqual({ outside: 'keep', openchamber: { note: 'keep' } });
+    expect(ops.updateSession.mock.calls[1][0].expectedIdentity).toMatchObject({ generation: 'oc1', epoch: 1 });
+    runtime.stop();
+  });
+
+  it('keeps the OC1 assist path when a checker callback is present', async () => {
+    const evaluateTurn = vi.fn(async () => ({ recap: false, suggestion: false }));
+    const { runtime, ops, generate } = kernelFixture(() => {}, evaluateTurn, null, 'oc1');
+    runtime.processPayload({ type: 'session.status', properties: {
+      sessionID: 'session', status: { type: 'idle' }, directory: '/project',
+    } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    expect(evaluateTurn).not.toHaveBeenCalled();
+    expect(generate).toHaveBeenCalledTimes(1);
     expect(ops.updateSession.mock.calls[0][0].metadata.openchamber.assist.forMessageID).toBe('answer');
+    runtime.stop();
+  });
+
+  it('does no transcript read when Jev rules out both assist fields', async () => {
+    const evaluateTurn = vi.fn(async () => ({ recap: false, suggestion: false }));
+    const { runtime, ops, generate } = kernelFixture(() => {}, evaluateTurn);
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(evaluateTurn).toHaveBeenCalledTimes(1));
+    await pause();
+    expect(ops.getSession).not.toHaveBeenCalled();
+    expect(ops.listMessages).not.toHaveBeenCalled();
+    expect(generate).not.toHaveBeenCalled();
+    runtime.stop();
+  });
+
+  it('keeps the original assist path when Jev cannot decide', async () => {
+    const { runtime, ops } = kernelFixture(() => {}, async () => null);
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(ops.updateSession).toHaveBeenCalledTimes(1));
+    runtime.stop();
+  });
+
+  it('drops a pending OC2 gate when a new user message starts another turn', async () => {
+    let answer;
+    const evaluateTurn = vi.fn(() => new Promise((resolve) => { answer = resolve; }));
+    const { runtime, ops } = kernelFixture(() => {}, evaluateTurn);
+    runtime.processPayload({ type: 'session.idle', properties: { sessionID: 'session', directory: '/project' } });
+    await vi.waitFor(() => expect(evaluateTurn).toHaveBeenCalledTimes(1));
+    runtime.processPayload({ type: 'message.updated', properties: {
+      info: { id: 'new', role: 'user', sessionID: 'session', time: { created: Date.now() + 1 } },
+    } });
+    answer({ recap: true, suggestion: true });
+    await pause();
+    expect(ops.getSession).not.toHaveBeenCalled();
     runtime.stop();
   });
 

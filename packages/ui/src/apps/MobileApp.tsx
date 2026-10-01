@@ -12,6 +12,7 @@ import { ChatView } from '@/components/views/ChatView';
 import { PlanView } from '@/components/views/PlanView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { UsageStatsView } from '@/components/views/usage/UsageStatsView';
+import type { ScheduledTasksLeaveReason } from '@/components/session/ScheduledTasksDialog';
 import { useUsageStatsAvailable } from '@/components/views/usage/useUsageStatsAvailability';
 import { AppLinkConfirmDialog } from '@/components/chat/AppLinkConfirmDialog';
 import { SharedTrustConfirmDialog } from '@/components/projects/SharedTrustConfirmDialog';
@@ -26,6 +27,7 @@ import { useRouter } from '@/hooks/useRouter';
 import { useTerminalSessionKeepalive } from '@/hooks/useTerminalSessionKeepalive';
 import { useUpdatePolling } from '@/hooks/useUpdatePolling';
 import { useWindowTitle } from '@/hooks/useWindowTitle';
+import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
 import { useRoutingSync } from '@/hooks/useRoutingSync';
 import { opencodeClient } from '@/lib/opencode/client';
 import type { RuntimeAPIs } from '@/lib/api/types';
@@ -35,9 +37,10 @@ import { useHardwareKeyboard } from '@/lib/hardwareKeyboard';
 import { useI18n } from '@/lib/i18n';
 import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { runtimeFetch } from '@/lib/runtime-fetch';
-import { getRuntimeApiBaseUrl, getRuntimeKey, subscribeRuntimeEndpointChanged, switchRuntimeEndpoint, MOBILE_DISCONNECTED_RUNTIME_KEY } from '@/lib/runtime-switch';
-import { refreshGlobalSessions, resolveGlobalSessionDirectory } from '@/stores/useGlobalSessionsStore';
-import { clearLastActiveSession, readLastActiveSession } from '@/sync/last-session-cache';
+import { getRuntimeApiBaseUrl, subscribeRuntimeEndpointChanged, switchRuntimeEndpoint, MOBILE_DISCONNECTED_RUNTIME_KEY } from '@/lib/runtime-switch';
+import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
+import { useAuthoritativeSessionCleanup } from '@/components/session/sidebar/list/useAuthoritativeSessionCleanup';
+import { restoreLastActiveSession } from '@/sync/last-session-restore';
 import { cn } from '@/lib/utils';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
@@ -54,9 +57,13 @@ import {
 } from '@/lib/worktrees/worktreeManager';
 import { refreshWorktreeTopologyForChange } from '@/lib/worktrees/worktreeTopologyRefresh';
 import { useUIStore } from '@/stores/useUIStore';
+import { useSpacesStore } from '@/lib/spaces/spaces-store';
+import { useOnDemandComponent } from '@/hooks/useOnDemandComponent';
+import { closeTopmostBackLayer } from '@/lib/mobileBackLayers';
 import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { ProjectConfigErrorToast } from '@/components/projects/ProjectConfigErrorToast';
 import { useOpenCodeSource } from './useOpenCodeSource';
 
 import { SyncAppEffects } from './AppEffects';
@@ -84,9 +91,14 @@ import {
   useIpadSidebarResize,
 } from './ipadSidebarResize';
 
+const loadRunOverview = () => import('@/components/multirun/RunOverview').then((module) => module.RunOverview);
+const loadSpaceDialogs = () => import('@/components/session/spaces/SpaceDialogsHost').then((module) => module.SpaceDialogsHost);
+const loadScheduledTasksView = () => import('@/components/session/ScheduledTasksDialog').then((module) => module.ScheduledTasksView);
+
 const MOBILE_SETTINGS_PAGES = [
   'web-search',
   'general',
+  'isolated-spaces',
   'appearance',
   'chat',
   'notifications',
@@ -121,7 +133,7 @@ const NATIVE_RESUME_SYNC_EVENT_THROTTLE_MS = 1_000;
     footer. Exactly one can be open at a time — opening another replaces it,
     closing returns to the chat. The sessions drawer and the workspace drawer
     (Changes / Files / Terminal / Notes / MCP) are separate layers. */
-type MobileSurface = 'instances' | 'settings' | 'usage' | 'update';
+type MobileSurface = 'instances' | 'scheduled' | 'settings' | 'update' | 'usage';
 
 const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onActiveConnectionDeleted }) => {
   const { t } = useI18n();
@@ -130,6 +142,18 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
   // are idle-reaped by the server while the workspace drawer is closed.
   useTerminalSessionKeepalive();
   const [sessionsSheetOpen, setSessionsSheetOpen] = React.useState(false);
+  // The run overview covers the chat; selecting any session returns to it.
+  React.useEffect(() => useSessionUIStore.subscribe((state, prev) => {
+    if (state.currentSessionId && state.currentSessionId !== prev.currentSessionId) {
+      useUIStore.getState().setRunOverviewKey(null);
+    }
+  }), []);
+  const runOverviewOpen = useUIStore((state) => state.runOverviewKey !== null);
+  const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const RunOverview = useOnDemandComponent(isOc2 && runOverviewOpen, loadRunOverview, () => useUIStore.getState().setRunOverviewKey(null));
+  React.useEffect(() => {
+    if (runOverviewOpen) setSessionsSheetOpen(false);
+  }, [runOverviewOpen]);
   const [activeSurface, setActiveSurface] = React.useState<MobileSurface | null>(null);
   const statsAvailable = useUsageStatsAvailable();
   React.useEffect(() => {
@@ -161,6 +185,7 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
     setActiveSurface(null);
     setOpenPlan(null);
   }, []);
+  const ScheduledTasksView = useOnDemandComponent(activeSurface === 'scheduled', loadScheduledTasksView, closeSurface);
 
   const openSurface = React.useCallback((surface: MobileSurface) => {
     setActiveSurface(surface);
@@ -337,6 +362,11 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
   // (opened from the drawer footer / workspace tabs), so they close before the
   // drawers underneath.
   const handleNativeBack = React.useCallback(() => {
+    // A sheet, dialog, select or menu open on top of everything goes first,
+    // so back inside a surface's editor does not close the whole surface.
+    if (closeTopmostBackLayer()) {
+      return true;
+    }
     if (openPlan) {
       setOpenPlan(null);
       return true;
@@ -380,10 +410,19 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
       onOpenInstances: showCapacitorOnlyFeatures ? () => openSurface('instances') : undefined,
       onOpenSettings: () => openSettingsSurface('nav'),
       onOpenUsage: statsAvailable ? () => openSurface('usage') : undefined,
+      onOpenScheduled: () => openSurface('scheduled'),
       onOpenUpdate: showUpdateItem ? () => openSurface('update') : undefined,
     }),
     [openSettingsSurface, openSurface, showCapacitorOnlyFeatures, showUpdateItem, statsAvailable],
   );
+
+  // A started run or a loop file to edit replaces the page: back to the chat,
+  // with the files drawer on top for a loop file.
+  const leaveScheduledTasks = React.useCallback((reason: ScheduledTasksLeaveReason) => {
+    closeSurface();
+    setSessionsSheetOpen(false);
+    if (reason === 'file') openFilesSurface();
+  }, [closeSurface, openFilesSurface]);
 
   const openMcpCreateSettings = React.useCallback(() => {
     const baseName = 'new-mcp-server';
@@ -498,6 +537,7 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
                 <ChatView />
               </ErrorBoundary>
             </div>
+            {isOc2 && runOverviewOpen && RunOverview ? <ErrorBoundary><RunOverview /></ErrorBoundary> : null}
           </main>
         </div>
 
@@ -643,6 +683,21 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
           </MobileFullscreenSurface>
         ) : null}
 
+        {activeSurface === 'scheduled' ? (
+          <MobileFullscreenSurface
+            open
+            variant={surfaceVariant}
+            dialogAlign="app"
+            onClose={closeSurface}
+            ariaLabel={t('sessions.scheduledTasks.dialog.title')}
+            title={t('sessions.scheduledTasks.dialog.title')}
+          >
+            <ErrorBoundary>
+              {ScheduledTasksView ? <ScheduledTasksView layout="mobile" onLeave={leaveScheduledTasks} /> : null}
+            </ErrorBoundary>
+          </MobileFullscreenSurface>
+        ) : null}
+
         {activeSurface === 'update' ? (
           <MobileFullscreenSurface
             open
@@ -665,6 +720,17 @@ const MobileShell: React.FC<{ onActiveConnectionDeleted: () => void }> = ({ onAc
 };
 
 export function MobileApp({ apis }: MobileAppProps) {
+  const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
+  const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const spaceDialogOpen = useSpacesStore((state) => Boolean(state.accessDialog || state.actionsSheet || state.deleteDialog || state.applyDialog || state.setupOutputDialog));
+  const SpaceDialogsHost = useOnDemandComponent(isOc2 && isolatedSpacesEnabled && spaceDialogOpen, loadSpaceDialogs, () => {
+    const spaces = useSpacesStore.getState();
+    spaces.closeAccessDialog();
+    spaces.closeActionsSheet();
+    spaces.closeDeleteDialog();
+    spaces.closeApplyDialog();
+    spaces.closeSetupOutputDialog();
+  });
   const syncSource = useOpenCodeSource();
   const { t } = useI18n();
   const initializeApp = useConfigStore((state) => state.initializeApp);
@@ -683,6 +749,16 @@ export function MobileApp({ apis }: MobileAppProps) {
   const refreshLinearAuthStatus = useLinearAuthStore((state) => state.refreshStatus);
   const setPlanModeEnabled = useFeatureFlagsStore((state) => state.setPlanModeEnabled);
   const projects = useProjectsStore((state) => state.projects);
+  // Mobile has no layout-level session-list cleanup, so reconcile from the
+  // complete global active and archived snapshots when they are authoritative.
+  const globalActiveSessions = useGlobalSessionsStore((state) => state.activeSessions);
+  const globalArchivedSessions = useGlobalSessionsStore((state) => state.archivedSessions);
+  const hasAuthoritativeGlobalSessions = useGlobalSessionsStore((state) => state.status === 'ready');
+  const cleanupSessions = React.useMemo(
+    () => [...globalActiveSessions, ...globalArchivedSessions],
+    [globalActiveSessions, globalArchivedSessions],
+  );
+  useAuthoritativeSessionCleanup({ hasAuthoritativeGlobalSessions, sessions: cleanupSessions });
   const [connectionEpoch, setConnectionEpoch] = React.useState(0);
   const [runtimeEndpointEpoch, setRuntimeEndpointEpoch] = React.useState(0);
   const [showConnectionRecovery, setShowConnectionRecovery] = React.useState(false);
@@ -1023,47 +1099,16 @@ export function MobileApp({ apis }: MobileAppProps) {
   const [lastSessionRestorePending, setLastSessionRestorePending] = React.useState(isNativeMobileApp);
   React.useEffect(() => {
     if (!isNativeMobileApp || !isConnected || lastSessionRestoreDoneRef.current) return;
-    if (useSessionUIStore.getState().currentSessionId) {
-      lastSessionRestoreDoneRef.current = true;
-      setLastSessionRestorePending(false);
-      return;
-    }
-    const runtimeKey = getRuntimeKey();
-    const persisted = readLastActiveSession(runtimeKey);
-    if (!persisted) {
-      lastSessionRestoreDoneRef.current = true;
-      setLastSessionRestorePending(false);
-      return;
-    }
     let cancelled = false;
     // Safety valve: the overlay must never strand the user on the splash if
     // the snapshot hangs — fall through to the draft after a bounded wait.
     const overlayTimeoutId = window.setTimeout(() => setLastSessionRestorePending(false), 6000);
     void (async () => {
-      // `null` = fetch failure — keep the ref unset so the next connect (a
-      // stale persisted isConnected can fire this early) retries the restore.
-      const snapshot = await refreshGlobalSessions().catch(() => null);
+      const result = await restoreLastActiveSession({ refresh: true });
       if (cancelled) return;
-      if (!snapshot) {
-        setLastSessionRestorePending(false);
-        return;
-      }
-      lastSessionRestoreDoneRef.current = true;
-      const session = snapshot.activeSessions.find((entry) => entry.id === persisted.sessionId);
-      if (!session) {
-        // Authoritative snapshot says the session is gone (deleted/archived) —
-        // drop the stale pointer instead of retrying it on every launch.
-        clearLastActiveSession(runtimeKey);
-        setLastSessionRestorePending(false);
-        return;
-      }
-      const latest = useSessionUIStore.getState();
-      if (!latest.currentSessionId) {
-        void latest.setCurrentSession(
-          session.id,
-          resolveGlobalSessionDirectory(session) ?? persisted.directory ?? undefined,
-        );
-      }
+      // A failed list read keeps the ref unset so the next connect (a stale
+      // persisted isConnected can fire this early) retries the restore.
+      if (result !== 'failed') lastSessionRestoreDoneRef.current = true;
       setLastSessionRestorePending(false);
     })();
     return () => {
@@ -1205,6 +1250,7 @@ export function MobileApp({ apis }: MobileAppProps) {
   useUpdatePolling();
   useWindowTitle();
   useRoutingSync();
+  useEnterprisePolicySync();
   useRouter();
   // APNs is the only notification channel on the native app (background-capable,
   // focus-suppressed server-side via the visibility beacon). Local notifications are
@@ -1339,6 +1385,7 @@ export function MobileApp({ apis }: MobileAppProps) {
               <AppStartupOverlay ready={!isNativeMobileApp || !lastSessionRestorePending} animated />
               <SyncAppEffects embeddedBackgroundWorkEnabled={isInitialized} />
               <OpenCodeUpdateToast />
+              <ProjectConfigErrorToast />
               <MobileAppUpdateToast />
               <MobileShell onActiveConnectionDeleted={() => {
                 switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
@@ -1346,6 +1393,7 @@ export function MobileApp({ apis }: MobileAppProps) {
               }} />
               <AppLinkConfirmDialog />
               <SharedTrustConfirmDialog />
+              {isOc2 && isolatedSpacesEnabled && SpaceDialogsHost ? <SpaceDialogsHost /> : null}
               <Toaster position="top-center" offset="calc(var(--oc-safe-area-top, 0px) + 16px)" />
               {isInitialized ? <ConfigUpdateOverlay /> : null}
             </div>

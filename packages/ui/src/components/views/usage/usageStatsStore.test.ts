@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { UsageStats } from '@/lib/opencode/session-stats';
+import type { UsageStats, UsageTools } from '@/lib/opencode/session-stats';
 import { opencodeClient } from '@/lib/opencode/client';
 
 import { createUsageStatsStore, getUsageStatsRuntimeKey, usageStatsKey, useUsageStatsStore, type UsageStatsRequest } from './usageStatsStore';
@@ -13,6 +13,7 @@ const report = (prompts: number): UsageStats => ({
   steps: prompts,
   tokens: { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
   cost: 0,
+  tools: { mode: 'none' },
   activeDays: 1,
   streak: 1,
   activity: [],
@@ -20,16 +21,19 @@ const report = (prompts: number): UsageStats => ({
 });
 
 type Pending = { request: UsageStatsRequest; resolve: (stats: UsageStats) => void; reject: (error: Error) => void };
+type PendingTools = { request: UsageStatsRequest; range: UsageStats['range']; resolve: (tools: UsageTools) => void; reject: (error: Error) => void };
 
 function setup() {
   const pending: Pending[] = [];
+  const pendingTools: PendingTools[] = [];
   let runtime = 'runtime-a';
   const store = createUsageStatsStore(
     (request) => new Promise<UsageStats>((resolve, reject) => pending.push({ request, resolve, reject })),
     () => runtime,
     () => 1000,
+    (request, range) => new Promise<UsageTools>((resolve, reject) => pendingTools.push({ request, range, resolve, reject })),
   );
-  return { store, pending, setRuntime: (next: string) => { runtime = next; } };
+  return { store, pending, pendingTools, setRuntime: (next: string) => { runtime = next; } };
 }
 
 const A: UsageStatsRequest = { range: '7d', projectDirectory: null };
@@ -145,5 +149,33 @@ describe('usage stats cache', () => {
       opencodeClient.reconnectToRuntimeBaseUrl();
       useUsageStatsStore.getState().reset();
     }
+  });
+
+  test('loads tools only on request and uses the shown report range', async () => {
+    const ctx = setup();
+    const read = ctx.store.getState().load(A);
+    ctx.pending[0].resolve({ ...report(3), range: { from: 100, to: 200 } });
+    await read;
+    expect(ctx.pendingTools).toHaveLength(0);
+    const tools = ctx.store.getState().loadTools(A);
+    expect(ctx.pendingTools[0].range).toEqual({ from: 100, to: 200 });
+    ctx.pendingTools[0].resolve({ mode: 'detail', totals: { calls: 2, succeeded: 2, failed: 0, unfinished: 0 }, usage: [] });
+    await tools;
+    expect(ctx.store.getState().toolEntries[usageStatsKey('runtime-a', A)]?.tools).toMatchObject({
+      mode: 'detail',
+      totals: { calls: 2 },
+    });
+  });
+
+  test('keeps tool failures separate from the usage report', async () => {
+    const ctx = setup();
+    const read = ctx.store.getState().load(A);
+    ctx.pending[0].resolve(report(3));
+    await read;
+    const tools = ctx.store.getState().loadTools(A);
+    ctx.pendingTools[0].reject(new Error('scan failed'));
+    await tools;
+    expect(entry(ctx, A)?.stats).toEqual(report(3));
+    expect(ctx.store.getState().toolEntries[usageStatsKey('runtime-a', A)]).toMatchObject({ tools: null, loading: false, error: 'scan failed' });
   });
 });

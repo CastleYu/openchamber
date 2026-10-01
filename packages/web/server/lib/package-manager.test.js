@@ -149,6 +149,27 @@ describe('checkForUpdates', () => {
     });
   });
 
+  it('keeps update checks but omits usage and install identity in enterprise mode', async () => {
+    const original = process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    try {
+      fetchMock.when('api.openchamber.dev', {
+        ok: true,
+        json: async () => ({ latestVersion: '1.10.0', updateAvailable: true }),
+      });
+      const result = await checkForUpdates({
+        appType: 'desktop-electron', currentVersion: '1.9.10', installId: 'local-id',
+      });
+      expect(result.available).toBe(true);
+      const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(payload.reportUsage).toBe(false);
+      expect(payload).not.toHaveProperty('installId');
+    } finally {
+      if (original === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+      else process.env.OPENCHAMBER_ENTERPRISE_MODE = original;
+    }
+  });
+
   it('resolves an Android APK asset when the update API returns an AAB', async () => {
     fetchMock
       .when('api.openchamber.dev', {

@@ -139,6 +139,7 @@ describe('managed OpenCode config file', () => {
       includeWeb: true,
       includeMemory: false,
       includeNotify: false,
+      codeMode: false,
     });
   });
 
@@ -154,6 +155,23 @@ describe('managed OpenCode config file', () => {
       includeWeb: false,
       includeMemory: false,
       includeNotify: true,
+      codeMode: false,
+    });
+  });
+
+  it('puts the tools behind Code Mode only when the user asks for it', async () => {
+    const { runtime, agentToolRuntime } = await createHarness({
+      settings: { agentToolsCodeMode: true },
+    });
+
+    await runtime.buildManagedChildEnv();
+
+    expect(agentToolRuntime.materializePlugin).toHaveBeenCalledWith({
+      includeControl: true,
+      includeWeb: true,
+      includeMemory: false,
+      includeNotify: false,
+      codeMode: true,
     });
   });
 

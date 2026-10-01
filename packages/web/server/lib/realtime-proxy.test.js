@@ -228,6 +228,38 @@ describe('realtime proxy', () => {
     }
   });
 
+  it('proxies a scoped space WebSocket without dropping the private upstream header', async () => {
+    let upstreamRequest = null;
+    const upstreamServer = http.createServer();
+    const upstreamWs = new WebSocketServer({ server: upstreamServer });
+    upstreamWs.on('connection', (socket, request) => {
+      upstreamRequest = request;
+      socket.send('ready');
+    });
+    const upstreamOrigin = await listen(upstreamServer);
+    const { origin, runtime } = await startProxyServer({ apiBaseUrl: upstreamOrigin });
+
+    try {
+      const path = '/api/spaces/012345abcdef/terminal/ws';
+      const target = `${upstreamOrigin.replace(/^http:/, 'ws:')}${path}`;
+      const client = new WebSocket(buildRealtimeProxyWsUrl(origin, target), {
+        headers: { Origin: 'openchamber-ui://app' },
+      });
+      const message = await new Promise((resolve, reject) => {
+        client.once('message', (data) => resolve(data.toString()));
+        client.once('error', reject);
+      });
+
+      expect(message).toBe('ready');
+      expect(upstreamRequest?.url).toBe(path);
+      expect(upstreamRequest?.headers['x-proxy-auth']).toBe('secret');
+      client.close();
+      upstreamWs.close();
+    } finally {
+      runtime.stop();
+    }
+  });
+
   it('allows first passwordless WebSocket proxy upgrade without an existing cookie', async () => {
     const upstreamServer = http.createServer();
     const upstreamWs = new WebSocketServer({ server: upstreamServer });

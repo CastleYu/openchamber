@@ -14,6 +14,12 @@ const createApp = () => {
   };
 };
 
+const createSseRequest = (originalUrl) => Object.assign(new EventEmitter(), {
+  originalUrl,
+  headers: {},
+  get(name) { return this.headers[name.toLowerCase()]; },
+});
+
 const proxyDeps = (getKernelRuntime, extra = {}) => ({
   fs: { promises: { realpath: async (value) => value } }, os: {}, path: {},
   getRuntime: () => ({ openCodePort: 49303, openCodeBaseUrl: 'http://127.0.0.1:49303' }),
@@ -105,9 +111,7 @@ it.each(['oc1', 'oc2'])('retires a direct %s SSE response when the selected kern
       headers: { 'content-type': 'text/event-stream' },
     });
   });
-  const req = new EventEmitter();
-  req.originalUrl = generation === 'oc1' ? '/api/global/event' : '/api/event';
-  req.headers = {};
+  const req = createSseRequest(generation === 'oc1' ? '/api/global/event' : '/api/event');
   const chunks = [];
   const res = Object.assign(new EventEmitter(), {
     writableEnded: false, destroyed: false,
@@ -138,9 +142,7 @@ it('discards an SSE read completed after the selected epoch changed', async () =
   const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(new ReadableStream({
     start(controller) { upstream = controller; },
   }), { headers: { 'content-type': 'text/event-stream' } }));
-  const req = new EventEmitter();
-  req.originalUrl = '/api/event';
-  req.headers = {};
+  const req = createSseRequest('/api/event');
   const chunks = [];
   const res = Object.assign(new EventEmitter(), {
     writableEnded: false, destroyed: false,

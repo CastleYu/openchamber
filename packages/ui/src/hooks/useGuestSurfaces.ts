@@ -11,6 +11,7 @@ import { guestPackageIconSrc, resolveGuestIconName } from '@/lib/guests/icon';
 import { enabledGuestSurfaces } from '@/lib/guests/surfaces';
 import { loadGuestCatalog } from '@/lib/guests/load-catalog';
 import { useGuestsStore } from '@/lib/guests/store';
+import type { InstalledGuest } from '@/lib/guests/types';
 import { getRuntimeUrlResolver } from '@/lib/runtime-url';
 import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
 import type { ContextSurfaceDescriptor } from '@/lib/surfaces/registry';
@@ -25,6 +26,7 @@ export type GuestAttachItem = {
 
 const EMPTY_ACTIONS: GuestActionEntry[] = [];
 const EMPTY_COMMANDS: GuestCommandEntry[] = [];
+const EMPTY_STATUS_SECTIONS: InstalledGuest[] = [];
 
 /** The catalog, loaded on mount and reloaded on a runtime switch. */
 const useGuestCatalog = () => {
@@ -115,4 +117,14 @@ export const useGuestAttachItems = (): GuestAttachItem[] => {
     // runtimeKey: the asset resolver answers for the active runtime, so a switch recomputes the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guests, runtimeKey]);
+};
+
+/** Active Work Status extensions on the web and desktop surfaces; the rail loads their catalog. */
+export const useGuestStatusSections = (): InstalledGuest[] => {
+  const guests = useGuestsStore((state) => state.guests);
+  return React.useMemo(() => {
+    if (isVSCodeRuntime() || isMobileSurfaceRuntime()) return EMPTY_STATUS_SECTIONS;
+    const sections = guests.filter((guest) => guest.statusEntry && isGuestActive(guest));
+    return sections.length > 0 ? sections : EMPTY_STATUS_SECTIONS;
+  }, [guests]);
 };

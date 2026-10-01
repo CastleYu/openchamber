@@ -1,4 +1,6 @@
-import { readAuthFile } from '../../opencode/auth.js';
+import { readOpenCodeCredentials } from '../../opencode/auth.js';
+import { readConfigLayers } from '../../opencode/shared.js';
+import { isRecord, toProviderEntity } from '../../opencode/config-v2.js';
 import {
   getAuthEntry,
   normalizeAuthEntry,
@@ -6,14 +8,29 @@ import {
   toUsageWindow,
   toNumber,
   asObject,
+  asNonEmptyString,
   formatMoney
 } from '../utils/index.js';
 
 export const providerId = 'openrouter';
 export const providerName = 'OpenRouter';
 export const aliases = ['openrouter'];
-const OPENROUTER_QUOTA_URL = 'https://openrouter.ai/api/v1/key';
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const PERIOD_SECONDS = { daily: 86400, weekly: 604800, monthly: 30 * 86400 };
+
+const resolveQuotaBase = (readLayers) => {
+  try {
+    const { mergedConfig } = readLayers();
+    const readBaseURL = (sectionKey) => {
+      const section = mergedConfig?.[sectionKey];
+      return isRecord(section) ? asNonEmptyString(toProviderEntity(section.openrouter).settings?.baseURL) : null;
+    };
+    const base = readBaseURL('providers') ?? readBaseURL('provider');
+    return base?.replace(/\/+$/, '') || null;
+  } catch {
+    return null;
+  }
+};
 
 export const resolveResetAt = (limitReset, nowMs) => {
   const now = new Date(nowMs);
@@ -30,14 +47,13 @@ export const resolveResetAt = (limitReset, nowMs) => {
   return null;
 };
 
-export const isConfigured = () => {
-  const auth = readAuthFile();
+export const isConfigured = (auth) => {
   const entry = normalizeAuthEntry(getAuthEntry(auth, aliases));
   return Boolean(entry?.key || entry?.token);
 };
 
-export const fetchQuota = async () => {
-  const auth = readAuthFile();
+export const fetchQuota = async ({ readLayers = readConfigLayers } = {}) => {
+  const auth = await readOpenCodeCredentials();
   const entry = normalizeAuthEntry(getAuthEntry(auth, aliases));
   const apiKey = entry?.key ?? entry?.token;
 
@@ -54,7 +70,7 @@ export const fetchQuota = async () => {
   const timeoutSignal = AbortSignal.timeout(15_000);
 
   try {
-    const response = await fetch(OPENROUTER_QUOTA_URL, {
+    const response = await fetch(`${resolveQuotaBase(readLayers) ?? OPENROUTER_API_BASE}/key`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${apiKey}`,

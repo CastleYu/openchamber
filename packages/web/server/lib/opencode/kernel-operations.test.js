@@ -269,6 +269,35 @@ describe('server kernel operations', () => {
       expectedIdentity: { ...current, epoch: 1 } })).rejects.toMatchObject({ code: 'runtime-changed' });
     expect(requests).toEqual([]);
   });
+
+  it('decides OC2 work changes in the same queue as a user metadata write', async () => {
+    let metadata = { openchamber: { work: { state: 'open' }, goal: 'keep' } };
+    const requests = [];
+    const endpoint = await serve(({ method, body }) => {
+      if (method === 'PATCH') {
+        metadata = body.metadata;
+        return { status: 204 };
+      }
+      return { body: { data: { ...oc2Session, metadata } } };
+    }, requests);
+    const ops = createKernelOperations({ getRuntime: () => runtime('oc2', endpoint), getHeaders: () => ({}) });
+    const identity = ops.captureIdentity();
+    const done = ops.updateSession({ sessionID: 'ses_2', metadata: { openchamber: { work: { state: 'done' } } }, expectedIdentity: identity });
+    const classified = ops.updateSession({ sessionID: 'ses_2', expectedIdentity: identity,
+      decideMetadata: (current) => current.openchamber.work.state === 'done' ? null : { openchamber: { work: { state: 'open' } } } });
+    const [, result] = await Promise.all([done, classified]);
+    expect(result.metadataChanged).toBe(false);
+    expect(metadata.openchamber).toEqual({ work: { state: 'done' }, goal: 'keep' });
+    expect(requests.filter((request) => request.method === 'PATCH')).toHaveLength(1);
+  });
+
+  it('refuses conditional metadata writes on OC1 before fetching', async () => {
+    const fetchImpl = vi.fn();
+    const ops = createKernelOperations({ getRuntime: () => runtime('oc1', 'http://kernel.test'), getHeaders: () => ({}), fetchImpl });
+    await expect(ops.updateSession({ sessionID: 'ses_1', decideMetadata: () => ({ work: 'open' }) }))
+      .rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
   it('uses OC1 SDK routes, directory query and 204 prompt acceptance', async () => {
     const requests = [];
     const endpoint = await serve(({ method, path }) => {
@@ -472,4 +501,48 @@ describe('server kernel operations', () => {
     await expect(ops.sendPrompt({ sessionID: 'ses_2', request: { generation: 'oc2', endpoint, epoch: 0, body: { text: 'old' } } })).rejects.toMatchObject({ code: 'runtime-changed' });
     await expect(ops.getSessionStatus({ sessionID: 'ses_2' })).rejects.toMatchObject({ code: 'unknown-status' });
   });
+  it('returns the accepted conditional metadata after OC2 replies with no content', async () => {
+    const requests = [];
+    const endpoint = await serve(({ method }) => method === 'GET'
+      ? { body: { data: { ...oc2Session, metadata: { keep: 'value', openchamber: { work: { state: 'closed' } } } } } }
+      : { status: 204 }, requests);
+    const ops = createKernelOperations({ getRuntime: () => runtime('oc2', endpoint), getHeaders: () => ({}) });
+    const result = await ops.updateSession({ sessionID: 'ses_2', directory: 'C:/work', expectedIdentity: ops.captureIdentity(),
+      decideMetadata: () => ({ openchamber: { work: { state: 'open' } } }) });
+    expect(result.metadataChanged).toBe(true);
+    expect(result.data.metadata).toEqual({ keep: 'value', openchamber: { work: { state: 'open' } } });
+    expect(requests.map((entry) => entry.method)).toEqual(['GET', 'PATCH']);
+  });
+
+  it('does not commit a conditional patch after its fresh read retires the runtime', async () => {
+    const requests = [];
+    let selected;
+    const endpoint = await serve(() => ({ body: { data: oc2Session } }), requests);
+    selected = runtime('oc2', endpoint);
+    const ops = createKernelOperations({ getRuntime: () => selected, getHeaders: () => ({}), fetchImpl: async (url, init) => {
+      const response = await fetch(url, init);
+      selected = runtime('oc2', endpoint, 2);
+      return response;
+    } });
+    await expect(ops.updateSession({ sessionID: 'ses_2', decideMetadata: () => ({ work: 'open' }) }))
+      .rejects.toMatchObject({ code: 'runtime-changed' });
+    expect(requests.map((entry) => entry.method)).toEqual(['GET']);
+  });
+
+  it('uses OC2 default model and import routes, and refuses them before dispatch on OC1', async () => {
+    const requests = [];
+    const endpoint = await serve(({ path: route }) => route === '/api/model/default'
+      ? { body: { data: { providerID: 'fixture', id: 'preferred' } } }
+      : route === '/api/experimental/session/import' ? { body: { data: { id: 'ses_imported' } } }
+      : { status: 404, body: {} }, requests);
+    let selected = runtime('oc2', endpoint);
+    const ops = createKernelOperations({ getRuntime: () => selected, getHeaders: () => ({}) });
+    expect((await ops.getDefaultModel()).data).toEqual({ providerID: 'fixture', id: 'preferred' });
+    expect((await ops.importSession({ chat: { fixture: true }, expectedIdentity: ops.captureIdentity() })).data).toEqual({ id: 'ses_imported' });
+    selected = runtime('oc1', endpoint);
+    await expect(ops.getDefaultModel()).rejects.toMatchObject({ code: 'unsupported-operation' });
+    await expect(ops.importSession({ chat: {} })).rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(requests.map((entry) => entry.path)).toEqual(['/api/model/default', '/api/experimental/session/import']);
+  });
+
 });

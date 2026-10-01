@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { excerpt, loadAssistContext } from './context.js';
+import { excerpt, loadAssistContext, loadSettledTurns } from './context.js';
 import { buildAssistPrompt } from './prompt.js';
 
 const record = (id, role, text, extra = {}, parts = []) => ({
@@ -9,6 +9,20 @@ const record = (id, role, text, extra = {}, parts = []) => ({
 const pair = (id) => [record(`u${id}`, 'user', `request ${id}`), record(`a${id}`, 'assistant', `answer ${id}`, { parentID: `u${id}` })];
 const page = (data, cursor = '') => ({ data, response: { headers: new Headers({ 'x-next-cursor': cursor }) } });
 const load = (readPage) => loadAssistContext({ readPage, signal: new AbortController().signal });
+const settled = (readPage) => loadSettledTurns({ readPage, signal: new AbortController().signal });
+
+describe('settled turn history', () => {
+  it('keeps completed history and excludes the newly sent request', async () => {
+    const turns = await settled(async () => page([...pair(1), ...pair(2), record('new', 'user', 'Start another task')]));
+    expect(turns.map((turn) => turn.user.id)).toEqual(['u1', 'u2']);
+    expect(turns.at(-1).assistant.text).toBe('answer 2');
+  });
+
+  it('treats a failed page as unknown history', async () => {
+    await expect(settled(async () => ({ data: null, response: { headers: new Headers() } })))
+      .rejects.toThrow('Session message page is unavailable');
+  });
+});
 
 describe('session assist context', () => {
   it('stops paging at three human turns and excludes tools and injected instructions', async () => {

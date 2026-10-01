@@ -43,6 +43,21 @@ describe('useSessionDisplayStore project sorting', () => {
   });
 });
 
+describe('useSessionDisplayStore worktree sorting', () => {
+  test('defaults to manual ordering and migrates v8 data without dropping other choices', () => {
+    expect(useSessionDisplayStore.getState().worktreeSortOrder).toBe('manual');
+    const migrated = migrateSessionDisplayState({ worktreeSortOrder: undefined, projectSortOrder: 'a-z' }, 8);
+    expect(migrated.worktreeSortOrder).toBe('manual');
+    expect(migrated.projectSortOrder).toBe('a-z');
+  });
+
+  for (const order of ['recent', 'manual', 'a-z'] as const) {
+    test(`preserves the selected ${order} worktree order`, () => {
+      expect(migrateSessionDisplayState({ worktreeSortOrder: order }, 8).worktreeSortOrder).toBe(order);
+    });
+  }
+});
+
 describe('useSessionDisplayStore project display', () => {
   test('defaults to showing all projects without a selected single project', () => {
     expect(useSessionDisplayStore.getState().projectDisplayMode).toBe('all');
@@ -106,7 +121,8 @@ describe('useSessionDisplayStore animated activity', () => {
       await useSessionDisplayStore.persist.rehydrate();
       expect(useSessionDisplayStore.getState().animatedActivityIndicators).toBe(false);
       expect(useSessionDisplayStore.getState().sidebarViewMode).toBe('timeline');
-      expect(useSessionDisplayStore.persist.getOptions().version).toBe(8);
+      expect(useSessionDisplayStore.persist.getOptions().version).toBe(9);
+      expect(useSessionDisplayStore.getState().worktreeSortOrder).toBe('manual');
       useSessionDisplayStore.getState().setAnimatedActivityIndicators(true);
       const enabledSnapshot = stored;
       useSessionDisplayStore.setState({ animatedActivityIndicators: false });

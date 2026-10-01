@@ -22,6 +22,7 @@ let liveAgents: TestAgent[] = [];
 let listAgentsImpl: ((directory?: string | null) => Promise<TestAgent[]>) | null = null;
 let getProvidersForConfigImpl: ((directory?: string | null) => Promise<TestProviderResponse>) | null = null;
 let v2Catalog: Extract<ProviderCatalog, { generation: 'oc2' }> | null = null;
+let v2CatalogImpl: ((directory?: string | null) => Promise<Extract<ProviderCatalog, { generation: 'oc2' }>>) | null = null;
 let v2Agents: V2Agent[] | null = null;
 let withDirectoryCalls: Array<string | null> = [];
 let currentFetchDirectory: string | null = DIRECTORY;
@@ -132,6 +133,17 @@ const providerResponse = (id: string, modelId = `${id}-model`, variants?: Record
   },
 });
 
+const v2CatalogResponse = (providerID: string): Extract<ProviderCatalog, { generation: 'oc2' }> => ({
+  generation: 'oc2',
+  providers: [{ id: providerID, name: providerID, activation: 'enabled', package: `@provider/${providerID}` }],
+  models: [{
+    id: `${providerID}/model`, modelID: 'model', providerID, name: 'Model', enabled: true, status: 'active',
+    capabilities: { tools: true, input: ['text'], output: ['text'] }, variants: [], cost: [],
+    time: { released: 1 }, limit: { context: 1000, output: 100 },
+  }],
+  default: { providerID, id: 'model' },
+});
+
 type TestProviderResponse = {
   providers: Array<ReturnType<typeof providerResponse>>;
   default: { default: string };
@@ -210,6 +222,7 @@ mock.module('@/lib/opencode/client', () => ({
     }),
     getProviderCatalog: mock(async (directory?: string | null) => {
       getProvidersCalls += 1;
+      if (v2CatalogImpl) return v2CatalogImpl(directory);
       if (v2Catalog) return v2Catalog;
       if (getProvidersForConfigImpl) {
         return { generation: 'oc1', ...await getProvidersForConfigImpl(directory) };
@@ -278,11 +291,31 @@ Object.defineProperty(globalThis, 'window', {
 });
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: makeStorage() });
 
-const { useConfigStore, selectConfigAgentsForDirectory, selectCatalogLoadedForDirectory } = await import('./useConfigStore');
+const { useConfigStore, selectConfigAgentsForDirectory, selectCatalogLoadedForDirectory, getSelectableModelId } = await import('./useConfigStore');
 const { isAgentBuiltIn } = await import('./useAgentsStore');
 const { emitTaggedSyncConfigChanged, setSyncRefs } = await import('@/sync/sync-refs');
 const { useSelectionStore } = await import('@/sync/selection-store');
 const { useSessionUIStore } = await import('@/sync/session-ui-store');
+
+const captureStartupAgentRechecks = () => {
+  const callbacks: Array<() => void> = [];
+  const nativeSetTimeout = globalThis.setTimeout;
+  const wrappedSetTimeout = (callback: () => void, delay?: number): ReturnType<typeof setTimeout> => {
+    if (delay === 8_000 && typeof callback === 'function') {
+      callbacks.push(callback);
+      const inert = nativeSetTimeout(() => {}, 0);
+      clearTimeout(inert);
+      return inert;
+    }
+    return nativeSetTimeout(callback, delay);
+  };
+  Object.defineProperty(globalThis, 'setTimeout', { configurable: true, writable: true, value: wrappedSetTimeout });
+  return {
+    callbacks,
+    flush: () => new Promise<void>((resolve) => nativeSetTimeout(resolve, 0)),
+    restore: () => { Object.defineProperty(globalThis, 'setTimeout', { configurable: true, writable: true, value: nativeSetTimeout }); },
+  };
+};
 
 describe('useConfigStore provider persistence', () => {
   beforeEach(() => {
@@ -308,6 +341,7 @@ describe('useConfigStore provider persistence', () => {
     listAgentsImpl = null;
     getProvidersForConfigImpl = null;
     v2Catalog = null;
+    v2CatalogImpl = null;
     v2Agents = null;
     withDirectoryCalls = [];
     currentFetchDirectory = DIRECTORY;
@@ -327,6 +361,7 @@ describe('useConfigStore provider persistence', () => {
     useConfigStore.setState({
       activeDirectoryKey: DIRECTORY,
       directoryScoped: {},
+      projectConfigErrors: {},
       providers: [],
       providersLoaded: false,
       agentsLoaded: false,
@@ -374,10 +409,178 @@ describe('useConfigStore provider persistence', () => {
     expect(state.providers[0].generation).toBe('oc2');
     expect(state.providers[0].models[0].id).toBe('p/m');
     expect(state.getModelMetadata('p', 'm')).toMatchObject({
-      id: 'm', tool_call: true, attachment: true,
+      id: 'p/m', tool_call: true, attachment: true,
       modalities: { input: ['text', 'image'], output: ['text'] },
       cost: { input: 1, output: 2, cache_read: 0.1, cache_write: 0.2 },
     });
+    expect(state.getCurrentModel()?.id).toBe('p/m');
+    const cached = state.getModelMetadata('p', 'm');
+    if (!cached) throw new Error('Expected OC2 model metadata');
+    useConfigStore.setState({ modelsMetadata: new Map([['p/m', {
+      ...cached, limit: { context: 200000, output: 8192 },
+    }]]) });
+    expect(useConfigStore.getState().getModelMetadata('p', 'm')?.limit).toMatchObject({
+      context: 100000, output: 4096,
+    });
+  });
+
+  test('OC2 model aliases keep distinct catalog IDs when they share a provider API modelID', async () => {
+    const base = v2CatalogResponse('p');
+    const model = base.models[0];
+    if (!model) throw new Error('Expected a catalog model');
+    const fast = { ...model, id: 'p/model-fast', name: 'Fast' };
+    v2Catalog = { ...base, models: [model, fast] };
+
+    await useConfigStore.getState().loadProviders({ directory: DIRECTORY });
+    const models = useConfigStore.getState().providers[0]?.models;
+    expect(models?.map(getSelectableModelId)).toEqual(['p/model', 'p/model-fast']);
+    const [baseModel, fastModel] = models ?? [];
+    if (!baseModel || !fastModel || !('modelID' in baseModel) || !('modelID' in fastModel)) {
+      throw new Error('Expected OC2 catalog aliases');
+    }
+    expect(baseModel.modelID).toBe(fastModel.modelID);
+  });
+
+  test('an OC2 fresh provider load waits for an older read, then performs a new catalog request', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'http://kernel', epoch: 'fresh-provider', version: '2.0.16' };
+    const pending = deferred<Extract<ProviderCatalog, { generation: 'oc2' }>>();
+    v2CatalogImpl = () => getProvidersCalls === 1 ? pending.promise : Promise.resolve(v2CatalogResponse('fresh'));
+
+    const original = useConfigStore.getState().loadProviders({ directory: DIRECTORY });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const refresh = useConfigStore.getState().loadProviders({ directory: DIRECTORY, source: 'catalogRefresh', fresh: true });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(getProvidersCalls).toBe(1);
+
+    pending.resolve(v2CatalogResponse('old'));
+    await Promise.all([original, refresh]);
+    expect(getProvidersCalls).toBe(2);
+    expect(useConfigStore.getState().providerCatalog?.generation).toBe('oc2');
+    expect(useConfigStore.getState().providers.map((item) => item.id)).toEqual(['fresh']);
+  });
+
+  test('an OC2 fresh agent load waits for an older read, then performs a new request', async () => {
+    boundRuntime = { generation: 'oc2', endpoint: 'http://kernel', epoch: 'fresh-agents', version: '2.0.16' };
+    const pending = deferred<TestAgent[]>();
+    listAgentsImpl = () => listAgentsCalls === 1 ? pending.promise : Promise.resolve([{ name: 'fresh-agent' }]);
+
+    const original = useConfigStore.getState().loadAgents({ directory: DIRECTORY });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const refresh = useConfigStore.getState().loadAgents({ directory: DIRECTORY, source: 'catalogRefresh', fresh: true });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(listAgentsCalls).toBe(1);
+
+    pending.resolve([{ name: 'old-agent' }]);
+    await Promise.all([original, refresh]);
+    expect(listAgentsCalls).toBe(2);
+    expect(useConfigStore.getState().agents.map((item) => item.name)).toEqual(['fresh-agent']);
+  });
+
+  test('project config errors stay scoped to their directory and clear after a successful agent load', async () => {
+    const invalidConfig = Object.assign(new Error('Invalid project config'), {
+      name: 'ConfigInvalidError',
+      data: {
+        path: `${DIRECTORY}/opencode.json`,
+        issues: [{ path: ['model'], message: 'Expected a model reference' }],
+      },
+    });
+    useConfigStore.setState({ agents: [testAgent('previous')] });
+    listAgentsImpl = async (directory) => {
+      if (directory === DIRECTORY) throw invalidConfig;
+      return [testAgent('other-agent')];
+    };
+
+    await useConfigStore.getState().loadAgents({ directory: DIRECTORY, source: 'test:invalidProjectConfig' });
+    expect(listAgentsCalls).toBe(1);
+    expect(useConfigStore.getState().projectConfigErrors[DIRECTORY]).toEqual({
+      name: 'ConfigInvalidError',
+      path: `${DIRECTORY}/opencode.json`,
+      message: 'model: Expected a model reference',
+    });
+    expect(useConfigStore.getState().agents.map((item) => item.name)).toEqual(['previous']);
+
+    await useConfigStore.getState().loadAgents({ directory: OTHER_DIRECTORY, source: 'test:otherProject' });
+    expect(useConfigStore.getState().projectConfigErrors[DIRECTORY]).toBeDefined();
+    expect(selectConfigAgentsForDirectory(useConfigStore.getState(), OTHER_DIRECTORY).map((item) => item.name)).toEqual(['other-agent']);
+
+    listAgentsImpl = async () => [testAgent('fixed-agent')];
+    await useConfigStore.getState().loadAgents({ directory: DIRECTORY, source: 'test:fixedProjectConfig' });
+    expect(useConfigStore.getState().projectConfigErrors).toEqual({});
+    expect(useConfigStore.getState().agents.map((item) => item.name)).toEqual(['fixed-agent']);
+  });
+
+  test('a rejected project config does not keep initial app startup from becoming ready', async () => {
+    listAgentsImpl = async () => {
+      throw Object.assign(new Error('Invalid project config'), {
+        name: 'ConfigJsonError',
+        data: { path: `${DIRECTORY}/opencode.json`, message: 'Unexpected token' },
+      });
+    };
+
+    await useConfigStore.getState().initializeApp();
+
+    expect(useConfigStore.getState().projectConfigErrors[DIRECTORY]).toMatchObject({
+      name: 'ConfigJsonError',
+      path: `${DIRECTORY}/opencode.json`,
+      message: 'Unexpected token',
+    });
+    expect(useConfigStore.getState().isInitialized).toBe(true);
+    expect(useConfigStore.getState().isConnected).toBe(true);
+  });
+
+  test('rechecks agents once after startup so late plugin agents are discovered', async () => {
+    const recheck = captureStartupAgentRechecks();
+    let reads = 0;
+    listAgentsImpl = async () => [{ name: `agent-${++reads}` }];
+    try {
+      await useConfigStore.getState().initializeApp();
+      expect(listAgentsCalls).toBe(1);
+      expect(recheck.callbacks).toHaveLength(1);
+
+      recheck.callbacks[0]?.();
+      await recheck.flush();
+
+      expect(listAgentsCalls).toBe(2);
+      expect(useConfigStore.getState().agents.map((agent) => agent.name)).toEqual(['agent-2']);
+    } finally {
+      recheck.restore();
+    }
+  });
+
+  test('drops the delayed startup agent recheck after a runtime switch', async () => {
+    const recheck = captureStartupAgentRechecks();
+    listAgentsImpl = async () => [{ name: 'startup-agent' }];
+    try {
+      await useConfigStore.getState().initializeApp();
+      expect(listAgentsCalls).toBe(1);
+      expect(recheck.callbacks).toHaveLength(1);
+
+      switchRuntimeEndpoint({ apiBaseUrl: 'https://late-agent-next.example', runtimeKey: 'late-agent-next' });
+      recheck.callbacks[0]?.();
+      await recheck.flush();
+
+      expect(listAgentsCalls).toBe(1);
+    } finally {
+      recheck.restore();
+    }
+  });
+
+  test('drops the delayed startup agent recheck after the active config directory changes', async () => {
+    const recheck = captureStartupAgentRechecks();
+    listAgentsImpl = async () => [{ name: 'startup-agent' }];
+    try {
+      await useConfigStore.getState().initializeApp();
+      expect(listAgentsCalls).toBe(1);
+      expect(recheck.callbacks).toHaveLength(1);
+
+      useConfigStore.setState({ activeDirectoryKey: OTHER_DIRECTORY });
+      recheck.callbacks[0]?.();
+      await recheck.flush();
+
+      expect(listAgentsCalls).toBe(1);
+    } finally {
+      recheck.restore();
+    }
   });
 
   test('OC2 agent keeps its own model and permission contract', async () => {
@@ -414,6 +617,33 @@ describe('useConfigStore provider persistence', () => {
     expect(useConfigStore.getState().currentModelId).toBe('chosen-model');
     expect(useConfigStore.getState().currentVariant).toBe('high');
     expect(useConfigStore.getState().currentVariantSelection.override).toBe('high');
+  });
+
+  test('OC2 can carry a manual model into a new directory while OC1 keeps its saved selection', async () => {
+    const prepare = () => useConfigStore.setState({
+      activeDirectoryKey: DIRECTORY,
+      currentProviderId: 'chosen',
+      currentModelId: 'model',
+      currentVariant: 'high',
+      currentVariantSelection: { override: 'high', inherited: undefined },
+      selectionSource: 'manual',
+      isConnected: false,
+      directoryScoped: {},
+    });
+    boundRuntime = { generation: 'oc2', endpoint: 'http://kernel', epoch: 'carry', version: '2.0.16' };
+    prepare();
+    await useConfigStore.getState().activateDirectory(OTHER_DIRECTORY, { preserveManualModel: true });
+    expect(useConfigStore.getState()).toMatchObject({
+      currentProviderId: 'chosen', currentModelId: 'model', currentVariant: 'high', selectionSource: 'manual',
+    });
+    expect(useConfigStore.getState().directoryScoped[OTHER_DIRECTORY]).toMatchObject({
+      currentProviderId: 'chosen', currentModelId: 'model', selectionSource: 'manual',
+    });
+
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel', epoch: 'legacy', version: '1.18.32' };
+    prepare();
+    await useConfigStore.getState().activateDirectory(OTHER_DIRECTORY, { preserveManualModel: true });
+    expect(useConfigStore.getState()).toMatchObject({ currentProviderId: '', currentModelId: '', selectionSource: 'auto' });
   });
 
   test('loading another project agent picker leaves the active composer untouched', async () => {

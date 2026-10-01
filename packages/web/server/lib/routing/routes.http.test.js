@@ -26,6 +26,9 @@ const createApp = ({ flag = '1', resolvePromptBody, generation = 'oc1' } = {}) =
     updateConfig: vi.fn(async () => ({ available: true })),
     setToken: vi.fn(async () => ({ available: true, tokenPresent: true })),
     clearToken: vi.fn(async () => ({ available: true, tokenPresent: false })),
+    setClassifierSource: vi.fn(async () => ({ available: true })),
+    setCustomEndpoint: vi.fn(async () => ({ available: true })),
+    clearCustomEndpoint: vi.fn(async () => ({ available: true })),
   };
   const app = express();
   registerRoutingRoutes(app, runtime);
@@ -115,5 +118,17 @@ describe('routing routes', () => {
   it('is absent without the feature flag', async () => {
     const { app } = createApp({ flag: '' });
     await request(app).put('/api/routing/token').send({ token: 'x' }).expect(404);
+  });
+
+  it('offers classifier mutations only on OC2 and passes custom endpoint input to the owner', async () => {
+    const oc1 = createApp({ generation: 'oc1' });
+    await request(oc1.app).put('/api/routing/classifier').send({ source: 'off' }).expect(404);
+    const oc2 = createApp({ generation: 'oc2', flag: '' });
+    await request(oc2.app).put('/api/routing/classifier').send({ source: 'custom' }).expect(200);
+    expect(oc2.runtime.setClassifierSource).toHaveBeenCalledWith('custom');
+    await request(oc2.app).put('/api/routing/classifier/custom').send({ url: 'https://example.test', model: 'jev' }).expect(200);
+    expect(oc2.runtime.setCustomEndpoint).toHaveBeenCalledWith({ url: 'https://example.test', model: 'jev' });
+    await request(oc2.app).delete('/api/routing/classifier/custom').expect(200);
+    expect(oc2.runtime.clearCustomEndpoint).toHaveBeenCalled();
   });
 });

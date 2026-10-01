@@ -8,13 +8,18 @@
 import { create } from 'zustand';
 import {
   clearRoutingToken,
+  clearCustomClassifier,
   fetchRoutingState,
   ROUTING_UNAVAILABLE,
   saveRoutingConfig,
+  saveClassifierSource,
+  saveCustomClassifier,
   saveRoutingToken,
   type RoutingConfig,
   type RoutingHeldPermission,
   type RoutingState,
+  type ClassifierSource,
+  type CustomEndpointInput,
 } from '@/lib/routing/routingApi';
 
 interface RoutingDecision {
@@ -45,6 +50,12 @@ interface RoutingStoreState extends RoutingState {
   saveConfig: (config: RoutingConfig) => Promise<void>;
   setToken: (token: string) => Promise<void>;
   clearToken: () => Promise<void>;
+  selectClassifier: (source: ClassifierSource) => Promise<void>;
+  setClassifierSource: (source: ClassifierSource) => Promise<void>;
+  setCustomClassifier: (input: CustomEndpointInput) => Promise<void>;
+  setCustomEndpoint: (input: CustomEndpointInput) => Promise<void>;
+  clearCustomClassifier: () => Promise<void>;
+  clearCustomEndpoint: () => Promise<void>;
 }
 
 /** Bumped on every load and every runtime switch; a response from an older generation is dropped. */
@@ -124,7 +135,27 @@ export const useRoutingStore = create<RoutingStoreState>()((set, get) => ({
     const state = await clearRoutingToken();
     if (generation === loadGeneration) get().applyState(state);
   },
+  selectClassifier: async (source) => {
+    const generation = loadGeneration;
+    const state = await saveClassifierSource(source);
+    if (generation === loadGeneration) get().applyState(state);
+  },
+  setClassifierSource: async (source) => get().selectClassifier(source),
+  setCustomClassifier: async (input) => {
+    const generation = loadGeneration;
+    const state = await saveCustomClassifier(input);
+    if (generation === loadGeneration) get().applyState(state);
+  },
+  setCustomEndpoint: async (input) => get().setCustomClassifier(input),
+  clearCustomClassifier: async () => {
+    const generation = loadGeneration;
+    const state = await clearCustomClassifier();
+    if (generation === loadGeneration) get().applyState(state);
+  },
+  clearCustomEndpoint: async () => get().clearCustomClassifier(),
 }));
 
 /** Whether the composer may offer the Auto row right now. */
 export const selectAutoReady = (state: RoutingStoreState): boolean => state.available && state.autoReady;
+
+export const selectSafetyNetAvailable = (state: RoutingStoreState): boolean => state.available && state.jevAvailable === true;

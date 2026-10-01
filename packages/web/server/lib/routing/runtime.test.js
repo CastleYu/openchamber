@@ -3,6 +3,7 @@ import { createRoutingRuntime, requestTextOf } from './runtime.js';
 import { resolveEffectiveConfig } from './store.js';
 import { excerptHead, excerptHeadTail, turnsToHistory } from './history.js';
 import { decidePermission, decideRouting } from './jev.js';
+import { resolveClassifier } from './classifier.js';
 
 const AUTO = { providerID: 'openchamber', modelID: 'auto' };
 const FALLBACK = { model: { providerID: 'anthropic', modelID: 'claude-sonnet-5' }, variant: 'medium' };
@@ -63,9 +64,16 @@ describe('OC2 session routing', () => {
     const kernelOperations = {
       captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: epochRef.value }),
       listMessages: vi.fn(async () => ({ data: { items: [] } })),
+      getSelectionCatalog: vi.fn(async () => ({ data: { models: [
+        { providerID: 'openai', modelID: 'gpt-6-astra', variants: [{ id: 'high' }] },
+        { providerID: 'anthropic', modelID: 'claude-sonnet-5', variants: [{ id: 'medium' }] },
+      ] } })),
       switchSessionSelection: vi.fn(async () => ({})),
     };
-    const store = { readConfig: async () => readyConfig(), readToken: async () => 'key' };
+    const store = {
+      readConfig: async () => readyConfig(), readToken: async () => 'key',
+      readClassifierSource: async () => 'typesafe', readCustomEndpoint: async () => null,
+    };
     const jev = { ask: vi.fn(async () => ({ answers: { category: { choice: 'hard', confidence: 0.97 } }, ms: 12 })) };
     const runtime = createRoutingRuntime({ kernelOperations, store, jev });
     return { runtime, kernelOperations, jev };
@@ -90,6 +98,62 @@ describe('OC2 session routing', () => {
     expect(runtime.isAutoSession('ses_2')).toBe(false);
     await expect(runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'hello' } })).resolves.toBeNull();
     expect(kernelOperations.switchSessionSelection).not.toHaveBeenCalled();
+  });
+
+  it('uses the OC2 model default when its saved thinking level is absent', async () => {
+    process.env.OPENCHAMBER_ROUTING_ENABLE = '1';
+    const { runtime, kernelOperations } = setup({ value: 1 });
+    kernelOperations.getSelectionCatalog.mockResolvedValue({ data: { models: [
+      { providerID: 'openai', modelID: 'gpt-6-astra', variants: [{ id: 'low' }] },
+    ] } });
+    runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo');
+    const decision = await runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'find root cause' } });
+    expect(decision.variant).toBeNull();
+    expect(kernelOperations.switchSessionSelection).toHaveBeenCalledWith(expect.objectContaining({
+      model: { providerID: 'openai', id: 'gpt-6-astra' },
+    }));
+  });
+
+  it('does not send text to Jev until a classifier is selected', async () => {
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }),
+      listMessages: vi.fn(async () => ({ data: { items: [] } })),
+      switchSessionSelection: vi.fn(async () => ({})),
+    };
+    const store = {
+      readConfig: async () => readyConfig(), readToken: async () => 'key',
+      readClassifierSource: async () => null, readCustomEndpoint: async () => null,
+    };
+    const jev = { ask: vi.fn() };
+    const runtime = createRoutingRuntime({ kernelOperations, store, jev });
+    expect((await runtime.describe()).autoReady).toBe(false);
+    runtime.noteModelSelection('ses_2', { providerID: 'openchamber', id: 'auto' }, '/repo');
+    await runtime.routeSend({ sessionId: 'ses_2', directory: '/repo', body: { text: 'private text' } });
+    expect(jev.ask).not.toHaveBeenCalled();
+    expect(kernelOperations.switchSessionSelection).toHaveBeenCalledWith(expect.objectContaining({
+      model: { providerID: 'anthropic', id: 'claude-sonnet-5', variant: 'medium' },
+    }));
+  });
+});
+
+describe('OC2 classification policy', () => {
+  it('keeps Jev off until a provider is explicitly selected, even when keys exist', () => {
+    const state = resolveClassifier({ selected: null, typesafeKey: 'saved', zenKey: 'saved', zenPromotionActive: true });
+    expect(state.selected).toBe('off');
+    expect(state.effective).toBeNull();
+  });
+
+  it('holds safety requests when the selected classifier fails', async () => {
+    const kernelOperations = { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }) };
+    const store = {
+      readConfig: async () => readyConfig(), readToken: async () => 'key',
+      readClassifierSource: async () => 'typesafe', readCustomEndpoint: async () => null,
+    };
+    const jev = { ask: vi.fn(async () => { throw new Error('unreachable'); }) };
+    const events = [];
+    const runtime = createRoutingRuntime({ kernelOperations, store, jev, broadcastGlobalUiEvent: (event) => events.push(event) });
+    await expect(runtime.evaluatePermission({ id: 'p1', sessionID: 's1' }, '/repo')).resolves.toMatchObject({ action: 'hold', skipped: 'unreachable' });
+    expect(events.some((event) => event.type === 'openchamber:routing.safety-skipped')).toBe(true);
   });
 });
 

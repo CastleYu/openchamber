@@ -25,10 +25,17 @@ export const isAutoModel = (model) => autoModelSchema.safeParse(model).success
 
 export const JEV_API_ORIGIN = 'https://api.typesafe.ai';
 export const JEV_API_PATH = '/v1/systemone';
+export const JEV_API_URL = JEV_API_ORIGIN + JEV_API_PATH;
 export const JEV_MODEL = 'jev-latest';
 export const ZEN_JEV_API_URL = 'https://opencode.ai/zen/v1/systemone';
 export const ZEN_JEV_MODEL = 'jev-1.13-free';
 export const ZEN_CLIENT_ID = 'openchamber';
+export const ZEN_JEV_PROMOTION_ACTIVE = true;
+export const ZEN_JEV_PAID_MODEL = 'jev-1.13';
+export const OPENROUTER_JEV_API_URL = 'https://openrouter.ai/api/v1/systemone';
+export const OPENROUTER_JEV_MODEL = 'jev-latest';
+export const VERCEL_JEV_API_URL = 'https://ai-gateway.vercel.sh/typesafe/v1/systemone';
+export const VERCEL_JEV_MODEL = 'typesafe-ai/jev';
 
 /** Per-attempt timeout; the lab measured 250–700 ms warm, ~1 s on a cold TLS handshake. */
 export const JEV_TIMEOUT_MS = 4000;

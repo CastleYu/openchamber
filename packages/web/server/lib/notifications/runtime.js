@@ -1,3 +1,5 @@
+import { isEnterpriseMode } from '../enterprise-mode.js';
+
 export const createNotificationTriggerRuntime = (deps) => {
   const {
     kernelOperations = null,
@@ -16,6 +18,7 @@ export const createNotificationTriggerRuntime = (deps) => {
     buildOpenCodeUrl,
     getOpenCodeAuthHeaders,
   } = deps;
+  const enterpriseMode = deps.isEnterpriseMode ?? isEnterpriseMode;
   let getIsSessionAutoAccepting = deps.getIsSessionAutoAccepting;
   const setGetIsSessionAutoAccepting = (resolver) => {
     getIsSessionAutoAccepting = typeof resolver === 'function' ? resolver : undefined;
@@ -60,14 +63,16 @@ export const createNotificationTriggerRuntime = (deps) => {
     goal_budget: 'Goal reached its token budget',
   };
 
+  const genericTitleOf = (payload) => APNS_TITLE_BY_TYPE[payload?.data?.type] || 'Agent update';
+
   const toApnsGenericPayload = (payload) => {
     const data = payload?.data && typeof payload.data === 'object' ? payload.data : {};
     const sessionName = typeof data.sessionName === 'string' && data.sessionName.trim().length > 0
       ? data.sessionName.trim()
       : 'Session';
     return {
-      title: APNS_TITLE_BY_TYPE[data.type] || 'Agent update',
-      body: sessionName,
+      title: genericTitleOf(payload),
+      body: enterpriseMode() ? '' : sessionName,
       badge: trackPushAndCountBadge(typeof payload?.tag === 'string' ? payload.tag : undefined),
       tag: payload?.tag,
       // sessionId is forwarded so a tapped push can deep-link; it is an opaque id, not content.
@@ -78,6 +83,11 @@ export const createNotificationTriggerRuntime = (deps) => {
   // Fan a notification out to every delivery channel: browser web-push (full templated
   // payload) and native iOS APNs (generic model-based text). Both share the dedup tag and
   // `requireNoSse` focus gate; a failure in one channel must not block the other.
+  const toWebPushPayload = (payload) => {
+    if (!enterpriseMode()) return payload;
+    const { sessionName: _sessionName, ...data } = payload.data ?? {};
+    return { ...payload, title: genericTitleOf(payload), body: '', data };
+  };
   const fanoutPush = (payload, options) => {
     // Presence-aware routing: if any interactive (non-mobile) client — desktop/web/vscode — is
     // currently visible, it already shows the in-app notification, so skip the native push to the
@@ -85,7 +95,7 @@ export const createNotificationTriggerRuntime = (deps) => {
     // also skip toApnsGenericPayload, so the badge isn't incremented for an undelivered push.
     const interactiveVisible = isAnyInteractiveClientVisible?.() === true;
     return Promise.all([
-      Promise.resolve(sendPushToAllUiSessions?.(payload, options)).catch((error) => {
+      Promise.resolve(sendPushToAllUiSessions?.(toWebPushPayload(payload), options)).catch((error) => {
         console.warn('[Push] web-push fanout failed:', error?.message ?? error);
       }),
       interactiveVisible
@@ -624,10 +634,8 @@ export const createNotificationTriggerRuntime = (deps) => {
         return;
       }
 
-      // Client may be in Permission Auto-Accept for this session (or any
-      // ancestor). Skip the whole notification path — the client responds
-      // directly and the user has opted out of approval prompts.
-      if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory)
+      // Only a request that was actually answered automatically is silent.
+      if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory, requestId)
         ?? isSessionAutoAccepting(sessionId, notificationDirectory))) {
         if (requestKey) notifiedPermissionRequests.add(requestKey);
         return;
@@ -641,7 +649,7 @@ export const createNotificationTriggerRuntime = (deps) => {
       const timer = setTimeout(async () => {
         pushPermissionDebounceTimers.delete(sessionId);
 
-        if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory)
+        if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory, requestId)
           ?? isSessionAutoAccepting(sessionId, notificationDirectory))) {
           if (requestKey) notifiedPermissionRequests.add(requestKey);
           return;

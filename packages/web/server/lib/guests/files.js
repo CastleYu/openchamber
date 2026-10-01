@@ -1,11 +1,11 @@
 import defaultFs from 'node:fs/promises';
 import defaultPath from 'node:path';
 
-import { GUEST_FILE_CONTENT_MAX, GUEST_FILE_LIST_MAX, GUEST_FILE_PATH_MAX, guestFileScope } from '@openchamber/sdk';
+import { GUEST_FILE_CONTENT_MAX, GUEST_FILE_LIST_MAX, guestFileScope, isGuestFilePath } from '@openchamber/sdk';
 
 /**
  * Guest file access. A relative path lives inside the open project and needs
- * the `files` grant. `/…` and `~/…` are outside the project, must match one
+ * the `files` grant. `/…`, `~/…`, and Windows drive-rooted paths are outside the project, must match one
  * of the package's `contributes.filesystem` patterns, and need the
  * `filesystem` grant. Every comparison is made on canonical absolute paths so
  * a symlink cannot widen either scope.
@@ -135,13 +135,7 @@ export const resolveGuestFilePath = async ({
   fsPromises = defaultFs,
   nodePath = defaultPath,
 }) => {
-  if (
-    rawPath.length === 0
-    || rawPath.length > GUEST_FILE_PATH_MAX
-    || rawPath.includes('\0')
-    || rawPath.includes('\\')
-    || hasDotDot(rawPath)
-  ) {
+  if (!isGuestFilePath(rawPath) || hasDotDot(rawPath)) {
     return failure('BAD_PATH', 'File path is malformed or leaves its scope.');
   }
   if (guestFileScope(rawPath) === 'project') {

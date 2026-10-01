@@ -15,11 +15,14 @@ vi.mock('../opencode/shared.js', () => ({
   isPlainObject: (value) => value instanceof Object && !Array.isArray(value),
 }));
 
-vi.mock('./runtime-providers.js', () => ({ getRuntimeProvider: vi.fn(async () => null) }));
+vi.mock('./runtime-providers.js', () => ({
+  getRuntimeProvider: vi.fn(async () => null),
+  getRuntimeGeneration: vi.fn(() => 'oc1'),
+}));
 
 const { callSmallModel } = await import('./call.js');
 const { readConfig, readConfigLayers } = await import('../opencode/shared.js');
-const { getRuntimeProvider } = await import('./runtime-providers.js');
+const { getRuntimeGeneration, getRuntimeProvider } = await import('./runtime-providers.js');
 
 // Minimal catalog fragment used by the catalog-based base URL resolution case.
 const CATALOG = {
@@ -64,6 +67,7 @@ describe('callSmallModel — custom provider config', () => {
     // Default: OpenCode knows nothing, so resolution stays file-based.
     getRuntimeProvider.mockReset();
     getRuntimeProvider.mockResolvedValue(null);
+    getRuntimeGeneration.mockReturnValue('oc1');
   });
 
   afterEach(() => {
@@ -554,6 +558,20 @@ describe('callSmallModel — custom provider config', () => {
       const { url, init } = lastCall(fetchMock);
       expect(url).toBe('https://api.mistral.ai/v1/chat/completions');
       expect(init.headers.Authorization).toBe('Bearer mistral-key');
+    });
+
+    it('sends the OC2 provider API name for a derived catalog model', async () => {
+      getRuntimeGeneration.mockReturnValue('oc2');
+      readConfig.mockReturnValue({});
+      fetchMock.mockResolvedValue(ok('ok'));
+      await callSmallModel({
+        auth: { mistral: { type: 'api', key: 'mistral-key' } },
+        catalog: { mistral: { ...CATALOG.mistral, models: {
+          'mistral-small-fast': { id: 'mistral-small-fast', modelID: 'mistral-small-latest' },
+        } } },
+        workingDirectory: '/proj', providerID: 'mistral', modelID: 'mistral-small-fast', prompt: 'hi',
+      });
+      expect(JSON.parse(lastCall(fetchMock).init.body).model).toBe('mistral-small-latest');
     });
 
     it('throws when a non-openai provider has no catalog api and no config baseURL', async () => {

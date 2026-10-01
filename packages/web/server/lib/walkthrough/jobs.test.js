@@ -27,6 +27,7 @@ const {
   __testing: walkthroughTesting,
 } = await import('./index.js');
 const { describeSmallModel, generateSmallModelText } = await import('../small-model/index.js');
+const { configureOpenCodeRuntimeProviders } = await import('../small-model/runtime-providers.js');
 const { getDiff } = await import('../git/service.js');
 
 // bun's vitest shim has no `vi.waitFor`.
@@ -74,6 +75,7 @@ describe('generation jobs', () => {
   });
 
   afterEach(async () => {
+    configureOpenCodeRuntimeProviders(null);
     if (isGenerating('/repo', 'working-tree:all')) {
       await cancelWalkthroughGeneration({ directory: '/repo', source: SOURCE }).catch(() => {});
     }
@@ -154,6 +156,17 @@ describe('generation jobs', () => {
     await generateWalkthrough({ directory: '/repo', source: SOURCE });
 
     expect(generateSmallModelText.mock.calls.at(-1)[0].maxOutputTokens).toBe(96_000);
+  });
+
+  it('uses a requested provider only for OC2 model selection', async () => {
+    generateSmallModelText.mockResolvedValue({ text: RESPONSE });
+    configureOpenCodeRuntimeProviders({ getGeneration: () => 'oc2' });
+    await generateWalkthrough({ directory: '/repo', source: SOURCE, providerID: 'anthropic', force: true });
+    expect(describeSmallModel.mock.calls.at(-1)[0].preferredProviderID).toBe('anthropic');
+
+    configureOpenCodeRuntimeProviders({ getGeneration: () => 'oc1' });
+    await generateWalkthrough({ directory: '/repo', source: SOURCE, providerID: 'anthropic', force: true });
+    expect(describeSmallModel.mock.calls.at(-1)[0].preferredProviderID).toBeUndefined();
   });
 
   it('serves the cache once the job has finished, without calling the model again', async () => {

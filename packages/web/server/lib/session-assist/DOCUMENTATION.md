@@ -15,7 +15,7 @@ unchanged; an empty suggestion is a successful outcome.
 
 ## Ownership
 
-- `runtime.js` owns idle timers, cancellation, provider selection, SDK reads,
+- `runtime.js` owns idle timers, cancellation, provider selection, kernel reads,
   freshness checks, settings gates, and metadata writes.
 - `context.js` reads bounded history and constructs human turns. It removes
   tool payloads and injected prompts before retaining message text.
@@ -25,7 +25,7 @@ unchanged; an empty suggestion is a successful outcome.
 
 ## What the model receives
 
-Read backward through the official SDK in pages of 50 messages until three
+Read backward through generation-bound kernel operations in pages of 50 messages until three
 human turns are covered, history ends, or eight pages have been read. A failed
 page or repeated cursor aborts generation; it is not treated as complete history.
 At the page limit, use fewer available human turns. If the latest answer's human
@@ -91,7 +91,10 @@ model context is small. Page/count bounds are not a network-byte quota.
 ## Generation and lifecycle
 
 1. The server's existing global event fan-out calls `processPayload`. An idle
-   event arms the 60-second quiet window. No history scan or startup backfill runs.
+   event arms the 60-second quiet window. On OC2, a selected Jev classifier
+   first decides which enabled assist fields merit generation. A missing or
+   failed classifier leaves both enabled fields eligible. OC1 follows the
+   original timer path. No history scan or startup backfill runs.
 2. Busy/retry events and newly created user messages clear pending work and
    abort in-flight reads/generation. Re-emitted old user updates do not cancel it.
 3. One generation runs per session. If a newer quiet window expires while an
@@ -114,6 +117,12 @@ model context is small. Page/count bounds are not a network-byte quota.
    The OpenCode update endpoint has no compare-and-set operation; another
    writer after the final read is not guarded atomically.
 
+Busy status or a newly created user message retires a stored assist owned by
+this runtime. The retirement waits for its pending write, then clears only the
+matching `forMessageID` and `generatedAt` payload through the captured kernel
+identity. A newer assist or changed kernel epoch is left alone. OC1 retains its
+full metadata update path; OC2 uses the conditional session update queue.
+
 Stopping the runtime clears pending timers/runs and aborts in-flight operations.
 No failed session blocks another session.
 
@@ -124,8 +133,10 @@ before work and before writing. With both off there are no reads, model calls,
 or writes. With one on, the shared recent context is still available, but only
 that field is requested. An empty suggestion does not erase a valid recap.
 
-Clients render an assist only while its `forMessageID` is the last message and
-the session is idle. A new message invalidates it without clearing writes.
+OC1 clients render an assist only while its `forMessageID` is the last loaded
+assistant message and the session is idle. OC2 clients use the authoritative
+idle time and reject an assist generated before that settled turn, or after a
+revert. A newer user message retires the stored assist as described above.
 
 - `packages/ui/src/lib/sessionAssistMetadata.ts` parses the payload.
 - `packages/ui/src/hooks/useSessionAssist.ts` owns freshness/settings gating.

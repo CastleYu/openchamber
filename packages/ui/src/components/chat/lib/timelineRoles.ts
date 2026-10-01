@@ -1,4 +1,5 @@
 import type { Message } from '@/lib/opencode/model';
+import { readSubagentRun } from '@/lib/opencode/subagent-run';
 
 /** Roles `TimelineNotice` owns; the rest belong to `ChatMessage` or nothing. */
 const NOTICE_ROLES = new Set<Message['role']>(['compaction', 'shell']);
@@ -26,3 +27,16 @@ const SKIPPED_ROLES = new Set<Message['role']>([
 export const isTimelineNoticeRole = (role: Message['role']): boolean => NOTICE_ROLES.has(role);
 
 export const isSkippedTimelineRole = (role: Message['role']): boolean => SKIPPED_ROLES.has(role);
+
+/**
+ * A background subagent run: a `subagent: true` command, or a subagent call
+ * that went to the background outside the loaded history. It opens a turn of
+ * its own, like the prompt a command used to be, so the parent's reaction to
+ * the result renders below it. The report of a call the transcript shows is
+ * dropped before this point (`keepCommandSubagentReports` in
+ * `ChatContainer`) and finishes that call's row instead.
+ */
+export const isSubagentRunEntry = (message: Message): boolean => readSubagentRun(message) !== undefined;
+
+export const isSkippedTimelineMessage = (message: Message): boolean =>
+    isSkippedTimelineRole(message.role) && !isSubagentRunEntry(message);

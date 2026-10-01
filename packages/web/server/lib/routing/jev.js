@@ -74,15 +74,19 @@ export const decidePermission = (answers, { threshold }) => {
 };
 
 const responseSchema = z.object({ answers: z.record(z.string(), z.unknown()) });
+const endpointSchema = z.object({
+  url: z.string().url(), model: z.string().min(1), headers: z.record(z.string(), z.string()),
+});
 
 export const createJevClient = ({ fetchImpl = fetch, timeoutMs = JEV_TIMEOUT_MS } = {}) => ({
   /** Resolves to the parsed answers; throws with `status` on an HTTP error and `code: 'timeout'` on abort. */
-  ask: async (request, token) => {
+  ask: async (request, tokenOrEndpoint) => {
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(), timeoutMs);
     const started = Date.now();
     try {
-      const endpoint = jevEndpoint(token);
+      const explicit = endpointSchema.safeParse(tokenOrEndpoint);
+      const endpoint = explicit.success ? explicit.data : jevEndpoint(tokenOrEndpoint);
       const response = await fetchImpl(endpoint.url, {
         method: 'POST',
         headers: { ...endpoint.headers, 'content-type': 'application/json' },

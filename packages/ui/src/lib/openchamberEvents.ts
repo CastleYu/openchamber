@@ -98,6 +98,7 @@ const routingDecisionSchema = z.object({
 const routingPermissionHeldSchema = z.object({
   permissionId: z.string().min(1),
   sessionId: z.string().min(1),
+  directory: z.string().nullable().default(null),
   score: z.number(),
   kind: z.string().nullable(),
 });
@@ -105,6 +106,7 @@ const routingPermissionHeldSchema = z.object({
 const routingSafetySkippedSchema = z.object({
   permissionId: z.string().min(1),
   sessionId: z.string().min(1),
+  directory: z.string().nullable().default(null),
   error: z.string(),
 });
 

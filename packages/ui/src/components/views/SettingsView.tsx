@@ -5,6 +5,7 @@ import {
   getEffectiveShortcutCombo,
 } from '@/lib/shortcuts';
 import { useUIStore } from '@/stores/useUIStore';
+import { useEnterpriseMode, useJevBlockedByEnterprise } from '@/stores/useEnterprisePolicyStore';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useAgentsStore } from '@/stores/useAgentsStore';
@@ -123,6 +124,7 @@ const pageOrder: SettingsPageSlug[] = [
   'remote-instances',
   'tunnel',
   'git',
+  'isolated-spaces',
   // 'opencode' group — OpenCode
   'providers',
   'web-search',
@@ -142,10 +144,10 @@ const NAV_GROUP_ORDER = ['general', 'projects', 'opencode', 'content'] as const;
 
 const ADD_PROVIDER_SETTINGS_ID = '__add_provider__';
 
-function buildRuntimeContext(isDesktop: boolean, isMobile: boolean, routingAvailable: boolean): SettingsRuntimeContext {
+function buildRuntimeContext(isDesktop: boolean, isMobile: boolean, routingAvailable: boolean, enterpriseMode: boolean, jevBlockedByEnterprise: boolean): SettingsRuntimeContext {
   const isVSCode = isVSCodeRuntime();
   const isWeb = !isDesktop && isWebRuntime();
-  return { isVSCode, isWeb, isDesktop, isMobile, routingAvailable };
+  return { isVSCode, isWeb, isDesktop, isMobile, routingAvailable, enterpriseMode, jevBlockedByEnterprise };
 }
 
 function isPageAvailable(page: SettingsPageMeta, ctx: SettingsRuntimeContext): boolean {
@@ -258,12 +260,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
   // keep platform check available for future window chrome tweaks
 
   const routingAvailable = useUIStore((state) => state.routingFeatureAvailable);
+  const enterpriseMode = useEnterpriseMode();
+  const jevBlockedByEnterprise = useJevBlockedByEnterprise();
   const generation = React.useSyncExternalStore(
     (listener) => opencodeClient.subscribeRuntime(listener),
     () => opencodeClient.getBoundRuntime()?.generation,
     () => undefined,
   );
-  const runtimeCtx = React.useMemo(() => ({ ...buildRuntimeContext(isDesktopApp, isMobile, routingAvailable), generation }), [isDesktopApp, isMobile, routingAvailable, generation]);
+  const runtimeCtx = React.useMemo(() => ({ ...buildRuntimeContext(isDesktopApp, isMobile, routingAvailable, enterpriseMode, jevBlockedByEnterprise), generation }), [isDesktopApp, isMobile, routingAvailable, enterpriseMode, jevBlockedByEnterprise, generation]);
 
   const visiblePages = React.useMemo(() => {
     const allowedPages = visiblePageSlugs ? new Set<SettingsPageSlug>(visiblePageSlugs) : null;
@@ -347,6 +351,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
     notifications: 'notifications',
     voice: 'voice',
     tunnel: 'tunnel',
+    'isolated-spaces': 'spaces',
   }), []);
 
   const getPageTitle = React.useCallback((slug: SettingsPageSlug): string => {
@@ -407,6 +412,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
         return t('settings.page.logs.title');
       case UPDATE_HISTORY_PAGE:
         return t('settings.page.update-history.title');
+      case 'isolated-spaces':
+        return t('settings.openchamber.spaces.title');
       case 'about':
         return t('settings.page.about.title');
       case 'home':
@@ -711,7 +718,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
       case 'sessions':
       case 'notifications':
       case 'voice':
-      case 'tunnel': {
+      case 'tunnel':
+      case 'isolated-spaces': {
         const section = openChamberSectionBySlug[slug] ?? 'visual';
         return <OpenChamberPage section={section} />;
       }

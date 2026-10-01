@@ -21,12 +21,13 @@ import { usePushVisibilityBeacon } from '@/hooks/usePushVisibilityBeacon';
 import { useWebNotificationStream } from '@/hooks/useWebNotificationStream';
 import { useAgentMemorySync } from '@/hooks/useAgentMemorySync';
 import { useBrowserProviderSync } from '@/hooks/useBrowserProviderSync';
+import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
 import { useRoutingSync } from '@/hooks/useRoutingSync';
 import { usePwaInstallPrompt } from '@/hooks/usePwaInstallPrompt';
 import { useWindowTitle } from '@/hooks/useWindowTitle';
 import { useRootScrollLock } from '@/hooks/useRootScrollLock';
 import { useConfigStore } from '@/stores/useConfigStore';
-import { isDesktopLocalOriginActive, isDesktopShell, restartDesktopApp, invokeDesktop } from '@/lib/desktop';
+import { isDesktopLocalOriginActive, isDesktopShell, restartDesktopApp, invokeDesktop, takePendingDesktopSessionLinks } from '@/lib/desktop';
 import {
   getInjectedBootOutcome,
   getBootInjectionStatus,
@@ -38,6 +39,8 @@ import {
 } from '@/lib/desktopBoot';
 import type { RecoveryVariant } from '@/components/onboarding/DesktopConnectionRecovery';
 import { useSessionUIStore } from '@/sync/session-ui-store';
+import { openSessionLink } from '@/lib/router/openSessionFromRoute';
+import { restoreLastActiveSession } from '@/sync/last-session-restore';
 import { markSessionViewed } from '@/sync/notification-store';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { opencodeClient } from '@/lib/opencode/client';
@@ -69,8 +72,9 @@ import {
   requestEmbeddedSessionVisibility,
 } from '@/components/layout/contextPanelEmbeddedChat';
 import { SyncAppEffects } from '@/apps/AppEffects';
-import { resetAppForRuntimeEndpointChange } from '@/apps/runtimeEndpointReset';
+import { isSameRuntimeEndpoint, resetAppForRuntimeEndpointChange } from '@/apps/runtimeEndpointReset';
 import { useAppFontEffects } from '@/apps/useAppFontEffects';
+import { ProjectConfigErrorToast } from '@/components/projects/ProjectConfigErrorToast';
 import { OpenCodeUpdateToast } from '@/components/update/OpenCodeUpdateToast';
 import { markStartupTrace, startupTraceEnabled } from '@/lib/startupTrace';
 import { fetchStartupDiagnostics, type StartupDiagnostics } from '@/lib/startupDiagnostics';
@@ -251,6 +255,7 @@ const EmbeddedSessionChatContent: React.FC<{
     <>
       <SyncAppEffects embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
       <OpenCodeUpdateToast />
+                  <ProjectConfigErrorToast />
       <ChatView
         active={embeddedBackgroundWorkEnabled}
         // Always subscribe to message history in the mounted session-chat
@@ -336,7 +341,7 @@ function App({ apis }: AppProps) {
 
   React.useEffect(() => {
     return subscribeRuntimeEndpointChanged((detail) => {
-      resetAppForRuntimeEndpointChange(detail);
+      if (isSameRuntimeEndpoint(detail)) resetAppForRuntimeEndpointChange(detail);
       setRuntimeEndpointEpoch((epoch) => epoch + 1);
       setInitRetryExhausted(false);
       setInitRetryEpoch((epoch) => epoch + 1);
@@ -672,18 +677,43 @@ function App({ apis }: AppProps) {
     if (typeof window === 'undefined') return;
 
     const handler = (event: Event) => {
-      const detail = (event as CustomEvent<{ sessionId?: string; directory?: string }>).detail;
+      const detail = (event as CustomEvent<{ sessionId?: string; directory?: string; messageId?: string }>).detail;
       const sessionId = typeof detail?.sessionId === 'string' ? detail.sessionId.trim() : '';
       if (!sessionId) return;
       const directory = typeof detail?.directory === 'string' && detail.directory.trim().length > 0
         ? detail.directory.trim()
         : null;
+      // A link (a desktop deep link, a link to this window's instance) carries
+      // no directory; the route opener resolves it from the global session
+      // list, as for a web link.
+      if (!directory) {
+        void openSessionLink(sessionId, typeof detail?.messageId === 'string' ? detail.messageId.trim() : null);
+        return;
+      }
       void useSessionUIStore.getState().setCurrentSession(sessionId, directory);
     };
 
     window.addEventListener('openchamber:open-session', handler as EventListener);
+    // A link that launched the app arrived before this listener existed; the
+    // desktop shell keeps it until the window asks. Taking is one-shot, so a
+    // cleanup must not drop links already taken (Strict Mode re-runs this).
+    if (!embeddedSessionChat) {
+      void takePendingDesktopSessionLinks().then((links) => {
+        for (const link of links) void openSessionLink(link.sessionId, link.messageId);
+      });
+    }
     return () => window.removeEventListener('openchamber:open-session', handler as EventListener);
-  }, []);
+  }, [embeddedSessionChat]);
+
+  // Launch continuity: reopen the session that was open when the app last
+  // closed, once per page load. A link or route that already opened
+  // something wins; see restoreLastActiveSession.
+  const lastSessionRestoreStartedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!isInitialized || embeddedSessionChat || lastSessionRestoreStartedRef.current) return;
+    lastSessionRestoreStartedRef.current = true;
+    void restoreLastActiveSession({ refresh: false });
+  }, [embeddedSessionChat, isInitialized]);
 
   // Open a draft Mini Chat window from the native File menu / tray. Uses a
   // dedicated single-fire event (not the menu-action channel) because draft
@@ -759,6 +789,7 @@ function App({ apis }: AppProps) {
   // Project notes sent every message with no memory index at all.
   useAgentMemorySync(currentDirectory || null);
   useBrowserProviderSync();
+  useEnterprisePolicySync();
   useRoutingSync();
   usePwaInstallPrompt();
 

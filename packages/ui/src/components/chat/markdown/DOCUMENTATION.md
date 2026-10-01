@@ -59,6 +59,19 @@ scripts are bundled application assets. Native file-save behavior continues to
 use each browser/webview's existing download handling; platform packaging and
 device acceptance must be reported separately from browser fixture tests.
 
+Document previews use the Markdown parser's `sanitize` mode for README HTML,
+with a narrow tag and attribute allowlist before the shared final sanitizer.
+Assistant output stays in `escape` mode. The document HTML security tests use
+jsdom because happy-dom does not faithfully execute DOMPurify's tree walk; the
+parser and the allowlist still run in ordinary browser DOMs at runtime.
+
+Large messages keep parser scans bounded: linkify uses the CJK-aware rule for
+short inline runs and lets Marked handle bare URLs in longer ones. Block math
+and disclosure start hints stop at the current paragraph. Streaming heals only
+the open tail block; completed blocks render from their original text. Incomplete
+image placeholders are removed before sanitization. The parser tests cover long
+JSON dumps, many short paragraphs and streamed image fragments.
+
 Upstream references: [Mermaid](https://github.com/mermaid-js/mermaid),
 [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid), and
 [PlantUML browser engine](https://github.com/plantuml/plantuml/blob/master/PUBLISHING_NPM.md).

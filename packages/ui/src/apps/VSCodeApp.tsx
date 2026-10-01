@@ -26,10 +26,12 @@ import { onHostSurfaceSeen } from '@/lib/surfaceAttention';
 import { markSessionViewed } from '@/sync/notification-store';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { ProjectConfigErrorToast } from '@/components/projects/ProjectConfigErrorToast';
 import { useOpenCodeSource } from './useOpenCodeSource';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { SyncAppEffects } from './AppEffects';
 import { useAppFontEffects } from './useAppFontEffects';
+import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
 
 type VSCodePanelType = 'chat' | 'agentManager';
 
@@ -71,6 +73,7 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
   }, [apis]);
 
   useAppFontEffects();
+  useEnterprisePolicySync();
   usePushVisibilityBeacon({ enabled: true });
   useWindowTitle();
   useRootScrollLock();
@@ -139,6 +142,7 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
                 <AppLinkConfirmDialog />
                 <SharedTrustConfirmDialog />
                 <OpenCodeUpdateToast />
+                <ProjectConfigErrorToast />
                 <Toaster position="top-center" />
               </div>
             </TooltipProvider>
@@ -160,6 +164,7 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
                 <AppLinkConfirmDialog />
                 <SharedTrustConfirmDialog />
                 <OpenCodeUpdateToast />
+                <ProjectConfigErrorToast />
                 <Toaster position="top-center" />
                 <ConfigUpdateOverlay />
               </div>

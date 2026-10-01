@@ -1,3 +1,8 @@
+import { isEnterpriseMode } from '../enterprise-mode.js';
+
+const TUNNEL_BLOCKED_ERROR = 'External tunnels are not available in enterprise mode. Pair devices on your network or through your own relay instead.';
+const TUNNEL_UI_PASSWORD_ERROR = 'Set a UI password before starting a public tunnel.';
+
 export const createTunnelRoutesRuntime = (dependencies) => {
   const {
     crypto,
@@ -28,6 +33,7 @@ export const createTunnelRoutesRuntime = (dependencies) => {
     setRuntimeManagedRemoteTunnelToken,
     getActiveTunnelController,
     setActiveTunnelController,
+    uiPasswordConfigured = false,
   } = dependencies;
 
   const resolveActiveNormalizedTunnelMode = () => {
@@ -74,6 +80,12 @@ export const createTunnelRoutesRuntime = (dependencies) => {
     selectedPresetId,
     selectedPresetName,
   }) => {
+    if (isEnterpriseMode()) {
+      throw Object.assign(new Error(TUNNEL_BLOCKED_ERROR), { code: 'enterprise_mode' });
+    }
+    if (!uiPasswordConfigured) {
+      throw Object.assign(new Error(TUNNEL_UI_PASSWORD_ERROR), { code: 'ui_password_required' });
+    }
     if (provider === TUNNEL_PROVIDER_CLOUDFLARE && mode === TUNNEL_MODE_MANAGED_REMOTE) {
       setRuntimeManagedRemoteTunnelHostname(hostname);
       setRuntimeManagedRemoteTunnelToken(token);
@@ -351,6 +363,7 @@ export const createTunnelRoutesRuntime = (dependencies) => {
         if (!publicUrl) {
           return res.json({
             active: false,
+            enterpriseMode: isEnterpriseMode(),
             url: null,
             mode: normalizedMode,
             provider,
@@ -445,6 +458,12 @@ export const createTunnelRoutesRuntime = (dependencies) => {
     });
 
     app.post('/api/openchamber/tunnel/start', async (_req, res) => {
+      if (isEnterpriseMode()) {
+        return res.status(403).json({ ok: false, code: 'enterprise_mode', error: TUNNEL_BLOCKED_ERROR });
+      }
+      if (!uiPasswordConfigured) {
+        return res.status(403).json({ ok: false, code: 'ui_password_required', error: TUNNEL_UI_PASSWORD_ERROR });
+      }
       try {
         const settings = await readSettingsFromDiskMigrated();
         if (typeof _req?.body?.provider === 'string' && _req.body.provider.trim().length > 0) {

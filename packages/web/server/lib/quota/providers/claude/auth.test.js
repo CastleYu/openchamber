@@ -18,9 +18,9 @@ vi.mock('fs', () => {
   return { ...fs, default: fs };
 });
 
-vi.mock('../../../opencode/auth.js', () => ({ readAuthFile: () => openCodeAuth() }));
+vi.mock('../../../opencode/auth.js', () => ({ readOpenCodeCredentials: async () => openCodeAuth() }));
 
-import { loadClaudeCredential } from './auth.js';
+import { findClaudeCredential, loadClaudeCredential } from './auth.js';
 
 const claudeCodeBlob = (accessToken) => JSON.stringify({
   mcpOAuth: { 'linear|abc': { accessToken: 'unrelated-mcp-token' } },
@@ -56,6 +56,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+const findLocal = () => findClaudeCredential(openCodeAuth());
+
 describe('Claude credential discovery', () => {
   it('prefers the macOS Keychain over a stale credentials file', () => {
     execFileSync.mockReturnValue(claudeCodeBlob('keychain-token'));
@@ -63,7 +65,7 @@ describe('Claude credential discovery', () => {
     files.set(credentialsPath, claudeCodeBlob('file-token'));
     process.env.CLAUDE_CONFIG_DIR = path.dirname(credentialsPath);
 
-    const credential = withPlatform('darwin', loadClaudeCredential);
+    const credential = withPlatform('darwin', findLocal);
 
     expect(credential.accessToken).toBe('keychain-token');
     expect(credential.refreshToken).toBe('keychain-token-refresh');
@@ -74,7 +76,7 @@ describe('Claude credential discovery', () => {
   it('reads the credentials file on Linux, where there is no Keychain', () => {
     files.set(path.join(process.env.HOME, '.claude', '.credentials.json'), claudeCodeBlob('file-token'));
 
-    const credential = withPlatform('linux', loadClaudeCredential);
+    const credential = withPlatform('linux', findLocal);
 
     expect(execFileSync).not.toHaveBeenCalled();
     expect(credential.accessToken).toBe('file-token');
@@ -85,13 +87,13 @@ describe('Claude credential discovery', () => {
     process.env.CLAUDE_CONFIG_DIR = '/tmp/claude-home';
     files.set(path.resolve('/tmp/claude-home/.credentials.json'), claudeCodeBlob('custom-dir-token'));
 
-    expect(withPlatform('linux', loadClaudeCredential).accessToken).toBe('custom-dir-token');
+    expect(withPlatform('linux', findLocal).accessToken).toBe('custom-dir-token');
   });
 
   it('falls back to the OpenCode auth entry when Claude Code is not signed in', () => {
     openCodeAuth.mockReturnValue({ anthropic: { access: 'opencode-token', refresh: 'opencode-refresh', expires: 1786735755912 } });
 
-    const credential = withPlatform('linux', loadClaudeCredential);
+    const credential = withPlatform('linux', findLocal);
 
     expect(credential.accessToken).toBe('opencode-token');
     expect(credential.source).toBe('opencode-auth');
@@ -101,7 +103,7 @@ describe('Claude credential discovery', () => {
   it('falls back to CLAUDE_CODE_OAUTH_TOKEN last, without a refresh token', () => {
     process.env.CLAUDE_CODE_OAUTH_TOKEN = 'env-token';
 
-    const credential = withPlatform('linux', loadClaudeCredential);
+    const credential = withPlatform('linux', findLocal);
 
     expect(credential.accessToken).toBe('env-token');
     expect(credential.refreshToken).toBeNull();
@@ -111,10 +113,21 @@ describe('Claude credential discovery', () => {
   it('ignores a Keychain blob that only holds unrelated MCP tokens', () => {
     execFileSync.mockReturnValue(JSON.stringify({ mcpOAuth: { 'linear|abc': { accessToken: 'unrelated' } } }));
 
-    expect(withPlatform('darwin', loadClaudeCredential)).toBeNull();
+    expect(withPlatform('darwin', findLocal)).toBeNull();
   });
 
   it('returns null when every source is empty', () => {
-    expect(withPlatform('darwin', loadClaudeCredential)).toBeNull();
+    expect(withPlatform('darwin', findLocal)).toBeNull();
+  });
+
+  it('asks OpenCode only when the local Claude Code sources are empty', async () => {
+    openCodeAuth.mockClear();
+    openCodeAuth.mockReturnValue({ anthropic: { access: 'opencode-token', refresh: 'opencode-refresh', expires: 1 } });
+    files.set(path.join(process.env.HOME, '.claude', '.credentials.json'), claudeCodeBlob('file-token'));
+    expect((await withPlatform('linux', loadClaudeCredential)).source).toBe('credentials-file');
+    expect(openCodeAuth).not.toHaveBeenCalled();
+
+    files.clear();
+    expect((await withPlatform('linux', loadClaudeCredential)).source).toBe('opencode-auth');
   });
 });

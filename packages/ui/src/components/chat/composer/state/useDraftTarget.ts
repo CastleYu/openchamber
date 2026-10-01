@@ -246,9 +246,10 @@ export function useDraftTarget(enabled: boolean) {
             newSessionDraft?.preserveDirectoryOverride
             ||
             newSessionDraft?.pendingWorktreeRequestId
+            || selectedDraftDirectoryBootstrapPending
             || (pendingDirectory && pendingDirectory === selectedDraftDirectory)
         );
-    }, [newSessionDraft?.bootstrapPendingDirectory, newSessionDraft?.pendingWorktreeRequestId, newSessionDraft?.preserveDirectoryOverride, selectedDraftDirectory]);
+    }, [newSessionDraft?.bootstrapPendingDirectory, newSessionDraft?.pendingWorktreeRequestId, newSessionDraft?.preserveDirectoryOverride, selectedDraftDirectory, selectedDraftDirectoryBootstrapPending]);
 
     const draftBranchItems = React.useMemo(() => {
         const baseItems: Array<{ value: string; label: string }> = [];

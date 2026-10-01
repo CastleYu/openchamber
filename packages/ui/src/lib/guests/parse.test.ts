@@ -281,3 +281,14 @@ describe('parseInstalledGuestJson', () => {
     expect(junkUpdate).toBeNull();
   });
 });
+
+test('retains a Work Status-only extension and rejects invalid frame height', () => {
+  const guest = {
+    id: 'metrics', name: 'Metrics', icon: 'window', statusEntry: 'status/index.html',
+    statusTitle: 'Runtime metrics', statusHeight: 128,
+    capabilities: { requested: [], granted: [] },
+  };
+  expect(parseInstalledGuestJson(JSON.stringify({ guest }))).toEqual(guest);
+  expect(parseInstalledGuestJson(JSON.stringify({ guest: { ...guest, statusHeight: 0 } }))).toBeNull();
+  expect(parseInstalledGuestJson(JSON.stringify({ guest: { ...guest, statusHeight: 100000 } }))).toBeNull();
+});

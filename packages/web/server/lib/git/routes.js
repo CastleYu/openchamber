@@ -1,4 +1,22 @@
-export function registerGitRoutes(app, { emitWorktreeChanged } = {}) {
+import { OpenCode } from '@opencode/client';
+
+const WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS = 5_000;
+const createWorktreeInstanceDisposer = ({ getOpenCodeAuthHeaders, getKernelRuntime }) => async (worktreeDirectory) => {
+  const identity = getKernelRuntime();
+  if (identity?.generation !== 'oc2' || !identity.endpoint) return;
+  const client = OpenCode.make({
+    baseUrl: identity.endpoint,
+    headers: getOpenCodeAuthHeaders(),
+    fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS) }),
+  });
+  await client.debug.location.evict({ location: { directory: worktreeDirectory } });
+  const current = getKernelRuntime();
+  if (current?.generation !== identity.generation || current?.endpoint !== identity.endpoint || current?.epoch !== identity.epoch) {
+    throw new Error('OpenCode connection changed during worktree disposal');
+  }
+};
+
+export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHeaders, getKernelRuntime } = {}) {
   let gitLibraries = null;
   const getGitLibraries = async () => {
     if (!gitLibraries) {
@@ -41,6 +59,7 @@ export function registerGitRoutes(app, { emitWorktreeChanged } = {}) {
   };
 
   const isNonRepoGitError = (error) => /not a git repository/i.test(extractGitErrorText(error));
+  const canDisposeWorktreeInstance = Boolean(getOpenCodeAuthHeaders && getKernelRuntime);
 
   const nonRepoStatusPayload = () => ({
     isGitRepository: false,
@@ -1222,11 +1241,27 @@ export function registerGitRoutes(app, { emitWorktreeChanged } = {}) {
       const result = await removeWorktree(directory, {
         directory: worktreeDirectory,
         deleteLocalBranch: req.body?.deleteLocalBranch === true,
+        disposeInstance: canDisposeWorktreeInstance
+          ? createWorktreeInstanceDisposer({ getOpenCodeAuthHeaders, getKernelRuntime })
+          : undefined,
       });
       res.json({ success: Boolean(result) });
     } catch (error) {
       console.error('Failed to remove worktree:', error);
       res.status(500).json({ error: error.message || 'Failed to remove worktree' });
+    }
+  });
+
+  app.post('/api/git/worktrees/snapshot', async (req, res) => {
+    const { snapshotWorktree } = await getGitLibraries();
+    try {
+      const directory = resolveDirectoryQuery(req.query.directory);
+      if (!directory) return res.status(400).json({ error: 'directory parameter is required' });
+      res.json(await snapshotWorktree(directory, { ref: req.body?.ref }));
+    } catch (error) {
+      if (error?.message === 'Invalid snapshot ref') return res.status(400).json({ error: error.message });
+      console.error('Failed to snapshot worktree:', error);
+      res.status(500).json({ error: error?.message || 'Failed to snapshot worktree' });
     }
   });
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { z } from 'zod';
 import type { FormField, FormValue, IntegrationOAuthMethod } from '@opencode/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +41,7 @@ interface ProviderOAuthMethodsProps {
   directory?: string | null;
   /** Layout only — the caller owns separation from whatever sits above. */
   className?: string;
+  /** MCP supplies its own connection feedback after reconnecting. */
   successToast?: boolean;
 }
 
@@ -88,9 +88,10 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
 
   const cancelAttempt = React.useCallback((attemptID: string) => {
     activeAttemptRef.current = null;
-    void opencodeClient.cancelIntegrationOAuth({ integrationID: integrationId, attemptID }, directory)
+    void opencodeClient
+      .cancelIntegrationOAuth({ integrationID: integrationId, attemptID }, directory)
       .catch(() => undefined);
-  }, [integrationId, directory]);
+  }, [directory, integrationId]);
 
   React.useEffect(() => () => {
     const pending = activeAttemptRef.current;
@@ -115,8 +116,8 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
   const succeed = async () => {
     activeAttemptRef.current = null;
     setFlow(IDLE);
-    await onConnected();
     if (successToast) toast.success(t('settings.providers.page.toast.oauthCompleted'));
+    await onConnected();
   };
 
   const fail = (methodID: string, error: unknown, fallbackKey: I18nKey) => {
@@ -160,10 +161,11 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
 
     let attempt: OAuthAttempt;
     try {
-      const input = Object.keys(answer).length > 0
-        ? { integrationID: integrationId, methodID: method.id, answer }
-        : { integrationID: integrationId, methodID: method.id };
-      const { data } = await opencodeClient.startIntegrationOAuth(input, directory);
+      const { data } = await opencodeClient.startIntegrationOAuth({
+        integrationID: integrationId,
+        methodID: method.id,
+        ...(Object.keys(answer).length > 0 ? { answer } : {}),
+      }, directory);
       attempt = { attemptID: data.attemptID, mode: data.mode, url: data.url, instructions: data.instructions };
     } catch (error) {
       fail(method.id, error, 'settings.providers.page.toast.oauthStartFailed');
@@ -262,8 +264,7 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
     }
 
     const raw = fieldValues[field.key];
-    const parsed = z.string().safeParse(raw);
-    const value = parsed.success ? parsed.data : '';
+    const value = typeof raw === 'string' ? raw : '';
     const setValue = (next: FormValue) =>
       setFieldValues((prev) => ({ ...prev, [field.key]: next }));
 

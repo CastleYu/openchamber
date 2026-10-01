@@ -61,3 +61,20 @@ test('fails instead of publishing an incomplete Windows channel set', (context) 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Both x64 and arm64 Windows update manifests are required/);
 });
+
+test('mac-only finalization leaves Windows channels untouched', (context) => {
+  const fixture = createFixture({ includeArm64: false });
+  context.after(() => fs.rmSync(fixture.root, { recursive: true, force: true }));
+  for (const architecture of ['x86_64', 'aarch64']) {
+    const directory = path.join(fixture.artifacts, `latest-yml-${architecture}-apple-darwin`);
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, 'latest-mac.yml'), `version: 1.2.3\nfiles:\n  - url: OpenChamber-${architecture}.dmg\n    sha512: checksum\n    size: 123\n`);
+  }
+
+  execFileSync(process.execPath, [script], { env: { ...environment(fixture), MAC_ONLY: '1' } });
+  assert.equal(fs.existsSync(path.join(fixture.output, 'latest.yml')), false);
+  assert.equal(fs.existsSync(path.join(fixture.output, 'latest-arm64.yml')), false);
+  const mac = fs.readFileSync(path.join(fixture.output, 'latest-mac.yml'), 'utf8');
+  assert.match(mac, /OpenChamber-x86_64\.dmg/);
+  assert.match(mac, /OpenChamber-aarch64\.dmg/);
+});

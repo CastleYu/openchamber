@@ -35,6 +35,8 @@ let lastReadModel: string | undefined;
 let lastGenerateModel: string | undefined;
 let lastReadLanguage: string | undefined;
 let lastGenerateLanguage: string | undefined;
+let lastReadProviderID: string | undefined;
+let lastGenerateProviderID: string | undefined;
 let lastGenerateSignal: AbortSignal | undefined;
 let cancelGenerationCalls = 0;
 const hangReads = new Set<string>();
@@ -44,9 +46,10 @@ mock.module('@/lib/walkthrough/api', () => ({
   fetchWalkthrough: async (
     directory: string,
     _source: WalkthroughSource,
-    options: { model?: string; language?: string; signal?: AbortSignal } = {},
+    options: { model?: string; providerID?: string; language?: string; signal?: AbortSignal } = {},
   ) => {
     lastReadModel = options.model;
+    lastReadProviderID = options.providerID;
     lastReadLanguage = options.language;
     readSignals.set(directory, options.signal);
     if (hangReads.has(directory)) {
@@ -64,10 +67,11 @@ mock.module('@/lib/walkthrough/api', () => ({
   generateWalkthrough: async (
     _directory: string,
     _source: WalkthroughSource,
-    options: { model?: string; language?: string; signal?: AbortSignal } = {},
+    options: { model?: string; providerID?: string; language?: string; signal?: AbortSignal } = {},
   ) => {
     generateCalls += 1;
     lastGenerateModel = options.model;
+    lastGenerateProviderID = options.providerID;
     lastGenerateLanguage = options.language;
     lastGenerateSignal = options.signal;
     return new Promise<WalkthroughResult>((resolve) => {
@@ -104,6 +108,8 @@ describe('useWalkthroughStore — reattaching to a running generation', () => {
     generateCalls = 0;
     cancelGenerationCalls = 0;
     releaseGeneration = undefined;
+    lastReadProviderID = undefined;
+    lastGenerateProviderID = undefined;
   });
 
   afterEach(() => {
@@ -137,6 +143,17 @@ describe('useWalkthroughStore — reattaching to a running generation', () => {
 
     expect(generateCalls).toBe(0);
     expect(useWalkthroughStore.getState().getEntry('/repo', SOURCE).status).toBe('ready');
+  });
+
+  test('passes the composer provider through reads and generated work', async () => {
+    readResult = result({ generating: true });
+    await useWalkthroughStore.getState().load('/repo', SOURCE, { providerID: 'openrouter' });
+    await flush();
+
+    expect(lastReadProviderID).toBe('openrouter');
+    expect(lastGenerateProviderID).toBe('openrouter');
+    releaseGeneration?.();
+    await flush();
   });
 
   test('a load while generating does not overwrite the pending state', async () => {

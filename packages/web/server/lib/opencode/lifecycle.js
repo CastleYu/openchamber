@@ -1,12 +1,13 @@
 import { execFile, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import net from 'node:net';
-import { stripAppImageArgv0Leak } from '../inherited-env.js';
+import { stripAppImageArgv0Leak, stripAppImageLauncherEnv } from '../inherited-env.js';
 import { reapOrphanedProcesses, registerManagedProcess, unregisterManagedProcess } from './managed-process-registry.js';
 import { applyProviderEnvAliases } from './provider-env-aliases.js';
 import { recordStartupPerformance } from './startup-performance.js';
 import { OPENCODE_GENERATION } from './compatibility.js';
 import { probeManagedOpenCodeGeneration as probeManagedGeneration } from './managed-generation.js';
+import { topUpV1Migration } from './v1-migration-topup.js';
 
 const exec = promisify(execFile);
 const killWindowsTree = (pid, force) => exec('taskkill',
@@ -26,6 +27,13 @@ const HEALTH_CHECK_MAX_CONSECUTIVE_FAILURES = parsePositiveInt(
 const HEALTH_CHECK_INTERVAL_OVERRIDE_MS = parsePositiveInt(process.env.OPENCHAMBER_OPENCODE_HEALTH_INTERVAL_MS, 0);
 const HEALTH_CHECK_RESULT_CACHE_MS = parsePositiveInt(process.env.OPENCHAMBER_OPENCODE_HEALTH_CACHE_MS, 750);
 const OPENCODE_HEALTH_PATH = '/global/health';
+// OC1 prints `opencode server listening on <url>`; OC2 2.x drops the
+// "opencode" prefix. Match either exact prefix so a line that merely mentions
+// "listening" elsewhere is never mistaken for readiness.
+const OPENCODE_READY_PREFIXES = Object.freeze([
+  'opencode server listening',
+  'server listening',
+]);
 const KERNEL_PATH = Object.freeze({
   [OPENCODE_GENERATION.OC1]: { agent: '/agent', warmup: '/session/status' },
   [OPENCODE_GENERATION.OC2]: { agent: '/api/agent', warmup: '/api/session' },
@@ -133,6 +141,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     kernelRuntime = null,
     managedStartupTimeoutMs = 30_000,
     now = Date.now,
+    topUpV1SessionMigration = topUpV1Migration,
   } = deps;
 
   const resolveReadyKernel = async () => {
@@ -150,6 +159,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     if (!KERNEL_PATH[generation]) throw new Error(`OpenCode readiness: ${generation}`);
     return generation;
   };
+
+  let managedProcessEnv = null;
 
   const killProcessOnPortWin32 = (port) => {
     try {
@@ -525,7 +536,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         stdout += chunk.toString();
         const lines = stdout.split('\n');
         for (const line of lines) {
-          if (!line.startsWith('opencode server listening')) continue;
+          if (!OPENCODE_READY_PREFIXES.some((prefix) => line.startsWith(prefix))) continue;
           const match = line.match(/on\s+(https?:\/\/[^\s]+)/);
           if (!match) {
             finish(reject, new Error(`Failed to parse server url from output: ${line}`));
@@ -625,11 +636,20 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
     try {
       if (kernelRuntime) {
-        const descriptor = await kernelRuntime.refresh();
-        const healthy = descriptor.generation === OPENCODE_GENERATION.OC1
-          || descriptor.generation === OPENCODE_GENERATION.OC2;
+        // A re-probe must not demote a healthy kernel on a single slow or
+        // unparseable response. `reprobe` preserves the live descriptor and
+        // epoch for a transient failure while still reporting the failure, so
+        // the periodic failure budget can decide when to restart.
+        const probe = kernelRuntime.reprobe
+          ? await kernelRuntime.reprobe()
+          : { descriptor: await kernelRuntime.refresh(), generation: null, preserved: false };
+        const descriptor = probe.descriptor;
+        const healthy = !probe.preserved
+          && (descriptor.generation === OPENCODE_GENERATION.OC1
+            || descriptor.generation === OPENCODE_GENERATION.OC2);
         return { healthy, failure: healthy ? null : {
-          class: 'invalid_response', detail: `OpenCode readiness: ${descriptor.generation}`,
+          class: 'invalid_response',
+          detail: `OpenCode readiness: ${probe.generation ?? descriptor.generation}`,
         } };
       }
       const response = await fetch(buildOpenCodeUrl(OPENCODE_HEALTH_PATH, ''), {
@@ -753,7 +773,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       totalDurationMs: performance.now() - attemptStartedAt,
     });
     phaseStartedAt = performance.now();
-    const openCodePassword = await ensureLocalOpenCodeServerPassword({ rotateManaged: true });
+    const openCodePassword = await ensureLocalOpenCodeServerPassword({ rotateManaged: true, generation: selectedKernel.generation });
     let envPath = process.env.PATH;
     if (typeof buildManagedOpenCodePath === 'function') {
       envPath = buildManagedOpenCodePath();
@@ -771,6 +791,30 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     });
     phaseStartedAt = performance.now();
 
+    // Re-arm OpenCode's own V1 -> V2 session import for sessions a bundled
+    // OpenCode 1.x created after the migration already completed. Only the OC2
+    // managed kernel has a V1 -> V2 migration to re-arm; never fatal.
+    if (selectedKernel.generation === OPENCODE_GENERATION.OC2) {
+      try {
+        const topUp = topUpV1SessionMigration();
+        if (topUp && topUp.status !== 'skipped') {
+          console.log('[OpenCode] V1 session migration top-up:', topUp);
+        }
+      } catch (error) {
+        console.warn('[OpenCode] V1 session migration top-up failed:', error instanceof Error ? error.message : error);
+      }
+    }
+
+    const processEnv = stripAppImageLauncherEnv(stripAppImageArgv0Leak(applyProviderEnvAliases({
+      ...shellEnv,
+      ...process.env,
+      ...managedOpenCodeEnv,
+      PATH: envPath,
+      OPENCODE_PASSWORD: openCodePassword,
+      OPENCODE_SERVER_PASSWORD: openCodePassword,
+    })));
+    managedProcessEnv = processEnv;
+
     let serverInstance;
     try {
       if (state.isShuttingDown) throw new Error('OpenCode startup cancelled during shutdown');
@@ -782,13 +826,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         timeout: managedStartupTimeoutMs,
         cwd: state.openCodeWorkingDirectory,
         shellEnvKeysCount: Object.keys(shellEnv).length,
-        env: stripAppImageArgv0Leak(applyProviderEnvAliases({
-          ...shellEnv,
-          ...process.env,
-          ...managedOpenCodeEnv,
-          PATH: envPath,
-          OPENCODE_SERVER_PASSWORD: openCodePassword,
-        })),
+        env: processEnv,
       });
 
       if (!serverInstance || !serverInstance.url) {
@@ -1222,8 +1260,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   // directory-scoped request, and that initialization takes seconds on large
   // session stores. Without warming, the user's first session open pays it
   // interactively (the chat waits on the message fetch until the directory
-  // finishes initializing). Warm the most recently used directories right
-  // after readiness so the work overlaps UI startup instead. Sequential and
+  // finishes initializing). Warm the last-used directory right after
+  // readiness so the work overlaps UI startup instead. Sequential and
   // best-effort: a failed or slow directory never blocks the others for long,
   // and a restart invalidates the pass via the port/readiness guard.
   const warmOpenCodeDirectories = async () => {
@@ -1236,7 +1274,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     if (!Array.isArray(directories) || directories.length === 0) return;
 
     const warmedPort = state.openCodePort;
-    const limit = process.env.OPENCHAMBER_RUNTIME === 'desktop'
+    const limit = activeGeneration() === OPENCODE_GENERATION.OC2 || process.env.OPENCHAMBER_RUNTIME === 'desktop'
       ? DESKTOP_WARMUP_DIRECTORY_LIMIT
       : WARMUP_DIRECTORY_LIMIT;
     for (const directory of directories.slice(0, limit)) {
@@ -1414,6 +1452,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   return {
+    getManagedOpenCodeProcessEnv: () => (state.isExternalOpenCode ? null : managedProcessEnv),
     killProcessOnPort,
     startOpenCode,
     restartOpenCode,

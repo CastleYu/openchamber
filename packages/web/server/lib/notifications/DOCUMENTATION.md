@@ -4,6 +4,12 @@ The server injects `kernelOperations` for OpenCode session and message
 lookups used by notification text, parent suppression and goal state. The
 message page's declared order decides which assistant reply is newest.
 
+Enterprise mode replaces outbound web push and APNs titles with scenario labels,
+clears their bodies, and removes the session name from web push data. Opaque
+session IDs remain for deep links. Local desktop and UI notifications retain
+their ordinary text. Permission notices are suppressed only when the specific
+request was answered automatically; held requests still notify.
+
 ## Purpose
 This module provides notification message preparation utilities for the web server runtime, including text truncation and plain-text normalization for system notifications.
 

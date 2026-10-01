@@ -1,5 +1,7 @@
 import type { UsageStats } from '@/lib/opencode/session-stats';
 
+type UsageTokens = UsageStats['tokens'];
+
 export type UsageRange = '7d' | '30d' | '90d' | 'all';
 
 export const USAGE_RANGES: readonly UsageRange[] = ['7d', '30d', '90d', 'all'];
@@ -77,6 +79,42 @@ export function buildActivitySeries(stats: Pick<UsageStats, 'range' | 'activity'
 /** Nothing happened in the range: no prompt and no model step. */
 export const isEmptyReport = (stats: Pick<UsageStats, 'prompts' | 'steps'>): boolean =>
   stats.prompts === 0 && stats.steps === 0;
+
+/** Cache reads as a share of input tokens that could have missed the cache. */
+export const cacheHitRate = (tokens: Pick<UsageTokens, 'input' | 'cacheRead' | 'cacheWrite'>): number | null => {
+  const total = tokens.input + tokens.cacheRead + tokens.cacheWrite;
+  return total > 0 ? tokens.cacheRead / total : null;
+};
+
+export const averagePer = (total: number, count: number): number | null => count > 0 ? total / count : null;
+
+export const toolSuccessRate = (totals: { succeeded: number; failed: number }): number | null => {
+  const completed = totals.succeeded + totals.failed;
+  return completed > 0 ? totals.succeeded / completed : null;
+};
+
+export const costPerMillionTokens = (cost: number, tokens: number): number | null =>
+  tokens > 0 ? (cost / tokens) * 1_000_000 : null;
+
+export const reasoningShare = (tokens: Pick<UsageTokens, 'output' | 'reasoning'>): number | null => {
+  const produced = tokens.output + tokens.reasoning;
+  return produced > 0 ? tokens.reasoning / produced : null;
+};
+
+export type TokenSegmentKey = 'input' | 'output' | 'cacheRead' | 'cacheWrite';
+
+interface TokenSegment {
+  key: TokenSegmentKey;
+  value: number;
+}
+
+/** Token bar order is stable; reasoning is grouped with model output. */
+export const tokenSegments = (tokens: UsageTokens): TokenSegment[] => [
+  { key: 'input', value: tokens.input },
+  { key: 'output', value: tokens.output + tokens.reasoning },
+  { key: 'cacheRead', value: tokens.cacheRead },
+  { key: 'cacheWrite', value: tokens.cacheWrite },
+];
 
 /** Project name as the sidebar shows it: its label, else the folder name. */
 export const projectDisplayName = (project: { label?: string | null; path: string }): string => {

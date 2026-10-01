@@ -209,7 +209,7 @@ describe('useMultiRunStore', () => {
       name: 'OC2 run', isolateRuns: false, agent: 'build',
       groups: [{ prompt: 'Fix it', models: [{ providerID: 'anthropic', modelID: 'claude-sonnet', variant: 'high' }] }],
     });
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(result?.sessionIds).toEqual(['ses_multirun']);
     expect(storedSession.model).toEqual({ providerID: 'anthropic', id: 'claude-sonnet', variant: 'high' });
     expect(storedSession.agent).toBe('build');

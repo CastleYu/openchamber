@@ -24,11 +24,11 @@ const credentialError = (res, error) => res.status(400).json({
   error: error instanceof Error ? error.message : 'Credential validation failed',
 });
 
-export function registerQuotaRoutes(app, { getQuotaProviders }) {
+export function registerQuotaRoutes(app, { getQuotaProviders, getKernelRuntime }) {
   app.get('/api/quota/providers', async (_req, res) => {
     try {
       const { listConfiguredQuotaProviders } = await getQuotaProviders();
-      res.json({ providers: listConfiguredQuotaProviders() });
+      res.json({ providers: await listConfiguredQuotaProviders() });
     } catch (error) {
       console.error('Failed to list quota providers:', error);
       res.status(500).json({ error: error.message || 'Failed to list quota providers' });
@@ -88,8 +88,17 @@ export function registerQuotaRoutes(app, { getQuotaProviders }) {
     try {
       const { providerId } = req.params;
       if (!providerId) return res.status(400).json({ error: 'Provider ID is required' });
+      const identity = getKernelRuntime();
+      if (identity.generation !== 'oc1' && identity.generation !== 'oc2') {
+        return res.status(503).json({ error: 'OpenCode generation is not ready' });
+      }
       const { fetchQuotaForProvider } = await getQuotaProviders();
-      res.json(await fetchQuotaForProvider(providerId));
+      const quota = await fetchQuotaForProvider(providerId, identity);
+      const current = getKernelRuntime();
+      if (current.epoch !== identity.epoch || current.endpoint !== identity.endpoint || current.generation !== identity.generation) {
+        return res.status(409).json({ error: 'OpenCode runtime changed during quota lookup' });
+      }
+      res.json(quota);
     } catch (error) {
       console.error('Failed to fetch quota:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch quota' });

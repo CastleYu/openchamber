@@ -97,20 +97,20 @@ jobs:
         with:
           bun-version: '1.4.2'
       - run: bun install --frozen-lockfile
-      - name: Prepare OpenCode 2.0.16 CLI
+      - name: Prepare OpenCode 2.0.20 CLI
         shell: pwsh
         run: |
           bun run --cwd packages/electron prepare:opencode-cli
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         env:
-          OPENCHAMBER_OPENCODE_CLI_VERSION: '2.0.16'
-      - name: Verify OpenCode 2.0.16 CLI
+          OPENCHAMBER_OPENCODE_CLI_VERSION: '2.0.20'
+      - name: Verify OpenCode 2.0.20 CLI
         shell: pwsh
         run: |
           bun run --cwd packages/electron verify:opencode-cli
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         env:
-          OPENCHAMBER_OPENCODE_CLI_VERSION: '2.0.16'
+          OPENCHAMBER_OPENCODE_CLI_VERSION: '2.0.20'
 
   publish:
     needs: [build, oc2-cli-smoke]

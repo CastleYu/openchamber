@@ -261,6 +261,18 @@ describe('ui auth client credential seam', () => {
     };
     expect(await auth.ensureSessionToken(dictationWsReq, null)).toBe('client:device-1');
 
+    const spaceId = 'abcdef123456';
+    const spaceWsPath = `/api/spaces/${spaceId}/terminal/ws`;
+    expect(await auth.ensureSessionToken({ method: 'GET', path: spaceWsPath,
+      url: `${spaceWsPath}?oc_url_token=${encodeURIComponent(urlToken)}`,
+      headers: { upgrade: 'websocket' } }, null)).toBe('client:device-1');
+    const spaceRawPath = `/api/spaces/${spaceId}/fs/raw`;
+    expect(await auth.ensureSessionToken({ method: 'GET', path: spaceRawPath,
+      url: `${spaceRawPath}?oc_url_token=${encodeURIComponent(urlToken)}`, headers: {} }, null)).toBe('client:device-1');
+    const wrongSpacePath = '/api/spaces/not-a-space/fs/raw';
+    expect(await auth.ensureSessionToken({ method: 'GET', path: wrongSpacePath,
+      url: `${wrongSpacePath}?oc_url_token=${encodeURIComponent(urlToken)}`, headers: {} }, null)).toBe(null);
+
     // An extension surface socket takes the session-wide URL token, never a
     // guest-scoped one: it carries the user's pointer and keyboard.
     const surfaceWsReq = {

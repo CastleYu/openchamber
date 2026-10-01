@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Message, Part } from '@/lib/opencode/model';
 import { projectTurnRecords } from './projectTurnRecords';
+import { runningSubagentRunMessage } from '@/lib/opencode/subagent-run';
 import type { ChatMessageEntry } from './types';
 
 function createMessageEntry({
@@ -26,6 +27,19 @@ function createMessageEntry({
 }
 
 describe('projectTurnRecords', () => {
+    test('a background subagent run opens a turn before the parent reaction', () => {
+        const user = createMessageEntry({ id: 'u1', role: 'user', createdAt: 1 });
+        const initial = createMessageEntry({ id: 'a1', role: 'assistant', createdAt: 2 });
+        const run = runningSubagentRunMessage('ses_parent', {
+            id: 'ses_child', projectID: 'project', directory: '/repo', parentID: 'ses_parent',
+            title: 'Review', time: { created: 3, updated: 3 },
+        });
+        const reaction = createMessageEntry({ id: 'a2', role: 'assistant', createdAt: 4 });
+
+        const projection = projectTurnRecords([user, initial, { info: run, parts: [] }, reaction]);
+        expect(projection.turns.map((turn) => turn.turnId)).toEqual(['u1', run.id]);
+        expect(projection.turns.map((turn) => turn.assistantMessageIds)).toEqual([['a1'], ['a2']]);
+    });
     test('groups assistant replies under their parent user turn', () => {
         const user = createMessageEntry({ id: 'u1', role: 'user', createdAt: 1 });
         const assistant = createMessageEntry({ id: 'a1', role: 'assistant', parentID: 'u1', createdAt: 2 });

@@ -36,6 +36,12 @@ describe("message chronology", () => {
     expect(messages).toEqual([first, second])
   })
 
+  test("places context before its prompt when the server gives both the same time", () => {
+    const prompt = message("msg_a", 100)
+    const context = { id: "msg_z", sessionID: "session-a", role: "synthetic" as const, time: { created: 100 }, text: "context" }
+    expect(sortMessagesChronologically([prompt, context])).toEqual([context, prompt])
+  })
+
   test("splits a revert branch by marker position instead of ID value", () => {
     const before = message("msg_ffffBefore", 100)
     const marker = message("msg_0000Marker", 200)

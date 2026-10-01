@@ -1,5 +1,9 @@
 # Managed OpenChamber Agent Tool
 
+OC2 generated tools are direct by default. The `agentToolsCodeMode` setting
+explicitly sets their `codemode` option. The OC1 plugin keeps its original
+schema and registration behavior.
+
 ## Purpose
 
 This module exposes OpenChamber to agents as typed OpenCode custom tools. There

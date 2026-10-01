@@ -270,6 +270,7 @@ export function applyDirectoryEvent(
       if (info.time.archived) {
         if (result.found) sessions.splice(result.index, 1)
         cleanupSessionCaches(draft, info.id, callbacks?.onSetSessionTodo)
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated, [info.id]: true }
         if (!info.parentID) draft.sessionTotal = Math.max(0, draft.sessionTotal - 1)
         markSessionEvent(info.id, true)
         return true
@@ -294,6 +295,10 @@ export function applyDirectoryEvent(
       const info = props.info ? projectLegacySession(props.info) : (result.found ? sessions[result.index] : undefined)
       if (result.found) sessions.splice(result.index, 1)
       cleanupSessionCaches(draft, sessionID, callbacks?.onSetSessionTodo)
+      if (draft.sessionStatusInvalidated?.[sessionID]) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[sessionID]
+      }
       if (!info?.parentID) draft.sessionTotal = Math.max(0, draft.sessionTotal - 1)
       markSessionEvent(sessionID, true)
       return true
@@ -317,8 +322,13 @@ export function applyDirectoryEvent(
 
     case "session.status": {
       const props = event.properties as { sessionID: string; status: SessionStatus }
+      const invalidated = draft.sessionStatusInvalidated?.[props.sessionID] === true
+      if (invalidated) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[props.sessionID]
+      }
       if (areSessionStatusesEqual(draft.session_status[props.sessionID], props.status)) {
-        return false
+        return invalidated
       }
       draft.session_status[props.sessionID] = props.status
       return true
@@ -327,8 +337,13 @@ export function applyDirectoryEvent(
     case "session.idle": {
       const props = event.properties as { sessionID: string }
       const status = { type: "idle" } as const
+      const invalidated = draft.sessionStatusInvalidated?.[props.sessionID] === true
+      if (invalidated) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[props.sessionID]
+      }
       if (areSessionStatusesEqual(draft.session_status[props.sessionID], status)) {
-        return false
+        return invalidated
       }
       draft.session_status[props.sessionID] = status
       return true
@@ -337,8 +352,13 @@ export function applyDirectoryEvent(
     case "session.error": {
       const props = event.properties as { sessionID: string }
       const status = { type: "idle" } as const
+      const invalidated = draft.sessionStatusInvalidated?.[props.sessionID] === true
+      if (invalidated) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[props.sessionID]
+      }
       if (areSessionStatusesEqual(draft.session_status[props.sessionID], status)) {
-        return false
+        return invalidated
       }
       draft.session_status[props.sessionID] = status
       return true
@@ -638,6 +658,16 @@ export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventR
       const result = Binary.search(draft.session, info.id, (item) => item.id)
       if (result.found && shouldSkipStaleSessionEvent(draft.session[result.index], info)) return { changed: false }
       const next = [...draft.session]
+      if (info.time.archived) {
+        if (result.found) next.splice(result.index, 1)
+        draft.session = next
+        cleanupSessionCaches(draft, info.id)
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated, [info.id]: true }
+        draft.sessionListSource = "live"
+        draft.sessionRevision = (draft.sessionRevision ?? 0) + 1
+        draft.sessionDeletedRevision = { ...draft.sessionDeletedRevision, [info.id]: draft.sessionRevision }
+        return { changed: true }
+      }
       if (result.found) next[result.index] = info
       else next.splice(result.index, 0, info)
       draft.session = next
@@ -652,6 +682,10 @@ export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventR
       if (result.found) next.splice(result.index, 1)
       draft.session = next
       cleanupSessionCaches(draft, event.sessionID)
+      if (draft.sessionStatusInvalidated?.[event.sessionID]) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[event.sessionID]
+      }
       delete draft.pendingPermission[event.sessionID]
       delete draft.pendingInput[event.sessionID]
       draft.sessionListSource = "live"
@@ -705,7 +739,12 @@ export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventR
       return { changed: true }
     }
     case "status": {
-      if (areSessionStatusesEqual(draft.session_status[event.sessionID], event.status)) return { changed: false }
+      const invalidated = draft.sessionStatusInvalidated?.[event.sessionID] === true
+      if (invalidated) {
+        draft.sessionStatusInvalidated = { ...draft.sessionStatusInvalidated }
+        delete draft.sessionStatusInvalidated[event.sessionID]
+      }
+      if (areSessionStatusesEqual(draft.session_status[event.sessionID], event.status)) return { changed: invalidated }
       draft.session_status[event.sessionID] = event.status
       return { changed: true }
     }
@@ -745,6 +784,10 @@ export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventR
       draft.pendingInput[event.sessionID] = next
       return { changed: true }
     }
+    // Shell lifecycle facts feed the cross-directory shell index
+    // (`background-shells.ts`); the transcript reducer ignores them.
+    case "shell.started":
+    case "shell.ended": return { changed: false }
     case "vcs-branch": {
       if (draft.vcs?.branch === event.branch) return { changed: false }
       draft.vcs = { ...draft.vcs, branch: event.branch }

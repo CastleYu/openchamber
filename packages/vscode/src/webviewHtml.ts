@@ -15,6 +15,8 @@ export interface WebviewHtmlOptions {
   cliAvailable: boolean;
   panelType?: PanelType;
   initialSessionId?: string;
+  /** Start a new editor draft with the parallel-run composer selected. */
+  initialComposer?: 'parallel';
   viewMode?: 'sidebar' | 'editor';
   devServerUrl?: string | null;
   extensionVersion?: string;
@@ -53,6 +55,7 @@ export function getWebviewHtml(options: WebviewHtmlOptions): string {
     cliAvailable,
     panelType = 'chat',
     initialSessionId,
+    initialComposer,
     viewMode = 'sidebar',
     devServerUrl,
     extensionVersion = '',
@@ -193,6 +196,7 @@ export function getWebviewHtml(options: WebviewHtmlOptions): string {
       panelType: "${panelType}",
       viewMode: "${viewMode}",
       initialSessionId: ${initialSessionId ? `"${initialSessionId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : 'null'},
+      initialComposer: ${initialComposer ? `"${initialComposer}"` : 'null'},
     };
     window.__OPENCHAMBER_HOME__ = "${workspaceFolder.replace(/\\/g, '\\\\')}";
     // VS Code's display language. The UI bundle uses it as the default locale

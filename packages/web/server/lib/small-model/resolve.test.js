@@ -89,6 +89,26 @@ describe('resolveSmallModel', () => {
     expect(result).toEqual({ providerID: 'google', modelID: 'gemini-2.5-flash', source: 'family-scan' });
   });
 
+  it('does not choose an unrelated provider when OC2 asks for its own default', () => {
+    expect(resolveSmallModel({
+      auth: { google: { type: 'api', key: 'g-key' } },
+      catalog,
+      allowCrossProvider: false,
+    })).toBeNull();
+  });
+
+  it('uses the catalog key for a derived model whose provider API name is shared', () => {
+    const result = resolveSmallModel({
+      auth: { chosen: { type: 'api', key: 'key' } },
+      catalog: { chosen: { models: {
+        'gpt-6-luna-fast': { id: 'gpt-6-luna', modelID: 'gpt-6-luna', family: 'gpt-nano', release_date: '2026-09-01' },
+      } } },
+      preferredProviderID: 'chosen',
+      allowCrossProvider: false,
+    });
+    expect(result).toMatchObject({ providerID: 'chosen', modelID: 'gpt-6-luna-fast' });
+  });
+
   it('skips providers without a usable credential', () => {
     const result = resolveSmallModel({
       auth: {

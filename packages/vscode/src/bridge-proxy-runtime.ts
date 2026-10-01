@@ -1,5 +1,12 @@
 import type { BridgeContext, BridgeResponse } from './bridge';
 import { waitForApiUrl } from './opencode-ready';
+import {
+  CREDENTIAL_LIST_ERROR,
+  ENTERPRISE_MODE_ERROR,
+  isCredentialListRequest,
+  isEnterpriseMode,
+  isProviderConnectRequest,
+} from '../../web/server/lib/enterprise-mode.js';
 import { resolveKernelRequest } from './kernelRequest';
 import { isSessionRecordPath, overlaySessionResponseBody, parseJson, type SessionStateStore } from './openchamberSessionState';
 
@@ -168,6 +175,33 @@ export async function handleProxyBridgeMessage(
           status: 400,
           headers: { 'content-type': 'application/json' },
           bodyText: JSON.stringify({ error: 'SSE requests must use api:sse:start' }),
+        };
+        return { id, type, success: true, data };
+      }
+
+      if (isCredentialListRequest(normalizedMethod, normalizedPath)) {
+        const data: ApiProxyResponsePayload = {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+          bodyText: JSON.stringify({ error: CREDENTIAL_LIST_ERROR, code: 'credential_list_refused' }),
+        };
+        return { id, type, success: true, data };
+      }
+
+      if (isEnterpriseMode() && normalizedMethod === 'POST' && isCredentialListRequest('GET', normalizedPath)) {
+        const data: ApiProxyResponsePayload = {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+          bodyText: JSON.stringify({ error: ENTERPRISE_MODE_ERROR, code: 'enterprise_mode' }),
+        };
+        return { id, type, success: true, data };
+      }
+
+      if (isEnterpriseMode() && isProviderConnectRequest(normalizedMethod, normalizedPath)) {
+        const data: ApiProxyResponsePayload = {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+          bodyText: JSON.stringify({ error: ENTERPRISE_MODE_ERROR, code: 'enterprise_mode' }),
         };
         return { id, type, success: true, data };
       }

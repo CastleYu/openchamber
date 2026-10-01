@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { JsonValue, Message, Part, Session, SessionStatus, StructuredError } from './model';
 import type { PendingInput, PendingPermission } from './operations';
 import { partIds } from './model';
+import { runningShellFromWire, type RunningShell } from './background-shell';
 
 const eventHeader = z.object({ type: z.string() });
 const eventCodecs: ReadonlyMap<string, (typeof EventManifest.ServerDefinitions)[number]> = new Map(
@@ -53,8 +54,13 @@ export type DomainEvent =
   | { type: 'permission-replied'; sessionID: string; requestID: string; directory?: string; eventID: string }
   | { type: 'input-created'; request: PendingInput; directory?: string; eventID: string }
   | { type: 'form-closed'; sessionID: string; requestID: string; directory?: string; eventID: string }
+  | { type: 'shell.started'; shell: RunningShell; directory?: string; eventID: string }
+  | { type: 'shell.ended'; shellID: string; directory?: string; eventID: string }
   | { type: 'vcs-branch'; branch?: string; directory?: string; eventID: string }
   | { type: 'refresh'; scope: 'global' | 'directory'; catalog?: CatalogKind; directory?: string; eventID: string };
+
+/** Generation-bound sync event body consumed by the sync source. */
+export type SyncEvent = DomainEvent;
 
 /** Project only facts the OC2 event actually carries. Full records come from the HTTP projection. */
 export function projectV2Event(event: V2Event): DomainEvent | null {
@@ -92,6 +98,13 @@ export function projectV2Event(event: V2Event): DomainEvent | null {
     case 'session.compaction.ended':
     case 'session.compaction.failed':
       return { type: 'transcript-refresh', sessionID: event.data.sessionID, directory, eventID, sequence };
+    case 'shell.created': {
+      const shell = runningShellFromWire(event.data.info);
+      return shell ? { type: 'shell.started', shell, directory, eventID } : null;
+    }
+    case 'shell.exited':
+    case 'shell.deleted':
+      return { type: 'shell.ended', shellID: event.data.id, directory, eventID };
     case 'session.text.delta':
       return { type: 'part-delta', sessionID: event.data.sessionID, messageID: event.data.assistantMessageID,
         partID: partIds.text(event.data.assistantMessageID, event.data.ordinal), delta: event.data.delta, directory, eventID, sequence };

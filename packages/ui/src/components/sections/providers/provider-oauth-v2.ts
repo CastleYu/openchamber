@@ -15,9 +15,8 @@
  * `integration.oauth.cancel`, and every attempt carries its own expiry.
  */
 
-import type { FormAnswer, FormField, FormValue, FormWhen } from '@opencode/client';
+import type { FormField, FormValue, FormWhen } from '@opencode/client';
 import type { I18nKey, I18nParams } from '@/lib/i18n';
-import { z } from 'zod';
 
 export type OAuthCompletionMode = 'auto' | 'code';
 
@@ -99,8 +98,8 @@ export const visibleFields = (
  * Seeds the answer map. A field's declared default wins; otherwise a field with
  * options preselects its first one so the form always starts answerable.
  */
-export const defaultFieldValues = (fields: readonly FormField[]): FormAnswer => {
-  const values: FormAnswer = {};
+export const defaultFieldValues = (fields: readonly FormField[]): Record<string, FormValue> => {
+  const values: Record<string, FormValue> = {};
   for (const field of fields) {
     switch (field.type) {
       case 'external':
@@ -110,7 +109,7 @@ export const defaultFieldValues = (fields: readonly FormField[]): FormAnswer => 
         break;
       case 'number':
       case 'integer':
-        if (field.default !== undefined) values[field.key] = field.default;
+        if (typeof field.default === 'number') values[field.key] = field.default;
         break;
       case 'multiselect':
         values[field.key] = field.default ?? [];
@@ -125,8 +124,7 @@ export const defaultFieldValues = (fields: readonly FormField[]): FormAnswer => 
 
 const isBlank = (value: FormValue | undefined): boolean => {
   if (value === undefined) return true;
-  const text = z.string().safeParse(value);
-  if (text.success) return text.data.trim().length === 0;
+  if (typeof value === 'string') return value.trim().length === 0;
   if (Array.isArray(value)) return value.length === 0;
   return false;
 };
@@ -134,7 +132,7 @@ const isBlank = (value: FormValue | undefined): boolean => {
 /** First visible required field still left blank, or `null` when the form is complete. */
 export const firstUnansweredField = (
   fields: readonly FormField[],
-  values: FormAnswer,
+  values: Record<string, FormValue>,
 ): FormField | null =>
   visibleFields(fields, values).find(
     (field) => isAnswerableField(field) && field.required === true && isBlank(values[field.key]),
@@ -147,15 +145,14 @@ export const firstUnansweredField = (
  */
 export const collectFieldAnswer = (
   fields: readonly FormField[],
-  values: FormAnswer,
-): FormAnswer => {
-  const answer: FormAnswer = {};
+  values: Record<string, FormValue>,
+): Record<string, FormValue> => {
+  const answer: Record<string, FormValue> = {};
   for (const field of visibleFields(fields, values)) {
     if (!isAnswerableField(field)) continue;
     const value = values[field.key];
     if (isBlank(value) || value === undefined) continue;
-    const text = z.string().safeParse(value);
-    answer[field.key] = text.success ? text.data.trim() : value;
+    answer[field.key] = typeof value === 'string' ? value.trim() : value;
   }
   return answer;
 };

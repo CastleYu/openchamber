@@ -47,6 +47,7 @@ describe('readCredentialsFromDb', () => {
       return;
     }
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-cred-'));
+    let cleanupError: unknown;
     try {
       const dbPath = path.join(dir, 'opencode.db');
       assert.equal(readCredentialsFromDb(dbPath), null);
@@ -75,10 +76,14 @@ describe('readCredentialsFromDb', () => {
           break;
         } catch (error) {
           // SAFETY: fs.promises.rm rejects with Node's errno-shaped filesystem error.
-          if ((error as NodeJS.ErrnoException).code !== 'EBUSY' || attempt === 39) throw error;
+          if ((error as NodeJS.ErrnoException).code !== 'EBUSY' || attempt === 39) {
+            cleanupError = error;
+            break;
+          }
           await delay(50);
         }
       }
     }
+    if (cleanupError !== undefined) throw cleanupError;
   });
 });

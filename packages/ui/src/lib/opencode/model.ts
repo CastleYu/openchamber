@@ -73,6 +73,15 @@ export type Config = ConfigDocument["info"]
 export type ConfigSource = ConfigEntry
 export type { JsonValue, ModelRef, PermissionRuleset, TokenUsageInfo }
 
+/** Prefer the catalog key; derived entries can share a wire modelID. */
+export function findCatalogModel<T extends { id: string; modelID: string }>(
+  models: readonly T[] | undefined,
+  id: string,
+): T | undefined {
+  if (!models || !id) return undefined
+  return models.find((model) => model.id === id) ?? models.find((model) => model.modelID === id)
+}
+
 /** Free-form JSON attached to sessions, messages, and prompts. */
 export type Metadata = Record<string, JsonValue>
 
@@ -199,6 +208,12 @@ export const describeMessageError = (error: MessageError): MessageErrorDescripti
   return { name: error.name, message: error.data.message }
 }
 
+/** The provider's raw response body behind a structured (v2) error, if any. */
+export const readErrorResponseBody = (error: MessageError | undefined): string | undefined => {
+  if (!error || !("type" in error)) return undefined
+  return error.response?.body.trim() || undefined
+}
+
 type MessageBase = {
   id: string
   sessionID: string
@@ -275,6 +290,8 @@ export type ShellMessage = MessageBase & {
   command: string
   status: "running" | "exited" | "timeout" | "killed"
   exit?: number
+  /** Live-only termination signal; OpenCode does not persist it. */
+  signal?: string
   output?: { output: string; cursor: number; size: number; truncated: boolean }
 }
 

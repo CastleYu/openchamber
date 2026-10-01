@@ -1,0 +1,316 @@
+/**
+ * "In work": Jev moves a session into work when real work starts in it, and
+ * says when a turn looks like the end of that work. The user closes; this
+ * runtime never does. See DOCUMENTATION.md.
+ *
+ * Two moments ask Jev:
+ * - a user message was sent (`message.updated`, role user): only while the
+ *   session is not in work, so an open session costs no call here;
+ * - a turn ended: session assist calls `evaluateTurnEnd` before it arms its
+ *   quiet window, and one call answers both this runtime's questions and
+ *   whether the Small Model is worth waking.
+ *
+ * Every failure leaves things as they were: nothing opens, no hint appears,
+ * and session assist behaves as it did without Jev.
+ */
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { z } from 'zod';
+import { readMergedSettingsSync } from '../opencode/settings-files.js';
+import { loadAssistContext, loadSettledTurns } from '../session-assist/context.js';
+import { turnsToHistory, excerptHead, excerptHeadTail } from '../routing/history.js';
+import {
+  buildSendRequest,
+  buildTurnEndRequest,
+  decideAssist,
+  decideOpen,
+  decideWrapUp,
+} from './questions.js';
+import { clearSuggestionPatch, openByJevPatch, readWork, suggestDonePatch } from './state.js';
+
+const OPENCHAMBER_SETTINGS_FILE = path.join(
+  process.env.OPENCHAMBER_DATA_DIR
+    ? path.resolve(process.env.OPENCHAMBER_DATA_DIR)
+    : path.join(os.homedir(), '.config', 'openchamber'),
+  'settings.json',
+);
+
+/** Both default on; read at every use so a change applies without a restart. */
+const readSessionWorkSettings = () => {
+  const settings = readMergedSettingsSync({ fs, path, settingsFilePath: OPENCHAMBER_SETTINGS_FILE });
+  return {
+    enabled: settings.sessionWorkEnabled !== false,
+    autoOpen: settings.sessionWorkAutoOpen !== false,
+  };
+};
+
+const READ_TIMEOUT_MS = 5_000;
+const REQUEST_CHARS = 1_500;
+const SEEN_MESSAGES_LIMIT = 500;
+
+const errorMessage = (error) => (error instanceof Error ? error.message : String(error));
+
+const userMessageSchema = z.object({
+  type: z.literal('message.updated'),
+  properties: z.object({
+    sessionID: z.string().min(1),
+    info: z.object({
+      id: z.string().min(1),
+      role: z.literal('user'),
+      text: z.string(),
+      time: z.object({ created: z.number() }).partial().optional(),
+    }),
+  }),
+});
+
+const busySchema = z.object({
+  type: z.literal('session.status'),
+  properties: z.object({ sessionID: z.string().min(1), status: z.object({ type: z.literal('busy') }) }),
+});
+
+const reviewSessionSchema = z.object({ openchamber: z.object({ kind: z.literal('review') }) });
+
+export function createSessionWorkRuntime({
+  kernelOperations,
+  /** `{ enabled, autoOpen }` as currently saved. */
+  getSettings = readSessionWorkSettings,
+  /** The classification provider's endpoint, or null when there is no Jev. */
+  classifierEndpoint,
+  jev,
+  readMetadata,
+  /** `(sessionID, decide, { directory }) => { metadata, changed }`, decided against the record at write time. */
+  updateMetadata,
+  isSessionArchived = async () => false,
+  /** Roots of managed Chats: plain conversations, never work. */
+  chatRoots = [],
+  /** `../session-lineage.js`: known subsessions are skipped without reading them. */
+  lineage = null,
+  now = Date.now,
+}) {
+  if (!kernelOperations) throw new Error('Session work requires kernel operations');
+  const resolvedChatRoots = chatRoots.filter(Boolean).map((root) => path.resolve(root));
+  const isChatDirectory = (directory) => {
+    if (!directory) return false;
+    const resolved = path.resolve(directory);
+    return resolvedChatRoots.some((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`));
+  };
+  let stopped = false;
+  const seenMessages = new Set();
+  // Sessions where this process wrote a done hint, so a new turn can retire it
+  // without reading every session's metadata at every turn start.
+  const suggested = new Map();
+  // A turn counter per session, moved by every turn start and every new user
+  // message. A turn-end check captures it before asking Jev and writes the
+  // done hint only if no newer turn began in the meantime: a late answer about
+  // the previous turn must not land on the next one.
+  // Values come from one process-wide counter, so they never repeat: a session
+  // evicted from the bounded map reads 0, which no pending check captured
+  // after a turn start, and its late answer is dropped rather than accepted.
+  const turnGenerations = new Map();
+  let lastTurnGeneration = 0;
+  let activeIdentity = '';
+  const runtimeIdentity = () => {
+    let identity;
+    try { identity = kernelOperations.captureIdentity(); } catch { return null; }
+    const key = `${identity.generation}\0${identity.endpoint}\0${identity.epoch}`;
+    if (key !== activeIdentity) {
+      activeIdentity = key;
+      seenMessages.clear();
+      suggested.clear();
+      turnGenerations.clear();
+    }
+    return identity.generation === 'oc2' ? identity : null;
+  };
+  const turnGeneration = (sessionId) => turnGenerations.get(sessionId) ?? 0;
+  const advanceTurn = (sessionId) => {
+    lastTurnGeneration += 1;
+    turnGenerations.delete(sessionId);
+    turnGenerations.set(sessionId, lastTurnGeneration);
+    while (turnGenerations.size > SEEN_MESSAGES_LIMIT) turnGenerations.delete(turnGenerations.keys().next().value);
+  };
+
+  const current = (identity) => {
+    const live = kernelOperations.captureIdentity();
+    if (live.generation !== 'oc2' || live.endpoint !== identity.endpoint || live.epoch !== identity.epoch) {
+      throw new Error('Session work runtime changed');
+    }
+  };
+
+  const readPages = (sessionId, directory, signal, identity) => async ({ limit, before }) => {
+    current(identity);
+    const page = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit, cursor: before, signal })).data;
+    current(identity);
+    const ordered = page.order === 'asc' ? page.items : [...page.items].reverse();
+    return {
+      data: ordered.filter((item) => item.role === 'user' || item.role === 'assistant').map((item) => ({
+        info: {
+          ...item.raw, id: item.id, role: item.role, parentID: item.parentID,
+          providerID: item.model?.providerID ?? item.raw.providerID,
+          modelID: item.model?.id ?? item.model?.modelID ?? item.raw.modelID,
+          time: { created: item.created, completed: item.completed },
+          finish: item.finish, error: item.error, summary: item.summary,
+        },
+        parts: item.raw.parts ?? item.raw.content ?? (item.text ? [{ type: 'text', text: item.text }] : []),
+      })),
+      response: { headers: new Headers(page.cursor?.next ? { 'x-next-cursor': page.cursor.next } : {}) },
+    };
+  };
+
+  /**
+   * The session record when it is one this feature serves: a top-level,
+   * unarchived project session that is not a review of another one. Chats
+   * are plain conversations and never in work. Null otherwise.
+   */
+  const eligibleSession = async (sessionId, directory, signal, identity) => {
+    current(identity);
+    const session = (await kernelOperations.getSession({ sessionID: sessionId, directory, signal })).data;
+    current(identity);
+    if (session?.id === sessionId) lineage?.remember(sessionId, session.parentID ?? null);
+    if (session?.id !== sessionId || session.parentID) return null;
+    if (isChatDirectory(session.directory)) return null;
+    if (reviewSessionSchema.safeParse(session.metadata).success) return null;
+    if (await isSessionArchived(sessionId)) return null;
+    return session;
+  };
+
+  const markSuggested = (sessionId, directory) => {
+    suggested.delete(sessionId);
+    suggested.set(sessionId, directory);
+    while (suggested.size > SEEN_MESSAGES_LIMIT) suggested.delete(suggested.keys().next().value);
+  };
+
+  const onUserMessage = async ({ sessionId, directory, messageId, text, createdAt }) => {
+    const identity = runtimeIdentity();
+    if (!identity) return;
+    const settings = getSettings();
+    if (!settings.enabled || !settings.autoOpen || !text.trim()) return;
+    if (seenMessages.has(messageId)) return;
+    seenMessages.add(messageId);
+    while (seenMessages.size > SEEN_MESSAGES_LIMIT) seenMessages.delete(seenMessages.values().next().value);
+
+    const endpoint = await classifierEndpoint();
+    if (!endpoint) return;
+    current(identity);
+    const signal = AbortSignal.timeout(READ_TIMEOUT_MS);
+    const session = await eligibleSession(sessionId, directory, signal, identity);
+    if (!session) return;
+    if (readWork(await readMetadata(sessionId, directory))?.state === 'open') return;
+    current(identity);
+
+    const turns = await loadSettledTurns({ readPage: readPages(sessionId, directory, signal, identity), signal });
+    current(identity);
+    const { answers } = await jev.ask(
+      buildSendRequest({ history: turnsToHistory(turns), request: excerptHead(text.trim(), REQUEST_CHARS) }),
+      endpoint,
+    );
+    if (stopped || !decideOpen(answers)) return;
+    current(identity);
+    await updateMetadata(sessionId, (metadata) => openByJevPatch(metadata, { requestAt: createdAt, now: now() }), { directory });
+  };
+
+  const retireSuggestion = (sessionId) => {
+    if (!suggested.has(sessionId)) return;
+    const directory = suggested.get(sessionId);
+    suggested.delete(sessionId);
+    Promise.resolve(updateMetadata(sessionId, clearSuggestionPatch, { directory }))
+      .catch((error) => console.warn('[session-work] could not retire a done hint:', errorMessage(error)));
+  };
+
+  const processPayload = (payload, directoryHint = '') => {
+    if (stopped || !runtimeIdentity()) return;
+    const busy = busySchema.safeParse(payload);
+    if (busy.success) {
+      advanceTurn(busy.data.properties.sessionID);
+      retireSuggestion(busy.data.properties.sessionID);
+      return;
+    }
+    const message = userMessageSchema.safeParse(payload);
+    if (!message.success) return;
+    const { sessionID, info } = message.data.properties;
+    // A subsession is never in work: no read, no Jev.
+    if (lineage?.isChild(sessionID) === true) return;
+    if (!seenMessages.has(info.id)) advanceTurn(sessionID);
+    const directory = payload.properties?.directory || directoryHint;
+    void onUserMessage({
+      sessionId: sessionID,
+      directory,
+      messageId: info.id,
+      text: info.text,
+      createdAt: info.time?.created ?? now(),
+    }).catch((error) => console.warn('[session-work] could not check a sent message:', errorMessage(error)));
+  };
+
+  /**
+   * One Jev call when a turn ended. `assist` says which assist fields the user
+   * has on. Resolves which of them are worth the Small Model, or null when Jev
+   * was not asked about them (no Jev, a failure, an ineligible session): the
+   * caller then behaves as it always did.
+   */
+  const evaluateTurnEnd = async ({ sessionId, directory, assist }) => {
+    if (stopped || lineage?.isChild(sessionId) === true) return null;
+    const identity = runtimeIdentity();
+    if (!identity) return null;
+    const settings = getSettings();
+    if (!settings.enabled && !assist.recap && !assist.suggestion) return null;
+    // Never capture 0: an evicted session also reads 0.
+    if (!turnGenerations.has(sessionId)) advanceTurn(sessionId);
+    const generation = turnGeneration(sessionId);
+    try {
+      const endpoint = await classifierEndpoint();
+      if (!endpoint) return null;
+      current(identity);
+      const signal = AbortSignal.timeout(READ_TIMEOUT_MS);
+      const session = await eligibleSession(sessionId, directory, signal, identity);
+      if (!session || session.revert?.messageID) return null;
+      const work = settings.enabled ? readWork(await readMetadata(sessionId, directory)) : null;
+      current(identity);
+      const ask = {
+        open: settings.enabled && settings.autoOpen && work?.state !== 'open',
+        wrapUp: settings.enabled && work?.state === 'open',
+        recap: assist.recap,
+        nextStep: assist.suggestion,
+      };
+      const context = await loadAssistContext({ readPage: readPages(sessionId, directory, signal, identity), signal });
+      if (!context) return null;
+      const turn = context.turns.at(-1);
+      const request = buildTurnEndRequest({
+        history: turnsToHistory(context.turns.slice(0, -1)),
+        request: excerptHead(turn.user.text, REQUEST_CHARS),
+        answer: excerptHeadTail(turn.assistant.text, 300, 300),
+        ask,
+      });
+      if (!request) return null;
+      const { answers } = await jev.ask(request, endpoint);
+      if (stopped) return null;
+      current(identity);
+      if (ask.open && decideOpen(answers)) {
+        const requestAt = turn.user.created ?? now();
+        await updateMetadata(sessionId, (metadata) => openByJevPatch(metadata, { requestAt, now: now() }), { directory });
+      }
+      if (ask.wrapUp && decideWrapUp(answers)) {
+        // Decided at write time: a turn that started while Jev was answering
+        // makes this answer about an older turn.
+        const { changed } = await updateMetadata(
+          sessionId,
+          (metadata) => (turnGeneration(sessionId) === generation ? suggestDonePatch(metadata, { now: now() }) : null),
+          { directory },
+        );
+        if (changed) markSuggested(sessionId, directory);
+      }
+      return ask.recap || ask.nextStep ? decideAssist(answers) : null;
+    } catch (error) {
+      console.warn('[session-work] turn-end check failed:', errorMessage(error));
+      return null;
+    }
+  };
+
+  const stop = () => {
+    stopped = true;
+    seenMessages.clear();
+    suggested.clear();
+    turnGenerations.clear();
+  };
+
+  return { processPayload, evaluateTurnEnd, stop };
+}

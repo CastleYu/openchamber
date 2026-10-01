@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { ensureChatsRootDirectory } from '@/lib/chatDirectories';
 import { opencodeClient } from '@/lib/opencode/client';
 import type { Session } from '@/lib/opencode/model';
+import type { SpaceMark } from '@/lib/spaces/spaces-store';
 import { filterManagedChatsForRuntime, listGlobalSessionPages, splitGlobalSessionsByArchived, type SessionPager } from './globalSessions';
 
 type Page = Awaited<ReturnType<SessionPager['listSessionsPage']>>;
@@ -34,6 +35,17 @@ describe('managed Chats runtime visibility', () => {
 });
 
 describe('listGlobalSessionPages', () => {
+  test('publishes Space marks only from the first completed page', async () => {
+    const first = { id: 'abcdef123456', name: 'Space', state: 'complete' as const,
+      projectDirectory: '/repo', directory: '/spaces/abcdef123456/repo' };
+    const second = { ...first, state: 'stale' as const };
+    const seen: Array<SpaceMark[] | null> = [];
+    await listGlobalSessionPages(pager(
+      { sessions: [session('first')], cursor: { next: 'more' }, spaces: [first] },
+      { sessions: [session('second')], cursor: {}, spaces: [second] },
+    ), { archived: false, pageSize: 1, onSpaces: (marks) => seen.push(marks) });
+    expect(seen).toEqual([[first]]);
+  });
   test('passes opaque cursors without deriving them from timestamps', async () => {
     const calls: Options[] = [];
     const client: SessionPager = { listSessionsPage: async (options) => {

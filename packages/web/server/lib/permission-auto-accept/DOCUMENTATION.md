@@ -6,9 +6,9 @@ This module owns the authoritative permission auto-accept policy for web, deskto
 
 ## Policy
 
-`permissionAutoAccept.sessions` contains explicit per-session boolean policies.
+`permissionAutoAccept.sessions` in OpenChamber settings retains explicit OC1 boolean policies. The separate `permission-modes.json` file owns OC2 `ask`, `safety`, and `auto` values. OC2 reads a mode first and can interpret an older boolean without rewriting the OC1 record. A failed mode write leaves both records intact. Server composition passes the OpenChamber `dataDir` to the runtime.
 
-Policy inheritance uses the nearest explicit session value. A child `false` therefore overrides a parent `true`; descendants without an explicit value inherit from their nearest configured ancestor.
+Policy inheritance uses the nearest explicit session value. A child `false` or `ask` overrides an accepting parent. Defaults are written only for newly created OC2 root sessions; children inherit their parent's explicit policy.
 
 ## Runtime
 
@@ -21,15 +21,11 @@ permission list and reply contract; OC2 uses the session-scoped permission
 request list and reply with `decision`. Session lineage reads use the same
 generation. The runtime captures endpoint and epoch before resolving lineage
 or consulting the safety net, and rejects a reply if either changes. A
-generation switch also clears the cached session lineage.
+generation switch also clears cached session lineage, in-flight work, and reply outcomes.
 
 ## Safety net
 
-`evaluatePermission` (the routing runtime, `../routing/DOCUMENTATION.md`) is
-consulted after the policy check and before the reply. `hold` counts the
-request as handled without replying, so it stays on screen; `accept` replies as
-before. A `permission.replied` event is passed to `onPermissionReplied` so the
-routing runtime forgets its cached decision.
+`evaluatePermission` (the routing runtime, `../routing/DOCUMENTATION.md`) is consulted after the policy check. OC1 keeps its global-switch evaluator and accept-on-classifier-failure result. OC2 `auto` replies without classification. OC2 `safety` replies only after an explicit `accept` verdict; a missing provider, classifier failure, or `hold` leaves the request for the user. `isPermissionAutoAnswered` separates a replied request from a held one for notification ownership. A `permission.replied` event clears the outcome and routing decision.
 
 ## Routes
 

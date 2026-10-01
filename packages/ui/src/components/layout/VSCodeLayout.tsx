@@ -19,7 +19,7 @@ import { SessionSwitcherDropdown } from '@/components/session/SessionSwitcherDro
 import { SessionsTabTitle } from '@/components/session/SessionsTabTitle';
 import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useSessionDisplayStore } from '@/stores/useSessionDisplayStore';
-import { getVSCodeBootstrapWorkspaceFolder } from '@/lib/vscodeBootstrap';
+import { getVSCodeBootstrapConfig, getVSCodeBootstrapWorkspaceFolder } from '@/lib/vscodeBootstrap';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -41,14 +41,17 @@ import { formatQuotaValueLabel, formatQuotaResetLabel, formatWindowLabel, QUOTA_
 import { useQuotaAutoRefresh, useQuotaStore } from '@/stores/useQuotaStore';
 import { updateDesktopSettings } from '@/lib/persistence';
 import { formatTimeForPreference } from '@/lib/timeFormat';
-import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
+import { useOnDemandComponent } from '@/hooks/useOnDemandComponent';
 import type { Session } from '@/lib/opencode/model';
 import type { UsageWindow } from '@/types';
 import type { SessionContextUsage } from '@/stores/types/sessionTypes';
 import { useUIStore, type TimeFormatPreference } from '@/stores/useUIStore';
 import { useSessionListSync } from '@/components/session/sidebar/list/useSessionListSync';
+import { opencodeClient } from '@/lib/opencode/client';
 
-const SettingsView = lazyWithChunkRecovery(() => import('@/components/views/SettingsView').then(m => ({ default: m.SettingsView })));
+const loadSettingsView = () => import('@/components/views/SettingsView').then((module) => module.SettingsView);
+const loadRunOverview = () => import('@/components/multirun/RunOverview').then((module) => module.RunOverview);
+const loadRunAutoFusion = () => import('@/lib/multirun/autoFusion').then((module) => module.RunAutoFusion);
 
 const formatTime = (timestamp: number | null, timeFormatPreference: TimeFormatPreference) => {
   if (!timestamp) return '-';
@@ -106,6 +109,7 @@ export const VSCodeLayout: React.FC = () => {
   const bootstrapWorkspaceFolder = React.useMemo<string | null>(() => {
     return getVSCodeBootstrapWorkspaceFolder();
   }, []);
+  const initialParallelComposer = React.useMemo(() => getVSCodeBootstrapConfig()?.initialComposer === 'parallel', []);
 
   const hasAppliedInitialSession = React.useRef(false);
 
@@ -258,10 +262,23 @@ export const VSCodeLayout: React.FC = () => {
   }, [currentSessionId, newSessionDraftOpen, currentView, viewMode, isSyncingMessages, hasActiveSessionWork]);
 
   const handleBackToSessions = React.useCallback(() => {
+    useUIStore.getState().setRunOverviewKey(null);
     setCurrentView('sessions');
   }, []);
 
+  const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const runOverviewKey = useUIStore((state) => state.runOverviewKey);
+  React.useEffect(() => {
+    if (isOc2 && runOverviewKey) setCurrentView((view) => view === 'sessions' ? 'chat' : view);
+  }, [isOc2, runOverviewKey]);
+  React.useEffect(() => useSessionUIStore.subscribe((state, previous) => {
+    if (state.currentSessionId && state.currentSessionId !== previous.currentSessionId) {
+      useUIStore.getState().setRunOverviewKey(null);
+    }
+  }), []);
+
   const handleSessionSelected = React.useCallback(() => {
+    useUIStore.getState().setRunOverviewKey(null);
     setCurrentView('chat');
   }, []);
 
@@ -457,6 +474,9 @@ export const VSCodeLayout: React.FC = () => {
     if (!initialSessionId) {
       hasAppliedInitialSession.current = true;
       openNewSessionDraft({ automatic: true, directoryOverride: bootstrapWorkspaceFolder });
+      if (initialParallelComposer && opencodeClient.getBoundRuntime()?.generation === 'oc2') {
+        useUIStore.getState().requestParallelComposer();
+      }
       return;
     }
 
@@ -466,7 +486,7 @@ export const VSCodeLayout: React.FC = () => {
 
     hasAppliedInitialSession.current = true;
     void useSessionUIStore.getState().setCurrentSession(initialSessionId);
-  }, [bootstrapWorkspaceFolder, connectionStatus, hasInitializedOnce, initialSessionExists, initialSessionId, openNewSessionDraft, viewMode]);
+  }, [bootstrapWorkspaceFolder, connectionStatus, hasInitializedOnce, initialParallelComposer, initialSessionExists, initialSessionId, openNewSessionDraft, viewMode]);
 
   // Track container width for responsive settings layout
   React.useEffect(() => {
@@ -488,6 +508,15 @@ export const VSCodeLayout: React.FC = () => {
 
   const usesMobileLayout = containerWidth > 0 && containerWidth < MOBILE_WIDTH_THRESHOLD;
   const usesExpandedLayout = containerWidth >= EXPANDED_LAYOUT_THRESHOLD;
+
+  const closeSettings = () => {
+    const previousView = viewBeforeSettingsRef.current;
+    viewBeforeSettingsRef.current = null;
+    setCurrentView(previousView ?? (usesExpandedLayout ? 'chat' : 'sessions'));
+  };
+  const SettingsView = useOnDemandComponent(currentView === 'settings', loadSettingsView, closeSettings);
+  const RunOverview = useOnDemandComponent(isOc2 && Boolean(runOverviewKey), loadRunOverview, () => useUIStore.getState().setRunOverviewKey(null));
+  const RunAutoFusion = useOnDemandComponent(isOc2, loadRunAutoFusion, () => {});
 
   const clampExpandedSidebarWidth = React.useCallback((value: number) => {
     return Math.min(SESSIONS_SIDEBAR_MAX_WIDTH, Math.max(SESSIONS_SIDEBAR_MIN_WIDTH, value));
@@ -552,24 +581,21 @@ export const VSCodeLayout: React.FC = () => {
             showRateLimits
             enableSessionSwitcher
           />
-          <div className="flex-1 overflow-hidden">
+          <div className="relative flex-1 overflow-hidden">
             <ErrorBoundary>
-              <ChatView />
+              <ChatView active={!isOc2 || !runOverviewKey} />
             </ErrorBoundary>
+            {isOc2 && runOverviewKey && RunOverview ? <ErrorBoundary><RunOverview /></ErrorBoundary> : null}
           </div>
         </div>
       ) : currentView === 'settings' ? (
         // Settings view
-        <React.Suspense fallback={null}>
+        SettingsView ? (
           <SettingsView
-            onClose={() => {
-              const previousView = viewBeforeSettingsRef.current;
-              viewBeforeSettingsRef.current = null;
-              setCurrentView(previousView ?? (usesExpandedLayout ? 'chat' : 'sessions'));
-            }}
+            onClose={closeSettings}
             forceMobile={usesMobileLayout}
           />
-        </React.Suspense>
+        ) : null
       ) : usesExpandedLayout ? (
         // Expanded layout: sessions sidebar + chat side by side
         <div className="flex h-full">
@@ -606,10 +632,11 @@ export const VSCodeLayout: React.FC = () => {
               showRateLimits
               enableSessionSwitcher
             />
-            <div className="flex-1 overflow-hidden">
+            <div className="relative flex-1 overflow-hidden">
               <ErrorBoundary>
-                <ChatView active={currentView === 'chat'} />
+                <ChatView active={currentView === 'chat' && (!isOc2 || !runOverviewKey)} />
               </ErrorBoundary>
+              {isOc2 && runOverviewKey && RunOverview ? <ErrorBoundary><RunOverview /></ErrorBoundary> : null}
             </div>
           </div>
         </div>
@@ -644,15 +671,17 @@ export const VSCodeLayout: React.FC = () => {
               showRateLimits
               enableSessionSwitcher
             />
-            <div className="flex-1 overflow-hidden">
+            <div className="relative flex-1 overflow-hidden">
               <ErrorBoundary>
-                <ChatView active={currentView === 'chat'} />
+                <ChatView active={currentView === 'chat' && (!isOc2 || !runOverviewKey)} />
               </ErrorBoundary>
+              {isOc2 && runOverviewKey && RunOverview ? <ErrorBoundary><RunOverview /></ErrorBoundary> : null}
             </div>
           </div>
         </>
       )}
       <SessionDialogs />
+      {isOc2 && RunAutoFusion ? <RunAutoFusion /> : null}
       </div>
     </>
   );

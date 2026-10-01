@@ -13,6 +13,7 @@ import {
   GUEST_GENERATE_TEXT_MAX,
   GUEST_FILE_CONTENT_MAX,
   GUEST_FILE_PATH_MAX,
+  guestFramePolicy,
   isGuestRequestPath,
   requestedGuestCapabilities,
   resolveIntegrationAuth,
@@ -20,6 +21,7 @@ import {
 
 import {
   findInstalledGuest,
+  hasGuestFrame,
   isGuestPanelId,
   listInstalledGuests,
   resolveGuestServedFile,
@@ -88,6 +90,10 @@ const requestBodySchema = z.object({
   body: z.string().max(64_000).optional(),
 });
 
+const serviceRequestBodySchema = requestBodySchema.extend({
+  viewerId: z.string().min(1).max(128).optional(),
+});
+
 const fileBodySchema = z.object({
   op: z.enum(['read', 'write', 'list', 'stat']),
   path: z.string().min(1).max(GUEST_FILE_PATH_MAX),
@@ -99,6 +105,9 @@ const generateBodySchema = z.object({
   system: z.string().trim().min(1).max(GUEST_GENERATE_SYSTEM_MAX).optional(),
   maxOutputTokens: z.number().int().min(1).max(GUEST_GENERATE_OUTPUT_TOKENS_MAX).optional(),
 });
+
+const providerHeaderSchema = z.string().trim().min(1).max(200);
+const guestHostSchema = z.string().regex(/^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/);
 
 const socketOverrideBodySchema = z.object({
   id: z.string().trim().regex(/^[a-z][a-z0-9-]*$/).max(64),
@@ -176,6 +185,10 @@ const sendInstallResult = (res, result) => {
     if (result.code === 'host-too-old' && result.required) {
       body.required = result.required;
     }
+    if (result.code === 'enterprise-mode') {
+      body.capabilities = result.capabilities;
+      return res.status(403).json(body);
+    }
     if (conflict && result.id) {
       body.id = result.id;
     }
@@ -196,24 +209,32 @@ export const registerGuestRoutes = (app, {
   resolveOptionalProjectDirectory,
   getSmallModelService,
   onGuestDeactivated = async () => false,
+  surfaceViewerHeaders = () => null,
+  isOc2 = () => false,
 }) => {
   const persistPath = extensionsPersistPath(openchamberDataDir);
   const authPath = guestAuthPersistPath(openchamberDataDir);
   const versionOptions = { openchamberVersion };
   const installOptions = () => ({ openchamberVersion, gitBinary: resolveGitBinaryForSpawn() });
+  const runtimeGuest = (guest) => guest && !isOc2() ? {
+    ...guest,
+    origins: [],
+    fileEditors: [],
+    capabilityGrants: (guest.capabilityGrants ?? []).filter((capability) => capability !== 'origins'),
+  } : guest;
 
   const loadGuest = async (id) => {
     if (!isGuestPanelId(id)) {
       return null;
     }
-    return findInstalledGuest(id, persistPath);
+    return runtimeGuest(await findInstalledGuest(id, persistPath));
   };
 
   app.get('/api/guests', async (_req, res) => {
     try {
       const guests = await listInstalledGuests({ persistPath });
       res.json({
-        guests: guests.map((guest) => toPublicGuest(withGuestUpdate(guest, persistPath))),
+        guests: guests.map((guest) => toPublicGuest(runtimeGuest(withGuestUpdate(guest, persistPath)))),
       });
     } catch (error) {
       console.error('Failed to list guests:', error);
@@ -547,7 +568,7 @@ export const registerGuestRoutes = (app, {
       if (!guest?.service) {
         return res.status(404).json({ error: 'not-found' });
       }
-      const parsed = requestBodySchema.safeParse(req.body);
+      const parsed = serviceRequestBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: 'invalid-request' });
       }
@@ -562,6 +583,7 @@ export const registerGuestRoutes = (app, {
         path: parsed.data.path,
         query: parsed.data.query,
         body: parsed.data.body,
+        headers: parsed.data.viewerId ? surfaceViewerHeaders(guest.id, parsed.data.viewerId) ?? undefined : undefined,
       });
       res.json(result);
     } catch (error) {
@@ -580,7 +602,7 @@ export const registerGuestRoutes = (app, {
     try {
       const result = await runGuestStorage(persistPath, req.params.id, parsed.data, async () => {
         const guest = await loadGuest(req.params.id);
-        if (!guest || guest.enabled === false || (!guest.entry && !guest.backgroundEntry)) throw new Error('Extension is unavailable.');
+        if (!guest || guest.enabled === false || !hasGuestFrame(guest)) throw new Error('Extension is unavailable.');
         if (!requestedGuestCapabilities(guest).every((capability) => guest.capabilityGrants.includes(capability))) throw new Error('Extension needs approval.');
       });
       return res.json(result);
@@ -652,6 +674,7 @@ export const registerGuestRoutes = (app, {
         return res.status(400).json({ error: 'invalid-request' });
       }
       const { directory } = await resolveOptionalProjectDirectory(req);
+      const provider = providerHeaderSchema.safeParse(req.get('x-openchamber-provider'));
       const { generateSmallModelText } = await getSmallModelService();
       let generated;
       try {
@@ -660,6 +683,7 @@ export const registerGuestRoutes = (app, {
           system: parsed.data.system,
           maxOutputTokens: parsed.data.maxOutputTokens,
           directory: directory || undefined,
+          preferredProviderID: provider.success ? provider.data : undefined,
         });
       } catch (error) {
         const statusCode = Number(error?.statusCode) || 500;
@@ -711,6 +735,9 @@ export const registerGuestRoutes = (app, {
       // partial grant would leave the guest half-working, so both are refused.
       const requested = requestedGuestCapabilities(guest);
       const granted = parsed.data.granted;
+      if (guest.enterpriseBlocked?.some((capability) => granted.includes(capability))) {
+        return res.status(403).json({ error: 'enterprise-mode', capabilities: guest.enterpriseBlocked });
+      }
       const matchesRequest = granted.length === requested.length && requested.every((capability) => granted.includes(capability));
       if (granted.length > 0 && !matchesRequest) {
         return res.status(400).json({ error: 'invalid-request' });
@@ -802,7 +829,8 @@ export const registerGuestRoutes = (app, {
       if (!isGuestPanelId(id)) {
         return res.status(404).end();
       }
-      const guest = await findInstalledGuest(id, persistPath);
+      const installed = await findInstalledGuest(id, persistPath);
+      const guest = runtimeGuest(installed);
       if (!guest) {
         return res.status(404).end();
       }
@@ -813,8 +841,11 @@ export const registerGuestRoutes = (app, {
       } catch {
         return res.status(404).end();
       }
+      const editorEntry = installed.fileEditors?.some((editor) => editor.entry === relativePath);
+      const sharedEntry = [guest.entry, guest.backgroundEntry, guest.attachEntry, guest.pageEntry, guest.statusEntry].includes(relativePath);
+      if (!isOc2() && editorEntry && !sharedEntry) return res.status(404).end();
       const served = await resolveGuestServedFile(guest.packageRoot, relativePath, {
-        hasRuntime: Boolean(guest.entry || guest.backgroundEntry),
+        hasRuntime: hasGuestFrame(guest),
       });
       if (!served) {
         return res.status(404).end();
@@ -834,10 +865,18 @@ export const registerGuestRoutes = (app, {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Cache-Control', 'no-store');
       // Guest files are third-party code served from the OpenChamber origin.
-      // The rail embeds them in a sandboxed iframe; this header makes the
+      // The rail embeds them in a sandboxed iframe; `sandbox` makes the
       // document sandboxed even when opened directly, so a guest page can
-      // never run with the user's session on the app origin.
-      res.setHeader('Content-Security-Policy', 'sandbox allow-scripts');
+      // never run with the user's session on the app origin. Its connection
+      // sources stay on this guest's route and approved origins.
+      const hostHeader = guestHostSchema.safeParse(req.headers.host);
+      const host = hostHeader.success ? hostHeader.data : null;
+      const connectSource = host ? `${host}/api/guests/${id}/` : null;
+      const origins = guest.capabilityGrants?.includes('origins') && Array.isArray(guest.origins) ? guest.origins : [];
+      res.setHeader('Content-Security-Policy', `sandbox allow-scripts; ${guestFramePolicy(connectSource, origins)}`);
+      if (!res.getHeader('Access-Control-Allow-Origin')) {
+        res.setHeader('Access-Control-Allow-Origin', 'null');
+      }
       res.send(body);
     } catch (error) {
       console.error('Failed to serve guest asset:', error);

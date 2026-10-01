@@ -12,6 +12,7 @@ import {
 } from '@/components/sections/shared/SettingsSection';
 import { isDesktopShell, requestFileAccess } from '@/lib/desktop';
 import { loadDesktopSettings, updateDesktopSettings } from '@/lib/persistence';
+import { restartOpenCodeWithFeedback } from '@/lib/restartOpenCode';
 import { recordDeferredOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
@@ -49,10 +50,6 @@ export const OpenCodeCliSettings: React.FC = () => {
   }, []);
 
   const handleBrowse = React.useCallback(async () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
     if (!isDesktopShell()) {
       return;
     }
@@ -144,7 +141,7 @@ export const OpenCodeCliSettings: React.FC = () => {
             />
           )}
 
-          <div className="flex justify-start py-1.5">
+          <div className="flex flex-wrap justify-start gap-2 py-1.5" data-settings-item="sessions.opencode-restart">
             <Button
               type="button"
               size="xs"
@@ -153,6 +150,14 @@ export const OpenCodeCliSettings: React.FC = () => {
               className="shrink-0 !font-normal"
             >
               {isSaving ? t('settings.common.actions.saving') : t('settings.common.actions.saveChanges')}
+            </Button>
+            <Button type="button" variant="outline" size="xs" disabled={isLoading || isSaving}
+              onClick={async () => {
+                setIsSaving(true);
+                try { await restartOpenCodeWithFeedback(t); }
+                finally { setIsSaving(false); }
+              }}>
+              {t('settings.openchamber.opencodeCli.actions.restart')}
             </Button>
           </div>
         </SettingsInset>

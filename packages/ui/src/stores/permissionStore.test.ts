@@ -28,6 +28,24 @@ describe('permission store server policy', () => {
     expect(usePermissionStore.getState().autoAccept).toEqual({ root: true });
   });
 
+  test('keeps an explicit OC2 ask mode over an inherited legacy auto policy', async () => {
+    fetchImpl = async () => json({ sessions: { root: true, child: false }, modes: { child: 'ask' }, revision: 2 });
+    await usePermissionStore.getState().hydrate();
+    expect(usePermissionStore.getState().modes).toEqual({ child: 'ask' });
+    expect(usePermissionStore.getState().getSessionMode('child')).toBe('ask');
+  });
+
+  test('sends an OC2 mode without rewriting the legacy boolean policy', async () => {
+    let body: unknown;
+    fetchImpl = async (_input, init) => {
+      body = JSON.parse(String(init?.body));
+      return json({ sessions: { root: true }, modes: { root: 'safety' }, revision: 1 });
+    };
+    await usePermissionStore.getState().setSessionMode('root', 'safety');
+    expect(body).toEqual({ mode: 'safety', directory: '/project' });
+    expect(usePermissionStore.getState().modes).toEqual({ root: 'safety' });
+  });
+
   test('preserves previous state when hydration fails', async () => {
     usePermissionStore.setState({ autoAccept: { root: true }, loaded: true });
     fetchImpl = async () => json({}, 503);

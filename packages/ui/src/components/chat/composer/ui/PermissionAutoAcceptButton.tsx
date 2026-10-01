@@ -12,6 +12,7 @@ import { Icon } from '@/components/icon/Icon';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import type { PermissionMode } from '@/stores/utils/permissionAutoAccept';
 
 type PermissionAutoAcceptButtonProps = {
     footerIconButtonClass: string;
@@ -19,6 +20,8 @@ type PermissionAutoAcceptButtonProps = {
     isInteractive: boolean;
     permissionAutoAcceptEnabled: boolean;
     handlePermissionAutoAcceptToggle: () => void;
+    permissionMode?: PermissionMode;
+    handlePermissionModeCycle?: () => void;
     withTooltip?: boolean;
 };
 
@@ -30,20 +33,30 @@ export const PermissionAutoAcceptButton = React.memo(function PermissionAutoAcce
         isInteractive,
         permissionAutoAcceptEnabled,
         handlePermissionAutoAcceptToggle,
+        permissionMode,
+        handlePermissionModeCycle,
         withTooltip = false,
     } = props;
 
-    const ariaLabel = permissionAutoAcceptEnabled
+    const legacyLabel = permissionAutoAcceptEnabled
         ? t('chat.chatInput.permissionAutoAccept.disable')
         : t('chat.chatInput.permissionAutoAccept.enable');
-    const tooltipLabel = permissionAutoAcceptEnabled
+    const legacyTooltip = permissionAutoAcceptEnabled
         ? t('chat.chatInput.permissionAutoAccept.on')
         : t('chat.chatInput.permissionAutoAccept.off');
+    const activeMode = handlePermissionModeCycle ? permissionMode : undefined;
+    const ariaLabel = activeMode === 'safety' ? t('chat.chatInput.permissionMode.safety')
+        : activeMode === 'auto' ? t('chat.chatInput.permissionMode.auto')
+            : activeMode === 'ask' ? t('chat.chatInput.permissionMode.ask') : legacyLabel;
+    const tooltipLabel = activeMode ? ariaLabel : legacyTooltip;
+    const icon = activeMode === 'ask' ? 'shield-user' : activeMode === 'safety' ? 'shield-star' : 'shield-check';
+    const color = activeMode === 'safety' ? 'var(--status-success)'
+        : activeMode === 'auto' || (!activeMode && permissionAutoAcceptEnabled) ? 'var(--status-info)' : undefined;
 
     const button = (
         <button
             type="button"
-            onClick={handlePermissionAutoAcceptToggle}
+            onClick={activeMode ? handlePermissionModeCycle : handlePermissionAutoAcceptToggle}
             className={cn(
                 footerIconButtonClass,
                 'rounded-md hover:bg-transparent',
@@ -58,15 +71,11 @@ export const PermissionAutoAcceptButton = React.memo(function PermissionAutoAcce
                     event.stopPropagation();
                 }
             }}
-            aria-pressed={permissionAutoAcceptEnabled}
+            aria-pressed={activeMode ? activeMode !== 'ask' : permissionAutoAcceptEnabled}
             aria-label={ariaLabel}
             title={ariaLabel}
         >
-            {permissionAutoAcceptEnabled ? (
-                <Icon name="shield-check" className={cn(iconSizeClass)} style={{ color: 'var(--status-info)' }} />
-            ) : (
-                <Icon name="shield-user" className={cn(iconSizeClass)} />
-            )}
+            <Icon name={icon} className={cn(iconSizeClass)} style={color ? { color } : undefined} />
         </button>
     );
 

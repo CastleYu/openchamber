@@ -28,6 +28,7 @@ import {
   observeWorktreeTopology,
   populateWorktreeWithLockRecovery,
   removeWorktree,
+  snapshotWorktree,
   resolvePrimaryWorktreeRoot,
   resolveWorktreeTopLevel,
   resetToCommit,
@@ -1210,6 +1211,14 @@ describe('createWorktree', () => {
         }
       }, { timeout: 5_000 }).not.toBe('');
 
+      // The hook writes its marker before Git and the asynchronous bootstrap
+      // release their handles. Wait for the real ready state before afterEach
+      // removes the scratch repository on Windows.
+      await expect.poll(
+        async () => (await getWorktreeBootstrapStatus(created.path)).status,
+        { timeout: 5_000 },
+      ).toBe('ready');
+
       const [previousHead, newHead, flag, cwd] = fs.readFileSync(hookLog, 'utf8').split('|');
       expect(previousHead).toBe('0000000000000000000000000000000000000000');
       expect(newHead).toBe(head);
@@ -1535,6 +1544,98 @@ describe('createWorktree', () => {
     }
   }, 30_000);
 
+  describe('from a local base branch', () => {
+    const withDataHome = async (run) => {
+      const previousXdgDataHome = process.env.XDG_DATA_HOME;
+      process.env.XDG_DATA_HOME = createTempDir();
+      try {
+        await run();
+      } finally {
+        if (previousXdgDataHome === undefined) {
+          delete process.env.XDG_DATA_HOME;
+        } else {
+          process.env.XDG_DATA_HOME = previousXdgDataHome;
+        }
+      }
+    };
+
+    // The repository sits on `next` with a local `main` tracking origin/main;
+    // a teammate then pushes one commit to main that was never pulled.
+    const createRepositoryBehindItsRemote = () => {
+      const { remote, repository } = createRepositoryWithRemote({ defaultBranch: 'main' });
+      runGit(repository, ['branch', '--track', 'main', 'origin/main']);
+      const teammate = createTempDir();
+      runGit(teammate, ['clone', remote, '.']);
+      runGit(teammate, ['config', 'user.email', 'teammate@example.com']);
+      runGit(teammate, ['config', 'user.name', 'Teammate']);
+      fs.writeFileSync(path.join(teammate, 'pushed.txt'), 'pushed\n');
+      runGit(teammate, ['add', 'pushed.txt']);
+      runGit(teammate, ['commit', '-m', 'pushed later']);
+      runGit(teammate, ['push', 'origin', 'HEAD:main']);
+      return { repository, pushedHead: runGit(teammate, ['rev-parse', 'HEAD']).trim() };
+    };
+
+    it('starts from the freshly fetched upstream when nothing is unpublished', async () => {
+      if (!canRunGit()) return;
+      await withDataHome(async () => {
+        const { repository, pushedHead } = createRepositoryBehindItsRemote();
+        const localMain = runGit(repository, ['rev-parse', 'main']).trim();
+
+        const created = await createWorktree(repository, {
+          mode: 'new',
+          branchName: 'openchamber/fresh-base',
+          worktreeName: 'fresh-base',
+          startRef: 'main',
+        });
+
+        expect(created.sourceFetchFailed).toBeUndefined();
+        expect(runGit(created.path, ['rev-parse', 'HEAD']).trim()).toBe(pushedHead);
+        expect(runGit(repository, ['rev-parse', 'main']).trim()).toBe(localMain);
+      });
+    }, 30_000);
+
+    it('keeps the local branch when it has unpublished commits', async () => {
+      if (!canRunGit()) return;
+      await withDataHome(async () => {
+        const { repository } = createRepositoryBehindItsRemote();
+        runGit(repository, ['checkout', 'main']);
+        fs.writeFileSync(path.join(repository, 'local.txt'), 'local\n');
+        runGit(repository, ['add', 'local.txt']);
+        runGit(repository, ['commit', '-m', 'unpublished']);
+        runGit(repository, ['checkout', 'next']);
+        const localMain = runGit(repository, ['rev-parse', 'main']).trim();
+
+        const created = await createWorktree(repository, {
+          mode: 'new',
+          branchName: 'openchamber/local-base',
+          worktreeName: 'local-base',
+          startRef: 'main',
+        });
+
+        expect(runGit(created.path, ['rev-parse', 'HEAD']).trim()).toBe(localMain);
+      });
+    }, 30_000);
+
+    it('keeps the local branch and reports it when the fetch fails', async () => {
+      if (!canRunGit()) return;
+      await withDataHome(async () => {
+        const { repository } = createRepositoryBehindItsRemote();
+        runGit(repository, ['remote', 'set-url', 'origin', '/nonexistent/openchamber-unreachable.git']);
+        const localMain = runGit(repository, ['rev-parse', 'main']).trim();
+
+        const created = await createWorktree(repository, {
+          mode: 'new',
+          branchName: 'openchamber/offline-base',
+          worktreeName: 'offline-base',
+          startRef: 'main',
+        });
+
+        expect(created.sourceFetchFailed).toBe(true);
+        expect(runGit(created.path, ['rev-parse', 'HEAD']).trim()).toBe(localMain);
+      });
+    }, 30_000);
+  });
+
   it('rejects creation from a remote start ref that was never fetched and cannot be fetched', async () => {
     if (!canRunGit()) return;
 
@@ -1696,6 +1797,24 @@ describe('createWorktree from a forked GitHub PR', () => {
 // ---------------------------------------------------------------------------
 
 describe('removeWorktree', () => {
+  it('disposes a registered location while its path still exists', async () => {
+    if (!canRunGit()) return;
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test']);
+    runGit(repo, ['commit', '--allow-empty', '-m', 'init']);
+    const worktree = path.join(createTempDir(), 'feature');
+    runGit(repo, ['worktree', 'add', worktree, '-b', 'feature']);
+    const disposeInstance = vi.fn(async (directory) => {
+      expect(directory).toBe(worktree);
+      expect(fs.existsSync(directory)).toBe(true);
+    });
+    await expect(removeWorktree(repo, { directory: worktree, disposeInstance })).resolves.toBe(true);
+    expect(disposeInstance).toHaveBeenCalledOnce();
+    expect(fs.existsSync(worktree)).toBe(false);
+  });
+
   it('forgets unmanaged orphan worktree entries without deleting files', async () => {
     if (!canRunGit()) return;
 
@@ -1728,6 +1847,33 @@ describe('removeWorktree', () => {
         process.env.XDG_DATA_HOME = previousXdgDataHome;
       }
     }
+  });
+});
+
+describe('snapshotWorktree', () => {
+  it('stores committed, staged, unstaged and untracked content without touching the user index', async () => {
+    if (!canRunGit()) return;
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test']);
+    fs.writeFileSync(path.join(repo, 'tracked.txt'), 'base');
+    runGit(repo, ['add', 'tracked.txt']);
+    runGit(repo, ['commit', '-m', 'init']);
+    fs.writeFileSync(path.join(repo, 'tracked.txt'), 'staged');
+    runGit(repo, ['add', 'tracked.txt']);
+    fs.writeFileSync(path.join(repo, 'tracked.txt'), 'unstaged');
+    fs.writeFileSync(path.join(repo, 'new.txt'), 'untracked');
+    const before = runGit(repo, ['status', '--porcelain']);
+    const head = runGit(repo, ['rev-parse', 'HEAD']).trim();
+    const ref = 'refs/openchamber/runs/group/lane';
+    const result = await snapshotWorktree(repo, { ref });
+    expect(result).toMatchObject({ ref, head });
+    expect(runGit(repo, ['show', `${ref}:tracked.txt`])).toBe('unstaged');
+    expect(runGit(repo, ['show', `${ref}:new.txt`])).toBe('untracked');
+    expect(runGit(repo, ['status', '--porcelain'])).toBe(before);
+    expect(runGit(repo, ['rev-parse', 'HEAD']).trim()).toBe(head);
+    await expect(snapshotWorktree(repo, { ref: 'refs/heads/main' })).rejects.toThrow('Invalid snapshot ref');
   });
 });
 
@@ -2775,6 +2921,55 @@ describe('getStatus untracked directories', () => {
       const { status: httpStatus, body } = await callDiffRoute(endpoint, { directory: repo, path: 'node_modules/' });
       expect(httpStatus).toBe(422);
       expect(body).toEqual({ code: 'untracked_directory', error: 'Path is a directory of untracked files: node_modules/' });
+    }
+  });
+});
+
+describe('git environment inside an AppImage', () => {
+  it('runs the worktree post-checkout hook without the AppImage launcher library path', async () => {
+    if (!canRunGit() || process.platform === 'win32') return;
+    const previous = {
+      APPDIR: process.env.APPDIR,
+      LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH,
+      XDG_DATA_HOME: process.env.XDG_DATA_HOME,
+    };
+    const dataHome = createTempDir();
+    process.env.XDG_DATA_HOME = dataHome;
+    process.env.APPDIR = '/tmp/.mount_OpenChAbC123';
+    process.env.LD_LIBRARY_PATH = '/tmp/.mount_OpenChAbC123/usr/lib:/opt/x:';
+
+    try {
+      const repo = createTempDir();
+      runGit(repo, ['init', '-b', 'main']);
+      runGit(repo, ['config', 'user.email', 'test@example.com']);
+      runGit(repo, ['config', 'user.name', 'Test User']);
+      fs.writeFileSync(path.join(repo, 'README.md'), '# Test\n');
+      runGit(repo, ['add', 'README.md']);
+      runGit(repo, ['commit', '-m', 'Initial commit']);
+      const hookLog = path.join(dataHome, 'post-checkout-env.log');
+      const hookPath = path.join(repo, '.git', 'hooks', 'post-checkout');
+      fs.writeFileSync(hookPath, `#!/bin/sh\nprintf '%s' "\${LD_LIBRARY_PATH-<unset>}" > ${JSON.stringify(hookLog)}\n`);
+      fs.chmodSync(hookPath, 0o755);
+
+      await createWorktree(repo, {
+        mode: 'new',
+        worktreeName: 'hook-env-test',
+        branchName: 'openchamber/hook-env-test',
+        returnAfterDirectoryCreated: true,
+      });
+
+      await expect.poll(() => {
+        try {
+          return fs.readFileSync(hookLog, 'utf8');
+        } catch {
+          return '';
+        }
+      }, { timeout: 5_000 }).toBe('/opt/x');
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
     }
   });
 });

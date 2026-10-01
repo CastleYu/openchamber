@@ -93,4 +93,19 @@ describe('routing store', () => {
     await store.clearToken();
     expect(await store.readToken()).toBeNull();
   });
+
+  it('keeps a selected classifier and custom endpoint credentials in separate files', async () => {
+    const dir = await tempDir();
+    const store = createRoutingStore({ dataDir: dir });
+    expect(await store.readClassifierSource()).toBeNull();
+    await store.writeClassifierSource('custom');
+    await store.writeCustomEndpoint({ url: 'https://example.test/v1/systemone', model: 'jev', key: 'secret' });
+    expect(await store.readClassifierSource()).toBe('custom');
+    expect(await store.readCustomEndpoint()).toEqual({ url: 'https://example.test/v1/systemone', model: 'jev', key: 'secret' });
+    expect(await fs.readFile(path.join(dir, 'classification.json'), 'utf8')).not.toContain('secret');
+    const stat = await fs.stat(path.join(dir, 'classifier-endpoint.json'));
+    if (process.platform !== 'win32') expect(stat.mode & 0o777).toBe(0o600);
+    await store.clearCustomEndpoint();
+    expect(await store.readCustomEndpoint()).toBeNull();
+  });
 });

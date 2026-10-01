@@ -2,11 +2,11 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
-import { readAuthFile, writeAuthFile } from '../opencode/auth.js';
+import { getOpenCodeCredentialGeneration, readAuthFile, writeAuthFile } from '../opencode/auth.js';
 import { readConfig, readConfigLayers, isPlainObject } from '../opencode/shared.js';
 import { getCatalogProvider } from './catalog.js';
 import { getAuthEntryForProvider } from './resolve.js';
-import { getRuntimeProvider } from './runtime-providers.js';
+import { getRuntimeGeneration, getRuntimeProvider } from './runtime-providers.js';
 
 // Direct, non-streaming text generation against the provider APIs, replicating
 // how OpenCode authenticates each of them (see the plugin auth loaders in the
@@ -151,9 +151,11 @@ const refreshOpenaiOauth = async (entry) => {
           : entry.refresh,
         expires: Date.now() + (Number(payload?.expires_in) > 0 ? Number(payload.expires_in) : 3600) * 1000,
       };
-      const auth = readAuthFile();
-      auth.openai = refreshed;
-      writeAuthFile(auth);
+      if (getOpenCodeCredentialGeneration() === 'oc1') {
+        const auth = readAuthFile();
+        auth.openai = refreshed;
+        writeAuthFile(auth);
+      }
       return refreshed;
     })().finally(() => {
       openaiRefreshPromise = null;
@@ -667,11 +669,14 @@ export async function resolveProviderLogin({ auth, workingDirectory, providerID 
     || null;
 }
 
-export async function callSmallModel({ auth, catalog, workingDirectory, sessionID, providerID, modelID, prompt, system, maxOutputTokens, responseSchema, timeoutMs, signal }) {
+export async function callSmallModel({ auth, catalog, workingDirectory, sessionID, providerID, modelID: selectedModelID, prompt, system, maxOutputTokens, responseSchema, timeoutMs, signal }) {
   const tokens = Number(maxOutputTokens) > 0 ? Number(maxOutputTokens) : DEFAULT_MAX_OUTPUT_TOKENS;
   const providerConfig = readProviderConfig(workingDirectory, providerID);
   const runtimeProvider = await getRuntimeProvider(providerID);
-  const runtimeModel = getRuntimeModel(runtimeProvider, modelID);
+  const runtimeModel = getRuntimeModel(runtimeProvider, selectedModelID);
+  const catalogModel = catalog?.[providerID]?.models?.[selectedModelID];
+  const modelID = getRuntimeGeneration() === 'oc2' && catalogModel?.modelID
+    ? catalogModel.modelID : selectedModelID;
   // Match OpenCode's resolveSDK precedence: config `provider.<id>.options`
   // wins, then what OpenCode itself resolved at runtime (the only place a
   // plugin's credential exists), and the auth.json entry last.
@@ -820,7 +825,7 @@ export async function callSmallModel({ auth, catalog, workingDirectory, sessionI
   // it through. An adapter nobody reports (a custom provider) is OpenAI-
   // compatible by OpenCode's own default.
   const adapter = runtimeModel?.api?.npm
-    ?? provider?.models?.[modelID]?.provider?.npm
+    ?? provider?.models?.[selectedModelID]?.provider?.npm
     ?? provider?.npm
     ?? null;
   const minimaxSwitch = modelID.toLowerCase().includes('minimax-m3')

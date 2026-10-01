@@ -1,6 +1,8 @@
 import React from 'react';
+import { SessionGoalCheckerField } from './SessionGoalCheckerField';
 import { ThemeImportButton } from './ThemeImportButton';
-import { ThemeSelectItem } from './ThemeSelectItem';
+import { ThemePicker } from './ThemePicker';
+import { MessageSearchSettings } from './MessageSearchSettings';
 
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import type { ThemeMode } from '@/types/theme';
@@ -305,7 +307,7 @@ const normalizeUserMessageRenderingMode = (mode: unknown): 'markdown' | 'plain' 
     return mode === 'markdown' ? 'markdown' : 'plain';
 };
 
-type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'mermaidStyle' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'animatedActivityIndicators';
+type VisibleSetting = 'sessionAssist' | 'sessionGoal' | 'theme' | 'windowControlsPosition' | 'pwaInstallName' | 'pwaOrientation' | 'mobileKeyboardMode' | 'timeFormat' | 'weekStart' | 'fontSize' | 'terminalFontSize' | 'terminalShell' | 'terminalLoginShell' | 'editorFontSize' | 'spacing' | 'scrollbars' | 'inputBarOffset' | 'mermaidRendering' | 'mermaidStyle' | 'userMessageRendering' | 'chatRenderMode' | 'messageTransport' | 'activityRenderMode' | 'collapsibleUserMessages' | 'stickyUserHeader' | 'promptNavigatorEnabled' | 'wideChatLayout' | 'codeBlockLineWrap' | 'splitAssistantMessageActions' | 'subagentReadOnlyBanner' | 'diffLayout' | 'mobileStatusBar' | 'dotfiles' | 'fileViewerPreview' | 'reasoning' | 'showToolFileIcons' | 'showTurnChangedFiles' | 'expandedTools' | 'followUpBehavior' | 'inputHistoryScope' | 'inputHistoryLimit' | 'messageSearch' | 'terminalQuickKeys' | 'fileEditorKeymap' | 'persistDraft' | 'inputSpellcheck' | 'largeTextPaste' | 'enterToSend' | 'reportUsage' | 'autoSaveEnabled' | 'sessionTabs' | 'animatedActivityIndicators';
 
 const WINDOW_CONTROLS_POSITION_OPTIONS: Array<{ id: DesktopWindowControlsPosition; labelKey: string }> = [
     { id: 'left', labelKey: 'settings.openchamber.desktopNetwork.option.windowControlsLeft' },
@@ -953,39 +955,25 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                             label={t('settings.openchamber.visual.field.lightTheme')}
                                             settingsItem="appearance.light-theme"
                                         >
-                                            <Select value={selectedLightTheme?.metadata.id ?? ''} onValueChange={setLightThemePreference}>
-                                                <SelectTrigger aria-label={t('settings.openchamber.visual.field.selectLightThemeAria')} size={SETTINGS_SELECT_SIZE} className={SETTINGS_SELECT_TRIGGER_CLASS}>
-                                                    <SelectValue placeholder={t('settings.openchamber.visual.field.selectThemePlaceholder')}>
-                                                        {selectedLightTheme
-                                                            ? formatThemeLabel(selectedLightTheme.metadata.name, 'light')
-                                                            : undefined}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {lightThemes.map((theme) => (
-                                                        <ThemeSelectItem key={theme.metadata.id} id={theme.metadata.id} label={formatThemeLabel(theme.metadata.name, 'light')} />
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <ThemePicker
+                                                value={selectedLightTheme?.metadata.id ?? ''}
+                                                onValueChange={setLightThemePreference}
+                                                options={lightThemes.map((theme) => ({ id: theme.metadata.id, label: formatThemeLabel(theme.metadata.name, 'light') }))}
+                                                placeholder={t('settings.openchamber.visual.field.selectThemePlaceholder')}
+                                                ariaLabel={t('settings.openchamber.visual.field.selectLightThemeAria')}
+                                            />
                                         </SettingsStackedField>
                                         <SettingsStackedField
                                             label={t('settings.openchamber.visual.field.darkTheme')}
                                             settingsItem="appearance.dark-theme"
                                         >
-                                            <Select value={selectedDarkTheme?.metadata.id ?? ''} onValueChange={setDarkThemePreference}>
-                                                <SelectTrigger aria-label={t('settings.openchamber.visual.field.selectDarkThemeAria')} size={SETTINGS_SELECT_SIZE} className={SETTINGS_SELECT_TRIGGER_CLASS}>
-                                                    <SelectValue placeholder={t('settings.openchamber.visual.field.selectThemePlaceholder')}>
-                                                        {selectedDarkTheme
-                                                            ? formatThemeLabel(selectedDarkTheme.metadata.name, 'dark')
-                                                            : undefined}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {darkThemes.map((theme) => (
-                                                        <ThemeSelectItem key={theme.metadata.id} id={theme.metadata.id} label={formatThemeLabel(theme.metadata.name, 'dark')} />
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <ThemePicker
+                                                value={selectedDarkTheme?.metadata.id ?? ''}
+                                                onValueChange={setDarkThemePreference}
+                                                options={darkThemes.map((theme) => ({ id: theme.metadata.id, label: formatThemeLabel(theme.metadata.name, 'dark') }))}
+                                                placeholder={t('settings.openchamber.visual.field.selectThemePlaceholder')}
+                                                ariaLabel={t('settings.openchamber.visual.field.selectDarkThemeAria')}
+                                            />
                                         </SettingsStackedField>
 
                                         <div className="flex items-center gap-2 pt-1">
@@ -1902,6 +1890,8 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                             </SettingsSection>
                         )}
 
+                        {shouldShow('messageSearch') && !isVSCode && <MessageSearchSettings />}
+
                         {showBehaviorFeatureCheckboxes && (
                             <>
                                 {shouldShow('expandedTools') && (
@@ -1979,6 +1969,7 @@ export const OpenChamberVisualSettings: React.FC<OpenChamberVisualSettingsProps>
                                             ariaLabel={t('settings.openchamber.visual.field.sessionGoalAria')}
                                             settingsItem="chat.session-goal"
                                         />
+                                            <SessionGoalCheckerField disabled={!sessionGoalEnabled} />
                                         <div data-settings-item="chat.session-goal-budget" className="flex items-center gap-2">
                                             <SettingsCheckboxRow
                                                 checked={sessionGoalDefaultBudgetEnabled}

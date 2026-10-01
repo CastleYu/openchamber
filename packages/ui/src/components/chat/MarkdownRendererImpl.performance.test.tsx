@@ -294,6 +294,7 @@ const initializePerformanceDom = async (): Promise<void> => {
   mock.module('@/lib/url', () => ({ getUrlScheme: () => null, isAppLinkUrl: () => false, isExternalHttpUrl: () => false, openConfirmedAppLinkUrl: async () => false, openExternalUrl: async () => undefined, getExternalFaviconUrl: () => null, isLoopbackHttpUrl: () => false }));
   mock.module('@/lib/desktop', () => ({ isDesktopLocalOriginActive: () => false, isDesktopShell: () => false, isVSCodeRuntime: () => false }));
   mock.module('@/lib/runtimeSurface', () => ({ isMobileSurfaceRuntime: () => false }));
+  mock.module('@/lib/router/openSessionFromRoute', () => ({ openSessionLink: async () => undefined }));
   mock.module('@/lib/path-utils', () => ({ getDirectoryForFilePath: () => '', isFilePathWithinDirectory: () => true, toAbsoluteFilePath: () => '', normalizeFilePath: (value: string) => value, isAbsoluteFilePath: (value: string) => value.startsWith('/') }));
   mock.module('@/lib/clipboard', () => ({ copyTextToClipboard: async () => undefined }));
   mock.module('beautiful-mermaid', () => ({
@@ -462,7 +463,9 @@ describe('MarkdownRenderer DOM mount performance contract', () => {
       expect(wrapper?.classList.contains('max-w-full')).toBe(true);
       expect(cells.length).toBeGreaterThan(0);
       expect(cells.every((cell) => cell.classList.contains('min-w-[120px]'))).toBe(true);
-      expect(cells.every((cell) => cell.classList.contains('max-w-[320px]'))).toBe(true);
+      // The measured colgroup now enforces the cap, allowing wider columns
+      // when the viewport has room while retaining the 320px no-layout fallback.
+      expect(cells.every((cell) => !cell.classList.contains('max-w-[320px]'))).toBe(true);
       expect(cells.every((cell) => (
         cell.classList.contains('whitespace-normal')
         && cell.classList.contains('[overflow-wrap:anywhere]')

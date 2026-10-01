@@ -1,3 +1,4 @@
+import type { PermissionMode } from '@/stores/utils/permissionAutoAccept';
 import type { Message, Part, Session } from '@/lib/opencode/model';
 import { opencodeClient } from '@/lib/opencode/client';
 import * as sessionActions from '@/sync/session-actions';
@@ -33,6 +34,9 @@ export type StartBtwInput = {
   modelID: string;
   agent?: string;
   variant?: string | null;
+  /** Absent: the fork is a new session and the server writes the default mode. */
+  permissionMode?: PermissionMode;
+  /** OC1 compatibility: the older input carries only the auto-accept toggle. */
   permissionAutoAccept?: boolean;
   attachments?: AttachedFile[];
   additionalParts?: Array<{
@@ -213,10 +217,18 @@ export async function startBtwSession(input: StartBtwInput): Promise<Session> {
         selections.saveAgentModelForSession(forked.id, input.agent, input.providerID, input.modelID);
         selections.saveAgentModelVariantForSession(forked.id, input.agent, input.providerID, input.modelID, input.variant);
       }
-      if (input.permissionAutoAccept !== undefined) {
+      if (input.permissionMode !== undefined || input.permissionAutoAccept !== undefined) {
         const { usePermissionStore } = await import('@/stores/permissionStore');
         if (getRuntimeKey() !== expectedRuntimeKey) throw new Error('runtime changed');
-        await usePermissionStore.getState().setSessionAutoAccept(forked.id, input.permissionAutoAccept);
+        const permissions = usePermissionStore.getState();
+        const generation = opencodeClient.getBoundRuntime()?.generation;
+        if (generation === 'oc1' && input.permissionAutoAccept !== undefined) {
+          await permissions.setSessionAutoAccept(forked.id, input.permissionAutoAccept);
+        } else if (input.permissionMode !== undefined) {
+          await permissions.setSessionMode(forked.id, input.permissionMode);
+        } else if (input.permissionAutoAccept !== undefined) {
+          await permissions.setSessionAutoAccept(forked.id, input.permissionAutoAccept);
+        }
         if (getRuntimeKey() !== expectedRuntimeKey) throw new Error('runtime changed');
       }
       // Locate the inherited-history boundary by identity, not by ID ordering.

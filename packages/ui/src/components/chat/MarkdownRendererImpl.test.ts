@@ -7,12 +7,15 @@ const parse = (value: string): ParsedFileReference | null => parseFileReference(
 type FakeElement = {
     childNodes: FakeElement[];
     children: FakeElement[];
+    lastElementChild: FakeElement | null;
     parentNode: FakeElement | null;
     attributes: Map<string, string>;
     style: { display: string; setProperty: () => void };
     innerHTML: string;
     setAttribute: (name: string, value: string) => void;
     getAttribute: (name: string) => string | null;
+    hasAttribute: (name: string) => boolean;
+    removeAttribute: (name: string) => void;
     appendChild: (child: FakeElement) => FakeElement;
     replaceWith: (replacement: FakeElement) => void;
     remove: () => void;
@@ -53,6 +56,9 @@ const makeFakeElement = (ownerDocument: { createElement: () => FakeElement }): F
     const element: FakeElement = {
         childNodes: [],
         children: [],
+        get lastElementChild() {
+            return this.children[this.children.length - 1] ?? null;
+        },
         parentNode: null,
         attributes: new Map(),
         style: { display: '', setProperty: () => undefined },
@@ -67,6 +73,12 @@ const makeFakeElement = (ownerDocument: { createElement: () => FakeElement }): F
         },
         getAttribute(name) {
             return this.attributes.get(name) ?? null;
+        },
+        hasAttribute(name) {
+            return this.attributes.has(name);
+        },
+        removeAttribute(name) {
+            this.attributes.delete(name);
         },
         appendChild(child) {
             child.parentNode = this;
@@ -125,6 +137,7 @@ const installRendererDom = () => {
     Object.defineProperty(globalThis, 'window', {
         configurable: true,
         value: {
+            location: { origin: 'http://localhost', href: 'http://localhost/' },
             matchMedia: () => ({ matches: false }),
             setTimeout,
             clearTimeout,
@@ -270,7 +283,8 @@ mock.module('./markdown/detachedMarkdownDomCache', () => ({
         store: () => undefined,
     },
 }));
-mock.module('@/lib/runtime-switch', () => ({ getRuntimeKey: () => 'runtime' }));
+mock.module('@/lib/runtime-switch', () => ({ getRuntimeApiBaseUrl: () => '', getRuntimeKey: () => 'runtime' }));
+mock.module('@/lib/router/openSessionFromRoute', () => ({ openSessionLink: async () => undefined }));
 type TestDecorateContext = {
     labels: { copy: string };
     codeBlockLineWrap: boolean;

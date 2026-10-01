@@ -1,8 +1,9 @@
 import type { OpenCodeClient } from '@opencode/client';
 import type { OperationScope, ProviderCatalog } from '../operations';
 import type { Agent, Command, Config, McpServerStatus, Project, Skill, Vcs } from '../model';
-import { mergeConfigDocuments, projectAgent, projectProject, projectVcs } from '../projection';
+import { deniesAnyProvider, mergeConfigDocuments, projectAgent, projectProject, projectVcs } from '../projection';
 import { OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError } from '../runtime';
+import { isSpaceDirectory } from '@/lib/spaces/space-route';
 
 /** Official OC2 catalog and location calls; no legacy provider/config shape escapes. */
 export class V2CatalogOperations {
@@ -31,16 +32,22 @@ export class V2CatalogOperations {
       mergeConfigDocuments(await this.clientFor(scope.directory).config.get(undefined, { signal: scope.signal })));
   }
 
+  deniesProvider(scope: OperationScope = {}): Promise<boolean> {
+    return this.binding.run('oc2', 'config.get provider policy', async () =>
+      deniesAnyProvider(await this.clientFor(scope.directory).config.get(undefined, { signal: scope.signal })));
+  }
+
   catalog(scope: OperationScope = {}): Promise<ProviderCatalog> {
     return this.binding.run('oc2', 'provider/model catalog', async () => {
       const runtime = this.binding.get();
       const client = this.clientFor(scope.directory);
+      const providersFrom = isSpaceDirectory(scope.directory) ? this.clientFor(null) : client;
       // The pinned kernel waits for plugin activation in integration.list;
       // provider/model handlers can otherwise return an empty cold registry.
-      await client.integration.list(undefined, { signal: scope.signal });
+      await providersFrom.integration.list(undefined, { signal: scope.signal });
       if (this.binding.get() !== runtime) throw new OpenCodeRuntimeChangedError();
       const [providers, models, selected] = await Promise.all([
-        client.provider.list(undefined, { signal: scope.signal }),
+        providersFrom.provider.list(undefined, { signal: scope.signal }),
         client.model.list(undefined, { signal: scope.signal }),
         client.model.default(undefined, { signal: scope.signal }),
       ]);
@@ -49,7 +56,7 @@ export class V2CatalogOperations {
         providers: providers.data,
         models: models.data,
       };
-      if (selected.data) catalog.default = { id: selected.data.modelID, providerID: selected.data.providerID };
+      if (selected.data) catalog.default = { id: selected.data.id, providerID: selected.data.providerID };
       return catalog;
     });
   }

@@ -1,10 +1,26 @@
+import { OpenCode } from '@opencode/client';
 import * as gitService from './gitService';
-import type { BridgeResponse } from './bridge';
+import type { BridgeContext, BridgeResponse } from './bridge';
 
 type BridgeMessageInput = {
   id: string;
   type: string;
   payload?: unknown;
+};
+
+const WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS = 5_000;
+const createWorktreeInstanceDisposer = (ctx?: BridgeContext) => async (worktreeDirectory: string): Promise<void> => {
+  const manager = ctx?.manager;
+  const identity = manager?.getKernelRuntime();
+  if (!manager || identity?.generation !== 'oc2') return;
+  const apiUrl = manager?.getApiUrl();
+  if (!apiUrl) throw new Error('OpenCode API URL is not available');
+  const client = OpenCode.make({
+    baseUrl: apiUrl.replace(/\/+$/, ''),
+    headers: manager.getOpenCodeAuthHeaders(),
+    fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS) }),
+  });
+  await client.debug.location.evict({ location: { directory: worktreeDirectory } });
 };
 
 const requireDirectory = (id: string, type: string, directory?: string): BridgeResponse | null => {
@@ -18,7 +34,7 @@ const isValidCommitHash = (hash: string | undefined): hash is string => (
   typeof hash === 'string' && /^[0-9a-fA-F]{7,40}$/.test(hash)
 );
 
-export async function handleStandardGitBridgeMessage(message: BridgeMessageInput): Promise<BridgeResponse | null> {
+export async function handleStandardGitBridgeMessage(message: BridgeMessageInput, ctx?: BridgeContext): Promise<BridgeResponse | null> {
   const { id, type, payload } = message;
 
   switch (type) {
@@ -156,11 +172,20 @@ export async function handleStandardGitBridgeMessage(message: BridgeMessageInput
         const removed = await gitService.removeWorktree(directory!, {
           directory: worktreeDirectory,
           deleteLocalBranch: removePayload?.body?.deleteLocalBranch === true || removePayload?.deleteLocalBranch === true,
+          disposeInstance: createWorktreeInstanceDisposer(ctx),
         });
         return { id, type, success: true, data: { success: Boolean(removed) } };
       }
 
       return { id, type, success: false, error: `Unsupported method: ${normalizedMethod}` };
+    }
+
+    case 'api:git/worktrees/snapshot': {
+      const { directory, ref } = (payload || {}) as { directory?: string; ref?: string };
+      const dirError = requireDirectory(id, type, directory);
+      if (dirError) return dirError;
+      const result = await gitService.snapshotWorktree(directory!, { ref });
+      return { id, type, success: true, data: result };
     }
 
     case 'api:git/worktrees/validate': {

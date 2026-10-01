@@ -375,6 +375,23 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     });
   };
 
+  const getDefaultModel = async ({ directory, signal } = {}) => {
+    const context = capture(directory);
+    if (context.generation !== GENERATION.OC2) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Default model lookup requires OC2', context.generation);
+    const result = await context.client.model.default(undefined, requestOptions(signal));
+    check(context);
+    return stamped(context, result.data ?? null);
+  };
+
+  const importSession = async ({ chat, signal, expectedIdentity }) => {
+    const context = capture();
+    if (context.generation !== GENERATION.OC2) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Chat import requires OC2', context.generation);
+    if (expectedIdentity) assertRequest(context, expectedIdentity);
+    const result = await context.client.session.import(chat, requestOptions(signal));
+    check(context);
+    return stamped(context, result);
+  };
+
   const forkSession = async ({ sessionID, directory, messageID, signal, expectedIdentity }) => {
     const context = capture(directory);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
@@ -399,28 +416,36 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     return stamped(context, true);
   };
 
-  const updateSession = async ({ sessionID, directory, title, metadata, replaceMetadata = false, time, signal, expectedIdentity }) => {
+  const updateSession = async ({ sessionID, directory, title, metadata, decideMetadata, replaceMetadata = false, time, signal, expectedIdentity }) => {
     const context = capture(directory);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
-    if (metadata && !replaceMetadata) await prepare(context, sessionID);
+    if (decideMetadata && context.generation !== GENERATION.OC2) {
+      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Conditional metadata writes require OC2', context.generation);
+    }
+    if ((metadata || decideMetadata) && !replaceMetadata) await prepare(context, sessionID);
     const write = async () => {
       check(context);
       if (expectedIdentity) assertRequest(context, expectedIdentity);
       const input = { sessionID };
+      let decidedSession = null;
       if (title !== undefined) input.title = title;
       if (time !== undefined) {
         if (context.generation !== GENERATION.OC1) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'OC2 archive state is owned by OpenChamber', context.generation);
         input.time = time;
       }
-      if (metadata) {
+      if (metadata || decideMetadata) {
         if (context.generation === GENERATION.OC2) {
-          if (!isRecord(metadata)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata patch must be an object', context.generation);
+          if (!decideMetadata && !isRecord(metadata)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata patch must be an object', context.generation);
           if (replaceMetadata) input.metadata = metadata;
           else {
             const current = sessionSchema.parse(await context.client.session.get({ sessionID }, requestOptions(signal)));
             check(context);
             if (expectedIdentity) assertRequest(context, expectedIdentity);
-            input.metadata = mergeMetadataPatch(current.metadata, metadata);
+            const patch = decideMetadata ? decideMetadata(current.metadata ?? {}) : metadata;
+            if (decideMetadata && patch === null) return { ...stamped(context, current), metadataChanged: false };
+            if (!isRecord(patch)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata patch must be an object', context.generation);
+            input.metadata = mergeMetadataPatch(current.metadata, patch);
+            if (decideMetadata) decidedSession = { ...current, metadata: input.metadata };
           }
         } else input.metadata = metadata;
       }
@@ -430,9 +455,10 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
         ? context.client.session.update({ ...input, directory }, requestOptions(signal))
         : context.client.session.update(input, requestOptions(signal)));
       check(context);
-      return stamped(context, context.generation === GENERATION.OC1 ? response.data : response);
+      const result = stamped(context, context.generation === GENERATION.OC1 ? response.data : response);
+      return decideMetadata ? { ...result, data: decidedSession, metadataChanged: true } : result;
     };
-    if (context.generation !== GENERATION.OC2 || !metadata) return write();
+    if (context.generation !== GENERATION.OC2 || (!metadata && !decideMetadata)) return write();
     const key = `${context.endpoint}\0${context.epoch}\0${sessionID}`;
     const previous = metadataWrites.get(key) ?? Promise.resolve();
     const current = previous.catch(() => undefined).then(write);
@@ -508,7 +534,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
 
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
-    listCommands, getSelectionCatalog, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
+    listCommands, getSelectionCatalog, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
     listPendingPermissions, replyPermission, getMessage, addSynthetic, switchSessionSelection,
   };
 };

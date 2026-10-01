@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ZEN_ANONYMOUS_API_KEY,
   configureOpenCodeRuntimeProviders,
+  getRuntimeDefaultModel,
+  getRuntimeGeneration,
   getRuntimeProvider,
   getRuntimeProviderSnapshot,
   resetOpenCodeRuntimeProviders,
@@ -67,6 +69,27 @@ describe('OpenCode runtime provider snapshot', () => {
     });
     expect(fetchMock.mock.calls[0][0]).toBe('http://127.0.0.1:4096/provider');
     expect(fetchMock.mock.calls[0][1].headers).toMatchObject({ Authorization: 'Basic test' });
+  });
+
+  it('tracks the configured kernel generation and defaults to OC1 when detached', () => {
+    expect(getRuntimeGeneration()).toBe('oc1');
+    configureOpenCodeRuntimeProviders({ getGeneration: () => 'oc2' });
+    expect(getRuntimeGeneration()).toBe('oc2');
+    configureOpenCodeRuntimeProviders(null);
+    expect(getRuntimeGeneration()).toBe('oc1');
+  });
+
+  it('accepts a stamped OC2 default model and rejects malformed data', async () => {
+    configureOpenCodeRuntimeProviders({
+      getGeneration: () => 'oc2',
+      getDefaultModel: async () => ({ generation: 'oc2', data: { providerID: 'chosen', id: 'model' } }),
+    });
+    expect(await getRuntimeDefaultModel('/project')).toEqual({ providerID: 'chosen', modelID: 'model', source: 'default' });
+    configureOpenCodeRuntimeProviders({
+      getGeneration: () => 'oc2',
+      getDefaultModel: async () => ({ generation: 'oc2', data: { providerID: 'chosen' } }),
+    });
+    await expect(getRuntimeDefaultModel('/project')).rejects.toThrow('invalid default model');
   });
 
   it('refuses the zen sentinel as a credential', async () => {

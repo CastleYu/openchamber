@@ -1,6 +1,7 @@
 import type { Session } from '@/lib/opencode/model';
 import type { Project as OpenCodeProject } from '@opencode-ai/sdk/v2/client';
 import { getNormalizedParentDirectory, normalizePath } from '@/lib/pathNormalization';
+import type { SpaceMark } from '@/lib/spaces/spaces-store';
 
 type Project = {
   id: string;
@@ -28,7 +29,8 @@ export type DirectoryOwner = {
   projectId: string;
   projectRoot: string;
   scopeDirectory: string;
-  kind: 'project' | 'worktree';
+  kind: 'project' | 'worktree' | 'space';
+  spaceId?: string;
 };
 
 export type SessionOwnershipIndex = {
@@ -71,6 +73,7 @@ export const createSessionOwnershipIndex = (
   isVSCode: boolean,
   archivedSessions: SessionOwnershipRecord[] = [],
   authoritativeProjects: readonly AuthoritativeOpenCodeProject[] = [],
+  spaces: readonly SpaceMark[] = [],
 ): SessionOwnershipIndex => {
   const ownerByDirectory = new Map<string, DirectoryOwner>();
   const projectByRoot = new Map<string, Project>();
@@ -105,6 +108,20 @@ export const createSessionOwnershipIndex = (
           kind: 'worktree',
         });
       }
+    }
+  }
+
+  // Space directories belong to their registered project but keep their own scope.
+  if (!isVSCode) {
+    for (const space of spaces) {
+      const projectRoot = normalizePath(space.projectDirectory);
+      const directory = normalizePath(space.directory);
+      const project = projectRoot ? projectByRoot.get(projectRoot) : undefined;
+      if (!project || !projectRoot || !directory) continue;
+      setOwner(ownerByDirectory, directory, {
+        projectId: project.id, projectRoot, scopeDirectory: directory,
+        kind: 'space', spaceId: space.id,
+      });
     }
   }
 

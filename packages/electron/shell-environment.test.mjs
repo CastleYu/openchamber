@@ -15,7 +15,7 @@ test('concurrent callers await one complete environment and later calls reuse it
     execute: (file, args, options) => {
       calls++;
       assert.equal(file, '/bin/zsh');
-      assert.deepEqual(args, ['-il', '-c', 'env -0']);
+      assert.deepEqual(args, ['-il', '-c', 'echo __OPENCHAMBER_ENV__; env -0']);
       assert.equal(options.timeout, 5000);
       assert.equal(options.windowsHide, true);
       return new Promise(resolve => { complete = resolve; });
@@ -30,6 +30,15 @@ test('concurrent callers await one complete environment and later calls reuse it
   assert.equal(await second, result);
   assert.equal(await load(), result);
   assert.equal(calls, 1);
+});
+
+test('keeps shell startup banners out of the environment', async () => {
+  const load = createShellEnvironmentLoader({
+    platform: 'linux',
+    env: { SHELL: '/bin/bash' },
+    execute: async () => ({ stdout: Buffer.from('Welcome\n__OPENCHAMBER_ENV__\nHOME=/home/user\0PATH=/bin\0') }),
+  });
+  assert.deepEqual(await load(), { HOME: '/home/user', PATH: '/bin' });
 });
 
 for (const failure of ['error', 'empty']) {

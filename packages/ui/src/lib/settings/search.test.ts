@@ -16,9 +16,20 @@ const runtimeCtx = {
   isLinux: false,
   isWindowsArm64: false,
   routingAvailable: false,
+  enterpriseMode: false,
+  jevBlockedByEnterprise: false,
 };
 
 describe('settings search', () => {
+  test('new OC2 settings do not appear while OC1 is bound', () => {
+    for (const generation of ['oc1', 'oc2'] as const) {
+      opencodeClient.bindRuntime({ generation, endpoint: 'http://settings.test', epoch: generation === 'oc2' ? 2 : 1, version: generation === 'oc2' ? '2.0.18' : '1.18.32' });
+      for (const [query, id] of [['codemode', 'sessions.agent-tools-code-mode'], ['checker', 'chat.session-goal-checker'], ['warming', 'sessions.warming']]) {
+        const results = buildSettingsSearchResults({ query, runtimeCtx, t, getPageTitle: page => page });
+        expect(results.some(result => result.id === id)).toBe(generation === 'oc2');
+      }
+    }
+  });
   test('notify follows the active kernel and is absent from VS Code', () => {
     for (const generation of ['oc1', 'oc2', 'oc1'] as const) {
       opencodeClient.bindRuntime({ generation, endpoint: 'http://notify.test', epoch: generation === 'oc2' ? 2 : 3, version: generation === 'oc2' ? '2.0.16' : '1.18.32' });
@@ -36,6 +47,21 @@ describe('settings search', () => {
       expect(results.find(result => result.id === 'update-history.entries')?.page).toBe('update-history');
     }
   });
+  test('finds the Claude Code integration by name and package, never in VS Code', () => {
+    for (const query of ['claude', '@openchamber/opencode-claude']) {
+      for (const isVSCode of [false, true]) {
+        const results = buildSettingsSearchResults({
+          query,
+          runtimeCtx: { ...runtimeCtx, isVSCode },
+          t,
+          getPageTitle: (page) => page,
+        });
+
+        expect(results.some((result) => result.id === 'integrations.third-party.opencode-claude')).toBe(!isVSCode);
+      }
+    }
+  });
+
   test('Enter-to-send is searchable only outside mobile', () => {
     for (const isMobile of [false, true]) {
       const results = buildSettingsSearchResults({

@@ -5,12 +5,16 @@ import { useSessionUIStore } from '@/sync/session-ui-store';
 import { usePrefetchSessionMessages } from '@/sync/use-sync';
 import { useGitHubAuthStore } from '@/stores/useGitHubAuthStore';
 import { getGitHubPrStatusKey, useGitHubPrStatusStore } from '@/stores/useGitHubPrStatusStore';
+import { useOpenPrSummarySync } from '@/hooks/useOpenPrSummarySync';
+import { getLinkedGitHubPullRequests } from '@/lib/linkedIssues';
+import type { GitHubPullRequestRef } from '@/lib/api/types';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import type { SessionTreeItemProps } from '../sessions/SessionTreeItem';
 import { useArchivedAutoFolders } from '../folders/useArchivedAutoFolders';
 import { ProjectSessionSelectionEffect } from '../projects/useProjectSessionSelection';
 import type { WorktreeMetadata } from '@/types/worktree';
  import { buildActiveSessionNode, useRecentSessionCollection, useSessionProjectCollection } from './sessionCollection';
+import type { SessionNode } from '../types';
  import { useChildStoreManager } from '@/sync/sync-context';
  import { useGlobalSyncStore } from '@/sync/global-sync-store';
 import { createSessionOwnershipIndex } from '../sessions/sessionOwnership';
@@ -27,21 +31,27 @@ import type { useSessionProjectViewState } from '../projects/useSessionProjectVi
 import { useSessionDisplayStore } from '@/stores/useSessionDisplayStore';
 import type { DeleteSessionConfirmState } from '../sessions/useSessionActions';
 import { useExpandedParents } from '../sessions/useExpandedParents';
-import { getChatsRootForHome, getChatsRootFromDirectory } from '@/lib/chatDirectories';
+import { getChatsRootForHome, getChatsRootFromDirectory, isChatDirectoryPath } from '@/lib/chatDirectories';
 import { isCapacitorApp } from '@/lib/platform';
-import { deriveRecentActivitySections, deriveTimelineActivityItems } from '../recent/activitySections';
+import { deriveRecentActivitySections, deriveTimelineActivityItems, sessionTreeMatchesSidebarQuery } from '../recent/activitySections';
+import { isSessionInWork } from '@/lib/sessionWorkMetadata';
 import { resolveSidebarSessionLocations } from '../recent/sessionLocation';
 import { buildSessionSidebarRowModel } from '../sessionSidebarRowModel';
 import { useSidebarGroupStatus } from './useSidebarGroupStatus';
 import { getSessionFolderOwnerKey, getSessionFolderScopes } from '../sessions/sessionFolderIdentity';
 import { SessionRowOrderProvider } from '../sessions/sessionRowOrder';
 import { canRequestNativeDirectoryAccess } from '@/lib/desktop';
+import { useSidebarSpaces, type SpaceMark } from '@/lib/spaces/spaces-store';
+import { useUIStore } from '@/stores/useUIStore';
+import { buildMultiRunIndex, EMPTY_MULTI_RUN_INDEX } from '@/lib/multirun/runs';
+import { opencodeClient } from '@/lib/opencode/client';
 
 const PR_NO_PR_RETRY_MS = 5 * 60_000;
 
 // A stable empty array: without a chats group the sections hook must not see a
 // new reference on every render.
 const EMPTY_STANDALONE_GROUPS: SessionGroup[] = [];
+const EMPTY_WORK_SESSIONS: readonly Session[] = [];
 
 const EMPTY_TIMELINE_ITEMS: ReturnType<typeof deriveTimelineActivityItems> = [];
 
@@ -112,7 +122,7 @@ type SessionProjectCollectionProps = {
     notifyOnSubtasks: boolean;
     setActiveProjectIdOnly: (id: string) => void;
     setSessionSwitcherOpen: (open: boolean) => void;
-    openNewSessionDraft: (options?: { selectedProjectId?: string | null; directoryOverride?: string | null }) => void;
+    openNewSessionDraft: (options?: { selectedProjectId?: string | null; directoryOverride?: string | null; preserveDirectoryOverride?: boolean }) => void;
     openNewWorktreeDialog: () => void;
     openWorktreesPage: (id: string) => void;
     openProjectEditDialog: (id: string) => void;
@@ -138,10 +148,26 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
   const projectView = view.projectView;
   const { getOrderedGroups, setGroupOrderByProject, toggleGroup, toggleProject } = projectViewActions;
   const collection = useSessionProjectCollection({ knownDirectories: topology.knownDirectories, isVSCode: topology.isVSCode, isVisible: true });
+  const spaceList = useSidebarSpaces();
+  const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
+  const spaceLabelById = React.useMemo(() => new Map((isolatedSpacesEnabled ? spaceList : []).map((space) => [space.id, space.name])), [isolatedSpacesEnabled, spaceList]);
+  const spacesByProject = React.useMemo(() => {
+    const groups = new Map<string, SpaceMark[]>();
+    if (!isolatedSpacesEnabled || topology.isVSCode) return groups;
+    for (const space of spaceList) {
+      const root = normalizePath(space.projectDirectory);
+      if (!root) continue;
+      const list = groups.get(root) ?? [];
+      list.push(space);
+      groups.set(root, list);
+    }
+    return groups;
+  }, [isolatedSpacesEnabled, spaceList, topology.isVSCode]);
   const authoritativeProjects = useGlobalSyncStore((state) => state.projects);
   const ownership = React.useMemo(
-    () => createSessionOwnershipIndex(collection.sessions, topology.projects, topology.availableWorktreesByProject, topology.isVSCode, collection.archivedSessions, authoritativeProjects),
-    [authoritativeProjects, collection.archivedSessions, collection.sessions, topology.availableWorktreesByProject, topology.isVSCode, topology.projects],
+    () => createSessionOwnershipIndex(collection.sessions, topology.projects, topology.availableWorktreesByProject, topology.isVSCode, collection.archivedSessions, authoritativeProjects,
+      isolatedSpacesEnabled ? spaceList : []),
+    [authoritativeProjects, collection.archivedSessions, collection.sessions, isolatedSpacesEnabled, spaceList, topology.availableWorktreesByProject, topology.isVSCode, topology.projects],
   );
   const [visibleSessionCountByGroup, setVisibleSessionCountByGroup] = React.useState<Map<string, number>>(new Map());
   const [collapsedActivityKeys, setCollapsedActivityKeys] = React.useState<Set<string>>(new Set());
@@ -171,6 +197,19 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     sessionOrderRanks: collection.sessionOrderRanks,
     sessions: collection.rootSessions,
   });
+  const runIndex = React.useMemo(() => opencodeClient.getBoundRuntime()?.generation === 'oc2'
+    ? buildMultiRunIndex(collection.rootSessions,
+      (session) => normalizePath(topology.worktreeMetadata.get(session.id)?.projectDirectory ?? session.directory ?? null))
+    : EMPTY_MULTI_RUN_INDEX,
+  [collection.rootSessions, topology.worktreeMetadata]);
+  const runMembershipRef = React.useRef<{ signature: string; map: ReadonlyMap<string, string> } | null>(null);
+  const runKeyBySessionId = React.useMemo(() => {
+    const signature = Array.from(runIndex.runKeyBySessionId, ([id, key]) => `${id}\u0000${key}`).sort().join('\u0001');
+    if (runMembershipRef.current?.signature !== signature) {
+      runMembershipRef.current = { signature, map: runIndex.runKeyBySessionId };
+    }
+    return runMembershipRef.current.map;
+  }, [runIndex]);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingRowKey, setEditingRowKey] = React.useState<string | null>(null);
   const [editTitle, setEditTitle] = React.useState('');
@@ -192,6 +231,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     setCurrentSession(sessionId, sessionDirectory);
   }, [setCurrentSession]);
   const prefetchSession = usePrefetchSessionMessages();
+  const worktreeSortOrder = useSessionDisplayStore((state) => state.worktreeSortOrder);
   const { buildGroupedSessions, filterSessionNodesForSearch, buildGroupSearchText } = useSessionGrouping({
     homeDirectory: view.homeDirectory,
     worktreeMetadata: topology.worktreeMetadata,
@@ -199,7 +239,10 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     sessionOrderRanks: collection.sessionOrderRanks,
     gitBranches: topology.gitBranches,
     isVSCode: topology.isVSCode,
+    worktreeSortOrder,
     sessionOwners: ownership.bySessionId,
+    spacesByProject,
+    runKeyBySessionId,
   });
   const { getSessionsForProject, getArchivedSessionsForProject } = useProjectSessionLists({ ownership });
   // Built before the sections hook runs, because that hook owns the search data
@@ -288,51 +331,23 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
   const setParams = useGitHubPrStatusStore((state) => state.setParams);
   const refreshTargets = useGitHubPrStatusStore((state) => state.refreshTargets);
   const retriedRef = React.useRef(new Set<string>());
-  React.useEffect(() => {
-    if (!github || !githubAuthChecked || !githubAuthStatus?.connected) return;
-    const targets = new Map<string, { directory: string; branch: string }>();
-    const now = Date.now();
-    projectSections.forEach((section) => {
-      if (projectView.collapsedProjects.has(section.project.id)) return;
-      section.groups.forEach((group) => {
-        if (group.isArchivedBucket || group.isMain) return;
-        const directory = normalizePath(group.directory ?? null);
-        const branch = group.branch?.trim() || topology.gitBranches.get(directory || '')?.trim();
-        if (!directory || !branch) return;
-        const key = getGitHubPrStatusKey(directory, branch);
-        const entry = useGitHubPrStatusStore.getState().entries[key];
-        const terminal = entry?.status?.pr?.state === 'closed' || entry?.status?.pr?.state === 'merged';
-        const retryKey = `${directory}::${branch}`;
-        const lastChecked = Math.max(entry?.lastRefreshAt ?? 0, entry?.lastDiscoveryPollAt ?? 0);
-        const retry = Boolean(entry?.isInitialStatusResolved && (!entry.status?.pr || terminal) && (!retriedRef.current.has(retryKey) || now - lastChecked >= PR_NO_PR_RETRY_MS));
-        if (!entry || !entry.isInitialStatusResolved || retry) {
-          if (retry) retriedRef.current.add(retryKey);
-          targets.set(key, { directory, branch });
-        }
-      });
-    });
-    targets.forEach((target, key) => {
-      ensureEntry(key);
-      setParams(key, { ...target, remoteName: null, canShow: true, github, githubAuthChecked, githubConnected: githubAuthStatus.connected });
-    });
-    if (targets.size) void refreshTargets([...targets.values()], { silent: true, markInitialResolved: true });
-  }, [ensureEntry, github, githubAuthChecked, githubAuthStatus?.connected, projectSections, projectView.collapsedProjects, refreshTargets, setParams, topology.gitBranches]);
   const sessionOrderIndex = React.useMemo(
     () => new Map(collection.orderedSessions.map((session, index) => [session.id, index])),
     [collection.orderedSessions],
   );
   const orderedSectionsForRender = React.useMemo(
-    () => sectionsForSidebarRender.map((section) => {
+    () => worktreeSortOrder !== 'manual' ? sectionsForSidebarRender : sectionsForSidebarRender.map((section) => {
       const groups = getOrderedGroups(section.project.id, section.groups);
       return groups === section.groups ? section : { ...section, groups };
     }),
-    [getOrderedGroups, sectionsForSidebarRender],
+    [getOrderedGroups, sectionsForSidebarRender, worktreeSortOrder],
   );
   const recentActivitySections = React.useMemo(() => {
     const locations = resolveSidebarSessionLocations({
       sessions: recentSessions,
       projects: topology.projects,
       ownerBySessionId: ownership.bySessionId,
+      spaceLabelById,
       availableWorktreesByProject: topology.availableWorktreesByProject,
       gitBranches: topology.gitBranches,
       homeDirectory: view.homeDirectory,
@@ -344,7 +359,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
       getSessionNode: (session) => buildActiveSessionNode(collection.childrenMap, session),
       query: view.hasSessionSearchQuery ? view.normalizedSessionSearchQuery : '',
     });
-  }, [collection.childrenMap, ownership.bySessionId, recentSessions, topology.availableWorktreesByProject, topology.gitBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery]);
+  }, [collection.childrenMap, ownership.bySessionId, recentSessions, spaceLabelById, topology.availableWorktreesByProject, topology.gitBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery]);
 
   // Timeline lists the project sessions themselves, in the shared lifecycle
   // order (pinned first), with no project, worktree, or folder structure.
@@ -356,6 +371,7 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
       sessions,
       projects: topology.projects,
       ownerBySessionId: ownership.bySessionId,
+      spaceLabelById,
       availableWorktreesByProject: topology.availableWorktreesByProject,
       gitBranches: topology.gitBranches,
       homeDirectory: view.homeDirectory,
@@ -374,7 +390,110 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
       }),
       query: view.hasSessionSearchQuery ? view.normalizedSessionSearchQuery : '',
     });
-  }, [collection.childrenMap, collection.orderedSessions, collection.rootSessions, ownership.bySessionId, timelineMode, topology.availableWorktreesByProject, topology.gitBranches, topology.projectRootBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery]);
+  }, [collection.childrenMap, collection.orderedSessions, collection.rootSessions, ownership.bySessionId, spaceLabelById, timelineMode, topology.availableWorktreesByProject, topology.gitBranches, topology.projectRootBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery]);
+
+  const sessionWorkEnabled = useUIStore((state) => state.sessionWorkEnabled);
+  const workSessions = React.useMemo(() => {
+    if (!sessionWorkEnabled || opencodeClient.getBoundRuntime()?.generation !== 'oc2') return EMPTY_WORK_SESSIONS;
+    const sessions = collection.orderedSessions.filter((session) => !session.parentID && !session.time?.archived
+      && !isChatDirectoryPath(session.directory) && isSessionInWork(session));
+    return sessions.length > 0 ? sessions : EMPTY_WORK_SESSIONS;
+  }, [collection.orderedSessions, sessionWorkEnabled]);
+  const workSessionIds = React.useMemo(() => new Set(workSessions.map((session) => session.id)), [workSessions]);
+  const workItems = React.useMemo(() => {
+    if (workSessions.length === 0) return EMPTY_TIMELINE_ITEMS;
+    const locations = resolveSidebarSessionLocations({
+      sessions: [...workSessions], projects: topology.projects, ownerBySessionId: ownership.bySessionId,
+      spaceLabelById,
+      availableWorktreesByProject: topology.availableWorktreesByProject, gitBranches: topology.gitBranches,
+      homeDirectory: view.homeDirectory, rootBranchByProjectId: topology.projectRootBranches,
+      hideBranchMatchingProjectLabel: !timelineMode,
+    });
+    const nodes = new Map(workSessions.map((session) => {
+      const tree = buildActiveSessionNode(collection.childrenMap, session);
+      return [session.id, { ...tree, children: timelineMode ? [] : tree.children,
+        worktree: locations.get(session.id)?.worktree ?? null }];
+    }));
+    const query = view.hasSessionSearchQuery ? view.normalizedSessionSearchQuery : '';
+    const listed = query ? workSessions.filter((session) => {
+      const node = nodes.get(session.id);
+      return node ? sessionTreeMatchesSidebarQuery(node, query) : false;
+    }) : [...workSessions];
+    return deriveTimelineActivityItems({ sessions: listed,
+      getSessionLocation: (sessionId) => locations.get(sessionId) ?? null,
+      getSessionNode: (session) => nodes.get(session.id) ?? buildActiveSessionNode(collection.childrenMap, session),
+      query: '' });
+  }, [collection.childrenMap, ownership.bySessionId, spaceLabelById, timelineMode, topology.availableWorktreesByProject, topology.gitBranches, topology.projectRootBranches, topology.projects, view.hasSessionSearchQuery, view.homeDirectory, view.normalizedSessionSearchQuery, workSessions]);
+  // Worktree branches whose PR badge is on screen in the current mode:
+  // Timeline rows there; expanded project groups plus Recent rows in the
+  // Projects view; In work rows in both. Collapse state from the Projects
+  // view must not decide what a Timeline badge shows.
+  const shownPrs = React.useMemo(() => {
+    const targets = new Map<string, { directory: string; branch: string }>();
+    // PRs linked to the sessions on screen, whatever their branch.
+    const linkedRefs = new Map<string, GitHubPullRequestRef>();
+    const addTarget = (directory: string | null, branch: string | null | undefined) => {
+      const trimmed = branch?.trim();
+      if (directory && trimmed) targets.set(getGitHubPrStatusKey(directory, trimmed), { directory, branch: trimmed });
+    };
+    // Same pair a row derives its badge key from (resolveSessionPrLookupKey).
+    const addNode = (node: SessionNode) => {
+      addTarget(normalizePath(node.worktree?.path ?? null), node.worktree?.branch);
+      if (!topology.isVSCode) {
+        for (const link of getLinkedGitHubPullRequests(node.session)) {
+          linkedRefs.set(`${link.owner.toLowerCase()}/${link.repo.toLowerCase()}#${link.number}`, { owner: link.owner, repo: link.repo, number: link.number });
+        }
+      }
+      node.children.forEach(addNode);
+    };
+    workItems.forEach((item) => addNode(item.node));
+    if (timelineMode) {
+      timelineItems.forEach((item) => addNode(item.node));
+      return { targets, linkedRefs: [...linkedRefs.values()] };
+    }
+    recentActivitySections.forEach((section) => section.items.forEach((item) => addNode(item.node)));
+    projectSections.forEach((section) => {
+      if (projectView.collapsedProjects.has(section.project.id)) return;
+      section.groups.forEach((group) => {
+        if (group.isArchivedBucket) return;
+        // Root sessions show linked PRs too; only worktree groups have a
+        // branch PR of their own.
+        group.sessions.forEach(addNode);
+        if (group.isMain) return;
+        const directory = normalizePath(group.directory ?? null);
+        addTarget(directory, group.branch?.trim() || topology.gitBranches.get(directory || ''));
+      });
+    });
+    return { targets, linkedRefs: [...linkedRefs.values()] };
+  }, [projectSections, projectView.collapsedProjects, recentActivitySections, timelineItems, timelineMode, topology.gitBranches, topology.isVSCode, workItems]);
+  const shownPrTargets = shownPrs.targets;
+  const shownPrKeys = React.useMemo(() => [...shownPrTargets.keys()], [shownPrTargets]);
+  const githubConnected = Boolean(githubAuthChecked && githubAuthStatus?.connected);
+  // Discovery: find the PR of a branch that has none yet, or whose PR is
+  // closed/merged (a newer one may have opened). Open PRs stay live through
+  // the batched summaries below instead.
+  React.useEffect(() => {
+    if (!github || !githubConnected) return;
+    const targets = new Map<string, { directory: string; branch: string }>();
+    const now = Date.now();
+    shownPrTargets.forEach(({ directory, branch }, key) => {
+      const entry = useGitHubPrStatusStore.getState().entries[key];
+      const terminal = entry?.status?.pr?.state === 'closed' || entry?.status?.pr?.state === 'merged';
+      const retryKey = `${directory}::${branch}`;
+      const lastChecked = Math.max(entry?.lastRefreshAt ?? 0, entry?.lastDiscoveryPollAt ?? 0);
+      const retry = Boolean(entry?.isInitialStatusResolved && (!entry.status?.pr || terminal) && (!retriedRef.current.has(retryKey) || now - lastChecked >= PR_NO_PR_RETRY_MS));
+      if (!entry || !entry.isInitialStatusResolved || retry) {
+        if (retry) retriedRef.current.add(retryKey);
+        targets.set(key, { directory, branch });
+      }
+    });
+    targets.forEach((target, key) => {
+      ensureEntry(key);
+      setParams(key, { ...target, remoteName: null, canShow: true, github, githubAuthChecked, githubConnected });
+    });
+    if (targets.size) void refreshTargets([...targets.values()], { silent: true, markInitialResolved: true });
+  }, [ensureEntry, github, githubAuthChecked, githubConnected, refreshTargets, setParams, shownPrTargets]);
+  useOpenPrSummarySync(shownPrKeys, shownPrs.linkedRefs, github, githubConnected);
 
   const { groupStatusByKey, bootstrapSnapshot } = useSidebarGroupStatus({
     childStores,
@@ -508,6 +627,8 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     chatGroup,
     recentSections: recentActivitySections,
     timelineItems,
+    workItems,
+    workSessionIds,
     showRecentSection: showRecentSection && !singleProjectMode && !timelineMode,
     foldersMap,
     groupSearchDataByGroup,
@@ -528,7 +649,8 @@ const VisibleSessionProjects: React.FC<SessionProjectCollectionProps> = ({ topol
     showOnlyMainWorkspace: view.showOnlyMainWorkspace,
     hideDirectoryControls: view.hideDirectoryControls,
     sessionBatchSize: singleProjectMode && !view.useGroupedSections ? 20 : undefined,
-  }), [chatGroup, collapsedActivityKeys, timelineItems, timelineMode, collapsedFolderIds, collection.pinnedSessionIds, expandedParents, folderAuthorityByOwner, foldersMap, groupSearchDataByGroup, groupStatusByKey, orderedSectionsForRender, projectSections, projectView.collapsedGroups, projectView.collapsedProjects, recentActivitySections, selectedSingleProjectId, sessionOrderIndex, showRecentSection, singleProjectMode, view.activeProjectId, view.hasSessionSearchQuery, view.hideDirectoryControls, view.normalizedSessionSearchQuery, view.showOnlyMainWorkspace, view.useGroupedSections, visibleCountByContainer]);
+    runIndex,
+  }), [runIndex, chatGroup, collapsedActivityKeys, timelineItems, timelineMode, workItems, workSessionIds, collapsedFolderIds, collection.pinnedSessionIds, expandedParents, folderAuthorityByOwner, foldersMap, groupSearchDataByGroup, groupStatusByKey, orderedSectionsForRender, projectSections, projectView.collapsedGroups, projectView.collapsedProjects, recentActivitySections, selectedSingleProjectId, sessionOrderIndex, showRecentSection, singleProjectMode, view.activeProjectId, view.hasSessionSearchQuery, view.hideDirectoryControls, view.normalizedSessionSearchQuery, view.showOnlyMainWorkspace, view.useGroupedSections, visibleCountByContainer]);
   React.useEffect(() => {
     onSearchMatchCountChange(sidebarRowModel.searchMatchCount);
   }, [onSearchMatchCountChange, sidebarRowModel.searchMatchCount]);

@@ -4,8 +4,8 @@ import { parseV2Event, projectV2Event } from './events';
 
 describe('OC2 event projection', () => {
   test('catalog events preserve the list that changed', () => {
-    const types = ['config.updated', 'websearch.updated', 'credential.updated'] as const;
-    const catalogs = ['config', 'websearch', 'credential'];
+    const types = ['config.updated', 'websearch.updated', 'credential.updated', 'agent.updated'] as const;
+    const catalogs = ['config', 'websearch', 'credential', 'agent'];
     types.forEach((type, index) => {
       const event: V2Event = { id: 'evt_0123456789abcdef', created: 1, type, data: {}, location: { directory: '/repo' } };
       expect(projectV2Event(event)).toMatchObject({ type: 'refresh', scope: 'global', catalog: catalogs[index], directory: '/repo' });
@@ -64,5 +64,24 @@ describe('OC2 event projection', () => {
       data: { sessionID: 'ses-1', title: 'New' },
     } as V2Event;
     expect(projectV2Event(event)).toEqual({ type: 'session-refresh', sessionID: 'ses-1', directory: undefined, eventID: 'evt-5', sequence: 7 });
+  });
+
+  test('publishes only session-owned background shell lifecycle events', () => {
+    const shellInfo = { id: 'shell-1', status: 'running', command: 'bun dev', cwd: '/repo', shell: '/bin/bash', file: '/tmp/shell.out', metadata: { sessionID: 'ses-1' }, time: { started: 5 } };
+    const created = {
+      id: 'evt-shell-created', created: 6, type: 'shell.created',
+      data: { info: shellInfo },
+      location: { directory: '/repo' },
+    } as V2Event;
+    expect(projectV2Event(created)).toEqual({
+      type: 'shell.started',
+      shell: { id: 'shell-1', sessionID: 'ses-1', command: 'bun dev', file: '/tmp/shell.out', startedAt: 5 },
+      directory: '/repo',
+      eventID: 'evt-shell-created',
+    });
+    const unowned = { ...created, id: 'evt-unowned', data: { info: { ...shellInfo, metadata: {} } } } as V2Event;
+    expect(projectV2Event(unowned)).toBeNull();
+    const deleted = { id: 'evt-shell-deleted', created: 7, type: 'shell.deleted', data: { id: 'shell-1' } } as V2Event;
+    expect(projectV2Event(deleted)).toEqual({ type: 'shell.ended', shellID: 'shell-1', directory: undefined, eventID: 'evt-shell-deleted' });
   });
 });

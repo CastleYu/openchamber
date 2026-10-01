@@ -19,6 +19,7 @@ import { registerProjectContextRoutes } from '../project-context/routes.js';
 import { registerProjectSetupRoutes } from '../projects/routes.js';
 import { registerAgentMemoryRoutes } from '../agent-memory/routes.js';
 import { registerSessionKnowledgeRoutes } from '../session-knowledge/routes.js';
+import { registerMessageSearchRoutes } from '../message-search/routes.js';
 import { registerPermissionAutoAcceptRoutes } from '../permission-auto-accept/runtime.js';
 import { registerMessageQueueRoutes } from '../message-queue/runtime.js';
 import { registerRoutingPromptRewrite, registerRoutingRoutes } from '../routing/routes.js';
@@ -104,6 +105,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
 
   const registerRoutes = async (app, routeDependencies) => {
     const {
+      messageSearchRuntime,
       crypto,
       fs,
       os,
@@ -115,6 +117,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       openchamberDataDir,
       runtimeLog,
       onGuestDeactivated,
+      surfaceViewerHeaders,
       openchamberUserConfigRoot,
       managedChatsRoot,
       normalizeDirectoryPath,
@@ -370,7 +373,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       getProfile,
     });
 
-    registerQuotaRoutes(app, { getQuotaProviders });
+    registerQuotaRoutes(app, { getQuotaProviders, getKernelRuntime: kernelRuntime.get });
     registerPerformanceRoutes(app);
     registerResourceModeRoutes(app);
     registerSmallModelRoutes(app, { getSmallModelService });
@@ -379,8 +382,10 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerGitHubRoutes(app);
     registerLinearRoutes(app);
     await registerBuiltInGuests({ persistPath: extensionsPersistPath(openchamberDataDir), root: routeDependencies.builtInExtensionsDir });
-    registerGuestRoutes(app, { openchamberDataDir, openchamberVersion, resolveGitBinaryForSpawn, resolveOptionalProjectDirectory, getSmallModelService, onGuestDeactivated });
+    registerGuestRoutes(app, { openchamberDataDir, openchamberVersion, resolveGitBinaryForSpawn, resolveOptionalProjectDirectory, getSmallModelService, onGuestDeactivated, surfaceViewerHeaders, isOc2: () => kernelRuntime.get().generation === 'oc2' });
     registerGitRoutes(app, {
+      buildOpenCodeUrl,
+      getOpenCodeAuthHeaders,
       emitWorktreeChanged: ({ directories, at }) => {
         const clients = getOpenChamberEventClients();
         for (const client of clients) {
@@ -405,6 +410,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerProjectSetupRoutes(app, { projectConfigRuntime });
     registerAgentMemoryRoutes(app, { agentMemoryRuntime, isAgentMemoryEnabled });
     registerSessionKnowledgeRoutes(app, { sessionKnowledgeRuntime });
+    registerMessageSearchRoutes(app, { messageSearchRuntime });
 
     registerSessionFoldersRoutes(app, {
       fsPromises,

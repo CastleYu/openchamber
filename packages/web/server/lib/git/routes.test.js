@@ -8,6 +8,7 @@ const gitLibraries = {
   getWorktrees: vi.fn(),
   observeWorktreeTopology: vi.fn(),
   subscribeWorktreeTopologyChanges: vi.fn(),
+  snapshotWorktree: vi.fn(),
 };
 
 vi.mock('./index.js', () => ({
@@ -18,6 +19,7 @@ vi.mock('./index.js', () => ({
   getWorktrees: gitLibraries.getWorktrees,
   observeWorktreeTopology: gitLibraries.observeWorktreeTopology,
   subscribeWorktreeTopologyChanges: gitLibraries.subscribeWorktreeTopologyChanges,
+  snapshotWorktree: gitLibraries.snapshotWorktree,
 }));
 
 const { registerGitRoutes } = await import('./routes.js');
@@ -73,6 +75,22 @@ describe('git routes index mutations', () => {
     gitLibraries.unstageFiles.mockReset();
     gitLibraries.isGitRepository.mockReset();
     gitLibraries.getStatus.mockReset();
+    gitLibraries.snapshotWorktree.mockReset();
+  });
+
+  it('routes a private run snapshot and rejects invalid refs', async () => {
+    const { app, getRoute } = createRouteRegistry();
+    registerGitRoutes(app);
+    const route = getRoute('POST', '/api/git/worktrees/snapshot');
+    gitLibraries.snapshotWorktree.mockResolvedValue({ ref: 'refs/openchamber/runs/group/lane', commit: 'abc', head: 'def' });
+    const response = createMockResponse();
+    await route({ query: { directory: '/repo' }, body: { ref: 'refs/openchamber/runs/group/lane' } }, response);
+    expect(response.statusCode).toBe(200);
+    expect(gitLibraries.snapshotWorktree).toHaveBeenCalledWith('/repo', { ref: 'refs/openchamber/runs/group/lane' });
+    gitLibraries.snapshotWorktree.mockRejectedValueOnce(new Error('Invalid snapshot ref'));
+    const invalid = createMockResponse();
+    await route({ query: { directory: '/repo' }, body: { ref: 'refs/heads/main' } }, invalid);
+    expect(invalid.statusCode).toBe(400);
   });
 
   it('accepts legacy stage path payloads', async () => {

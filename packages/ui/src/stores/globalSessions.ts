@@ -4,6 +4,7 @@ import { retry } from "@/sync/retry";
 import { stripSessionListDetails } from "@/sync/sanitize";
 import { startSessionLoadPerformanceEvent } from "@/sync/session-load-performance";
 import { isChatDirectoryPath } from '@/lib/chatDirectories';
+import type { SpaceMark } from '@/lib/spaces/spaces-store';
 
 export type GlobalSessionRecord = Session & {
     project?: {
@@ -23,7 +24,7 @@ export type SessionPager = {
     listSessionsPage(options?: {
         global?: boolean; directory?: string | null; archived?: boolean; roots?: boolean;
         limit?: number; cursor?: string; signal?: AbortSignal;
-    }): Promise<{ sessions: Session[]; cursor: { next?: string } }>;
+    }): Promise<{ sessions: Session[]; cursor: { next?: string }; spaces?: SpaceMark[] }>;
 };
 
 /**
@@ -70,6 +71,7 @@ export async function listGlobalSessionPages(
         roots?: boolean;
         pageSize: number;
         onPage?: (sessions: GlobalSessionRecord[]) => void;
+        onSpaces?: (spaces: SpaceMark[] | null) => void;
     },
 ): Promise<GlobalSessionRecord[]> {
     const all: GlobalSessionRecord[] = [];
@@ -93,7 +95,7 @@ export async function listGlobalSessionPages(
             operation,
             caller: cursor === undefined ? "initial-page" : "pagination",
         });
-        const { nextCursor, payload } = await retry(
+        const { nextCursor, payload, spaces } = await retry(
             () => runSessionListNetworkTask(async () => {
                 attempts += 1;
                 const response = await apiClient.listSessionsPage({
@@ -105,7 +107,7 @@ export async function listGlobalSessionPages(
                     ...(cursor !== undefined ? { cursor } : {}),
                 });
                 const payload = response.sessions.map((session) => stripSessionListDetails(session));
-                return { nextCursor: response.cursor.next, payload };
+                return { nextCursor: response.cursor.next, payload, spaces: response.spaces };
             }),
             { attempts: 3, delay: 500, retryIf: () => true },
         ).catch((error) => {
@@ -113,6 +115,7 @@ export async function listGlobalSessionPages(
             throw error;
         });
 
+        if (cursor === undefined) options.onSpaces?.(spaces ?? null);
         finishPerformanceEvent("complete", {
             retryCount: Math.max(0, attempts - 1),
             recordCount: payload.length,

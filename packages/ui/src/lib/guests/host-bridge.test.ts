@@ -43,6 +43,8 @@ const effects = (overrides: Partial<BridgeEffects> = {}): BridgeEffects => ({
   serviceStatus: overrides.serviceStatus ?? (async () => ({ ok: true, result: { status: 'ready' as const } })),
   file: overrides.file ?? (async () => ({ ok: true, result: { written: true as const } })),
   generate: overrides.generate ?? (async () => ({ ok: true, result: { text: '' } })),
+  openCommit: overrides.openCommit ?? (async () => ({ ok: true })),
+  resize: overrides.resize ?? (() => {}),
   setBadge: overrides.setBadge ?? (() => {}),
   resolveResult: overrides.resolveResult ?? (() => {}),
 });

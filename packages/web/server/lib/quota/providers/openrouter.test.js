@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../opencode/auth.js', () => ({
-  readAuthFile: () => ({ openrouter: { key: 'test-token' } }),
+  readOpenCodeCredentials: async () => ({ openrouter: { key: 'test-token' } }),
 }));
 
 import { fetchQuota, resolveResetAt } from './openrouter.js';
@@ -52,6 +52,16 @@ const expectMonthlyReset = (resetAt) => {
 };
 
 describe('OpenRouter quota provider', () => {
+  it('uses a supplied generation config reader for the key endpoint', async () => {
+    const requested = [];
+    vi.stubGlobal('fetch', async (url) => {
+      requested.push(url);
+      return mockResponse(DOCUMENTED_PAYLOAD);
+    });
+    await fetchQuota({ readLayers: () => ({ mergedConfig: { providers: { openrouter: { settings: { baseURL: 'https://gateway.test/v1/' } } } } }) });
+    await fetchQuota({ readLayers: () => ({ mergedConfig: { provider: { openrouter: { options: { baseURL: 'https://legacy.test/v1' } } } } }) });
+    expect(requested).toEqual(['https://gateway.test/v1/key', 'https://legacy.test/v1/key']);
+  });
   it('builds a monthly window from the documented payload', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse(DOCUMENTED_PAYLOAD)));
 

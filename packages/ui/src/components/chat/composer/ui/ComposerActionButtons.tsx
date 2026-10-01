@@ -26,6 +26,7 @@ type ComposerActionButtonsProps = {
     onPrimaryAction: () => void;
     onQueueMessage: () => void;
     onAbort: () => void;
+    sendLabel?: string;
 };
 
 export const ComposerActionButtons = React.memo(function ComposerActionButtons(props: ComposerActionButtonsProps) {
@@ -42,6 +43,7 @@ export const ComposerActionButtons = React.memo(function ComposerActionButtons(p
         onPrimaryAction,
         onQueueMessage,
         onAbort,
+        sendLabel,
     } = props;
     const { t } = useI18n();
 
@@ -63,7 +65,7 @@ export const ComposerActionButtons = React.memo(function ComposerActionButtons(p
                     ? 'text-primary hover:text-primary'
                     : 'opacity-30'
             )}
-            aria-label={t('chat.chatInput.actions.sendMessageAria')}
+            aria-label={sendLabel ?? t('chat.chatInput.actions.sendMessageAria')}
         >
             <Icon name="send-plane-2" className={cn(sendIconSizeClass)} />
         </button>

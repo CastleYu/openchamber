@@ -14,6 +14,7 @@ import {
 } from './files.js';
 
 const tempDirs = [];
+// The guest contract uses forward slashes, including Windows drive-rooted paths.
 const guestPath = (value) => process.platform === 'win32' ? value.split(path.sep).join('/') : value;
 
 const makeTemp = async (prefix) => {
@@ -74,7 +75,7 @@ describe('resolveGuestFilePath', () => {
     expect(inside).toEqual({ ok: true, scope: 'project', absolute: path.join(project, 'README.md') });
     const dot = await resolveGuestFilePath({ path: '.', projectDirectory: project, patterns: [], homeDir: os.homedir() });
     expect(dot).toEqual({ ok: true, scope: 'project', absolute: project });
-    for (const bad of ['../etc/passwd', 'src/../../x', '~/../x', '/tmp/../etc', 'a\\b', 'a\0b', '']) {
+    for (const bad of ['../etc/passwd', 'src/../../x', '~/../x', '/tmp/../etc', 'a\\b', 'a\0b', '', 'C:notes.txt']) {
       const result = await resolveGuestFilePath({ path: bad, projectDirectory: project, patterns: ['/**'], homeDir: os.homedir() });
       expect(result).toMatchObject({ ok: false, code: 'BAD_PATH' });
     }
@@ -141,7 +142,7 @@ describe('runGuestFileOperation', () => {
       probe,
       run: (overrides) => runGuestFileOperation({
         projectDirectory: project,
-      patterns: [`${guestPath(probe)}/**`],
+        patterns: [`${guestPath(probe)}/**`],
         grants: ['files', 'filesystem'],
         homeDir: os.homedir(),
         ...overrides,

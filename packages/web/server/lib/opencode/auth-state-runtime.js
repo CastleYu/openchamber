@@ -1,3 +1,5 @@
+import { OPENCODE_GENERATION } from './compatibility.js';
+
 export const createOpenCodeAuthStateRuntime = (dependencies) => {
   const {
     crypto,
@@ -8,6 +10,7 @@ export const createOpenCodeAuthStateRuntime = (dependencies) => {
     setAuthSource,
     getUserProvidedPassword,
     syncToHmrState,
+    getGeneration = () => OPENCODE_GENERATION.OC1,
   } = dependencies;
 
   const normalizeOpenCodePassword = (value) => {
@@ -44,22 +47,22 @@ export const createOpenCodeAuthStateRuntime = (dependencies) => {
     return normalized;
   };
 
-  const getOpenCodeAuthHeaders = () => {
-    const password = normalizeOpenCodePassword(getAuthPassword() || process.env.OPENCODE_SERVER_PASSWORD || '');
+  const getOpenCodeAuthHeaders = (generation = getGeneration()) => {
+    const password = normalizeOpenCodePassword((generation === OPENCODE_GENERATION.OC2 ? getUserProvidedPassword(generation) : null) || getAuthPassword() || process.env.OPENCODE_SERVER_PASSWORD || '');
 
     if (!password) {
       return {};
     }
 
-    const username = process.env.OPENCODE_SERVER_USERNAME?.trim() || 'opencode';
+    const username = generation === OPENCODE_GENERATION.OC2 ? 'opencode' : process.env.OPENCODE_SERVER_USERNAME?.trim() || 'opencode';
     const credentials = Buffer.from(`${username}:${password}`).toString('base64');
     return { Authorization: `Basic ${credentials}` };
   };
 
   const isOpenCodeConnectionSecure = () => Object.prototype.hasOwnProperty.call(getOpenCodeAuthHeaders(), 'Authorization');
 
-  const ensureLocalOpenCodeServerPassword = async ({ rotateManaged = false } = {}) => {
-    const userProvidedPassword = getUserProvidedPassword();
+  const ensureLocalOpenCodeServerPassword = async ({ rotateManaged = false, generation = getGeneration() } = {}) => {
+    const userProvidedPassword = getUserProvidedPassword(generation);
     if (isValidOpenCodePassword(userProvidedPassword)) {
       return setOpenCodeAuthState(userProvidedPassword, 'user-env');
     }

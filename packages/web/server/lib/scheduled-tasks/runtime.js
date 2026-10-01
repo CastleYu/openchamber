@@ -256,6 +256,7 @@ export const createScheduledTasksRuntime = (deps) => {
     emitTaskRunEvent,
     setSessionAutoAccept,
     sessionKnowledgeRuntime = null,
+    chatsScope = null,
     logger = console,
     maxGlobalConcurrency = DEFAULT_GLOBAL_CONCURRENCY,
     maxProjectConcurrency = DEFAULT_PROJECT_CONCURRENCY,
@@ -365,13 +366,21 @@ export const createScheduledTasksRuntime = (deps) => {
     }
   };
 
+  const isChatsScope = (projectID) => Boolean(chatsScope) && projectID === chatsScope.id;
+  const listScopes = async () => {
+    const projects = await listProjects();
+    return chatsScope && !projects.some((project) => project?.id === chatsScope.id)
+      ? [...projects, { id: chatsScope.id, path: chatsScope.root }]
+      : projects;
+  };
+
   const ensureProjectPath = async (projectID) => {
     if (projectPathByID.has(projectID)) {
       return projectPathByID.get(projectID) || null;
     }
 
     try {
-      const projects = await listProjects();
+      const projects = await listScopes();
       const project = projects.find((item) => item?.id === projectID && item?.path);
       if (project?.path) {
         projectPathByID.set(projectID, project.path);
@@ -388,7 +397,7 @@ export const createScheduledTasksRuntime = (deps) => {
     const projectPath = projectPathByID.get(projectID) || null;
 
     let tasks;
-    if (projectPath) {
+    if (projectPath && !isChatsScope(projectID)) {
       // Reconcile `.agents/loops` definitions with the persisted task list:
       // loop files are authoritative while present, removed files unschedule
       // their task, and runtime state is preserved (see loops.js).
@@ -408,7 +417,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const syncAllProjects = async () => {
-    const projects = await listProjects();
+    const projects = await listScopes();
     const activeProjectIDs = new Set();
     projectPathByID.clear();
     for (const project of projects) {
@@ -606,6 +615,12 @@ export const createScheduledTasksRuntime = (deps) => {
     }
 
     const identity = kernelOperations?.captureIdentity();
+    if (isChatsScope(projectID) && identity?.generation !== 'oc2') {
+      throw new Error('Scheduled chats require OpenCode 2');
+    }
+    const directory = isChatsScope(projectID)
+      ? await chatsScope.createChatDirectory(new Date(startedAt))
+      : projectPath;
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
     const authHeaders = getOpenCodeAuthHeaders();
     const client = kernelOperations ? null : createOpencodeClient({
@@ -613,12 +628,16 @@ export const createScheduledTasksRuntime = (deps) => {
       headers: authHeaders,
     });
 
-    const sessionResponse = kernelOperations
-      ? await kernelOperations.createSession({ directory: projectPath, title })
-      : await client.session.create({ directory: projectPath, title });
-    const sessionID = sessionResponse?.data?.id;
-    if (!sessionID) {
-      throw new Error('failed to create session');
+    let sessionID;
+    try {
+      const sessionResponse = kernelOperations
+        ? await kernelOperations.createSession({ directory, title })
+        : await client.session.create({ directory, title });
+      sessionID = sessionResponse?.data?.id;
+      if (!sessionID) throw new Error('failed to create session');
+    } catch (error) {
+      if (directory !== projectPath) await chatsScope.discardChatDirectory(directory);
+      throw error;
     }
 
     try {
@@ -637,13 +656,13 @@ export const createScheduledTasksRuntime = (deps) => {
       // is already auto-approved. Enrollment failure must not kill the run —
       // the task still executes, permissions just wait for the user.
       try {
-        await setSessionAutoAccept(sessionID, true, projectPath);
+        await setSessionAutoAccept(sessionID, true, directory);
       } catch (error) {
         logger.warn?.('[scheduled-tasks] failed to enable permission auto-accept for session', sessionID, error?.message ?? error);
       }
     }
 
-    const scheduledCommand = await resolveScheduledCommand({ client, projectPath, task });
+    const scheduledCommand = await resolveScheduledCommand({ client, projectPath: directory, task });
 
     if (task.execution.goalEnabled) {
       const commandObjective = scheduledCommand
@@ -654,8 +673,8 @@ export const createScheduledTasksRuntime = (deps) => {
         authHeaders,
         kernelOperations,
         sessionID,
-        directory: projectPath,
-        objective: commandObjective ?? expandSnippets(task.execution.prompt, projectPath),
+        directory,
+        objective: commandObjective ?? expandSnippets(task.execution.prompt, directory),
         tokenBudget: task.execution.goalTokenBudget,
         providerID: task.execution.providerID,
         modelID: task.execution.modelID,
@@ -664,13 +683,13 @@ export const createScheduledTasksRuntime = (deps) => {
     }
 
     if (scheduledCommand) {
-      await runScheduledCommand({ client, projectPath, sessionID, task, command: scheduledCommand, identity });
+      await runScheduledCommand({ client, projectPath: directory, sessionID, task, command: scheduledCommand, identity });
     } else {
       await runPromptAsync({
         baseUrl,
         authHeaders,
         sessionID,
-        projectPath,
+        projectPath: directory,
         task,
         identity,
       });
@@ -679,6 +698,7 @@ export const createScheduledTasksRuntime = (deps) => {
     const finishedAt = Date.now();
     return {
       sessionID,
+      directory,
       durationMs: Math.max(0, finishedAt - startedAt),
       reason,
       startedAt,
@@ -905,6 +925,7 @@ export const createScheduledTasksRuntime = (deps) => {
 
       let status = 'success';
       let sessionID;
+      let sessionDirectory;
       let durationMs = 0;
       let errorMessage;
 
@@ -923,6 +944,7 @@ export const createScheduledTasksRuntime = (deps) => {
           }
         });
         sessionID = result.sessionID;
+        sessionDirectory = result.directory;
         durationMs = result.durationMs;
         status = 'success';
         logger.info?.(
@@ -1041,6 +1063,7 @@ export const createScheduledTasksRuntime = (deps) => {
           ok: status === 'success',
           status,
           sessionID,
+          directory: sessionDirectory,
           task: stateResult.task || recoveredTask,
           error: status === 'error' ? errorMessage : undefined,
           persistError: message,
@@ -1063,6 +1086,7 @@ export const createScheduledTasksRuntime = (deps) => {
         ok: status === 'success',
         status,
         sessionID,
+        directory: sessionDirectory,
         task: stateResult.task || null,
         error: errorMessage,
       };

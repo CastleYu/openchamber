@@ -75,6 +75,29 @@ beforeEach(() => {
   removeObjectiveForFork.mockReset(); removeObjectiveForFork.mockResolvedValue(undefined);
 });
 
+describe('session service project directory resolution', () => {
+  it('resolves a registered project and fails closed for unknown or unreadable projects', async () => {
+    const { createOpenChamberSessionService } = await import('./routes.js');
+    const dependencies = {
+      kernelOperations: { captureIdentity: () => identity('oc2') },
+      readSettingsFromDiskMigrated: async () => ({ projects: [{ id: 'proj_1', path: '/repo/app' }] }),
+      sanitizeProjects: (projects) => projects,
+      validateDirectoryPath: async (directory) => ({ ok: true, directory }),
+    };
+    const service = createOpenChamberSessionService(dependencies);
+    await expect(service.resolveDirectory({ projectId: 'proj_1' })).resolves.toBe('/repo/app');
+    await expect(service.resolveDirectory({ projectId: 'missing' }))
+      .rejects.toMatchObject({ statusCode: 404, message: 'Project not found' });
+    const missingFolder = createOpenChamberSessionService({ ...dependencies,
+      validateDirectoryPath: async () => ({ ok: false, error: 'Directory not found' }) });
+    await expect(missingFolder.resolveDirectory({ projectId: 'proj_1' }))
+      .rejects.toMatchObject({ statusCode: 400, message: 'Directory not found' });
+    const unreadable = createOpenChamberSessionService({ ...dependencies,
+      readSettingsFromDiskMigrated: async () => { throw new Error('settings unreadable'); } });
+    await expect(unreadable.resolveDirectory({ projectId: 'proj_1' })).rejects.toThrow('settings unreadable');
+  });
+});
+
 describe('OpenChamber session HTTP contracts', () => {
   it.each(['oc1', 'oc2'])('creates and dispatches with %s selection and the captured runtime', async (generation) => {
     const { app, kernelOperations } = setup(generation);

@@ -30,6 +30,18 @@ runtime. A pending record left behind is not an eligible member.
 ## Consumers
 
 - `useMultiRunStore` writes membership for both isolated and shared-directory runs.
+- On OC2, the composer can launch prompt variants with per-variant attachments,
+  a title and an optional automatic fusion judge. Each lane receives the
+  project's standing context before its first prompt. The overview reads
+  ordered message pages, so it can distinguish the first prompt from the last
+  reply. It revalidates selected sessions and preserves failed reads as errors.
+- Layouts load the overview when its key opens. Desktop and VS Code load
+  `RunAutoFusion` as soon as their OC2 layout mounts and keep it mounted while
+  the layout is active, including when the overview is closed.
+- The OC2 overview can add lanes, rename a run, keep or detach members, archive
+  members and start code or answer fusion. Run creation and fusion check the
+  bound runtime before each step. OC1 continues through its original launcher
+  and fusion dialog.
 - Sidebar menus use membership, including metadata-only row invalidation.
 - `MultiRunFusionDialog` selects the same group and prompt group, excludes fusion
   results, and retains user exclusions across session-list updates.

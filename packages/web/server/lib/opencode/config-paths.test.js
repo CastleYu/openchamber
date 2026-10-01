@@ -95,6 +95,7 @@ describe('OpenCode global config paths', () => {
       put(route, ...callbacks) { handlers.set(`PUT ${route}`, callbacks.at(-1)); },
       post() {},
       delete() {},
+      use() {},
     };
     routes.registerOpenCodeRoutes(app, {});
 
@@ -111,6 +112,17 @@ describe('OpenCode global config paths', () => {
     expect(response.json).toHaveBeenLastCalledWith({
       content: 'Global behavior', exists: true, path: path.join(process.env.XDG_CONFIG_HOME, 'opencode', 'AGENTS.md'),
     });
+
+    await handlers.get('PUT /api/behavior/agents-md')({
+      body: { content: 'Stale draft', expectedContent: 'Older behavior' },
+    }, response);
+    expect(response.status).toHaveBeenLastCalledWith(409);
+    expect(fs.readFileSync(path.join(process.env.XDG_CONFIG_HOME, 'opencode', 'AGENTS.md'), 'utf8')).toBe('Global behavior');
+
+    await handlers.get('PUT /api/behavior/agents-md')({
+      body: { content: 'Current draft', expectedContent: 'Global behavior' },
+    }, response);
+    expect(fs.readFileSync(path.join(process.env.XDG_CONFIG_HOME, 'opencode', 'AGENTS.md'), 'utf8')).toBe('Current draft');
     fs.rmSync(root, { recursive: true, force: true });
   });
 });

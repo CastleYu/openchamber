@@ -3,12 +3,12 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { randomUUID } from 'crypto';
+import { reconstructOriginalContentFromPatch } from './patchReconstruction';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { asSessionId, asSessionIdList, asSessionMetadata, asTimestamp, mergeMetadataPatch, parseJson, type JsonValue, type SessionStateStore } from './openchamberSessionState';
 import { removeProviderConfig, getProviderSources, upsertProviderConfig } from './opencodeConfig';
-import { getProviderAuth, removeProviderAuth } from './opencodeAuth';
+import { getLegacyProviderAuth, getOpenCodeProviderAuth, removeProviderAuth } from './opencodeAuth';
 import * as v2Config from './opencodeConfigV2';
-import * as v2Auth from './opencodeAuthV2';
 import { fetchQuotaForProvider, listConfiguredQuotaProviders } from './quotaProviders';
 import { credentialStatus, deleteCredential, importCursorCredential, normalizeCredential, readCredential, validateCredential, writeCredential, type ManagedProvider } from './quotaCredentials';
 import { getSessionActivitySnapshot } from './sessionActivityWatcher';
@@ -18,6 +18,7 @@ import { normalizeWindowsDriveLetter, pathsEqualWithNormalizedDriveLetter } from
 import { resolveWorkspaceFolders } from './workspaceResolver';
 import { resolveKernelRequest } from './kernelRequest';
 import type { BridgeContext, BridgeResponse } from './bridge';
+import { ENTERPRISE_MODE_ERROR, isEnterpriseMode, publicEnterprisePolicy } from '../../web/server/lib/enterprise-mode.js';
 
 const legacyClient = (ctx: BridgeContext | undefined) => {
   const manager = ctx?.manager;
@@ -123,12 +124,6 @@ const mapNodeArchToApiArch = (value: string): 'arm64' | 'x64' | 'unknown' => {
   return 'unknown';
 };
 
-type ParsedDiffHunk = {
-  newStart: number;
-  oldLines: string[];
-  newLines: string[];
-};
-
 const VIRTUAL_DIFF_SCHEME = 'openchamber-diff';
 const virtualDiffContents = new Map<string, string>();
 let virtualDiffCounter = 0;
@@ -170,76 +165,6 @@ const createVirtualOriginalDiffUri = (modifiedPath: string, content: string): vs
     path: `/${path.basename(modifiedPath) || 'original'}`,
     query: `key=${encodeURIComponent(key)}`,
   });
-};
-
-const parseUnifiedDiffHunks = (patch: string): ParsedDiffHunk[] => {
-  const lines = patch.split(/\r?\n/);
-  const hunks: ParsedDiffHunk[] = [];
-
-  let current: ParsedDiffHunk | null = null;
-
-  for (const line of lines) {
-    const headerMatch = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
-    if (headerMatch) {
-      if (current) {
-        hunks.push(current);
-      }
-      current = {
-        newStart: Number(headerMatch[1] || 1),
-        oldLines: [],
-        newLines: [],
-      };
-      continue;
-    }
-
-    if (!current) continue;
-
-    if (line.startsWith('---') || line.startsWith('+++') || line.startsWith('\\ No newline')) {
-      continue;
-    }
-
-    if (line.startsWith('-')) {
-      current.oldLines.push(line.slice(1));
-      continue;
-    }
-
-    if (line.startsWith('+')) {
-      current.newLines.push(line.slice(1));
-      continue;
-    }
-
-    if (line.startsWith(' ')) {
-      const content = line.slice(1);
-      current.oldLines.push(content);
-      current.newLines.push(content);
-    }
-  }
-
-  if (current) {
-    hunks.push(current);
-  }
-
-  return hunks;
-};
-
-const reconstructOriginalContentFromPatch = (modifiedContent: string, patch: string): string | null => {
-  const hunks = parseUnifiedDiffHunks(patch);
-  if (hunks.length === 0) {
-    return null;
-  }
-
-  const lines = modifiedContent.split('\n');
-  for (let index = hunks.length - 1; index >= 0; index -= 1) {
-    const hunk = hunks[index];
-    if (!hunk) {
-      continue;
-    }
-    const startIndex = Math.max(0, hunk.newStart - 1);
-    const replaceCount = hunk.newLines.length;
-    lines.splice(startIndex, replaceCount, ...hunk.oldLines);
-  }
-
-  return lines.join('\n');
 };
 
 const fetchFreeZenModels = async (): Promise<Array<{ id: string; owned_by?: string }>> => [];
@@ -322,6 +247,10 @@ export async function handleSystemBridgeMessage(
       return { id, type, success: true, data: { models } };
     }
 
+    case 'api:openchamber:enterprise-policy': {
+      return { id, type, success: true, data: publicEnterprisePolicy() };
+    }
+
     case 'api:openchamber:update-check': {
       try {
         const body = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
@@ -340,7 +269,7 @@ export async function handleSystemBridgeMessage(
         const archRaw = typeof body.arch === 'string' && body.arch.trim().length > 0
           ? body.arch.trim()
           : os.arch();
-        const reportUsage = body.reportUsage !== false;
+        const reportUsage = body.reportUsage !== false && !isEnterpriseMode();
 
         const requestBody = {
           appType: 'vscode',
@@ -481,7 +410,7 @@ export async function handleSystemBridgeMessage(
               if (!response.ok) throw new Error(`OpenCode unarchive failed (${response.status})`);
               restored.push({ id: sessionID, archivedAt: null });
             }
-          } catch (error) {
+          } catch {
             check();
             failedIds.push(sessionID);
           }
@@ -608,7 +537,7 @@ export async function handleSystemBridgeMessage(
         const sources = generation === 'oc2'
           ? v2Config.getProviderSources(providerId, workingDirectory)
           : getProviderSources(providerId, workingDirectory);
-        const auth = generation === 'oc2' ? v2Auth.getProviderAuth(providerId) : getProviderAuth(providerId);
+        const auth = generation === 'oc2' ? await getOpenCodeProviderAuth(providerId) : getLegacyProviderAuth(providerId);
         sources.auth.exists = Boolean(auth);
         const config = generation === 'oc2' ? v2Config.getStoredProviderConfig(providerId, workingDirectory) : undefined;
         return { id, type, success: true, data: { providerId, sources, ...(config ? { config } : {}) } };
@@ -625,18 +554,23 @@ export async function handleSystemBridgeMessage(
         config,
         scope,
         directory,
+        hasCredential,
       } = (payload || {}) as {
         providerID?: string;
         providerId?: string;
         config?: unknown;
         scope?: string;
         directory?: string;
+        hasCredential?: boolean;
       };
       const providerId = (typeof providerID === 'string' && providerID.trim())
         || (typeof providerIdAlias === 'string' && providerIdAlias.trim())
         || '';
       if (!providerId) {
         return { id, type, success: false, error: 'Provider ID is required' };
+      }
+      if (isEnterpriseMode()) {
+        return { id, type, success: false, error: ENTERPRISE_MODE_ERROR };
       }
       if (!config || typeof config !== 'object' || Array.isArray(config)) {
         return { id, type, success: false, error: 'Provider config is required' };
@@ -651,13 +585,13 @@ export async function handleSystemBridgeMessage(
           ? directory.trim()
           : ctx?.manager?.getWorkingDirectory();
         const writeConfig = generation === 'oc2' ? v2Config.upsertProviderConfig : upsertProviderConfig;
-        const storedAuth = generation === 'oc2' ? v2Auth.getProviderAuth(providerId) : getProviderAuth(providerId);
+        const storedAuth = generation === 'oc2' ? await getOpenCodeProviderAuth(providerId) : getLegacyProviderAuth(providerId);
         const result = writeConfig(
           providerId,
           config,
           workingDirectory,
           normalizedScope,
-          { hasStoredAuth: Boolean(storedAuth) },
+          { hasStoredAuth: hasCredential === true || Boolean(storedAuth) },
         );
         if (generation === 'oc1') await ctx?.manager?.restart();
         return {
@@ -681,7 +615,7 @@ export async function handleSystemBridgeMessage(
 
     case 'api:quota:providers': {
       try {
-        const providers = listConfiguredQuotaProviders();
+        const providers = await listConfiguredQuotaProviders();
         return { id, type, success: true, data: { providers } };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -725,7 +659,11 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Provider ID is required' };
       }
       try {
-        const result = await fetchQuotaForProvider(providerId);
+        const generation = await providerGeneration(ctx);
+        const runtime = ctx?.manager?.getKernelRuntime();
+        if (!runtime || runtime.generation !== generation) throw new Error('OpenCode connection changed during quota lookup');
+        const runtimeScope = `${runtime.endpoint}:${runtime.epoch}`;
+        const result = await fetchQuotaForProvider(providerId, generation, ctx?.manager?.getWorkingDirectory(), runtimeScope);
         return { id, type, success: true, data: result };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

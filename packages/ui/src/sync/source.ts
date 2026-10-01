@@ -9,6 +9,7 @@ import { V1SessionOperations } from '@/lib/opencode/v1/sessions';
 import { projectLegacyMessage, projectLegacyPart } from '@/lib/opencode/v1/projection';
 import type { V2SessionOperations } from '@/lib/opencode/v2/sessions';
 import { OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntimeBinding } from '@/lib/opencode/runtime';
+import { parseSpaceAnnouncement, type SpaceAnnouncement } from './space-events';
 
 export type SyncMessagePage = {
   /** Wire page order varies by generation; the loader sorts each page by message time. */
@@ -17,7 +18,7 @@ export type SyncMessagePage = {
 };
 
 type LegacyEnvelope = Awaited<ReturnType<OpencodeClient['global']['event']>>['stream'] extends AsyncIterable<infer T> ? T : never;
-export type SyncEvent = { generation: 'oc1'; value: LegacyEnvelope } | { generation: 'oc2'; value: DomainEvent };
+export type SyncEvent = { generation: 'oc1'; value: LegacyEnvelope } | { generation: 'oc2'; value: DomainEvent } | { generation: 'openchamber'; value: SpaceAnnouncement; eventID: string };
 export type TaggedAgents = { generation: 'oc1'; value: LegacyAgent[] } | { generation: 'oc2'; value: Agent[] };
 
 export type SyncBootstrapOperations = {
@@ -44,7 +45,7 @@ export type SyncSource = {
   status(directory: string, signal?: AbortSignal): Promise<Record<string, SessionStatus>>;
   permissions(directory: string, signal?: AbortSignal): Promise<PendingPermission[]>;
   inputs(directory: string, signal?: AbortSignal): Promise<PendingInput[]>;
-  events(signal: AbortSignal, lastEventID?: string): AsyncIterable<SyncEvent>;
+  events(signal: AbortSignal, lastEventID?: string, onActivity?: () => void): AsyncIterable<SyncEvent>;
 };
 
 function unwrap<T>(result: { data?: T; error?: unknown; response?: { status?: number } }, operation: string): T {
@@ -116,7 +117,7 @@ export type V2SyncOperations = {
   status(directory: string, signal?: AbortSignal): Promise<Record<string, SessionStatus>>;
   permissions(directory: string, signal?: AbortSignal): Promise<PendingPermission[]>;
   forms(directory: string, signal?: AbortSignal): Promise<PendingInput[]>;
-  events(signal: AbortSignal, lastEventID?: string): AsyncIterable<V2Event>;
+  events(signal: AbortSignal, lastEventID?: string, onActivity?: () => void): AsyncIterable<V2Event>;
 };
 
 export function createV2SyncSource(operations: V2SyncOperations, binding: OpenCodeRuntimeBinding, bootstrap: SyncBootstrapOperations): SyncSource {
@@ -139,9 +140,9 @@ export function createV2SyncSource(operations: V2SyncOperations, binding: OpenCo
     status: (directory, signal) => run('sync.status', () => operations.status(directory, signal)),
     permissions: (directory, signal) => run('sync.permission.list', () => operations.permissions(directory, signal)),
     inputs: (directory, signal) => run('sync.form.list', () => operations.forms(directory, signal)),
-    events: async function* (signal, lastEventID) {
+    events: async function* (signal, lastEventID, onActivity) {
       current();
-      for await (const wire of operations.events(signal, lastEventID)) {
+      for await (const wire of operations.events(signal, lastEventID, onActivity)) {
         current();
         if (recent.has(wire.id)) continue;
         recent.add(wire.id);
@@ -149,6 +150,11 @@ export function createV2SyncSource(operations: V2SyncOperations, binding: OpenCo
         if (eventOrder.length > 1024) {
           const expired = eventOrder.shift();
           if (expired) recent.delete(expired);
+        }
+        const local = wire.type.startsWith('openchamber:space-') ? parseSpaceAnnouncement(wire) : null;
+        if (local) {
+          yield { generation: 'openchamber', value: local, eventID: wire.id };
+          continue;
         }
         const event = projectV2Event(wire);
         if (event) {

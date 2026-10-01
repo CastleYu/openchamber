@@ -5,6 +5,7 @@
  * @module quota/providers
  */
 
+import { readOpenCodeCredentials } from '../../opencode/auth.js';
 import { buildResult } from '../utils/index.js';
 
 import * as claude from './claude/index.js';
@@ -20,6 +21,7 @@ import * as kimi from './kimi.js';
 import * as nanogpt from './nanogpt.js';
 import * as openai from './openai.js';
 import * as openrouter from './openrouter.js';
+import { readConfigLayers as readConfigLayersV2 } from '../../opencode/shared-v2.js';
 import * as zai from './zai.js';
 import * as zhipuaiCodingPlan from './zhipuai-coding-plan.js';
 import * as minimaxCodingPlan from './minimax-coding-plan.js';
@@ -168,12 +170,18 @@ const registry = {
 const pendingFetches = new Map();
 
 
-export const listConfiguredQuotaProviders = () => {
+/**
+ * Providers with a usable credential. OpenCode's stored credentials are read
+ * once and handed to every provider; when OpenCode cannot be asked this
+ * throws, so a transient failure does not look like "nothing configured".
+ */
+export const listConfiguredQuotaProviders = async () => {
+  const auth = await readOpenCodeCredentials();
   const configured = [];
 
   for (const [id, provider] of Object.entries(registry)) {
     try {
-      if (provider.isConfigured()) {
+      if (provider.isConfigured(auth)) {
         configured.push(id);
       }
     } catch {
@@ -184,7 +192,7 @@ export const listConfiguredQuotaProviders = () => {
   return configured;
 };
 
-const fetchQuotaForProviderUncoalesced = async (providerId) => {
+const fetchQuotaForProviderUncoalesced = async (providerId, identity) => {
   const provider = registry[providerId];
 
   if (!provider) {
@@ -198,6 +206,9 @@ const fetchQuotaForProviderUncoalesced = async (providerId) => {
   }
 
   try {
+    if (providerId === 'openrouter' && identity?.generation === 'oc2') {
+      return await provider.fetchQuota({ readLayers: readConfigLayersV2 });
+    }
     return await provider.fetchQuota();
   } catch (error) {
     return buildResult({
@@ -210,14 +221,15 @@ const fetchQuotaForProviderUncoalesced = async (providerId) => {
   }
 };
 
-export const fetchQuotaForProvider = (providerId) => {
-  const existing = pendingFetches.get(providerId);
+export const fetchQuotaForProvider = (providerId, identity) => {
+  const key = `${providerId}:${identity?.generation ?? 'oc1'}:${identity?.endpoint ?? ''}:${identity?.epoch ?? 0}`;
+  const existing = pendingFetches.get(key);
   if (existing) return existing;
 
-  const pending = fetchQuotaForProviderUncoalesced(providerId).finally(() => {
-    if (pendingFetches.get(providerId) === pending) pendingFetches.delete(providerId);
+  const pending = fetchQuotaForProviderUncoalesced(providerId, identity).finally(() => {
+    if (pendingFetches.get(key) === pending) pendingFetches.delete(key);
   });
-  pendingFetches.set(providerId, pending);
+  pendingFetches.set(key, pending);
   return pending;
 };
 

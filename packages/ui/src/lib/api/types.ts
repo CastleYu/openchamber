@@ -92,6 +92,8 @@ export interface ResizeTerminalPayload {
   sessionId: string;
   cols: number;
   rows: number;
+  /** The terminal's working directory; one inside an isolated space addresses that space. */
+  directory?: string | null;
 }
 
 export interface TerminalHandlers {
@@ -117,14 +119,19 @@ export interface TerminalAPI {
   listShells?(): Promise<TerminalShellOption[]>;
   /** Server-side sessions for a working directory, or all directories when cwd is empty; absent on runtimes without a server terminal list. */
   listSessions?(cwd: string): Promise<TerminalServerSession[]>;
-  /** Marks the sessions as active so the server's idle sweep does not reap terminals an open client still shows. */
-  touchSessions?(sessionIds: string[]): Promise<void>;
+  /**
+   * Marks the sessions as active so the server's idle sweep does not reap terminals an open
+   * client still shows. `directory` is the sessions' working directory: one inside an isolated
+   * space addresses that space, so a batch spans one directory.
+   */
+  touchSessions?(sessionIds: string[], directory?: string | null): Promise<void>;
   createSession(options: CreateTerminalOptions): Promise<TerminalSession>;
-  connect(sessionId: string, handlers: TerminalHandlers): Subscription;
-  sendInput(sessionId: string, input: string): Promise<void>;
+  /** `directory` is the terminal's working directory; one inside an isolated space addresses that space's terminal socket. */
+  connect(sessionId: string, handlers: TerminalHandlers, directory?: string | null): Subscription;
+  sendInput(sessionId: string, input: string, directory?: string | null): Promise<void>;
   resize(payload: ResizeTerminalPayload): Promise<void>;
-  updateAppearance?(sessionId: string, appearance: Pick<CreateTerminalOptions, 'themeMode' | 'terminalBackground' | 'terminalForeground'>): Promise<void>;
-  close(sessionId: string): Promise<void>;
+  updateAppearance?(sessionId: string, appearance: Pick<CreateTerminalOptions, 'themeMode' | 'terminalBackground' | 'terminalForeground'>, directory?: string | null): Promise<void>;
+  close(sessionId: string, directory?: string | null): Promise<void>;
   restartSession?(currentSessionId: string, options: RestartTerminalOptions): Promise<TerminalSession>;
   forceKill?(options: ForceKillOptions): Promise<void>;
 }
@@ -517,6 +524,19 @@ export interface RemoveGitWorktreePayload {
   deleteLocalBranch?: boolean;
 }
 
+/** Private ref (`refs/openchamber/runs/<group>/<session>`) holding a worktree snapshot. */
+export interface GitWorktreeSnapshotPayload {
+  ref: string;
+}
+
+export interface GitWorktreeSnapshotResult {
+  ref: string;
+  /** Snapshot commit: HEAD plus every staged, unstaged and untracked (not ignored) change. */
+  commit: string;
+  /** The worktree HEAD the snapshot was taken on top of. */
+  head: string;
+}
+
 export interface GitDeleteBranchPayload {
   branch: string;
   force?: boolean;
@@ -562,6 +582,8 @@ interface GitWorktreeAPI {
   preview?(directory: string, payload: CreateGitWorktreePayload): Promise<GitWorktreeCreateResult>;
   create?(directory: string, payload: CreateGitWorktreePayload): Promise<GitWorktreeCreateResult>;
   remove?(directory: string, payload: RemoveGitWorktreePayload): Promise<{ success: boolean }>;
+  /** `directory` is the worktree to snapshot. */
+  snapshot?(directory: string, payload: GitWorktreeSnapshotPayload): Promise<GitWorktreeSnapshotResult>;
 }
 
 export interface GitAPI {
@@ -857,8 +879,9 @@ export interface EditorAPI {
 }
 
 export interface VSCodeAPI {
-  executeCommand(command: string, ...args: unknown[]): Promise<unknown>;
+  /** Opens the retained OC1 agent group manager. */
   openAgentManager(): Promise<void>;
+  executeCommand(command: string, ...args: unknown[]): Promise<unknown>;
   openExternalUrl(url: string): Promise<void>;
   /** Opens a local file path with the OS default program (extension host machine). */
   openLocalPath?(path: string): Promise<void>;
@@ -1063,6 +1086,30 @@ export type GitHubPullRequestStatus = {
   defaultBranch?: string | null;
   resolvedRemoteName?: string | null;
 };
+
+export type GitHubPullRequestRef = GitHubRepoSelector & { number: number };
+
+/** Live fields of a known PR, refreshed in batches for list surfaces. */
+export type GitHubPullRequestLiveSummary = GitHubPullRequestRef & {
+  state: GitHubPullRequest['state'];
+  draft: boolean;
+  title: string;
+  headSha?: string;
+  mergeable: boolean | null;
+  mergeableState: string | null;
+  /** Null for closed/merged PRs, whose checks are not actionable. */
+  checks: GitHubChecksSummary | null;
+};
+
+export type GitHubPullRequestSummariesResult =
+  | { connected: false }
+  | {
+      connected: true;
+      /** Server-side stamp of when GitHub was asked (ms epoch). */
+      fetchedAt: number;
+      /** PRs GitHub could not resolve are absent: unknown, not closed. */
+      summaries: GitHubPullRequestLiveSummary[];
+    };
 
 export type GitHubPullRequestCreateInput = {
   directory: string;
@@ -1406,6 +1453,7 @@ export interface GitHubAPI {
   me?(): Promise<GitHubUserSummary>;
 
   prStatus(directory: string, branch: string, remote?: string, options?: { force?: boolean }): Promise<GitHubPullRequestStatus>;
+  prSummaries(refs: GitHubPullRequestRef[]): Promise<GitHubPullRequestSummariesResult>;
   prCreate(payload: GitHubPullRequestCreateInput): Promise<GitHubPullRequest>;
   prUpdate(payload: GitHubPullRequestUpdateInput): Promise<GitHubPullRequest>;
   prMerge(payload: GitHubPullRequestMergeInput): Promise<GitHubPullRequestMergeResult>;

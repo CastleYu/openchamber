@@ -19,7 +19,7 @@ const storeSchema = z.object({
   // whole store and hide every installed extension.
   capabilityGrants: z.record(z.string(), z.array(z.string())).optional(),
   // What each grant covered when the user approved it: the filesystem
-  // patterns, the API origin, the service's exec names and socket ids. A
+  // patterns, approved frame origins, the API origin, the service's exec names and socket ids. A
   // newer package that widens any of these is treated as not approved for
   // that capability. Entries are checked one at a time on read.
   capabilityScopes: z.record(z.string(), z.unknown()).optional(),
@@ -32,6 +32,7 @@ const storeSchema = z.object({
 
 const capabilityScopeSchema = z.object({
   filesystem: z.array(z.string().min(1)).optional(),
+  origins: z.array(z.string().min(1)).optional(),
   apiOrigin: z.string().min(1).optional(),
   oauth: z.object({
     authorizeUrl: z.string().min(1),

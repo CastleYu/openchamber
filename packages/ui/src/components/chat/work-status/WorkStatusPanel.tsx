@@ -15,13 +15,16 @@ import { WorkStatusMcpSection } from './WorkStatusMcpSection';
 import { WorkStatusPinnedSection } from './WorkStatusPinnedSection';
 import { WorkStatusContextSection } from './WorkStatusContextSection';
 import { WorkStatusSectionsDialog } from './WorkStatusSectionsDialog';
+import { WorkStatusExtensionSection } from './WorkStatusExtensionSection';
 import {
   areAllWorkStatusSectionsHidden,
   getWorkStatusPanelPresentation,
+  isExtensionSectionId,
   isWorkStatusSectionVisible,
-  sanitizeWorkStatusSectionOrder,
+  resolveWorkStatusSectionOrder,
   type WorkStatusSectionId,
 } from './sections';
+import { useWorkStatusExtensionSections } from './useWorkStatusExtensionSections';
 import { WorkStatusPresenceProvider } from './presence';
 import { Icon } from '@/components/icon/Icon';
 
@@ -72,7 +75,11 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
   const setOverlayOpen = useUIStore((state) => state.setWorkStatusOverlayOpen);
   const hiddenSections = useUIStore((state) => state.workStatusHiddenSections);
   const storedOrder = useUIStore((state) => state.workStatusSectionOrder);
-  const sectionOrder = React.useMemo(() => sanitizeWorkStatusSectionOrder(storedOrder), [storedOrder]);
+  const extensionSections = useWorkStatusExtensionSections();
+  const sectionOrder = React.useMemo(
+    () => resolveWorkStatusSectionOrder(storedOrder, extensionSections.ids),
+    [extensionSections.ids, storedOrder],
+  );
   const [sectionsDialogOpen, setSectionsDialogOpen] = React.useState(false);
   // Starts optimistic: sections report after their first commit, and rendering
   // nothing on the way in would make the card flash out and back on arrival.
@@ -98,7 +105,7 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
   // re-enable sections. The previous `renderedSections > 0` guard is preserved
   // for the transient "no data yet" state so the panel doesn't flash a bare
   // bordered card on first mount.
-  const allSectionsHidden = areAllWorkStatusSectionsHidden(hiddenSections);
+  const allSectionsHidden = areAllWorkStatusSectionsHidden(hiddenSections, extensionSections.ids);
   const { interactive, showEmptyState } = getWorkStatusPanelPresentation({
     visible,
     contentMounted,
@@ -207,10 +214,6 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
           'absolute right-3 top-3 z-30 mx-0 my-0',
           'max-h-[calc(100%-1.5rem)]',
           'shadow-[0_8px_28px_-8px_rgb(0_0_0_/_0.28)]',
-          // Beside the transcript the translucent fill reads as depth; on top
-          // of it, message bubbles showed straight through the rows. Frosting
-          // separates the two without going fully opaque.
-          'oc-glass-panel',
         ],
         // When every section is hidden the card keeps its border and background
         // so the settings button stays discoverable — going transparent made the
@@ -242,6 +245,12 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
         pointerEvents: interactive ? undefined : 'none',
       }}
     >
+      {/* Beside the transcript the translucent fill reads as depth; on top of
+          it, message bubbles showed straight through the rows, so the overlay
+          is frosted. The glass sits on this inner layer, away from the card's
+          shadow: on one element Chromium grows the backdrop-filter layer by
+          the shadow's blur and paints a grey band past the card's edge. */}
+      <div className={cn('flex min-h-0 flex-1 flex-col', overlay && 'oc-glass-panel')}>
       {/* Overlaid rather than placed in flow: the panel has no header of its
           own, and giving it one would cost a row of height on every session. */}
       <button
@@ -272,6 +281,10 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
         >
           {(primary) => sectionOrder.map((id) => {
             if (!sectionVisible(id)) return null;
+            if (isExtensionSectionId(id)) {
+              const guest = extensionSections.byId.get(id);
+              return guest ? <WorkStatusExtensionSection key={id} guest={guest} /> : null;
+            }
             return <React.Fragment key={id}>{id === 'session' || id === 'repository' ? primary[id] : secondarySections[id]}</React.Fragment>;
           })}
         </WorkStatusPrimaryGroup>
@@ -292,6 +305,7 @@ export const WorkStatusPanel: React.FC<Props> = ({ sessionId, directory, visible
           </Button>
         </div>
       ) : null}
+      </div>
 
       <WorkStatusSectionsDialog open={sectionsDialogOpen} onOpenChange={setSectionsDialogOpen} />
     </aside>

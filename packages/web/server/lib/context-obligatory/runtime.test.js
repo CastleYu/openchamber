@@ -19,7 +19,7 @@ describe('context obligatory runtime', () => {
       getSession: vi.fn(async () => ({ data: { id: 'ses_2', metadata: { openchamber: {
         context_obligatory_messages: [{ id: 'msg_1', role: 'user', createdAt: 10 }],
       } } } })),
-      listMessages: vi.fn(async () => ({ data: { items: [{ id: 'cmp_1', role: 'compaction', completed: 20,
+      listMessages: vi.fn(async () => ({ data: { items: [{ id: 'cmp_1', role: 'compaction',
         raw: { status: 'completed' } }] } })),
       getMessage: vi.fn(async () => ({ data: { id: 'msg_1', type: 'user', text: 'Keep this' } })),
       addSynthetic: vi.fn(async () => ({})),

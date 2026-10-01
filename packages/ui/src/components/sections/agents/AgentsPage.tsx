@@ -10,7 +10,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ModelSelector } from './ModelSelector';
 import { useI18n } from '@/lib/i18n';
 import { parseModelIdentifier } from '@/lib/modelIdentifier';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { useConfigStore, type ProviderWithModelList } from '@/stores/useConfigStore';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
 import {
   SettingsSection,
@@ -35,16 +35,10 @@ import { AgentPermissionsEditor } from './AgentPermissionsEditor';
 import { AgentsPageV2 } from './AgentsPageV2';
 import { opencodeClient } from '@/lib/opencode/client';
 
-type AgentVariantProvider = {
-  id: string;
-  models?: Array<{
-    id?: string;
-    variants?: Record<string, unknown>;
-  }>;
-};
+type LegacyProvider = Extract<ProviderWithModelList, { generation: 'oc1' }>;
 
 const getVariantOptionsForModel = (
-  providers: AgentVariantProvider[],
+  providers: LegacyProvider[],
   modelValue: string,
 ): string[] => {
   const parsedModel = parseModelIdentifier(modelValue);
@@ -53,7 +47,7 @@ const getVariantOptionsForModel = (
   }
 
   const provider = providers.find((item) => item.id === parsedModel.providerId);
-  const model = provider?.models?.find((item) => item.id === parsedModel.modelId);
+  const model = provider?.models.find((item) => item.id === parsedModel.modelId);
   return model?.variants ? Object.keys(model.variants) : [];
 };
 const AgentsPageV1: React.FC = () => {

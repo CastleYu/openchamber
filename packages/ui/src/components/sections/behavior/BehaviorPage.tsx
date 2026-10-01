@@ -21,6 +21,7 @@ import {
 } from '@/lib/responseStyle';
 import type { DesktopSettings } from '@/lib/desktop';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { opencodeClient } from '@/lib/opencode/client';
 import { noteDeferredRestartFromPayload, recordDeferredOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
 import {
@@ -94,6 +95,10 @@ const saveBehaviorSetting = async (settings: Partial<DesktopSettings>, fallbackE
 export const BehaviorPage: React.FC = () => {
   const { t } = useI18n();
   const isVSCode = useIsVSCodeRuntime();
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+  );
   const [prompt, setPrompt] = React.useState('');
   const [agentsMdPath, setAgentsMdPath] = React.useState('AGENTS.md');
   const [optimizeSystemPrompt, setOptimizeSystemPrompt] = React.useState(false);
@@ -105,6 +110,11 @@ export const BehaviorPage: React.FC = () => {
   const [isApplyingPromptOptimization, setIsApplyingPromptOptimization] = React.useState(false);
   const [initialPrompt, setInitialPrompt] = React.useState('');
   const [initialOptimizeSystemPrompt, setInitialOptimizeSystemPrompt] = React.useState(false);
+  const promptRef = React.useRef(prompt);
+  promptRef.current = prompt;
+  const initialPromptRef = React.useRef(initialPrompt);
+  initialPromptRef.current = initialPrompt;
+  const agentsMdOnDiskRef = React.useRef<string | null>(null);
   const lastSavedResponseStyleRef = React.useRef<{
     enabled: boolean;
     preset: ResponseStyleValue;
@@ -150,6 +160,7 @@ export const BehaviorPage: React.FC = () => {
           if (abort.signal.aborted) return;
           setAgentsMdPath(agentsData.path ?? 'AGENTS.md');
           if (agentsData.exists) {
+            agentsMdOnDiskRef.current = agentsData.content;
             promptSource = { kind: 'file', content: agentsData.content };
           }
         }
@@ -181,6 +192,45 @@ export const BehaviorPage: React.FC = () => {
 
     void load();
     return () => abort.abort();
+  }, []);
+
+  // AGENTS.md may be edited in another editor while this page stays open.
+  // Re-read it when the window returns, and follow the external edit only when
+  // the prompt currently has no unsaved changes of its own.
+  React.useEffect(() => {
+    let abort: AbortController | null = null;
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      abort?.abort();
+      const controller = new AbortController();
+      abort = controller;
+      try {
+        const response = await runtimeFetch('/api/behavior/agents-md', {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = agentsMdResponseSchema.parse(await response.json());
+        if (controller.signal.aborted || !data.exists) return;
+        if (data.content === agentsMdOnDiskRef.current || promptRef.current !== initialPromptRef.current) return;
+        agentsMdOnDiskRef.current = data.content;
+        setInitialPrompt(data.content);
+        setPrompt(data.content);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.warn('Failed to refresh AGENTS.md:', error);
+        }
+      }
+    };
+    const onRefresh = () => { void refresh(); };
+    window.addEventListener('focus', onRefresh);
+    document.addEventListener('visibilitychange', onRefresh);
+    return () => {
+      abort?.abort();
+      window.removeEventListener('focus', onRefresh);
+      document.removeEventListener('visibilitychange', onRefresh);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -263,6 +313,7 @@ export const BehaviorPage: React.FC = () => {
   };
 
   const handleSavePromptOptimization = async () => {
+    if (isVSCode || opencodeClient.getBoundRuntime()?.generation !== 'oc1') return;
     setIsApplyingPromptOptimization(true);
     try {
       await saveBehaviorSetting(
@@ -286,7 +337,7 @@ export const BehaviorPage: React.FC = () => {
       description={t('settings.page.behavior.description')}
       showSaveStatus
     >
-      {!isVSCode && (
+      {!isVSCode && generation === 'oc1' && (
         <SettingsSection
           title={t('settings.behavior.page.section.systemPromptOptimization')}
           divider={false}

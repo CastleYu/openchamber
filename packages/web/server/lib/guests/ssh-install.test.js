@@ -65,6 +65,8 @@ if (!process.env.GUEST_SSH_TEST_HOME) {
       GIT_CEILING_DIRECTORIES: path.dirname(home),
       GUEST_SSH_TEST_HOME: home,
     });
+    let execution;
+    let cleanupError;
     try {
       const refused = spawnSync(bunExecutable, ['test', testPath], {
         env, cwd: path.dirname(home), stdio: 'pipe', timeout: 60_000,
@@ -73,19 +75,24 @@ if (!process.env.GUEST_SSH_TEST_HOME) {
       expect(refused.stderr.toString()).toContain('SSH fixture refused to run without an isolated home');
       // Bun's default child-process environment can ignore late process.env
       // edits. Establish isolation at process startup and always pass env/cwd.
-      execFileSync(bunExecutable, ['test', testPath], {
+      execution = spawnSync(bunExecutable, ['test', testPath], {
         env, cwd: home, stdio: 'pipe', timeout: 60_000,
       });
     } finally {
       const after = await Promise.all(protectedPaths.map(readProtected));
-      await fs.rm(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      // On Windows a just-exited Bun/Git child can hold its former cwd briefly. Wait for that
+      // handle to close, then remove only this scratch home.
+      try { await fs.rm(home, { recursive: true, force: true, maxRetries: 6, retryDelay: 100 }); }
+      catch (error) { cleanupError = error; }
       // Compare bytes without printing configuration contents on a failure.
       for (let index = 0; index < before.length; index++) {
         const unchanged = before[index] === null ? after[index] === null : after[index] !== null && before[index].equals(after[index]);
         expect(unchanged).toBe(true);
       }
     }
-  });
+    expect(execution?.status, execution?.stderr?.toString()).toBe(0);
+    if (cleanupError) throw cleanupError;
+  }, 90_000);
 } else {
 beforeAll(async () => {
   root = process.env.GUEST_SSH_TEST_HOME;
@@ -167,6 +174,15 @@ describe('SSH extension installs', () => {
   });
 
   test('persists the selected identity and re-resolves it for update checks and replacement clones', async () => {
+    // Check the executable before a clone can start. On Windows a bare `ssh` would bypass the
+    // local .cmd fixture and could invoke the system SSH client instead.
+    setEnv('GIT_SSH_COMMAND', 'untrusted-command-from-global-config');
+    const selected = await prepareGuestGitNetwork(source, { gitIdentityId: 'work', lookup });
+    setEnv('GIT_SSH_COMMAND', undefined);
+    const helper = path.join(root, 'bin', 'ssh.cmd').replaceAll('\\', '/');
+    expect(selected?.env.GIT_SSH_COMMAND.startsWith(process.platform === 'win32' ? `'${helper}' -i ` : 'ssh -i ')).toBe(true);
+    expect(selected?.env.GIT_SSH_COMMAND).toContain('-o BatchMode=yes');
+    expect(selected?.env.GIT_SSH_COMMAND).not.toContain('untrusted-command-from-global-config');
     const persistPath = path.join(root, 'extensions.json');
     const result = await installGuestFromGitSource(source, persistPath, { gitIdentityId: 'work', ref: 'main', lookup });
     expect(result.ok).toBe(true);
@@ -188,6 +204,6 @@ describe('SSH extension installs', () => {
     expect(await updateGuest({ guest, origin: guest.gitOrigin, persistPath, lookup })).toMatchObject({ ok: false, code: 'clone-failed' });
     const [preserved] = await listInstalledGuests({ persistPath });
     expect(preserved.version).toBe('1.1.0');
-  });
+  }, 30_000);
 });
 }

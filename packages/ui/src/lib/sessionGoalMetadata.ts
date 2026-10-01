@@ -3,7 +3,7 @@ import type { Session } from '@/lib/opencode/model';
 // Session goal driven by the server's session-goal runtime, stored under
 // session.metadata.openchamber.goal. The UI writes goals (create/edit/
 // pause/resume/clear) by patching this metadata; the server loop accounts
-// usage, audits progress with the small model, and auto-continues the
+// usage, checks progress with Jev or the small model, and auto-continues the
 // session until the goal settles.
 export type SessionGoalStatus = 'active' | 'paused' | 'blocked' | 'budgetLimited' | 'complete';
 
@@ -20,6 +20,7 @@ export interface SessionGoalPayload {
   tokenBudget: number | null;
   tokensUsed: number;
   turnsUsed: number;
+  /** OC1 goal runtime diagnostics retained for the legacy goal drawer. */
   blockedStreak: number;
   note: string;
   statusReason: string;

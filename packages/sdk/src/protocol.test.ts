@@ -714,14 +714,17 @@ describe('parseGuestMessage', () => {
     expect(parseGuestMessage({ ...base, type: 'generate', payload: {} })).toBeNull();
   });
 
-  test('accepts file messages and drops an empty or backslash path', () => {
+  test('accepts rooted Windows file messages and drops invalid paths', () => {
     const base = { channel: OPENCHAMBER_SDK_CHANNEL, v: 1 as const, id: 'oc-20' };
     expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: 'README.md' } })?.type).toBe('file-read');
     expect(parseGuestMessage({ ...base, type: 'file-write', payload: { path: '~/.config/x.json', content: '{}' } })?.type).toBe('file-write');
     expect(parseGuestMessage({ ...base, type: 'file-list', payload: { path: '.' } })?.type).toBe('file-list');
     expect(parseGuestMessage({ ...base, type: 'file-stat', payload: { path: '/tmp/x' } })?.type).toBe('file-stat');
+    expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: 'C:/Users/Ada/notes.txt' } })?.type).toBe('file-read');
+    expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: 'C:\\Users\\Ada\\notes.txt' } })?.type).toBe('file-read');
     expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: '' } })).toBeNull();
     expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: 'a\\b' } })).toBeNull();
+    expect(parseGuestMessage({ ...base, type: 'file-read', payload: { path: 'C:notes.txt' } })).toBeNull();
     expect(parseGuestMessage({ ...base, type: 'file-write', payload: { path: 'a' } })).toBeNull();
   });
 
@@ -855,6 +858,20 @@ describe('actions, commands, and badge wire shapes', () => {
     expect(parseGuestMessage({ ...envelope, type: 'resolve-result', id: 'r-1', payload: { error: 'nope' } }))
       .toMatchObject({ payload: { error: 'nope' } });
     expect(parseGuestMessage({ ...envelope, type: 'resolve-result', id: 'r-1', payload: { error: '' } })).toBeNull();
+  });
+
+  test('accepts open-commit only with a hex commit id', () => {
+    expect(parseGuestMessage({ ...envelope, type: 'open-commit', id: 'c-1', payload: { sha: 'abc1234' } })).toMatchObject({ payload: { sha: 'abc1234' } });
+    for (const sha of ['abc12', 'HEAD', '--output=x', 'abc1234 ', 'g'.repeat(40), 'a'.repeat(65)]) {
+      expect(parseGuestMessage({ ...envelope, type: 'open-commit', id: 'c-1', payload: { sha } })).toBeNull();
+    }
+  });
+
+  test('accepts resize heights in range and drops the rest', () => {
+    expect(parseGuestMessage({ ...envelope, type: 'resize', id: 'h-1', payload: { height: 180 } })).toMatchObject({ payload: { height: 180 } });
+    expect(parseGuestMessage({ ...envelope, type: 'resize', id: 'h-1', payload: { height: -1 } })).toBeNull();
+    expect(parseGuestMessage({ ...envelope, type: 'resize', id: 'h-1', payload: { height: 10_001 } })).toBeNull();
+    expect(parseGuestMessage({ ...envelope, type: 'resize', id: 'h-1', payload: { height: 1.5 } })).toBeNull();
   });
 
   test('accepts badge counts in range and drops the rest', () => {

@@ -1,6 +1,45 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import {
+  configureOpenCodeCredentials as configureSharedCredentials,
+  getOpenCodeCredentialGeneration as getSharedCredentialGeneration,
+  getProviderAuth as getSharedProviderAuth,
+  openCodeCredentialSource as createSharedCredentialSource,
+  readOpenCodeCredentials as readSharedCredentials,
+} from '../../web/server/lib/opencode/auth.js';
+
+type CredentialManager = {
+  getApiUrl(): string | null;
+  getKernelRuntime(): { generation: string; endpoint?: string | null; epoch?: number | string; version?: string | null };
+  getOpenCodeAuthHeaders(): Record<string, string>;
+  getManagedLaunchEnvironment(): NodeJS.ProcessEnv | null;
+};
+
+/** Keep one identity-bound reader for OC1 files and versioned OC2 credential sources. */
+export const openCodeCredentialSource = (manager: CredentialManager) => {
+  const getRuntime = () => manager.getKernelRuntime();
+  return createSharedCredentialSource({
+    buildOpenCodeUrl: (pathPart, prefix = '') => {
+      const apiUrl = manager.getApiUrl();
+      if (!apiUrl) throw new Error('OpenCode API URL is not available');
+      const suffix = [prefix, pathPart].map((part) => part.replace(/^\/+|\/+$/g, '')).filter(Boolean).join('/');
+      return suffix ? new URL(suffix, `${apiUrl.replace(/\/+$/, '')}/`).toString() : `${apiUrl.replace(/\/+$/, '')}/`;
+    },
+    getOpenCodeAuthHeaders: () => manager.getOpenCodeAuthHeaders(),
+    getLaunchEnvironment: () => manager.getManagedLaunchEnvironment(),
+    getIdentity: getRuntime,
+  });
+};
+
+export const configureOpenCodeCredentials = configureSharedCredentials;
+export const configureOpenCodeCredentialSource = (manager: CredentialManager): void => {
+  const getRuntime = () => manager.getKernelRuntime();
+  configureSharedCredentials(getRuntime, openCodeCredentialSource(manager));
+};
+export const readOpenCodeCredentials = (): Promise<AuthFile> => readSharedCredentials();
+export const getOpenCodeProviderAuth = (providerId: string): Promise<AuthEntry | null> => getSharedProviderAuth(providerId);
+export const getOpenCodeCredentialGeneration = (): string => getSharedCredentialGeneration();
 
 const OPENCODE_DATA_DIR = path.join(os.homedir(), '.local', 'share', 'opencode');
 const AUTH_FILE = path.join(OPENCODE_DATA_DIR, 'auth.json');
@@ -72,7 +111,7 @@ export const removeProviderAuth = (providerId: string): boolean => {
   return true;
 };
 
-export const getProviderAuth = (providerId: string): AuthEntry | null => {
+export const getLegacyProviderAuth = (providerId: string): AuthEntry | null => {
   const auth = readAuthFile();
   return auth[providerId] || null;
 };

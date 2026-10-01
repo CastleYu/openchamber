@@ -97,6 +97,14 @@ describe('agent tool action allowlist', () => {
 });
 
 describe('managed agent tool runtime', () => {
+  it('keeps OC2 tools direct by default and opts in to Code Mode explicitly', async () => {
+    const { runtime, dataDir } = await createRuntime();
+    await prepareManagedEnv(runtime);
+    expect((await loadTools(dataDir, 'direct')).openchamber.options.codemode).toBe(false);
+    await prepareManagedEnv(runtime, { codeMode: true });
+    expect((await loadTools(dataDir, 'code-mode')).openchamber.options.codemode).toBe(true);
+  });
+
   it('materializes the plugin and mints a per-child callback token', async () => {
     const { runtime, dataDir } = await createRuntime();
 

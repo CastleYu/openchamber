@@ -107,7 +107,7 @@ export function createGlobalMessageStreamWsBridge({
         }
       });
     }
-  });
+  }, { spaces: true });
 
   const unsubscribeStatus = globalHub.subscribeStatus((status) => {
     if (status.type === 'identity-change') {

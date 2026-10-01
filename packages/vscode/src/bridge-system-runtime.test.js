@@ -54,7 +54,8 @@ mock.module('./opencodeConfigV2', () => ({
 }));
 mock.module('./opencodeAuthV2', () => ({ getProviderAuth: mock(() => ({ type: 'api', key: 'test' })) }));
 mock.module('./opencodeAuth', () => ({
-  getProviderAuth: mock(),
+  getLegacyProviderAuth: mock(),
+  getOpenCodeProviderAuth: mock(),
   removeProviderAuth: mock(),
 }));
 mock.module('./quotaProviders', () => ({
@@ -90,6 +91,22 @@ const managerFor = (generation) => ({
 });
 
 describe('VS Code provider and session state generations', () => {
+  test('refuses custom provider writes in enterprise mode on both kernels', async () => {
+    const previous = process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    try {
+      for (const generation of ['oc1', 'oc2']) {
+        const result = await handleSystemBridgeMessage({ id: generation, type: 'api:provider:upsert',
+          payload: { providerId: 'custom', config: { name: 'Custom' }, scope: 'project', directory: '/repo' } },
+        { manager: managerFor(generation) }, deps);
+        expect(result).toMatchObject({ success: false });
+      }
+    } finally {
+      if (previous === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+      else process.env.OPENCHAMBER_ENTERPRISE_MODE = previous;
+    }
+  });
+
   test('keeps OC1 archive writes on native session PATCH routes', async () => {
     const requests = [];
     const server = createServer(async (req, res) => {

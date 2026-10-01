@@ -12,6 +12,9 @@ directory, checks that a file exists, broadcasts
 These new agent actions require OC2 under the initial adoption policy. OC1 keeps
 its existing notification delivery and file viewer. The control service enforces
 this gate for direct HTTP callers as well as generated tool schemas.
+OC2 browser actions may name a `tabId` returned by `browser.snapshot`; the
+service validates and forwards it to the selected browser provider. OC1 retains
+its untargeted browser actions and rejects explicit tab targeting.
 
 ## Purpose
 
@@ -41,6 +44,10 @@ other.
 
 - Session status and messages come from official directory-scoped OpenCode
   APIs. Message output includes only ordered `text` parts.
+- Session reads accept either `projectId` or `directory`. A project ID resolves
+  through the session service's registered project lookup; an unknown project
+  fails instead of falling back to the caller's directory. Both scope fields
+  together are invalid for reads and writes.
 - Wait never treats an initial idle response as completion after dispatch. It
   requires observed activity or a newly completed assistant message.
 - Timeout and cancellation are failures, never authoritative idle results.

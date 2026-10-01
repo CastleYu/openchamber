@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDirectoryStore, useSession, useSessionStatus } from '@/sync/sync-context';
-import { getSessionAssist, type SessionAssistPayload } from '@/lib/sessionAssistMetadata';
+import { getCurrentSessionAssist, getSessionAssist, type SessionAssistPayload } from '@/lib/sessionAssistMetadata';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useUIStore } from '@/stores/useUIStore';
 
 // How long the chat must sit untouched before the recap becomes visible.
@@ -67,19 +68,21 @@ export function useSessionAssistState(sessionId: string, directory?: string): Se
   const sessionSuggestionEnabled = useUIStore((state) => state.sessionSuggestionEnabled);
 
   const isIdle = !status || status.type === 'idle';
+  const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
   const payload = getSessionAssist(session);
 
-  // Fresh = the payload's target message is still the session's last message.
-  const assist = payload
+  // OC1 history remains keyed to the last assistant record. OC2's idle marker
+  // is authoritative even when a paged transcript has not reached that record.
+  const oc1Assist = payload
     && lastMessage
     && lastMessage.role === 'assistant'
     && lastMessage.id === payload.forMessageID
-    && isIdle
     ? payload
     : null;
+  const assist = isIdle ? (isOc2 ? getCurrentSessionAssist(session) : oc1Assist) : null;
 
   // Recap waits out the quiet window; re-render once when the boundary passes.
-  const lastTimestamp = lastMessage?.timestamp ?? 0;
+  const lastTimestamp = isOc2 ? session?.time?.idle ?? 0 : lastMessage?.timestamp ?? 0;
   const [, forceTick] = React.useReducer((tick: number) => tick + 1, 0);
   const quietElapsed = assist ? Date.now() - lastTimestamp >= RECAP_VISIBILITY_DELAY_MS : false;
 

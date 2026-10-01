@@ -62,6 +62,8 @@ export const OpenChamberToolsSettings: React.FC = () => {
   // visible switch invites turning on something that was never announced.
   const agentMemoryAvailable = useUIStore((state) => state.agentMemoryFeatureAvailable);
   const setAgentMemoryToolEnabled = useUIStore((state) => state.setAgentMemoryToolEnabled);
+  const agentToolsCodeMode = useUIStore((state) => state.agentToolsCodeMode);
+  const setAgentToolsCodeMode = useUIStore((state) => state.setAgentToolsCodeMode);
 
   const handleAgentControlToolChange = React.useCallback((enabled: boolean) => {
     setAgentControlToolEnabled(enabled);
@@ -74,6 +76,11 @@ export const OpenChamberToolsSettings: React.FC = () => {
     void updateDesktopSettings({ agentWebToolEnabled: enabled });
     recordDeferredOpenCodeRestart('cli', { id: 'agent-web-tool' });
   }, [setAgentWebToolEnabled]);
+
+  const handleAgentToolsCodeModeChange = React.useCallback((enabled: boolean) => {
+    setAgentToolsCodeMode(enabled);
+    void updateDesktopSettings({ agentToolsCodeMode: enabled });
+  }, [setAgentToolsCodeMode]);
 
   // The dropdown lists installed extensions, so the catalog has to be loaded
   // here too: this page can be the first thing opened after a fresh start.
@@ -187,6 +194,18 @@ export const OpenChamberToolsSettings: React.FC = () => {
         />
         ) : null}
       </div>
+
+      {notifyAvailable ? (
+        <SettingsCheckboxRow
+          className="mt-4"
+          settingsItem="sessions.agent-tools-code-mode"
+          checked={agentToolsCodeMode}
+          onChange={handleAgentToolsCodeModeChange}
+          label={t('settings.openchamber.tools.field.agentToolsCodeMode')}
+          ariaLabel={t('settings.openchamber.tools.field.agentToolsCodeModeAria')}
+          info={t('settings.openchamber.tools.field.agentToolsCodeModeInfo')}
+        />
+      ) : null}
     </SettingsSection>
   );
 };

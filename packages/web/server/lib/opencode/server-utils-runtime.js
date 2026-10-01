@@ -25,6 +25,8 @@ export const createServerUtilsRuntime = (dependencies) => {
     setOpenCodeNotReadySince,
     clearLastOpenCodeError,
     getLoginShellPath,
+    getMergeSpaceSessionList = null,
+    getSpaceEventHub = null,
   } = dependencies;
 
   const setOpenCodePort = (port) => {
@@ -221,6 +223,12 @@ export const createServerUtilsRuntime = (dependencies) => {
       ensureOpenCodeApiPrefix,
       getSseUpstreamStallTimeoutMs: getUpstreamStallTimeoutMs,
       getUiNotificationClients,
+      // Resolve at request time, so a live switch does not leave a stale host captured.
+      mergeSpaceSessionList: typeof getMergeSpaceSessionList === 'function' ? async (payload) => {
+        const merge = getMergeSpaceSessionList();
+        return merge ? merge(payload) : payload;
+      } : null,
+      spaceEventHub: typeof getSpaceEventHub === 'function' ? getSpaceEventHub() : null,
     });
   };
 

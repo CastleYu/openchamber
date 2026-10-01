@@ -79,14 +79,17 @@ export const getConfigDirectory = (): string | null => {
 const AGENTS_LOAD_CACHE_TTL_MS = 5000;
 const DEFAULT_AGENTS_CACHE_KEY = '__default__';
 const agentsLastLoadedAt = new Map<string, number>();
-const agentsLoadInFlight = new Map<string, Promise<boolean>>();
+const agentsLoadGeneration = new Map<string, number>();
+const agentsLoadInFlight = new Map<string, { generation: number; request: Promise<boolean> }>();
 
 const getAgentsCacheKey = (directory: string | null): string => {
   return directory?.trim() || DEFAULT_AGENTS_CACHE_KEY;
 };
 
 export const invalidateAgentsLoadCache = (directory: string | null = getConfigDirectory()) => {
-  agentsLastLoadedAt.delete(getAgentsCacheKey(directory));
+  const cacheKey = getAgentsCacheKey(directory);
+  agentsLastLoadedAt.delete(cacheKey);
+  agentsLoadGeneration.set(cacheKey, (agentsLoadGeneration.get(cacheKey) ?? 0) + 1);
 };
 
 const buildAgentsSignature = (agents: Agent[]): string => {
@@ -340,11 +343,16 @@ export const useAgentsStore = create<AgentsStore>()(
             return true;
           }
 
-          const inFlight = agentsLoadInFlight.get(cacheKey);
-          if (inFlight) {
-            return inFlight;
+          let inFlight = agentsLoadInFlight.get(cacheKey);
+          while (inFlight) {
+            if (inFlight.generation === (agentsLoadGeneration.get(cacheKey) ?? 0)) {
+              return inFlight.request;
+            }
+            await inFlight.request;
+            inFlight = agentsLoadInFlight.get(cacheKey);
           }
 
+          const generation = agentsLoadGeneration.get(cacheKey) ?? 0;
           const request = (async () => {
             set({ isLoading: true });
             // Failure must never look like an empty project. The mirror is the
@@ -422,7 +430,9 @@ export const useAgentsStore = create<AgentsStore>()(
                 } else {
                   set({ isLoading: false });
                 }
-                agentsLastLoadedAt.set(cacheKey, Date.now());
+                if (generation === (agentsLoadGeneration.get(cacheKey) ?? 0)) {
+                  agentsLastLoadedAt.set(cacheKey, Date.now());
+                }
                 return true;
               } catch {
                 // ignore error
@@ -433,11 +443,12 @@ export const useAgentsStore = create<AgentsStore>()(
             return false;
           })();
 
-          agentsLoadInFlight.set(cacheKey, request);
+          const entry = { generation, request };
+          agentsLoadInFlight.set(cacheKey, entry);
           try {
             return await request;
           } finally {
-            agentsLoadInFlight.delete(cacheKey);
+            if (agentsLoadInFlight.get(cacheKey) === entry) agentsLoadInFlight.delete(cacheKey);
           }
         },
 

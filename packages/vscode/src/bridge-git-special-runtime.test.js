@@ -42,10 +42,11 @@ const manager = (generation = 'oc1') => {
   };
 };
 
-const { handleSpecialGitBridgeMessage } = await import('./bridge-git-special-runtime');
+const { handleSpecialGitBridgeMessage, setUnavailableRetryDelaysForTest } = await import('./bridge-git-special-runtime');
 
 describe('bridge git special runtime', () => {
   beforeEach(() => {
+    setUnavailableRetryDelaysForTest();
     gitService.getGitRangeFiles.mockReset();
     gitService.getGitRangeDiff.mockReset();
     sdkClient.v2.model.list.mockReset();
@@ -141,6 +142,19 @@ describe('bridge git special runtime', () => {
     expect(v2Client.model.list).toHaveBeenCalled();
     expect(v2Client.generate.text).toHaveBeenCalledWith(expect.objectContaining({ model: { providerID: 'anthropic', id: 'claude-sonnet-4-5' } }), expect.anything());
     expect(sdkClient.session.create).not.toHaveBeenCalled();
+  });
+
+  it('retries only a transient OC2 model catalog rejection', async () => {
+    setUnavailableRetryDelaysForTest([0]);
+    v2Client.generate.text.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('Model unavailable: anthropic/claude-sonnet-4-5'), { _tag: 'InvalidRequestError' });
+    });
+    const response = await handleSpecialGitBridgeMessage({
+      id: 'retry', type: 'api:git/pr-description',
+      payload: { directory: '/repo', base: 'main', head: 'feature', providerId: 'anthropic', modelId: 'claude-sonnet-4-5' },
+    }, { manager: manager('oc2') }, { readSettings: () => ({}), execGit: mock() });
+    expect(response?.success).toBe(true);
+    expect(v2Client.generate.text).toHaveBeenCalledTimes(2);
   });
 
   it('does not generate when kernel generation remains unknown', async () => {

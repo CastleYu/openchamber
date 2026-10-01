@@ -48,10 +48,10 @@ export function parseModelRef(value) {
 }
 
 const pickByFamily = (models, family) => {
-  const matches = Object.values(models)
-    .filter((model) => model && typeof model === 'object' && model.family === family);
+  const matches = Object.entries(models)
+    .filter(([, model]) => model && typeof model === 'object' && model.family === family);
   if (matches.length === 0) return null;
-  matches.sort((a, b) => String(b.release_date || '').localeCompare(String(a.release_date || '')));
+  matches.sort(([, a], [, b]) => String(b.release_date || '').localeCompare(String(a.release_date || '')));
   return matches[0];
 };
 
@@ -71,11 +71,11 @@ const pickWithinProvider = (providerID, auth, catalog, family) => {
   }
   const provider = getCatalogProvider(catalog, providerID);
   if (!provider || !provider.models || typeof provider.models !== 'object') return null;
-  const model = pickByFamily(provider.models, family);
-  return model?.id ? { providerID, modelID: model.id, source: 'family-scan' } : null;
+  const match = pickByFamily(provider.models, family);
+  return match ? { providerID, modelID: match[0], source: 'family-scan' } : null;
 };
 
-export function resolveSmallModel({ auth, catalog, settingsSmallModel, configSmallModel, preferredProviderID, preferredModelID }) {
+export function resolveSmallModel({ auth, catalog, settingsSmallModel, configSmallModel, preferredProviderID, preferredModelID, allowCrossProvider = true }) {
   // OpenChamber's own setting (Settings → Sessions → Small Model override)
   // outranks everything, including the OpenCode config.
   const fromSettings = parseModelRef(settingsSmallModel);
@@ -104,6 +104,8 @@ export function resolveSmallModel({ auth, catalog, settingsSmallModel, configSma
       return { providerID: preferred, modelID: preferredModelID, source: 'session-model' };
     }
   }
+
+  if (!allowCrossProvider) return null;
 
   // No session context (or its provider has no usable login): scan all
   // authenticated providers by family priority.

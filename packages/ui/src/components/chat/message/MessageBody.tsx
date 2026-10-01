@@ -1,4 +1,5 @@
 import React from 'react';
+import { LongErrorText } from '../LongErrorText';
 import type { Part } from '@/lib/opencode/model';
 
 import UserTextPart from './parts/UserTextPart';
@@ -16,10 +17,16 @@ import { isEmptyTextPart, extractTextContent } from './partUtils';
 import { FadeInOnReveal } from './FadeInOnReveal';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ErrorResponseDetails } from '@/components/chat/ErrorResponseDetails';
 import { SaveProjectPlanDialog } from '@/components/session/SaveProjectPlanDialog';
 import { ForkSessionDialog, type ForkSessionExecution } from '@/components/session/ForkSessionDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowsMerge } from '@/components/icons/ArrowsMerge';
+import { AskOtherModelsDialog } from '@/components/multirun/AskOtherModelsDialog';
+import { getMultiRunIdentity } from '@/lib/multirun/identity';
+import { openParallelComposer } from '@/lib/multirun/openParallelComposer';
+import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
+import type { Session } from '@/lib/opencode/model';
 
 import { SimpleMarkdownRenderer } from '../MarkdownRenderer';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -476,12 +483,16 @@ interface MessageBodyProps {
     hasTextContent?: boolean;
     onCopyMessage?: () => void | boolean | Promise<void | boolean>;
     copiedMessage?: boolean;
+    /** Copies a link to this message; absent where the surface has no message links. */
+    onCopyLink?: () => void;
     showReasoningTraces?: boolean;
     agentMention?: AgentMentionInfo;
     turnGroupingContext?: TurnGroupingContext;
     onRevert?: () => void;
     onFork?: () => void;
     errorMessage?: string;
+    /** Raw provider response behind `errorMessage`, shown as collapsed details. */
+    errorResponseBody?: string;
     userActionsMode?: 'inline' | 'external-content' | 'external-actions';
     stickyUserHeaderEnabled?: boolean;
     reviewTransferDirection?: ReviewTransferDirection | null;
@@ -565,7 +576,34 @@ const MessageExtraActionButtons: React.FC<{ actions?: MessageExtraAction[] }> = 
     );
 };
 
-const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobile, alwaysShowActions = isMobile, hasTouchInput, hasTextContent, onCopyMessage, copiedMessage, onShowPopup, agentMention, onRevert, onFork, contextPinned, contextPinPending, onToggleContextPin, userActionsMode = 'inline', stickyUserHeaderEnabled = true, extraActions }: {
+/** Copies a link to the message; the toast confirms, as the link is not visible. */
+const CopyMessageLinkButton: React.FC<{ onCopyLink: () => void }> = ({ onCopyLink }) => {
+    const { t } = useI18n();
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground bg-transparent hover:text-foreground hover:!bg-transparent active:!bg-transparent focus-visible:!bg-transparent focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={t('chat.messageBody.actions.copyLink')}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        onCopyLink();
+                    }}
+                >
+                    <Icon name="link" className="h-3 w-3" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={6}>{t('chat.messageBody.actions.copyLink')}</TooltipContent>
+        </Tooltip>
+    );
+};
+
+const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobile, alwaysShowActions = isMobile, hasTouchInput, hasTextContent, onCopyMessage, copiedMessage, onCopyLink, onShowPopup, agentMention, onRevert, onFork, contextPinned, contextPinPending, onToggleContextPin, userActionsMode = 'inline', stickyUserHeaderEnabled = true, extraActions }: {
     messageId: string;
     parts: Part[];
     messageCreatedAt?: number | null;
@@ -575,6 +613,7 @@ const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobi
     hasTextContent?: boolean;
     onCopyMessage?: () => void | boolean | Promise<void | boolean>;
     copiedMessage?: boolean;
+    onCopyLink?: () => void;
     onShowPopup: (content: ToolPopupContent) => void;
     agentMention?: AgentMentionInfo;
     onRevert?: () => void;
@@ -695,6 +734,14 @@ const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobi
                 },
             });
         }
+        if (onCopyLink) {
+            actions.push({
+                id: 'copy-link',
+                label: t('chat.messageBody.actions.copyLink'),
+                icon: <Icon name="link" className="h-4 w-4" />,
+                onSelect: onCopyLink,
+            });
+        }
         if (onToggleContextPin && hasCopyableText) {
             actions.push({
                 id: 'pin-context',
@@ -724,7 +771,7 @@ const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobi
             actions.push({ id: extra.id, label: extra.label, icon: extra.icon, onSelect: extra.onSelect });
         }
         return actions;
-    }, [canCopyMessage, contextPinPending, contextPinned, effectiveOnFork, extraActions, hasCopyableText, onCopyMessage, onRevert, onToggleContextPin, t]);
+    }, [canCopyMessage, contextPinPending, contextPinned, effectiveOnFork, extraActions, hasCopyableText, onCopyLink, onCopyMessage, onRevert, onToggleContextPin, t]);
     const timestamp = React.useMemo(() => {
         void locale;
         if (typeof messageCreatedAt !== 'number' || messageCreatedAt <= 0) return null;
@@ -732,7 +779,7 @@ const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobi
         return formatted.length > 0 ? formatted : null;
     }, [locale, messageCreatedAt, timeFormatPreference]);
     const hasExtraActions = Boolean(extraActions && extraActions.length > 0);
-    const actionsBlock = chatSurfaceMode !== 'peek' && ((canCopyMessage && hasCopyableText) || onRevert || effectiveOnFork || onToggleContextPin || hasExtraActions) && showUserActions ? (
+    const actionsBlock = chatSurfaceMode !== 'peek' && ((canCopyMessage && hasCopyableText) || onCopyLink || onRevert || effectiveOnFork || onToggleContextPin || hasExtraActions) && showUserActions ? (
         <div className={cn(
             'group/user-actions',
             isMobile
@@ -892,6 +939,7 @@ const UserMessageBody = React.memo(({ messageId, parts, messageCreatedAt, isMobi
                             <TooltipContent sideOffset={6}>{t(contextPinned ? 'chat.messageBody.actions.unpinContext' : 'chat.messageBody.actions.pinContext')}</TooltipContent>
                         </Tooltip>
                     )}
+                    {onCopyLink && <CopyMessageLinkButton onCopyLink={onCopyLink} />}
                     {canCopyMessage && hasCopyableText && (
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -1010,6 +1058,7 @@ interface AssistantMessageActionButtonsProps {
     hasCopyableText: boolean;
     isTouchContext: boolean;
     onCopyMessage?: () => void | boolean | Promise<void | boolean>;
+    onCopyLink?: () => void;
     reviewTransferAction?: {
         ariaLabel: string;
         tooltip: string;
@@ -1024,6 +1073,7 @@ const AssistantMessageActionButtons = React.memo(({
     hasCopyableText,
     isTouchContext,
     onCopyMessage,
+    onCopyLink,
     reviewTransferAction,
     onShareImage,
     ttsText,
@@ -1184,6 +1234,7 @@ const AssistantMessageActionButtons = React.memo(({
 
     return (
         <>
+            {onCopyLink && <CopyMessageLinkButton onCopyLink={onCopyLink} />}
             {onCopyMessage && (
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -1326,9 +1377,11 @@ const AssistantMessageBody = React.memo(({
     allowAnimation: _allowAnimation,
     hasTextContent = false,
     onCopyMessage,
+    onCopyLink,
     showReasoningTraces = false,
     turnGroupingContext,
     errorMessage,
+    errorResponseBody,
     reviewTransferDirection = null,
     contextPinned,
     contextPinPending,
@@ -1659,10 +1712,24 @@ const AssistantMessageBody = React.memo(({
             }
 
             const prefilledPrompt = `${MULTIRUN_EXECUTION_FORK_PROMPT_META_TEXT}\n\n${assistantPlanText}`;
-            openMultiRunLauncherWithPrompt(prefilledPrompt);
+            if (canForkAnswer) openParallelComposer(prefilledPrompt);
+            else openMultiRunLauncherWithPrompt(prefilledPrompt);
         },
-        [assistantPlanText, openMultiRunLauncherWithPrompt]
+        [assistantPlanText, canForkAnswer, openMultiRunLauncherWithPrompt]
     );
+
+    const [askOtherModelsSession, setAskOtherModelsSession] = React.useState<Session | null>(null);
+    const handleAskOtherModels = React.useCallback(() => {
+        if (!sessionId) return;
+        const session = useGlobalSessionsStore.getState().activeSessions.find((entry) => entry.id === sessionId);
+        if (!session) return;
+        const identity = getMultiRunIdentity(session);
+        if (identity) {
+            useUIStore.getState().setRunOverviewKey(identity.key);
+            return;
+        }
+        setAskOtherModelsSession(session);
+    }, [sessionId]);
 
     const handleSaveAsPlanClick = React.useCallback(
         // Optional event: the footer's action sheet calls this without one.
@@ -1901,12 +1968,13 @@ const AssistantMessageBody = React.memo(({
             hasCopyableText={hasCopyableText}
             isTouchContext={isTouchContext}
             onCopyMessage={onCopyMessage}
+            onCopyLink={onCopyLink}
             onShareImage={shareMessageAsImage}
             ttsText={assistantPlanText}
             reviewTransferAction={reviewTransferAction}
             extraActions={extraActions}
         />
-    ), [assistantPlanText, extraActions, hasCopyableText, isTouchContext, onCopyMessage, reviewTransferAction, shareMessageAsImage]);
+    ), [assistantPlanText, extraActions, hasCopyableText, isTouchContext, onCopyLink, onCopyMessage, reviewTransferAction, shareMessageAsImage]);
 
     // The turn footer appends its own buttons (fork, multi-run) after this
     // group, so extension actions are rendered there separately, last.
@@ -1915,11 +1983,12 @@ const AssistantMessageBody = React.memo(({
             hasCopyableText={hasCopyableText}
             isTouchContext={isTouchContext}
             onCopyMessage={onCopyMessage}
+            onCopyLink={onCopyLink}
             onShareImage={shareMessageAsImage}
             ttsText={assistantPlanText}
             reviewTransferAction={reviewTransferAction}
         />
-    ), [assistantPlanText, hasCopyableText, isTouchContext, onCopyMessage, reviewTransferAction, shareMessageAsImage]);
+    ), [assistantPlanText, hasCopyableText, isTouchContext, onCopyLink, onCopyMessage, reviewTransferAction, shareMessageAsImage]);
 
     const renderJustificationActions = React.useCallback((activity: NonNullable<TurnGroupingContext['activityParts']>[number]) => {
         if (!showSplitAssistantMessageActions || !isSortedRenderMode) {
@@ -2334,6 +2403,14 @@ const AssistantMessageBody = React.memo(({
                 },
             });
         }
+        if (onCopyLink) {
+            actions.push({
+                id: 'copy-link',
+                label: t('chat.messageBody.actions.copyLink'),
+                icon: <Icon name="link" className="h-4 w-4" />,
+                onSelect: onCopyLink,
+            });
+        }
         if (reviewTransferAction && !isMiniChatSurface) {
             actions.push({
                 id: 'review-transfer',
@@ -2405,7 +2482,7 @@ const AssistantMessageBody = React.memo(({
             }
         }
         return actions;
-    }, [assistantPlanText, canForkAnswer, handleForkAnswer, isHistoryForking, canUseProjectPlanActions, contextPinPending, contextPinned, currentProjectRef, extraActions, handleForkClick, handleSaveAsPlanClick, hasCopyableText, isFooterTTSPlaying, isMiniChatSurface, isReviewSessionView, onCopyMessage, onToggleContextPin, playFooterTTS, reviewTransferAction, shareMessageAsImage, showMessageTTSButtons, stopFooterTTS, t]);
+    }, [assistantPlanText, canForkAnswer, handleForkAnswer, isHistoryForking, canUseProjectPlanActions, contextPinPending, contextPinned, currentProjectRef, extraActions, handleForkClick, handleSaveAsPlanClick, hasCopyableText, isFooterTTSPlaying, isMiniChatSurface, isReviewSessionView, onCopyLink, onCopyMessage, onToggleContextPin, playFooterTTS, reviewTransferAction, shareMessageAsImage, showMessageTTSButtons, stopFooterTTS, t]);
 
     const finalTurnActionButtons = (
         <>
@@ -2502,7 +2579,25 @@ const AssistantMessageBody = React.memo(({
                 </TooltipTrigger>
                 <TooltipContent sideOffset={6}>{t('chat.messageBody.actions.startNewSession')}</TooltipContent>
             </Tooltip> : null}
-            {canShowMultiRunAction && !isReviewSessionView ? (
+            {canShowMultiRunAction && canForkAnswer && !isReviewSessionView ? (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground"
+                            aria-label={t('chat.messageBody.actions.askOtherModels')}
+                            onPointerDown={(event) => event.stopPropagation()}>
+                            <ArrowsMerge className="h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onPointerDown={(event) => event.stopPropagation()}>
+                        {turnGroupingContext?.turnId ? <DropdownMenuItem onSelect={handleAskOtherModels}>
+                            {t('chat.messageBody.actions.askOtherModels')}
+                        </DropdownMenuItem> : null}
+                        <DropdownMenuItem onSelect={() => openParallelComposer(`${MULTIRUN_EXECUTION_FORK_PROMPT_META_TEXT}\n\n${assistantPlanText}`)}>
+                            {t('chat.messageBody.actions.startNewMultiRun')}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ) : canShowMultiRunAction && !isReviewSessionView ? (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -2519,6 +2614,9 @@ const AssistantMessageBody = React.memo(({
                     <TooltipContent sideOffset={6}>{t('chat.messageBody.actions.startNewMultiRun')}</TooltipContent>
                 </Tooltip>
             ) : null}
+            {askOtherModelsSession && turnGroupingContext?.turnId ? <AskOtherModelsDialog
+                session={askOtherModelsSession} turnUserMessageId={turnGroupingContext.turnId}
+                open onOpenChange={(open) => { if (!open) setAskOtherModelsSession(null); }} /> : null}
         </>
     );
  
@@ -2565,14 +2663,17 @@ const AssistantMessageBody = React.memo(({
                                 <div className="flex items-center gap-3">
                                     <Icon name="information" className="size-4 shrink-0 text-[var(--status-info)]" />
                                     <div className="min-w-0 flex-1 break-words">
-                                        <SimpleMarkdownRenderer
-                                            content={errorMessage ?? ''}
-                                            onShowPopup={onShowPopup}
-                                            className="[&_.markdown-content>*:first-child]:mt-0 [&_.markdown-content>*:last-child]:mb-0"
-                                            enableFileReferences={false}
-                                        />
+                                        <LongErrorText text={errorMessage ?? ''}>
+                                            {(visibleText) => <SimpleMarkdownRenderer
+                                                content={visibleText}
+                                                onShowPopup={onShowPopup}
+                                                className="[&_.markdown-content>*:first-child]:mt-0 [&_.markdown-content>*:last-child]:mb-0"
+                                                enableFileReferences={false}
+                                            />}
+                                        </LongErrorText>
                                     </div>
                                 </div>
+                                {errorResponseBody ? <ErrorResponseDetails body={errorResponseBody} className="mt-1 pl-7" /> : null}
                             </div>
                         </FadeInOnReveal>
                     )}
@@ -2744,6 +2845,7 @@ const MessageBody = React.memo(({ isUser, ...props }: MessageBodyProps) => {
                 hasTextContent={props.hasTextContent}
                 onCopyMessage={props.onCopyMessage}
                 copiedMessage={props.copiedMessage}
+                onCopyLink={props.onCopyLink}
                 onShowPopup={props.onShowPopup}
                 agentMention={props.agentMention}
                 onRevert={props.onRevert}

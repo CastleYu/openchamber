@@ -54,6 +54,10 @@ const agent: Agent = { generation: 'oc1', name: AGENT, mode: 'primary' };
 let latestUserChoice: UserModelChoice | null = null;
 let sessionRecord: Session | undefined;
 let snapshotReady = true;
+/** Models and agents another directory's catalog lists, for the display fallback. */
+type KnownElsewhere = { models: typeof model[]; agents: Agent[] };
+const nothingKnownElsewhere = (): KnownElsewhere => ({ models: [], agents: [] });
+let knownElsewhere = nothingKnownElsewhere();
 let forcePreserveManualOverride: boolean | null = null;
 
 /** Every effort written for the session, in order, including `undefined`. */
@@ -213,9 +217,16 @@ mock.module('@/lib/messages/userModelChoice', () => ({
 
 mock.module('@/stores/useConfigStore', () => ({
   useConfigStore,
+  isStaleAutoSelection: () => false,
   getSelectableModelId: (item: typeof model) => item.id,
   getSelectableModelVariants: (item: typeof model) => Object.keys(item.variants),
   selectCatalogLoadedForDirectory: (state: ConfigState, resource: 'models' | 'agents') => resource === 'models' ? state.providersLoaded : state.agentsLoaded,
+  // The active catalog first, then what other directories' catalogs know.
+  selectKnownCatalogModel: (state: ConfigState, providerId: string, modelId: string) =>
+    state.providers.find((provider) => provider.id === providerId)?.models.find((entry) => entry.id === modelId)
+      ?? knownElsewhere.models.find((entry) => entry.providerID === providerId && entry.id === modelId),
+  selectKnownAgent: (state: ConfigState, name: string) =>
+    state.agents.find((agent) => agent.name === name) ?? knownElsewhere.agents.find((agent) => agent.name === name),
 }));
 mock.module('@/sync/selection-store', () => ({ useSelectionStore }));
 mock.module('@/sync/session-ui-store', () => ({ useSessionUIStore }));
@@ -368,6 +379,7 @@ describe('ModelControls effort restore', () => {
     variantWrites.length = 0;
     overrideWrites.length = 0;
     latestUserChoice = null;
+    knownElsewhere = nothingKnownElsewhere();
     sessionRecord = undefined;
     snapshotReady = true;
     forcePreserveManualOverride = null;
@@ -459,6 +471,51 @@ describe('ModelControls effort restore', () => {
       expect(dom.container.textContent).toContain(MODEL_ID);
       expect(useConfigStore.getState().currentVariant).toBe('high');
       expect(overrideWrites).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test('a draft in a directory still starting shows the model, effort and agent other catalogs know', async () => {
+    // OpenCode answers a directory it is still starting with part of its
+    // catalog; the composer keeps what it already knows instead of a raw id
+    // and "Select agent", and writes nothing while it waits.
+    useSessionUIStore.setState({ currentSessionId: null });
+    knownElsewhere.models.push({ ...model, name: 'GPT Five' });
+    knownElsewhere.agents.push(agent);
+    useConfigStore.setState({
+      providers: [], agents: [], currentAgentName: undefined,
+      currentVariant: 'high', settingsDefaultVariant: 'high',
+      currentVariantSelection: { override: 'high', inherited: 'high' },
+    });
+    const { dom, cleanup } = await renderModelControls();
+    try {
+      expect(dom.container.querySelector('.model-controls__model-trigger')?.textContent).toContain('GPT Five');
+      expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe('high');
+      expect(dom.container.querySelector('.model-controls__agent-label')?.textContent).toBe('Build');
+      expect(useConfigStore.getState().currentVariant).toBe('high');
+      expect(overrideWrites).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test('a draft keeps its picked effort while another directory resolves the automatic model', async () => {
+    // Activating another directory empties the automatic model until its
+    // catalog arrives; the effort the draft picked must survive that gap.
+    useSessionUIStore.setState({ currentSessionId: null });
+    useConfigStore.setState({
+      providers: [], providersLoaded: false, currentProviderId: '', currentModelId: '',
+      currentVariant: 'high', currentVariantSelection: { override: 'high', inherited: undefined },
+    });
+    const { cleanup } = await renderModelControls();
+    try {
+      expect(overrideWrites).toEqual([]);
+      await act(async () => {
+        useConfigStore.setState({ providers: [provider], providersLoaded: true, currentProviderId: PROVIDER_ID, currentModelId: MODEL_ID });
+      });
+      expect(useConfigStore.getState().currentVariantSelection.override).toBe('high');
+      expect(useConfigStore.getState().currentVariant).toBe('high');
     } finally {
       await cleanup();
     }

@@ -2,7 +2,9 @@ import { describe, expect, mock, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { Window } from 'happy-dom';
 import { ChildStoreManager } from '@/sync/child-store';
+import { sessionEvents, type SessionDeleteRequest } from '@/lib/sessionEvents';
 import { I18nProvider } from '@/lib/i18n';
 import { useSessionFoldersStore } from '@/stores/useSessionFoldersStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -145,6 +147,46 @@ const createProps = (): SessionGroupSectionProps => ({
 });
 
 describe('SessionGroupSection public behavior', () => {
+  test('Shift+click requests a safe worktree check while ordinary click keeps the dialog', async () => {
+    const dom = new Window({ url: 'http://localhost' });
+    const originals = new Map<string, PropertyDescriptor | undefined>();
+    for (const [name, value] of Object.entries({ window: dom, document: dom.document, navigator: dom.navigator,
+      Element: dom.Element, HTMLElement: dom.HTMLElement, MouseEvent: dom.MouseEvent, IS_REACT_ACT_ENVIRONMENT: true })) {
+      originals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+      Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
+    }
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const requests: SessionDeleteRequest[] = [];
+    const unsubscribe = sessionEvents.onDeleteRequest((request) => requests.push(request));
+    const worktreeGroup: SessionGroupSectionProps['group'] = {
+      ...groupWithSession,
+      id: 'worktree',
+      label: 'Feature',
+      isMain: false,
+      worktree: { path: '/workspace/feature', projectDirectory: '/workspace', branch: 'feature', label: 'Feature' },
+    };
+    try {
+      await act(async () => root.render(<I18nProvider><SessionGroupSection {...createProps()} group={worktreeGroup} groupKey="project:feature" hideGroupLabel={false} renderBody={false} /></I18nProvider>));
+      const button = [...container.querySelectorAll('button')].find((entry) => entry.getAttribute('aria-label')?.includes('Delete Feature'));
+      if (!button) throw new Error('Worktree delete action did not mount');
+      await act(async () => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      await act(async () => button.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true })));
+      expect(requests.map((request) => request.skipDialogIfSafe)).toEqual([false, true]);
+      expect(requests.every((request) => request.mode === 'worktree' && request.worktree?.path === '/workspace/feature')).toBe(true);
+    } finally {
+      unsubscribe();
+      await act(async () => root.unmount());
+      container.remove();
+      for (const [name, descriptor] of originals) {
+        if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+        else Reflect.deleteProperty(globalThis, name);
+      }
+      await dom.happyDOM.abort();
+    }
+  });
+
   test('an empty successful list does not spin for initialization and keeps initialization failure retryable', async () => {
     let rejectInitialization!: (error: Error) => void;
     const initialization = new Promise<void>((_resolve, reject) => { rejectInitialization = reject; });

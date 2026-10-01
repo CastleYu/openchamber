@@ -6,6 +6,8 @@ import { isChatDirectoryPath } from '@/lib/chatDirectories';
 import { resolveGlobalSessionDirectory } from '@/stores/useGlobalSessionsStore';
 import { getPinnedSessionKey } from '@/stores/useSessionPinnedStore';
 import type { SessionNode } from '../types';
+import type { WorktreeMetadata } from '@/types/worktree';
+import { getGitHubPrStatusKey } from '@/stores/useGitHubPrStatusStore';
 
 /**
  * Per-row render extras precomputed once per group render and threaded down to
@@ -358,6 +360,21 @@ export const selectRowBadgeVisibilityClass = (input: {
 }): string => {
   if (input.actionsAlwaysVisible) return '';
   return `transition-opacity duration-150 ${input.menuOpen ? 'opacity-0' : input.hideOnHoverClass}`;
+};
+
+export const resolveTooltipBranchLabel = (
+  secondaryMeta: { projectLabel?: string | null; branchLabel?: string | null } | null | undefined,
+  worktreeBranch: string | null | undefined,
+): string | null => secondaryMeta ? (secondaryMeta.branchLabel ?? null) : (worktreeBranch ?? null);
+
+export const resolveSessionPrLookupKey = (
+  worktree: WorktreeMetadata | null | undefined,
+  isVSCode: boolean,
+): string | null => {
+  if (isVSCode) return null;
+  const branch = worktree?.branch?.trim();
+  const directory = normalizePath(worktree?.path ?? null);
+  return branch && directory ? getGitHubPrStatusKey(directory, branch) : null;
 };
 
 /**

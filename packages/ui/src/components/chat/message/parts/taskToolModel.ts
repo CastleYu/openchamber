@@ -1,4 +1,6 @@
 import type { MessageRecord } from '@/lib/messageCompletion';
+import type { Part, Session, ToolInput } from '@/lib/opencode/model';
+import { isSubagentTool, normalizeToolName } from '@/lib/opencode/tools';
 
 import { capToolOutputText } from '../toolRenderers';
 import { readTaskTagSessionIdFromOutput } from './taskSessionIdParser';
@@ -23,6 +25,33 @@ export const readTaskSessionIdFromRecord = (value: unknown): string | undefined 
     if (!value || typeof value !== 'object') return undefined;
     const record = value as Record<string, unknown>;
     return normalizeSessionIdCandidate(record.sessionID) ?? normalizeSessionIdCandidate(record.sessionId);
+};
+
+/** Recover an OC2 running child when the persisted call has no progress metadata yet. */
+export const resolveRunningTaskChildSessionId = (options: {
+    sessions: readonly Session[];
+    parentSessionID: string;
+    startedAt: number;
+    agent: ToolInput[string] | undefined;
+    description: ToolInput[string] | undefined;
+    siblingParts: readonly Part[] | undefined;
+    partID: string;
+}): string | undefined => {
+    const { sessions, parentSessionID, startedAt, agent, description, siblingParts, partID } = options;
+    const claimed = new Set<string>();
+    for (const sibling of siblingParts ?? []) {
+        if (sibling.id === partID || sibling.type !== 'tool' || !isSubagentTool(normalizeToolName(sibling.tool))) continue;
+        const id = sibling.state.status === 'pending' ? undefined : readTaskSessionIdFromRecord(sibling.state.metadata);
+        if (id) claimed.add(id);
+    }
+    const candidates = sessions.filter((session) => session.parentID === parentSessionID
+        && session.time.created >= startedAt
+        && (agent === undefined || session.agent === undefined || session.agent === agent)
+        && !claimed.has(session.id));
+    if (candidates.length === 1) return candidates[0].id;
+    if (description === undefined) return undefined;
+    const titled = candidates.filter((session) => session.title === description);
+    return titled.length === 1 ? titled[0].id : undefined;
 };
 
 export const normalizeTaskSummaryEntries = (value: unknown): TaskToolSummaryEntry[] => {
@@ -103,15 +132,15 @@ const projectMessageSummaryEntries = (message: MessageRecord): TaskToolSummaryEn
     if (message.info.role === 'assistant') {
         for (const part of message.parts) {
             if (part.type !== 'tool') continue;
-            const toolName = part.tool?.trim().toLowerCase();
-            if (!toolName || toolName === 'task' || toolName === 'todowrite' || toolName === 'todoread') continue;
+            const toolName = normalizeToolName(part.tool);
+            if (!toolName || isSubagentTool(toolName) || toolName === 'todowrite' || toolName === 'todoread') continue;
             const state = part.state as { status?: string; title?: string; input?: unknown } | undefined;
             entries.push({
                 id: part.id,
                 tool: part.tool,
                 state: {
                     status: state?.status,
-                    title: state?.title,
+                    ...(state?.title !== undefined ? { title: state.title } : {}),
                     input: state?.input && typeof state.input === 'object'
                         ? state.input as Record<string, unknown>
                         : undefined,
@@ -151,11 +180,16 @@ const unwrapTaskResultEnvelope = (output: string): string => {
     return resultBlock[1];
 };
 
+const SUBAGENT_ENVELOPE_PATTERN = /^\s*<subagent(?:\s[^>]*)?>\r?\n([\s\S]*?)\r?\n<\/subagent>\s*$/i;
+
+const unwrapSubagentEnvelope = (output: string): string =>
+    output.match(SUBAGENT_ENVELOPE_PATTERN)?.[1] ?? output;
+
 // The task tool renders its output through the markdown parser instead of the
 // shared tool-output path, so it needs the same size guard as
 // `getToolOutputText` (issue #2265): an unbounded single string reaching the
 // parser can exhaust V8's Zone allocator and crash the renderer.
 export const prepareTaskToolOutput = (output: string | undefined): string => {
     if (!output) return '';
-    return capToolOutputText(stripTaskMetadataFromOutput(unwrapTaskResultEnvelope(output)));
+    return capToolOutputText(stripTaskMetadataFromOutput(unwrapSubagentEnvelope(unwrapTaskResultEnvelope(output))));
 };

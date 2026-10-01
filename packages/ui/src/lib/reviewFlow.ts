@@ -13,6 +13,7 @@ import {
 import { useConfigStore } from '@/stores/useConfigStore';
 import { useAutoReviewStore, type AutoReviewRun } from '@/stores/useAutoReviewStore';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
+import { usePermissionStore } from '@/stores/permissionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { optimisticSend, patchSessionMetadata, waitForConnectionOrThrow } from '@/sync/session-actions';
 import { useSelectionStore } from '@/sync/selection-store';
@@ -433,6 +434,21 @@ const getReviewSessionTitle = (original: Session): string => {
   return `Review: ${implementationTitle}`;
 };
 
+// A fresh review session uses the original session's permission choice.
+// OC1 keeps its binary auto-accept behavior; OC2 also inherits ask and safety.
+const inheritReviewPermission = async (originalSessionID: string, reviewSessionID: string): Promise<void> => {
+  const permissions = usePermissionStore.getState();
+  try {
+    if (opencodeClient.getBoundRuntime()?.generation === 'oc2') {
+      await permissions.setSessionMode(reviewSessionID, permissions.getSessionMode(originalSessionID));
+    } else if (permissions.isSessionAutoAccepting(originalSessionID)) {
+      await permissions.setSessionAutoAccept(reviewSessionID, true);
+    }
+  } catch (error) {
+    console.warn('[review-flow] failed to inherit permission mode for review session', error);
+  }
+};
+
 const createOrReuseReviewSession = async (originalSessionID: string, directory: string, expectedRuntimeKey?: string): Promise<Session> => {
   assertAutoReviewRuntimeStillCurrent(expectedRuntimeKey);
   const original = await opencodeClient.getSession(originalSessionID, directory);
@@ -471,7 +487,10 @@ const createOrReuseReviewSession = async (originalSessionID: string, directory: 
     });
     throw error;
   }
+  assertAutoReviewRuntimeStillCurrent(expectedRuntimeKey);
   useGlobalSessionsStore.getState().upsertSession(review);
+  await inheritReviewPermission(originalSessionID, review.id);
+  assertAutoReviewRuntimeStillCurrent(expectedRuntimeKey);
   return review;
 };
 

@@ -4,6 +4,7 @@ import { routeMessage, useSessionUIStore } from '@/sync/session-ui-store';
 import { devtools } from 'zustand/middleware';
 import type { CreateMultiRunParams, CreateMultiRunResult } from '@/types/multirun';
 import { opencodeClient } from '@/lib/opencode/client';
+import { fetchSessionKnowledge, reportSessionKnowledgeDelivered } from '@/lib/sessionKnowledgeApi';
 import { getWorktreeSetupWaitEnabled, saveWorktreeSetupCommands } from '@/lib/openchamberConfig';
 import type { ProjectRef } from '@/lib/worktrees/worktreeManager';
 import { createWorktreeWithDefaults, resolveRootTrackingRemote } from '@/lib/worktrees/worktreeCreate';
@@ -15,12 +16,14 @@ import { useProjectsStore } from './useProjectsStore';
 import { useSnippetsStore } from './useSnippetsStore';
 import { useGlobalSessionsStore } from './useGlobalSessionsStore';
 import { getMultiRunSessionTitle } from '@/lib/multirun/title';
+import { RUN_LAUNCHER_ID } from '@/lib/multirun/launcher';
+import { multiRunVariantLabel } from '@/lib/multirun/runs';
 import { createMultiRunSession } from '@/lib/multirun/createSession';
 import { multiRunGroupKey, type MultiRunMembership } from '@/lib/multirun/identity';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 import { getSyncChildStores, registerSessionDirectory } from '@/sync/sync-refs';
 
-const toGitSafeSlug = (value: string): string => {
+export const toGitSafeSlug = (value: string): string => {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -28,7 +31,7 @@ const toGitSafeSlug = (value: string): string => {
     .substring(0, 50);
 };
 
-const toModelSlug = (providerID: string, modelID: string): string => {
+export const toModelSlug = (providerID: string, modelID: string): string => {
   const provider = toGitSafeSlug(providerID);
   const model = toGitSafeSlug(modelID);
   return `${provider}-${model}`.substring(0, 60);
@@ -81,6 +84,38 @@ export const registerMultiRunSession = (session: Session, directory: string): Se
 
   return sessionWithDirectory;
 };
+
+/** Send the first prompt with the same standing project context as a composer send. */
+export async function dispatchRunPrompt(input: {
+  runtimeKey: string;
+  assertCurrent: () => void;
+  sessionId: string;
+  directory: string;
+  prompt: string;
+  providerID: string;
+  modelID: string;
+  variant?: string;
+  agent?: string;
+  files?: Array<{ type: 'file'; mime: string; filename: string; url: string }>;
+}): Promise<void> {
+  input.assertCurrent();
+  const [text, knowledge] = await Promise.all([
+    useSnippetsStore.getState().expandText(input.prompt).catch(() => input.prompt),
+    fetchSessionKnowledge(input.directory, input.sessionId),
+  ]);
+  input.assertCurrent();
+  const route = await routeMessage({
+    runtimeKey: input.runtimeKey, sessionId: input.sessionId, directory: input.directory,
+    content: text, providerID: input.providerID, modelID: input.modelID,
+    variant: input.variant, agent: input.agent, files: input.files,
+    additionalParts: knowledge.text
+      ? [{ text: knowledge.text, synthetic: true, systemContext: 'session-knowledge' }]
+      : undefined,
+  });
+  if (knowledge.text && route !== 'shell') {
+    void reportSessionKnowledgeDelivered(input.directory, input.sessionId, knowledge.signature);
+  }
+}
 
 const resolveActiveProject = (): ProjectRef | null => {
   const projectsState = useProjectsStore.getState();
@@ -167,6 +202,10 @@ export const useMultiRunStore = create<MultiRunStore>()(
           const shouldIsolateRuns = isGit && params.isolateRuns !== false;
 
           const groupSlug = toGitSafeSlug(groupName) || 'multi-run';
+          const runTitle = generation === 'oc2' ? (params.title?.trim() || groupName).slice(0, 200) : groupName;
+          const autoFusion = generation === 'oc2' && params.autoFusion
+            ? { ...params.autoFusion, launcherId: RUN_LAUNCHER_ID }
+            : undefined;
           const membershipGroup: MultiRunMembership['group'] = { kind: 'id', id: crypto.randomUUID() };
           const rootBranch = shouldIsolateRuns ? await getRootBranch(directory) : undefined;
           assertCurrent();
@@ -180,6 +219,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
             modelID: string;
             variant?: string;
             prompt: string;
+            files?: CreateMultiRunParams['files'];
           }> = [];
 
           const commandsToRun = setupCommands?.filter((cmd) => cmd.trim().length > 0) ?? [];
@@ -213,20 +253,18 @@ export const useMultiRunStore = create<MultiRunStore>()(
                 ? `${runGroup}/${modelPart}`
                 : modelPart;
 
-              const sessionTitle = getMultiRunSessionTitle({
-                groupSlug,
-                runGroup,
-                providerID: model.providerID,
-                modelID: model.modelID,
-                index: count > 1 ? index : undefined,
-              });
+              const sessionTitle = generation === 'oc2'
+                ? `${model.displayName || model.modelID}${count > 1 ? ` #${index}` : ''}${runGroup ? ` · ${multiRunVariantLabel(runGroup)}` : ''} · ${runTitle}`
+                : getMultiRunSessionTitle({ groupSlug, runGroup, providerID: model.providerID,
+                  modelID: model.modelID, index: count > 1 ? index : undefined });
 
               try {
                 const createRun = (runDirectory: string) => createMultiRunSession(client, {
                   title: sessionTitle, directory: runDirectory, generation,
                   selection: { model: { providerID: model.providerID, id: model.modelID, variant: model.variant }, agent },
                   identity: { group: membershipGroup, groupSlug, runGroup, providerID: model.providerID,
-                    modelID: model.modelID, index: count > 1 ? index : undefined, role: 'run' },
+                    modelID: model.modelID, index: count > 1 ? index : undefined, role: 'run',
+                    ...(generation === 'oc2' ? { title: runTitle, autoFusion } : {}) },
                 }, assertCurrent);
                 if (!shouldIsolateRuns) {
                   const session = await createRun(directory);
@@ -240,6 +278,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
                     modelID: model.modelID,
                     variant: model.variant,
                     prompt,
+                    files: generation === 'oc2' ? group.files : undefined,
                   });
                   continue;
                 }
@@ -284,6 +323,7 @@ export const useMultiRunStore = create<MultiRunStore>()(
                   modelID: model.modelID,
                   variant: model.variant,
                   prompt,
+                  files: generation === 'oc2' ? group.files : undefined,
                 });
               } catch (err) {
                 assertCurrent();
@@ -324,17 +364,17 @@ export const useMultiRunStore = create<MultiRunStore>()(
                     assertCurrent();
                     const text = await expandText(run.prompt).catch(() => run.prompt);
                     assertCurrent();
-                    await routeMessage({
-                      runtimeKey,
-                      sessionId: run.sessionId,
-                      directory: run.worktreePath,
-                      content: text,
-                      providerID: run.providerID,
-                      modelID: run.modelID,
-                      variant: run.variant,
-                      agent,
-                      files: filesForMessage,
-                    });
+                    if (generation === 'oc2') {
+                      await dispatchRunPrompt({ runtimeKey, assertCurrent, sessionId: run.sessionId,
+                        directory: run.worktreePath, prompt: run.prompt, providerID: run.providerID,
+                        modelID: run.modelID, variant: run.variant, agent,
+                        files: [...(filesForMessage ?? []), ...(run.files ?? []).map((f) => ({ type: 'file' as const, mime: f.mime, filename: f.filename, url: f.url }))],
+                      });
+                    } else {
+                      await routeMessage({ runtimeKey, sessionId: run.sessionId, directory: run.worktreePath,
+                        content: text, providerID: run.providerID, modelID: run.modelID,
+                        variant: run.variant, agent, files: filesForMessage });
+                    }
                   } catch (err) {
                     console.warn('[MultiRun] Failed to start run:', err);
                   }

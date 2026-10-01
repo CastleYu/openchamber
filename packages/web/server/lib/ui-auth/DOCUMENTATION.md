@@ -21,6 +21,10 @@ Browsers key a cookie jar on the host only, never the port (RFC 6265). Two OpenC
 
 Compatibility: upgrading renames the cookie for any explicit-port host, so already-signed-in browser sessions must log in once again. No on-disk format changes.
 
+## Space transport tokens
+
+The short-lived URL token check recognizes raw file reads at `/api/spaces/<12 lowercase hex digits>/fs/raw` and the space terminal, event, global event, and dev-tunnel WebSocket paths. Only those exact path shapes receive URL token handling; malformed space IDs and other space API requests use the ordinary authenticated request path.
+
 ## Public exports (ui-auth.js)
 - `createUiAuth({ password, cookieName, sessionTtlMs, readSettingsFromDiskMigrated })`: creates UI auth controller with methods:
   - `enabled`

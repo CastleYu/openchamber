@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test"
 import { togglePermissionAutoAccept } from "../../components/chat/permissionAutoAccept"
 
 const storage = new Map<string, string>()
+const runtimeBinding = { generation: 'oc1', endpoint: 'http://test.local', epoch: 'fixture', version: '1.18.32' } as const
 const createSessionCalls: Array<{ title?: string; directory: string | null; parentID: string | null; metadata?: unknown }> = []
 const permissionAutoAcceptCalls: Array<[string, boolean]> = []
 const savedVariantCalls: Array<string | undefined> = []
@@ -108,6 +109,7 @@ mock.module("@/stores/utils/safeStorage", () => ({
 
 mock.module("@/lib/opencode/client", () => ({
   opencodeClient: {
+    getBoundRuntime: () => runtimeBinding,
     getDirectory: () => null,
     getFilesystemHome: mock(async () => "/home/test"),
     getFilesystemHomeInfo: async () => ({ home: "/home/test" }),

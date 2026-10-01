@@ -1,6 +1,6 @@
 import type { ContextPartMetadata } from '@/lib/messages/contextParts';
 import { createOpencodeClient, OpencodeClient } from "@opencode-ai/sdk/v2";
-import { isPermissionNotFoundError, type FormAnswer, type OpenCodeClient, type PermissionRequest as V2PermissionRequest, type SessionRevert as V2SessionRevert } from '@opencode/client';
+import { isMessageNotFoundError, isPermissionNotFoundError, type FormAnswer, type OpenCodeClient, type PermissionRequest as V2PermissionRequest, type SessionRevert as V2SessionRevert } from '@opencode/client';
 import type { PermissionV2Request, PermissionV2Effect, PermissionV2Source } from "@opencode-ai/sdk/v2/client";
 import { z } from "zod";
 import { OpencodeRequestError, toUpstreamErrorDetail, upstreamErrorPayloadSchema } from "./upstreamError";
@@ -8,8 +8,10 @@ import { OPEN_CODE_GENERATION, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedErr
 import { V1SessionOperations } from './v1/sessions';
 import { projectLegacyMessage, projectLegacyPart, projectLegacySession } from './v1/projection';
 import type { Message as DomainMessage, Metadata, ModelRef, Part as DomainPart, Project as DomainProject, Session as DomainSession, Vcs as DomainVcs } from './model';
-import { V2SessionOperations } from './v2/sessions';
+import { V2SessionOperations, type V2MessagePage, type V2MessagePageOptions } from './v2/sessions';
 import { V2CatalogOperations } from './v2/catalog';
+import type { SpaceMark } from '@/lib/spaces/spaces-store';
+import { isSpaceDirectory } from '@/lib/spaces/space-route';
 import type { BootstrapPath, McpCatalog, PendingInput, PendingPermission, ProviderCatalog, TaggedConfig } from './operations';
 import { createV2RuntimeClient } from './v2/client';
 import { createOpenCodeFetch, createTimeoutSignal } from './transport';
@@ -27,6 +29,7 @@ import { isAmbiguousTransportFailure, markAmbiguousTransportFailure } from "@/li
 import { FilesystemError, parseFilesystemErrorReason } from "@/lib/api/files-errors";
 import type { PermissionRequest } from "@/types/permission";
 import type { QuestionRequest } from "@/types/question";
+import { runningShellFromWire, shellCancellationNote, type RunningShell } from './background-shell';
 
 /**
  * Tagged result of `OpencodeService.fetchPermission()`. The caller can
@@ -56,6 +59,7 @@ import {
 const DEFAULT_BASE_URL = import.meta.env.VITE_OPENCODE_URL || "/api";
 const CONFIG_CACHE_TTL_MS = 10_000;
 const OPENCODE_HEALTH_TIMEOUT_MS = 4_000;
+const SHELL_OUTPUT_TAIL_BYTES = 64 * 1024;
 
 /**
  * Render an SDK error payload into a short string for Error messages.
@@ -84,6 +88,10 @@ type SdkResult<T> = {
 type DirectoryAvailability = "available" | "missing" | "unknown";
 type SessionArchivePayload = { ids: string[]; directory?: string; archivedAt?: number };
 const directoryProbeErrorSchema = z.object({ reason: z.string().optional(), isDirectory: z.boolean().optional() });
+
+/** A read of something OpenCode confirmed gone (HTTP 404); any other failure stays an unknown error. */
+export const isOpencodeNotFound = (error: unknown): boolean =>
+  (error instanceof OpencodeRequestError && error.status === 404) || isMessageNotFoundError(error);
 
 
 function unwrapSdkData<T>(result: SdkResult<T>, operation: string): T {
@@ -218,6 +226,13 @@ export type ProjectFileSearchHit = {
   path: string;
   relativePath: string;
   extension?: string;
+};
+
+export type SyntheticContextInput = {
+  id?: string;
+  text: string;
+  metadata?: ContextPartMetadata;
+  description?: string;
 };
 
 type AgentPartInputLite = {
@@ -413,8 +428,9 @@ class OpencodeService {
       const baseUrl = this.baseUrl;
       this.syncSource = createV2SyncSource({
         sessions: this.v2Sessions,
-        status: async (_directory, signal) => {
-          const active = await client.session.active({ signal });
+        status: async (directory, signal) => {
+          const scoped = isSpaceDirectory(directory) ? this.v2ClientFor(directory) : client;
+          const active = await scoped.session.active({ signal });
           return Object.fromEntries(Object.keys(active).map((id) => [id, { type: 'busy' as const }]));
         },
         permissions: async (directory, signal) => {
@@ -425,12 +441,12 @@ class OpencodeService {
           const result = await client.form.list({ location: directory ? { directory } : undefined }, { signal });
           return result.data.map((value) => ({ generation: 'oc2' as const, kind: 'form' as const, value }));
         },
-        events: (signal, lastEventID) => {
+        events: (signal, lastEventID, onActivity) => {
           const events = lastEventID ? createV2RuntimeClient({
             baseUrl, lastEventID,
             assertProtocol: () => this.runtimeBinding.assert('oc2', 'event stream'),
           }) : client;
-          return events.event.subscribe({ signal });
+          return events.event.subscribe({ signal, onActivity });
         },
       }, this.runtimeBinding, bootstrap);
     } else {
@@ -764,6 +780,7 @@ class OpencodeService {
       const requestDirectory = this.scope(directory).directory;
       if (patch.metadata !== undefined) {
         const response = await runtimeFetch(`/api/openchamber/sessions/${encodeURIComponent(id)}/metadata`, {
+          directory: requestDirectory,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ patch: patch.metadata, directory: requestDirectory }),
@@ -781,6 +798,7 @@ class OpencodeService {
         if (requestDirectory) payload.directory = requestDirectory;
         if (archivedAt > 0) payload.archivedAt = archivedAt;
         const response = await runtimeFetch(route, {
+          directory: requestDirectory,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -799,18 +817,23 @@ class OpencodeService {
     return this.runtimeBinding.run('oc1', 'session.messages', () => this.sessions.messages(id, limit, { directory: requestDirectory }));
   }
 
+  async getSessionMessagePage(id: string, options: V2MessagePageOptions = {}, directory?: string | null): Promise<V2MessagePage> {
+    if (!this.isV2()) throw new OpenCodeRuntimeError('oc1', 'ordered message page');
+    return this.v2Sessions.messages(id, options, this.scope(directory));
+  }
+
   /** One protocol-native page; cursor is an opaque string at this boundary. */
   async listSessionsPage(options: {
     global?: boolean; directory?: string | null; archived?: boolean; roots?: boolean;
     limit?: number; cursor?: string; order?: 'asc' | 'desc'; search?: string; parentID?: string | null; signal?: AbortSignal;
-  } = {}): Promise<{ sessions: DomainSession[]; cursor: { next?: string } }> {
+  } = {}): Promise<{ sessions: DomainSession[]; cursor: { next?: string }; spaces?: SpaceMark[] }> {
     const directory = options.global ? null : this.normalizeCandidatePath(options.directory) ?? this.currentDirectory;
     if (this.isV2()) {
       const page = await this.v2Sessions.listPage({
         limit: options.limit, cursor: options.cursor, order: options.order, search: options.search,
         parentID: options.roots === true ? null : options.parentID,
       }, { directory, signal: options.signal });
-      return { sessions: page.sessions, cursor: { next: page.cursor.next } };
+      return { sessions: page.sessions, cursor: { next: page.cursor.next }, ...(page.spaces ? { spaces: page.spaces } : {}) };
     }
     if (options.search !== undefined || options.order !== undefined || options.parentID !== undefined) {
       throw new OpenCodeRuntimeError('oc1', 'filtered session listing');
@@ -1017,6 +1040,11 @@ class OpencodeService {
       this.v2ClientFor(directory).config.get(undefined, { signal }));
   }
 
+  async configDeniesAnyProvider(directory?: string | null): Promise<boolean> {
+    if (!this.isV2()) return false;
+    return this.v2Catalog.deniesProvider(this.scope(directory));
+  }
+
   async getProviderCatalog(directory?: string | null, signal?: AbortSignal): Promise<ProviderCatalog> {
     if (this.isV2()) return this.v2Catalog.catalog(this.scope(directory, signal));
     const value = await this.getProvidersForConfig(directory);
@@ -1204,10 +1232,10 @@ class OpencodeService {
     if (agent) await this.runtimeBinding.run('oc2', 'session.switchAgent', () => client.session.switchAgent({ sessionID, agent }));
   }
 
-  private async v2Synthetic(sessionID: string, text: string, directory?: string | null, metadata?: ContextPartMetadata, delivery?: 'steer') {
+  private async v2Synthetic(sessionID: string, text: string, directory?: string | null, metadata?: ContextPartMetadata, delivery?: 'steer', id?: string, description?: string) {
     if (!text.trim()) return;
     await this.runtimeBinding.run('oc2', 'session.synthetic', () => this.v2ClientFor(directory).session.synthetic({
-      sessionID, text, metadata: metadata ? z.record(z.string(), z.json()).parse(metadata) : undefined,
+      sessionID, id, text, description, metadata: metadata ? z.record(z.string(), z.json()).parse(metadata) : undefined,
       delivery, resume: false,
     }));
   }
@@ -1225,6 +1253,8 @@ class OpencodeService {
     files?: Array<FileInputLite>;
     /** Additional text/file parts to include (for batch sending queued messages) */
     additionalParts?: Array<{
+      id?: string;
+      description?: string;
       text: string;
       synthetic?: boolean;
       metadata?: ContextPartMetadata;
@@ -1262,7 +1292,7 @@ class OpencodeService {
         await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory);
         if (params.prefaceTextSynthetic !== false) await this.v2Synthetic(params.id, params.prefaceText ?? '', directory, undefined, params.delivery);
         for (const item of params.additionalParts ?? []) {
-          if (item.synthetic) await this.v2Synthetic(params.id, item.text, directory, item.metadata, params.delivery);
+          if (item.synthetic) await this.v2Synthetic(params.id, item.text, directory, item.metadata, params.delivery, item.id, item.description);
         }
         this.assertRuntimeUnchanged(params.runtimeKey);
         await this.v2Sessions.prompt({
@@ -1494,6 +1524,79 @@ class OpencodeService {
     return Boolean(response.data);
   }
 
+  /** Move the blocking work of a turn into the background (OC2 only). */
+  async backgroundSessionWork(id: string, directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'session.background', () =>
+      this.v2ClientFor(directory).session.background({ sessionID: id }));
+  }
+
+  /** Running background shell commands owned by sessions in this directory. */
+  async listRunningShells(directory: string): Promise<{ directory: string; shells: RunningShell[] }> {
+    const response = await this.runtimeBinding.run('oc2', 'shell.list', () => this.v2ClientFor(directory).shell.list());
+    return {
+      directory: response.location.directory ?? directory,
+      shells: unwrapSdkData(response, 'shell.list').flatMap((info) => runningShellFromWire(info) ?? []),
+    };
+  }
+
+  /** Read a running shell's captured output, initially showing only its tail. */
+  async readShellOutput(
+    shellID: string,
+    directory: string,
+    cursor?: number,
+    tailBytes = SHELL_OUTPUT_TAIL_BYTES,
+  ): Promise<{ output: string; cursor: number; skipped: boolean }> {
+    const boundRuntime = this.runtimeBinding.get();
+    this.runtimeBinding.assert('oc2', 'shell.output');
+    const assertRuntime = () => {
+      if (this.runtimeBinding.get() !== boundRuntime) throw new OpenCodeRuntimeChangedError();
+    };
+    const client = this.v2ClientFor(directory);
+    const read = (at: number, limit?: number) => this.runtimeBinding.run('oc2', 'shell.output', async () => {
+      assertRuntime();
+      const result = await client.shell.output({ id: shellID, cursor: at, ...(limit === undefined ? {} : { limit }) });
+      return unwrapSdkData(result, 'shell.output');
+    });
+    let start = cursor;
+    if (start === undefined) {
+      const end = await read(Number.MAX_SAFE_INTEGER);
+      start = Math.max(0, end.size - tailBytes);
+    }
+    const page = await read(start, tailBytes);
+    return { output: page.output, cursor: page.cursor, skipped: cursor === undefined && start > 0 };
+  }
+
+  /** Tell the agent a user stopped the command before removing the process. */
+  async stopBackgroundShell(params: {
+    sessionID: string;
+    sessionDirectory?: string | null;
+    shellID: string;
+    shellDirectory: string;
+    command: string;
+  }): Promise<void> {
+    const boundRuntime = this.runtimeBinding.get();
+    this.runtimeBinding.assert('oc2', 'session.synthetic');
+    const assertRuntime = () => {
+      if (this.runtimeBinding.get() !== boundRuntime) throw new OpenCodeRuntimeChangedError();
+    };
+    const note = shellCancellationNote({ shellID: params.shellID, command: params.command });
+    await this.runtimeBinding.run('oc2', 'session.synthetic', async () => {
+      assertRuntime();
+      await this.v2ClientFor(params.sessionDirectory).session.synthetic({
+        sessionID: params.sessionID,
+        text: note.text,
+        description: note.description,
+        metadata: note.metadata,
+        resume: false,
+      });
+    });
+    assertRuntime();
+    await this.runtimeBinding.run('oc2', 'shell.remove', async () => {
+      assertRuntime();
+      await this.v2ClientFor(params.shellDirectory).shell.remove({ id: params.shellID });
+    });
+  }
+
   async shellSession(params: {
     runtimeKey?: string;
     sessionId: string;
@@ -1614,7 +1717,8 @@ class OpencodeService {
   ): Promise<Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }> | null> {
     if (this.isV2()) {
       try {
-        const active = await this.runtimeBinding.run('oc2', 'session.active', () => this.v2Client.session.active());
+        const scoped = isSpaceDirectory(directory) ? this.v2ClientFor(directory) : this.v2Client;
+        const active = await this.runtimeBinding.run('oc2', 'session.active', () => scoped.session.active());
         return Object.fromEntries(Object.keys(active).map((id) => [id, { type: 'busy' as const }]));
       } catch {
         return null;
@@ -2326,6 +2430,16 @@ class OpencodeService {
   async removeCredential(credentialID: string, directory?: string | null): Promise<void> {
     await this.runtimeBinding.run('oc2', 'credential.remove', () =>
       this.v2ClientFor(directory).credential.remove({ credentialID }));
+  }
+
+  async activateCredential(credentialID: string, directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'credential.activate', () =>
+      this.v2ClientFor(directory).credential.activate({ credentialID }));
+  }
+
+  async renameCredential(credentialID: string, label: string, directory?: string | null): Promise<void> {
+    await this.runtimeBinding.run('oc2', 'credential.update', () =>
+      this.v2ClientFor(directory).credential.update({ credentialID, label }));
   }
 
   // Lightweight readiness check. Full diagnostics still live at /health.

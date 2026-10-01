@@ -15,6 +15,7 @@ import { copyTextToClipboard } from '@/lib/clipboard';
 import { serializeFormAsJson, serializeFormAsMarkdown } from './formSerializers';
 import { FormFieldControl } from './FormFieldControl';
 import { readWebSearchConsent } from '@/lib/opencode/websearch';
+import { getRuntimeKey } from '@/lib/runtime-switch';
 import { WebSearchConsentCard } from './WebSearchConsent';
 import {
     type FormValues,
@@ -28,6 +29,19 @@ import {
 interface FormCardProps {
     form: FormRequest;
 }
+
+type FormDraft = { fieldsSignature: string; values: FormValues };
+const formDrafts = new Map<string, FormDraft>();
+const MAX_FORM_DRAFTS = 50;
+
+const saveFormDraft = (key: string, draft: FormDraft) => {
+    formDrafts.delete(key);
+    formDrafts.set(key, draft);
+    if (formDrafts.size > MAX_FORM_DRAFTS) {
+        const oldest = formDrafts.keys().next().value;
+        if (oldest) formDrafts.delete(oldest);
+    }
+};
 
 /**
  * The inline card for a form request, used where a dock cannot float: the
@@ -57,9 +71,15 @@ const GenericFormCard: React.FC<FormCardProps> = ({ form }) => {
     }, [form.sessionID, currentSessionId, sessions]);
 
     const fields = form.fields;
+    const fieldsSignature = fields.map((field) => `${field.key}:${field.type}`).join('|');
+    const draftKey = `${getRuntimeKey()}:${form.id}`;
+    const [restored] = React.useState(() => {
+        const draft = formDrafts.get(draftKey);
+        return draft?.fieldsSignature === fieldsSignature ? draft : null;
+    });
     // The card shows every field at once, so an external link is on screen
     // from the start and its acknowledgement travels with the reply.
-    const [values, setValues] = React.useState<FormValues>(() => initialFormValues(fields, { acknowledgeExternal: true }));
+    const [values, setValues] = React.useState<FormValues>(() => restored?.values ?? initialFormValues(fields, { acknowledgeExternal: true }));
     const [isResponding, setIsResponding] = React.useState(false);
     const [hasResponded, setHasResponded] = React.useState(false);
     const [showErrors, setShowErrors] = React.useState(false);
@@ -69,13 +89,21 @@ const GenericFormCard: React.FC<FormCardProps> = ({ form }) => {
     // fields array changes identity without changing content. Resetting on
     // identity threw away half-filled answers; only a different form, or a
     // form whose fields actually changed, starts over.
-    const fieldsSignature = fields.map((field) => `${field.key}:${field.type}`).join('|');
+    const appliedSignatureRef = React.useRef(fieldsSignature);
     React.useEffect(() => {
+        if (appliedSignatureRef.current === fieldsSignature) return;
+        appliedSignatureRef.current = fieldsSignature;
         setValues(initialFormValues(fields, { acknowledgeExternal: true }));
         setHasResponded(false);
         setShowErrors(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fieldsSignature, form.id]);
+
+    React.useEffect(() => {
+        if (appliedSignatureRef.current === fieldsSignature && !hasResponded) {
+            saveFormDraft(draftKey, { fieldsSignature, values });
+        }
+    }, [draftKey, fieldsSignature, hasResponded, values]);
 
     const shown = React.useMemo(() => visibleFields(fields, values), [fields, values]);
     const missing = React.useMemo(() => missingRequiredKeys(fields, values), [fields, values]);
@@ -93,25 +121,27 @@ const GenericFormCard: React.FC<FormCardProps> = ({ form }) => {
         setIsResponding(true);
         try {
             await sessionActions.replyToForm(form.sessionID, form.id, buildFormAnswer(fields, values));
+            formDrafts.delete(draftKey);
             setHasResponded(true);
         } catch {
             toast.error(t('chat.formCard.submitFailed'), { description: t('chat.formCard.tryAgain') });
         } finally {
             setIsResponding(false);
         }
-    }, [canSubmit, fields, form.id, form.sessionID, t, values]);
+    }, [canSubmit, draftKey, fields, form.id, form.sessionID, t, values]);
 
     const handleCancel = React.useCallback(async () => {
         setIsResponding(true);
         try {
             await sessionActions.cancelForm(form.sessionID, form.id);
+            formDrafts.delete(draftKey);
             setHasResponded(true);
         } catch {
             toast.error(t('chat.formCard.cancelFailed'), { description: t('chat.formCard.tryAgain') });
         } finally {
             setIsResponding(false);
         }
-    }, [form.id, form.sessionID, t]);
+    }, [draftKey, form.id, form.sessionID, t]);
 
     const handleKeyDown = React.useCallback(
         (event: React.KeyboardEvent<HTMLTextAreaElement>) => {

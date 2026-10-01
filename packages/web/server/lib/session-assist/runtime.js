@@ -1,5 +1,5 @@
 // Background session assistance. Only live idle events arm generation; there
-// is no backfill. Clients hide results whose forMessageID is no longer current.
+// is no backfill. A new turn retires assistance written by this runtime.
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -93,10 +93,14 @@ export const createSessionAssistRuntime = ({
   getSmallModelService,
   getTargets = getSessionAssistTargets,
   quietMs = IDLE_QUIET_MS,
+  evaluateTurn = null,
+  lineage = null,
 }) => {
   const timers = new Map();
+  const gates = new Map();
   const inflight = new Map();
   const ready = new Map();
+  const persisted = new Map();
   let stopped = false;
 
   const clearTimer = (sessionId) => {
@@ -109,12 +113,47 @@ export const createSessionAssistRuntime = ({
 
   const invalidate = (sessionId) => {
     clearTimer(sessionId);
+    gates.delete(sessionId);
     ready.delete(sessionId);
     inflight.get(sessionId)?.controller.abort();
   };
 
-  const generateAssist = async (sessionId, directory, signal) => {
-    const targets = getTargets();
+  const sameIdentity = (left, right) => left.generation === right.generation
+    && left.endpoint === right.endpoint && left.epoch === right.epoch;
+  const ownsAssist = (metadata, stored) => {
+    const assist = metadata?.openchamber?.assist;
+    return assist?.forMessageID === stored.assist.forMessageID
+      && assist?.generatedAt === stored.assist.generatedAt;
+  };
+
+  // Wait for the write that created this assist. On OC2 the conditional delete
+  // then joins the same per-session metadata queue, preserving unrelated fields.
+  const retireStored = (sessionId) => {
+    const stored = persisted.get(sessionId);
+    if (!stored) return;
+    persisted.delete(sessionId);
+    void (async () => {
+      try { await stored.write; } catch { return; }
+      if (!sameIdentity(kernelOperations.captureIdentity(), stored.identity)) return;
+      if (stored.identity.generation === 'oc2') {
+        await kernelOperations.updateSession({
+          sessionID: sessionId, directory: stored.directory, expectedIdentity: stored.identity,
+          decideMetadata: (current) => ownsAssist(current, stored) ? { openchamber: { assist: null } } : null,
+        });
+        return;
+      }
+      const snapshot = await kernelOperations.getSession({ sessionID: sessionId, directory: stored.directory });
+      if (!sameIdentity(snapshot, stored.identity) || !ownsAssist(snapshot.data?.metadata, stored)) return;
+      const metadata = snapshot.data.metadata;
+      const { assist: _assist, ...namespace } = metadata.openchamber;
+      await kernelOperations.updateSession({ sessionID: sessionId, directory: stored.directory,
+        expectedIdentity: stored.identity, metadata: { ...metadata, openchamber: namespace } });
+    })().catch(() => console.warn('[session-assist] failed to retire a stale assist'));
+  };
+
+  const generateAssist = async (sessionId, directory, signal, allowed) => {
+    const enabled = getTargets();
+    const targets = { recap: enabled.recap && allowed.recap, suggestion: enabled.suggestion && allowed.suggestion };
     if (!targets.recap && !targets.suggestion) return;
     const identity = kernelOperations?.captureIdentity();
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
@@ -149,9 +188,10 @@ export const createSessionAssistRuntime = ({
     checkCurrent();
     // Reverted history is not the active conversation. A new prompt clears
     // the revert boundary before its next idle event.
+    if (session?.id === sessionId) lineage?.remember(sessionId, session.parentID ?? null);
     if (session?.id !== sessionId || session.parentID || session.revert?.messageID || session.time?.archived) return;
     if (!await treeIdle()) {
-      armTimer(sessionId, directory);
+      armTimer(sessionId, directory, Date.now(), allowed);
       return;
     }
     const context = await loadAssistContext({
@@ -240,40 +280,50 @@ export const createSessionAssistRuntime = ({
     checkCurrent();
     if (freshSession?.id !== sessionId || freshSession.revert?.messageID || freshSession.time?.archived || freshSession.directory !== session.directory) return;
     if (!await treeIdle()) {
-      armTimer(sessionId, directory);
+      armTimer(sessionId, directory, Date.now(), allowed);
       return;
     }
-    const enabled = getTargets();
-    if (!enabled.recap) recap = '';
-    if (!enabled.suggestion) suggestion = '';
+    const stillEnabled = getTargets();
+    if (!stillEnabled.recap || !allowed.recap) recap = '';
+    if (!stillEnabled.suggestion || !allowed.suggestion) suggestion = '';
     if (!recap && !suggestion) return;
+    const assist = { recap, suggestion, forMessageID: last.id, generatedAt: Date.now() };
+    const stored = kernelOperations ? { directory, identity, assist, lastCreated: last.created, write: null } : null;
+    if (stored) persisted.set(sessionId, stored);
     const currentMetadata = freshSession.metadata ?? {};
     const currentNamespace = currentMetadata.openchamber ?? {};
-    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: {
-      ...currentMetadata,
-      openchamber: { ...currentNamespace, assist: { recap, suggestion, forMessageID: last.id, generatedAt: Date.now() } },
-    }, signal });
-    else await client.session.update({
-      sessionID: sessionId, directory,
-      metadata: {
+    try {
+      if (kernelOperations && identity?.generation === 'oc2') stored.write = kernelOperations.updateSession({
+        sessionID: sessionId, directory, expectedIdentity: identity, signal,
+        decideMetadata: () => ({ openchamber: { assist } }),
+      });
+      else if (kernelOperations) stored.write = kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: {
         ...currentMetadata,
-        openchamber: {
-          ...currentNamespace,
-          assist: { recap, suggestion, forMessageID: last.id, generatedAt: Date.now() },
+        openchamber: { ...currentNamespace, assist },
+      }, signal });
+      else await client.session.update({
+        sessionID: sessionId, directory,
+        metadata: {
+          ...currentMetadata,
+          openchamber: { ...currentNamespace, assist },
         },
-      },
-    }, requestOptions());
+      }, requestOptions());
+      if (stored) await stored.write;
+    } catch (error) {
+      if (persisted.get(sessionId) === stored) persisted.delete(sessionId);
+      throw error;
+    }
   };
 
-  const startGeneration = (sessionId, directory, armedAt) => {
+  const startGeneration = (sessionId, directory, armedAt, allowed) => {
     if (stopped) return;
     if (inflight.has(sessionId)) {
-      ready.set(sessionId, { directory, armedAt });
+      ready.set(sessionId, { directory, armedAt, allowed });
       return;
     }
     const controller = new AbortController();
     inflight.set(sessionId, { controller, armedAt });
-    generateAssist(sessionId, directory, controller.signal)
+    generateAssist(sessionId, directory, controller.signal, allowed)
       .catch(() => {
         if (!controller.signal.aborted) console.warn('[session-assist] failed to read or save assistance');
       })
@@ -282,43 +332,80 @@ export const createSessionAssistRuntime = ({
         if (ready.has(sessionId)) {
           const next = ready.get(sessionId);
           ready.delete(sessionId);
-          startGeneration(sessionId, next.directory, next.armedAt);
+          startGeneration(sessionId, next.directory, next.armedAt, next.allowed);
         }
       });
   };
 
-  const armTimer = (sessionId, directory) => {
+  const armTimer = (sessionId, directory, armedAt = Date.now(), allowed = ALL_FIELDS) => {
     clearTimer(sessionId);
-    const armedAt = Date.now();
     const timer = setTimeout(() => {
       timers.delete(sessionId);
-      startGeneration(sessionId, directory, armedAt);
+      startGeneration(sessionId, directory, armedAt, allowed);
     }, quietMs);
     timer.unref?.();
     timers.set(sessionId, { timer, armedAt });
+  };
+
+  const ALL_FIELDS = { recap: true, suggestion: true };
+
+  const onTurnEnd = (sessionId, directory) => {
+    clearTimer(sessionId);
+    const armedAt = Date.now();
+    let generation;
+    try { generation = kernelOperations?.captureIdentity().generation; } catch { generation = null; }
+    if (!evaluateTurn || generation !== 'oc2') {
+      armTimer(sessionId, directory, armedAt);
+      return;
+    }
+    const gate = { armedAt };
+    gates.set(sessionId, gate);
+    Promise.resolve()
+      .then(() => evaluateTurn({ sessionId, directory, assist: getTargets() }))
+      .catch(() => null)
+      .then((allowed) => {
+        if (stopped || gates.get(sessionId) !== gate) return;
+        gates.delete(sessionId);
+        const fields = allowed ?? ALL_FIELDS;
+        if (!fields.recap && !fields.suggestion) return;
+        armTimer(sessionId, directory, armedAt, fields);
+      });
   };
 
   const processPayload = (payload, directoryHint = '') => {
     if (stopped) return;
     const status = extractSessionStatus(payload);
     if (status) {
-      if (status.type === 'idle') armTimer(status.sessionId, status.directory || directoryHint);
-      else invalidate(status.sessionId);
+      if (status.type === 'idle') {
+        if (lineage?.isChild(status.sessionId) !== true) onTurnEnd(status.sessionId, status.directory || directoryHint);
+      }
+      else {
+        invalidate(status.sessionId);
+        retireStored(status.sessionId);
+      }
       return;
     }
     const userMessage = extractUserMessage(payload);
     if (userMessage) {
       // Ignore old message.updated events re-emitted after completion.
-      const since = timers.get(userMessage.sessionId)?.armedAt ?? inflight.get(userMessage.sessionId)?.armedAt;
+      const since = timers.get(userMessage.sessionId)?.armedAt
+        ?? gates.get(userMessage.sessionId)?.armedAt
+        ?? inflight.get(userMessage.sessionId)?.armedAt;
       if (since !== undefined && userMessage.createdAt >= since) invalidate(userMessage.sessionId);
+      const stored = persisted.get(userMessage.sessionId);
+      if (stored && (stored.lastCreated === null || userMessage.createdAt > stored.lastCreated)) {
+        retireStored(userMessage.sessionId);
+      }
     }
   };
 
   const stop = () => {
     stopped = true;
     for (const sessionId of timers.keys()) clearTimer(sessionId);
+    gates.clear();
     ready.clear();
     for (const { controller } of inflight.values()) controller.abort();
+    persisted.clear();
   };
   return { processPayload, stop };
 };

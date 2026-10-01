@@ -13,11 +13,16 @@ import type { OperationScope } from '../operations';
 import { compact, type Message, type Part, type Session } from '../model';
 import { projectMessages, projectSession } from '../projection';
 import { OpenCodeRuntimeBinding } from '../runtime';
+import { z } from 'zod';
+import { spaceMarkSchema, type SpaceMark } from '@/lib/spaces/spaces-store';
 
 export type V2SessionPage = {
   sessions: Session[];
   cursor: { previous?: string; next?: string };
+  spaces?: SpaceMark[];
 };
+
+const pageSpaces = z.object({ spaces: z.array(spaceMarkSchema).optional() });
 
 export type V2MessagePage = {
   items: Array<{ info: Message; parts: Part[] }>;
@@ -47,7 +52,8 @@ export class V2SessionOperations {
   listPage(input: Omit<SessionListInput, 'directory'> = {}, scope: OperationScope = {}): Promise<V2SessionPage> {
     return this.binding.run('oc2', 'session.list', async () => {
       const result = await this.clientFor(scope.directory).session.list({ ...input, limit: input.limit ?? DEFAULT_PAGE_LIMIT, directory: scope.directory ?? undefined }, { signal: scope.signal });
-      return { sessions: result.data.map(projectSession), cursor: cursor(result.cursor) };
+      const spaces = scope.directory === null ? pageSpaces.safeParse(result).data?.spaces : undefined;
+      return { sessions: result.data.map(projectSession), cursor: cursor(result.cursor), ...(spaces ? { spaces } : {}) };
     });
   }
 

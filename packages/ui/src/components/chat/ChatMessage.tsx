@@ -1,9 +1,9 @@
 import React from 'react';
-import type { Message, Part } from '@/lib/opencode/model';
+import { findCatalogModel, readErrorResponseBody, type Message, type Part } from '@/lib/opencode/model';
 import { useShallow } from 'zustand/react/shallow';
 
 import { MessageFreshnessDetector } from '@/lib/messageFreshness';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { getSelectableModelVariants, useConfigStore } from '@/stores/useConfigStore';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useContextStore } from '@/stores/contextStore';
@@ -36,6 +36,7 @@ import { streamPerfCount } from '@/stores/utils/streamDebug';
 import { areOptionalRenderRelevantMessagesEqual, areRenderRelevantMessagesEqual, areRelevantTurnGroupingContextsEqual } from './message/renderCompare';
 import type { ReviewTransferDirection } from '@/lib/reviewFlow';
 import { toast } from 'sonner';
+import { useCopyMessageLink } from './message/useCopyMessageLink';
 import { useI18n } from '@/lib/i18n';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
 import { getContextObligatoryMessages } from '@/lib/contextObligatoryMessages';
@@ -185,6 +186,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
     const [copiedMessage, setCopiedMessage] = React.useState(false);
+    const handleCopyLink = useCopyMessageLink(message.info.sessionID, message.info.id);
     const [expandedTools, setExpandedTools] = React.useState<Set<string>>(() => readExpandedToolsCache(message.info.id));
     const [collapsedTools, setCollapsedTools] = React.useState<Set<string>>(() => readCollapsedToolsCache(message.info.id));
     const [popupContent, setPopupContent] = React.useState<ToolPopupContent>({
@@ -372,17 +374,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         if (isUser) return false;
         if (!providerID || !modelID) return false;
 
-        const provider = providers.find((p) => p.id === providerID);
-        if (!provider?.models || !Array.isArray(provider.models)) {
-            return false;
-        }
-
-        const model = provider.models.find((m: Record<string, unknown>) => (m as Record<string, unknown>).id === modelID) as
-            | { variants?: Record<string, unknown> }
-            | undefined;
-
-        const variants = model?.variants;
-        return Boolean(variants && Object.keys(variants).length > 0);
+        const provider = providers.find((item) => item.id === providerID);
+        if (!provider) return false;
+        const model = provider.generation === 'oc2'
+            ? findCatalogModel(provider.models, modelID)
+            : provider.models.find((entry) => entry.id === modelID);
+        return model ? getSelectableModelVariants(model).length > 0 : false;
     }, [isUser, modelID, providerID, providers]);
 
     const displayAgentName = useStickyDisplayValue<string>(agentName);
@@ -702,6 +699,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }, [isUser, message.info]);
 
     const assistantErrorText = assistantError?.text;
+    // The provider's raw response behind the error, offered as expandable details.
+    const assistantErrorResponseBody = assistantErrorText && message.info.role === 'assistant'
+        ? readErrorResponseBody(message.info.error)
+        : undefined;
 
     const messageTextContent = React.useMemo(() => {
         if (isUser) {
@@ -851,8 +852,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return null;
     }
 
-    const assistantTopPaddingClass = !isUser && shouldShowHeader && !previousIsHiddenUserMessage
-        ? (stickyUserHeader ? (isMobile ? 'pt-4' : 'pt-6') : 'pt-0')
+    // Desktop keeps the whole gap below the user bubble inside the user row
+    // (see `pb-11` below), so the assistant block adds nothing on top.
+    const assistantTopPaddingClass = !isUser && shouldShowHeader && !previousIsHiddenUserMessage && stickyUserHeader && isMobile
+        ? 'pt-4'
         : 'pt-0';
     const userMessageRadius = 'var(--radius-xl)';
 
@@ -878,10 +881,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 respectReducedMotion
                             >
                                 <div className={cn('relative flex justify-end', !isMobile ? 'group/user-shell' : undefined)}>
-                                    {/* peek: the action row under the bubble is suppressed, so
-                                        reserve its gap to the next message here, OUTSIDE the
-                                        bubble background. */}
-                                    <div className={cn('max-w-[85%]', showStickyInlineHoverRow ? 'pb-5' : undefined, chatSurfaceMode === 'peek' ? 'pb-3' : undefined)}>
+                                    {/* The hover action row hangs below the bubble (absolute,
+                                        `top-full` + `pt-5`, 26px tall), so the user row reserves
+                                        the whole 44px gap to the assistant block here. The list's
+                                        row containers paint-contain their content: anything that
+                                        pokes past the row is cut, which showed as a half-visible
+                                        action row while the reply had not started yet.
+                                        peek: the action row is suppressed, so reserve only its
+                                        gap to the next message, OUTSIDE the bubble background. */}
+                                    <div className={cn('max-w-[85%]', showStickyInlineHoverRow ? 'pb-11' : undefined, chatSurfaceMode === 'peek' ? 'pb-3' : undefined)}>
                                         <div
                                             style={{
                                                 backgroundColor: 'var(--chat-user-message-bg)',
@@ -889,6 +897,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 borderBottomRightRadius: 'var(--radius-sm)',
                                             }}
                                             className="px-5 py-3 shadow-none border border-primary/5"
+                                            data-user-message-bubble=""
                                         >
                                             <MessageBody
                                                 messageId={message.info.id}
@@ -910,6 +919,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 shouldShowHeader={false}
                                                 hasTextContent={hasTextContent}
                                                 onCopyMessage={handleCopyMessage}
+                                                onCopyLink={handleCopyLink}
                                                 copiedMessage={copiedMessage}
                                                 showReasoningTraces={showReasoningTraces}
                                                 agentMention={agentMention}
@@ -919,6 +929,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 contextPinPending={pinPending}
                                                 onToggleContextPin={canPinIntoContext && messageCreatedAt ? handleToggleContextPin : undefined}
                                                 errorMessage={assistantErrorText}
+                                                errorResponseBody={assistantErrorResponseBody}
                                                 userActionsMode={useExternalUserActionsRow ? 'external-content' : 'inline'}
                                                 stickyUserHeaderEnabled={stickyUserHeader}
                                                 extraActions={guestMessageActions}
@@ -945,6 +956,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 shouldShowHeader={false}
                                                 hasTextContent={hasTextContent}
                                                 onCopyMessage={handleCopyMessage}
+                                                onCopyLink={handleCopyLink}
                                                 copiedMessage={copiedMessage}
                                                 showReasoningTraces={showReasoningTraces}
                                                 agentMention={agentMention}
@@ -954,6 +966,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 contextPinPending={pinPending}
                                                 onToggleContextPin={canPinIntoContext && messageCreatedAt ? handleToggleContextPin : undefined}
                                                 errorMessage={assistantErrorText}
+                                                errorResponseBody={assistantErrorResponseBody}
                                                 userActionsMode="external-actions"
                                                 stickyUserHeaderEnabled={stickyUserHeader}
                                                 extraActions={guestMessageActions}
@@ -990,11 +1003,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                 shouldShowHeader={shouldShowHeader}
                                 hasTextContent={hasTextContent}
                                 onCopyMessage={handleCopyMessage}
+                                onCopyLink={handleCopyLink}
                                 copiedMessage={copiedMessage}
                                 showReasoningTraces={showReasoningTraces}
                                 agentMention={agentMention}
                                 turnGroupingContext={turnGroupingContext}
                                 errorMessage={assistantErrorText}
+                                errorResponseBody={assistantErrorResponseBody}
                                 reviewTransferDirection={reviewTransferDirection}
                                 footerProviderID={headerProviderID}
                                 footerModelName={headerModelName}

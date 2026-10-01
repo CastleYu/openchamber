@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../opencode/auth.js', () => ({ readOpenCodeCredentials: async () => ({}) }));
 
 import * as google from './google/index.js';
 import { fetchQuotaForProvider, listConfiguredQuotaProviders } from './index.js';
@@ -11,8 +13,8 @@ describe('quota provider registry', () => {
     expect(typeof google.resolveGoogleAuthSources).toBe('function');
   });
 
-  it('can list configured providers without missing provider exports', () => {
-    expect(() => listConfiguredQuotaProviders()).not.toThrow();
+  it('can list configured providers without missing provider exports', async () => {
+    await expect(listConfiguredQuotaProviders()).resolves.toBeInstanceOf(Array);
   });
 
   it('coalesces concurrent refreshes by provider ID', async () => {
@@ -22,5 +24,14 @@ describe('quota provider registry', () => {
     expect(first).toBe(second);
     await first;
     expect(fetchQuotaForProvider('unsupported-test-provider')).not.toBe(first);
+  });
+
+  it('does not coalesce quota reads across runtime epochs or generations', async () => {
+    const oc1 = fetchQuotaForProvider('unsupported-test-provider', { generation: 'oc1', endpoint: 'local', epoch: 1 });
+    const oc2 = fetchQuotaForProvider('unsupported-test-provider', { generation: 'oc2', endpoint: 'local', epoch: 1 });
+    const next = fetchQuotaForProvider('unsupported-test-provider', { generation: 'oc2', endpoint: 'local', epoch: 2 });
+    expect(oc1).not.toBe(oc2);
+    expect(oc2).not.toBe(next);
+    await Promise.all([oc1, oc2, next]);
   });
 });

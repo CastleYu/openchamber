@@ -36,10 +36,12 @@ import { cn } from '@/lib/utils';
 import type { ComposerLanguageContext } from '../language/tokenize';
 import type { ComposerAutoCorrect } from './autocorrect';
 import { composerLanguage, setLanguageContext } from './composerLanguage';
+import { composerBidi } from './bidi';
 import { replaceWithCaret } from './documentEdits';
 import type { ComposerEditorViewStore } from './viewStore';
 import { composerEditorTheme, composerSelectionExtension } from './theme';
 import { handleComposerHostMouseDown } from './hostMouseDown';
+import { getComposerHeightLimit, isComposerContentCapped } from './heightLimit';
 import { restoreDeferredEnterModifiers } from '../keyboardPolicy';
 
 export interface ComposerSelection {
@@ -267,6 +269,7 @@ export const ComposerEditor = React.forwardRef<ComposerEditorHandle, ComposerEdi
                         Prec.highest(keymap.of(interceptKeys)),
                         keymap.of([...standardKeymap, ...historyKeymap]),
                         composerLanguage(handlersRef.current.languageContext),
+                        composerBidi,
                         editableCompartment.of(
                             EditorView.editable.of(handlersRef.current.editable ?? true),
                         ),
@@ -421,6 +424,7 @@ export const ComposerEditor = React.forwardRef<ComposerEditorHandle, ComposerEdi
             // window while the rest of the surface sits empty.
             if (fillContainer) {
                 view.scrollDOM.style.maxHeight = '';
+                view.scrollDOM.style.overflowY = '';
                 return;
             }
 
@@ -442,24 +446,29 @@ export const ComposerEditor = React.forwardRef<ComposerEditorHandle, ComposerEdi
                     getComputedStyle(view.contentDOM).lineHeight || '',
                 );
                 if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
-                let cap = lineHeight * maxLines;
-                if (boundEl && branch) {
-                    const chrome = branch.offsetHeight - view.scrollDOM.offsetHeight;
-                    const available = boundEl.clientHeight - chrome - boundGapPx;
-                    if (available > 0) cap = Math.min(cap, available);
-                }
+                const cap = getComposerHeightLimit({
+                    maxLinesHeight: lineHeight * maxLines,
+                    boundHeight: boundEl?.clientHeight,
+                    surroundingHeight: branch ? branch.offsetHeight - view.scrollDOM.offsetHeight : undefined,
+                    boundGapPx,
+                });
                 const next = `${cap}px`;
                 // The scroller growing re-fires the observer with an unchanged
                 // result; writing only on change keeps that loop silent.
                 if (view.scrollDOM.style.maxHeight !== next) {
                     view.scrollDOM.style.maxHeight = next;
                 }
+                const overflowY = isComposerContentCapped(
+                    view.contentDOM.getBoundingClientRect().height, cap, lineHeight,
+                ) ? 'auto' : 'hidden';
+                if (view.scrollDOM.style.overflowY !== overflowY) view.scrollDOM.style.overflowY = overflowY;
             };
 
             applyLimit();
             if (typeof ResizeObserver === 'undefined') return;
             const observer = new ResizeObserver(applyLimit);
             observer.observe(host);
+            observer.observe(view.contentDOM);
             if (branch) observer.observe(branch);
             if (boundEl) observer.observe(boundEl);
             return () => observer.disconnect();

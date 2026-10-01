@@ -211,6 +211,7 @@ export const createProjectContextRuntime = (deps) => {
       : `plan_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
 
   const writeLocks = new Map();
+  const migrationReads = new Map();
 
   const sanitizeProjectId = (projectId) => {
     const value = asNonEmptyString(projectId);
@@ -362,6 +363,20 @@ export const createProjectContextRuntime = (deps) => {
     return migrated;
   };
 
+  // Mutators call readStoredContext while holding the write lock, so migration
+  // cannot acquire that lock. Coalesce the migration itself instead: Windows
+  // cannot reliably rename two temp files over the same target at once.
+  const migrateOnce = (projectId, now) => {
+    const key = sanitizeProjectId(projectId);
+    const existing = migrationReads.get(key);
+    if (existing) return existing;
+    const pending = Promise.resolve().then(() => migrateFromLegacyConfig(projectId, now)).finally(() => {
+      if (migrationReads.get(key) === pending) migrationReads.delete(key);
+    });
+    migrationReads.set(key, pending);
+    return pending;
+  };
+
   /**
    * Read the stored context.
    *
@@ -370,11 +385,9 @@ export const createProjectContextRuntime = (deps) => {
    * error propagates. Never returns an empty context to paper over a read
    * that did not succeed.
    *
-   * Deliberately does NOT take the write lock: every mutator calls this while
-   * already holding it, so locking here would deadlock. The legacy migration
-   * it can trigger is safe unlocked — both of its writes are atomic renames
-   * of identical content, so concurrent migrations converge instead of
-   * interleaving.
+   * Does not take the write lock: every mutator calls this while already
+   * holding it. Concurrent legacy migration reads share one migration
+   * promise, so only one pair of atomic renames targets the stored files.
    */
   const readStoredContext = async (projectId) => {
     const now = Date.now();
@@ -385,7 +398,7 @@ export const createProjectContextRuntime = (deps) => {
     }
 
     if (stored.missing) {
-      const migrated = await migrateFromLegacyConfig(projectId, now);
+      const migrated = await migrateOnce(projectId, now);
       if (migrated) {
         return {
           version: PROJECT_CONTEXT_VERSION,

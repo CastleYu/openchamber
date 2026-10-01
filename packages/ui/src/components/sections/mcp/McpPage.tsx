@@ -35,6 +35,8 @@ import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { cn } from '@/lib/utils';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
+import { SettingsBackButton } from '@/components/sections/shared/SettingsCards';
+import { McpGrid } from './McpGrid';
 import {
   SettingsSection,
   SettingsFieldRow,
@@ -601,6 +603,12 @@ export const McpPage: React.FC = () => {
   // Settings browses whichever project its own selector points at; the app
   // stays where it is.
   const currentDirectory = useSettingsDirectory();
+
+  React.useEffect(() => () => {
+    const store = useMcpConfigStore.getState();
+    store.setSelectedMcp(null);
+    store.setMcpDraft(null);
+  }, []);
   const runtimeKey = React.useSyncExternalStore(
     (listener) => opencodeClient.subscribeRuntime(listener),
     () => { const runtime = opencodeClient.getBoundRuntime(); return `${runtime?.endpoint ?? ''}:${runtime?.epoch ?? ''}:${runtime?.generation ?? ''}`; },
@@ -1387,17 +1395,9 @@ export const McpPage: React.FC = () => {
     };
   }, [currentDirectory, isAuthPolling, refreshStatus, selectedMcpName, t]);
 
-  // ── Empty state ──
+  // ── Browse ──
   if (!selectedMcpName) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <Icon name="plug" className="mx-auto mb-3 h-12 w-12 opacity-50" />
-          <p className="typography-body">{t('settings.mcp.page.empty.selectServer')}</p>
-          <p className="typography-meta mt-1 opacity-75">{t('settings.mcp.page.empty.addNewOne')}</p>
-        </div>
-      </div>
-    );
+    return <McpGrid />;
   }
 
   const runtimeStatus = mcpStatus[selectedMcpName];
@@ -1466,6 +1466,15 @@ export const McpPage: React.FC = () => {
     <>
       <SettingsPageLayout
         title={isNewServer ? t('settings.mcp.page.header.newServer') : selectedMcpName}
+        titleLeading={(
+          <SettingsBackButton
+            label={t('settings.mcp.page.back')}
+            onClick={() => {
+              setMcpDraft(null);
+              setSelectedMcp(null);
+            }}
+          />
+        )}
         titleAccessory={!isNewServer ? (
           <StatusBadge
             status={isAwaitingRestart ? 'awaiting_restart' : effectiveRuntimeStatus?.status}

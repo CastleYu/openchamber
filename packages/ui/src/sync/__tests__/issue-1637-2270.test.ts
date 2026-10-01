@@ -21,6 +21,7 @@ const runtimeSdkClient = createOpencodeClient()
 mock.module("@/lib/opencode/client", () => ({
   opencodeClient: {
     getSdkClient: () => runtimeSdkClient,
+    getBoundRuntime: () => runtimeSdkClient,
     getDirectory: () => currentDirectory,
     setDirectory: mock(() => undefined),
     createSession: mock(async (params: unknown, directory?: string | null) => {

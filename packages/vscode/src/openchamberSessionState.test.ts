@@ -1,4 +1,4 @@
-import { after, beforeEach, describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import fs from 'node:fs/promises';

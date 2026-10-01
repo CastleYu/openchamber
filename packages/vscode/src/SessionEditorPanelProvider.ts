@@ -111,6 +111,15 @@ export class SessionEditorPanelProvider {
   }
 
   public createOrShowNewSession(): void {
+    this._openDraftPanel(t('New Session'));
+  }
+
+  /** Opens a blank editor draft with the parallel-run composer selected. */
+  public createOrShowParallelDraft(): void {
+    this._openDraftPanel(t('Run on several models'), 'parallel');
+  }
+
+  private _openDraftPanel(title: string, initialComposer?: 'parallel'): void {
     // Without an open workspace folder there is no directory to start the
     // session against; opening a draft would fall back to the last session's
     // directory in shared UI state (the bug this fixes). Mirror the sidebar
@@ -123,7 +132,7 @@ export class SessionEditorPanelProvider {
 
     // Generate unique panel ID for new session drafts
     const panelId = `new_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    this._createPanel(panelId, t('New Session'), null);
+    this._createPanel(panelId, title, null, initialComposer);
   }
 
   public createOrShow(sessionId: string, title?: string): void {
@@ -143,7 +152,7 @@ export class SessionEditorPanelProvider {
     this._createPanel(sessionId, sessionTitle, sessionId);
   }
 
-  private _createPanel(panelId: string, title: string, initialSessionId: string | null): void {
+  private _createPanel(panelId: string, title: string, initialSessionId: string | null, initialComposer?: 'parallel'): void {
     const distUri = vscode.Uri.joinPath(this._extensionUri, 'dist');
 
     const panel = vscode.window.createWebviewPanel(
@@ -173,7 +182,7 @@ export class SessionEditorPanelProvider {
     this._panels.set(panelId, state);
     this._lastActivePanelId = panelId;
 
-    panel.webview.html = this._getHtmlForWebview(panel.webview, initialSessionId);
+    panel.webview.html = this._getHtmlForWebview(panel.webview, initialSessionId, initialComposer);
 
     void this.updateTheme(vscode.window.activeColorTheme.kind);
     this._sendCachedStateToPanel(state);
@@ -670,7 +679,7 @@ export class SessionEditorPanelProvider {
     return { id, type, success: true, data: { stopped: true } };
   }
 
-  private _getHtmlForWebview(webview: vscode.Webview, sessionId: string | null) {
+  private _getHtmlForWebview(webview: vscode.Webview, sessionId: string | null, initialComposer?: 'parallel') {
     const workspaceFolder = normalizeWindowsDriveLetter(
       vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''
     );
@@ -687,6 +696,7 @@ export class SessionEditorPanelProvider {
       cliAvailable,
       panelType: 'chat',
       initialSessionId: sessionId ?? undefined,
+      initialComposer,
       viewMode: 'editor',
       extensionVersion: String(this._context.extension?.packageJSON?.version || ''),
       devServerUrl: this._webviewDevServerUrl,

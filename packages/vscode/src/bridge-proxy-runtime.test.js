@@ -11,6 +11,27 @@ const createDeps = () => ({
 });
 
 describe('bridge proxy runtime', () => {
+  it('blocks OC1 and OC2 provider connections in enterprise mode before proxying', async () => {
+    const previous = process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    try {
+      const deps = createDeps();
+      for (const [method, path] of [
+        ['PUT', '/api/auth/openai'],
+        ['POST', '/api/provider/openai/oauth/authorize'],
+        ['POST', '/api/provider/openai/oauth/callback'],
+        ['POST', '/api/integration/example/connect'],
+      ]) {
+        const response = await handleProxyBridgeMessage({ id: path, type: 'api:proxy', payload: { method, path } }, undefined, deps);
+        expect(response?.data?.status).toBe(403);
+      }
+      expect(deps.tryHandleLocalFsProxy).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+      else process.env.OPENCHAMBER_ENTERPRISE_MODE = previous;
+    }
+  });
+
   it('does not buffer SSE endpoints through the generic API proxy', async () => {
     const deps = createDeps();
 
@@ -28,5 +49,34 @@ describe('bridge proxy runtime', () => {
     });
     expect(deps.tryHandleLocalFsProxy).not.toHaveBeenCalled();
     expect(deps.buildUnavailableApiResponse).not.toHaveBeenCalled();
+  });
+
+  it('never returns stored provider credentials to the webview', async () => {
+    for (const path of ['/api/credential', '/API//%63redential/', '/api/x/../credential']) {
+      const response = await handleProxyBridgeMessage(
+        { id: path, type: 'api:proxy', payload: { method: 'GET', path } },
+        undefined,
+        createDeps(),
+      );
+      expect(response?.data).toMatchObject({ status: 403 });
+      expect(JSON.parse(response?.data.bodyText).code).toBe('credential_list_refused');
+    }
+  });
+
+  it('blocks credential writes in enterprise mode', async () => {
+    const previous = process.env.OPENCHAMBER_ENTERPRISE_MODE;
+    process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';
+    try {
+      const response = await handleProxyBridgeMessage(
+        { id: 'credential-write', type: 'api:proxy', payload: { method: 'POST', path: '/api/credential' } },
+        undefined,
+        createDeps(),
+      );
+      expect(response?.data).toMatchObject({ status: 403 });
+      expect(JSON.parse(response?.data.bodyText).code).toBe('enterprise_mode');
+    } finally {
+      if (previous === undefined) delete process.env.OPENCHAMBER_ENTERPRISE_MODE;
+      else process.env.OPENCHAMBER_ENTERPRISE_MODE = previous;
+    }
   });
 });

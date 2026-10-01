@@ -9,6 +9,7 @@ const gitService = {
   resetToCommit: mock(),
   createWorktree: mock(),
   getWorktreeBootstrapStatus: mock(),
+  snapshotWorktree: mock(),
 };
 
 mock.module('./gitService', () => gitService);
@@ -25,6 +26,15 @@ describe('bridge git runtime index mutations', () => {
     gitService.resetToCommit.mockReset();
     gitService.createWorktree.mockReset();
     gitService.getWorktreeBootstrapStatus.mockReset();
+    gitService.snapshotWorktree.mockReset();
+  });
+
+  it('routes a run snapshot to the scoped Git service', async () => {
+    gitService.snapshotWorktree.mockResolvedValue({ ref: 'refs/openchamber/runs/group/lane', commit: 'abc', head: 'def' });
+    const response = await handleStandardGitBridgeMessage({ id: 'snapshot', type: 'api:git/worktrees/snapshot',
+      payload: { directory: '/repo', ref: 'refs/openchamber/runs/group/lane' } });
+    expect(response?.success).toBe(true);
+    expect(gitService.snapshotWorktree).toHaveBeenCalledWith('/repo', { ref: 'refs/openchamber/runs/group/lane' });
   });
 
   it('accepts legacy stage path payloads', async () => {

@@ -723,7 +723,7 @@ const readConfigLayers = (workingDirectory?: string) => {
   };
 };
 
-const readConfig = (workingDirectory?: string): Record<string, unknown> =>
+export const readConfig = (workingDirectory?: string): Record<string, unknown> =>
   readConfigLayers(workingDirectory).mergedConfig;
 
 const getAncestors = (startDir?: string, stopDir?: string): string[] => {

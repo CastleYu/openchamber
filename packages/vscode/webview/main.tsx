@@ -16,6 +16,7 @@ import {
 import { getBootstrapMessages, readStoredLocaleForBootstrap } from '@openchamber/ui/lib/i18n';
 import type { VSCodeActiveEditorFile } from '@/sync/input-store';
 import { usePermissionStore } from '@openchamber/ui/stores/permissionStore';
+import { permissionPolicyWireSchema, policySnapshotFromWire } from '@openchamber/ui/stores/utils/permissionAutoAccept';
 import { processVSCodePermissionAutoAccept } from '@openchamber/ui/sync/vscode-permission-auto-accept';
 import type { PermissionRequest } from '@opencode-ai/sdk/v2/client';
 import { focusChatInput } from '@openchamber/ui/components/chat/composer/editor/dom';
@@ -42,6 +43,7 @@ declare global {
       panelType?: PanelType;
       viewMode?: 'sidebar' | 'editor';
       initialSessionId?: string | null;
+      initialComposer?: 'parallel' | null;
     };
     __OPENCHAMBER_VSCODE_THEME__?: VSCodeThemePayload['theme'];
     __OPENCHAMBER_VSCODE_SHIKI_THEMES__?: { light?: Record<string, unknown>; dark?: Record<string, unknown> } | null;
@@ -1112,6 +1114,16 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     }
   }
 
+  if (pathname === '/api/openchamber/enterprise-policy' && method === 'GET') {
+    try {
+      const data = await sendBridgeMessage('api:openchamber:enterprise-policy');
+      return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: message }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
   if (pathname.startsWith('/api/openchamber/update-check')) {
     try {
       const currentVersion = url.searchParams.get('currentVersion') || undefined;
@@ -2119,14 +2131,9 @@ onCommand('settingsSynced', () => {
 });
 
 onCommand('permissionAutoAcceptSynced', (payload) => {
-  if (!payload || typeof payload !== 'object') return;
-  const snapshot = payload as { sessions?: unknown; revision?: unknown };
-  const sessions = snapshot.sessions;
-  if (!sessions || typeof sessions !== 'object') return;
-  usePermissionStore.getState().applySnapshot({
-    sessions: sessions as Record<string, boolean>,
-    revision: typeof snapshot.revision === 'number' ? snapshot.revision : undefined,
-  });
+  const snapshot = permissionPolicyWireSchema.safeParse(payload);
+  if (!snapshot.success) return;
+  usePermissionStore.getState().applySnapshot(policySnapshotFromWire(snapshot.data));
 });
 
 // Listen for active editor file changes from the extension

@@ -2,6 +2,10 @@
 
 Capacitor shell for the dedicated OpenChamber mobile web surface.
 
+Android registers the app-local `FileShare` Capacitor plugin for sharing a
+web-held file through the system share sheet. It writes the file to the app
+cache and exposes it through the existing FileProvider.
+
 The mobile package reuses the web build, then rewrites `mobile.html` to `index.html` in `packages/mobile/dist` so native iOS/Android always launch `MobileApp` instead of the hosted surface selector.
 
 ## Runtime Model

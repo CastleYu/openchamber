@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import type { OpenCodeManager } from './opencode';
 import { resolveKernelRequest } from './kernelRequest';
@@ -21,6 +22,12 @@ type SpecialGitDeps = {
 };
 
 const BRIDGE_GIT_GENERATION_TIMEOUT_MS = 2 * 60 * 1000;
+const UNAVAILABLE_RETRY_DELAYS_MS = [500, 1_000, 2_000, 4_000, 8_000, 16_000];
+let unavailableRetryDelaysMs = UNAVAILABLE_RETRY_DELAYS_MS;
+
+export const setUnavailableRetryDelaysForTest = (delays: number[] = UNAVAILABLE_RETRY_DELAYS_MS): void => {
+  unavailableRetryDelaysMs = delays;
+};
 const BRIDGE_GIT_GENERATION_POLL_INTERVAL_MS = 500;
 const BRIDGE_GIT_MODEL_CATALOG_CACHE_TTL_MS = 30 * 1000;
 
@@ -261,12 +268,23 @@ const generateV2Text = async (manager: OpenCodeManager, prompt: string, provider
   const apiUrl = manager.getApiUrl();
   if (!apiUrl) throw new Error('OpenCode API unavailable');
   const { OpenCode } = await import('@opencode/client');
-  const result = await OpenCode.make({ baseUrl: apiUrl, headers: manager.getOpenCodeAuthHeaders() }).generate.text(
-    { prompt, model: { id: modelID, providerID } },
-    { signal: AbortSignal.timeout(BRIDGE_GIT_GENERATION_TIMEOUT_MS) },
-  );
-  selected.assertCurrent();
-  return result.text.trim();
+  const client = OpenCode.make({ baseUrl: apiUrl, headers: manager.getOpenCodeAuthHeaders() });
+  const signal = AbortSignal.timeout(BRIDGE_GIT_GENERATION_TIMEOUT_MS);
+  const unavailableMessage = `Model unavailable: ${providerID}/${modelID}`;
+  for (let attempt = 0; ; attempt += 1) {
+    selected.assertCurrent();
+    try {
+      const result = await client.generate.text({ prompt, model: { id: modelID, providerID } }, { signal });
+      selected.assertCurrent();
+      return result.text.trim();
+    } catch (error) {
+      selected.assertCurrent();
+      const tagged = error as { _tag?: unknown; message?: unknown } | null;
+      if (tagged?._tag !== 'InvalidRequestError' || tagged.message !== unavailableMessage
+        || attempt >= unavailableRetryDelaysMs.length) throw error;
+      await delay(unavailableRetryDelaysMs[attempt], undefined, { signal });
+    }
+  }
 };
 
 const parseJsonObjectSafe = (value: string): Record<string, unknown> | null => {

@@ -18,6 +18,8 @@ const AUTH = JSON.stringify({
   neuralwatt: { key: 'test-token' },
   'opencode-go': { key: 'test-token' },
   openrouter: { key: 'test-token' },
+  'kimi-code-plan-cn': { key: 'cn-key' },
+  'kimi-for-coding': { key: 'stale-key' },
   'zai-coding-plan': { key: 'test-token' },
   deepseek: { key: 'test-token' },
   hyper: { key: 'test-token' },
@@ -27,7 +29,7 @@ const AUTH = JSON.stringify({
 ((fs as unknown) as { existsSync: () => boolean }).existsSync = () => true;
 ((fs as unknown) as { readFileSync: () => string }).readFileSync = () => AUTH;
 
-import { fetchClinePassQuota, fetchHyperQuota, fetchOllamaCloudQuota, fetchQuotaForProvider } from './quotaProviders';
+import { fetchClinePassQuota, fetchHyperQuota, fetchKimiQuota, fetchOllamaCloudQuota, fetchQuotaForProvider } from './quotaProviders';
 import { validateCredential } from './quotaCredentials';
 
 type MockResponseInit = { ok?: boolean; status?: number };
@@ -133,6 +135,19 @@ describe('OpenRouter quota provider (VS Code parity)', () => {
     },
   };
 
+  const withConfig = async (configJson: string, run: () => Promise<void>) => {
+    const mutableFs = fs as { readFileSync: (filePath: fs.PathOrFileDescriptor, options?: BufferEncoding) => string };
+    const originalRead = mutableFs.readFileSync;
+    mutableFs.readFileSync = (filePath: fs.PathOrFileDescriptor): string => (
+      String(filePath).toLowerCase().includes('opencode.json') ? configJson : AUTH
+    );
+    try {
+      await run();
+    } finally {
+      mutableFs.readFileSync = originalRead;
+    }
+  };
+
   test('reads the documented key endpoint and emits the current reset window', async () => {
     let requestedUrl = '';
     let requestInit: RequestInit | undefined;
@@ -153,6 +168,81 @@ describe('OpenRouter quota provider (VS Code parity)', () => {
     assert.equal(result.usage!.windows.daily!.windowSeconds, 86400);
     assert.equal(result.usage!.windows.daily!.valueLabel, '$0.00 / $30.00');
     assert.ok(typeof result.usage!.windows.daily!.resetAt === 'number');
+  });
+
+  test('uses OpenCode 2 configured baseURL for the usage lookup', async () => {
+    let requestedUrl = '';
+    await withConfig(JSON.stringify({ providers: { openrouter: { settings: { baseURL: 'https://gateway.example/v1/' } } } }), async () => {
+      globalThis.fetch = (async (url: string) => {
+        requestedUrl = url;
+        return mockResponse(documentedPayload);
+      }) as typeof fetch;
+      await fetchQuotaForProvider('openrouter', 'oc2', 'C:/project');
+    });
+    assert.equal(requestedUrl, 'https://gateway.example/v1/key');
+  });
+
+  test('uses the accepted legacy api address when OpenCode 2 has no v2 baseURL', async () => {
+    let requestedUrl = '';
+    await withConfig(JSON.stringify({ provider: { openrouter: { api: 'https://legacy.example/v1' } } }), async () => {
+      globalThis.fetch = (async (url: string) => {
+        requestedUrl = url;
+        return mockResponse(documentedPayload);
+      }) as typeof fetch;
+      await fetchQuotaForProvider('openrouter', 'oc2', 'C:/project');
+    });
+    assert.equal(requestedUrl, 'https://legacy.example/v1/key');
+  });
+
+  test('keeps OpenCode 1 provider api lookup generation-scoped', async () => {
+    let requestedUrl = '';
+    await withConfig(JSON.stringify({ provider: { openrouter: { api: 'https://oc1.example/v1' } } }), async () => {
+      globalThis.fetch = (async (url: string) => {
+        requestedUrl = url;
+        return mockResponse(documentedPayload);
+      }) as typeof fetch;
+      await fetchQuotaForProvider('openrouter', 'oc1', 'C:/project');
+    });
+    assert.equal(requestedUrl, 'https://oc1.example/v1/key');
+  });
+
+  test('prefers the China plan key over the stale pre-split Kimi credential', async () => {
+    let authorization = '';
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      authorization = new Headers(init?.headers).get('Authorization') ?? '';
+      return mockResponse({ usage: null, limits: [] });
+    }) as typeof fetch;
+    await fetchQuotaForProvider('kimi-for-coding');
+    assert.equal(authorization, 'Bearer cn-key');
+  });
+
+  test('recognizes global and pre-split Kimi aliases when no China plan exists', async () => {
+    const sentKey = async (auth: Record<string, { key?: string; token?: string }>) => {
+      let authorization = '';
+      const result = await fetchKimiQuota({
+        readAuth: () => auth,
+        fetchImpl: async (_url, init) => {
+          authorization = new Headers(init.headers).get('Authorization') ?? '';
+          return mockResponse({ usage: null, limits: [] });
+        },
+      });
+      return { result, authorization };
+    };
+    assert.equal((await sentKey({ 'kimi-code-plan-global': { key: 'global-key' } })).authorization, 'Bearer global-key');
+    assert.equal((await sentKey({ 'kimi-for-coding': { key: 'legacy-key' } })).authorization, 'Bearer legacy-key');
+  });
+
+  test('skips a blank Kimi key and falls back to a token on the same credential', async () => {
+    let authorization = '';
+    const result = await fetchKimiQuota({
+      readAuth: () => ({ 'kimi-code-plan-cn': { key: '  ', token: 'cn-token' } }),
+      fetchImpl: async (_url, init) => {
+        authorization = new Headers(init.headers).get('Authorization') ?? '';
+        return mockResponse({ usage: null, limits: [] });
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.equal(authorization, 'Bearer cn-token');
   });
 
   test('maps an unlimited null-limit key to a monthly spent window', async () => {
@@ -417,7 +507,9 @@ describe('Codex quota provider (VS Code parity)', () => {
 
     const first = fetchQuotaForProvider('codex');
     const second = fetchQuotaForProvider('codex');
-    resolveResponse?.(mockResponse({ rate_limit: null }));
+    // The request goes out once the credential read settles.
+    while (!resolveResponse) await new Promise((resolve) => setImmediate(resolve));
+    resolveResponse(mockResponse({ rate_limit: null }));
 
     const [firstResult, secondResult] = await Promise.all([first, second]);
 

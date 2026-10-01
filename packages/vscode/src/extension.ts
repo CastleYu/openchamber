@@ -3,6 +3,7 @@ import { ChatViewProvider } from './ChatViewProvider';
 import { AgentManagerPanelProvider } from './AgentManagerPanelProvider';
 import { SessionEditorPanelProvider } from './SessionEditorPanelProvider';
 import { createOpenCodeManager, type OpenCodeManager } from './opencode';
+import { configureOpenCodeCredentialSource } from './opencodeAuth';
 import { startGlobalEventWatcher, stopGlobalEventWatcher, setChatViewProvider } from './sessionActivityWatcher';
 import { pathsEqualWithNormalizedDriveLetter } from './pathUtils';
 import { resolveWorkspaceFolders } from './workspaceResolver';
@@ -10,6 +11,7 @@ import { InlineCommentThreads, SIDEBAR_SURFACE_ID } from './InlineCommentThreads
 import { applyConnectAttemptTimeout } from './networkDefaults';
 import { stopGitProcesses } from './bridge-git-process-runtime';
 import { resolveKernelRequest } from './kernelRequest';
+import { routeOpenAgentManager } from './openAgentManagerCommand';
 
 let chatViewProvider: ChatViewProvider | undefined;
 
@@ -141,6 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Create OpenCode manager first
   openCodeManager = createOpenCodeManager(context);
+  configureOpenCodeCredentialSource(openCodeManager);
 
   // Create chat view provider with manager reference
   // The webview will show a loading state until OpenCode is ready
@@ -238,8 +241,12 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('openchamber.openAgentManager', () => {
-      agentManagerProvider?.createOrShow();
+    vscode.commands.registerCommand('openchamber.openAgentManager', async () => {
+      await routeOpenAgentManager(openCodeManager, {
+        openOC1: () => agentManagerProvider?.createOrShow(),
+        openOC2: () => sessionEditorProvider?.createOrShowParallelDraft(),
+        onNotReady: () => vscode.window.showWarningMessage(t('OpenChamber: Chat sidebar is not ready')),
+      });
     })
   );
 

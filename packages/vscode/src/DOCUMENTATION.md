@@ -6,6 +6,18 @@ This document describes backend runtime modules used by the VS Code extension br
 
 Keep `bridge.ts` as a thin orchestration layer that delegates message handling to cohesive domain runtimes while preserving API behavior.
 
+The extension host reads the same enterprise policy as the web server. Its
+API proxy refuses OC1 auth and OAuth connection writes and OC2 integration
+connect writes before forwarding. The provider config writer also refuses
+new provider writes. Update checks remain available with usage reporting off.
+The webview reads the public policy through a bridge message.
+
+OpenCode Basic authentication retains the configured OC1 username. OC2 uses
+the fixed `opencode` username and accepts `OPENCODE_PASSWORD` ahead of the
+legacy password variable after its generation is known. An external URL can
+use the CLI's service password only when the service status URL names the
+same scheme, port, and loopback server.
+
 ## Runtime modules
 
 - `bridge.ts`
@@ -35,6 +47,7 @@ Keep `bridge.ts` as a thin orchestration layer that delegates message handling t
 
 - `gitService.ts`
   - Owns VS Code Git and worktree operations.
+  - Run snapshots use a temporary Git index and a private `refs/openchamber/runs/` ref, leaving the user's index and worktree untouched. Worktree removal releases its OC2 OpenCode location before deletion, retries transient Windows folder locks, and limits orphan cleanup to the managed worktree root. OC1 retains its existing process ownership.
   - `api:git/diff` and `api:git/file-diff` classify the status path first through `gitPathDiff.ts`, matching the web server's diff routes. The host answers `{ kind: 'diff' | 'file-diff', ..., submodule }` or `{ kind: 'unavailable', reason: 'path_not_found' | 'nested_repository', message }`, and `webview/api/git.ts` parses that into the shared contract, throwing `GitPathUnavailableError` for unavailable paths. A failing `git diff` rejects instead of returning an empty patch. These handlers are currently dead bridge surface (see below), so the contract is covered by `gitPathDiff.test.ts` and `webview/api/git.test.ts` rather than by a reachable screen.
   - Fetches the current tracked source branch once before worktree creation. Fetch failure falls back to the local branch and reports it to the shared UI.
   - Fast worktree creation reports bootstrap phases explicitly: `directory-created`, then `git-ready` after Git population/upstream work, and `setup-ready` after setup commands. Existing worktrees without tracked bootstrap state fall back to `ready`/`setup-ready`; shared webview consumers also accept legacy responses without `phase`.
@@ -101,7 +114,7 @@ The webview build emits each worker as one self-contained file. VS Code webviews
 
 - `openchamberSessionState.ts`
   - Reuses the web archive, metadata migration, and storage-scope stores. The first OC2 scope claims root state files; managed scope survives port changes, while external scopes use endpoint identity. OC1 never opens these files. Metadata migration runs before the first OC2 metadata read or write, and endpoint/epoch checks reject late writes. VS Code's OC2 HTTP adapter merges nested metadata patches before OpenCode's replacing PATCH.
-  - Quota handlers keep managed exe.dev, Ollama Cloud, and Cursor credentials in the extension data directory with the same private-file contract as the web runtime. exe.dev uses one command-scoped usage token for the aggregate billing shared by every `exe-*` model provider.
+  - Quota handlers keep managed exe.dev, Ollama Cloud, and Cursor credentials in the extension data directory with the same private-file contract as the web runtime. exe.dev uses one command-scoped usage token for the aggregate billing shared by every `exe-*` model provider. Kimi quota reads the China plan credential before legacy aliases; OpenRouter quota resolves the key endpoint from the active generation's provider config and uses the default endpoint when none is configured.
   - `ollamaQuota.ts` owns the Ollama settings request and parser shared by credential validation and quota refresh. Both reject redirects, failed HTTP responses, and pages without parsed windows, with a 15-second request timeout. Validation finishes before the bridge writes a replacement cookie. Monthly dollar quotas and legacy session/weekly/premium quotas remain supported; zero extra-credit balances are omitted.
 
 - `opencode-upgrade-runtime.ts`

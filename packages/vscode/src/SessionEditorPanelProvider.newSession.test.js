@@ -87,6 +87,24 @@ describe('SessionEditorPanelProvider.createOrShowNewSession', () => {
     expect(panel.webview.html).toContain('workspaceFolders: [{"name":"alpha","path":"/work/alpha"}]');
   });
 
+  it('embeds parallel composer mode for the OC2 parallel draft command', () => {
+    const provider = createProvider();
+    provider.createOrShowParallelDraft();
+
+    expect(createWebviewPanel.mock.calls.at(-1)?.[1]).toBe('Run on several models');
+    expect(panel.webview.html).toContain('initialComposer: "parallel"');
+    expect(panel.webview.html).toContain('viewMode: "editor"');
+  });
+
+  it('keeps the parallel draft behind the existing workspace guard', () => {
+    workspaceFolders = [];
+    createWebviewPanel.mockClear();
+
+    createProvider().createOrShowParallelDraft();
+
+    expect(createWebviewPanel).not.toHaveBeenCalled();
+  });
+
   it('does not open a panel or post a newSession command when no workspace folder is open', () => {
     workspaceFolders = [];
     createWebviewPanel.mockClear();

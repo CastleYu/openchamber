@@ -26,6 +26,13 @@ Stage 0 finished on 2026-09-19. All four experiments passed with changes, and DE
 | 3 | Code in and out | Transfer, uncommitted snapshot, both apply variants, quarantine | Bait repository: `.env` absent, executable bit kept, unclean apply touches nothing |
 | 4 | Dispatcher, sessions, events | The space shows in the sidebar, chat works, an unreachable space breaks nothing | Failure isolation: kill the space mid-work, normal sessions unaffected |
 | 5 | The journey in the UI | Places funnel, create dialog, group status and actions, grant dialog with journal, apply dialog, spaces page, chat archive, idle stop, start without waiting | Manual checklist for journey steps 0 to 9 |
+
+Stage 5e-4 adds a Places Settings page for the Docker place's disk usage and
+clean-up. The host routes read disk use and remove only OpenChamber's
+rebuildable, unused resources; Docker decides whether a resource is in use.
+The feature remains OC2-only and behind the existing isolated-spaces switch.
+Fake-Docker and HTTP route tests cover the server boundary; real Docker and
+device checks remain part of the stage's manual checklist.
 | 6 | Dev server preview | A dev server in the space opens in the built-in browser | Manual, bait repository |
 | 7 | Browser logins | OpenAI with a short token, Copilot with its warning | Manual with a real OpenAI login: works, refreshes, host login survives |
 | | First release: local Docker | The switch is removed | Full manual pass on Mac, Windows, Linux, web. Quick look on mobile |

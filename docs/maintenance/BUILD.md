@@ -30,7 +30,7 @@
 
 ## 操作
 
-双内核构建会先执行工作区类型检查、个人版本与仅通知更新策略测试、CLI 制品测试，以及独立进程中的 UI 合同测试和 Web API 合同测试。另一个 Windows 作业准备并验证 OpenCode 2.0.16，使用独立 runner 和检出目录。正式便携包继续使用默认 OC1 1.18.31；OC2 验证不会替换正式包内核。发布必须等待两个作业成功。首次双内核功能的个人版本为 `1.24.2-DIJIANG.4.0`，上游基线保持 1.24.2。
+双内核构建会先执行工作区类型检查、个人版本与仅通知更新策略测试、CLI 制品测试，以及独立进程中的 UI 合同测试和 Web API 合同测试。另一个 Windows 作业准备并验证 OpenCode 2.0.20，使用独立 runner 和检出目录。正式便携包继续使用默认 OC1 1.18.31；OC2 验证不会替换正式包内核。发布必须等待两个作业成功。首次双内核功能的个人版本为 `1.24.2-DIJIANG.4.0`，上游基线保持 1.24.2。
 
 `.github/workflows/personal-portable.yml` 会在向 `codex/personal` 推送或手动派发该分支时运行，且仅限 `CastleYu/openchamber`。它使用相同的本地构建脚本、固定版本的 actions、Node 22 和 Bun 1.4.2。构建作业只有只读权限，并将 portable EXE 和元数据作为 Actions 制品保留 30 天；不包含解包后的应用文件。
 
@@ -53,3 +53,7 @@ OpenCode 自身的更新功能不受 OpenChamber 此替换策略约束；RUN-01 
 运行个人更新测试、HTTP/CLI 策略测试、工作区类型检查和 lint、dead-code 检查及真实打包脚本。检查打包应用的启动、版本显示、更新提示和关闭过程，并验证打包的原生模块/OpenCode。将实际结果记录在 [PLAN.md](PLAN.md)；编译成功不等于打包应用已启动，也不等于 Actions 运行成功。
 
 替换过程为手动操作：从已审查的集成版本构建，关闭正在运行的应用，保留先前的可执行文件和数据，然后启动新可执行文件。如果启动后出现回归，关闭新版本并重新打开先前的构建。今后若有持久化数据迁移，在旧版二进制文件使用这些数据前，先审查迁移情况。
+
+## October 2026 upstream content intake
+
+The current upstream base is 2.0.4, with post-release main fixes through 56fbe4e3a9bf20d3c0c2599a8352592200abae4b. DIJIANG featureVersion remains 4.0 by maintainer instruction. The portable release still defaults to OC1 1.18.31; a separate OC2 2.0.20 validation resource does not change that manifest default. See [intake evidence](evidence/2026-10-01-upstream-intake.md) for generation-specific adoption and checks. This source intake does not authorize a remote publication.

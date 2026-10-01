@@ -2,6 +2,14 @@ import { z } from 'zod';
 
 import type { Metadata, ToolInput } from './model';
 
+/** Protocol names for built-in OC2 tools; OC1 tool parsing remains separate. */
+export const OPENCODE_TOOLS = {
+  edit: 'edit', execute: 'execute', glob: 'glob', grep: 'grep', patch: 'patch',
+  question: 'question', read: 'read', shell: 'shell', skill: 'skill',
+  subagent: 'subagent', webfetch: 'webfetch', websearch: 'websearch', write: 'write',
+  sessionRename: 'session_rename', sessionMove: 'session_move', models: 'models',
+} as const;
+
 // Code Mode's built-in tool is named exactly `execute`. A namespaced plugin
 // with the same suffix must keep the generic tool presentation.
 export const isExecuteTool = (name: string): boolean => name === 'execute';
@@ -17,7 +25,29 @@ const metadataSchema = z.object({
   toolCalls: z.array(callSchema.nullable().catch(null)).optional().catch(undefined),
   truncated: z.boolean().optional().catch(undefined),
   outputPath: text,
+  sessionID: text,
+  sessionId: text,
 }).catch({});
+
+const SUBAGENT_TOOLS = new Set(['task', 'subagent']);
+export const isSubagentTool = (name: string): boolean => SUBAGENT_TOOLS.has(name.trim().toLowerCase());
+
+export const normalizeToolName = (name: string | null | undefined): string => {
+  const parts = name?.trim().toLowerCase().split('.').filter(Boolean);
+  return parts?.at(-1) ?? '';
+};
+
+/** The built-in command tool as OpenCode 2.x names it. */
+export const isShellTool = (name: string): boolean => normalizeToolName(name) === OPENCODE_TOOLS.shell;
+
+/** Tools that block the turn on a form the user must answer; only `question` does today. */
+export const blocksOnForm = (name: string): boolean => normalizeToolName(name) === OPENCODE_TOOLS.question;
+
+/** OC1 and OC2 spell the child identity differently in tool metadata. */
+export const subagentSessionId = (metadata: Metadata | undefined): string | undefined => {
+  const parsed = metadataSchema.parse(metadata ?? {});
+  return parsed.sessionID ?? parsed.sessionId;
+};
 
 export type ExecuteToolCall = {
   tool: string;

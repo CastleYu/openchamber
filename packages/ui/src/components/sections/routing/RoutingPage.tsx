@@ -27,7 +27,7 @@ import { isPrimaryMode } from '@/components/chat/mobileControlsUtils';
 import { useI18n } from '@/lib/i18n';
 import { reportSettingsSaveState } from '@/lib/persistence';
 import { getRuntimeKey } from '@/lib/runtime-switch';
-import type { RoutingCategory, RoutingConfig } from '@/lib/routing/routingApi';
+import type { ClassifierSource, RoutingCategory, RoutingConfig } from '@/lib/routing/routingApi';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { parseModelIdentifier } from '@/lib/modelIdentifier';
 import { isAutoModel } from '@/lib/routing/autoModel';
@@ -191,11 +191,22 @@ export const RoutingPage: React.FC = () => {
   const saveConfig = useRoutingStore((state) => state.saveConfig);
   const setToken = useRoutingStore((state) => state.setToken);
   const clearToken = useRoutingStore((state) => state.clearToken);
+  const classification = useRoutingStore((state) => state.classification);
+  const customEndpoint = useRoutingStore((state) => state.customEndpoint);
+  const enterpriseMode = useRoutingStore((state) => state.enterpriseMode);
+  const selectClassifier = useRoutingStore((state) => state.selectClassifier);
+  const setCustomClassifier = useRoutingStore((state) => state.setCustomClassifier);
+  const clearCustomClassifier = useRoutingStore((state) => state.clearCustomClassifier);
 
   const [draft, setDraft] = React.useState<RoutingConfig | null>(serverConfig);
   const [tokenInput, setTokenInput] = React.useState('');
   const [tokenBusy, setTokenBusy] = React.useState(false);
   const [tokenError, setTokenError] = React.useState<string | null>(null);
+  const [classifierError, setClassifierError] = React.useState<string | null>(null);
+  const [classifierBusy, setClassifierBusy] = React.useState(false);
+  const [customUrl, setCustomUrl] = React.useState('');
+  const [customModel, setCustomModel] = React.useState('');
+  const [customKey, setCustomKey] = React.useState('');
   const [newCategoryName, setNewCategoryName] = React.useState('');
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
   // A pending edit remembers the server it was made against; a save that would
@@ -216,6 +227,48 @@ export const RoutingPage: React.FC = () => {
   React.useEffect(() => {
     if (!pendingRef.current && savesInFlightRef.current === 0) setDraft(serverConfig);
   }, [serverConfig]);
+
+  React.useEffect(() => {
+    setCustomUrl(customEndpoint?.url ?? '');
+    setCustomModel(customEndpoint?.model ?? '');
+    setCustomKey('');
+  }, [customEndpoint]);
+
+  const sourceLabel = (source: ClassifierSource) => {
+    switch (source) {
+      case 'off': return t('settings.classification.source.off.name');
+      case 'zen-promo': return t('settings.classification.source.zenPromo.name');
+      case 'zen-key': return t('settings.classification.source.zenKey.name');
+      case 'openrouter': return t('settings.classification.source.openrouter.name');
+      case 'vercel': return t('settings.classification.source.vercel.name');
+      case 'typesafe': return t('settings.classification.source.typesafe.name');
+      case 'custom': return t('settings.classification.source.custom.name');
+    }
+  };
+
+  const changeClassifier = async (source: ClassifierSource) => {
+    setClassifierBusy(true);
+    setClassifierError(null);
+    try { await selectClassifier(source); }
+    catch (error) { setClassifierError(error instanceof Error ? error.message : String(error)); }
+    finally { setClassifierBusy(false); }
+  };
+
+  const saveCustom = async () => {
+    setClassifierBusy(true);
+    setClassifierError(null);
+    try { await setCustomClassifier({ url: customUrl, model: customModel, key: customKey || undefined }); }
+    catch (error) { setClassifierError(error instanceof Error ? error.message : String(error)); }
+    finally { setClassifierBusy(false); }
+  };
+
+  const removeCustom = async () => {
+    setClassifierBusy(true);
+    setClassifierError(null);
+    try { await clearCustomClassifier(); }
+    catch (error) { setClassifierError(error instanceof Error ? error.message : String(error)); }
+    finally { setClassifierBusy(false); }
+  };
 
   const flush = React.useCallback(() => {
     const pending = pendingRef.current;
@@ -345,7 +398,7 @@ export const RoutingPage: React.FC = () => {
   const enabledCount = draft?.categories.filter((category) => category.enabled).length ?? 0;
   const removedBuiltins = builtins.filter((builtin) => !draft?.categories.some((category) => category.id === builtin.id));
 
-  const readinessText = !tokenPresent
+  const readinessText = !classification && !tokenPresent
     ? t('settings.routing.status.noToken')
     : !draft?.enabled
       ? t('settings.routing.status.disabled')
@@ -368,11 +421,62 @@ export const RoutingPage: React.FC = () => {
         <p className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.routing.unavailable')}</p>
       ) : (
         <>
-          <SettingsSection title={t('settings.routing.token.title')} divider={false}>
+          {classification ? (
+            <SettingsSection title={t('settings.classification.page.title')} divider={false}>
+              <div className={SETTINGS_FIELDS_STACK_CLASS}>
+                <SettingsFieldRow label={t('settings.classification.jev.title')} settingsItem="routing.classifier">
+                  <Select value={classification.selected} onValueChange={(value) => {
+                    const source = classification.sources.find((entry) => entry.id === value)?.id;
+                    if (source) void changeClassifier(source);
+                  }} disabled={classifierBusy}>
+                    <SelectTrigger size={SETTINGS_SELECT_SIZE} className={SETTINGS_SELECT_ROW_TRIGGER_CLASS} aria-label={t('settings.classification.jev.title')}>
+                      <SelectValue>{sourceLabel(classification.selected)}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classification.sources.filter(({ id }) => !enterpriseMode || id === 'off' || (id === 'custom' && customEndpoint?.pinned)).map(({ id }) => (
+                        <SelectItem key={id} value={id}>{sourceLabel(id)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </SettingsFieldRow>
+                {classification.selected === 'off' ? (
+                  <p className={SETTINGS_HELPER_CLASS}>{t('settings.classification.source.off.description')}</p>
+                ) : !classification.effective ? (
+                  <p className={SETTINGS_HELPER_CLASS}>{t('settings.classification.status.none')}</p>
+                ) : null}
+                {classification.selected === 'custom' && !customEndpoint?.pinned ? (
+                  <>
+                    <SettingsFieldRow label={t('settings.classification.custom.url.label')} info={t('settings.classification.custom.url.info')} settingsItem="routing.custom-endpoint">
+                      <Input value={customUrl} onChange={(event) => setCustomUrl(event.target.value)} aria-label={t('settings.classification.custom.url.label')} />
+                    </SettingsFieldRow>
+                    <SettingsFieldRow label={t('settings.classification.custom.model.label')}>
+                      <Input value={customModel} onChange={(event) => setCustomModel(event.target.value)} aria-label={t('settings.classification.custom.model.label')} />
+                    </SettingsFieldRow>
+                    <SettingsFieldRow label={t('settings.classification.custom.key.label')} info={t('settings.classification.custom.key.info')}>
+                      <Input type="password" autoComplete="off" value={customKey} onChange={(event) => setCustomKey(event.target.value)}
+                        placeholder={customEndpoint?.keyPresent ? t('settings.classification.custom.key.replacePlaceholder') : t('settings.classification.custom.key.placeholder')}
+                        aria-label={t('settings.classification.custom.key.label')} />
+                    </SettingsFieldRow>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => void saveCustom()} disabled={classifierBusy || !customUrl.trim() || !customModel.trim()}>
+                        {t('settings.classification.custom.save')}
+                      </Button>
+                      {customEndpoint ? <Button size="sm" variant="ghost" disabled={classifierBusy} onClick={() => void removeCustom()}>
+                        {t('settings.classification.custom.remove')}
+                      </Button> : null}
+                    </div>
+                  </>
+                ) : null}
+                {customEndpoint?.pinned ? <p className={SETTINGS_HELPER_CLASS}>{t('settings.classification.custom.pinned', { url: customEndpoint.url, model: customEndpoint.model })}</p> : null}
+                {classifierError ? <p className={SETTINGS_DESCRIPTION_CLASS}>{classifierError}</p> : null}
+              </div>
+            </SettingsSection>
+          ) : null}
+          {(!classification || classification.selected === 'typesafe') ? <SettingsSection title={classification ? t('settings.classification.source.typesafe.name') : t('settings.routing.token.title')} divider={!classification}>
             <div className={SETTINGS_FIELDS_STACK_CLASS}>
-              <p className={SETTINGS_HELPER_CLASS}>
+              {!classification ? <p className={SETTINGS_HELPER_CLASS}>
                 {tokenPresent ? t('settings.routing.token.present') : t('settings.routing.token.missing')}
-              </p>
+              </p> : null}
               <SettingsFieldRow
                 settingsItem="routing.token"
                 label={t('settings.routing.token.label')}
@@ -402,7 +506,7 @@ export const RoutingPage: React.FC = () => {
               </SettingsFieldRow>
               {tokenError ? <p className={SETTINGS_DESCRIPTION_CLASS}>{tokenError}</p> : null}
             </div>
-          </SettingsSection>
+          </SettingsSection> : null}
 
           <SettingsSection title={t('settings.routing.auto.title')}>
             <div className={SETTINGS_FIELDS_STACK_CLASS}>
@@ -489,7 +593,7 @@ export const RoutingPage: React.FC = () => {
               </SettingsFieldRow>
             </div>
           </SettingsSection>
-          <SettingsSection title={t('settings.routing.safety.title')}>
+          {!classification ? <SettingsSection title={t('settings.routing.safety.title')}>
             <div className={SETTINGS_FIELDS_STACK_CLASS}>
               <p className={SETTINGS_HELPER_CLASS}>{t('settings.routing.safety.description')}</p>
               <div className={SETTINGS_OPTION_STACK_CLASS}>
@@ -503,7 +607,7 @@ export const RoutingPage: React.FC = () => {
                 />
               </div>
             </div>
-          </SettingsSection>
+          </SettingsSection> : null}
 
         </>
       )}

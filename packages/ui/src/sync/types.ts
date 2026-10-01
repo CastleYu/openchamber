@@ -44,6 +44,8 @@ export type State = {
   session_status: Record<string, SessionStatus>
   /** A successful status snapshot makes omitted sessions authoritatively idle. */
   sessionStatusReady?: boolean
+  /** An archived session has no status authority until a fresh read or live event. */
+  sessionStatusInvalidated?: Record<string, true>
   session_diff: Record<string, FileDiff[]>
   todo: Record<string, Todo[]>
   permission: Record<string, PermissionRequest[]>

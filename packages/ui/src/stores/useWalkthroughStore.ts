@@ -108,11 +108,11 @@ interface WalkthroughActions {
    * itself, because the fallback is the interface locale and locale state
    * belongs to `@/lib/i18n`, not here.
    */
-  load: (directory: string, source: WalkthroughSource, options?: { language?: string }) => Promise<void>;
+  load: (directory: string, source: WalkthroughSource, options?: { language?: string; providerID?: string }) => Promise<void>;
   generate: (
     directory: string,
     source: WalkthroughSource,
-    options?: { force?: boolean; language?: string }
+    options?: { force?: boolean; language?: string; providerID?: string }
   ) => Promise<void>;
   cancel: (directory: string, source: WalkthroughSource) => void;
   /** Abort an in-flight GET load only. Does not cancel a paid generation. */
@@ -205,6 +205,7 @@ export const useWalkthroughStore = create<WalkthroughState & WalkthroughActions>
         try {
           const result = await fetchWalkthrough(directory, source, {
             model: get().selectedModel[key],
+            providerID: options.providerID,
             language: options.language,
             signal: controller.signal,
           });
@@ -222,7 +223,7 @@ export const useWalkthroughStore = create<WalkthroughState & WalkthroughActions>
           if (result.generating) {
             // The running job already has its own language; this only decides
             // what a request that does *not* attach would ask for.
-            void get().generate(directory, source, { language: options.language });
+            void get().generate(directory, source, { language: options.language, providerID: options.providerID });
           }
         } catch (error) {
           if (controller.signal.aborted) return;
@@ -288,6 +289,7 @@ export const useWalkthroughStore = create<WalkthroughState & WalkthroughActions>
           const result = await generateWalkthrough(directory, source, {
             force: options.force,
             model: get().selectedModel[key],
+            providerID: options.providerID,
             language: options.language,
             signal: controller.signal,
           });

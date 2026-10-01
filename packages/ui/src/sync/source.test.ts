@@ -27,4 +27,5 @@ describe('sync source epoch', () => {
     const iterator = source.events(new AbortController().signal)[Symbol.asyncIterator]();
     expect((await iterator.next()).value).toEqual({ generation: 'oc1', value: envelope });
   });
+
 });

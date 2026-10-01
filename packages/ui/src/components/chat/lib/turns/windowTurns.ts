@@ -1,4 +1,5 @@
 import type { ChatMessageEntry } from './types';
+import { isSubagentRunEntry } from '../timelineRoles';
 
 const resolveMessageRole = (message: ChatMessageEntry): string => {
     const role = (message.info as { clientRole?: string | null; role?: string | null }).clientRole ?? message.info.role;
@@ -92,7 +93,7 @@ export const updateTurnWindowModelIncremental = (
     const messageId = nextMessage.info.id;
     const nextModel = cloneTurnWindowModel(previousModel);
 
-    if (role === 'user') {
+    if (role === 'user' || isSubagentRunEntry(nextMessage.info)) {
         const nextTurnIndex = nextModel.turnIds.length;
         nextModel.turnIds.push(messageId);
         nextModel.turnMessageStartIndexes.push(nextMessages.length - 1);
@@ -150,7 +151,7 @@ export const buildTurnWindowModel = (messages: ChatMessageEntry[]): TurnWindowMo
         const role = resolveMessageRole(message);
         const messageId = message.info.id;
 
-        if (role === 'user') {
+        if (role === 'user' || isSubagentRunEntry(message.info)) {
             currentTurnIndex = turnIds.length;
             turnIds.push(messageId);
             turnMessageStartIndexes.push(index);

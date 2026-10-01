@@ -51,8 +51,10 @@ const server = http.createServer((req, res) => {
 });
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = z.object({ port: z.number() }).parse(server.address());
-configureRuntimeUrlResolver({ apiBaseUrl: `http://127.0.0.1:${address.port}` });
+const testBaseUrl = `http://127.0.0.1:${address.port}`;
+configureRuntimeUrlResolver({ apiBaseUrl: testBaseUrl });
 opencodeClient.reconnectToRuntimeBaseUrl();
+opencodeClient.bindRuntime({ generation: 'oc1', endpoint: testBaseUrl, epoch: 'agent-groups-test', version: '1.18.31' });
 useProjectsStore.setState({ projects: [], activeProjectId: null });
 useDirectoryStore.setState({ currentDirectory: '/group-test' });
 afterAll(async () => {

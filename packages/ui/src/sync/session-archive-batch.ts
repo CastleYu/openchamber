@@ -12,7 +12,7 @@
  * unsupported status, and callers fall back to archiving session by session.
  */
 
-import type { Session } from '@/lib/opencode/model'
+import type { Metadata, Session } from '@/lib/opencode/model'
 import { z } from 'zod';
 
 import { runtimeFetch } from '@/lib/runtime-fetch';
@@ -43,6 +43,7 @@ export async function requestSessionArchiveBatch(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ directory, ids, archivedAt }),
+      directory,
     });
   } catch (error) {
     return { outcome: 'unavailable', reason: error instanceof Error ? error.message : 'archive request failed' };
@@ -74,4 +75,39 @@ export async function requestSessionArchiveBatch(
     archived: parsed.data.archived as Session[],
     failedIds: parsed.data.failedIds,
   };
+}
+
+const metadataResponseSchema = z.object({ metadata: z.record(z.string(), z.json()) });
+
+export type SessionMetadataUpdateResult =
+  | { outcome: 'updated'; metadata: Metadata }
+  | { outcome: 'unavailable'; reason: string };
+
+/** Merge-patches OpenChamber-owned session metadata through its server route. */
+export async function requestSessionMetadataUpdate(
+  sessionID: string,
+  patch: Metadata,
+  directory?: string | null,
+): Promise<SessionMetadataUpdateResult> {
+  let response: Response;
+  try {
+    response = await runtimeFetch(`/api/openchamber/sessions/${encodeURIComponent(sessionID)}/metadata`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ patch }),
+      directory,
+    });
+  } catch (error) {
+    return { outcome: 'unavailable', reason: error instanceof Error ? error.message : 'metadata request failed' };
+  }
+  if (!response.ok) return { outcome: 'unavailable', reason: `metadata request failed with ${response.status}` };
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (error) {
+    return { outcome: 'unavailable', reason: error instanceof Error ? error.message : 'metadata response was not JSON' };
+  }
+  const parsed = metadataResponseSchema.safeParse(body);
+  if (!parsed.success) return { outcome: 'unavailable', reason: `malformed metadata response: ${parsed.error.issues[0]?.message ?? 'unknown shape'}` };
+  return { outcome: 'updated', metadata: parsed.data.metadata };
 }

@@ -96,6 +96,19 @@ export interface OutgoingMessageDeps {
     buildSkillInstruction: (names: string[]) => string | null;
 }
 
+export function hasComposerContent(input: {
+    text: string;
+    attachmentCount: number;
+    hasDrafts: boolean;
+    hasLinkedReferences: boolean;
+    isBtwActive: boolean;
+}): boolean {
+    return input.text.trim().length > 0
+        || input.attachmentCount > 0
+        || input.hasDrafts
+        || (!input.isBtwActive && input.hasLinkedReferences);
+}
+
 export function buildOutgoingMessage(
     input: OutgoingMessageInput,
     deps: OutgoingMessageDeps,

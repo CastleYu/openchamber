@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import type { JsonValue, Session } from '@/lib/opencode/model';
 import { createMultiRunSession, type MultiRunGeneration, type MultiRunSessionApi } from './createSession';
-import { getMultiRunIdentity, getMultiRunMembership, withMultiRunMembership, type MultiRunIdentity } from './identity';
+import { getMultiRunIdentity, getMultiRunMembership, type MultiRunIdentity } from './identity';
 
 const identity: Omit<MultiRunIdentity, 'key'> = {
   group: { kind: 'id', id: '9f512893-6e63-4e49-a534-5de733ca103e' },

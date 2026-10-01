@@ -1,6 +1,18 @@
 import { describe, expect, test } from 'bun:test';
 
-import { buildActivitySeries, isEmptyReport, isSameLocalDay, projectDisplayName, rangeStart } from './usageStatsModel';
+import {
+  averagePer,
+  buildActivitySeries,
+  cacheHitRate,
+  costPerMillionTokens,
+  isEmptyReport,
+  isSameLocalDay,
+  projectDisplayName,
+  rangeStart,
+  reasoningShare,
+  tokenSegments,
+  toolSuccessRate,
+} from './usageStatsModel';
 
 const local = (year: number, month: number, day: number, hour = 0) => new Date(year, month - 1, day, hour).getTime();
 
@@ -60,4 +72,27 @@ test('a project reads as its label, else its folder name', () => {
 test('same local day compares calendar dates, not 24 hours', () => {
   expect(isSameLocalDay(local(2026, 9, 23, 0), local(2026, 9, 23, 23))).toBe(true);
   expect(isSameLocalDay(local(2026, 9, 22, 23), local(2026, 9, 23, 0))).toBe(false);
+});
+
+describe('usage breakdowns', () => {
+  test('returns null for undefined ratios and derives token shares from totals', () => {
+    expect(cacheHitRate({ input: 0, cacheRead: 0, cacheWrite: 0 })).toBeNull();
+    expect(cacheHitRate({ input: 50, cacheRead: 30, cacheWrite: 20 })).toBe(0.3);
+    expect(averagePer(10, 0)).toBeNull();
+    expect(averagePer(10, 2)).toBe(5);
+    expect(toolSuccessRate({ succeeded: 0, failed: 0 })).toBeNull();
+    expect(toolSuccessRate({ succeeded: 3, failed: 1 })).toBe(0.75);
+    expect(costPerMillionTokens(0.5, 0)).toBeNull();
+    expect(costPerMillionTokens(0.5, 1_000_000)).toBe(0.5);
+    expect(reasoningShare({ output: 3, reasoning: 1 })).toBe(0.25);
+  });
+
+  test('segments preserve legend order and fold reasoning into output', () => {
+    expect(tokenSegments({ input: 2, output: 3, reasoning: 5, cacheRead: 7, cacheWrite: 11, total: 28 })).toEqual([
+      { key: 'input', value: 2 },
+      { key: 'output', value: 8 },
+      { key: 'cacheRead', value: 7 },
+      { key: 'cacheWrite', value: 11 },
+    ]);
+  });
 });

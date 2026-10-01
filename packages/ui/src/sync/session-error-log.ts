@@ -10,9 +10,11 @@
  */
 
 import type { EventSessionError } from '@opencode-ai/sdk/v2'
+import type { StructuredError } from '@/lib/opencode/model'
 
 const MAX_RECORDED_SESSION_ERRORS = 20
 const MAX_MESSAGE_LENGTH = 400
+const MAX_RESPONSE_BODY_LENGTH = 16_000
 
 export type OpenCodeErrorSummary = {
   name: string | null
@@ -42,6 +44,16 @@ export function summarizeOpenCodeError(error: OpenCodeSessionErrorPayload | { me
   const topMessage = typeof record.message === 'string' ? record.message.trim() : ''
   const message = dataMessage || topMessage || null
   return { name, message: message ? message.slice(0, MAX_MESSAGE_LENGTH) : null }
+}
+
+/**
+ * The provider's raw response body behind the error (OpenCode 2.0.20+), for
+ * the details a person can expand under the notice. Kept out of the
+ * diagnostics records: a body may echo request content.
+ */
+export function responseBodyOf(error: StructuredError | null | undefined): string | null {
+  const body = error?.response?.body.trim()
+  return body ? body.slice(0, MAX_RESPONSE_BODY_LENGTH) : null
 }
 
 const records: SessionErrorRecord[] = []

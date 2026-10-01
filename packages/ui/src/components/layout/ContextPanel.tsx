@@ -35,7 +35,8 @@ import { setExternallyViewedSession, useDirectoryStore } from '@/sync/sync-conte
 import { ContextPanelContent } from './ContextSidebarTab';
 import { BrowserPane } from '@/components/browser/BrowserPane';
 import { browserUrlLabel } from '@/lib/browser/url';
-import { registerBrowserOpener } from '@/lib/browser/controlClient';
+import { registerBrowserOpener, registerSleepingBrowserTab, setShownBrowserTab } from '@/lib/browser/controlClient';
+import { opencodeClient } from '@/lib/opencode/client';
 import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { getRuntimeBearerTokenSync, getRuntimeExtraHeadersSync } from '@/lib/runtime-auth';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@/lib/runtime-switch';
@@ -499,21 +500,47 @@ export const ContextPanel: React.FC = () => {
   const panelState = useUIStore((state) => (directoryKey ? state.contextPanelByDirectory[directoryKey] : undefined));
   const closeContextPanel = useUIStore((state) => state.closeContextPanel);
   const closeContextPanelTab = useUIStore((state) => state.closeContextPanelTab);
+  const pinContextPanelTab = useUIStore((state) => state.pinContextPanelTab);
   const openContextPanelTab = useUIStore((state) => state.openContextPanelTab);
   const toggleContextPanelExpanded = useUIStore((state) => state.toggleContextPanelExpanded);
   const setContextPanelWidth = useUIStore((state) => state.setContextPanelWidth);
   const setActiveContextPanelTab = useUIStore((state) => state.setActiveContextPanelTab);
   const openContextBrowser = useUIStore((state) => state.openContextBrowser);
+  const openAgentBrowserTab = useUIStore((state) => state.openAgentBrowserTab);
 
-  // Lets an agent's browser.open create the tab it needs when none is open yet.
-  // Registered from the panel because opening a tab is panel state, not
-  // something the browser view itself can do before it exists. Reveal the
-  // panel so Electron gives the webview a composited surface; capturePage()
-  // cannot capture the zero-width webview inside a closed panel.
+  // A browser tab loads its page only once it is needed: shown in the open
+  // panel, opened by the agent, or woken by an agent action. Tabs restored
+  // from a previous run otherwise stay asleep, since every loaded tab costs a
+  // Chromium process. Once loaded, a tab stays loaded until it is closed.
+  const [wokenBrowserTabIds, setWokenBrowserTabIds] = React.useState<ReadonlySet<string>>(() => new Set());
+  const wakeBrowserTab = React.useCallback((tabId: string) => {
+    setWokenBrowserTabIds((current) => (current.has(tabId) ? current : new Set(current).add(tabId)));
+  }, []);
+
+  // Lets an agent's browser.open create its own tab; the id goes back to the
+  // agent so it keeps working there. Registered from the panel because opening a tab is panel state, not
+  // something the browser view itself can do before it exists. Background on
+  // purpose: an agent working a page must not pop the panel open or steal the
+  // active tab while the user reads something else, and that includes taking
+  // a screenshot of it. The tab appears in the strip.
   React.useEffect(() => {
     if (!effectiveDirectory) return;
-    return registerBrowserOpener((url) => openContextBrowser(effectiveDirectory, url));
-  }, [effectiveDirectory, openContextBrowser]);
+    return registerBrowserOpener((url) => {
+      if (opencodeClient.getBoundRuntime()?.generation !== 'oc2') {
+        openContextBrowser(effectiveDirectory, url);
+        const state = useUIStore.getState().contextPanelByDirectory[directoryKey];
+        const tab = state?.tabs.find((entry) => entry.id === state.activeTabId);
+        if (tab?.mode === 'browser') wakeBrowserTab(tab.id);
+        return tab?.mode === 'browser' ? tab.id : null;
+      }
+      const tabId = openAgentBrowserTab(effectiveDirectory, url);
+      if (tabId) wakeBrowserTab(tabId);
+      return tabId;
+    });
+  }, [directoryKey, effectiveDirectory, openAgentBrowserTab, openContextBrowser, wakeBrowserTab]);
+  // The agent asked for a file to be shown. It opens in front of whatever tab
+  // the user had, on purpose: the agent is pointing at a result, and the prior
+  // tab is one click away.
   const reorderContextPanelTabs = useUIStore((state) => state.reorderContextPanelTabs);
   const openContextFile = useUIStore((state) => state.openContextFile);
   React.useEffect(() => subscribeOpenchamberEvents((event) => {
@@ -535,6 +562,10 @@ export const ContextPanel: React.FC = () => {
 
   const tabs = React.useMemo(() => panelState?.tabs ?? [], [panelState?.tabs]);
   const activeTab = tabs.find((tab) => tab.id === panelState?.activeTabId) ?? tabs[tabs.length - 1] ?? null;
+  const shownBrowserTabId = activeTab?.mode === 'browser' ? activeTab.id : null;
+  React.useEffect(() => {
+    if (shownBrowserTabId) setShownBrowserTab(shownBrowserTabId);
+  }, [shownBrowserTabId]);
   const isOpen = Boolean(panelState?.isOpen && activeTab);
   const [availablePanelAreaWidth, setAvailablePanelAreaWidth] = React.useState<number | null>(null);
   const hasOpenEditorFile = React.useMemo(
@@ -1029,6 +1060,7 @@ export const ContextPanel: React.FC = () => {
       icon: getTabIcon(tab, faviconByOrigin),
       title: tabPathLabel ? `${rawLabel}: ${tabPathLabel}` : rawLabel,
       closeLabel: t('contextPanel.tab.closeTabAria', { label }),
+      preview: tab.preview,
     };
   }), [activeModeTabs, effectiveDirectory, faviconByOrigin, sessionTitleById, t]);
 
@@ -1060,6 +1092,27 @@ export const ContextPanel: React.FC = () => {
     },
     [activeTab?.id, browserKeepAlive, isOpen, tabs],
   );
+  const visibleBrowserTabId = isOpen && activeTab?.mode === 'browser' ? activeTab.id : null;
+  React.useEffect(() => {
+    if (visibleBrowserTabId) wakeBrowserTab(visibleBrowserTabId);
+  }, [visibleBrowserTabId, wakeBrowserTab]);
+  const loadedBrowserTabs = React.useMemo(
+    () => browserTabs.filter((tab) => tab.id === visibleBrowserTabId || wokenBrowserTabIds.has(tab.id)),
+    [browserTabs, visibleBrowserTabId, wokenBrowserTabIds],
+  );
+  React.useEffect(() => {
+    // Only a Chromium host mounts views that agents can drive, so only it may
+    // offer to wake a tab; anywhere else a claimed action could never run.
+    if (!window.__OPENCHAMBER_ELECTRON__) return;
+    const unregister = browserTabs
+      .filter((tab) => !loadedBrowserTabs.includes(tab))
+      .map((tab) => registerSleepingBrowserTab({
+        tabId: tab.id,
+        describe: () => ({ title: '', url: tab.targetPath ?? '' }),
+        wake: () => wakeBrowserTab(tab.id),
+      }));
+    return () => unregister.forEach((release) => release());
+  }, [browserTabs, loadedBrowserTabs, wakeBrowserTab]);
   const diffTabs = React.useMemo(
     () => tabs.filter((tab) => tab.mode === 'diff'),
     [tabs],
@@ -1166,6 +1219,9 @@ export const ContextPanel: React.FC = () => {
               return;
             }
             reorderContextPanelTabs(directoryKey, activeTabID, overTabID);
+          }}
+          onDoubleClickTab={(tabID) => {
+            if (directoryKey) pinContextPanelTab(directoryKey, tabID);
           }}
           layoutMode="scrollable"
           variant="default"
@@ -1378,7 +1434,7 @@ export const ContextPanel: React.FC = () => {
             }}
           />
         ) : null}
-        {browserTabs.map((tab) => (
+        {loadedBrowserTabs.map((tab) => (
           <div
             key={tab.id}
             className={cn(
@@ -1414,7 +1470,11 @@ export const ContextPanel: React.FC = () => {
         ))}
         {terminalTab ? (
           <div className={cn('absolute inset-0', activeTab?.mode === 'terminal' ? 'block' : 'hidden')}>
-            <TerminalView visible={isOpen && activeTab?.mode === 'terminal'} directory={terminalTab.targetDirectory} />
+            <TerminalView
+              visible={isOpen && activeTab?.mode === 'terminal'}
+              directory={terminalTab.targetDirectory}
+              onLastTabClosed={() => { if (directoryKey) closeContextPanelTab(directoryKey, terminalTab.id); }}
+            />
           </div>
         ) : null}
         {hasWalkthroughTab ? (

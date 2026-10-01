@@ -6,6 +6,8 @@ import { MESSAGE_IMAGE_EXPORT_EXCLUDE_ATTRIBUTE } from '../message/imageExport';
 import { getMermaidViewerController } from './mermaidViewer';
 import { diagramPng, saveBlob } from './diagramExport';
 import { DIAGRAM_CODE_SELECTOR, type DeferredDiagram } from './deferredDiagrams';
+import { getMarkdownCodeText } from './codeText';
+import { getMarkdownSelectionText } from './selectionMarkdown';
 
 // ---------------------------------------------------------------------------
 // Shared decoration context
@@ -206,12 +208,7 @@ const layoutCodeLines = (pre: HTMLPreElement): void => {
   code.toggleAttribute('data-md-code-trailing-newline', hasTrailingNewline);
 };
 
-export const getMarkdownCodeText = (code: HTMLElement): string => {
-  const lineContents = Array.from(code.querySelectorAll<HTMLElement>('[data-md-code-line-content]'));
-  if (lineContents.length === 0) return code.textContent ?? '';
-  const text = lineContents.map((line) => line.textContent ?? '').join('\n');
-  return code.hasAttribute('data-md-code-trailing-newline') ? `${text}\n` : text;
-};
+export { getMarkdownCodeText };
 
 export const applyMarkdownCodeBlockWrapState = (root: HTMLElement, enabled: boolean, labels: DecorateLabels): void => {
   const wrappers = root.querySelectorAll<HTMLElement>('[data-component="markdown-code"]');
@@ -243,6 +240,8 @@ const decorateInlineCode = (root: HTMLElement): void => {
     if (code.getAttribute('data-markdown') !== 'inline-code') {
       code.setAttribute('data-markdown', 'inline-code');
     }
+    if (code.getAttribute('dir') !== 'ltr') code.setAttribute('dir', 'ltr');
+    if (code.closest('table')) code.classList.add('whitespace-nowrap');
   }
 };
 
@@ -264,6 +263,7 @@ const decorateCodeBlocks = (root: HTMLElement, ctx: DecorateContext): void => {
 
     const wrapper = document.createElement('div');
     wrapper.setAttribute('data-component', 'markdown-code');
+    wrapper.setAttribute('dir', 'ltr');
     wrapper.className =
       'my-4 group overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface-elevated)]';
 
@@ -358,9 +358,8 @@ const buildTableMenu = (action: string, items: Array<{ key: string; label: strin
 };
 
 const TABLE_COLUMN_MIN_WIDTH = 120;
-const TABLE_COLUMN_MAX_WIDTH = 320;
+const TABLE_COLUMN_FALLBACK_MAX_WIDTH = 320;
 const TABLE_LAYOUT_ATTR = 'data-md-table-layout';
-const CHAT_CONTENT_SELECTOR = '.message-content-text';
 
 const decorateTables = (root: HTMLElement, labels: DecorateLabels): void => {
   const tables = root.querySelectorAll<HTMLTableElement>('table');
@@ -412,10 +411,10 @@ const decorateTables = (root: HTMLElement, labels: DecorateLabels): void => {
     lastBodyRow?.classList.remove('border-b');
     lastBodyRow?.classList.add('border-0');
     for (const th of Array.from(table.querySelectorAll('th'))) {
-      th.classList.add('min-w-[120px]', 'max-w-[320px]', 'whitespace-normal', '[overflow-wrap:anywhere]', 'border-r', 'border-border/60', 'px-4', 'py-2.5', 'text-left', 'align-middle', 'font-semibold', 'text-foreground', 'last:border-r-0');
+      th.classList.add('min-w-[120px]', 'whitespace-normal', '[overflow-wrap:anywhere]', 'border-r', 'border-border/60', 'px-4', 'py-2.5', 'text-left', 'align-middle', 'font-semibold', 'text-foreground', 'last:border-r-0');
     }
     for (const td of Array.from(table.querySelectorAll('td'))) {
-      td.classList.add('min-w-[120px]', 'max-w-[320px]', 'whitespace-normal', '[overflow-wrap:anywhere]', 'border-r', 'border-border/60', 'px-4', 'py-2.5', 'align-middle', 'text-foreground/90', 'last:border-r-0');
+      td.classList.add('min-w-[120px]', 'whitespace-normal', '[overflow-wrap:anywhere]', 'border-r', 'border-border/60', 'px-4', 'py-2.5', 'align-middle', 'text-foreground/90', 'last:border-r-0');
     }
 
     scroll.appendChild(table);
@@ -425,9 +424,6 @@ const decorateTables = (root: HTMLElement, labels: DecorateLabels): void => {
 };
 
 export const stabilizeMarkdownTableWidths = (root: HTMLElement): void => {
-  // Chat uses fluid columns, matching the original conversation layout. Keep
-  // measurement for standalone Markdown previews only.
-  if (root.closest(CHAT_CONTENT_SELECTOR)) return;
   const tables = Array.from(root.querySelectorAll<HTMLTableElement>(
     `table[data-markdown="table"]:not([${TABLE_LAYOUT_ATTR}="fixed"])`,
   ));
@@ -490,16 +486,28 @@ export const stabilizeMarkdownTableWidths = (root: HTMLElement): void => {
   });
 
   root.appendChild(measurementRoot);
-  const plans = probes.map(({ table, columnProbes }) => ({
-    table,
-    widths: columnProbes.map((probe) => Math.min(
-      TABLE_COLUMN_MAX_WIDTH,
-      Math.max(TABLE_COLUMN_MIN_WIDTH, Math.ceil(probe.getBoundingClientRect().width)),
-    )),
-  }));
+  const plans = probes.map(({ table, columnProbes }) => {
+    const availableWidth = table.parentElement?.clientWidth ?? 0;
+    const maxColumnWidth = Math.max(TABLE_COLUMN_MIN_WIDTH, availableWidth || TABLE_COLUMN_FALLBACK_MAX_WIDTH);
+    const naturalWidths = columnProbes.map((probe) => Math.ceil(probe.getBoundingClientRect().width));
+    return {
+      table,
+      widths: naturalWidths.map((width) => Math.min(maxColumnWidth, Math.max(TABLE_COLUMN_MIN_WIDTH, width))),
+      cappedColumns: naturalWidths.map((width) => width > maxColumnWidth),
+    };
+  });
   measurementRoot.remove();
 
-  for (const { table, widths } of plans) {
+  for (const { table, widths, cappedColumns } of plans) {
+    for (const row of Array.from(table.querySelectorAll<HTMLTableRowElement>('tr'))) {
+      const cells = Array.from(row.children).filter((child) => child.tagName === 'TH' || child.tagName === 'TD');
+      cells.forEach((cell, columnIndex) => {
+        const nowrap = !cappedColumns[columnIndex];
+        for (const code of Array.from(cell.querySelectorAll('code[data-markdown="inline-code"]'))) {
+          code.classList.toggle('whitespace-nowrap', nowrap);
+        }
+      });
+    }
     const existingColumns = Array.from(table.children).find((child) => (
       child.matches('colgroup[data-md-table-columns]')
     ));
@@ -621,6 +629,7 @@ const decorateLinks = (root: HTMLElement, ctx: DecorateContext): void => {
     const href = anchor.getAttribute('href') ?? '';
     if (!isExternalHttpUrl(href)) continue;
     anchor.setAttribute('data-md-link-decorated', 'true');
+    if (anchor.textContent === href) anchor.setAttribute('dir', 'ltr');
 
     const faviconUrl = getExternalFaviconUrl(href);
     if (faviconUrl) {
@@ -656,6 +665,9 @@ const decorateLinks = (root: HTMLElement, ctx: DecorateContext): void => {
 
 /** Run all idempotent DOM decoration passes over freshly-rendered markdown. */
 export const decorateMarkdown = (root: HTMLElement, ctx: DecorateContext): void => {
+  for (const block of root.querySelectorAll('li, blockquote')) {
+    if (block.getAttribute('dir') !== 'auto') block.setAttribute('dir', 'auto');
+  }
   decorateDisclosures(root);
   decorateImageLabels(root);
   decorateInlineCode(root);
@@ -700,27 +712,38 @@ type MarkdownCopyState = {
 
 const markdownCopyStates = new WeakMap<Document, MarkdownCopyState>();
 
+// Copying a selection inside rendered markdown writes its source form: code
+// as the exact code text, anything else as Markdown. The markdown path keeps
+// the selected HTML too, so rich editors still paste formatted text.
 const registerMarkdownCodeCopy = (doc: Document): (() => void) => {
   let state = markdownCopyStates.get(doc);
   if (!state) {
-    const getSelectedText = (): string | null => {
+    const getSelectedCopy = (): { text: string; html: string | null } | null => {
       const selection = doc.getSelection();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) return null;
-      return getMarkdownCodeSelectionText(selection.getRangeAt(0));
+      const range = selection.getRangeAt(0);
+      const code = getMarkdownCodeSelectionText(range);
+      if (code !== null) return { text: code, html: null };
+      const markdown = getMarkdownSelectionText(range);
+      if (markdown === null) return null;
+      const holder = doc.createElement('div');
+      holder.appendChild(range.cloneContents());
+      return { text: markdown, html: holder.innerHTML };
     };
     const handler = (event: ClipboardEvent) => {
       if (!event.clipboardData) return;
-      const text = getSelectedText();
-      if (text === null) return;
+      const copy = getSelectedCopy();
+      if (copy === null) return;
       event.preventDefault();
       event.stopPropagation();
-      event.clipboardData.setData('text/plain', text);
+      event.clipboardData.setData('text/plain', copy.text);
+      if (copy.html) event.clipboardData.setData('text/html', copy.html);
     };
     const menuHandler = (event: Event) => {
-      const text = getSelectedText();
-      if (text === null) return;
+      const copy = getSelectedCopy();
+      if (copy === null) return;
       event.preventDefault();
-      void copyTextToClipboard(text);
+      void copyTextToClipboard(copy.text);
     };
     state = { registrations: 0, handler, menuHandler };
     markdownCopyStates.set(doc, state);

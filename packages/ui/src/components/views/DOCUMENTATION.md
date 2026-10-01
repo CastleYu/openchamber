@@ -1,5 +1,11 @@
 # Retained context views
 
+Desktop, VS Code and mobile load the OC2 run overview when a run opens. The
+desktop Spaces page loads when selected; its dialogs load when their own store
+state opens. The mobile app uses the same dialog host. These components stay
+out of the layout's OC1 startup imports. A failed page or dialog import closes
+its open state, so the next open can retry.
+
 `ContextPanel` keeps file, diff and walkthrough views mounted to preserve
 navigation, expanded sections and editor state. Its `visible` prop combines
 the panel's open state with the selected tab. Hiding via CSS alone does not
@@ -66,3 +72,8 @@ Most focused tests use Bun. `MultiFileDiffEntry.vitest.tsx` exercises the real
 diff component through the web workspace's Vitest runner because its transitive
 UI imports require Vite asset transforms. The web test configuration includes
 UI `*.vitest.tsx` fixtures; the isolated Bun runner intentionally does not.
+
+
+## Restored browser tabs
+
+ContextPanel restores browser tab labels without mounting Chromium views. A tab loads when the user shows it or a claimed browser action wakes it. Captures temporarily composite the existing page at zero opacity and restore its stage in finally; taking a screenshot does not open or select the panel. OC1 keeps its existing foreground browser-open path. OC2 agent opens create background tabs. Runtime-specific browser host limits remain explicit.

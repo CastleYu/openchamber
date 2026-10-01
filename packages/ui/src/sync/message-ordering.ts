@@ -5,6 +5,10 @@ const getCreatedAt = (message: Message): number => {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
 }
 
+// Context admitted with a prompt can share its timestamp. Put it first even
+// when a server-assigned id would otherwise place it after the user's text.
+const equalTimeRank = (message: Message): number => (message.role === "synthetic" ? 0 : 1)
+
 /**
  * Message IDs identify records; they are not chronology. OpenCode's sortable
  * ID timestamp rolls over, so a newly created `msg_000...` can follow a legacy
@@ -14,6 +18,8 @@ const getCreatedAt = (message: Message): number => {
 export const compareMessagesChronologically = (left: Message, right: Message): number => {
   const createdAtDifference = getCreatedAt(left) - getCreatedAt(right)
   if (createdAtDifference !== 0) return createdAtDifference
+  const rankDifference = equalTimeRank(left) - equalTimeRank(right)
+  if (rankDifference !== 0) return rankDifference
   if (left.id < right.id) return -1
   if (left.id > right.id) return 1
   return 0

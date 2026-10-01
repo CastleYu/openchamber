@@ -64,6 +64,15 @@ describe("applySessionStatusSnapshot", () => {
   })
 
   describe("authoritative mode (reconnect / escalated resync)", () => {
+    test("clears an archived session's invalidation only after a successful scoped snapshot", () => {
+      const store = createDirectoryStore({
+        session_status: { ses_a: { type: "idle" } },
+        sessionStatusInvalidated: { ses_a: true },
+      })
+      expect(applySessionStatusSnapshot(store, {}, ["ses_a"], "authoritative")).toBe(true)
+      expect(store.getState().sessionStatusInvalidated?.ses_a).toBeUndefined()
+      expect(store.getState().session_status.ses_a).toEqual({ type: "idle" })
+    })
     test("lowers a busy session to idle when the snapshot omits it", () => {
       const store = createDirectoryStore({
         session_status: { ses_a: BUSY },

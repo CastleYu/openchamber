@@ -16,6 +16,8 @@ import { useI18n } from '@/lib/i18n';
 import { isSyntheticPart } from '@/lib/messages/synthetic';
 import { cn } from '@/lib/utils';
 import { useSessionUIStore } from '@/sync/session-ui-store';
+import { commitStagedRevert, clearStagedRevert } from '@/sync/session-actions';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useDirectorySync } from '@/sync/sync-context';
 import {
     EMPTY_REVERTED_MESSAGE_DOCK_STATE,
@@ -60,6 +62,7 @@ export const RevertedMessageDock: React.FC<RevertedMessageDockProps> = React.mem
     const handleSlashRedo = useSessionUIStore((s) => s.handleSlashRedo);
     const [restoringId, setRestoringId] = React.useState<string | null>(null);
     const [forkingId, setForkingId] = React.useState<string | null>(null);
+    const [settling, setSettling] = React.useState<'commit' | 'clear' | null>(null);
     const [collapsed, setCollapsed] = React.useState(true);
     const revertedStateRef = React.useRef<RevertedMessageDockState>(EMPTY_REVERTED_MESSAGE_DOCK_STATE);
     const revertedState = useDirectorySync(
@@ -80,7 +83,9 @@ export const RevertedMessageDock: React.FC<RevertedMessageDockProps> = React.mem
         if (!revertMessageID) return [];
         return revertedState.records.map((record) => ({
             id: record.message.id,
-            text: getRevertedPreview(record.parts, noTextContent),
+            text: record.message.role === 'synthetic'
+                ? (record.message.description?.trim() || noTextContent)
+                : getRevertedPreview(record.parts, noTextContent),
         }));
     }, [noTextContent, revertMessageID, revertedState]);
     const firstRevertedMessageId = items[0]?.id;
@@ -115,19 +120,32 @@ export const RevertedMessageDock: React.FC<RevertedMessageDockProps> = React.mem
         }
     }, [forkFromMessage, forkingId, sessionId]);
 
-    if (!sessionId || items.length === 0) return null;
+    const handleSettle = React.useCallback(async (action: 'commit' | 'clear') => {
+        if (!sessionId || settling) return;
+        setSettling(action);
+        try {
+            if (action === 'commit') await commitStagedRevert(sessionId);
+            else await clearStagedRevert(sessionId);
+        } finally {
+            setSettling(null);
+        }
+    }, [sessionId, settling]);
+
+    const oc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+    if (!sessionId || (!oc2 && items.length === 0) || !revertMessageID) return null;
 
     return (
         <div className="pb-2 w-full px-1">
             <div className="rounded-xl border border-border/60 bg-[var(--surface-elevated)] text-[var(--surface-elevated-foreground)] shadow-sm overflow-hidden">
+                <div className="flex w-full items-center gap-2 px-3 py-2">
                 <button
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[var(--interactive-hover)] transition-colors"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left hover:bg-[var(--interactive-hover)] transition-colors"
                     onClick={() => setCollapsed((value) => !value)}
                     aria-expanded={!collapsed}
                 >
-                    <span className="typography-ui-label font-medium text-foreground flex-shrink-0">
-                        {t('chat.revertPopover.title')} messages {items.length}
+                    <span className="typography-ui-label font-medium text-foreground truncate">
+                        {oc2 ? t('chat.revertPopover.staged', { count: items.length }) : `${t('chat.revertPopover.title')} messages ${items.length}`}
                     </span>
                     <Icon
                         name="arrow-down-s"
@@ -135,6 +153,17 @@ export const RevertedMessageDock: React.FC<RevertedMessageDockProps> = React.mem
                         aria-hidden="true"
                     />
                 </button>
+                {oc2 ? <>
+                    <Button type="button" variant="secondary" size="xs" disabled={Boolean(settling || forkingId)} onClick={() => { void handleSettle('clear'); }}>
+                        <Icon name={settling === 'clear' ? 'loader-4' : 'arrow-go-back'} className="size-3" aria-hidden="true" />
+                        {t('chat.revertPopover.clear')}
+                    </Button>
+                    <Button type="button" variant="destructive" size="xs" disabled={Boolean(settling || forkingId)} onClick={() => { void handleSettle('commit'); }}>
+                        <Icon name={settling === 'commit' ? 'loader-4' : 'delete-bin'} className="size-3" aria-hidden="true" />
+                        {t('chat.revertPopover.commit')}
+                    </Button>
+                </> : null}
+                </div>
                 {!collapsed && (
                     <div className="px-3 pb-3 flex flex-col gap-1.5 max-h-[10.5rem] overflow-y-auto">
                         {items.map((item) => (

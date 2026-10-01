@@ -22,6 +22,7 @@ import {
   validateCustomProvider,
   type CustomProviderFormState,
   type CustomProviderPersistPlan,
+  type CustomProviderTranslator,
   type FieldErrors,
   type HeaderFieldErrors,
   type ModelFieldErrors,
@@ -115,7 +116,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
 
     const output = validateCustomProvider({
       form,
-      t,
+      t: ((key, vars) => t(key as Parameters<typeof t>[0], vars)) as CustomProviderTranslator,
       existingProviderIDs,
       disabledProviders,
       editingProviderID: isEdit ? form.providerID : undefined,

@@ -263,7 +263,8 @@ interface FileRowProps {
     canReveal: boolean;
   };
   downloadFile?: (path: string) => Promise<void>;
-  onSelect: (node: FileNode) => void;
+  /** A plain click opens a preview tab; `pin` (double-click) keeps it. */
+  onSelect: (node: FileNode, options?: { pin?: boolean }) => void;
   onToggle: (path: string) => void;
   onRevealPath: (path: string) => void;
   onOpenDialog: (type: 'createFile' | 'createFolder' | 'rename' | 'delete', data: { path: string; name?: string; type?: 'file' | 'directory' }) => void;
@@ -319,6 +320,10 @@ const FileRow: React.FC<FileRowProps> = ({
       onSelect(node);
     }
   }, [isDir, node, onSelect, onToggle]);
+
+  const handleDoubleClick = React.useCallback(() => {
+    if (!isDir) onSelect(node, { pin: true });
+  }, [isDir, node, onSelect]);
 
   const handleMenuButtonClick = React.useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
@@ -459,6 +464,7 @@ const FileRow: React.FC<FileRowProps> = ({
       <button
         type="button"
         onClick={handleInteraction}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
         draggable
         onDragStart={handleDragStart}
@@ -719,6 +725,14 @@ const SidebarFilesTreeContent: React.FC<{
   const expandedPathSet = React.useMemo(() => new Set(expandedPaths), [expandedPaths]);
   const selectedPath = useFilesViewTabsStore((state) => (root ? (state.byRoot[root]?.selectedPath ?? null) : null));
   const setSelectedPath = useFilesViewTabsStore((state) => state.setSelectedPath);
+  const treeSectionRef = React.useRef<HTMLElement>(null);
+  // A newly selected file is revealed once, as soon as its row exists: its
+  // ancestors may still be loading when the selection lands. After that the
+  // tree scrolls only when the user scrolls it.
+  const pendingRevealPathRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    pendingRevealPathRef.current = selectedPath;
+  }, [selectedPath]);
   const addOpenPath = useFilesViewTabsStore((state) => state.addOpenPath);
   const removeOpenPathsByPrefix = useFilesViewTabsStore((state) => state.removeOpenPathsByPrefix);
   const toggleExpandedPath = useFilesViewTabsStore((state) => state.toggleExpandedPath);
@@ -1063,7 +1077,7 @@ const SidebarFilesTreeContent: React.FC<{
 
   // --- File operations ---
 
-  const handleOpenFile = React.useCallback(async (node: FileNode) => {
+  const handleOpenFile = React.useCallback(async (node: FileNode, options?: { pin?: boolean }) => {
     if (!root) return;
 
     const openValidation = await validateContextFileOpen(files, node.path, { directory: root });
@@ -1074,7 +1088,8 @@ const SidebarFilesTreeContent: React.FC<{
 
     setSelectedPath(root, node.path);
     addOpenPath(root, node.path);
-    openContextFile(root, node.path);
+    // Touch has no double-click to keep a preview, so it opens tabs outright.
+    openContextFile(root, node.path, { preview: !options?.pin && !useUIStore.getState().isMobile });
   }, [addOpenPath, files, openContextFile, root, setSelectedPath]);
 
   const toggleDirectory = React.useCallback(async (dirPath: string) => {
@@ -1343,7 +1358,7 @@ const SidebarFilesTreeContent: React.FC<{
       const isLast = index === nodes.length - 1;
 
       return (
-        <li key={node.path} className="relative">
+        <li key={node.path} className="relative" data-file-tree-path={isDir ? undefined : node.path}>
           {depth > 0 && (
             <>
               <span className="absolute top-3.5 left-[-12px] w-3 h-px bg-border/40" />
@@ -1391,12 +1406,23 @@ const SidebarFilesTreeContent: React.FC<{
     });
   }
 
+  React.useEffect(() => {
+    const path = pendingRevealPathRef.current;
+    const section = treeSectionRef.current;
+    if (!path || !section) return;
+    const row = section.querySelector<HTMLElement>(`[data-file-tree-path="${CSS.escape(path)}"]`);
+    // A hidden tree has no layout to scroll; reveal once it is shown.
+    if (!row || row.offsetParent === null) return;
+    pendingRevealPathRef.current = null;
+    row.scrollIntoView({ block: 'nearest' });
+  });
+
   const hasTree = Boolean(root && childrenByDir[root]);
   const rootLoadError = root ? loadErrorsByDir[root] : null;
   const dropTargetLabel = dropTarget ? getDropTargetLabel(root, dropTarget) : '';
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden">
+    <section ref={treeSectionRef} className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex flex-col gap-2 border-b border-border/40 px-3 py-2">
         <div className="flex items-center justify-end gap-2">
         {canUpload && root && (
@@ -1531,10 +1557,11 @@ const SidebarFilesTreeContent: React.FC<{
             searchResults.map((node) => {
               const isActive = selectedPath === node.path;
               return (
-                <li key={node.path}>
+                <li key={node.path} data-file-tree-path={node.path}>
                   <button
                     type="button"
                     onClick={() => handleOpenFile(node)}
+                    onDoubleClick={() => handleOpenFile(node, { pin: true })}
                     draggable
                     onDragStart={(e) => {
                       recordFileTreeDragStart(e);
@@ -1560,7 +1587,8 @@ const SidebarFilesTreeContent: React.FC<{
                       className="min-w-0 flex-1 truncate typography-meta"
                       style={{ direction: 'rtl', textAlign: 'left' }}
                     >
-                      {node.relativePath ?? node.path}
+                      {/* Left-to-right marks keep a leading "." in place inside the rtl box. */}
+                      {`\u200E${node.relativePath ?? node.path}\u200E`}
                     </span>
                   </button>
                 </li>

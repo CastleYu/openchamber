@@ -28,7 +28,7 @@ import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useQuotaAutoRefresh, useQuotaStore } from '@/stores/useQuotaStore';
 import { useGitBranchLabel } from '@/stores/useGitStore';
 import { useGlobalSessionsStore } from '@/stores/useGlobalSessionsStore';
-import { collectSessionSubtreeIds } from '@/components/session/sidebar/sessions/sessionSubtreeActions';
+import { archiveUndoToastOptions, collectSessionSubtreeIds } from '@/components/session/sidebar/sessions/sessionSubtreeActions';
 import { streamPerfCount } from '@/stores/utils/streamDebug';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 
@@ -37,6 +37,10 @@ import { ContextUsageDisplay } from '@/components/ui/ContextUsageDisplay';
 import { toContextUsageReading } from '@/components/ui/contextUsageReading';
 import { WindowsWindowControls } from '@/components/desktop/WindowsWindowControls';
 import { PerformancePanel } from './PerformancePanel';
+import { HeaderSessionArchiveMenuItem } from './HeaderSessionArchiveMenuItem';
+import { SpaceApplyButton } from '@/components/session/spaces/SpaceApplyButton';
+import { SpaceAccessButton } from '@/components/session/spaces/SpaceAccessButton';
+import { useMultiRunTitle } from '@/lib/multirun/useMultiRuns';
 import { UpdateDialog } from '@/components/ui/UpdateDialog';
 import { useDeviceInfo, useTabletStandalonePwaRuntime } from '@/lib/device';
 import { cn } from '@/lib/utils';
@@ -935,26 +939,29 @@ export const Header: React.FC = () => {
     });
   }, [currentSessionId, isCurrentSessionActive, isCurrentSessionMovingToWorktree, sessionDirectory, t]);
 
-  const confirmHeaderRetentionAction = React.useCallback(async () => {
-    if (!pendingHeaderRetentionAction) return;
-    const action = pendingHeaderRetentionAction.action;
-    const ids = [
-      pendingHeaderRetentionAction.sessionId,
-      ...collectSessionSubtreeIds(pendingHeaderRetentionAction.sessionId, [], action === 'delete'),
-    ];
-    setPendingHeaderRetentionAction(null);
-    const result = action === 'archive' ? await archiveSessions(ids) : await deleteSessions(ids);
-    const failedIds = result.failedIds;
-    if (failedIds.length > 0) {
-      toast.error(t(action === 'archive'
-        ? 'sessions.sidebar.session.archive.error'
-        : 'sessions.sidebar.session.delete.error'));
+  const runHeaderRetentionAction = React.useCallback(async (action: 'archive' | 'delete', sessionId: string) => {
+    const ids = [sessionId, ...collectSessionSubtreeIds(sessionId, [], action === 'delete')];
+    const reopenId = useSessionUIStore.getState().currentSessionId === sessionId ? sessionId : null;
+    if (action === 'delete') {
+      const { failedIds } = await deleteSessions(ids);
+      if (failedIds.length > 0) toast.error(t('sessions.sidebar.session.delete.error'));
+      else toast.success(t('sessions.sidebar.session.delete.success'));
       return;
     }
-    toast.success(t(action === 'archive'
-      ? 'sessions.sidebar.session.archive.success'
-      : 'sessions.sidebar.session.delete.success'));
-  }, [archiveSessions, deleteSessions, pendingHeaderRetentionAction, t]);
+    const { archivedIds, failedIds } = await archiveSessions(ids);
+    if (failedIds.length > 0) {
+      toast.error(t('sessions.sidebar.session.archive.error'));
+      return;
+    }
+    toast.success(t('sessions.sidebar.session.archive.success'), archiveUndoToastOptions(archivedIds, reopenId, t));
+  }, [archiveSessions, deleteSessions, t]);
+
+  const confirmHeaderRetentionAction = React.useCallback(async () => {
+    if (!pendingHeaderRetentionAction) return;
+    const { action, sessionId } = pendingHeaderRetentionAction;
+    setPendingHeaderRetentionAction(null);
+    await runHeaderRetentionAction(action, sessionId);
+  }, [pendingHeaderRetentionAction, runHeaderRetentionAction]);
 
   // Full-page surfaces (Scheduled, Archive, Worktrees, Multi-run) replace the
   // chat area; while one is open the header shows the surface identity
@@ -965,10 +972,15 @@ export const Header: React.FC = () => {
   const isArchiveSurfaceOpen = useUIStore((state) => state.isArchivePageOpen);
   const isUsageStatsSurfaceOpen = useUIStore((state) => state.isUsageStatsPageOpen);
   const worktreesSurfaceProjectId = useUIStore((state) => state.worktreesPageProjectId);
+  const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
+  const spacesSurfaceProjectId = useUIStore((state) => state.isolatedSpacesEnabled ? state.spacesPageProjectId : null);
+  const runOverviewKey = useUIStore((state) => state.runOverviewKey);
+  const overviewRunTitle = useMultiRunTitle(opencodeClient.getBoundRuntime()?.generation === 'oc2' ? runOverviewKey : null);
   const isMultiRunSurfaceOpen = useUIStore((state) => state.isMultiRunLauncherOpen);
   const worktreesSurfaceProjectLabel = useProjectsStore((state) => {
-    if (!worktreesSurfaceProjectId) return null;
-    const project = state.projects.find((entry) => entry.id === worktreesSurfaceProjectId);
+    const surfaceProjectId = worktreesSurfaceProjectId ?? spacesSurfaceProjectId;
+    if (!surfaceProjectId) return null;
+    const project = state.projects.find((entry) => entry.id === surfaceProjectId);
     return project?.label?.trim() || project?.path?.split('/').pop() || null;
   });
   const activeSurfaceHeader = React.useMemo<{ title: string; subtitle: string | null } | null>(() => {
@@ -988,11 +1000,17 @@ export const Header: React.FC = () => {
         subtitle: null,
       };
     }
+    if (spacesSurfaceProjectId) {
+      return { title: t('spaces.page.title', { project: worktreesSurfaceProjectLabel ?? '' }), subtitle: null };
+    }
+    if (runOverviewKey && opencodeClient.getBoundRuntime()?.generation === 'oc2') {
+      return { title: overviewRunTitle ?? t('multirun.overview.headerTitle'), subtitle: t('multirun.overview.headerTitle') };
+    }
     if (isMultiRunSurfaceOpen) {
       return { title: t('sessions.sidebar.header.actions.newMultiRun'), subtitle: null };
     }
     return null;
-  }, [guestPage, isArchiveSurfaceOpen, isMultiRunSurfaceOpen, isScheduledSurfaceOpen, isUsageStatsSurfaceOpen, t, worktreesSurfaceProjectId, worktreesSurfaceProjectLabel]);
+  }, [guestPage, isArchiveSurfaceOpen, isMultiRunSurfaceOpen, isScheduledSurfaceOpen, isUsageStatsSurfaceOpen, overviewRunTitle, runOverviewKey, spacesSurfaceProjectId, t, worktreesSurfaceProjectId, worktreesSurfaceProjectLabel]);
 
 
   const actionDirectory = React.useMemo(() => {
@@ -1268,6 +1286,15 @@ export const Header: React.FC = () => {
       if (!currentSessionId || isMobile) return false;
       beginHeaderSessionRename();
     },
+    archive_current_session: () => {
+      if (!currentSessionId || isMobile) return false;
+      if (useGlobalSessionsStore.getState().entityById.get(currentSessionId)?.time.archived) return false;
+      if (useUIStore.getState().showDeletionDialog) {
+        setPendingHeaderRetentionAction({ action: 'archive', sessionId: currentSessionId });
+        return;
+      }
+      void runHeaderRetentionAction('archive', currentSessionId);
+    },
     toggle_services_menu: () => {
       if (isDesktopServicesOpen) {
         setIsDesktopServicesOpen(false);
@@ -1287,6 +1314,8 @@ export const Header: React.FC = () => {
           className="mr-2"
         />
       ) : null}
+      {isolatedSpacesEnabled ? <><SpaceApplyButton directory={openDirectory} className={cn(DESKTOP_HEADER_ICON_BUTTON_CLASS, 'mr-1 text-muted-foreground hover:text-foreground')} iconClassName="h-[18px] w-[18px]" />
+        <SpaceAccessButton directory={openDirectory} className={cn(DESKTOP_HEADER_ICON_BUTTON_CLASS, 'mr-1 text-muted-foreground hover:text-foreground')} iconClassName="h-[18px] w-[18px]" /></> : null}
       <OpenInAppButton directory={actionDirectory} className="mr-1" />
       {/* Instances only exist in the desktop app. On web the menu was left
           holding a single dev-only shutdown action, which is not a reason to
@@ -1373,9 +1402,8 @@ export const Header: React.FC = () => {
           <Icon name="close-circle" className="mr-1 size-4" />{t('header.sessionTabs.closeOtherTabs')}
         </Item>
         <Separator />
-        <Item onClick={() => setPendingHeaderRetentionAction({ action: 'archive', sessionId: session.id })}>
-          <Icon name="inbox-archive" className="mr-1 size-4" />{t('sessions.sidebar.bulkActions.archive')}
-        </Item>
+        <HeaderSessionArchiveMenuItem sessionId={session.id} Item={Item}
+          onArchive={() => setPendingHeaderRetentionAction({ action: 'archive', sessionId: session.id })} />
         <Item className="text-destructive focus:text-destructive" onClick={() => setPendingHeaderRetentionAction({ action: 'delete', sessionId: session.id })}>
           <Icon name="delete-bin" className="mr-1 size-4" />{t('sessions.sidebar.bulkActions.delete')}
         </Item>
@@ -1579,7 +1607,8 @@ export const Header: React.FC = () => {
                       </Tooltip>
                     ) : null}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => { if (currentSessionId) setPendingHeaderRetentionAction({ action: 'archive', sessionId: currentSessionId }); }}><Icon name="inbox-archive" className="mr-1 size-4" />{t('sessions.sidebar.bulkActions.archive')}</DropdownMenuItem>
+                    {currentSessionId ? <HeaderSessionArchiveMenuItem sessionId={currentSessionId} Item={DropdownMenuItem}
+                      onArchive={() => setPendingHeaderRetentionAction({ action: 'archive', sessionId: currentSessionId })} /> : null}
                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { if (currentSessionId) setPendingHeaderRetentionAction({ action: 'delete', sessionId: currentSessionId }); }}><Icon name="delete-bin" className="mr-1 size-4" />{t('sessions.sidebar.bulkActions.delete')}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

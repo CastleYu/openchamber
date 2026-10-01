@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Session } from "@/lib/opencode/model";
-import { autoRespondsPermission, type PermissionAutoAcceptMap } from "./utils/permissionAutoAccept";
+import { autoRespondsPermission, resolvePermissionMode, type PermissionAutoAcceptMap, type PermissionMode, type PermissionModeMap } from "./utils/permissionAutoAccept";
 import { getAllSyncSessionMap } from "@/sync/sync-refs";
 import { runtimeFetch } from "@/lib/runtime-fetch";
 import { isVSCodeRuntime } from "@/lib/desktop";
@@ -9,11 +9,14 @@ import { createDeferredSafeJSONStorage } from "./utils/safeStorage";
 import { useSessionUIStore } from "@/sync/session-ui-store";
 import { opencodeClient } from "@/lib/opencode/client";
 import { getRuntimeKey } from "@/lib/runtime-switch";
+import { z } from 'zod';
 
 type PermissionPolicySnapshot = {
     sessions: PermissionAutoAcceptMap;
+    modes?: PermissionModeMap;
     revision?: number;
 };
+const modeMapSchema = z.record(z.string().min(1), z.enum(['ask', 'safety', 'auto'])).catch({});
 
 const normalizeRevision = (value: unknown): number | undefined => (
     Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : undefined
@@ -21,6 +24,7 @@ const normalizeRevision = (value: unknown): number | undefined => (
 
 interface PermissionStore {
     autoAccept: PermissionAutoAcceptMap;
+    modes: PermissionModeMap;
     loaded: boolean;
     saving: boolean;
     lastAppliedRevision: number;
@@ -30,7 +34,9 @@ interface PermissionStore {
     applySnapshot: (snapshot: PermissionPolicySnapshot, expectedRuntimeKey?: string) => void;
     reset: () => void;
     isSessionAutoAccepting: (sessionId: string) => boolean;
+    getSessionMode: (sessionId: string) => PermissionMode;
     setSessionAutoAccept: (sessionId: string, enabled: boolean) => Promise<void>;
+    setSessionMode: (sessionId: string, mode: PermissionMode) => Promise<void>;
 }
 
 const readSnapshot = async (response: Response): Promise<PermissionPolicySnapshot> => {
@@ -43,7 +49,8 @@ const readSnapshot = async (response: Response): Promise<PermissionPolicySnapsho
     for (const [sessionId, enabled] of Object.entries(payload.sessions)) {
         if (sessionId && typeof enabled === "boolean") sessions[sessionId] = enabled;
     }
-    return { sessions, revision: normalizeRevision(payload.revision) };
+    const modes = modeMapSchema.parse(payload.modes);
+    return { sessions, modes, revision: normalizeRevision(payload.revision) };
 };
 
 const requestSnapshot = async (path: string, init?: RequestInit) => readSnapshot(await runtimeFetch(path, init));
@@ -81,6 +88,7 @@ const normalizeSessions = (value: unknown): PermissionAutoAcceptMap => {
 
 export const usePermissionStore = create<PermissionStore>()(persist((set, get) => ({
     autoAccept: {},
+    modes: {},
     loaded: false,
     saving: false,
     lastAppliedRevision: -1,
@@ -126,7 +134,7 @@ export const usePermissionStore = create<PermissionStore>()(persist((set, get) =
         generation += 1;
         latestStartedSequence = 0;
         pendingSavingOperations.clear();
-        set({ autoAccept: {}, loaded: false, saving: false, lastAppliedRevision: -1 });
+        set({ autoAccept: {}, modes: {}, loaded: false, saving: false, lastAppliedRevision: -1 });
     },
 
     applySnapshot: (snapshot, expectedRuntimeKey) => {
@@ -138,6 +146,7 @@ export const usePermissionStore = create<PermissionStore>()(persist((set, get) =
             if (revision !== undefined && revision < state.lastAppliedRevision) return state;
             return {
                 autoAccept: sessions,
+                modes: snapshot.modes ?? {},
                 loaded: true,
                 ...(revision !== undefined ? { lastAppliedRevision: revision } : {}),
             };
@@ -149,6 +158,36 @@ export const usePermissionStore = create<PermissionStore>()(persist((set, get) =
         const autoAccept = get().autoAccept;
         if (Object.keys(autoAccept).length === 0) return false;
         return isAutoAccepting(autoAccept, getAllSyncSessionMap(), sessionId);
+    },
+
+    getSessionMode: (sessionId) => {
+        const state = get();
+        const mode = resolvePermissionMode({ modes: state.modes, sessions: [], sessionById: getAllSyncSessionMap(), sessionID: sessionId });
+        if (mode) return mode;
+        return state.isSessionAutoAccepting(sessionId) ? 'auto' : 'ask';
+    },
+
+    setSessionMode: async (sessionId, mode) => {
+        if (!sessionId) return;
+        const operation = beginOperation();
+        pendingSavingOperations.add(operation.sequence);
+        set({ saving: true });
+        try {
+            const directory = useSessionUIStore.getState().getDirectoryForSession(sessionId)
+                ?? opencodeClient.getDirectory() ?? undefined;
+            const snapshot = await requestSnapshot(
+                `/api/permission-auto-accept/sessions/${encodeURIComponent(sessionId)}`,
+                { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, directory }) },
+            );
+            if (isCurrentOperation(operation) && (snapshot.revision !== undefined || operation.sequence === latestStartedSequence)) {
+                get().applySnapshot(snapshot, operation.runtimeKey);
+            }
+        } finally {
+            if (isCurrentOperation(operation)) {
+                pendingSavingOperations.delete(operation.sequence);
+                set({ saving: pendingSavingOperations.size > 0 });
+            }
+        }
     },
 
     setSessionAutoAccept: async (sessionId, enabled) => {

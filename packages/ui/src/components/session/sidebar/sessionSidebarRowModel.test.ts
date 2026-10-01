@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import type { Session } from '@/lib/opencode/model';
 import type { SessionGroup, SessionNode } from './types';
 import type { ProjectSection } from './projects/sessionProjectRender';
-import { buildSessionSidebarRowModel, resolveSessionSidebarStickyHeader, type SessionSidebarActivityItem, type SessionSidebarRowModelArgs } from './sessionSidebarRowModel';
+import { buildSessionSidebarRowModel, resolveSessionSidebarStickyHeader, runExpansionKey, type SessionSidebarActivityItem, type SessionSidebarRowModelArgs } from './sessionSidebarRowModel';
+import { buildMultiRunIndex } from '@/lib/multirun/runs';
+import { withMultiRunMembership } from '@/lib/multirun/identity';
 import { getPinnedSessionKey } from '@/stores/useSessionPinnedStore';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 
@@ -78,6 +80,51 @@ const args = (sections: ProjectSection[]): SessionSidebarRowModelArgs => ({
 });
 
 describe('buildSessionSidebarRowModel', () => {
+  test('moves an in-work session above Recent and keeps it out of the project list', () => {
+    const input = args([project([group([node('working'), node('other')])])]);
+    input.workItems = [timelineItem('working')];
+    input.workSessionIds = new Set(['working']);
+    input.showRecentSection = true;
+    input.recentSections = [{ key: 'active-now', items: [timelineItem('working'), timelineItem('other')] }];
+
+    const rows = buildSessionSidebarRowModel(input).rows;
+    expect(rows.flatMap((row) => row.kind === 'activity-header' ? [row.activityKey] : [])).toEqual(['work', 'active-now']);
+    expect(rows.flatMap((row) => row.kind === 'session' ? [`${row.renderContext}:${row.node.session.id}`] : []))
+      .toEqual(['recent:working', 'recent:other', 'project:other']);
+  });
+
+  test('collapses active OC2 run lanes and expands them one level below the run row', () => {
+    const member = (id: string): Session => ({ ...session(id), metadata: withMultiRunMembership({}, {
+      version: 1, sessionID: id, group: { kind: 'id', id: '9f512893-6e63-4e49-a534-5de733ca103e' }, groupSlug: 'fix-auth',
+      role: 'run', providerID: 'anthropic', modelID: 'claude', title: 'Fix auth',
+    }) });
+    const runIndex = buildMultiRunIndex([member('lane-1'), member('lane-2')], () => '/repo');
+    const runKey = [...runIndex.runs.keys()][0] ?? '';
+    const input = args([project([group([node('lane-1'), node('other'), node('lane-2')])])]);
+    input.runIndex = runIndex;
+    const collapsed = buildSessionSidebarRowModel(input);
+    expect(collapsed.rows.flatMap((row) => row.kind === 'run' ? ['run'] : row.kind === 'session' ? [row.node.session.id] : []))
+      .toEqual(['run', 'other']);
+    input.expandedParents = new Set([runExpansionKey('project', runKey)]);
+    const expanded = buildSessionSidebarRowModel(input);
+    expect(expanded.rows.flatMap((row) => row.kind === 'run' ? [`run@${row.depth}`] : row.kind === 'session' ? [`${row.node.session.id}@${row.depth}`] : []))
+      .toEqual(['run@0', 'lane-1@1', 'lane-2@1', 'other@0']);
+  });
+  test('folder sessions and a grouped run indent below their folder header', () => {
+    const member = (id: string): Session => ({ ...session(id), metadata: withMultiRunMembership({}, {
+      version: 1, sessionID: id, group: { kind: 'id', id: '9f512893-6e63-4e49-a534-5de733ca103e' }, groupSlug: 'fix-auth',
+      role: 'run', providerID: 'anthropic', modelID: 'claude', title: 'Fix auth',
+    }) });
+    const runIndex = buildMultiRunIndex([member('lane-1'), member('lane-2')], () => '/repo');
+    const runKey = [...runIndex.runs.keys()][0] ?? '';
+    const input = args([project([group([node('lane-1'), node('lane-2'), node('plain')])])]);
+    input.runIndex = runIndex;
+    input.foldersMap = { '/repo': [{ id: 'folder-a', name: 'Folder', createdAt: 1, sessionIds: ['lane-1', 'lane-2', 'plain'] }] };
+    input.expandedParents = new Set([runExpansionKey('project', runKey)]);
+    const rows = buildSessionSidebarRowModel(input).rows.filter((row) => row.kind === 'run' || row.kind === 'session');
+    expect(rows.map((row) => row.kind === 'run' ? `run@${row.depth}` : `${row.node.session.id}@${row.depth}`))
+      .toEqual(['run@1', 'lane-1@2', 'lane-2@2', 'plain@1']);
+  });
   test('uses occurrence keys while retaining duplicate session IDs in logical order', () => {
     const repeated = node('same-session');
     const input = args([project([group([repeated])])]);

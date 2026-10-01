@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { opencodeClient } from '@/lib/opencode/client';
-import { assertUsageStatsRuntime, fetchUsageStats, resolveUsageProjectID, type UsageStats } from '@/lib/opencode/session-stats';
+import { assertUsageStatsRuntime, fetchUsageStats, fetchUsageTools, resolveUsageProjectID, type UsageStats, type UsageTools } from '@/lib/opencode/session-stats';
 import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
 
 import { rangeStart, type UsageRange } from './usageStatsModel';
@@ -30,6 +30,18 @@ export type UsageStatsEntry = {
 
 export type UsageStatsFetcher = (request: UsageStatsRequest, signal: AbortSignal) => Promise<UsageStats>;
 
+export type UsageToolsEntry = {
+  tools: UsageTools | null;
+  loading: boolean;
+  error: string | null;
+};
+
+export type UsageToolsFetcher = (
+  request: UsageStatsRequest,
+  range: UsageStats['range'],
+  signal: AbortSignal,
+) => Promise<UsageTools>;
+
 export const usageStatsKey = (runtimeKey: string, request: UsageStatsRequest): string =>
   `${runtimeKey}::${request.range}::${request.projectDirectory ?? '__all__'}`;
 
@@ -49,6 +61,9 @@ type UsageStatsStore = {
    * this only reads a key that has no report, no error and no read running.
    */
   load: (request: UsageStatsRequest, options?: { force?: boolean }) => Promise<void>;
+  toolEntries: Record<string, UsageToolsEntry>;
+  toolsRequested: boolean;
+  loadTools: (request: UsageStatsRequest, options?: { force?: boolean }) => Promise<void>;
   /** Forgets every entry and ignores reads still in flight. */
   reset: () => void;
 };
@@ -65,7 +80,19 @@ const fetchFromOpencode: UsageStatsFetcher = async ({ range, projectDirectory },
   return fetchUsageStats({ from: rangeStart(range, new Date()), projectID, timezone: viewerTimeZone() }, signal, runtime);
 };
 
-export function createUsageStatsStore(fetcher: UsageStatsFetcher, runtimeKey: () => string, now: () => number = Date.now) {
+const fetchToolsFromOpencode: UsageToolsFetcher = async ({ projectDirectory }, window, signal) => {
+  const runtime = assertUsageStatsRuntime();
+  const projectID = projectDirectory ? await resolveUsageProjectID(projectDirectory, signal, runtime) : undefined;
+  signal.throwIfAborted();
+  return fetchUsageTools({ from: window.from, to: window.to, projectID, timezone: viewerTimeZone() }, signal, runtime);
+};
+
+export function createUsageStatsStore(
+  fetcher: UsageStatsFetcher,
+  runtimeKey: () => string,
+  now: () => number = Date.now,
+  toolsFetcher: UsageToolsFetcher = fetchToolsFromOpencode,
+) {
   // Aborted and replaced on reset, so reads from a previous runtime can
   // neither commit nor keep a key marked as loading.
   let controller = new AbortController();
@@ -77,8 +104,16 @@ export function createUsageStatsStore(fetcher: UsageStatsFetcher, runtimeKey: ()
         return { entries: { ...state.entries, [key]: { ...previous, ...next } } };
       });
 
+    const patchTools = (key: string, next: Partial<UsageToolsEntry>) =>
+      set((state) => {
+        const previous = state.toolEntries[key] ?? { tools: null, loading: false, error: null };
+        return { toolEntries: { ...state.toolEntries, [key]: { ...previous, ...next } } };
+      });
+
     return {
       entries: {},
+      toolEntries: {},
+      toolsRequested: false,
 
       load: async (request, options) => {
         const usageRuntimeKey = runtimeKey();
@@ -95,6 +130,7 @@ export function createUsageStatsStore(fetcher: UsageStatsFetcher, runtimeKey: ()
           // Written under the key the read started for: switching filters
           // while it runs never lets it land on another filter.
           patch(key, { stats, fetchedAt: now(), loading: false, error: null });
+          if (get().toolsRequested) void get().loadTools(request, { force: Boolean(get().toolEntries[key]?.tools) });
         } catch (error) {
           if (signal.aborted || runtimeKey() !== usageRuntimeKey) return;
           // A failed read keeps the last report; it never becomes zeros.
@@ -102,10 +138,32 @@ export function createUsageStatsStore(fetcher: UsageStatsFetcher, runtimeKey: ()
         }
       },
 
+      loadTools: async (request, options) => {
+        const usageRuntimeKey = runtimeKey();
+        const key = usageStatsKey(usageRuntimeKey, request);
+        const range = get().entries[key]?.stats?.range;
+        if (!range) return;
+        set({ toolsRequested: true });
+        const entry = get().toolEntries[key];
+        if (entry?.loading) return;
+        if (!options?.force && (entry?.tools || entry?.error)) return;
+
+        const { signal } = controller;
+        patchTools(key, { loading: true });
+        try {
+          const tools = await toolsFetcher(request, range, signal);
+          if (signal.aborted || runtimeKey() !== usageRuntimeKey) return;
+          patchTools(key, { tools, loading: false, error: null });
+        } catch (error) {
+          if (signal.aborted || runtimeKey() !== usageRuntimeKey) return;
+          patchTools(key, { loading: false, error: error instanceof Error ? error.message : String(error) });
+        }
+      },
+
       reset: () => {
         controller.abort();
         controller = new AbortController();
-        set({ entries: {} });
+        set({ entries: {}, toolEntries: {} });
       },
     };
   });
@@ -117,6 +175,11 @@ export const selectUsageStatsEntry = (
   state: Pick<UsageStatsStore, 'entries'>,
   request: UsageStatsRequest,
 ): UsageStatsEntry | undefined => state.entries[usageStatsKey(getUsageStatsRuntimeKey(), request)];
+
+export const selectUsageToolsEntry = (
+  state: Pick<UsageStatsStore, 'toolEntries'>,
+  request: UsageStatsRequest,
+): UsageToolsEntry | undefined => state.toolEntries[usageStatsKey(getUsageStatsRuntimeKey(), request)];
 
 subscribeRuntimeEndpointChanged(() => useUsageStatsStore.getState().reset());
 opencodeClient.subscribeRuntime(() => useUsageStatsStore.getState().reset());

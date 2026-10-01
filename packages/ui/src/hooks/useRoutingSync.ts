@@ -12,6 +12,7 @@ import { subscribeOpenchamberEvents } from '@/lib/openchamberEvents';
 import { subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
 import { useRoutingStore } from '@/stores/useRoutingStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { notifyHeldPermission } from '@/sync/sync-context';
 
 export const useRoutingSync = (): void => {
   const available = useUIStore((state) => state.routingFeatureAvailable);
@@ -39,8 +40,10 @@ export const useRoutingSync = (): void => {
         store.recordDecision(event.decision);
       } else if (event.type === 'routing-permission-held') {
         store.holdPermission({ permissionId: event.permissionId, score: event.score, kind: event.kind });
+        notifyHeldPermission(event.permissionId, event.sessionId, event.directory);
       } else if (event.type === 'routing-safety-skipped') {
         toast.warning(tRef.current('routing.toast.safetySkipped'), { description: event.error });
+        notifyHeldPermission(event.permissionId, event.sessionId, event.directory);
       }
     });
   }, [available]);

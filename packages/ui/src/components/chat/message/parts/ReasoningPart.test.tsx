@@ -181,6 +181,25 @@ describe('ReasoningTimelineBlock', () => {
     expect(markup).not.toContain('data-message-text-export-source');
   });
 
+  test('opens a collapsed block with its body in the first render when search asks for it', () => {
+    const markup = renderToStaticMarkup(
+      <TestProviders>
+        <ReasoningTimelineBlock
+          text={LONG_REASONING}
+          variant="thinking"
+          blockId="reasoning-reveal"
+          showDuration={false}
+          revealRequest={1}
+          reasoningMessageId="msg_reveal"
+        />
+      </TestProviders>,
+    );
+
+    expect(markup).toContain('aria-expanded="true"');
+    expect(markup).toContain('data-message-text-export-source');
+    expect(markup).toContain('data-reasoning-message-id="msg_reveal"');
+  });
+
   test('renders "Justification" label for justification variant when pre-expanded and not streaming', () => {
     const markup = renderToStaticMarkup(
       <TestProviders>
@@ -319,10 +338,10 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
     expect(markup).toContain('aria-expanded="true"');
   });
 
-  test('streaming reasoning grows in the transcript without a nested scroller', () => {
+  test('streaming reasoning stays in a capped nested scroller', () => {
     const markup = renderPart(makeReasoningPart({ start: 1_000 }), 'streaming');
-    expect(markup).not.toContain('max-h-80');
-    expect(markup).not.toContain('data-scrollable="true"');
+    expect(markup).toContain('max-h-80');
+    expect(markup).toContain('data-scrollable="true"');
   });
 
   test('a live part with no committed text yet shows the busy header and no empty summary', () => {
@@ -384,7 +403,7 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
 });
 
 describe('ReasoningTimelineBlock completion layout', () => {
-  test('caps completed reasoning and releases the cap when streaming resumes', async () => {
+  test('keeps the nested cap through completion and resumed streaming', async () => {
     const dom = installDomStub();
     const root = createRoot(dom.container);
     const renderBlock = (isStreaming: boolean) => (
@@ -396,13 +415,13 @@ describe('ReasoningTimelineBlock completion layout', () => {
     );
     try {
       await act(async () => { root.render(renderBlock(true)); });
-      expect(dom.container.querySelector('[data-scrollable="true"]')).toBeNull();
+      expect(dom.container.querySelector('[data-scrollable="true"]')).not.toBeNull();
 
       await act(async () => { root.render(renderBlock(false)); });
       expect(dom.container.querySelector('[data-scrollable="true"]')).not.toBeNull();
       expect(dom.container.innerHTML).toContain('max-h-80');
       await act(async () => { root.render(renderBlock(true)); });
-      expect(dom.container.querySelector('[data-scrollable="true"]')).toBeNull();
+      expect(dom.container.querySelector('[data-scrollable="true"]')).not.toBeNull();
     } finally {
       await act(async () => { root.unmount(); });
       dom.restore();

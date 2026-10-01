@@ -34,6 +34,7 @@ import {
 import type { GuestFileProxyResult, GuestFileRequest } from '@/lib/guests/files';
 import type { GuestGenerateProxyResult } from '@/lib/guests/generate';
 import type { GuestRequestProxyResult } from '@/lib/guests/oauth';
+import type { GuestOpenCommitResult } from '@/lib/guests/open-commit';
 
 import { isContextPanelMode, type ContextPanelMode } from '@/lib/surfaces/modes';
 
@@ -75,6 +76,8 @@ type HostBridgeEffects = {
   file: (request: GuestFileRequest) => Promise<GuestFileProxyResult>;
   /** One-off Small Model text generation; the pane checks the `model` grant, the server picks and calls the model. */
   generate: (request: GenerateRequest) => Promise<GuestGenerateProxyResult>;
+  openCommit: (sha: string) => Promise<GuestOpenCommitResult>;
+  resize: (height: number) => void;
   /** Rail badge for this guest; `null` clears. */
   setBadge: (count: number | null) => void;
   /** The guest answered a host `resolve` with this id. Not a request, so no `result` goes back. */
@@ -241,8 +244,21 @@ export const answerGuestMessage = async (
     case 'workspace-unsubscribe': effects.workspaceUnsubscribe(message.payload.subscriptionId); return okResult(message.id);
     case 'storage': return okResult(message.id, await effects.storage(message.payload));
     case 'open-session': effects.openSession(message.payload.sessionId); return okResult(message.id);
+    case 'open-commit': {
+      const opened = await effects.openCommit(message.payload.sha);
+      return opened.ok ? okResult(message.id) : errorResult(message.id, opened.message, opened.code);
+    }
+    case 'resize':
+      effects.resize(message.payload.height);
+      return null;
+    // No answer: the pane handles these itself. File editor traffic belongs to
+    // its file channel, not to a request/result pair.
     case 'hello':
     case 'action-result':
+    case 'file-snapshot-result':
+    case 'file-change':
+    case 'file-save':
+    case 'file-unsupported':
       return null;
     case 'toast':
       effects.toast(message.payload);
@@ -358,9 +374,11 @@ export const answerGuestMessage = async (
     case 'resolve-result':
       effects.resolveResult(message.id, message.payload);
       return null;
+    default:
+      return null;
   }
   } catch (error) {
-    if (message.type === 'hello') return null;
+    if (!('id' in message)) return null;
     return errorResult(message.id, error instanceof HostRequestError ? error.message : 'Extension operation failed.', error instanceof HostRequestError ? error.code : 'HOST_REJECTED');
   }
 };

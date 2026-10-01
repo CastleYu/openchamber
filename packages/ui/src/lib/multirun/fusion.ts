@@ -3,6 +3,8 @@ import type { Message, Part, Session } from '@/lib/opencode/model';
 import { flattenAssistantTextParts } from '@/lib/messages/messageText';
 import { getMultiRunIdentity, isFusionSource, type MultiRunIdentity } from './identity';
 import type { MultiRunGeneration } from './createSession';
+export { NoFusionOutputsError, startRunFusion, fusionModeFor, shouldInlineDiffs } from './fusionV2';
+export type { FusionJudge, FusionMode } from './fusionV2';
 
 export type FusionSource = {
   session: Session;

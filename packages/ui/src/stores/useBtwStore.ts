@@ -1,3 +1,4 @@
+import type { PermissionMode } from './utils/permissionAutoAccept';
 import { create } from 'zustand';
 import type { Agent } from '@opencode-ai/sdk/v2';
 
@@ -49,7 +50,10 @@ type BtwPanelUIState = {
   creating?: boolean;
   destroying?: boolean;
   pending?: boolean;
+  /** Legacy OC1 boolean choice; kept separate from the OC2 three-state mode. */
   pendingAutoAccept?: boolean;
+  /** The shield button's choice for the fork; absent means the new session takes the default from Settings. */
+  pendingPermissionMode?: PermissionMode;
   pendingSend?: symbol;
 };
 

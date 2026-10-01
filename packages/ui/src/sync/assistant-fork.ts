@@ -1,10 +1,13 @@
 import type { Message } from '@/lib/opencode/model';
+import { readSubagentRun } from '@/lib/opencode/subagent-run';
 
-/** OC2 forks before a user message, so retain the selected assistant turn. */
+/** OC2 forks before the next turn starter, so retain the selected answer. */
 export function assistantForkBoundary(messages: readonly Message[], messageID: string): string | undefined {
   const index = messages.findIndex(message => message.id === messageID);
   if (index < 0 || messages[index].role !== 'assistant') throw new Error('Fork source answer is not loaded');
-  return messages.slice(index + 1).find(message => message.role === 'user')?.id;
+  return messages.slice(index + 1).find(message =>
+    message.role === 'user' || message.role === 'compaction' || message.role === 'shell'
+    || readSubagentRun(message) !== undefined)?.id;
 }
 
 /** A running turn is excluded even when one of its assistant steps completed. */

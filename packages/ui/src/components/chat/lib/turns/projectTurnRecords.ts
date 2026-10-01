@@ -1,4 +1,5 @@
 import { isHiddenUserMessage } from '../../message/hiddenUserMessage';
+import { isSubagentRunEntry } from '../timelineRoles';
 import { projectTurnActivity } from './projectTurnActivity';
 import { projectTurnIndexes } from './projectTurnIndexes';
 import { projectTurnChangedFiles, projectTurnDiffStats, projectTurnSummary } from './projectTurnSummary';
@@ -207,7 +208,7 @@ export const projectTurnRecords = (
 
     messages.forEach((message, index) => {
         const role = resolveMessageRole(message);
-        if (role !== 'user') {
+        if (role !== 'user' && !isSubagentRunEntry(message.info)) {
             return;
         }
 
@@ -253,7 +254,7 @@ export const projectTurnRecords = (
     let currentTurn: TurnRecord | undefined;
     messages.forEach((message, index) => {
         const role = resolveMessageRole(message);
-        if (role === 'user') {
+        if (role === 'user' || isSubagentRunEntry(message.info)) {
             currentTurn = turnByUserId.get(message.info.id);
             return;
         }

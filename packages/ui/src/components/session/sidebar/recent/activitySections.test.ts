@@ -81,6 +81,7 @@ describe('deriveRecentActivitySections', () => {
       query: 'deploy',
     });
 
+    expect(typeof sections[0]?.items[0]?.getSecondaryMeta).toBe('function');
     expect(sections).toEqual([{
       key: 'active-now',
       items: [{
@@ -88,6 +89,7 @@ describe('deriveRecentActivitySections', () => {
         projectId: 'app',
         groupDirectory: '/workspace/app/worktrees/release',
         secondaryMeta: { projectLabel: 'App', branchLabel: 'release' },
+        getSecondaryMeta: sections[0]?.items[0]?.getSecondaryMeta,
       }],
     }]);
   });

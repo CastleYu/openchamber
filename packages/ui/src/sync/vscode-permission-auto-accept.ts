@@ -138,7 +138,13 @@ export function createVSCodePermissionAutoAcceptRuntime(dependencies: Dependenci
 
 const runtime = createVSCodePermissionAutoAcceptRuntime({
   getScope: () => JSON.stringify(opencodeClient.getBoundRuntime()),
-  getPolicy: () => usePermissionStore.getState().autoAccept,
+  getPolicy: () => {
+    const state = usePermissionStore.getState()
+    return {
+      ...state.autoAccept,
+      ...Object.fromEntries(Object.entries(state.modes).map(([sessionId, mode]) => [sessionId, mode !== "ask"])),
+    }
+  },
   getSessions: getAllSyncSessionMap,
   getSession: (sessionId, directory) => opencodeClient.getSession(sessionId, directory),
   getKnownPendingPermissions: (directory) => {

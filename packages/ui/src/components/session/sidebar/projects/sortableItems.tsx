@@ -19,6 +19,7 @@ import { PROJECT_COLOR_MAP, PROJECT_ICON_MAP, ProjectIconImage } from '@/lib/pro
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useI18n } from '@/lib/i18n';
 import { CrossfadeZoneHeader } from './CrossfadeZoneHeaders';
+import { useProjectFolderMissing } from './useProjectFolderMissing';
 
 export type SortableDragHandleProps = {
   listeners: ReturnType<typeof useSortable>['listeners'];
@@ -118,6 +119,7 @@ export interface SortableProjectItemProps extends ProjectIdentityProps {
   onNewSession: () => void;
   onNewWorktreeSession?: () => void;
   onManageWorktrees?: () => void;
+  onManageSpaces?: () => void;
   onRenameStart: () => void;
   onClose: () => void;
   children?: React.ReactNode;
@@ -150,6 +152,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
   onNewSession,
   onNewWorktreeSession,
   onManageWorktrees,
+  onManageSpaces,
   onRenameStart,
   onClose,
   children,
@@ -162,6 +165,7 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
   onProjectSelect,
 }) => {
   const { t } = useI18n();
+  const folderMissing = useProjectFolderMissing(projectDirectory);
   const { files } = useRuntimeAPIs();
   const {
     attributes,
@@ -197,6 +201,12 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
           {t('sessions.sidebar.project.actions.manageWorktrees')}
         </Item>
       )}
+      {isRepo && !hideDirectoryControls && onManageSpaces ? (
+        <Item onClick={onManageSpaces}>
+          <Icon name="box-3" className="mr-1.5 h-4 w-4" />
+          {t('spaces.page.menuItem')}
+        </Item>
+      ) : null}
       {files.nativeFiles && projectDirectory && <Item disabled={!isDesktopLocalOriginActive()} onClick={() => {
         void files.openNative?.(projectDirectory, { directory: projectDirectory }).catch(() => toast.error(t('fileOpening.actionFailed')));
       }}><Icon name="folder" className="mr-1.5 h-4 w-4" />{t('fileOpening.explorer')}</Item>}
@@ -332,6 +342,10 @@ export const SortableProjectItem: React.FC<SortableProjectItemProps> = ({
                       isCollapsed={isCollapsed}
                       alwaysShowActions={alwaysShowActions}
                     />
+                    {folderMissing ? <span className="inline-flex flex-shrink-0 items-center text-status-warning"
+                      title={t('sessions.sidebar.project.folderMissing')} aria-label={t('sessions.sidebar.project.folderMissing')}>
+                      <Icon name="alert" className="h-3 w-3" />
+                    </span> : null}
                     {statusIndicator ? (
                       <span className="ml-1 inline-flex flex-shrink-0 items-center">{statusIndicator}</span>
                     ) : null}

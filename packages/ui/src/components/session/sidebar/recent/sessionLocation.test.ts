@@ -12,6 +12,24 @@ const session = (id: string, directory: string): Session => ({
 });
 
 describe('resolveSidebarSessionLocations', () => {
+  test('labels a Space session with its owning Space and keeps its directory scope', () => {
+    const record = session('space-chat', '/spaces/abc/project/src');
+    const spaces = [{ id: 'abcdef123456', name: 'Review', state: 'complete' as const,
+      projectDirectory: '/repo', directory: '/spaces/abc/project' }];
+    const ownership = createSessionOwnershipIndex([record], projects, new Map(), false, [], [], spaces);
+    expect(ownership.bySessionId.get(record.id)).toMatchObject({
+      projectId: 'repo', kind: 'space', spaceId: 'abcdef123456', scopeDirectory: '/spaces/abc/project',
+    });
+    const locations = resolveSidebarSessionLocations({
+      sessions: [record], projects, ownerBySessionId: ownership.bySessionId,
+      availableWorktreesByProject: new Map(), gitBranches: new Map(), homeDirectory: null,
+      spaceLabelById: new Map([['abcdef123456', 'Review']]), hideBranchMatchingProjectLabel: true,
+    });
+    expect(locations.get(record.id)).toEqual({
+      projectId: 'repo', groupDirectory: '/spaces/abc/project', projectLabel: 'Repo',
+      branchLabel: 'Review', worktree: null,
+    });
+  });
   test('keeps a restored missing-worktree session in Timeline with its actual request directory', () => {
     const restored = session('restored', '/worktrees/deleted');
     const ownership = createSessionOwnershipIndex(

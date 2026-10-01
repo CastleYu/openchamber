@@ -9,6 +9,8 @@ import { raiseSessionOrderingBaselines } from '@/sync/session-ordering';
 import { mapWithConcurrency } from '@/lib/concurrency';
 import { persistManagedChatSessions, readManagedChatSessions } from '@/sync/persist-cache';
 import { isVSCodeRuntime } from '@/lib/desktop';
+import { spaceIdOfDirectory } from '@/lib/spaces/space-route';
+import { useSpacesStore, type SpaceMark } from '@/lib/spaces/spaces-store';
 import { ensureChatsRootDirectory, getChatsRootForHome } from '@/lib/chatDirectories';
 import { countSyncPerformance } from '@/sync/performance-diagnostics';
 import {
@@ -705,10 +707,12 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
         // soon as it lands and keep loading the rest silently; the complete
         // snapshot below is still the only authoritative result.
         let firstPageMerged = false;
+        let spaceMarks: SpaceMark[] = [];
         const allSessions = await listGlobalSessionPages(sdk, {
           archived: true,
           narrowToArchived: false,
           pageSize: PAGE_SIZE,
+          onSpaces: (spaces) => { spaceMarks = spaces ?? []; },
           onPage: (page) => {
             if (firstPageMerged || generation !== loadGeneration) return;
             firstPageMerged = true;
@@ -728,6 +732,7 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
           return { activeSessions: [], archivedSessions: [] };
         }
         const { active, archived } = splitGlobalSessionsByArchived(allSessions);
+        useSpacesStore.getState().applyMarks(spaceMarks);
         set((state) => {
           const reconciled = overlayMutationsSince(state, active, archived, baselineRevision);
           return applySnapshot(state, reconciled.activeSessions, reconciled.archivedSessions, 'ready');
@@ -797,6 +802,10 @@ export const useGlobalSessionsStore = create<GlobalSessionsState>((set, get) => 
     if (generation !== loadGeneration) {
       const state = get();
       return { activeSessions: state.activeSessions, archivedSessions: state.archivedSessions };
+    }
+    for (const directory of fetched.directories) {
+      const spaceId = spaceIdOfDirectory(directory);
+      if (spaceId !== null) useSpacesStore.getState().noteReachable(spaceId);
     }
 
     if (fetched.errors.length > 0) {

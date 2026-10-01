@@ -11,6 +11,7 @@ import { getDefaultTheme } from '@/lib/theme/themes';
 import type { Theme } from '@/types/theme';
 import { openAppLinkWithConfirmation } from './appLinkConfirmation';
 import { attachAppLinkInteractions } from './appLinkInteractions';
+import { attachFileRefClickGuard } from './fileRefClickGuard';
 import type { ToolPopupContent } from './message/types';
 import { FadeInOnReveal } from './message/FadeInOnReveal';
 import { useUIStore } from '@/stores/useUIStore';
@@ -18,6 +19,8 @@ import { useEffectiveDirectory } from '@/hooks/useEffectiveDirectory';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
 import type { EditorAPI } from '@/lib/api/types';
 import { isVSCodeRuntime } from '@/lib/desktop';
+import { openSessionLink } from '@/lib/router/openSessionFromRoute';
+import { getRuntimeApiBaseUrl } from '@/lib/runtime-switch';
 import { isMobileSurfaceRuntime } from '@/lib/runtimeSurface';
 import { getDirectoryForFilePath, toAbsoluteFilePath } from '@/lib/path-utils';
 import {
@@ -25,6 +28,7 @@ import {
   renderMarkdownBlocks,
   renderMarkdownSync,
   type MarkdownImageMode,
+  type MarkdownRawHtmlMode,
 } from './markdown/markdownCore';
 import { ensureMarkdownShikiTheme } from './markdown/markdownTheme';
 import { getMarkdownSyntaxVars } from './markdown/markdownSyntaxVars';
@@ -67,6 +71,22 @@ const useCurrentMermaidTheme = () => {
       : fallbackLight);
 };
 
+// Addresses that serve the instance this chat belongs to: the page itself
+// (web), and the instance the app is connected to, which the desktop page,
+// living on its own scheme, does not share an origin with. A link to either
+// opens in place; one to another instance leaves the chat as before.
+const resolveOwnOrigins = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  const origins = [window.location.origin];
+  try {
+    const apiOrigin = new URL(getRuntimeApiBaseUrl() || window.location.href, window.location.href).origin;
+    if (!origins.includes(apiOrigin)) origins.push(apiOrigin);
+  } catch {
+    // An unparseable runtime address adds nothing.
+  }
+  return origins;
+};
+
 const useLinkInteractions = ({
   containerRef,
   enabled,
@@ -80,10 +100,16 @@ const useLinkInteractions = ({
       return;
     }
 
+    // VS Code keeps session links inert: its sessions live on its own OpenCode.
+    const opensSessionLinks = !isVSCodeRuntime();
     return attachAppLinkInteractions(container, {
       allowExternalHttp: enabled !== false,
       openAppLink: (href) => void openAppLinkWithConfirmation(href),
       openExternalHttp: (href) => void openExternalUrl(href),
+      openSessionLink: opensSessionLinks
+        ? (target) => void openSessionLink(target.sessionId, target.messageId)
+        : undefined,
+      ownOrigins: resolveOwnOrigins(),
     });
   }, [containerRef, enabled]);
 };
@@ -226,6 +252,12 @@ const extractPathCandidateFromElement = (element: HTMLElement): string => {
   }
 
   return (element.textContent || '').trim();
+};
+
+const extractHrefFileReferenceCandidate = (anchor: HTMLAnchorElement): string | null => {
+  const href = anchor.getAttribute('href')?.trim();
+  if (!href) return null;
+  return localPathFromFileUrl(href) ?? (isLikelyFilePath(href) ? href : null);
 };
 
 // Walks text nodes inside `<pre><code>` subtrees and wraps any substring that
@@ -392,9 +424,15 @@ const useFileReferenceInteractions = ({
       unwrapBlockCodePathTokens(container);
     };
 
+    const attachClickGuard = () => attachFileRefClickGuard(container, {
+      hrefCandidate: extractHrefFileReferenceCandidate,
+      isResolvable: (raw) => getResolvedReference(raw, effectiveDirectory) !== null,
+      openFileReference: (element) => { void openFileReference(element).catch(() => {}); },
+    });
+
     if (!fileReferencesEnabled) {
       clearAnnotatedFileLinks();
-      return;
+      return enabled ? attachClickGuard() : undefined;
     }
 
     const scheduleAnnotation = (delayMs = 0) => {
@@ -478,7 +516,7 @@ const useFileReferenceInteractions = ({
       }
     };
 
-    const openFileReference = async (sourceElement: HTMLElement) => {
+    async function openFileReference(sourceElement: HTMLElement): Promise<void> {
       const raw = sourceElement.getAttribute('data-openchamber-file-ref') || extractPathCandidateFromElement(sourceElement);
       const resolved = getResolvedReference(raw, effectiveDirectory);
       if (!resolved) {
@@ -516,24 +554,7 @@ const useFileReferenceInteractions = ({
       } else {
         uiStore.openContextFile(contextDirectory, resolved.resolvedPath);
       }
-    };
-
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const fileRefElement = target.closest(FILE_LINK_SELECTOR);
-      if (!(fileRefElement instanceof HTMLElement)) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      void openFileReference(fileRefElement).catch(() => {});
-    };
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Enter' && event.key !== ' ') {
@@ -566,7 +587,7 @@ const useFileReferenceInteractions = ({
       subtree: true,
     });
 
-    container.addEventListener('click', handleClick);
+    const removeClickGuard = attachClickGuard();
     container.addEventListener('keydown', handleKeyDown);
 
     return () => {
@@ -576,7 +597,7 @@ const useFileReferenceInteractions = ({
       }
       annotationDebounceRef.current = null;
       observer.disconnect();
-      container.removeEventListener('click', handleClick);
+      removeClickGuard();
       container.removeEventListener('keydown', handleKeyDown);
     };
   }, [containerRef, editor, effectiveDirectory, preferRuntimeEditor, enabled]);
@@ -691,6 +712,16 @@ const useMermaidInlineInteractions = ({
 const MERMAID_RENDER_CACHE = new Map<string, MermaidRender>();
 const MERMAID_RENDER_CACHE_MAX = 100;
 const MARKDOWN_DECORATION_ID_ATTR = 'data-md-decoration-id';
+
+const markLastMarkdownBlock = (target: HTMLElement): void => {
+  const last = target.lastElementChild;
+  for (const child of Array.from(target.children)) {
+    if (child !== last && child.hasAttribute('data-md-last')) child.removeAttribute('data-md-last');
+  }
+  if (last?.hasAttribute('data-md-block') && !last.hasAttribute('data-md-last')) {
+    last.setAttribute('data-md-last', '');
+  }
+};
 
 // True when the container already holds exactly these settled blocks with the
 // current decoration. The first paint of a remounted message is served from
@@ -825,6 +856,7 @@ const useMorphdomMarkdown = ({
   streaming,
   diagramStreaming = streaming,
   imageMode = 'inline',
+  rawHtml = 'escape',
   syntaxVars,
   ctx,
   domCacheKey,
@@ -835,6 +867,7 @@ const useMorphdomMarkdown = ({
   streaming: boolean;
   diagramStreaming?: boolean;
   imageMode?: MarkdownImageMode;
+  rawHtml?: MarkdownRawHtmlMode;
   syntaxVars: Record<string, string>;
   ctx: DecorateContext;
   domCacheKey?: DetachedMarkdownDomKey | null;
@@ -903,7 +936,7 @@ const useMorphdomMarkdown = ({
   React.useLayoutEffect(() => {
     renderRevisionRef.current += 1;
     mountedDomRef.current = null;
-  }, [ctx, diagramStreaming, imageMode, streaming, text]);
+  }, [ctx, diagramStreaming, imageMode, rawHtml, streaming, text]);
 
   React.useLayoutEffect(() => {
     if (!domCacheKey) return;
@@ -914,6 +947,7 @@ const useMorphdomMarkdown = ({
     const cached = detachedMarkdownDomCache.take(domCacheKey);
     if (cached) {
       target.appendChild(cached);
+      markLastMarkdownBlock(target);
       const decorationId = getMarkdownDecorationId(ctx);
       for (const block of Array.from(target.children)) {
         block.setAttribute(MARKDOWN_DECORATION_ID_ATTR, decorationId);
@@ -968,7 +1002,7 @@ const useMorphdomMarkdown = ({
     if (!target) return;
     const decorationId = getMarkdownDecorationId(ctx);
     if (text && target.childNodes.length === 0) {
-      const cachedBlocks = !streaming ? getCachedMarkdownBlocks(text, imageMode) : null;
+      const cachedBlocks = !streaming ? getCachedMarkdownBlocks(text, imageMode, rawHtml) : null;
       if (cachedBlocks) {
         let hasMermaidBlock = false;
         for (const cachedBlock of cachedBlocks) {
@@ -990,19 +1024,20 @@ const useMorphdomMarkdown = ({
         const block = document.createElement('div');
         block.setAttribute('data-md-block', '');
         block.style.display = 'contents';
-        block.innerHTML = renderMarkdownSync(text, imageMode);
+        block.innerHTML = renderMarkdownSync(text, imageMode, rawHtml);
         decorateMarkdown(block, ctx);
         block.setAttribute(MARKDOWN_DECORATION_ID_ATTR, decorationId);
         target.appendChild(block);
         if (shouldRefreshMermaidViewers(block)) refreshMermaidViewers();
       }
+      markLastMarkdownBlock(target);
     } else if (!mermaidViewerRef.current && shouldRefreshMermaidViewers(target)) {
       // StrictMode re-runs this setup after the cleanup probe. The DOM remains,
       // but the viewer registry does not, so recreate it without reinstalling
       // or re-decorating ordinary blocks.
       refreshMermaidViewers();
     }
-  }, [containerRef, text, streaming, imageMode, ctx, refreshMermaidViewers, revealGate]);
+  }, [containerRef, text, streaming, imageMode, rawHtml, ctx, refreshMermaidViewers, revealGate]);
 
   React.useEffect(() => () => {
     mermaidViewerRef.current?.cleanup();
@@ -1018,7 +1053,7 @@ const useMorphdomMarkdown = ({
     const decorationId = getMarkdownDecorationId(ctx);
 
     if (!streaming) {
-      const cachedBlocks = getCachedMarkdownBlocks(text, imageMode);
+      const cachedBlocks = getCachedMarkdownBlocks(text, imageMode, rawHtml);
       if (cachedBlocks && !target.querySelector(DIAGRAM_PENDING_SELECTOR) && domMatchesRenderedBlocks(target, cachedBlocks, decorationId)) {
         mountedDomRef.current = domCacheKey
           ? { key: domCacheKey, copiedLabel: ctx.labels.copied }
@@ -1030,7 +1065,7 @@ const useMorphdomMarkdown = ({
       }
     }
 
-    void renderMarkdownBlocks(text, streaming, imageMode).then(async (blocks) => {
+    void renderMarkdownBlocks(text, streaming, imageMode, rawHtml).then(async (blocks) => {
       if (!active || renderRevisionRef.current !== renderRevision) return;
       // Stateful diagram engines run only after the response settles. A growing
       // code fence stays readable without queuing layouts on each token.
@@ -1136,6 +1171,7 @@ const useMorphdomMarkdown = ({
         }
         removed?.remove();
       }
+      markLastMarkdownBlock(target);
       if (removedMermaidBlock || (existing.length > blocks.length && hadMermaidBeforeTrailingCleanup)) {
         refreshMermaidViewers();
       }
@@ -1158,7 +1194,7 @@ const useMorphdomMarkdown = ({
       active = false;
       ctx.cancelDiagrams();
     };
-  }, [containerRef, ctx, diagramStreaming, domCacheKey, imageMode, refreshMermaidViewers, releaseRevealHold, scheduleTableLayout, streaming, text]);
+  }, [containerRef, ctx, diagramStreaming, domCacheKey, imageMode, rawHtml, refreshMermaidViewers, releaseRevealHold, scheduleTableLayout, streaming, text]);
 
   React.useEffect(() => {
     const container = containerRef.current;
@@ -1322,6 +1358,8 @@ const SimpleMarkdownRendererImpl: React.FC<{
   mermaidControls?: MermaidControlOptions;
   allowMermaidWheelEvents?: boolean;
   enableFileReferences?: boolean;
+  /** Use the document HTML allowlist for user-opened files only. */
+  allowRawHtml?: boolean;
 }> = ({
   content,
   className,
@@ -1332,6 +1370,7 @@ const SimpleMarkdownRendererImpl: React.FC<{
   mermaidControls = DEFAULT_MERMAID_CONTROLS,
   allowMermaidWheelEvents = false,
   enableFileReferences = true,
+  allowRawHtml = false,
 }) => {
   const { editor, runtime } = useRuntimeAPIs();
   const currentTheme = useCurrentMermaidTheme();
@@ -1365,6 +1404,7 @@ const SimpleMarkdownRendererImpl: React.FC<{
     containerRef,
     text: renderedContent,
     streaming: false,
+    rawHtml: allowRawHtml ? 'sanitize' : 'escape',
     syntaxVars,
     ctx,
     tableLayoutSettled: true,
@@ -1372,7 +1412,7 @@ const SimpleMarkdownRendererImpl: React.FC<{
 
   return (
     <div className={cn('break-words w-full min-w-0', className)} ref={containerRef} data-diagram-wheel-zoom={allowMermaidWheelEvents || undefined}>
-      <div className={markdownContentClassName(variant)} data-markdown-content />
+      <div className={markdownContentClassName(variant)} data-markdown-content data-markdown-html={allowRawHtml ? '' : undefined} />
     </div>
   );
 };
@@ -1391,5 +1431,6 @@ export const SimpleMarkdownRenderer = React.memo(SimpleMarkdownRendererImpl, (pr
     && prevMermaidControls.copy === nextMermaidControls.copy
     && prevMermaidControls.showPanZoomControls === nextMermaidControls.showPanZoomControls
     && prev.allowMermaidWheelEvents === next.allowMermaidWheelEvents
-    && prev.enableFileReferences === next.enableFileReferences;
+    && prev.enableFileReferences === next.enableFileReferences
+    && prev.allowRawHtml === next.allowRawHtml;
 });

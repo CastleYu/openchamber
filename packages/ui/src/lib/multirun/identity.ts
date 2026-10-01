@@ -8,6 +8,13 @@ const groupSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('id'), id: z.uuid() }),
   z.object({ kind: z.literal('legacy'), scope: identifier }),
 ]);
+const autoFusionSchema = z.object({
+  providerID: identifier,
+  modelID: identifier,
+  variant: identifier.optional(),
+  agent: identifier.optional(),
+  launcherId: identifier,
+});
 const membershipSchema = z.object({
   version: z.literal(1),
   sessionID: identifier.nullable(),
@@ -18,6 +25,8 @@ const membershipSchema = z.object({
   modelID: identifier,
   index: z.number().int().positive().safe().optional(),
   role: z.enum(['run', 'fusion']),
+  title: z.string().trim().min(1).max(200).optional(),
+  autoFusion: autoFusionSchema.optional(),
 }).refine((value) => value.group.kind !== 'legacy' || value.role === 'fusion');
 const openchamberSchema = z.looseObject({});
 const membershipEnvelopeSchema = z.object({ multirun: membershipSchema });
@@ -40,8 +49,8 @@ export function getMultiRunIdentity(session: Session, legacyDirectory = session.
   if (openchamber && Object.hasOwn(openchamber, 'multirun')) {
     const membership = getMultiRunMembership(session);
     if (!membership) return null;
-    const { group, groupSlug, runGroup, providerID, modelID, index, role } = membership;
-    return { group, groupSlug, runGroup, providerID, modelID, index, role, key: multiRunGroupKey(group, groupSlug) };
+    const { group, groupSlug, runGroup, providerID, modelID, index, role, title, autoFusion } = membership;
+    return { group, groupSlug, runGroup, providerID, modelID, index, role, title, autoFusion, key: multiRunGroupKey(group, groupSlug) };
   }
   if (session.parentID || openchamber?.kind === 'btw' || openchamber?.kind === 'review') return null;
   const title = parseMultiRunSessionTitle(session.title);
@@ -65,6 +74,9 @@ export function withMultiRunMembership(session: Pick<Session, 'metadata'>, membe
   };
 }
 
+export const multiRunMembershipPatch = (membership: MultiRunMembership): NonNullable<Session['metadata']> =>
+  withMultiRunMembership({ metadata: {} }, membership);
+
 export const isFusionSource = (anchor: MultiRunIdentity, candidate: MultiRunIdentity | null): boolean =>
   candidate !== null && candidate.role === 'run' && candidate.key === anchor.key
   && candidate.runGroup === anchor.runGroup;
@@ -77,5 +89,5 @@ export function sameMultiRunIdentity(a: Session, b: Session): boolean {
   if (!left || !right) return left === right;
   return left.key === right.key && left.runGroup === right.runGroup && left.role === right.role
     && left.groupSlug === right.groupSlug && left.providerID === right.providerID
-    && left.modelID === right.modelID && left.index === right.index;
+    && left.modelID === right.modelID && left.index === right.index && left.title === right.title;
 }

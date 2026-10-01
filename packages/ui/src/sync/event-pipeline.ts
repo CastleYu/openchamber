@@ -25,6 +25,9 @@ import { type RelayTunnelWebSocket } from "@/lib/relay/tunnel-client"
 import { openRuntimeWebSocket } from "@/lib/relay/runtime-socket"
 import { syncDebug } from "./debug"
 import { countSyncPerformance } from "./performance-diagnostics"
+import { parseSpaceAnnouncement, type SpaceAnnouncement, type SpaceProgress } from './space-events'
+
+export type { SpaceProgress } from './space-events'
 
 // Paces a sustained event stream only: the first event after a quiet spell is
 // flushed at once, so a lone permission or status event is not delayed. Every
@@ -72,6 +75,11 @@ export type EventPipelineInput = {
   onDisconnect?: (reason: string) => void
   /** Called when transport switches (e.g. WS timeout → SSE fallback) without actual disconnection. */
   onTransportSwitch?: () => void
+  onSpaceStream?: (details: Extract<SpaceAnnouncement, { type: 'openchamber:space-stream' }>['properties']) => void
+  onSpaceProgress?: (details: SpaceProgress) => void
+  onSpaceSetup?: (spaceId: string) => void
+  /** A frame or keepalive arrived; opening an empty connection does not count. */
+  onStreamActivity?: () => void
   transport?: "auto" | "ws" | "sse"
   heartbeatTimeoutMs?: number
   reconnectDelayMs?: number
@@ -274,6 +282,10 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     onReconnect,
     onDisconnect,
     onTransportSwitch,
+    onSpaceStream,
+    onSpaceProgress,
+    onSpaceSetup,
+    onStreamActivity,
     routeDirectory,
     transport = "auto",
     heartbeatTimeoutMs = DEFAULT_HEARTBEAT_TIMEOUT_MS,
@@ -600,17 +612,30 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     heartbeat = undefined
   }
 
+  const noteStreamActivity = () => {
+    resetHeartbeat()
+    onStreamActivity?.()
+  }
+
+  const dispatchSpaceAnnouncement = (event: SpaceAnnouncement): void => {
+    switch (event.type) {
+      case 'openchamber:space-stream': onSpaceStream?.(event.properties); break
+      case 'openchamber:space-progress': onSpaceProgress?.(event.properties); break
+      case 'openchamber:space-setup': onSpaceSetup?.(event.properties.spaceId); break
+    }
+  }
+
   const runSseAttempt = async (signal: AbortSignal) => {
     if (source) {
       let yielded = now()
       let connected = false
-      for await (const event of source.events(signal, lastEventId)) {
+      for await (const event of source.events(signal, lastEventId, noteStreamActivity)) {
         if (!connected) {
           markConnected()
           resetHeartbeat()
           connected = true
         }
-        resetHeartbeat()
+        noteStreamActivity()
         streamErrorLogged = false
         if (event.generation === "oc1") {
           const payload = resolveEventPayload(event.value)
@@ -618,6 +643,9 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
             lastEventId = payload.id
             enqueueEvent(resolveEventDirectory(event.value, payload), payload)
           }
+        } else if (event.generation === 'openchamber') {
+          lastEventId = event.eventID
+          dispatchSpaceAnnouncement(event.value)
         } else {
           lastEventId = event.value.eventID
           enqueueDomain(event.value.directory ?? "global", event.value)
@@ -633,7 +661,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       signal,
       ...(lastEventId && lastEventId.length > 0 ? { headers: { "Last-Event-ID": lastEventId } } : {}),
       onSseEvent: (event: { id?: unknown }) => {
-        resetHeartbeat()
+        noteStreamActivity()
         if (typeof event.id === "string" && event.id.length > 0) {
           lastEventId = event.id
         }
@@ -652,7 +680,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
     resetHeartbeat()
 
     for await (const event of events.stream) {
-      resetHeartbeat()
+      noteStreamActivity()
       streamErrorLogged = false
 
       const payload = resolveEventPayload((event as { payload?: Event }).payload ?? event)
@@ -759,7 +787,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       }
 
       socket.onmessage = (messageEvent) => {
-        resetHeartbeat()
+        noteStreamActivity()
         streamErrorLogged = false
 
         let frame: MessageStreamWsFrame | null = null
@@ -814,6 +842,12 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
         if (source?.generation === "oc2") {
           const json = z.json().safeParse(frame.payload)
           if (!json.success) return
+          const announcement = parseSpaceAnnouncement(json.data)
+          if (announcement) {
+            dispatchSpaceAnnouncement(announcement)
+            if (typeof frame.eventId === 'string' && frame.eventId.length > 0) lastEventId = frame.eventId
+            return
+          }
           const wire = parseV2Event(json.data)
           if (!wire) return
           const projected = projectV2Event(wire)
@@ -911,9 +945,18 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
           onTransportSwitch?.()
         } else if (!isAbortError(error)) {
           consecutiveFailures += 1
+          // The first failure is often the startup race: the socket opens
+          // before the server has resolved the OpenCode generation and closes
+          // immediately, then reconnect succeeds. Warn so it stays visible
+          // without polluting error reporting; escalate to console.error only
+          // once retries keep failing, so a real outage is not hidden.
           if (!streamErrorLogged) {
-            streamErrorLogged = true
-            console.error("[event-pipeline] stream failed", error)
+            if (consecutiveFailures > 1) {
+              streamErrorLogged = true
+              console.error("[event-pipeline] stream failed", error)
+            } else {
+              console.warn("[event-pipeline] stream failed", error)
+            }
           }
           // Notify consumer that the stream has disconnected, so it can
           // update connection state (e.g. set isConnected = false).

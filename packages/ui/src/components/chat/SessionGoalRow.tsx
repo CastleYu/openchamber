@@ -63,6 +63,7 @@ export const SessionGoalRow: React.FC<SessionGoalRowProps> = React.memo(({ sessi
       className={cn(
         'flex w-full min-w-0 items-center gap-2 rounded-lg border px-2 py-1',
         'border-[var(--interactive-border)]',
+        'oc-glass-composer',
         className,
       )}
       aria-label={t('chat.goal.row.aria')}

@@ -7,6 +7,7 @@ export type SessionDeleteRequest = {
   dateLabel?: string;
   mode?: 'session' | 'worktree';
   worktree?: WorktreeMetadata | null;
+  skipDialogIfSafe?: boolean;
 };
 
 export type SessionCreateRequest = {

@@ -30,12 +30,13 @@ const compaction = (status: CompactionMessage['status']): CompactionMessage => (
 });
 
 describe('OC2 timeline notices', () => {
-    test('shows an active compaction and its streaming summary', () => {
+    test('shows an active compaction as an expanded summary block', () => {
         const html = renderToStaticMarkup(
             <I18nProvider><TimelineNotice message={compaction('running')} /></I18nProvider>,
         );
         expect(html).toContain('Compacting the conversation');
-        expect(html).toContain('Earlier context');
+        expect(html).toContain('data-reasoning-block-id="compact-1"');
+        expect(html).toContain('aria-expanded="true"');
     });
 
     test('shows a completed compaction with a summary control', () => {

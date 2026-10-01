@@ -7,6 +7,7 @@ import type { QueuedContextPart } from '@/stores/messageQueueStore';
 import {
     buildComposerContext,
     buildOutgoingMessage,
+    hasComposerContent,
     queuedContextToParts,
     type ComposerContextInput,
     type OutgoingMessageDeps,
@@ -47,6 +48,22 @@ const input = (overrides: Partial<OutgoingMessageInput> = {}): OutgoingMessageIn
     linkedLinearIssue: null,
     linkedGuestIssue: null,
     ...overrides,
+});
+
+describe('composer send eligibility', () => {
+    const empty = { text: ' ', attachmentCount: 0, hasDrafts: false, hasLinkedReferences: false, isBtwActive: false };
+
+    test('a linked reference alone is sendable outside BTW', () => {
+        expect(hasComposerContent({ ...empty, hasLinkedReferences: true })).toBe(true);
+        expect(hasComposerContent({ ...empty, hasLinkedReferences: true, isBtwActive: true })).toBe(false);
+    });
+
+    test('text, files and drafts keep their existing eligibility', () => {
+        expect(hasComposerContent(empty)).toBe(false);
+        expect(hasComposerContent({ ...empty, text: 'reply' })).toBe(true);
+        expect(hasComposerContent({ ...empty, attachmentCount: 1 })).toBe(true);
+        expect(hasComposerContent({ ...empty, hasDrafts: true })).toBe(true);
+    });
 });
 
 describe('the composer text alone', () => {

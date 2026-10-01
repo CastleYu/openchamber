@@ -17,6 +17,7 @@ import {
 import { stripSessionDiffSnapshots } from "./sanitize"
 import { getSessionMaterializationStatus } from "./materialization"
 import { getRuntimeKey } from "@/lib/runtime-switch"
+import { readDomainInputSnapshot } from './directory-recovery-snapshots'
 
 // Shared across useSync() hook instances. Chat, model controls, and sidebar can
 // all request the same session during startup; coalesce them into one HTTP load.
@@ -77,6 +78,22 @@ export function useSync() {
       return (targetStore.getState().question[sessionID]?.length ?? 0) > 0
     },
     [childStores, directory, runtimeKey],
+  )
+
+  const recoverPendingForms = useCallback(
+    async (sessionID: string, directoryOverride?: string): Promise<boolean> => {
+      const targetDirectory = directoryOverride || directory
+      if (source.generation !== 'oc2' || !sessionID || !targetDirectory || getRuntimeKey() !== runtimeKey) return false
+      const targetStore = childStores.ensureChild(targetDirectory, {
+        priority: 'selected',
+        reason: 'selected-session',
+      })
+      const pendingInput = await readDomainInputSnapshot(targetStore, () => source.inputs(targetDirectory))
+      if (getRuntimeKey() !== runtimeKey || childStores.getChild(targetDirectory) !== targetStore) return false
+      targetStore.setState({ pendingInput })
+      return (pendingInput[sessionID] ?? []).some((request) => request.generation === 'oc2' && request.kind === 'form')
+    },
+    [childStores, directory, runtimeKey, source],
   )
 
   const keyFor = useCallback(
@@ -252,13 +269,14 @@ export function useSync() {
       isLoading,
       isComplete,
       recoverPendingQuestions,
+      recoverPendingForms,
       optimistic: {
         add: optimisticAdd,
         remove: optimisticRemove,
         confirm: optimisticConfirm,
       },
     }),
-    [syncSession, prefetchSession, loadMore, hasMore, isLoading, isComplete, recoverPendingQuestions, optimisticAdd, optimisticRemove, optimisticConfirm],
+    [syncSession, prefetchSession, loadMore, hasMore, isLoading, isComplete, recoverPendingQuestions, recoverPendingForms, optimisticAdd, optimisticRemove, optimisticConfirm],
   )
 }
 

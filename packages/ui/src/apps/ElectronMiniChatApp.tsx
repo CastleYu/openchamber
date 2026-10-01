@@ -9,6 +9,7 @@ import { AppLinkConfirmDialog } from '@/components/chat/AppLinkConfirmDialog';
 import { SharedTrustConfirmDialog } from '@/components/projects/SharedTrustConfirmDialog';
 import { usePushVisibilityBeacon } from '@/hooks/usePushVisibilityBeacon';
 import { useWindowTitle } from '@/hooks/useWindowTitle';
+import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
 import { useRoutingSync } from '@/hooks/useRoutingSync';
 import { useRootScrollLock } from '@/hooks/useRootScrollLock';
 import { opencodeClient } from '@/lib/opencode/client';
@@ -19,6 +20,7 @@ import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useGitStore } from '@/stores/useGitStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider, useSessions } from '@/sync/sync-context';
+import { ProjectConfigErrorToast } from '@/components/projects/ProjectConfigErrorToast';
 import { useOpenCodeSource } from './useOpenCodeSource';
 import { useSync } from '@/sync/use-sync';
 import { SyncRuntimeEffects } from './AppEffects';
@@ -331,6 +333,7 @@ export function ElectronMiniChatApp({ apis }: ElectronMiniChatAppProps) {
   usePushVisibilityBeacon({ enabled: true });
   useWindowTitle();
   useRoutingSync();
+  useEnterprisePolicySync();
   useRootScrollLock();
 
   return (
@@ -342,6 +345,7 @@ export function ElectronMiniChatApp({ apis }: ElectronMiniChatAppProps) {
               <ElectronMiniChatContent config={config} />
               <AppLinkConfirmDialog />
               <SharedTrustConfirmDialog />
+              <ProjectConfigErrorToast />
               <Toaster />
             </div>
           </TooltipProvider>

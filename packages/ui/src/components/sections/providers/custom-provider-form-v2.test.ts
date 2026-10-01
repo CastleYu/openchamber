@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildIntegrationKeyRequest,
   buildProviderUpsertRequest,
+  storeKeyAfterConfigWrite,
   isConfigDefinedCustomProvider,
   isCustomOpenAICompatibleProvider,
   providerToCustomFormState,
@@ -218,6 +219,7 @@ describe('request construction', () => {
       providerID: 'custom-provider',
       config: plan.config,
       scope: 'user',
+      hasCredential: true,
     });
   });
 
@@ -241,6 +243,17 @@ describe('request construction', () => {
     });
 
     expect(buildIntegrationKeyRequest(validated.result!)).toBeNull();
+  });
+
+  test('waits for the config watcher to register the new key method', async () => {
+    const attempts: string[] = [];
+    const waits: number[] = [];
+    await storeKeyAfterConfigWrite(async () => {
+      attempts.push('connect');
+      if (attempts.length < 3) throw new Error('Integration not found');
+    }, async (ms) => { waits.push(ms); });
+    expect(attempts).toHaveLength(3);
+    expect(waits).toEqual([250, 500]);
   });
 });
 

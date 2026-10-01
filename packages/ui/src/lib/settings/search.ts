@@ -1,5 +1,6 @@
 import type { I18nKey } from '@/lib/i18n/store';
 import { UPDATE_HISTORY_PAGE, UPDATE_HISTORY_ANCHOR } from './updateHistory';
+import { ISOLATED_SPACES_RELEASED } from '@/lib/spaces/release';
 import { useUIStore } from '@/stores/useUIStore';
 import { opencodeClient } from '@/lib/opencode/client';
 import type { SettingsPageSlug, SettingsRuntimeContext } from './metadata';
@@ -32,6 +33,12 @@ interface SettingsSearchAvailabilityContext extends SettingsRuntimeContext {
   // Windows ARM64 — temporary workaround gate (see opencode#19130).
   isWindowsArm64: boolean;
 }
+
+const OC2_SEARCH_IDS = new Set([
+  'sessions.warming', 'sessions.permission-default', 'sessions.work', 'sessions.work-enabled', 'sessions.work-auto-open',
+  'chat.session-goal-checker', 'sessions.agent-tools-code-mode', 'providers.classification',
+  'general.isolated-spaces', 'general.isolated-spaces-idle-stop', 'routing.classifier', 'routing.custom-endpoint',
+]);
 
 const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
   {
@@ -267,7 +274,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     id: 'chat.session-goal',
     page: 'chat',
     titleKey: 'settings.openchamber.visual.field.sessionGoal',
-    keywords: ['goal', 'objective', 'auto continue', 'small model'],
+    keywords: ['goal', 'objective', 'auto continue'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'chat.session-goal-checker',
+    page: 'chat',
+    titleKey: 'settings.openchamber.visual.goal.checkerLabel',
+    keywords: ['goal', 'progress', 'check', 'jev', 'classification', 'small model'],
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
@@ -463,6 +477,44 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['delete', 'confirmation'],
   },
   {
+    id: 'sessions.warming',
+    page: 'sessions',
+    titleKey: 'settings.openchamber.defaults.field.sessionWarming',
+    descriptionKey: 'settings.openchamber.defaults.field.sessionWarmingInfo',
+    keywords: ['warming', 'warm', 'cache', 'prompt cache', 'keep-alive', 'idle'],
+  },
+  {
+    id: 'sessions.permission-default',
+    page: 'sessions',
+    titleKey: 'settings.sessions.permissions.defaultMode',
+    descriptionKey: 'settings.sessions.permissions.defaultModeInfo',
+    keywords: ['permissions', 'auto-accept', 'accept', 'safety net', 'ask', 'shield', 'approval', 'new session'],
+    // The server writes the default onto new sessions; VS Code has none.
+    isAvailable: (ctx) => !ctx.isVSCode && opencodeClient.getBoundRuntime()?.generation === 'oc2',
+  },
+  {
+    id: 'sessions.work',
+    page: 'sessions',
+    titleKey: 'settings.openchamber.sessionWork.title',
+    descriptionKey: 'settings.openchamber.sessionWork.info',
+    keywords: ['in work', 'in progress', 'track', 'done', 'inbox', 'sidebar', 'jev'],
+  },
+  {
+    id: 'sessions.work-enabled',
+    page: 'sessions',
+    titleKey: 'settings.openchamber.sessionWork.field.enabled',
+    keywords: ['in work', 'in progress', 'track', 'done', 'sidebar'],
+  },
+  {
+    id: 'sessions.work-auto-open',
+    page: 'sessions',
+    titleKey: 'settings.openchamber.sessionWork.field.autoOpen',
+    descriptionKey: 'settings.openchamber.sessionWork.field.autoOpenInfo',
+    keywords: ['in work', 'automatic', 'jev', 'classification', 'track'],
+    // Jev runs on the OpenChamber server; VS Code has only the manual part.
+    isAvailable: (ctx) => !ctx.isVSCode && opencodeClient.getBoundRuntime()?.generation === 'oc2',
+  },
+  {
     id: 'sessions.small-model',
     page: 'sessions',
     titleKey: 'settings.openchamber.defaults.smallModel.title',
@@ -573,6 +625,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'sessions.opencode-restart',
+    page: 'general',
+    titleKey: 'settings.openchamber.opencodeCli.actions.restart',
+    keywords: ['opencode', 'restart', 'reload', 'plugin'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
     id: 'sessions.opencode-update-notifications',
     page: 'general',
     titleKey: 'settings.openchamber.opencodeCli.field.showUpdateNotifications',
@@ -612,6 +671,25 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'general.isolated-spaces',
+    page: 'isolated-spaces',
+    titleKey: 'settings.openchamber.spaces.field.enabled',
+    descriptionKey: 'settings.openchamber.spaces.field.enabledInfo',
+    keywords: ['isolated', 'space', 'spaces', 'container', 'docker', 'sandbox', 'agent'],
+    // Never in VS Code: the feature has no entry point there (decision 16 of the design).
+    // Hidden from everyone until the feature's first release, like the row itself.
+    isAvailable: (ctx) => !ctx.isVSCode && ISOLATED_SPACES_RELEASED,
+  },
+  {
+    id: 'general.isolated-spaces-idle-stop',
+    page: 'isolated-spaces',
+    titleKey: 'settings.openchamber.spaces.idleStop.enabled',
+    descriptionKey: 'settings.openchamber.spaces.idleStop.enabledInfo',
+    keywords: ['idle', 'stop', 'space', 'spaces', 'container', 'hours', 'timeout', 'sleep'],
+    // Rendered only while the switch is on, and never before the feature's release or in VS Code.
+    isAvailable: (ctx) => !ctx.isVSCode && ISOLATED_SPACES_RELEASED && useUIStore.getState().isolatedSpacesEnabled,
+  },
+  {
     id: 'sessions.agent-memory-tool',
     page: 'general',
     titleKey: 'settings.openchamber.tools.field.agentMemoryTool',
@@ -630,12 +708,35 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
   },
   {
+    id: 'sessions.agent-tools-code-mode',
+    page: 'general',
+    titleKey: 'settings.openchamber.tools.field.agentToolsCodeMode',
+    descriptionKey: 'settings.openchamber.tools.field.agentToolsCodeModeInfo',
+    keywords: ['agent', 'tool', 'code mode', 'codemode', 'execute', 'openchamber'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
     id: 'routing.enabled',
     page: 'routing',
     titleKey: 'settings.routing.auto.enable',
     descriptionKey: 'settings.routing.auto.enableInfo',
     keywords: ['auto', 'routing', 'model', 'jev', 'automatic'],
-    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable && !ctx.jevBlockedByEnterprise,
+  },
+  {
+    id: 'routing.classifier',
+    page: 'routing',
+    titleKey: 'settings.classification.jev.title',
+    keywords: ['jev', 'classifier', 'classification', 'source'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable && !ctx.jevBlockedByEnterprise,
+  },
+  {
+    id: 'routing.custom-endpoint',
+    page: 'routing',
+    titleKey: 'settings.classification.custom.url.label',
+    descriptionKey: 'settings.classification.custom.url.info',
+    keywords: ['endpoint', 'classifier', 'classification', 'custom', 'jev'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable && !ctx.enterpriseMode,
   },
   {
     id: 'routing.fallback-model',
@@ -643,15 +744,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.routing.auto.fallbackModel',
     descriptionKey: 'settings.routing.auto.fallbackModelInfo',
     keywords: ['fallback', 'default', 'model', 'routing'],
-    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
-  },
-  {
-    id: 'routing.safety-enabled',
-    page: 'routing',
-    titleKey: 'settings.routing.safety.enable',
-    descriptionKey: 'settings.routing.safety.enableInfo',
-    keywords: ['safety net', 'auto-accept', 'permissions', 'destructive', 'hold'],
-    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable && !ctx.jevBlockedByEnterprise,
   },
   {
     id: 'routing.add-category',
@@ -659,7 +752,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.routing.categories.title',
     descriptionKey: 'settings.routing.categories.description',
     keywords: ['category', 'categories', 'task type', 'routing'],
-    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable && !ctx.jevBlockedByEnterprise,
   },
   {
     id: 'git.identities',
@@ -979,6 +1072,15 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['add provider', 'connect provider', 'credentials'],
   },
   {
+    // Opens the Classification providers sub-page (SettingsView sets the request).
+    id: 'providers.classification',
+    page: 'providers',
+    titleKey: 'settings.classification.page.title',
+    descriptionKey: 'settings.classification.page.description',
+    keywords: ['jev', 'typesafe', 'zen', 'api key', 'token', 'safety net', 'auto', 'routing', 'classification', 'promotion', 'off', 'disable', 'privacy', 'custom endpoint', 'base url', 'openai-compatible', 'system one', 'self-hosted', 'proxy'],
+    isAvailable: (ctx) => !ctx.isVSCode && ctx.routingAvailable,
+  },
+  {
     id: 'providers.custom',
     page: 'providers',
     titleKey: 'settings.providers.page.custom.title',
@@ -988,14 +1090,8 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
   {
     id: 'providers.auth',
     page: 'providers',
-    titleKey: 'settings.providers.page.auth.title',
-    keywords: ['api key', 'oauth', 'credentials'],
-  },
-  {
-    id: 'providers.connection-details',
-    page: 'providers',
-    titleKey: 'settings.providers.page.connectionDetails.title',
-    keywords: ['config', 'source', 'disconnect'],
+    titleKey: 'settings.providers.accounts.title',
+    keywords: ['api key', 'oauth', 'credentials', 'accounts', 'switch account', 'disconnect'],
   },
   {
     id: 'providers.models',
@@ -1105,14 +1201,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.tunnel.field.provider',
     descriptionKey: 'settings.openchamber.tunnel.description',
     keywords: ['remote access', 'cloudflare', 'ngrok'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'tunnel.type',
     page: 'tunnel',
     titleKey: 'settings.openchamber.tunnel.field.tunnelType',
     keywords: ['quick', 'managed remote', 'managed local'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'tunnel.ttl',
@@ -1120,14 +1216,14 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.tunnel.field.connectLinkTtl',
     descriptionKey: 'settings.openchamber.tunnel.field.tunnelSessionTtl',
     keywords: ['expiry', 'expiration', 'session ttl', 'connect link ttl'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'tunnel.managed-remote',
     page: 'tunnel',
     titleKey: 'settings.openchamber.tunnel.section.savedManagedRemoteTunnels',
     keywords: ['cloudflare', 'hostname', 'token', 'managed remote'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'tunnel.managed-local-config',
@@ -1135,7 +1231,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.tunnel.field.configurationFile',
     descriptionKey: 'settings.openchamber.tunnel.note.managedLocalUsesConfig',
     keywords: ['cloudflared', 'config', 'yaml', 'json', 'managed local'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'tunnel.start',
@@ -1143,7 +1239,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.tunnel.actions.startTunnel',
     descriptionKey: 'settings.openchamber.tunnel.note.connectLinksOneTime',
     keywords: ['connect link', 'qr code', 'public url', 'remote access'],
-    isAvailable: (ctx) => !ctx.isVSCode,
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.enterpriseMode,
   },
   {
     id: 'notifications.delivery',
@@ -1206,6 +1302,38 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {
+    id: 'integrations.third-party',
+    page: 'integrations',
+    titleKey: 'settings.integrations.thirdParty.title',
+    descriptionKey: 'settings.integrations.thirdParty.info',
+    keywords: ['plugin', 'provider', 'install', 'update', 'remove', 'subscription'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'integrations.third-party.opencode-claude',
+    page: 'integrations',
+    titleKey: 'settings.integrations.thirdParty.opencodeClaude.name',
+    descriptionKey: 'settings.integrations.thirdParty.opencodeClaude.description',
+    keywords: ['claude', 'anthropic', 'claude code', 'pro', 'max', 'agent sdk', '@openchamber/opencode-claude'],
+    isAvailable: (ctx) => !ctx.isVSCode,
+  },
+  {
+    id: 'integrations.extensions',
+    page: 'integrations',
+    titleKey: 'settings.integrations.extensionCatalog.title',
+    descriptionKey: 'settings.integrations.extensionCatalog.info',
+    keywords: ['extension', 'install', 'update', 'remove', 'openchamber'],
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.isMobile,
+  },
+  {
+    id: 'integrations.extensions.excalidraw',
+    page: 'integrations',
+    titleKey: 'settings.integrations.extensionCatalog.excalidraw.name',
+    descriptionKey: 'settings.integrations.extensionCatalog.excalidraw.description',
+    keywords: ['excalidraw', 'drawing', 'diagram', 'canvas', 'whiteboard', 'obsidian', 'sketch'],
+    isAvailable: (ctx) => !ctx.isVSCode && !ctx.isMobile,
+  },
+  {
     id: 'integrations.guests',
     page: 'integrations',
     titleKey: 'settings.integrations.guests.title',
@@ -1266,6 +1394,7 @@ export function buildSettingsSearchResults({
   const terms = normalizedQuery.split(/\s+/).filter(Boolean);
 
   return SETTINGS_SEARCH_ITEMS.flatMap((item) => {
+    if (OC2_SEARCH_IDS.has(item.id) && opencodeClient.getBoundRuntime()?.generation !== 'oc2') return [];
     if (allowedPages && !allowedPages.has(item.page)) {
       return [];
     }

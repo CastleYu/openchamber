@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, spyOn, test } from "bun:test"
 import type { Event, OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createEventPipeline } from "./event-pipeline"
 import { projectResources } from '@/lib/performance/projectResources'
@@ -6,6 +6,15 @@ import { projectResources } from '@/lib/performance/projectResources'
 const failAfter = (ms: number) => new Promise<never>((_, reject) => {
   setTimeout(() => reject(new Error("Timed out waiting for event pipeline flush")), ms)
 })
+
+async function until(condition: () => boolean, timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (condition()) return
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+  throw new Error("Condition was not met before the timeout")
+}
 
 function partUpdatedEvent(text: string): Event {
   return {
@@ -276,6 +285,61 @@ describe("createEventPipeline", () => {
       }
       return `updated:${((event.properties as { part: { text: string } }).part).text}`
     })).toEqual(["updated:a", "delta:b", "updated:ab", "delta:c"])
+  })
+
+  test("warns instead of erroring when a startup stream failure recovers", async () => {
+    const warnSpy = spyOn(console, "warn").mockImplementation(() => {})
+    const errorSpy = spyOn(console, "error").mockImplementation(() => {})
+    let attempts = 0
+    const source = {
+      generation: "oc1" as const,
+      events: async function* (signal: AbortSignal): AsyncGenerator<never> {
+        attempts += 1
+        if (attempts === 1) {
+          throw new Error("OpenCode service unavailable")
+        }
+        await new Promise<void>((resolve) => {
+          if (signal.aborted) {
+            resolve()
+            return
+          }
+          signal.addEventListener("abort", () => resolve(), { once: true })
+        })
+        yield* []
+      },
+    }
+    const pipeline = createEventPipeline({ source, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
+    try {
+      await until(() => attempts >= 2, 1_000)
+      expect(errorSpy.mock.calls.length).toBe(0)
+      expect(warnSpy.mock.calls.length > 0).toBe(true)
+    } finally {
+      pipeline.cleanup()
+      warnSpy.mockRestore()
+      errorSpy.mockRestore()
+    }
+  })
+
+  test("keeps a persistent stream failure visible as console.error", async () => {
+    const warnSpy = spyOn(console, "warn").mockImplementation(() => {})
+    const errorSpy = spyOn(console, "error").mockImplementation(() => {})
+    const source = {
+      generation: "oc1" as const,
+      events: async function* (): AsyncGenerator<never> {
+        yield* []
+        throw new Error("OpenCode service unavailable")
+      },
+    }
+    const pipeline = createEventPipeline({ source, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
+    try {
+      await until(() => errorSpy.mock.calls.length > 0, 2_000)
+      expect(warnSpy.mock.calls.length > 0).toBe(true)
+      expect(errorSpy.mock.calls.some((call) => call[0] === "[event-pipeline] stream failed")).toBe(true)
+    } finally {
+      pipeline.cleanup()
+      warnSpy.mockRestore()
+      errorSpy.mockRestore()
+    }
   })
 
   test("normalizes openchamber session status events", async () => {

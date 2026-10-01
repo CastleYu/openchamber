@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test"
+import { describe, expect, test, beforeEach, afterEach, mock, spyOn } from "bun:test"
 import type { PermissionRequest } from "@/types/permission"
 import type { QuestionRequest } from "@/types/question"
 import type { InputState } from "./input-store"
@@ -52,6 +52,8 @@ const directoryAvailability = new Map<string, "available" | "missing" | "unknown
 const sessionUpdateResultsById = new Map<string, Session | undefined>()
 let runtimeKey = "default-runtime"
 const AMBIGUOUS_TRANSPORT_FAILURE = Symbol("ambiguous-transport-failure")
+let connectionReady = true
+let probeConnection: (timeoutMs: number) => Promise<boolean> = async () => false
 
 const mockScopedClient = {
   permission: {
@@ -185,7 +187,17 @@ mock.module("@/lib/opencode/client", () => ({
     }),
     getFilesystemHome: mock(async () => "/home/test"),
     getSdkClient: () => mockSdk,
+    getSessionStatusForDirectory: mock(async () => ({})),
     getBoundRuntime: () => mockBoundRuntime,
+    stageRevert: mock(async (sessionId: string, messageId: string, options?: { directory?: string | null }) => {
+      replyCalls.push({ method: "session.revert.stage", params: { sessionID: sessionId, messageID: messageId, directory: options?.directory } })
+    }),
+    commitRevert: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.revert.commit", params: { sessionID: sessionId, directory } })
+    }),
+    clearRevert: mock(async (sessionId: string, directory?: string | null) => {
+      replyCalls.push({ method: "session.revert.clear", params: { sessionID: sessionId, directory } })
+    }),
     getSession: async (id: string) => {
       const session = forkSessionReads.get(id)
       if (!session) throw new Error('Session unavailable in fixture')
@@ -284,8 +296,9 @@ mock.module("@/lib/opencode/client", () => ({
 mock.module("@/stores/useConfigStore", () => ({
   useConfigStore: {
     getState: () => ({
-      isConnected: true,
+      isConnected: connectionReady,
       hasEverConnected: true,
+      probeConnection: ({ timeoutMs }: { timeoutMs: number }) => probeConnection(timeoutMs),
     }),
   },
 }))
@@ -421,6 +434,7 @@ mock.module("./session-message-loader", () => ({
 
 mock.module("../lib/runtime-switch", () => ({
   getRuntimeKey: () => runtimeKey,
+  getRuntimeApiBaseUrl: () => 'http://localhost',
   switchRuntimeEndpoint: ({ runtimeKey: nextRuntimeKey }: { runtimeKey: string }) => {
     runtimeKey = nextRuntimeKey
   },
@@ -625,6 +639,38 @@ describe("moveSessionToDirectory", () => {
     expect(destination.getState().message["session-a"]).toBe(undefined)
     expect(destination.getState().part["message-a"]).toBe(undefined)
   })
+})
+
+test('connection probes keep the direct window and allow a longer relay round trip', async () => {
+  const { waitForConnectionOrThrow } = await import('./session-actions')
+  const { activateRelayTunnel, deactivateRelayTunnel } = await import('@/lib/relay/runtime-tunnel')
+  const now = spyOn(Date, 'now')
+  let time = 1_000
+  const durations: number[] = []
+  connectionReady = false
+  now.mockImplementation(() => time)
+  probeConnection = async (timeoutMs) => {
+    durations.push(timeoutMs)
+    time += durations.length === 1 ? 2_500 : 500
+    return false
+  }
+
+  try {
+    deactivateRelayTunnel()
+    await expect(waitForConnectionOrThrow()).rejects.toThrow('Connection lost')
+    expect(durations).toEqual([500])
+
+    durations.length = 0
+    time = 1_000
+    activateRelayTunnel({ relayUrl: 'wss://relay.example.test', serverId: 'test-host', hostEncPubJwk: { kty: 'OKP', crv: 'X25519', x: 'test' } })
+    await expect(waitForConnectionOrThrow()).rejects.toThrow('Connection lost')
+    expect(durations).toEqual([3_000, 500])
+  } finally {
+    deactivateRelayTunnel()
+    connectionReady = true
+    probeConnection = async () => false
+    now.mockRestore()
+  }
 })
 
 describe("OC2 form actions", () => {
@@ -1623,6 +1669,32 @@ describe("optimisticSend target directory", () => {
     sessionMessagesResult = { data: [] }
   })
 
+  test("OC2 admits context before the prompt with stable ids and rolls both back on failure", async () => {
+    mockBoundRuntime = { generation: "oc2" }
+    const store = createStore({})
+    const added: OptimisticAddCall[] = []
+    const removed: string[] = []
+    const { optimisticSend, setActionRefs, setOptimisticRefs } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/target/project", store]]), () => "/target/project")
+    setOptimisticRefs((input) => added.push(input), (input) => removed.push(input.messageID))
+    try {
+      await expect(optimisticSend({
+        sessionId: "session-new", directory: "/target/project", content: "prompt", providerID: "provider", modelID: "model",
+        context: [{ text: "file context" }, { text: "   " }],
+        send: async (messageID, context) => {
+          expect(context).toHaveLength(1)
+          expect(context[0].id).toBe(added[0].message.id)
+          expect(messageID).toBe(added[1].message.id)
+          throw new Error("send failed")
+        },
+      })).rejects.toThrow("send failed")
+      expect(added.map((item) => item.message.role)).toEqual(["synthetic", "user"])
+      expect(removed).toEqual(added.map((item) => item.message.id))
+    } finally {
+      mockBoundRuntime = { generation: "oc1" }
+    }
+  })
+
   test("passes the prompt directory to optimistic state during session switch races", async () => {
     const currentStore = createStore({})
     const targetStore = createStore({})
@@ -2173,6 +2245,7 @@ describe("forkFromMessage composer restore", () => {
 
   beforeEach(() => {
     replyCalls.length = 0
+    globalUpsertedSessions.length = 0
     selectedSessions.length = 0
     runtimeKey = "fork-runtime"
     sessionForkResult = forkedSession
@@ -2418,6 +2491,27 @@ describe("revertToMessage passes session directory", () => {
       pendingInputMode: "replace",
       attachedFiles: [],
     })
+  })
+
+  test("OC2 stages at the first context record and can clear the staged cut", async () => {
+    mockBoundRuntime = { generation: "oc2" }
+    const session = { id: "session-a", directory: "/test/project", time: { created: 1, updated: 2 } } as Session
+    const context = { id: "msg_context", sessionID: session.id, role: "synthetic", time: { created: 2 }, text: "context" } as Message
+    const prompt = { id: "msg_prompt", sessionID: session.id, role: "user", time: { created: 2 } } as Message
+    const store = createStore({}, { session: [session], message: { [session.id]: [context, prompt] }, part: { [prompt.id]: [{ id: "text", type: "text", text: "prompt" } as Part] } })
+    forkSessionReads.set(session.id, { ...session, revert: { messageID: context.id } })
+    const { setActionRefs, revertToMessage, unrevertSession } = await import("./session-actions")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([[session.directory, store]]), () => session.directory)
+    try {
+      await revertToMessage(session.id, prompt.id)
+      expect(replyCalls.find((call) => call.method === "session.revert.stage")?.params.messageID).toBe(context.id)
+      expect(replyCalls.some((call) => call.method === "session.revert.commit")).toBe(false)
+      await unrevertSession(session.id)
+      expect(replyCalls.find((call) => call.method === "session.revert.clear")?.params.sessionID).toBe(session.id)
+    } finally {
+      mockBoundRuntime = { generation: "oc1" }
+      forkSessionReads.delete(session.id)
+    }
   })
 
   test("routes revert through the session directory instead of the current directory", async () => {

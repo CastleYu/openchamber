@@ -1,5 +1,6 @@
 import React from 'react';
-import { getSelectableModelId, useConfigStore, type ProviderModel, type ProviderWithModelList } from '@/stores/useConfigStore';
+import { findCatalogModel } from '@/lib/opencode/model';
+import { getSelectableModelId, selectProvidersForDirectory, useConfigStore, type ProviderModel, type ProviderWithModelList } from '@/stores/useConfigStore';
 import { useUIStore } from '@/stores/useUIStore';
 
 export interface ModelListItem {
@@ -9,8 +10,15 @@ export interface ModelListItem {
   modelID: string;
 }
 
-export const useModelLists = () => {
-  const providers = useConfigStore((state) => state.providers);
+const findProviderModel = (provider: ProviderWithModelList, modelID: string): ProviderModel | undefined =>
+  provider.generation === 'oc2'
+    ? findCatalogModel(provider.models, modelID)
+    : provider.models.find((model) => getSelectableModelId(model) === modelID);
+
+export const useModelLists = (directory?: string) => {
+  const providers = useConfigStore((state) => directory === undefined
+    ? state.providers
+    : selectProvidersForDirectory(state, directory));
   const favoriteModels = useUIStore((state) => state.favoriteModels);
   const recentModels = useUIStore((state) => state.recentModels);
   const hiddenModels = useUIStore((state) => state.hiddenModels);
@@ -24,7 +32,7 @@ export const useModelLists = () => {
       .map(({ providerID, modelID }) => {
         const provider = providers.find((p) => p.id === providerID);
         if (!provider) return null;
-        const model = provider.models.find((m) => getSelectableModelId(m) === modelID);
+        const model = findProviderModel(provider, modelID);
         if (!model) return null;
         if (isHidden(providerID, modelID)) return null;
         return { provider, model, providerID, modelID };
@@ -37,7 +45,7 @@ export const useModelLists = () => {
       .map(({ providerID, modelID }) => {
         const provider = providers.find((p) => p.id === providerID);
         if (!provider) return null;
-        const model = provider.models.find((m) => getSelectableModelId(m) === modelID);
+        const model = findProviderModel(provider, modelID);
         if (!model) return null;
         if (isHidden(providerID, modelID)) return null;
         return { provider, model, providerID, modelID };

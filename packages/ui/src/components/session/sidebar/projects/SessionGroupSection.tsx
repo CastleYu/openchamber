@@ -1,4 +1,5 @@
 import { DirectoryActionIndicator } from '../sessions/DirectoryActionIndicator';
+import { SpaceGroupStatus } from '@/components/session/spaces/SpaceGroupStatus';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { Session } from '@/lib/opencode/model';
@@ -12,6 +13,10 @@ import { Icon } from "@/components/icon/Icon";
 import { cn } from '@/lib/utils';
 import { sessionEvents } from '@/lib/sessionEvents';
 import { useUIStore } from '@/stores/useUIStore';
+import { useOnDemandComponent } from '@/hooks/useOnDemandComponent';
+import { useShiftKeyHeld } from '@/hooks/useShiftKeyHeld';
+import { opencodeClient } from '@/lib/opencode/client';
+import type { WorktreeMetadata } from '@/types/worktree';
 import { SessionFolderItem } from '../../SessionFolderItem';
 import type { SortableDragHandleProps } from './sortableItems';
 import { DroppableFolderWrapper, SessionFolderDndScope } from '../folders/sessionFolderDnd';
@@ -32,6 +37,8 @@ import { useSessionFoldersStore } from '@/stores/useSessionFoldersStore';
 
 type FolderScope = { scopeKey: string; directory: string | null };
 import { getGitHubPrStatusKey, usePrVisualSummary } from '@/stores/useGitHubPrStatusStore';
+import { openExternalUrl } from '@/lib/url';
+import { getPrStatusLabel } from '../prStatusLabel';
 import { useI18n } from '@/lib/i18n';
 import { useChildStoreManager } from '@/sync/sync-context';
 import { canRequestNativeDirectoryAccess, requestDirectoryAccess } from '@/lib/desktop';
@@ -40,6 +47,8 @@ import { useCollapsedSessionActivityState } from '../sessions/collapsedActivityS
 import { SessionTreeItem, type SessionTreeItemProps } from '../sessions/SessionTreeItem';
 import { FolderDeleteConfirmDialog } from '../shell/ConfirmDialogs';
 import { getSessionFolderOwnerKey } from '../sessions/sessionFolderIdentity';
+
+const loadSpaceActionsMenu = () => import('@/components/session/spaces/SpaceActions').then((module) => module.SpaceActionsMenu);
 
 type DeleteFolderConfirm = {
   scopeKey: string;
@@ -69,7 +78,7 @@ export type SessionGroupSectionProps = {
   activeProjectId: string | null;
   setActiveProjectIdOnly: (id: string) => void;
   setSessionSwitcherOpen: (open: boolean) => void;
-  openNewSessionDraft: (options?: { selectedProjectId?: string | null; directoryOverride?: string | null; targetFolderId?: string; target?: 'chat' | 'project' }) => void;
+  openNewSessionDraft: (options?: { selectedProjectId?: string | null; directoryOverride?: string | null; preserveDirectoryOverride?: boolean; targetFolderId?: string; target?: 'chat' | 'project' }) => void;
   pinnedSessionIds: Set<string>;
   sessionOrderIndex: Map<string, number>;
   notifyOnSubtasks: boolean;
@@ -256,6 +265,46 @@ const areGroupPropsEqual = (prev: SessionGroupSectionProps, next: SessionGroupSe
   );
 };
 
+type WorktreeDeleteActionProps = {
+  label: string;
+  sessions: Session[];
+  worktree: WorktreeMetadata;
+};
+
+// Keep modifier-key updates on the action instead of re-rendering every group.
+const WorktreeDeleteAction = React.memo(function WorktreeDeleteAction({ label, sessions, worktree }: WorktreeDeleteActionProps): React.ReactNode {
+  const { t } = useI18n();
+  const shiftHeld = useShiftKeyHeld();
+  return <Tooltip>
+    <TooltipTrigger asChild>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          sessionEvents.requestDelete({
+            sessions,
+            mode: 'worktree',
+            worktree,
+            skipDialogIfSafe: shiftHeld || event.shiftKey,
+          });
+        }}
+        className={cn(
+          'inline-flex h-6 w-6 items-center justify-center rounded-md hover:text-destructive hover:bg-interactive-hover/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          shiftHeld ? 'text-destructive' : 'text-muted-foreground',
+        )}
+        aria-label={shiftHeld
+          ? t('sessions.sidebar.group.actions.deleteGroupAndBranchAria', { label })
+          : t('sessions.sidebar.group.actions.deleteGroupAria', { label })}
+      >
+        <Icon name="delete-bin" className="h-4 w-4" />
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom" sideOffset={4}>
+      <p>{shiftHeld ? t('sessions.sidebar.group.actions.deleteWorktreeAndBranch') : t('sessions.sidebar.group.actions.deleteWorktree')}</p>
+    </TooltipContent>
+  </Tooltip>;
+});
+
 function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNode {
   const { t } = useI18n();
   const {
@@ -295,6 +344,9 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
     setFolderRenameDraft,
     clearFolderRename,
   } = props;
+  const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
+  const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
+  const SpaceActionsMenu = useOnDemandComponent(isOc2 && isolatedSpacesEnabled && Boolean(group.space), loadSpaceActionsMenu, () => {});
   const toggleFolderCollapse = useSessionFoldersStore((state) => state.toggleFolderCollapse);
   const renameFolder = useSessionFoldersStore((state) => state.renameFolder);
   const deleteFolder = useSessionFoldersStore((state) => state.deleteFolder);
@@ -323,6 +375,10 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
   }, [group.branch, group.directory, group.isArchivedBucket, group.isMain, hideGroupLabel]);
   const groupPrSummary = usePrVisualSummary(groupPrKey);
   const groupPrColor = groupPrSummary ? `var(--pr-${groupPrSummary.visualState})` : undefined;
+  const groupPrStatusLabel = getPrStatusLabel(groupPrSummary, t);
+  const groupPrLabel = groupPrSummary
+    ? (groupPrStatusLabel ? `#${groupPrSummary.number} · ${groupPrStatusLabel}` : `#${groupPrSummary.number}`)
+    : undefined;
   const childStores = useChildStoreManager();
   const bootstrapDirectories = React.useMemo(() => {
     const directories = group.folderScopes?.map((scope) => normalizePath(scope.directory))
@@ -1006,7 +1062,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
                 // folder-style row with a PR-tinted branch icon and PR badge.
                 <span className="flex w-full min-w-0 items-center gap-1.5">
                   <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-                    <Icon name="git-branch"
+                    <Icon name={group.space ? 'box-3' : 'git-branch'}
                       className={cn('h-3.5 w-3.5 shrink-0', !groupPrColor && 'text-muted-foreground', alwaysShowActions ? 'hidden' : 'group-hover/gh:hidden')}
                       style={groupPrColor ? { color: groupPrColor } : undefined}
                     />
@@ -1023,12 +1079,26 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
                   {worktreeMissingIndicator}
                   {groupActivityIndicator}
                   {groupPrSummary ? (
-                    <span
-                      className="ml-auto flex-shrink-0 text-[0.72rem] font-medium leading-none"
+                    // Opens the PR; it sits inside the collapse toggle and the
+                    // drag handle, so it keeps its pointer and keys to itself.
+                    <button
+                      type="button"
+                      className="ml-auto flex-shrink-0 rounded text-[0.72rem] font-medium leading-none hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:no-underline"
                       style={groupPrColor ? { color: groupPrColor } : undefined}
+                      disabled={!groupPrSummary.url}
+                      aria-label={groupPrLabel}
+                      title={groupPrSummary.title && groupPrStatusLabel
+                        ? `${groupPrLabel} · ${groupPrSummary.title}`
+                        : groupPrLabel}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (groupPrSummary.url) void openExternalUrl(groupPrSummary.url);
+                      }}
                     >
                       #{groupPrSummary.number}
-                    </span>
+                    </button>
                   ) : null}
                 </span>
               ) : (
@@ -1051,7 +1121,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
               </span>
             ) : null}
           </div>
-          {!group.isArchivedBucket && group.directory ? <DirectoryActionIndicator directory={group.directory} className="self-center" /> : null}
+          {!group.isArchivedBucket && !group.space && group.directory ? <DirectoryActionIndicator directory={group.directory} className="self-center" /> : null}
         </div>
         {group.isArchivedBucket && allGroupSessions.length > 0 ? (
           <div className={cn('absolute right-0.5 top-1/2 -translate-y-1/2 z-10 transition-opacity', alwaysShowActions ? 'opacity-100' : 'opacity-0 group-hover/gh:opacity-100 group-focus-within/gh:opacity-100')}>
@@ -1078,28 +1148,12 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
         ) : null}
         {group.directory && !group.isMain && group.worktree ? (
           <div className={cn('absolute right-7 top-1/2 -translate-y-1/2 z-10 transition-opacity', alwaysShowActions ? 'opacity-100' : 'opacity-0 group-hover/gh:opacity-100 group-focus-within/gh:opacity-100')}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    sessionEvents.requestDelete({
-                      sessions: allGroupSessions,
-                      mode: 'worktree',
-                      worktree: group.worktree,
-                    });
-                  }}
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-interactive-hover/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={t('sessions.sidebar.group.actions.deleteGroupAria', { label: group.label })}
-                >
-                  <Icon name="delete-bin" className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={4}><p>{t('sessions.sidebar.group.actions.deleteWorktree')}</p></TooltipContent>
-            </Tooltip>
+            <WorktreeDeleteAction label={group.label} sessions={allGroupSessions} worktree={group.worktree} />
           </div>
         ) : null}
+        {isOc2 && isolatedSpacesEnabled && group.space && SpaceActionsMenu ? <div className={cn('absolute right-7 top-1/2 -translate-y-1/2 z-10 transition-opacity', alwaysShowActions ? 'opacity-100' : 'opacity-0 group-hover/gh:opacity-100 group-focus-within/gh:opacity-100')}>
+          <SpaceActionsMenu spaceId={group.space.id} label={group.label} />
+        </div> : null}
         {group.directory ? (
           <div className={cn('absolute right-0.5 top-1/2 -translate-y-1/2 z-10 transition-opacity', alwaysShowActions ? 'opacity-100' : 'opacity-0 group-hover/gh:opacity-100 group-focus-within/gh:opacity-100')}>
             <Tooltip>
@@ -1110,7 +1164,8 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
                     event.stopPropagation();
                     if (projectId && projectId !== activeProjectId) setActiveProjectIdOnly(projectId);
                     if (mobileVariant) setSessionSwitcherOpen(false);
-                    openNewSessionDraft({ selectedProjectId: projectId, directoryOverride: group.directory });
+                    openNewSessionDraft({ selectedProjectId: projectId, directoryOverride: group.directory,
+                      preserveDirectoryOverride: Boolean(group.space) });
                   }}
                   className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-interactive-hover/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t('sessions.sidebar.group.actions.newDraftInGroupAria', { label: group.label })}
@@ -1123,6 +1178,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
            </div>
          ) : null}
       </div>
+      {group.space ? <SpaceGroupStatus spaceId={group.space.id} className="pb-1 pl-5" /> : null}
       {!isCollapsed && renderBody ? <div className={cn('oc-group-body', groupBodyPaddingClass)}>{body}</div> : null}
     </div>{folderDeleteDialog}</>
   );

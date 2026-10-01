@@ -1,7 +1,9 @@
 import React from 'react';
 import type { Session } from '@/lib/opencode/model';
 import { getRuntimeKey } from '@/lib/runtime-switch';
-import { cleanupPersistedSessionState } from '@/sync/session-deletion-cleanup';
+import { reconcileExternallyDeletedSession } from '@/sync/session-actions';
+import { spaceIdOfDirectory } from '@/lib/spaces/space-route';
+import { useSpacesStore } from '@/lib/spaces/spaces-store';
 import {
   buildAuthoritativeSessionIdentityMap,
   findRemovedAuthoritativeSessions,
@@ -27,8 +29,12 @@ export const useAuthoritativeSessionCleanup = (args: {
       ? baselineRef.current.identities
       : null;
 
+    const spaces = useSpacesStore.getState().spaces;
     for (const identity of findRemovedAuthoritativeSessions(previous, current)) {
-      cleanupPersistedSessionState({ runtimeKey, ...identity });
+      const spaceId = spaceIdOfDirectory(identity.directory);
+      const space = spaceId === null ? null : spaces.get(spaceId);
+      if (space && space.state !== 'complete') continue;
+      reconcileExternallyDeletedSession({ runtimeKey, ...identity });
     }
     baselineRef.current = { runtimeKey, identities: current };
   }, [enabled, hasAuthoritativeGlobalSessions, sessions]);

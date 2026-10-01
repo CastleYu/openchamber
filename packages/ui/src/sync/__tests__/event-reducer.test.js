@@ -167,6 +167,8 @@ describe('applyDirectoryEvent', () => {
           tool: 'apply_patch',
           state: {
             status: 'completed',
+            input: {},
+            metadata: {},
             time: {
               start: 10,
               end: 20,
@@ -186,6 +188,7 @@ describe('applyDirectoryEvent', () => {
           tool: 'apply_patch',
           state: {
             status: 'running',
+            input: {},
             time: {
               start: 10,
             },

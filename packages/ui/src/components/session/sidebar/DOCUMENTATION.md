@@ -43,6 +43,11 @@ kept at this root in `types.ts` and `utils.tsx`.
   changes), both directories are refreshed authoritatively because the session
   may have moved server-side, and the toast points the user at the destination.
   Existing destinations are never removed; they get the same guidance.
+- Shift+click on a worktree delete button asks `SessionDialogs` to check fresh
+  Git status. It skips the dialog only for a clean worktree whose branch has an
+  upstream and no commits ahead. Dirty, unpublished, unknown and failed-status
+  cases still open the confirmation. A per-path in-flight guard prevents a
+  repeated Shift+click from starting a second removal.
 
 `MainLayout` and `VSCodeLayout` call `useSessionListSync({ isVSCode })`
 unconditionally. The hook publishes background bootstrap demand scoped to
@@ -60,11 +65,33 @@ cache. Live busy and retry state comes from `global-session-status`, never from
 the global cache or persisted history. A failed global or directory fetch keeps
 existing data; it is never treated as an authoritative empty list.
 
+When isolated Spaces are enabled, the ownership index maps each Space directory
+to its registered project and keeps the Space as a separate folder scope.
+Recent and Timeline use the same owner and show the Space name. The project
+group remains visible with no sessions, and a stale Space keeps its last known
+sessions until an authoritative complete read replaces them. VS Code has no
+Space groups. The Space switch is off by default. A real Space group in an OC2
+runtime loads its actions menu on demand; OC1 and the default-off startup do
+not request that module. The mobile sessions sheet loads project editing when
+it opens. Inside that editor, Space rows load only for an OC2 project with
+listed Spaces; ordinary OC1 project editing stays available.
+
+OC2 multi-run members collapse into one derived run row in project and activity
+views. Expanding it reveals its member sessions; archived sessions stay
+individual rows. OC1 keeps its existing launcher and fusion menu. With Session
+Work enabled on OC2, sessions marked in work appear once in the In Work block
+above Recent or Timeline, while their child sessions remain reachable there.
+
 Activity indicators use `SessionActivityIndicator` in project and timeline rows,
-header tabs, switchers and collapsed aggregates. Running uses the info color;
-unread uses success. The local Appearance preference `animatedActivityIndicators`
-is off by default. Enabling it swaps running dots for a stepped spinner, even
-when the OS requests reduced motion. Permission/question badges and per-session
+header tabs, switchers and collapsed aggregates. Each state is a static icon:
+the session's own run is `circle`, a pause held open by a background subagent
+is `robot`, one held open by a background command is `terminal` (all info
+color; `useSessionTurnActivity` in `sync/global-session-status.ts` decides, the
+session's own run first, then the subagent), and a finished unseen turn is
+`checkbox-circle` (success color). Collapsed aggregates show only running or
+unread. The local Appearance preference `animatedActivityIndicators`
+is off by default. Enabling it swaps every running kind for a stepped spinner,
+even when the OS requests reduced motion; the unread icon stays. Permission/question badges and per-session
 elapsed counters retain their existing precedence and behavior. The display
 store keeps version 8: missing preferences inherit the default during hydration,
 while an explicitly saved choice survives reload.
@@ -139,8 +166,9 @@ renders `projects`.
 - Timeline keeps the managed Chats zone, with an initial reveal of 3 instead of
   the usual Chats limit. Pinned chats are always shown and never spend that
   limit, so Show more/Show fewer count only unpinned rows. Chats rows render
-  with `renderContext: 'timeline-chat'`: one line, no left gutter, pin and
-  status dot on the right beside the time. Collapsing a zone header resets its
+  with `renderContext: 'timeline-chat'`: one line, no left gutter, pin marker
+  and status icon on the right beside the time; the goal glyph and badges ride
+  in the same cluster. Collapsing a zone header resets its
   Show more state.
 - Zone headers are sticky in the projects view and never in the timeline; there
   is no user toggle. Timeline zone headers drop the leading icon and use a
@@ -213,6 +241,12 @@ matching and ordering. Search does not fetch sessions or broaden list membership
   recursively mount descendants in the shared scroller. One preorder ID pool
   plus index ranges supplies hidden descendants to subtree selection without
   copying a descendant array for every ancestor.
+- A row's `depth` is its visual indent, not its tree depth. Sessions and runs
+  in a folder start at depth 1 beneath the folder header; child rows add one.
+- OC2 session assist is current only when it was generated after the session's
+  last idle marker and the session has not been reverted. Desktop rows show the
+  recap in the row tooltip and an In work completion hint from session metadata.
+  OC1 chat assist continues to compare its target assistant message ID.
 - The existing `ScrollableOverlay` is the sole scroll owner. The shared row
   renderer measures variable-height rows, uses stable occurrence keys, keeps a
   bounded pre-initialization window, and pins editing, focused, and open-menu

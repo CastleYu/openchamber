@@ -5,6 +5,7 @@ import {
     CONTEXT_METADATA_KEY,
     contextPayloadFromDraft,
     createContextPart,
+    draftFromContextPayload,
     formatContextText,
     hasContextParts,
     readContextPart,
@@ -105,6 +106,15 @@ describe('round-trip through part metadata', () => {
         for (const payload of payloads) {
             expect(readContextPart(asPart(payload))).toEqual(payload);
         }
+    });
+
+    test('a chat quote anchor survives the outgoing part and draft restoration', () => {
+        const anchor = { text: 'selected words', prefix: 'before ', suffix: ' after', start: 7 };
+        const original = draft({ source: 'chat-quote', fileLabel: 'msg_1', code: 'selected words', anchor });
+        const payload = readContextPart(asPart(contextPayloadFromDraft(original)));
+        expect(payload).toMatchObject({ kind: 'chat-quote', messageId: 'msg_1', anchor });
+        if (!payload) throw new Error('Chat quote did not parse');
+        expect(draftFromContextPayload(payload)?.anchor).toEqual(anchor);
     });
 
     test('github references carry picker-built text and structured identity', () => {

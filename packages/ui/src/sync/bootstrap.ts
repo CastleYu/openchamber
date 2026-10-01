@@ -1,6 +1,7 @@
 import type { OpencodeClient, Project } from "@opencode-ai/sdk/v2/client"
 import type { SyncSource } from "./source"
 import type { BootstrapPath } from "@/lib/opencode/operations"
+import { opencodeClient } from "@/lib/opencode/client"
 import { z } from "zod"
 import { retry } from "./retry"
 import type { GlobalState, State } from "./types"
@@ -9,6 +10,7 @@ import { emitSyncConfigChanged, emitTaggedSyncConfigChanged } from "./sync-refs"
 import { warmChatsRootDirectory } from "../lib/chatDirectories"
 import { runBackgroundNetworkTask } from "../lib/background-network"
 import { sessionStatusSnapshotSchema } from "../lib/opencode/session-status"
+import { refreshBackgroundShells } from "./background-shells"
 import {
   readDirectoryStatusSnapshot,
   readDirectoryQuestionSnapshot,
@@ -91,6 +93,13 @@ export async function bootstrapGlobal(
       }
       else set({ config: unwrap(await legacyClient().global.config.get(), "global.config.get") })
     }),
+    ...(source?.generation === "oc2" ? [retry(async () => {
+      const projects = (await opencodeClient.listProjects())
+        .filter((project) => project.worktree && !project.worktree.includes("opencode-test"))
+        .map((project) => ({ ...project, vcs: project.vcs === "git" ? "git" as const : undefined }))
+        .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+      set({ projects })
+    })] : []),
   ])
 
   const errors = results
@@ -278,6 +287,11 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
         if (result.data) commit({ vcs: result.data })
       }
     }),
+    // Commands the agent left running in the background, including ones whose
+    // start or exit this client missed.
+    ...(source?.generation === "oc2"
+      ? [read(() => refreshBackgroundShells(directory, (target) => opencodeClient.listRunningShells(target)))]
+      : []),
   ])
   const [results, enrichmentResults] = await Promise.all([critical, enrichment])
   if (input.isStale?.()) return "stale"

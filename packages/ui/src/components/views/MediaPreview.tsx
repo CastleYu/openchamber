@@ -1,4 +1,4 @@
-import { ImagePreview } from './ImagePreview';
+import { ImageArtifact } from './files/previews/ImageArtifact';
 import { FontArtifact } from './files/previews/FontArtifact';
 import React from 'react';
 import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
@@ -53,7 +53,7 @@ export function MediaPreview({ path, options }: { path: string; options: FileTra
     <p>{t('fileOpening.previewFailed')}</p>
     <Button size="sm" variant="outline" onClick={retry}>{t('fileOpening.retry')}</Button>
   </div>;
-  if (kind === 'image') return <ImagePreview src={state.url} name={path.replace(/\\/g, '/').split('/').pop() || path} />;
+  if (kind === 'image') return <ImageArtifact src={state.url} name={path.replace(/\\/g, '/').split('/').pop() || path} sizeBytes={null} />;
   if (kind === 'font') return <FontArtifact src={state.url} name={path.replace(/\\/g, '/').split('/').pop() || path} sizeBytes={null} />;
   if (kind === 'pdf') return <iframe src={state.url} title={path} className="h-full min-h-96 w-full border-0" />;
   if (kind === 'zip') return <div className="p-3 overflow-auto h-full typography-ui">

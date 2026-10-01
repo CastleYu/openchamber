@@ -23,6 +23,8 @@ import { useUsageStatsAvailable } from '@/components/views/usage/useUsageStatsAv
 import { WorktreesView } from '@/components/views/WorktreesView';
 import { DiffWorkerProvider } from '@/contexts/DiffWorkerProvider';
 import { MultiRunLauncher } from '@/components/multirun';
+import { opencodeClient } from '@/lib/opencode/client';
+import { useSpacesStore } from '@/lib/spaces/spaces-store';
 
 import { useUIStore } from '@/stores/useUIStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -35,12 +37,16 @@ import { useUpdatePolling } from '@/hooks/useUpdatePolling';
 import { useTerminalSessionKeepalive } from '@/hooks/useTerminalSessionKeepalive';
 import { useDeviceInfo } from '@/lib/device';
 import { cn } from '@/lib/utils';
-import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
+import { useOnDemandComponent } from '@/hooks/useOnDemandComponent';
 import { useSessionListSync } from '@/components/session/sidebar/list/useSessionListSync';
 
 import { ChatView } from '@/components/views/ChatView';
 
-const SettingsWindow = lazyWithChunkRecovery(() => import('@/components/views/SettingsWindow').then(m => ({ default: m.SettingsWindow })));
+const loadSettingsWindow = () => import('@/components/views/SettingsWindow').then((module) => module.SettingsWindow);
+const loadSpacesView = () => import('@/components/views/SpacesView').then((module) => module.SpacesView);
+const loadSpaceDialogs = () => import('@/components/session/spaces/SpaceDialogsHost').then((module) => module.SpaceDialogsHost);
+const loadRunOverview = () => import('@/components/multirun/RunOverview').then((module) => module.RunOverview);
+const loadRunAutoFusion = () => import('@/lib/multirun/autoFusion').then((module) => module.RunAutoFusion);
 
 /**
  * Desktop-surface layout: the chat owns the main area, and every other
@@ -55,18 +61,10 @@ export const MainLayout: React.FC = () => {
     const setIsMobile = useUIStore((state) => state.setIsMobile);
     const isSettingsDialogOpen = useUIStore((state) => state.isSettingsDialogOpen);
     const setSettingsDialogOpen = useUIStore((state) => state.setSettingsDialogOpen);
-    // Mount the windowed settings dialog only after its first open: rendering
-    // the lazy component (even closed) makes React fetch the SettingsView
-    // chunk graph (CodeMirror editor, vim mode, theme tooling) on startup.
-    // Once opened it stays mounted so the close animation and state behave as
-    // before.
-    const [settingsWindowMounted, setSettingsWindowMounted] = React.useState(false);
-    React.useEffect(() => {
-        if (isSettingsDialogOpen) {
-            setSettingsWindowMounted(true);
-        }
-    }, [isSettingsDialogOpen]);
+    const SettingsWindow = useOnDemandComponent(isSettingsDialogOpen, loadSettingsWindow, () => setSettingsDialogOpen(false));
     const isMultiRunLauncherOpen = useUIStore((state) => state.isMultiRunLauncherOpen);
+    const isRunOverviewOpen = useUIStore((state) => state.runOverviewKey !== null);
+    const isOc2 = opencodeClient.getBoundRuntime()?.generation === 'oc2';
     const setMultiRunLauncherOpen = useUIStore((state) => state.setMultiRunLauncherOpen);
     const multiRunLauncherPrefillPrompt = useUIStore((state) => state.multiRunLauncherPrefillPrompt);
     const isScheduledTasksPageOpen = useUIStore((state) => state.isScheduledTasksDialogOpen);
@@ -77,6 +75,20 @@ export const MainLayout: React.FC = () => {
         if (!statsAvailable && isUsageStatsPageOpen) useUIStore.getState().setUsageStatsPageOpen(false);
     }, [statsAvailable, isUsageStatsPageOpen]);
     const worktreesPageProjectId = useUIStore((state) => state.worktreesPageProjectId);
+    const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
+    const spacesPageProjectId = useUIStore((state) => state.spacesPageProjectId);
+    const spaceDialogOpen = useSpacesStore((state) => Boolean(state.accessDialog || state.actionsSheet || state.deleteDialog || state.applyDialog || state.setupOutputDialog));
+    const SpacesView = useOnDemandComponent(isOc2 && isolatedSpacesEnabled && Boolean(spacesPageProjectId), loadSpacesView, () => useUIStore.getState().setSpacesPageProjectId(null));
+    const SpaceDialogsHost = useOnDemandComponent(isOc2 && isolatedSpacesEnabled && spaceDialogOpen, loadSpaceDialogs, () => {
+        const spaces = useSpacesStore.getState();
+        spaces.closeAccessDialog();
+        spaces.closeActionsSheet();
+        spaces.closeDeleteDialog();
+        spaces.closeApplyDialog();
+        spaces.closeSetupOutputDialog();
+    });
+    const RunOverview = useOnDemandComponent(isOc2 && isRunOverviewOpen, loadRunOverview, () => useUIStore.getState().setRunOverviewKey(null));
+    const RunAutoFusion = useOnDemandComponent(isOc2, loadRunAutoFusion, () => {});
     const openGuestPageId = useUIStore((state) => state.openGuestPageId);
     const guestPages = useGuestPages();
     const guestPage = guestPages.find((guest) => guest.id === openGuestPageId);
@@ -87,7 +99,7 @@ export const MainLayout: React.FC = () => {
     // Any full-page surface replacing the chat area. While open, the chat is
     // fully hidden (not just covered) so none of its floating chrome bleeds
     // through, and selecting a session or draft anywhere closes the surface.
-    const isSurfacePageOpen = isScheduledTasksPageOpen || isArchivePageOpen || (statsAvailable && isUsageStatsPageOpen) || Boolean(worktreesPageProjectId) || isMultiRunLauncherOpen || Boolean(guestPage);
+    const isSurfacePageOpen = isScheduledTasksPageOpen || isArchivePageOpen || (statsAvailable && isUsageStatsPageOpen) || Boolean(worktreesPageProjectId) || (isOc2 && isolatedSpacesEnabled && Boolean(spacesPageProjectId)) || isMultiRunLauncherOpen || (isOc2 && isRunOverviewOpen) || Boolean(guestPage);
 
     React.useEffect(() => {
         const closeSurfacePages = () => useUIStore.getState().closeMainSurfaces();
@@ -124,6 +136,8 @@ export const MainLayout: React.FC = () => {
                 <CommandPalette />
                 <HelpDialog />
                 <OpenCodeStatusDialog />
+                {isOc2 && RunAutoFusion ? <RunAutoFusion /> : null}
+                {isOc2 && isolatedSpacesEnabled && SpaceDialogsHost ? <SpaceDialogsHost /> : null}
                 <SessionDialogs />
                 <SessionWorktreeMoveConfirmDialog
                     value={sessionTreeMoveConfirmation}
@@ -173,6 +187,7 @@ export const MainLayout: React.FC = () => {
                                                     </ErrorBoundary>
                                                 </div>
                                             )}
+                                            {isOc2 && isRunOverviewOpen && RunOverview ? <ErrorBoundary><RunOverview /></ErrorBoundary> : null}
                                             <ErrorBoundary><ScheduledTasksDialog /></ErrorBoundary>
                                             <ErrorBoundary><ArchiveView /></ErrorBoundary>
                                             {statsAvailable && isUsageStatsPageOpen && (
@@ -181,6 +196,7 @@ export const MainLayout: React.FC = () => {
                                                 </div>
                                             )}
                                             <ErrorBoundary><WorktreesView /></ErrorBoundary>
+                                            {isOc2 && isolatedSpacesEnabled && spacesPageProjectId && SpacesView ? <ErrorBoundary><SpacesView /></ErrorBoundary> : null}
                                             {guestPage && <div className="absolute inset-0 z-10 bg-background">
                                                 <ErrorBoundary><PluginPane mode={`plugin:${guestPage.id}`} surface="page" item={null}
                                                     onDismiss={() => useUIStore.getState().setOpenGuestPage(null)} /></ErrorBoundary>
@@ -199,13 +215,8 @@ export const MainLayout: React.FC = () => {
                 </div>
 
                 {/* Settings: windowed dialog with blur */}
-                {settingsWindowMounted ? (
-                    <React.Suspense fallback={null}>
-                        <SettingsWindow
-                            open={isSettingsDialogOpen}
-                            onOpenChange={setSettingsDialogOpen}
-                        />
-                    </React.Suspense>
+                {SettingsWindow ? (
+                    <SettingsWindow open={isSettingsDialogOpen} onOpenChange={setSettingsDialogOpen} />
                 ) : null}
             </div>
         </DiffWorkerProvider>

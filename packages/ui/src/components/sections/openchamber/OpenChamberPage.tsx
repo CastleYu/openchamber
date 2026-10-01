@@ -12,6 +12,9 @@ import { TunnelSettings } from './TunnelSettings';
 import { OpenCodeCliSettings } from './OpenCodeCliSettings';
 import { OpenChamberToolsSettings } from './OpenChamberToolsSettings';
 import { OccupancySettings } from './OccupancySettings';
+import { SessionWorkSettings } from './SessionWorkSettings';
+import { IsolatedSpacesSettings } from './IsolatedSpacesSettings';
+import { ISOLATED_SPACES_RELEASED } from '@/lib/spaces/release';
 import { DesktopNetworkSettings } from './DesktopNetworkSettings';
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings';
 import { SettingsPageLayout } from '@/components/sections/shared/SettingsPageLayout';
@@ -51,6 +54,7 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
             <SettingsPageLayout showSaveStatus className="openchamber-page-body space-y-3 sm:space-y-6">
                 <OpenChamberVisualSettings />
                 <DefaultsSettings key={runtimeEndpointEpoch} />
+                <SessionWorkSettings />
                 {showDesktopNetworkSettings && <DesktopNetworkSettings />}
                 {!isVSCode && <OpenCodeCliSettings />}
                 {!isVSCode && <OpenChamberToolsSettings />}
@@ -83,6 +87,8 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
                 return <VoiceSectionContent />;
             case 'tunnel':
                 return <TunnelSectionContent />;
+            case 'spaces':
+                return <SpacesSectionContent />;
             default:
                 return null;
         }
@@ -99,6 +105,7 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
         notifications: t('settings.page.notifications.title'),
         voice: t('settings.page.voice.title'),
         tunnel: t('settings.page.tunnel.title'),
+        spaces: t('settings.openchamber.spaces.title'),
     }[section];
 
     const pageDescription = {
@@ -112,6 +119,7 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
         notifications: t('settings.page.notifications.description'),
         voice: t('settings.page.voice.description'),
         tunnel: t('settings.page.tunnel.description'),
+        spaces: undefined,
     }[section];
 
     return (
@@ -210,6 +218,7 @@ const ChatSectionContent: React.FC = () => {
                 'diffLayout',
                 'inputHistoryScope',
                 'inputHistoryLimit',
+                'messageSearch',
                 'dotfiles',
                 'fileViewerPreview',
                 'followUpBehavior',
@@ -227,6 +236,7 @@ const SessionsSectionContent: React.FC<{ runtimeEndpointEpoch: number }> = ({ ru
     return (
         <>
             <DefaultsSettings key={runtimeEndpointEpoch} />
+            <SessionWorkSettings />
             <SessionRetentionSettings />
         </>
     );
@@ -248,6 +258,11 @@ const VoiceSectionContent: React.FC = () => {
         return null;
     }
     return <VoiceSettings />;
+};
+
+const SpacesSectionContent: React.FC = () => {
+    if (isVSCodeRuntime() || !ISOLATED_SPACES_RELEASED) return null;
+    return <IsolatedSpacesSettings />;
 };
 
 const TunnelSectionContent: React.FC = () => {

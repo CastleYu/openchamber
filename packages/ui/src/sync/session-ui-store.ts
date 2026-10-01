@@ -16,6 +16,7 @@ import type { ContextPartMetadata } from "@/lib/messages/contextParts"
 import { create } from "zustand"
 import type { Session, Part, TextPart, Metadata } from "@/lib/opencode/model"
 import type { AttachedFile, SessionContextUsage, SessionWorktreeAttachment } from "@/stores/types/sessionTypes"
+import type { PermissionMode } from "@/stores/utils/permissionAutoAccept"
 import type { WorktreeMetadata } from "@/types/worktree"
 import { opencodeClient } from "@/lib/opencode/client"
 import { runtimeFetch } from "@/lib/runtime-fetch"
@@ -35,7 +36,7 @@ import { CHAT_DRAFT_PROJECT_ID, createChatDirectory, deleteChatDirectory, getCha
 import { isVSCodeRuntime } from "@/lib/desktop"
 import { composeForkSessionMessage } from "@/lib/messages/executionMeta"
 import { findLatestUserModelChoice } from "@/lib/messages/userModelChoice"
-import { waitForPendingDraftWorktreeRequest } from "@/lib/worktrees/pendingDraftWorktree"
+import { noteDraftSendWaiting, waitForPendingDraftWorktreeRequest } from "@/lib/worktrees/pendingDraftWorktree"
 import { waitForWorktreeBootstrap } from "@/lib/worktrees/worktreeBootstrap"
 import { getWorktreeSetupWaitEnabled } from "@/lib/openchamberConfig"
 import { resolveProjectForSessionDirectory } from "@/lib/projectResolution"
@@ -254,7 +255,13 @@ export async function routeMessage(params: {
     directory: requestDirectory,
     files: params.files,
     appendSubmissions: params.appendSubmissions,
-    send: (messageID) => opencodeClient.sendMessage({
+    context: promptAdditionalParts?.filter((part) => part.synthetic && part.text.trim()).map((part) => ({
+      text: part.text,
+      metadata: part.metadata,
+    })),
+    send: (messageID, context) => {
+      let contextIndex = 0
+      return opencodeClient.sendMessage({
       runtimeKey: params.runtimeKey,
       id: params.sessionId,
       providerID: params.providerID,
@@ -269,11 +276,13 @@ export async function routeMessage(params: {
         synthetic: part.synthetic,
         metadata: part.metadata,
         files: part.files,
+        id: part.synthetic && part.text.trim() ? context[contextIndex++]?.id : undefined,
       })),
       delivery: params.delivery,
       messageId: messageID,
       directory: requestDirectory,
-    }).then(() => {}),
+      }).then(() => {})
+    },
   })
   return 'prompt'
 }
@@ -312,6 +321,18 @@ type AssistantMessageSessionSource = {
 
 import { projectResources } from '@/lib/performance/projectResources';
 
+/** A revert marker may name context just before the prompt it belongs to. */
+function revertedUserMessageIndex(
+  messages: readonly { id: string }[],
+  userMessages: readonly { id: string }[],
+  revertMessageID: string,
+): number {
+  const markerIndex = messages.findIndex((message) => message.id === revertMessageID)
+  if (markerIndex < 0) return -1
+  const reverted = messages.slice(markerIndex).find((message) => userMessages.includes(message))
+  return reverted ? userMessages.indexOf(reverted) : -1
+}
+
 function notifyMessageSent(sessionId: string, directory: string): void {
   projectResources.sent(directory)
   runtimeFetch(`/api/sessions/${sessionId}/message-sent`, { method: "POST" })
@@ -330,6 +351,7 @@ export type NewSessionDraftState = {
   selectedProjectId?: string | null
   directoryOverride: string | null
   permissionAutoAcceptEnabled?: boolean
+  permissionMode?: PermissionMode
   pendingWorktreeRequestId?: string | null
   bootstrapPendingDirectory?: string | null
   preserveDirectoryOverride?: boolean
@@ -398,6 +420,7 @@ export type SessionUIState = {
   setNewSessionDraftTarget: (target: { projectId?: string | null; selectedProjectId?: string | null; directoryOverride?: string | null }, options?: { force?: boolean }) => void
   setDraftPreserveDirectoryOverride: (value: boolean) => void
   setDraftPermissionAutoAcceptEnabled: (enabled: boolean) => void
+  setDraftPermissionMode: (mode: PermissionMode) => void
   setDraftProjectContextPin: (kind: "note" | "plan", id: string, pinned: boolean) => void
   acknowledgeSessionAbort: (sessionId: string) => void
   clearAbortPrompt: () => void
@@ -640,8 +663,11 @@ const resolveSessionDirectory = (
   return resolution.directory
 }
 
-const activateConfigForDirectory = async (directory: string | null | undefined): Promise<void> => {
-  await useConfigStore.getState().activateDirectory(normalizePath(directory))
+const activateConfigForDirectory = async (
+  directory: string | null | undefined,
+  options?: { preserveManualModel?: boolean },
+): Promise<void> => {
+  await useConfigStore.getState().activateDirectory(normalizePath(directory), options)
 }
 
 const applyDraftTargetSelectionDefaults = (
@@ -668,20 +694,24 @@ const applyDraftTargetSelectionDefaults = (
           normalizePath(draft.directoryOverride ?? null),
         )))
 
-  const configDirectory = normalizePath(selectedProject?.path ?? null)
-    ?? normalizePath(draft.directoryOverride ?? null)
+  const configDirectory = normalizePath(draft.directoryOverride ?? null)
+    ?? normalizePath(selectedProject?.path ?? null)
 
   if (previousDraft?.open && previousDraft.draftId === draft.draftId && previousDraft.target === draft.target) {
     const previousProject = previousDraft.target !== 'project' ? null
       : projects.find((project) => project.id === previousDraft.selectedProjectId)
         ?? resolveDraftProjectForDirectory(projects, availableWorktreesByProject, normalizePath(previousDraft.directoryOverride ?? null))
-    const previousConfigDirectory = normalizePath(previousProject?.path ?? previousDraft.directoryOverride ?? null)
+    const previousConfigDirectory = normalizePath(previousDraft.directoryOverride ?? null)
+      ?? normalizePath(previousProject?.path ?? null)
     if (previousConfigDirectory === configDirectory) return
   }
 
   const runtimeKey = getRuntimeKey()
   const revision = ++draftDefaultsRevision
+  const projectChanged = !previousDraft || previousDraft.target !== draft.target
+    || previousDraft.selectedProjectId !== draft.selectedProjectId
   const applyDefaults = () => {
+    if (!projectChanged) return
     const currentProject = selectedProject?.path
       ? useProjectsStore.getState().projects.find((project) => normalizePath(project.path) === normalizePath(selectedProject.path))
       : undefined
@@ -691,7 +721,9 @@ const applyDraftTargetSelectionDefaults = (
       projectDefaultVariant: currentProject?.defaultVariant,
     })
   }
-  const activation = activateConfigForDirectory(configDirectory)
+  const activation = activateConfigForDirectory(configDirectory, {
+    preserveManualModel: !projectChanged && draft.target === "project",
+  })
   applyDefaults()
   void activation.then(() => {
     const current = useSessionUIStore.getState()
@@ -944,7 +976,8 @@ export async function materializeOpenDraftSession(selection: {
   const store = useSessionUIStore.getState()
   const draft = draftOverride ?? store.newSessionDraft
   if (!draft?.open) return null
-  const draftPermissionAutoAcceptEnabled = draft.permissionAutoAcceptEnabled === true
+  const draftPermissionMode = draft.permissionMode
+    ?? (draft.permissionAutoAcceptEnabled === true ? "auto" : undefined)
 
   const trimmedAgent = typeof selection.agent === "string" && selection.agent.trim().length > 0
     ? selection.agent.trim()
@@ -953,8 +986,14 @@ export async function materializeOpenDraftSession(selection: {
   const draftProjectId = draft.selectedProjectId ?? null
 
   if (draft.pendingWorktreeRequestId) {
-    draftDirectoryOverride = await waitForPendingDraftWorktreeRequest(draft.pendingWorktreeRequestId)
-    store.resolvePendingDraftWorktreeTarget(draft.pendingWorktreeRequestId, draftDirectoryOverride)
+    const requestId = draft.pendingWorktreeRequestId
+    noteDraftSendWaiting(requestId, true)
+    try {
+      draftDirectoryOverride = await waitForPendingDraftWorktreeRequest(requestId)
+    } finally {
+      noteDraftSendWaiting(requestId, false)
+    }
+    store.resolvePendingDraftWorktreeTarget(requestId, draftDirectoryOverride)
   }
 
   const isChatDraft = draft.target === "chat"
@@ -1026,11 +1065,16 @@ export async function materializeOpenDraftSession(selection: {
 
   store.initializeNewOpenChamberSession(created.id, configState.agents ?? [])
 
-  if (draftPermissionAutoAcceptEnabled) {
+  const oc2PermissionMode = opencodeClient.getBoundRuntime()?.generation === "oc2"
+    ? draftPermissionMode
+    : undefined
+  if (oc2PermissionMode || (draft.permissionAutoAcceptEnabled === true && draftPermissionMode !== "safety")) {
     void import("@/stores/permissionStore")
-      .then(({ usePermissionStore }) => usePermissionStore.getState().setSessionAutoAccept(created.id, true))
+      .then(({ usePermissionStore }) => oc2PermissionMode
+        ? usePermissionStore.getState().setSessionMode(created.id, oc2PermissionMode)
+        : usePermissionStore.getState().setSessionAutoAccept(created.id, true))
       .catch((error) => {
-        console.warn("Failed to apply draft permission auto-accept to new session:", error)
+        console.warn("Failed to apply draft permission mode to new session:", error)
       })
   }
 
@@ -1519,7 +1563,13 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
   setDraftPermissionAutoAcceptEnabled: (enabled) =>
     set((s) => {
       if (!s.newSessionDraft?.open) return s
-      return { newSessionDraft: { ...s.newSessionDraft, permissionAutoAcceptEnabled: enabled } }
+      return { newSessionDraft: { ...s.newSessionDraft, permissionAutoAcceptEnabled: enabled, permissionMode: enabled ? "auto" : "ask" } }
+    }),
+
+  setDraftPermissionMode: (mode) =>
+    set((s) => {
+      if (!s.newSessionDraft?.open) return s
+      return { newSessionDraft: { ...s.newSessionDraft, permissionMode: mode, permissionAutoAcceptEnabled: mode !== "ask" } }
     }),
 
   setDraftProjectContextPin: (kind, id, pinned) =>
@@ -1988,7 +2038,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
     const revertToId = currentSession?.revert?.messageID
     let targetMessage: typeof messages[number] | undefined
     if (revertToId) {
-      const revertIndex = userMessages.findIndex((message) => message.id === revertToId)
+      const revertIndex = revertedUserMessageIndex(messages, userMessages, revertToId)
       targetMessage = revertIndex > 0 ? userMessages[revertIndex - 1] : undefined
     } else {
       targetMessage = userMessages[userMessages.length - 1]
@@ -2036,7 +2086,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
     await refetchSessionMessages(sessionId)
     const messages = getSyncMessages(sessionId)
     const userMessages = messages.filter((m) => m.role === "user")
-    const revertIndex = userMessages.findIndex((message) => message.id === revertToId)
+    const revertIndex = revertedUserMessageIndex(messages, userMessages, revertToId)
     const targetMessage = revertIndex >= 0 ? userMessages[revertIndex + 1] : undefined
 
     if (targetMessage) {

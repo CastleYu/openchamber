@@ -5,10 +5,10 @@ import type { Message, Part } from "@/lib/opencode/model"
 import type { Session } from "@/lib/opencode/model"
 import type { StoreApi } from "zustand"
 import { useStore } from "zustand"
-import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import type { SyncSource } from "./source"
 import type { CatalogKind, DomainEvent } from "@/lib/opencode/events"
 import { refreshStoresForCatalogKind } from "@/stores/catalogRefresh"
+import { markConfigCatalogStale } from "@/stores/useConfigStore"
 import type { PendingInput, PendingPermission } from "@/lib/opencode/operations"
 import { projectLegacyPart } from "@/lib/opencode/v1/projection"
 import { applyDomainEvent } from "./event-reducer"
@@ -44,7 +44,7 @@ import { countSyncPerformance } from "./performance-diagnostics"
 import { runBackgroundNetworkTask } from "@/lib/background-network"
 import { recordDirectoryRecoveryEvent, recordDomainRecoveryEvent } from "./directory-recovery-snapshots"
 import { setActionRefs } from "./session-actions"
-import { setSyncRefs, getAllSyncSessions } from "./sync-refs"
+import { setSyncRefs, getAllSyncSessions, getDirectoryState } from "./sync-refs"
 import { useSessionUIStore } from "./session-ui-store"
 import { stripSessionDiffSnapshots } from "./sanitize"
 import { upsertSessionRecord } from "./session-records"
@@ -59,7 +59,11 @@ import { getReconnectCandidateSessionIds, mergeBootstrapSessions } from "./recon
 import { messagesBefore } from "./message-ordering"
 import { opencodeClient } from "@/lib/opencode/client"
 import { usePermissionStore } from "@/stores/permissionStore"
-import { useRoutingStore } from "@/stores/useRoutingStore"
+import { permissionPolicyWireSchema, policySnapshotFromWire } from "@/stores/utils/permissionAutoAccept"
+import { useUIStore } from "@/stores/useUIStore"
+import { spaceIdOfDirectory } from '@/lib/spaces/space-route'
+import { refreshSpacesJourney, useSpacesStore } from '@/lib/spaces/spaces-store'
+import { selectSafetyNetAvailable, useRoutingStore } from "@/stores/useRoutingStore"
 import { applyMessageQueueUpdatedEvent, useMessageQueueStore } from "@/stores/messageQueueStore"
 import { subscribeMessageQueueSync } from "./message-queue-sync"
 import {
@@ -72,7 +76,8 @@ import { useTodosPersistStore } from "@/stores/useTodosPersistStore"
 import { cleanupPersistedSessionState } from "./session-deletion-cleanup"
 import { toast } from "@/components/ui"
 import { appendNotification } from "./notification-store"
-import { recordSessionError, summarizeOpenCodeError, type OpenCodeErrorSummary, type OpenCodeSessionErrorPayload } from "./session-error-log"
+import { recordSessionError, responseBodyOf, summarizeOpenCodeError, type OpenCodeErrorSummary, type OpenCodeSessionErrorPayload } from "./session-error-log"
+import { applyBackgroundShellEvents, directoriesWithRunningShells, refreshBackgroundShells } from "./background-shells"
 import {
   applyGlobalSessionStatusEvent,
   applyGlobalSessionStatusEvents,
@@ -157,10 +162,10 @@ syncGlobal[SYNC_RUNTIME_CONTEXT_GLOBAL_KEY] = SyncRuntimeContext
 
 setSessionParentResolver((sessionId) => useGlobalSessionsStore.getState().entityById.get(sessionId)?.parentID)
 
-type DeferredTurnNotifications = Map<string, { runtimeKey: string; directory: string; outcome: 'completed' | 'failed'; error?: OpenCodeErrorSummary }>
+type DeferredTurnNotifications = Map<string, { runtimeKey: string; directory: string; outcome: 'completed' | 'failed'; error?: OpenCodeErrorSummary & { responseBody?: string | null } }>
 const deferredBySource = new WeakMap<Pick<SyncSource, 'getSession'>, DeferredTurnNotifications>()
 
-const appendTurnNotification = (sessionID: string, directory: string, outcome: 'completed' | 'failed', error?: OpenCodeErrorSummary): void => {
+const appendTurnNotification = (sessionID: string, directory: string, outcome: 'completed' | 'failed', error?: OpenCodeErrorSummary & { responseBody?: string | null }): void => {
   appendNotification({ directory, session: sessionID, time: Date.now(), viewed: isViewedInCurrentSession(directory, sessionID),
     ...(outcome === 'failed' ? { type: 'error' as const, error } : { type: 'turn-complete' as const }) })
 }
@@ -176,34 +181,6 @@ const settleDeferredTurnNotifications = (sessionID: string, runtimeKey: string, 
     deferredTurnNotifications.delete(ancestor)
     appendTurnNotification(ancestor, pending.directory, pending.outcome, pending.error)
   })
-}
-
-type SdkResult<T> = {
-  data?: T
-  error?: unknown
-  response?: {
-    status?: number
-    headers?: { get?: (name: string) => string | null }
-  }
-}
-
-function formatSdkError(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === "string") return error
-  if (error && typeof error === "object" && "message" in error && typeof (error as { message?: unknown }).message === "string") {
-    return (error as { message: string }).message
-  }
-  try {
-    return JSON.stringify(error)
-  } catch {
-    return String(error)
-  }
-}
-
-function assertSdkSuccess<T>(result: SdkResult<T>, operation: string): T | undefined {
-  if (!result.error) return result.data
-  const status = result.response?.status
-  throw new Error(`${operation} failed${status ? ` (${status})` : ""}: ${formatSdkError(result.error)}`)
 }
 
 function useSyncSystem() {
@@ -754,10 +731,16 @@ export function applySessionStatusSnapshot(
   store.setState((state: DirectoryStore) => {
     const current = state.session_status ?? {}
     let next: Record<string, SessionStatus> | undefined
+    let nextInvalidated: Record<string, true> | undefined
     const draft = () => (next ??= { ...current })
 
     for (const sessionId of candidateSessionIds) {
       const incoming = toSessionStatus(snapshot[sessionId])
+      if (mode === "authoritative" && state.sessionStatusInvalidated?.[sessionId]) {
+        nextInvalidated ??= { ...state.sessionStatusInvalidated }
+        delete nextInvalidated[sessionId]
+        changed = true
+      }
 
       if (incoming && incoming.type !== "idle") {
         // Confirm or raise active status (catches a busy event the SSE missed).
@@ -782,7 +765,11 @@ export function applySessionStatusSnapshot(
       }
     }
 
-    return next ? { session_status: next } : state
+    if (!next && !nextInvalidated) return state
+    const patch: Partial<DirectoryStore> = {}
+    if (next) patch.session_status = next
+    if (nextInvalidated) patch.sessionStatusInvalidated = nextInvalidated
+    return patch
   })
 
   return changed
@@ -795,11 +782,16 @@ async function resyncDirectorySessionStatuses(
   mode: StatusSnapshotMode,
   isStale?: () => boolean,
 ): Promise<DirectorySessionStatusSnapshot | null> {
+  const invalidatedAtStart = store.getState().sessionStatusInvalidated
   const nextStatuses = await opencodeClient.getSessionStatusForDirectory(directory)
   // null = fetch failed; preserve existing state. {} or populated = a snapshot
   // of active sessions — reconciled per `mode` (absence ≠ idle under monotonic).
   if (nextStatuses === null || isStale?.()) return null
-  applySessionStatusSnapshot(store, nextStatuses, candidateSessionIds, mode)
+  const currentInvalidated = store.getState().sessionStatusInvalidated
+  const eligibleIds = candidateSessionIds.filter((id) => (
+    !currentInvalidated?.[id] || currentInvalidated === invalidatedAtStart
+  ))
+  applySessionStatusSnapshot(store, nextStatuses, eligibleIds, mode)
   if (mode === "authoritative") {
     store.setState({ sessionStatusReady: true })
     applyGlobalSessionStatusSnapshot(directory, nextStatuses, getDirectoryOwnedSessionIds(directory, store.getState().session))
@@ -809,7 +801,7 @@ async function resyncDirectorySessionStatuses(
     // The snapshot write above already lowered their status to explicit idle,
     // which is the gate the helper requires — a session the snapshot reports
     // busy stays untouched.
-    for (const sessionId of candidateSessionIds) {
+    for (const sessionId of eligibleIds) {
       applyInterruptedTurnReconciliation(store, sessionId)
     }
   }
@@ -1680,6 +1672,18 @@ const notifyQuestionAsked = (question: QuestionRequest, directory: string): void
   })
 }
 
+const isAnsweredWithoutUser = (sessionID: string): boolean => {
+  const mode = usePermissionStore.getState().getSessionMode(sessionID)
+  return mode === "auto" || (mode === "safety" && selectSafetyNetAvailable(useRoutingStore.getState()))
+}
+
+/** Notify when the safety net leaves a previously held permission to the user. */
+export const notifyHeldPermission = (permissionID: string, sessionID: string, directory: string | null): void => {
+  if (!directory || isVSCodeRuntime()) return
+  const permission = getDirectoryState(directory)?.permission[sessionID]?.find((entry) => entry.id === permissionID)
+  if (permission) notifyPermissionAsked(permission, directory)
+}
+
 // Blocking requests in a directory without a store still deserve the in-app
 // toast: the sidebar row and tray approvals need the directory store, but the
 // toast only needs the request and where to open it. VS Code keeps its
@@ -1689,7 +1693,7 @@ const notifyBlockingRequestWithoutStore = (payload: Event, directory: string): v
   if (payload.type === "permission.asked") {
     // SAFETY: permission.asked properties are the SDK permission request.
     const permission = payload.properties as PermissionRequest
-    if (usePermissionStore.getState().isSessionAutoAccepting(permission.sessionID)) return
+    if (isAnsweredWithoutUser(permission.sessionID)) return
     notifyPermissionAsked(permission, directory)
     return
   }
@@ -1734,16 +1738,9 @@ export function handleEvent(
   }
 
   if ((payload as { type?: unknown }).type === "openchamber:permission-auto-accept.updated") {
-    const properties = (payload as unknown as { properties?: unknown }).properties
-    if (properties && typeof properties === "object") {
-      const snapshot = properties as { sessions?: unknown; revision?: unknown }
-      if (snapshot.sessions && typeof snapshot.sessions === "object") {
-        usePermissionStore.getState().applySnapshot({
-          sessions: snapshot.sessions as Record<string, boolean>,
-          revision: typeof snapshot.revision === "number" ? snapshot.revision : undefined,
-        }, expectedRuntimeKey)
-      }
-    }
+    const properties = (payload as { properties?: unknown }).properties
+    const parsed = permissionPolicyWireSchema.safeParse(properties)
+    if (parsed.success) usePermissionStore.getState().applySnapshot(policySnapshotFromWire(parsed.data), expectedRuntimeKey)
     return
   }
 
@@ -1884,7 +1881,7 @@ export function handleEvent(
       )
       return
     }
-    if (!isVSCodeRuntime() && usePermissionStore.getState().isSessionAutoAccepting(permission.sessionID)) {
+    if (!isVSCodeRuntime() && isAnsweredWithoutUser(permission.sessionID)) {
       updateRoutingIndexFromEvent(routingIndex, resolvedDirectory, payload)
       return
     }
@@ -2179,6 +2176,7 @@ export function applyDomainBatch(
     deferredBySource.set(source, deferredTurnNotifications)
   }
   const catalogs = new Set<CatalogKind>()
+  let reconnect = false
   const groups = new Map<string, DomainEvent[]>()
   for (const event of events) {
     const sessionID = domainSessionID(event)
@@ -2200,6 +2198,7 @@ export function applyDomainBatch(
     })
     if (batch.length === 0) continue
     if (directory !== "global") {
+      applyBackgroundShellEvents(directory, batch)
       applyGlobalDomainStatusEvents(directory, batch)
       applyGlobalDomainBlockingEvents(directory, batch)
     }
@@ -2223,7 +2222,11 @@ export function applyDomainBatch(
     const refreshTranscripts = new Set<string>()
     let changed = false
     for (const event of batch) {
-      if (event.type === 'refresh' && event.catalog) catalogs.add(event.catalog)
+      if (event.type === 'refresh' && event.scope === 'global' && !event.catalog) reconnect = true
+      if (event.type === 'refresh' && event.catalog) {
+        markConfigCatalogStale(event.catalog, directory === 'global' ? null : directory)
+        catalogs.add(event.catalog)
+      }
       const sessionID = domainSessionID(event)
       if (store && (event.type === "status" || event.type === "permission-asked" || event.type === "permission-replied"
         || event.type === "input-created" || event.type === "form-closed" || event.type === "session-delete")) {
@@ -2242,7 +2245,7 @@ export function applyDomainBatch(
       if (event.type === 'status' && event.status.type !== 'idle') deferredTurnNotifications.delete(event.sessionID)
       if (event.type === "status" && event.status.type === "idle" && directory !== "global") {
         if ((event.outcome === 'completed' || event.outcome === 'failed') && !isSubtaskSession(event.sessionID, directory, childStores)) {
-          const error = event.error ? { name: event.error.type, message: event.error.message } : undefined
+          const error = event.error ? { name: event.error.type, message: event.error.message, responseBody: responseBodyOf(event.error) } : undefined
           if (hasActiveSubagent(event.sessionID, useGlobalSessionStatusStore.getState().activeSessionIds)) {
             deferredTurnNotifications.set(event.sessionID, { runtimeKey: expectedRuntimeKey, directory, outcome: event.outcome, error })
           } else {
@@ -2306,6 +2309,13 @@ export function applyDomainBatch(
     }
   }
   for (const kind of catalogs) void refreshStoresForCatalogKind(kind)
+  if (reconnect) {
+    for (const dir of directoriesWithRunningShells()) {
+      if (childStores.getChild(dir)) continue
+      void runBackgroundNetworkTask(() => refreshBackgroundShells(dir, (target) => opencodeClient.listRunningShells(target)))
+        .catch(() => undefined)
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2796,14 +2806,11 @@ function BoundSyncProvider(props: {
       routeDirectory: (directory, payload) => {
         return resolveDirectoryFromRoutingIndex(routingIndex, directory, payload, childStores)
       },
-      onEvents: (directory, payloads) => {
-        // Track ALL stream activity (including heartbeats) as proof of
-        // connection health. The watchdog stale check uses this to distinguish
-        // a genuinely dead stream (no heartbeats for 20s) from a quiet-but-
-        // connected session that is only receiving heartbeats. Excluding
-        // heartbeats here caused issue #1656: the stale timer fired for any
-        // quiet session, triggering redundant full resyncs every ~15s.
+      // Keepalive comments and WS heartbeats prove liveness without becoming events.
+      onStreamActivity: () => {
         lastStreamActivityAtRef.current = Date.now()
+      },
+      onEvents: (directory, payloads) => {
         const batch = createDirectoryEventBatch()
         try {
           for (const payload of payloads) {
@@ -2823,10 +2830,41 @@ function BoundSyncProvider(props: {
         }
       },
       onDomainEvents: (directory, payloads) => {
-        lastStreamActivityAtRef.current = Date.now()
         applyDomainBatch(directory, payloads, props.source, childStores, routingIndex, messageLoader, runtimeKey)
       },
+      onSpaceStream: ({ spaceId, status }) => {
+        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        useSpacesStore.getState().noteStream(spaceId, status)
+        if (status !== 'connected') {
+          if (useSpacesStore.getState().journey?.get(spaceId)?.state === 'running') {
+            void refreshSpacesJourney().catch(() => undefined)
+          }
+          return
+        }
+        const directories = new Set(Array.from(useGlobalSessionsStore.getState().sessionsByDirectory.keys())
+          .filter((directory) => spaceIdOfDirectory(directory) === spaceId))
+        const spaceDirectory = useSpacesStore.getState().spaces.get(spaceId)?.directory
+        if (spaceDirectory) directories.add(spaceDirectory)
+        for (const directory of childStores.children.keys()) {
+          if (spaceIdOfDirectory(directory) === spaceId) triggerDirectoryResync(directory, 'stream-reconnect')
+        }
+        if (directories.size === 0) return
+        void useGlobalSessionsStore.getState().refreshSessionsForDirectories(directories).catch(() => undefined)
+      },
+      onSpaceProgress: (progress) => {
+        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        const known = useSpacesStore.getState().noteProgress(progress)
+        if (known && progress.step !== 'ready' && progress.step !== 'failed') return
+        void refreshSpacesJourney().catch(() => undefined)
+      },
+      onSpaceSetup: () => {
+        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        void refreshSpacesJourney().catch(() => undefined)
+      },
       onReconnect: ({ replayReset }) => {
+        if (getRuntimeKey() === runtimeKey && useUIStore.getState().isolatedSpacesEnabled && !isVSCodeRuntime()) {
+          void refreshSpacesJourney().catch(() => undefined)
+        }
         // Queue recovery is independent of the directory-bootstrap debounce.
         void useMessageQueueStore.getState().resync().catch(() => undefined)
         useConfigStore.setState({
@@ -3281,6 +3319,20 @@ export function useSessionStatus(sessionID: string, directory?: string) {
       if (state.session_status?.[sessionID] !== previous.session_status?.[sessionID]) notify()
     })
   }, [sessionID, store])
+  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+}
+
+/** A successful status snapshot covers this session unless archive invalidated it. */
+export function useSessionStatusSnapshotReady(directory?: string, sessionID?: string): boolean {
+  const store = useDirectoryStore(directory)
+  const getSnapshot = useCallback(() => {
+    const state = store.getState()
+    return state.sessionStatusReady === true && (!sessionID || !state.sessionStatusInvalidated?.[sessionID])
+  }, [sessionID, store])
+  const subscribe = useCallback((notify: () => void) => store.subscribe((state, previous) => {
+    if (state.sessionStatusReady !== previous.sessionStatusReady
+      || (sessionID && state.sessionStatusInvalidated?.[sessionID] !== previous.sessionStatusInvalidated?.[sessionID])) notify()
+  }), [sessionID, store])
   return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 

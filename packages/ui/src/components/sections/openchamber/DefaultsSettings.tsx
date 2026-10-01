@@ -12,7 +12,12 @@ import {
   SETTINGS_SELECT_ROW_TRIGGER_CLASS,
   SETTINGS_SELECT_SIZE,
   SETTINGS_OPTION_STACK_CLASS,
+  SETTINGS_FIELDS_STACK_CLASS,
 } from '@/components/sections/shared/SettingsSection';
+import { PermissionDefaultModeField } from './PermissionDefaultModeField';
+import { isVSCodeRuntime } from '@/lib/desktop';
+import { opencodeClient } from '@/lib/opencode/client';
+import { SessionWarmingCheckbox } from './SessionWarmingCheckbox';
 import { SettingsInfoHint } from '@/components/sections/shared/SettingsInfoHint';
 import { loadDesktopSettings, updateDesktopSettings } from '@/lib/persistence';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -39,6 +44,12 @@ const getDisplayModel = (
 
 export const DefaultsSettings: React.FC = () => {
   const { t } = useI18n();
+  const generation = React.useSyncExternalStore(
+    (listener) => opencodeClient.subscribeRuntime(listener),
+    () => opencodeClient.getBoundRuntime()?.generation,
+    () => undefined,
+  );
+  const isVSCode = React.useMemo(() => isVSCodeRuntime(), []);
   const setProvider = useConfigStore((state) => state.setProvider);
   const setModel = useConfigStore((state) => state.setModel);
   const setAgent = useConfigStore((state) => state.setAgent);
@@ -312,7 +323,7 @@ export const DefaultsSettings: React.FC = () => {
             )}
           </div>
 
-          <div>
+          <div className={SETTINGS_FIELDS_STACK_CLASS}>
             <SettingsFieldRow
               settingsItem="sessions.default-model"
               label={t('settings.openchamber.defaults.field.defaultModel')}
@@ -358,6 +369,8 @@ export const DefaultsSettings: React.FC = () => {
                 className={SETTINGS_CUSTOM_TRIGGER_CLASS}
               />
             </SettingsFieldRow>
+
+            {isVSCode ? null : <PermissionDefaultModeField agentName={defaultAgent} />}
           </div>
 
           <SettingsInset className={SETTINGS_OPTION_STACK_CLASS}>
@@ -368,6 +381,7 @@ export const DefaultsSettings: React.FC = () => {
               label={t('settings.openchamber.defaults.field.showDeletionDialog')}
               ariaLabel={t('settings.openchamber.defaults.field.showDeletionDialogAria')}
             />
+            {generation === 'oc2' ? <SessionWarmingCheckbox /> : null}
           </SettingsInset>
 
           <div className="space-y-3 pt-6">

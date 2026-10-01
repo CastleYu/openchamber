@@ -33,6 +33,15 @@ const routingConfigSchema = z.object({
 const heldPermissionSchema = z.object({ permissionId: z.string(), score: z.number(), kind: z.string().nullable() });
 
 const builtinCategorySchema = z.object({ id: z.string().min(1), name: z.string().min(1), description: z.string().min(1) });
+const classifierSourceSchema = z.enum(['off', 'zen-promo', 'zen-key', 'openrouter', 'vercel', 'typesafe', 'custom']);
+const classificationSchema = z.object({
+  selected: classifierSourceSchema,
+  effective: classifierSourceSchema.nullable(),
+  sources: z.array(z.object({ id: classifierSourceSchema, usable: z.boolean() })),
+});
+const customEndpointSchema = z.object({
+  url: z.string().url(), model: z.string().min(1), keyPresent: z.boolean(), pinned: z.boolean(),
+});
 
 const stateSchema = z.object({
   available: z.boolean(),
@@ -41,12 +50,18 @@ const stateSchema = z.object({
   config: routingConfigSchema.nullable(),
   builtins: z.array(builtinCategorySchema),
   heldPermissions: z.array(heldPermissionSchema).optional(),
+  jevAvailable: z.boolean().optional(),
+  classification: classificationSchema.optional(),
+  customEndpoint: customEndpointSchema.nullable().optional(),
+  enterpriseMode: z.boolean().optional(),
 });
 
 export type RoutingCategory = z.infer<typeof routingCategorySchema>;
 export type RoutingConfig = z.infer<typeof routingConfigSchema>;
 export type RoutingHeldPermission = z.infer<typeof heldPermissionSchema>;
 export type RoutingState = z.infer<typeof stateSchema>;
+export type ClassifierSource = z.infer<typeof classifierSourceSchema>;
+export type CustomEndpointInput = { url: string; model: string; key?: string | null };
 
 export const ROUTING_UNAVAILABLE: RoutingState = { available: false, autoReady: false, tokenPresent: false, config: null, builtins: [], heldPermissions: [] };
 
@@ -80,3 +95,16 @@ export const saveRoutingToken = async (token: string): Promise<RoutingState> =>
 
 export const clearRoutingToken = async (): Promise<RoutingState> =>
   readState(await runtimeFetch('/api/routing/token', { method: 'DELETE' }));
+
+export const saveClassifierSource = async (source: ClassifierSource): Promise<RoutingState> =>
+  readState(await runtimeFetch('/api/routing/classifier', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source }),
+  }));
+
+export const saveCustomClassifier = async (input: CustomEndpointInput): Promise<RoutingState> =>
+  readState(await runtimeFetch('/api/routing/classifier/custom', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  }));
+
+export const clearCustomClassifier = async (): Promise<RoutingState> =>
+  readState(await runtimeFetch('/api/routing/classifier/custom', { method: 'DELETE' }));

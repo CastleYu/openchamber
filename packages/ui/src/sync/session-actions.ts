@@ -5,14 +5,18 @@
 
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import type { FormAnswer } from "@opencode/client"
+import { z } from "zod"
 import type { SyncSource } from "./source"
-import type { FilePart, Session, Message, Part, Metadata } from "@/lib/opencode/model"
+import type { FilePart, Session, Message, Part, Metadata, SessionStatus, SyntheticMessage } from "@/lib/opencode/model"
+import { compact } from "@/lib/opencode/model"
+import { readSubagentRun } from "@/lib/opencode/subagent-run"
 import { Binary } from "./binary"
 import { useSessionUIStore } from "./session-ui-store"
 import { useInputStore } from "./input-store"
 import type { ChildStoreManager } from "./child-store"
 import { computeSubtreeIds } from "./scoped-blocking-requests"
-import { opencodeClient } from "@/lib/opencode/client"
+import { opencodeClient, type SyntheticContextInput } from "@/lib/opencode/client"
+import { sessionStatusSnapshotSchema } from "@/lib/opencode/session-status"
 import { OpenCodeRuntimeError, type OpenCodeRuntime } from '@/lib/opencode/runtime'
 import { assistantForkBoundary, findLastCompletedTurnMessageId } from './assistant-fork'
 import { applyForkInheritance } from '@/lib/sessionForkLinks'
@@ -39,11 +43,13 @@ import {
 import { withContextObligatoryMessage, type ContextObligatoryMessage } from "@/lib/contextObligatoryMessages"
 import { getBtwOriginalSessionID, getBtwSessionID, isBtwSession, withoutBtwSessionLink } from "@/lib/sessionBtwMetadata"
 import { withLinkedIssue, type LinkedIssue } from "@/lib/linkedIssues"
+import { withSessionWorkState, type SessionWork } from "@/lib/sessionWorkMetadata"
 import { getImperativeSessionMessageLoader } from "./session-message-loader"
 import { cleanupPersistedSessionState } from "./session-deletion-cleanup"
 import { requestSessionArchiveBatch } from "./session-archive-batch"
 import { registerBulkArchiveEchoes, releaseBulkArchiveEchoes } from "./bulk-archive-echo"
 import { getRuntimeKey } from "@/lib/runtime-switch"
+import { isRelayModeActive } from "@/lib/relay/runtime-tunnel"
 import { markAmbiguousTransportFailure } from "@/lib/relay/transport-error"
 import { getErrorStatus, isAmbiguousSendFailure } from "./send-failure-classification"
 import { getStaleRunningToolMessageID } from "./materialization"
@@ -57,6 +63,7 @@ import { cancelSessionTitleGeneration } from "./session-title-generation"
 import { recordSessionActionFailure } from "./session-action-failures"
 
 const MESSAGE_REFETCH_LIMIT = 100
+const contextMetadataSchema = z.record(z.string(), z.json())
 const SEND_CONFIRMATION_REFETCH_LIMIT = 30
 // A relay-tunnel send fails when the tunnel drops, and the confirming refetch
 // then has to travel over that same tunnel to answer "did my message land?".
@@ -415,14 +422,20 @@ function connectionLostError(): Error {
 // blip) otherwise surface as a hard "Connection lost" toast even though the
 // pipeline recovers within a second. While waiting, run bounded health probes
 // inside the same grace window so stale disconnected state can recover quickly.
+// A relayed health round trip crosses the relay twice, so give it a wider window.
 const CONNECTION_GRACE_MS = 2000
+const CONNECTION_PROBE_MS = 500
+const RELAY_CONNECTION_GRACE_MS = 3000
+const RELAY_CONNECTION_PROBE_MS = 3000
 export async function waitForConnectionOrThrow(): Promise<void> {
-  const deadline = Date.now() + CONNECTION_GRACE_MS
+  const relayed = isRelayModeActive()
+  const deadline = Date.now() + (relayed ? RELAY_CONNECTION_GRACE_MS : CONNECTION_GRACE_MS)
+  const probeMs = relayed ? RELAY_CONNECTION_PROBE_MS : CONNECTION_PROBE_MS
   while (Date.now() < deadline) {
     if (useConfigStore.getState().isConnected) return
     const remainingMs = deadline - Date.now()
     if (remainingMs <= 0) break
-    if (await useConfigStore.getState().probeConnection({ timeoutMs: Math.min(500, remainingMs) })) return
+    if (await useConfigStore.getState().probeConnection({ timeoutMs: Math.min(probeMs, remainingMs) })) return
     const sleepMs = Math.min(100, deadline - Date.now())
     if (sleepMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, sleepMs))
@@ -482,7 +495,8 @@ function hasAuthoritativeIdleCoverage(sessionId: string, stores: ChildStoreManag
     ?? findSessionDirectoryInChildStores(sessionId)
   if (!directory) return false
   const state = stores.getChild(directory)?.getState()
-  return state?.sessionStatusReady === true || state?.session_status[sessionId]?.type === "idle"
+  return (state?.sessionStatusReady === true && !state.sessionStatusInvalidated?.[sessionId])
+    || state?.session_status[sessionId]?.type === "idle"
 }
 
 function resolveKnownSessionDirectory(sessionId: string): string | null {
@@ -541,6 +555,32 @@ async function fetchSessionMessages(sessionId: string, directory?: string | null
   return records.map(({ info }) => info)
 }
 
+function descendantRevertCutoff(state: { session: readonly Session[] }, target: Message): number {
+  const run = readSubagentRun(target)
+  const child = run ? state.session.find((session) => session.id === run.childSessionID) : undefined
+  return child ? Math.min(child.time.created, target.time.created) : target.time.created
+}
+
+/** Keep a prompt's synthetic context with it when cutting an OC2 transcript. */
+function transcriptCutForMessage(messages: readonly Message[], messageID: string): string {
+  const index = messages.findIndex((message) => message.id === messageID)
+  if (messages[index]?.role !== "user") return messageID
+  let first = index
+  while (first > 0 && messages[first - 1].role === "synthetic") first -= 1
+  return messages[first]?.id ?? messageID
+}
+
+function contextCarriersForMessage(messages: readonly Message[], messageID: string): ContextCarrierPart[] {
+  const index = messages.findIndex((message) => message.id === messageID)
+  const carriers: ContextCarrierPart[] = []
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    const candidate = messages[cursor]
+    if (candidate.role !== "synthetic") break
+    carriers.unshift({ metadata: candidate.metadata })
+  }
+  return carriers
+}
+
 async function cascadeRevertToDescendants(rootId: string, cutoff: number): Promise<void> {
   for (const { session, directory } of getDescendantSessions(rootId)) {
     try {
@@ -552,7 +592,13 @@ async function cascadeRevertToDescendants(rootId: string, cutoff: number): Promi
       // them would rely on unrelated message IDs to decide chronology.
       const target = firstUserMessageAtOrAfter(messages, cutoff)
       if (!target) continue
-      const reverted = await opencodeClient.revertSession(session.id, target.id, undefined, directory)
+      let reverted: Session
+      if (opencodeClient.getBoundRuntime()?.generation === "oc2") {
+        await opencodeClient.stageRevert(session.id, target.id, { directory })
+        reverted = await opencodeClient.getSession(session.id, directory)
+      } else {
+        reverted = await opencodeClient.revertSession(session.id, target.id, undefined, directory)
+      }
       mirrorSessionIntoLiveStores(reverted, directory)
     } catch (error) {
       console.error(`[session-actions] Failed to cascade revert to descendant ${session.id}:`, error)
@@ -567,11 +613,52 @@ async function cascadeUnrevertToDescendants(rootId: string): Promise<void> {
       // Same reason as the revert cascade: a running descendant keeps writing
       // messages that the unrevert would race against.
       await abortDescendantIfBusy(session.id, directory)
-      mirrorSessionIntoLiveStores(await opencodeClient.unrevertSession(session.id, directory), directory)
+      let restored: Session
+      if (opencodeClient.getBoundRuntime()?.generation === "oc2") {
+        await opencodeClient.clearRevert(session.id, directory)
+        restored = await opencodeClient.getSession(session.id, directory)
+      } else {
+        restored = await opencodeClient.unrevertSession(session.id, directory)
+      }
+      mirrorSessionIntoLiveStores(restored, directory)
     } catch (error) {
       console.error(`[session-actions] Failed to cascade unrevert to descendant ${session.id}:`, error)
     }
   }
+}
+
+/** Finalize the OC2 staged cut in the parent and each staged child. */
+export async function commitStagedRevert(sessionId: string): Promise<void> {
+  const { directory } = dirStoreForSession(sessionId)
+  for (const descendant of getDescendantSessions(sessionId)) {
+    if (!descendant.session.revert) continue
+    try {
+      await opencodeClient.commitRevert(descendant.session.id, descendant.directory)
+      mirrorSessionIntoLiveStores(await opencodeClient.getSession(descendant.session.id, descendant.directory), descendant.directory)
+    } catch (error) {
+      console.error(`[session-actions] Failed to commit revert in descendant ${descendant.session.id}:`, error)
+    }
+  }
+  await opencodeClient.commitRevert(sessionId, directory)
+  mirrorSessionIntoLiveStores(await opencodeClient.getSession(sessionId, directory), directory)
+  await refetchSessionMessages(sessionId)
+  if (directory) sessionEvents.requestGitRefresh({ directory })
+}
+
+/** Cancel the OC2 staged cut without deleting the hidden transcript. */
+export async function clearStagedRevert(sessionId: string): Promise<void> {
+  const { directory } = dirStoreForSession(sessionId)
+  for (const descendant of getDescendantSessions(sessionId)) {
+    if (!descendant.session.revert) continue
+    try {
+      await opencodeClient.clearRevert(descendant.session.id, descendant.directory)
+      mirrorSessionIntoLiveStores(await opencodeClient.getSession(descendant.session.id, descendant.directory), descendant.directory)
+    } catch (error) {
+      console.error(`[session-actions] Failed to clear revert in descendant ${descendant.session.id}:`, error)
+    }
+  }
+  await opencodeClient.clearRevert(sessionId, directory)
+  mirrorSessionIntoLiveStores(await opencodeClient.getSession(sessionId, directory), directory)
 }
 
 function getGlobalSessionSnapshot(sessionId: string): Session | null {
@@ -1027,6 +1114,22 @@ export async function setLinkedIssue(
     withLinkedIssue(metadata, issue, linked))
 }
 
+/** Bind the user's work-state change to the runtime captured at click time. */
+export async function setSessionWorkState(
+  sessionId: string,
+  directory: string | null | undefined,
+  state: SessionWork['state'],
+): Promise<Session | null> {
+  const runtimeKey = getRuntimeKey()
+  try {
+    return await patchSessionMetadata(sessionId, directory, (metadata) =>
+      withSessionWorkState(metadata, state, Date.now()), runtimeKey)
+  } catch (error) {
+    if (isStaleRuntime(runtimeKey)) return null
+    throw error
+  }
+}
+
 export async function setContextObligatoryMessage(
   sessionId: string,
   directory: string | null | undefined,
@@ -1091,7 +1194,7 @@ async function cleanupReviewMetadataBeforeDelete(
 }
 
 /** Remove a server-confirmed session from every live child store that has it. */
-function removeSessionFromLiveStores(sessionId: string, preferredDirectory?: string): SessionListSnapshot[] {
+function removeSessionFromLiveStores(sessionId: string, preferredDirectory?: string, archive = false): SessionListSnapshot[] {
   if (!_childStores) return []
 
   const snapshots: SessionListSnapshot[] = []
@@ -1117,10 +1220,16 @@ function removeSessionFromLiveStores(sessionId: string, preferredDirectory?: str
       continue
     }
     snapshots.push({ directory })
-    store.setState({
+    const patch: Partial<ReturnType<DirectoryStoreApi["getState"]>> = {
       session: current.session.filter((session) => session.id !== sessionId),
       ...sessionMutationPatch(current, sessionId, true),
-    })
+    }
+    if (archive) {
+      patch.session_status = { ...current.session_status }
+      delete patch.session_status[sessionId]
+      patch.sessionStatusInvalidated = { ...current.sessionStatusInvalidated, [sessionId]: true }
+    }
+    store.setState(patch)
   }
 
   return snapshots
@@ -1134,7 +1243,7 @@ function removeSessionFromLiveStores(sessionId: string, preferredDirectory?: str
  * the sidebar — once per session, which is what made archiving a worktree's
  * sessions block the main thread for seconds.
  */
-function removeSessionsFromLiveStores(sessionIds: Iterable<string>, preferredDirectory?: string): SessionListSnapshot[] {
+function removeSessionsFromLiveStores(sessionIds: Iterable<string>, preferredDirectory?: string, archive = false): SessionListSnapshot[] {
   const ids = new Set(sessionIds)
   if (!_childStores || ids.size === 0) return []
 
@@ -1161,10 +1270,19 @@ function removeSessionsFromLiveStores(sessionIds: Iterable<string>, preferredDir
     if (removed.length === 0) continue
 
     snapshots.push({ directory })
-    store.setState({
+    const patch: Partial<ReturnType<DirectoryStoreApi["getState"]>> = {
       session: current.session.filter((session) => !ids.has(session.id)),
       ...sessionsMutationPatch(current, removed, true),
-    })
+    }
+    if (archive) {
+      patch.session_status = { ...current.session_status }
+      patch.sessionStatusInvalidated = { ...current.sessionStatusInvalidated }
+      for (const id of removed) {
+        delete patch.session_status[id]
+        patch.sessionStatusInvalidated[id] = true
+      }
+    }
+    store.setState(patch)
   }
 
   return snapshots
@@ -1190,6 +1308,13 @@ function finalizeConfirmedSessionDeletion(
   expectedRuntimeKey = getRuntimeKey(),
 ): void {
   const snapshots = removeSessionFromLiveStores(sessionId, sessionDirectory)
+  for (const store of _childStores?.children.values() ?? []) {
+    const invalidated = store.getState().sessionStatusInvalidated
+    if (!invalidated?.[sessionId]) continue
+    const next = { ...invalidated }
+    delete next[sessionId]
+    store.setState({ sessionStatusInvalidated: next })
+  }
   invalidateSessionLoads(sessionId, [...snapshots.map((snapshot) => snapshot.directory), sessionDirectory])
   useGlobalSessionsStore.getState().removeSessions([sessionId])
   const ui = useSessionUIStore.getState()
@@ -1202,6 +1327,16 @@ function finalizeConfirmedSessionDeletion(
       sessionId,
     })
   }
+}
+
+/** A complete global snapshot can confirm deletion missed by the event stream. */
+export function reconcileExternallyDeletedSession(identity: {
+  runtimeKey: string
+  directory: string
+  sessionId: string
+}): void {
+  if (isStaleRuntime(identity.runtimeKey)) return
+  finalizeConfirmedSessionDeletion(identity.sessionId, identity.directory, identity.runtimeKey)
 }
 
 type ChatDirectoryCleanupPlan = {
@@ -1396,7 +1531,7 @@ export async function archiveSession(sessionId: string, expectedRuntimeKey = get
     if (!archived) {
       throw new Error("session.update failed: server did not return the archived session")
     }
-    const snapshots = removeSessionFromLiveStores(sessionId, sessionDirectory)
+    const snapshots = removeSessionFromLiveStores(sessionId, sessionDirectory, true)
     invalidateSessionLoads(sessionId, [...snapshots.map((snapshot) => snapshot.directory), sessionDirectory])
     useGlobalSessionsStore.getState().upsertSession(archived)
     const ui = useSessionUIStore.getState()
@@ -1566,7 +1701,7 @@ function commitArchivedSessions(sessions: Session[], directory: string): void {
   if (sessions.length === 0) return
 
   const ids = sessions.map((session) => session.id)
-  const snapshots = removeSessionsFromLiveStores(ids, directory)
+  const snapshots = removeSessionsFromLiveStores(ids, directory, true)
   const directories = [...snapshots.map((snapshot) => snapshot.directory), directory]
   for (const id of ids) invalidateSessionLoads(id, directories)
 
@@ -1618,6 +1753,26 @@ export async function unarchiveSession(sessionId: string, expectedRuntimeKey = g
     useGlobalSessionsStore.getState().upsertSession(restored)
     if (sessionDirectory) registerSessionDirectory(sessionId, sessionDirectory)
     promoteRestoredSessionOrdering(sessionId)
+    const store = sessionDirectory ? _childStores?.getChild(sessionDirectory) : undefined
+    if (store) {
+      const before = store.getState()
+      // Restore succeeded already. A failed status read keeps this session unknown.
+      const statuses = await opencodeClient.getSessionStatusForDirectory(sessionDirectory).catch(() => null)
+      const parsed = sessionStatusSnapshotSchema.safeParse(statuses)
+      if (!isStaleRuntime(expectedRuntimeKey) && parsed.success) {
+        const status: SessionStatus = parsed.data[sessionId] ?? { type: "idle" }
+        store.setState((current) => {
+          if (current.sessionStatusInvalidated !== before.sessionStatusInvalidated
+            || current.session_status[sessionId] !== before.session_status[sessionId]) return current
+          const invalidated = { ...current.sessionStatusInvalidated }
+          delete invalidated[sessionId]
+          return {
+            session_status: { ...current.session_status, [sessionId]: status },
+            sessionStatusInvalidated: invalidated,
+          }
+        })
+      }
+    }
     return true
   } catch (error) {
     console.error("[session-actions] unarchiveSession failed", error)
@@ -1756,12 +1911,14 @@ export async function optimisticSend(input: {
   agent?: string
   directory?: string | null
   files?: Array<{ type: "file"; mime: string; url: string; filename: string }>
+  /** Context admitted before the OC2 prompt, with stable client IDs. */
+  context?: SyntheticContextInput[]
   appendSubmissions?: () => void
   onOptimisticInsert?: () => void
   onMessageID?: (messageID: string) => void
   beforeOptimisticInsert?: () => void
   /** The actual API call — receives the optimistic messageID so the server can use the same ID */
-  send: (messageID: string) => Promise<void>
+  send: (messageID: string, context: SyntheticContextInput[]) => Promise<void>
 }): Promise<void> {
   if (!_optimisticAdd || !_optimisticRemove) {
     throw new Error("Optimistic refs not set — is useSync() mounted?")
@@ -1817,8 +1974,12 @@ export async function optimisticSend(input: {
     }
   }
 
+  const context = opencodeClient.getBoundRuntime()?.generation === "oc2"
+    ? (input.context ?? []).filter((item) => item.text.trim()).map((item) => ({ ...item, id: ascendingId("msg") }))
+    : []
   const messageID = ascendingId("msg")
   input.onMessageID?.(messageID)
+  const optimisticIDs = [...context.map((item) => item.id), messageID]
   const textPartId = ascendingId("prt")
 
   const optimisticParts: Part[] = [
@@ -1846,6 +2007,20 @@ export async function optimisticSend(input: {
     time: { created: Date.now() },
   } as unknown as Message
 
+  // The context records share the prompt's timestamp so timeline ordering
+  // places them with the prompt until OpenCode echoes its own records.
+  for (const item of context) {
+    const synthetic: SyntheticMessage = compact({
+      id: item.id,
+      role: "synthetic" as const,
+      sessionID: input.sessionId,
+      time: { created: optimisticMessage.time.created },
+      text: item.text,
+      description: item.description,
+      metadata: item.metadata ? contextMetadataSchema.parse(JSON.parse(JSON.stringify(item.metadata))) : undefined,
+    })
+    optimisticAdd({ sessionID: input.sessionId, directory: targetDirectory, message: synthetic, parts: [] })
+  }
   // Insert into store + register in shadow Map (for mergeOptimisticPage cleanup)
   optimisticAdd({
     sessionID: input.sessionId,
@@ -1866,7 +2041,7 @@ export async function optimisticSend(input: {
 
   try {
     assertRuntimeUnchanged()
-    await input.send(messageID)
+    await input.send(messageID, context)
   } catch (error) {
     const status = getErrorStatus(error)
     const ambiguousFailure = isAmbiguousSendFailure(error)
@@ -1875,11 +2050,11 @@ export async function optimisticSend(input: {
       : null
 
     if (acceptedRecords) {
-      materializeConfirmedSendRecords(store, input.sessionId, messageID, acceptedRecords)
-      optimisticConfirm?.({
+      materializeConfirmedSendRecords(store, input.sessionId, optimisticIDs, acceptedRecords)
+      for (const optimisticID of optimisticIDs) optimisticConfirm?.({
         sessionID: input.sessionId,
         directory: targetDirectory,
-        messageID,
+        messageID: optimisticID,
       })
       return
     }
@@ -1903,10 +2078,10 @@ export async function optimisticSend(input: {
     console.warn("[session-actions] prompt send rejected; rolling back optimistic message", failureRecord)
 
     // Rollback via optimistic infrastructure
-    optimisticRemove({
+    for (const optimisticID of optimisticIDs) optimisticRemove({
       sessionID: input.sessionId,
       directory: targetDirectory,
-      messageID,
+      messageID: optimisticID,
     })
     const rollbackState = store.getState()
     let session = rollbackState.session
@@ -1970,18 +2145,19 @@ async function fetchRecentSendConfirmationRecords(
 function materializeConfirmedSendRecords(
   store: DirectoryStoreApi,
   sessionId: string,
-  messageID: string,
+  optimisticIDs: readonly string[],
   records: Array<{ info: Message; parts?: Part[] }>,
 ): void {
+  const optimistic = new Set(optimisticIDs)
   store.setState((state) => {
     const currentMessages = state.message[sessionId]
     const message = { ...state.message }
     const part = { ...state.part }
     if (currentMessages) {
-      const nextMessages = currentMessages.filter((message) => message.id !== messageID)
+      const nextMessages = currentMessages.filter((message) => !optimistic.has(message.id))
       message[sessionId] = nextMessages
     }
-    delete part[messageID]
+    for (const optimisticID of optimisticIDs) delete part[optimisticID]
 
     const materialized = materializeSessionSnapshots(
       { ...state, message, part },
@@ -2372,8 +2548,13 @@ export async function revertToMessage(sessionId: string, messageId: string): Pro
     submittedFileParts = parts.filter((p) => p.type === "file" && !isSyntheticPart(p)) as Array<Record<string, unknown>>
     // Attached context (review comments, quotes, terminal selections) rides in
     // synthetic text parts and belongs back on the composer chips.
-    submittedContextParts = parts
+    submittedContextParts = opencodeClient.getBoundRuntime()?.generation === "oc2"
+      ? contextCarriersForMessage(messages, messageId)
+      : parts
   }
+  const revertMessageID = opencodeClient.getBoundRuntime()?.generation === "oc2"
+    ? transcriptCutForMessage(messages, messageId)
+    : messageId
 
   // Optimistically set only the revert marker. Keep messages and parts in the
   // local store; visible-message selectors derive the displayed timeline from
@@ -2389,7 +2570,7 @@ export async function revertToMessage(sessionId: string, messageId: string): Pro
   const patch: Record<string, unknown> = {}
 
   if (sessionIdx >= 0) {
-    sessions[sessionIdx] = { ...sessions[sessionIdx], revert: { messageID: messageId } } as Session
+    sessions[sessionIdx] = { ...sessions[sessionIdx], revert: { messageID: revertMessageID } } as Session
     patch.session = sessions
   }
 
@@ -2416,15 +2597,23 @@ export async function revertToMessage(sessionId: string, messageId: string): Pro
   // Restore file/image attachments from the target message.
   // Clear existing attachments first — previous revert's attachments
   // must not carry over, even when the current message has no files.
-  restoreFilePartsToInput(submittedFileParts)
-  if (draftTarget) restoreContextPartsToInput(submittedContextParts, draftTarget)
+  if (targetMsg?.role === "user") {
+    restoreFilePartsToInput(submittedFileParts)
+    if (draftTarget) restoreContextPartsToInput(submittedContextParts, draftTarget)
+  }
 
   // Call SDK and merge authoritative result into store
   try {
     // Descendants go first because OpenCode also restores file snapshots during
     // revert. All sessions share a directory, so the parent's snapshot must win.
-    await cascadeRevertToDescendants(sessionId, targetMessage.time.created)
-    const revertedSession = await opencodeClient.revertSession(sessionId, messageId, undefined, directory)
+    await cascadeRevertToDescendants(sessionId, descendantRevertCutoff(state, targetMessage))
+    let revertedSession: Session
+    if (opencodeClient.getBoundRuntime()?.generation === "oc2") {
+      await opencodeClient.stageRevert(sessionId, revertMessageID, { directory })
+      revertedSession = await opencodeClient.getSession(sessionId, directory)
+    } else {
+      revertedSession = await opencodeClient.revertSession(sessionId, revertMessageID, undefined, directory)
+    }
     const current = store.getState()
     const updated = [...current.session]
     const idx = updated.findIndex((s) => s.id === sessionId)
@@ -2495,6 +2684,10 @@ export async function refetchSessionMessages(sessionId: string): Promise<void> {
  * Restore all previously reverted messages. Aborts if busy, merges result.
  */
 export async function unrevertSession(sessionId: string): Promise<void> {
+  if (opencodeClient.getBoundRuntime()?.generation === "oc2") {
+    await clearStagedRevert(sessionId)
+    return
+  }
   const { store, directory } = dirStoreForSession(sessionId)
   const state = store.getState()
   const previousMessageCount = state.message[sessionId]?.length ?? 0
@@ -2537,7 +2730,9 @@ export async function forkAfterMessage(sessionId: string, messageId: string): Pr
   if (runtime?.generation !== 'oc2') throw new OpenCodeRuntimeError(runtime?.generation ?? 'unknown', 'fork after answer')
   const expectedRuntimeKey = getRuntimeKey()
   const { store, directory } = dirStoreForSession(sessionId)
-  const before = assistantForkBoundary(store.getState().message[sessionId] ?? [], messageId)
+  const messages = store.getState().message[sessionId] ?? []
+  const boundary = assistantForkBoundary(messages, messageId)
+  const before = boundary ? transcriptCutForMessage(messages, boundary) : undefined
   let fork = await opencodeClient.forkSession(sessionId, before, directory)
   if (isStaleRuntime(expectedRuntimeKey) || opencodeClient.getBoundRuntime() !== runtime) return null
   const assertRuntime = () => {
@@ -2613,7 +2808,13 @@ export async function forkFromMessage(sessionId: string, messageId: string): Pro
     .trim()
   const fileParts = parts.filter((part): part is FilePart => part.type === "file" && !isSyntheticPart(part))
 
-  const forkedSession = await opencodeClient.forkSession(sessionId, messageId, directory)
+  const forkedSession = await opencodeClient.forkSession(
+    sessionId,
+    opencodeClient.getBoundRuntime()?.generation === "oc2"
+      ? transcriptCutForMessage(state.message[sessionId] ?? [], messageId)
+      : messageId,
+    directory,
+  )
   if (isStaleRuntime(expectedRuntimeKey)) return
   const target = createChatDraftIdentity(expectedRuntimeKey, resolveSessionOwnedDirectory(forkedSession) ?? directory, forkedSession.id)
   if (!target) throw new Error("Forked session has no composer directory")
@@ -2645,7 +2846,12 @@ export async function forkFromMessage(sessionId: string, messageId: string): Pro
   })
   // The forked session is a fresh draft target, so the attached context of the
   // forked message follows the text into its composer.
-  restoreContextPartsToInput(parts, { directory: target.directory, sessionKey: forkedSession.id })
+  restoreContextPartsToInput(
+    opencodeClient.getBoundRuntime()?.generation === "oc2"
+      ? contextCarriersForMessage(state.message[sessionId] ?? [], messageId)
+      : parts,
+    { directory: target.directory, sessionKey: forkedSession.id },
+  )
 }
 
 export async function fetchMessagesForSession(sessionID: string, directory?: string | null): Promise<void> {

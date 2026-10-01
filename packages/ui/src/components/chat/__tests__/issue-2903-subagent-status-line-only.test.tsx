@@ -40,6 +40,7 @@ mock.module('@/stores/permissionStore', () => ({
   usePermissionStore: { getState: () => ({ isSessionAutoAccepting: () => false, hydrate: async () => undefined }) },
 }));
 mock.module('@/stores/useConfigStore', () => ({
+  markConfigCatalogStale: () => undefined,
   useConfigStore: {
     getState: () => ({ isConnected: true, hasEverConnected: true, settingsMessageStreamTransport: 'auto' }),
     setState: () => undefined,

@@ -25,6 +25,7 @@ import { ComposerAttachmentControls } from './ComposerAttachmentControls';
 import { FocusModeButton } from './FocusModeButton';
 import { PermissionAutoAcceptButton } from './PermissionAutoAcceptButton';
 import type { BtwSelection } from '@/stores/useBtwStore';
+import type { PermissionMode } from '@/stores/utils/permissionAutoAccept';
 
 const MemoModelControls = React.memo(ModelControls);
 const MemoComposerDictation = React.memo(ComposerDictation);
@@ -50,6 +51,7 @@ export interface ComposerFooterProps {
     hasContent: boolean;
     isExpandedInput: boolean;
     permissionAutoAcceptEnabled: boolean;
+    permissionMode?: PermissionMode;
     isPermissionAutoAcceptInteractive: boolean;
     dictationActive: boolean;
 
@@ -64,6 +66,7 @@ export interface ComposerFooterProps {
     onOpenAttachSheet: () => void;
     onToggleExpandedInput: () => void;
     onTogglePermissionAutoAccept: () => void;
+    onCyclePermissionMode?: () => void;
     onPrimaryAction: () => void;
     onQueueMessage: () => void;
     onAbort: () => void;
@@ -75,6 +78,8 @@ export interface ComposerFooterProps {
     isBtw?: boolean;
     modelSessionId?: string | null;
     btwSelection: BtwSelection;
+    onRunInParallel?: () => void;
+    parallelRun?: { runCount: number; launching: boolean; onLaunch: () => void } | null;
 }
 
 export function ComposerFooter(props: ComposerFooterProps) {
@@ -98,6 +103,7 @@ export function ComposerFooter(props: ComposerFooterProps) {
         hasContent,
         isExpandedInput,
         permissionAutoAcceptEnabled,
+        permissionMode,
         isPermissionAutoAcceptInteractive,
         dictationActive,
         onOpenSettings,
@@ -111,6 +117,7 @@ export function ComposerFooter(props: ComposerFooterProps) {
         onOpenAttachSheet,
         onToggleExpandedInput,
         onTogglePermissionAutoAccept,
+        onCyclePermissionMode,
         onPrimaryAction,
         onQueueMessage,
         onAbort,
@@ -122,6 +129,8 @@ export function ComposerFooter(props: ComposerFooterProps) {
         isBtw = false,
         modelSessionId,
         btwSelection,
+        onRunInParallel,
+        parallelRun = null,
     } = props;
 
     return (
@@ -162,6 +171,8 @@ export function ComposerFooter(props: ComposerFooterProps) {
                                 isInteractive={isPermissionAutoAcceptInteractive}
                                 permissionAutoAcceptEnabled={permissionAutoAcceptEnabled}
                                 handlePermissionAutoAcceptToggle={onTogglePermissionAutoAccept}
+                                permissionMode={permissionMode}
+                                handlePermissionModeCycle={onCyclePermissionMode}
                             />
                             {!isBtw ? <SessionGoalButton
                                 sessionId={currentSessionId}
@@ -241,6 +252,8 @@ export function ComposerFooter(props: ComposerFooterProps) {
                             isInteractive={isPermissionAutoAcceptInteractive}
                             permissionAutoAcceptEnabled={permissionAutoAcceptEnabled}
                             handlePermissionAutoAcceptToggle={onTogglePermissionAutoAccept}
+                            permissionMode={permissionMode}
+                            handlePermissionModeCycle={onCyclePermissionMode}
                             withTooltip
                         />
                         {!isBtw ? <SessionGoalButton
@@ -254,7 +267,7 @@ export function ComposerFooter(props: ComposerFooterProps) {
                         {!isBtw ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
                     </div>
                     <div className={cn('flex items-center flex-1 justify-end', footerGapClass, 'md:gap-x-3')}>
-                        {isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} />}
+                        {parallelRun ? <div className="flex-1" /> : isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} onRunInParallel={onRunInParallel} />}
                         {!isBtw ? <MemoComposerDictation
                             radius={chatInputRadius}
                             isMobile={isMobile}
@@ -272,14 +285,15 @@ export function ComposerFooter(props: ComposerFooterProps) {
                             footerIconButtonClass={footerIconButtonClass}
                             sendIconSizeClass={sendIconSizeClass}
                             stopIconSizeClass={stopIconSizeClass}
-                            canSend={canSend}
-                            canAbort={canAbort}
+                            canSend={parallelRun ? canSend && parallelRun.runCount >= 2 && !parallelRun.launching : canSend}
+                            canAbort={parallelRun ? false : canAbort}
                             hasContent={hasContent}
                             currentSessionId={currentSessionId}
                             newSessionDraftOpen={newSessionDraftOpen}
-                            onPrimaryAction={onPrimaryAction}
+                            onPrimaryAction={parallelRun?.onLaunch ?? onPrimaryAction}
                             onQueueMessage={onQueueMessage}
                             onAbort={onAbort}
+                            sendLabel={parallelRun ? t('chat.parallel.runAria', { count: parallelRun.runCount }) : undefined}
                         />
                     </div>
                 </>

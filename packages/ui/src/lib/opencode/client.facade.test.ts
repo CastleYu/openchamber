@@ -37,7 +37,7 @@ describe('bound OC2 facade', () => {
       if (catalog.generation === 'oc2') {
         expect(catalog.providers[0]).toEqual(provider);
         expect(catalog.models[0]).toEqual(model);
-        expect(catalog.default).toEqual({ id: 'm', providerID: 'p' });
+        expect(catalog.default).toEqual({ id: 'p/m', providerID: 'p' });
       }
       const config = await opencodeClient.getTaggedConfig('/repo');
       expect(config.generation).toBe('oc2');

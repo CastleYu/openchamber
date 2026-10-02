@@ -167,9 +167,19 @@ try {
 } catch {
 }
 
+// A portable build runs from a temp extraction dir that vanishes on exit, so
+// register the launched .exe instead. Dev runs never claim the protocol.
+const PORTABLE_EXE_ENV = 'PORTABLE_EXECUTABLE_FILE';
 try {
-  if (!app.isDefaultProtocolClient(DEEP_LINK_PROTOCOL)) {
-    app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL);
+  const portableExe = String(process.env[PORTABLE_EXE_ENV] || '').trim();
+  if (app.isPackaged) {
+    if (portableExe) {
+      if (!app.isDefaultProtocolClient(DEEP_LINK_PROTOCOL, portableExe, [])) {
+        app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL, portableExe, []);
+      }
+    } else if (!app.isDefaultProtocolClient(DEEP_LINK_PROTOCOL)) {
+      app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL);
+    }
   }
 } catch (error) {
   // log.* not yet initialized at this point; fall back to console.

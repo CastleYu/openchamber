@@ -34,7 +34,9 @@ This module provides OpenCode server integration utilities for the web server ru
 - `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Unknown
   startup endpoints are not probed. Credential changes and managed restarts retire
   old request identities, including discovery performed while the old process is
-  closing. `/api/opencode/runtime` exposes the descriptor through the authenticated
+  closing. A health `reprobe` keeps a resolved OC1 or OC2 descriptor when detection
+  returns `unreachable` or `unknown`. See lifecycle health monitoring below.
+  `/api/opencode/runtime` exposes the descriptor through the authenticated
   OpenChamber route with no-store caching.
 - `kernel-operations.js` selects server-side session/message/send operations from
   that descriptor. Deferred sends carry their captured identity and reject after
@@ -65,6 +67,7 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/opencode/cli-options.js`: CLI/environment option parsing for server startup arguments.
 - `packages/web/server/lib/opencode/cli-entry-runtime.js`: CLI entrypoint runtime that detects direct execution, parses CLI options, and starts server bootstrap.
 - `packages/web/server/lib/opencode/routes.js`: OpenCode/provider settings and auth-related route registration.
+- `packages/web/server/lib/opencode/v1-migration-topup.js`: re-arms OpenCode's own V1 -> V2 session import for V1 sessions changed by 1.x after the last completed import. `startOpenCodeOnce` runs it only before a managed OC2 spawn. OC1 credential reads and writes stay on their existing path. See "v1-migration-topup.js" below.
 - `packages/web/server/lib/opencode/lifecycle.js`: OpenCode process lifecycle runtime (startup, restart, readiness, health monitoring). After readiness it warms the most recently used directories (`getWarmupDirectories` dep, sequential and best-effort) because OpenCode initializes each directory lazily on first request and that cost would otherwise be paid by the user's first interactive session open. The Desktop runtime warms the last-used directory only, because its UI bootstraps the directories it shows in its own priority order.
 - `packages/web/server/lib/opencode/provider-env-aliases.js`: mirrors known provider credential env aliases into the managed OpenCode process environment (for example `GEMINI_API_KEY` → `GOOGLE_GENERATIVE_AI_API_KEY`) so OpenCode connection detection and the upstream AI SDK agree on the same key names. Canonical implementation shared by web lifecycle and the VS Code managed spawn path (`packages/vscode/src/provider-env-aliases.ts` re-exports this module).
 - `packages/web/server/lib/opencode/env-runtime.js`: OpenCode CLI/binary resolution and shell environment runtime.
@@ -148,6 +151,53 @@ and ordinary mode: OpenCode 2.0.20 returns raw secrets there. Enterprise mode
 also refuses `POST /api/credential`; account activation and removal stay
 available. The server reads the credential API privately with its own auth
 headers, never through the client proxy.
+
+## v1-migration-topup.js
+
+OpenCode 2.x imports the legacy `session`, `message`, and `part` tables into
+`session_v2` and `session_message` once, then records `{"phase":"completed"}`
+under `migration.v1-v2` in the `kv` table. V1 sessions a bundled OpenCode 1.x
+created after that point stay out of the v2 session list. `topUpV1Migration()`
+writes a resume cursor so OpenCode's own migration imports them. OpenChamber
+does not write session rows.
+
+`startOpenCodeOnce` calls it only when the selected managed kernel is OC2,
+immediately before that process is spawned. An external OpenCode is left alone,
+and the call does not run against a managed process that is already up. A
+failure is logged and startup continues. OC1 credential reads and writes stay
+on `auth.js`. This module does not open `auth.json`.
+
+It opens `<data>/opencode.db`, or `OPENCODE_DB`, read-write through `node:sqlite`
+on Node or `bun:sqlite` on Bun, and skips when neither runtime is available.
+It returns `{ status: 'skipped' | 'scheduled' | 'unsafe' | 'unavailable', missing, revisited, reason? }`
+and logs one line. There is no HTTP route and no UI.
+
+When the migration row says `completed`, and some `session` rows have no
+`session_v2` twin and `session.time_updated` is later than the completion stamp
+on that row, it sets the row to `{"phase":"sessions","cursor":...}`. A v2 delete
+leaves the legacy row behind, so a missing twin by itself does not qualify.
+The cursor is the largest missing id plus a suffix. OpenCode walks `id < cursor`
+in descending id order, and ids are fixed width, so no real id falls between an
+id and that cursor. Comparison is SQLite TEXT order, byte by byte. Session ids
+encode time in a field that wraps, so id order is not time order.
+
+Hard rules, as this module implements them. The comments record the check
+against OpenCode v2.0.8 `packages/core/src/database/v1-migration.bun.ts`, and
+the completion stamp against v2.0.16:
+
+- The `migration.v1-v2` row is updated in place. It is never cleared or deleted.
+  With no row, OpenCode treats the database as pre-migration and deletes the
+  `event` table, v2's durable event log.
+- A cursor is not written when a session under it already has v2 activity: a
+  message created after completion, a `session_v2.time_updated` after completion,
+  or a message `type` other than `user`, `assistant`, `synthetic`, or
+  `compaction`. The outcome is `unsafe` with reason
+  `revisited-sessions-have-v2-activity`, and one warning names how many sessions
+  stay missing.
+- Only 1.x activity after the last completed import schedules another import.
+  When 1.x was used again, OpenCode's loop still walks every legacy row under
+  the cursor, so a deleted session that sorts below a fresh one comes back with
+  it.
 
 ## Public exports (providers.js)
 - `getProviderSources(providerId, workingDirectory)`: Resolves which OpenCode config layers define a provider.
@@ -237,11 +287,28 @@ from any present sibling (`GOOGLE_GENERATIVE_AI_API_KEY`, `GOOGLE_API_KEY`,
 the Generative AI SDK path used at chat time. Existing non-empty values are
 never overwritten.
 
+`createManagedOpenCodeServerProcess` treats a stdout line as the listen line
+only when the line starts with `opencode server listening` (OC1) or
+`server listening` (OC2 2.0.20), then reads the `on http(s)://...` URL. A line
+that merely contains those words later is ignored.
+
+Before that spawn, and only when the probed kernel is OC2, `startOpenCodeOnce`
+runs `topUpV1Migration`. See "v1-migration-topup.js" above.
+
 Set `OPENCHAMBER_STARTUP_PERF=1` to emit bounded startup phase records for server listen, managed OpenCode preparation/readiness, and proxy readiness holds. Every OpenCode bootstrap emits one terminal `opencode.bootstrap.ready` or `opencode.bootstrap.error` event, including reused and external server paths. Records contain controlled phase/outcome/route labels and timing values only; they never contain request URLs, runtime keys, directories, session IDs, credentials, or content.
 
 macOS `say` voice enumeration starts concurrently with server composition. The server listener and managed OpenCode startup do not wait for it; `/api/tts/say/status` awaits the same authoritative capability promise when queried before enumeration completes.
 
 Transport-triggered health checks share the periodic monitor's failure accounting interval. Rapid WS reconnect callbacks therefore cannot exhaust the managed-process restart threshold using one cached unhealthy result; an exited managed process still restarts immediately.
+
+A periodic re-probe keeps a live OC1 or OC2 descriptor when detection returns
+`unreachable` or `unknown`. `reprobe` leaves that descriptor and its epoch in
+place and still returns the raw generation. `probeOpenCodeHealthDetailed`
+treats that preserved result as unhealthy. `runHealthCheckCycle` restarts, and
+`restartOpenCode` calls `invalidate`, when the managed process has exited or
+the consecutive-failure budget is spent. Busy sessions postpone the budget
+restart until the two-minute stale guard. A re-probe that identifies a
+different generation commits that generation on the same probe.
 
 Managed health failures are classified as `timeout`, `connection_refused`, `connection_reset`, `invalid_response`, or `error`. The lifecycle retains the latest counted failure with a bounded detail string and source. Managed process wrappers continue capturing a sanitized, bounded stderr tail after readiness and retain exit code/signal. Before replacing a managed process, lifecycle snapshots the reason, latest health failure, process diagnostics/aliveness, busy-session count, and timestamp into `lastOpenCodeRestartDiagnostics`; successful startup does not clear this snapshot, and `/health` exposes it for post-restart diagnosis without process environment or credentials.
 

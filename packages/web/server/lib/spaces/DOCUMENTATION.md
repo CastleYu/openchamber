@@ -516,7 +516,7 @@ The design is in DESIGN.md, "User journey". Stage 5a built the host's side of it
 
 ### Routes
 
-All under `/api/openchamber/spaces`, a namespace of the host's beside `/api/openchamber/tunnel`, on the JSON-body allowlist of `core-routes.js`. A request to the server inside a space is `/api/spaces/<id>/...` and belongs to the dispatcher; nothing here has that shape. The route registry, switch controller, and host constructor require a live OC2 generation predicate. They refuse OC1 with `spaces_require_oc2` before building a host or running a journey route. The server must also check OC2 before restoring an enabled switch at startup. While OC2 is selected and the switch is off, every journey route answers 404 with `isolated_spaces_off`.
+All under `/api/openchamber/spaces`, a namespace of the host's beside `/api/openchamber/tunnel`, on the JSON-body allowlist of `core-routes.js`. A request to the server inside a space is `/api/spaces/<id>/...` and belongs to the dispatcher; nothing here has that shape. The route registry, switch controller, and host constructor require a live OC2 generation predicate. They refuse OC1 with `spaces_require_oc2` before building a host or running a journey route. The server must also check OC2 before restoring an enabled switch at startup. While OC2 is selected and the switch is off, every journey route answers 404 with `isolated_spaces_off`, and the switch still answers.
 
 | Route | What it does |
 |---|---|

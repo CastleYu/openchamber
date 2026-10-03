@@ -29,7 +29,7 @@ Retain upstream owning modules and directory layout wherever possible. Put proto
 
 Before implementing, compare the proposed abstraction's current diff and future conflict surface with localized version implementations. Record the chosen tradeoff. Partition work by non-overlapping files and dependent contracts, with acceptance tests for every inventory row. Independently review task coverage before implementation.
 
-Use the maintainer's requested delegation: Sol medium for interface inventory, task decomposition and task review; Astra medium for architecture; Luna medium for bounded implementation and test execution; Sol medium for complex implementation; Astra low for implementation review. Escalate a blocked Luna task to Sol low with its exact evidence. The primary agent owns test design and final acceptance. Delegate only independent useful work and inspect the actual changes.
+Stage, delegate and budget the work as described in [execution economy](execution-economy.md). The primary agent does the inventory, task split, architecture judgment, test design and final acceptance itself, and delegates only bounded module batches. Escalate a blocked Luna task to Sol low in a new agent with its exact evidence. Inspect the actual changes.
 
 ## Validate and publish
 

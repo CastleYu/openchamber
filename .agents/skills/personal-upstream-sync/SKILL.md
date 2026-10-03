@@ -11,6 +11,10 @@ Deliver a reviewed merge that retains the personal commit history and behavior. 
 
 When preserving OC1 while adopting an OC2 upstream target, read [dual-kernel intake](references/dual-kernel.md) before choosing a merge or declaring the target integrated. It owns API classification, preserved OC1 behavior, task delegation and content-adoption gates. The remaining sections own Git protection, personal policies and publication. A restored or reverted upstream change must be evaluated by actual content, not ancestry alone.
 
+## Plan the run
+
+Read [execution economy](references/execution-economy.md) before starting the intake. It owns scope pinning, phase sessions, delegation, waiting and the call budget.
+
 ## Establish the target
 
 Read root `AGENTS.md`, [branch contracts](../../../docs/maintenance/BRANCHES.md), [personal build policy](../../../docs/maintenance/BUILD.md), and the latest applicable validation record. The historical SHAs in those documents are evidence, not the current upstream target.
@@ -33,7 +37,7 @@ If another merge, rebase or cherry-pick is already in progress, inspect its owne
 
 ## Fetch and isolate
 
-Fetch the verified community branch and fork before comparing commits. A failed fetch means the latest upstream is unknown; do not substitute an old remote-tracking ref and call it current. Record the fetched upstream SHA and time. Pin that SHA for this integration so an advancing remote does not move the target during conflict resolution.
+Fetch the verified community branch and fork before comparing commits. A failed fetch means the latest upstream is unknown; do not substitute an old remote-tracking ref and call it current. Record the fetched upstream SHA and time. Pin that SHA for this integration so an advancing remote does not move the target during conflict resolution. Commits that land upstream during the run become a separate follow-up batch after the pinned batch is validated and committed.
 
 Compare the personal branch with both the fetched upstream and the fork's personal branch, if it exists. Use `git rev-list --left-right --count`, `git log --left-right --cherry-pick --oneline`, and `git merge-base --is-ancestor` as appropriate. Rewritten equivalent patches can produce large ahead/behind counts; do not treat that as permission to force-push or replay every commit. If the fork has new personal commits, reconcile them in the integration branch before community intake. Keep both sides' non-equivalent changes.
 

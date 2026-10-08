@@ -224,7 +224,11 @@ describe('owned agent HTTP routes', () => {
   it('returns only validated runtime identity', async () => {
     const { app } = fixture();
     const response = await request(app).get(AGENT_ROUTE.RUNTIME).set('x-test-auth', 'accepted').expect(200);
-    expect(response.body).toEqual({ identity });
+    expect(response.body.identity).toEqual(identity);
+    expect(Object.keys(response.body.operations).sort()).toEqual(Object.values(AGENT_OPERATION).sort());
+    expect(response.body.operations[AGENT_OPERATION.GET_SESSION]).toEqual({ available: true });
+    expect(response.body.operations[AGENT_OPERATION.SEND_PROMPT])
+      .toEqual({ available: false, reason: AGENT_ERROR.UNVERIFIED });
     expect(response.headers['cache-control']).toBe('no-store');
   });
 

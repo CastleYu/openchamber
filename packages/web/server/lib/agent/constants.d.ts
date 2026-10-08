@@ -16,7 +16,10 @@ export const AGENT_ATTEMPT: Readonly<{
   UNKNOWN: 'unknown'; ACCEPTED: 'accepted'; COMPLETE: 'complete'; NOT_SENT: 'not-sent';
 }>;
 export const AGENT_FILE_ERROR: Readonly<{ EXISTS: 'EEXIST'; MISSING: 'ENOENT' }>;
-export const AGENT_HOST_OPERATION: Readonly<{ CAPTURE_IDENTITY: 'captureIdentity'; READ_ATTEMPT: 'readAttempt' }>;
+export const AGENT_HOST_OPERATION: Readonly<{
+  CAPTURE_IDENTITY: 'captureIdentity'; READ_ATTEMPT: 'readAttempt'; GET_BINDING: 'getBinding';
+  DESCRIBE_RUNTIME: 'describeRuntime';
+}>;
 export const AGENT_ROUTE: Readonly<{
   PREFIX: '/api/agent-backend'; RUNTIME: '/api/agent-backend/runtime'; DISPATCH: '/api/agent-backend/dispatch';
   ATTEMPT: '/api/agent-backend/attempt';

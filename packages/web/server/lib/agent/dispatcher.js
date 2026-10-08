@@ -19,6 +19,23 @@ const same = (left, right) => left.family === right.family
   && left.adapterRevision === right.adapterRevision
   && left.capabilityRevision === right.capabilityRevision;
 
+const refusal = (binding, operation) => {
+  if (!binding) return AGENT_ERROR.UNAVAILABLE;
+  if (!binding.authorized) return AGENT_ERROR.UNAUTHORIZED;
+  if (!binding.ready) return AGENT_ERROR.UNAVAILABLE;
+  const capability = binding.capabilities[operation];
+  if (!capability || capability.state === AGENT_SUPPORT.UNVERIFIED) return AGENT_ERROR.UNVERIFIED;
+  if (capability.state === AGENT_SUPPORT.UNSUPPORTED) return AGENT_ERROR.UNSUPPORTED;
+  const accepted = binding.acceptance;
+  if ((capability.state !== AGENT_SUPPORT.SUPPORTED && capability.state !== AGENT_SUPPORT.ADAPTED)
+    || !capability.evidence.length || !accepted
+    || accepted.adapterRevision !== binding.identity.adapterRevision
+    || accepted.capabilityRevision !== binding.identity.capabilityRevision
+    || !accepted.operations.includes(operation)) return AGENT_ERROR.UNACCEPTED;
+  if (!Object.hasOwn(binding.handlers, operation)) return AGENT_ERROR.MISSING_HANDLER;
+  return null;
+};
+
 /** A host-owned binding, never an adapter manifest, grants dispatch authority. */
 export const createAgentDispatcher = ({ getBinding, attempts }) => {
   const requireOperation = (operation) => {
@@ -29,26 +46,8 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
     const binding = getBinding();
     if (!binding) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, operation);
     if (expected && !same(expected, binding.identity)) throw new AgentDispatchError(AGENT_ERROR.CHANGED, operation);
-    if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, operation);
-    if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, operation);
-    const capability = binding.capabilities[operation];
-    if (!capability || capability.state === AGENT_SUPPORT.UNVERIFIED) {
-      throw new AgentDispatchError(AGENT_ERROR.UNVERIFIED, operation);
-    }
-    if (capability.state === AGENT_SUPPORT.UNSUPPORTED) {
-      throw new AgentDispatchError(AGENT_ERROR.UNSUPPORTED, operation);
-    }
-    const accepted = binding.acceptance;
-    if ((capability.state !== AGENT_SUPPORT.SUPPORTED && capability.state !== AGENT_SUPPORT.ADAPTED)
-      || !capability.evidence.length || !accepted
-      || accepted.adapterRevision !== binding.identity.adapterRevision
-      || accepted.capabilityRevision !== binding.identity.capabilityRevision
-      || !accepted.operations.includes(operation)) {
-      throw new AgentDispatchError(AGENT_ERROR.UNACCEPTED, operation);
-    }
-    if (!Object.hasOwn(binding.handlers, operation)) {
-      throw new AgentDispatchError(AGENT_ERROR.MISSING_HANDLER, operation);
-    }
+    const code = refusal(binding, operation);
+    if (code) throw new AgentDispatchError(code, operation);
     return binding;
   };
   const captureIdentity = () => {
@@ -57,6 +56,20 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
     if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, AGENT_HOST_OPERATION.CAPTURE_IDENTITY);
     if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, AGENT_HOST_OPERATION.CAPTURE_IDENTITY);
     return Object.freeze({ ...binding.identity });
+  };
+  const describeRuntime = () => {
+    const binding = getBinding();
+    const operation = AGENT_HOST_OPERATION.DESCRIBE_RUNTIME;
+    if (!binding) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, operation);
+    if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, operation);
+    if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, operation);
+    return {
+      identity: Object.freeze({ ...binding.identity }),
+      operations: Object.fromEntries([...operations].map((id) => {
+        const reason = refusal(binding, id) || (mutations.has(id) && !attempts ? AGENT_ERROR.WRITE_UNAVAILABLE : null);
+        return [id, reason ? { available: false, reason } : { available: true }];
+      })),
+    };
   };
   const dispatch = async (operation, input, expected) => {
     const binding = requireBinding(operation, expected);
@@ -130,5 +143,5 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
     if (!same(identity, current)) throw new AgentDispatchError(AGENT_ERROR.CHANGED, operation);
     return { identity, attempt };
   };
-  return Object.freeze({ captureIdentity, dispatch, readAttempt });
+  return Object.freeze({ captureIdentity, describeRuntime, dispatch, readAttempt });
 };

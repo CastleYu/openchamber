@@ -1,6 +1,7 @@
 import { expectTypeOf, it } from 'vitest';
 import { AGENT_OPERATION } from './constants.js';
-import { createAgentDispatcher, type AgentInputs, type AgentOperation, type AgentOutputs, type AgentSession } from './dispatcher.js';
+import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentOperation, type AgentOutputs, type AgentRuntime, type AgentSession } from './dispatcher.js';
+import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
 
 it('preserves operation-specific inputs and results without SDK wire types', () => {
   const dispatcher = createAgentDispatcher({ getBinding: () => null });
@@ -22,4 +23,28 @@ it('preserves operation-specific inputs and results without SDK wire types', () 
     dispatcher.dispatch('unregistered', request);
   };
   expectTypeOf(check).toEqualTypeOf<() => void>();
+});
+
+it('keeps selection and independent approval in typed host ports', () => {
+  const authority = createAgentAuthority({
+    registrations: [], getSelection: () => null,
+    getAcceptance: (selection) => {
+      expectTypeOf(selection).toEqualTypeOf<AgentSelection>();
+      return null;
+    },
+  });
+  const dispatcher = createAgentDispatcher({ getBinding: authority.getBinding });
+  expectTypeOf(dispatcher.describeRuntime).returns.toEqualTypeOf<AgentRuntime>();
+  expectTypeOf<keyof AgentRuntime['operations']>().toEqualTypeOf<AgentOperation>();
+  expectTypeOf<AgentRuntime['operations'][AgentOperation]>().toEqualTypeOf<AgentAvailability>();
+  expectTypeOf(dispatcher.captureIdentity).returns.toHaveProperty('connectionID').toBeString();
+  expectTypeOf<AgentApproval['operations'][number]['operation']>().toEqualTypeOf<AgentOperation>();
+  const check = () => {
+    // @ts-expect-error Selection must bind a tested server revision and readiness.
+    createAgentAuthority({ registrations: [], getSelection: () => ({ family: 'cagent' }), getAcceptance: () => null });
+    // @ts-expect-error Approval rows require independent evidence, not operation IDs alone.
+    const operations: AgentApproval['operations'] = [AGENT_OPERATION.GET_SESSION];
+    return operations;
+  };
+  expectTypeOf(check).toBeFunction();
 });

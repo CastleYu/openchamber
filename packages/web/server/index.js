@@ -55,6 +55,7 @@ import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentDispatcher } from './lib/agent/dispatcher.js';
+import { createAgentAuthority } from './lib/agent/authority.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
 import { AGENT_ATTEMPT } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
@@ -2216,8 +2217,11 @@ async function main(options = {}) {
   uiAuthController = bootstrapResult.uiAuthController;
   // Reserve the owned protocol before proxy fallback. Activation is a later
   // host-owned step; candidate adapter files cannot grant dispatch authority.
+  const agentAuthority = createAgentAuthority({
+    registrations: [], getSelection: () => null, getAcceptance: () => null,
+  });
   registerAgentRoutes(app, { dispatcher: createAgentDispatcher({
-    getBinding: () => null,
+    getBinding: agentAuthority.getBinding,
     attempts: createAgentAttempts({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_ATTEMPT.DIRECTORY) }),
   }) });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
+import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
 
 const id = z.string().min(1);
 const json = z.json();
@@ -37,6 +37,13 @@ export const agentIdentitySchema = z.object({
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
+export const agentRuntimeSchema = z.object({
+  identity: agentIdentitySchema,
+  operations: z.record(agentOperationSchema, z.discriminatedUnion('available', [
+    z.object({ available: z.literal(true) }).strict(),
+    z.object({ available: z.literal(false), reason: z.enum(Object.values(AGENT_ERROR)) }).strict(),
+  ])),
+}).strict();
 
 export const AGENT_INPUT_SCHEMAS = Object.freeze({
   [AGENT_OPERATION.GET_SESSION]: session,

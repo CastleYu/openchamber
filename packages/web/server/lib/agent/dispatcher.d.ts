@@ -1,4 +1,4 @@
-import { AGENT_OPERATION } from './constants.js';
+import { AGENT_ERROR, AGENT_OPERATION } from './constants.js';
 
 export type AgentFamily = 'opencode' | 'cagent';
 export type AgentIdentity = Readonly<{
@@ -103,6 +103,10 @@ export type AgentBinding = Readonly<{
   handlers: AgentHandlers;
 }>;
 export type AgentResult<K extends AgentOperation> = { identity: AgentIdentity; data: AgentOutputs[K] };
+export type AgentAvailability = { available: true } | {
+  available: false; reason: typeof AGENT_ERROR[keyof typeof AGENT_ERROR];
+};
+export type AgentRuntime = { identity: AgentIdentity; operations: { [K in AgentOperation]: AgentAvailability } };
 export class AgentDispatchError extends Error {
   readonly code: string;
   readonly operation: string;
@@ -113,6 +117,7 @@ export function createAgentDispatcher(options: {
   attempts?: import('./attempts.js').AgentAttempts;
 }): {
   captureIdentity(): AgentIdentity;
+  describeRuntime(): AgentRuntime;
   readAttempt(expected: AgentIdentity, requestID: string): Promise<{
     identity: AgentIdentity; attempt: import('./attempts.js').AgentAttempt | null;
   }>;

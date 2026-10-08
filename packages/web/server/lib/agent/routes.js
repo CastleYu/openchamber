@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { AGENT_ERROR, AGENT_ROUTE } from './constants.js';
 import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
-import { agentIdentitySchema, agentOperationSchema } from './schemas.js';
+import { agentIdentitySchema, agentOperationSchema, agentRuntimeSchema } from './schemas.js';
 
 const requestSchema = z.object({
   operation: agentOperationSchema,
@@ -43,8 +43,7 @@ export const registerAgentRoutes = (app, { dispatcher }) => {
   app.get(AGENT_ROUTE.RUNTIME, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const identity = agentIdentitySchema.parse(dispatcher.captureIdentity());
-      return res.json({ identity });
+      return res.json(agentRuntimeSchema.parse(dispatcher.describeRuntime()));
     } catch (error) {
       return failure(res, error);
     }

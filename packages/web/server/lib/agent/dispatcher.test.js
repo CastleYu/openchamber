@@ -44,6 +44,42 @@ const errorCode = async (promise, code) => {
 };
 
 describe('agent dispatcher', () => {
+  it('describes every operation from one host snapshot without handler effects', () => {
+    const current = binding();
+    current.capabilities[AGENT_OPERATION.LIST_SESSIONS] = { state: AGENT_SUPPORT.UNSUPPORTED, evidence: ['absence'] };
+    const getBinding = vi.fn(() => current);
+    const runtime = createAgentDispatcher({ getBinding }).describeRuntime();
+    expect(getBinding).toHaveBeenCalledTimes(1);
+    expect(Object.keys(runtime.operations).sort()).toEqual(Object.values(AGENT_OPERATION).sort());
+    expect(runtime.identity).toEqual(current.identity);
+    expect(runtime.operations[AGENT_OPERATION.GET_SESSION]).toEqual({ available: true });
+    expect(runtime.operations[AGENT_OPERATION.LIST_SESSIONS]).toEqual({ available: false, reason: AGENT_ERROR.UNSUPPORTED });
+    expect(runtime.operations[AGENT_OPERATION.SEND_PROMPT]).toEqual({ available: false, reason: AGENT_ERROR.UNVERIFIED });
+    expect(current.handler).not.toHaveBeenCalled();
+  });
+
+  it('reports a supported mutation unavailable without durable storage', () => {
+    const current = binding();
+    current.capabilities[AGENT_OPERATION.SEND_PROMPT] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['dispatch'] };
+    current.acceptance.operations.push(AGENT_OPERATION.SEND_PROMPT);
+    current.handlers[AGENT_OPERATION.SEND_PROMPT] = vi.fn();
+    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    expect(dispatcher.describeRuntime().operations[AGENT_OPERATION.SEND_PROMPT])
+      .toEqual({ available: false, reason: AGENT_ERROR.WRITE_UNAVAILABLE });
+    expect(current.handlers[AGENT_OPERATION.SEND_PROMPT]).not.toHaveBeenCalled();
+  });
+
+  it('a prior available snapshot cannot authorize dispatch after revocation', async () => {
+    const current = binding();
+    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    const snapshot = dispatcher.describeRuntime();
+    expect(snapshot.operations[AGENT_OPERATION.GET_SESSION]).toEqual({ available: true });
+    current.acceptance = null;
+    await expect(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION,
+      { workspaceID: 'w1', sessionID: 's1' }, snapshot.identity)).rejects.toMatchObject({ code: AGENT_ERROR.UNACCEPTED });
+    expect(current.handler).not.toHaveBeenCalled();
+  });
+
   it.each([AGENT_SUPPORT.SUPPORTED, AGENT_SUPPORT.ADAPTED])('dispatches %s capability', async (state) => {
     const current = binding();
     current.capabilities[AGENT_OPERATION.GET_SESSION].state = state;

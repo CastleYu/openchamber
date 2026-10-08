@@ -75,6 +75,8 @@ The [weak-agent packet workflow](CAGENT-ADAPTER-WORKBOOK.md#weak-agent-packet-ex
 
 CA-02 freezes the [local model workload budget](CAGENT-ADAPTER-WORKBOOK.md#local-model-workload-budget), demonstrates packet splitting when required input exceeds it, and records execution effort for its rehearsals. Production operation dispatch uses accepted code without model-dependent routing or conversion.
 
+CA-02 also validates the [feature decision examples](CAGENT-ADAPTER-WORKBOOK.md#feature-decision-examples) and [documentation-change procedure](CAGENT-ADAPTER-WORKBOOK.md#documentation-changes-and-reacceptance). CA-03 records the real contract revision and maintenance handoff. A changed contract cannot retain affected capabilities solely because an earlier revision passed.
+
 CA-02 additionally delivers the [model calibration samples](CAGENT-ADAPTER-WORKBOOK.md#local-model-calibration-and-task-assignment) and demonstrates all task-assignment outcomes, including a usable maintainer-only path. CA-03 runs those samples with the actual local model before implementing real API mappings and records its selected workload. Calibration never substitutes for operation or feature acceptance.
 
 ### CA-03: local CAgent adaptation and live acceptance

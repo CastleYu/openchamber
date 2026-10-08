@@ -163,6 +163,30 @@ The rows are templates, not findings about the real CAgent. The report must enum
 
 An extension record includes action ID, schema version, context, label/localization keys, input/output types, effect class, authorization, progress/terminal/unknown behavior, cancellation, host availability and evidence. A hypothetical extra action is used only to test the kit renderer; do not imply that CAgent offers that action.
 
+## Feature decision examples
+
+The following cases are protected kit examples, not observations about CAgent. The runner applies the frozen dependency registry to the local evidence; the agent cannot select a more permissive outcome.
+
+| Documented condition | Required disposition |
+| --- | --- |
+| No event stream, but authoritative status and history are available | Attempt the tested polling alternative. Enable only its accepted features and declare refresh latency; a prompt receipt alone is insufficient. |
+| Dispatch exists, but completion cannot be observed | Keep chat and its autonomous callers disabled. Accept independently verified read-only features separately. |
+| The server may request permission or an answer, but has no usable reply operation | Disable the affected chat mode. Escalate the missing semantics rather than auto-accepting decisions. |
+| Cancellation is absent | Disable Stop and workflows requiring cancellation. Interactive chat needs the explicit mode and completion evidence required by the SPEC. |
+| OpenCode configuration, MCP or plugin semantics have no CAgent equivalent | Disable those backend operations individually. Preserve independently available OpenChamber-owned functions. |
+| A documented new action fits the finite form/action/result contract | Generate a typed `cagent` extension record and bounded handler; validate its authorization, result and unknown-outcome behavior before acceptance. |
+| A new action needs an interaction outside that contract | Record `requires-host-development` with a concrete input/result example. Keep it disabled while the architecture owner supplies the interaction. |
+
+## Documentation changes and reacceptance
+
+The local maintainer freezes a document inventory with section references and local content digests alongside each accepted adapter revision. A digest detects changed material; it does not prove that the documentation is correct. Keep private excerpts and digests inside the environment unless their export is approved.
+
+The protected runner links every operation and extension to its cited sections. On a documentation, schema or server-contract change, mark the affected mappings pending review and suspend their dependent capabilities until the maintainer accepts replacement evidence. Preserve unrelated accepted operations only when the recorded contract remains applicable. If the changed scope cannot be determined, suspend the adapter's backend-dependent capabilities pending contract review.
+
+Rebuild affected packets from the new evidence, rerun their protected checks and live journeys, then issue a new accepted adapter revision. Retire stale in-flight client results at activation, preserve unknown request identities for outcome resolution, and never replay them automatically. Rollback requires a revision accepted for the current server contract; an old adapter is not a compatibility guarantee for a changed server.
+
+CA-02 rehearses a changed field, an unrelated unchanged operation and an unscoped contract change. Protected checks verify dependency suspension and prohibit candidate self-reactivation. CA-03 records the actual local documentation/server revision and maintenance procedure in its handoff.
+
 ## Required negative checks
 
 - An unsupported operation is refused by the host dispatcher before any request or file write, including direct callers and shortcuts.

@@ -65,6 +65,8 @@ Deliver the complete runnable packet toolchain, not planning documents alone. In
 
 Exit: a clean offline checkout runs the documented commands successfully. The sparse adapter correctly rejects unsupported operations and fails validation when their dependent features are incorrectly enabled, and the synthetic extension passes only through registered typed handlers. Attempts to edit protected tests/contracts or enable a feature without linked evidence fail validation. Failed required checks return nonzero and concise machine-readable results.
 
+Documentation intake also passes the [workbook decision cases](CAGENT-ADAPTER-WORKBOOK.md#documentation-to-adapter-decisions). Protected expectations cover structural mapping, semantic differences, absence, conflicting evidence and additional capabilities. An endpoint inventory alone cannot satisfy feature coverage.
+
 ### CA-03: local CAgent adaptation and live acceptance
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.

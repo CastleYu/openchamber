@@ -10,7 +10,14 @@ export const AGENT_ERROR = Object.freeze({
   WRITE_UNAVAILABLE: 'write-unavailable', BACKEND_FAILED: 'backend-failed',
   UNKNOWN_ROUTE: 'unknown-route',
   UNSUPPORTED_RUNTIME: 'unsupported-runtime',
+  ATTEMPT_EXISTS: 'attempt-exists', ATTEMPT_STORAGE: 'attempt-storage-failed',
+  ATTEMPT_CORRUPT: 'attempt-corrupt',
 });
+export const AGENT_ATTEMPT = Object.freeze({
+  VERSION: 1, DIRECTORY: 'agent-attempts', MAX_RECORD_BYTES: 65536,
+  UNKNOWN: 'unknown', ACCEPTED: 'accepted', COMPLETE: 'complete', NOT_SENT: 'not-sent',
+});
+export const AGENT_FILE_ERROR = Object.freeze({ EXISTS: 'EEXIST', MISSING: 'ENOENT' });
 export const AGENT_ROUTE = Object.freeze({
   PREFIX: '/api/agent-backend', RUNTIME: '/api/agent-backend/runtime',
   DISPATCH: '/api/agent-backend/dispatch',

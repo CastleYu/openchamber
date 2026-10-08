@@ -9,6 +9,7 @@ const page = { cursor: z.string().optional(), limit: z.number().int().positive()
 const workspace = z.object({ workspaceID: id }).strict();
 const session = z.object({ workspaceID: id, sessionID: id }).strict();
 const selection = { model: z.string().optional(), agent: z.string().optional() };
+const effect = { requestID: id };
 const sessionRecord = z.object({
   id, workspaceID: id, title: z.string().optional(), parentID: id.optional(), metadata: metadata.optional(),
 }).strict();
@@ -39,24 +40,24 @@ export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
 
 export const AGENT_INPUT_SCHEMAS = Object.freeze({
   [AGENT_OPERATION.GET_SESSION]: session,
-  [AGENT_OPERATION.CREATE_SESSION]: z.object({ workspaceID: id, title: z.string().optional() }).strict(),
+  [AGENT_OPERATION.CREATE_SESSION]: z.object({ workspaceID: id, title: z.string().optional(), ...effect }).strict(),
   [AGENT_OPERATION.LIST_SESSIONS]: workspace.extend(page).strict(),
   [AGENT_OPERATION.LIST_MESSAGES]: session.extend(page).strict(),
   [AGENT_OPERATION.LIST_CHILDREN]: session.extend(page).strict(),
   [AGENT_OPERATION.LIST_ACTIVE_STATUSES]: workspace,
   [AGENT_OPERATION.GET_SESSION_STATUS]: session,
   [AGENT_OPERATION.LIST_PENDING_PERMISSIONS]: workspace,
-  [AGENT_OPERATION.REPLY_PERMISSION]: z.object({ workspaceID: id, sessionID: id, permissionID: id, choice: z.string() }).strict(),
+  [AGENT_OPERATION.REPLY_PERMISSION]: z.object({ workspaceID: id, sessionID: id, permissionID: id, choice: z.string(), ...effect }).strict(),
   [AGENT_OPERATION.GET_MESSAGE]: z.object({ workspaceID: id, sessionID: id, messageID: id }).strict(),
-  [AGENT_OPERATION.ADD_SYNTHETIC]: z.object({ workspaceID: id, sessionID: id, text: z.string() }).strict(),
-  [AGENT_OPERATION.SWITCH_SELECTION]: session.extend(selection).strict(),
+  [AGENT_OPERATION.ADD_SYNTHETIC]: z.object({ workspaceID: id, sessionID: id, text: z.string(), ...effect }).strict(),
+  [AGENT_OPERATION.SWITCH_SELECTION]: session.extend({ ...selection, ...effect }).strict(),
   [AGENT_OPERATION.LIST_COMMANDS]: workspace,
   [AGENT_OPERATION.GET_SELECTION_CATALOG]: workspace,
   [AGENT_OPERATION.GET_DEFAULT_MODEL]: workspace,
-  [AGENT_OPERATION.IMPORT_SESSION]: z.object({ workspaceID: id, session: sessionRecord, messages: z.array(message) }).strict(),
-  [AGENT_OPERATION.FORK_SESSION]: z.object({ workspaceID: id, sessionID: id, messageID: id.optional() }).strict(),
-  [AGENT_OPERATION.REMOVE_SESSION]: session,
-  [AGENT_OPERATION.UPDATE_SESSION]: z.object({ workspaceID: id, sessionID: id, title: z.string().optional(), metadata: metadata.optional() }).strict(),
+  [AGENT_OPERATION.IMPORT_SESSION]: z.object({ workspaceID: id, session: sessionRecord, messages: z.array(message), ...effect }).strict(),
+  [AGENT_OPERATION.FORK_SESSION]: z.object({ workspaceID: id, sessionID: id, messageID: id.optional(), ...effect }).strict(),
+  [AGENT_OPERATION.REMOVE_SESSION]: session.extend(effect).strict(),
+  [AGENT_OPERATION.UPDATE_SESSION]: z.object({ workspaceID: id, sessionID: id, title: z.string().optional(), metadata: metadata.optional(), ...effect }).strict(),
   [AGENT_OPERATION.SEND_PROMPT]: z.object({ workspaceID: id, sessionID: id, ...selection, requestID: id, text: z.string() }).strict(),
   [AGENT_OPERATION.SEND_COMMAND]: z.object({ workspaceID: id, sessionID: id, ...selection, requestID: id, commandID: id, arguments: z.string() }).strict(),
   [AGENT_OPERATION.INTERRUPT_SESSION]: z.object({ workspaceID: id, sessionID: id, requestID: id }).strict(),

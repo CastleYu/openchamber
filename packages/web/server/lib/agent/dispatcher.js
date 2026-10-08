@@ -1,4 +1,4 @@
-import { AGENT_ERROR, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS } from './schemas.js';
 
 const operations = new Set(Object.values(AGENT_OPERATION));
@@ -20,7 +20,7 @@ const same = (left, right) => left.family === right.family
   && left.capabilityRevision === right.capabilityRevision;
 
 /** A host-owned binding, never an adapter manifest, grants dispatch authority. */
-export const createAgentDispatcher = ({ getBinding }) => {
+export const createAgentDispatcher = ({ getBinding, attempts }) => {
   const requireOperation = (operation) => {
     if (!operations.has(operation)) throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OPERATION, operation);
   };
@@ -64,9 +64,18 @@ export const createAgentDispatcher = ({ getBinding }) => {
     if (!request.success) throw new AgentDispatchError(AGENT_ERROR.INVALID_INPUT, operation);
     const identity = Object.freeze({ ...binding.identity });
     const handler = binding.handlers[operation];
+    const mutation = mutations.has(operation);
+    if (mutation && !attempts) throw new AgentDispatchError(AGENT_ERROR.WRITE_UNAVAILABLE, operation);
+    const attempt = mutation ? await attempts.begin(identity, operation, request.data.requestID) : null;
     // Re-read at the point of effect. The host can replace a binding while
     // earlier checks run. No handler may run under a stale lease.
-    requireBinding(operation, identity);
+    try {
+      requireBinding(operation, identity);
+    } catch (error) {
+      await attempt?.finish(AGENT_ATTEMPT.NOT_SENT);
+      throw error;
+    }
+    let finalizing = false;
     try {
       const data = await handler(request.data, identity);
       const current = getBinding();
@@ -82,8 +91,23 @@ export const createAgentDispatcher = ({ getBinding }) => {
           mutations.has(operation) ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE, operation,
         );
       }
+      if (attempt) {
+        const result = response.data;
+        if (Object.hasOwn(result, 'requestID') && result.requestID !== request.data.requestID) {
+          throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OUTCOME, operation);
+        }
+        const state = Object.hasOwn(result, 'requestID') ? result.state : AGENT_ATTEMPT.COMPLETE;
+        finalizing = true;
+        await attempt.finish(state);
+        requireBinding(operation, identity);
+        if (state === AGENT_ATTEMPT.UNKNOWN) throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OUTCOME, operation);
+      }
       return { identity, data: response.data };
     } catch (error) {
+      if (attempt) {
+        if (!finalizing) await attempt.finish(AGENT_ATTEMPT.UNKNOWN).catch(() => {});
+        throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OUTCOME, operation);
+      }
       const current = getBinding();
       if (!current || !same(identity, current.identity)) {
         throw new AgentDispatchError(

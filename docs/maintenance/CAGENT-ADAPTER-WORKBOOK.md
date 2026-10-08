@@ -35,6 +35,24 @@ The local maintainer supplies endpoint/auth references and the API documentation
 
 Blank fields required by an operation block its support claim. Mark a documented missing operation unsupported with its source. If the documentation is silent, mark it unverified and record a precise question. An auth error is not proof of absence.
 
+## Documentation-to-adapter decisions
+
+The kit converts supplied API documentation into a local endpoint inventory before generating implementation packets. Each endpoint row retains a document section, method, path, request/response definitions and effect classification. OpenAPI input can populate structural fields deterministically. Prose input produces candidate rows with source excerpts; the local maintainer checks those rows before they authorize calls. Examples alone do not establish error, pagination or completion semantics.
+
+Compare that inventory with the frozen shared operations in both directions. Every shared operation receives a mapping or a specific evidence gap. Every documented CAgent endpoint receives a shared-operation mapping, a namespaced extension disposition or a reason it is outside the current product scope. Multiple endpoints may implement one operation, and one endpoint may serve several operations; endpoint counts do not prove feature coverage.
+
+| Mapping result | Work given to the local agent | Activation gate |
+| --- | --- | --- |
+| Same semantics, different method/path/field names | Fill declarative mappings; the kit generates the handler and constants. | Request matching, response validation and real operation acceptance. |
+| Verified semantic difference | Implement one bounded typed codec in its packet, with the documented difference and fixed examples. | Negative fixtures and live checks prove required semantics are preserved. |
+| Documented absence or incompatible required semantics | Record unsupported with the cited section and affected feature IDs. | Host and UI refuse the dependent feature; no substitute success is fabricated. |
+| Silent, conflicting or incomplete documentation | Record unverified and a precise question; retain the incomplete mapping. | The maintainer supplies evidence before implementation or activation of that operation. |
+| Additional CAgent capability | Use a shared operation if equivalent, otherwise the fixed extension template. | Extension acceptance, or `requires-host-development` when the template cannot express the interaction. |
+
+The weak agent must not choose protocol architecture, synthesize undocumented routes, or change feature dependency rules to make a mapping fit. Accepted packets remain available when another packet stops. A resumed packet loads its mapping, current generated stub, smallest failing fixture and previous result record. It does not need to reconstruct decisions from conversation history.
+
+CA-02 tests this intake with supplied sample documentation containing a renamed field, a semantic difference, a documented missing operation, a conflicting definition and a new capability. The expected dispositions are protected reference data. The kit must reject a guessed route or an enabled capability without its acceptance evidence. These are sample-kit checks, not findings about the real CAgent API.
+
 ## Operation-sized work sequence
 
 1. Run the untouched kit baseline. Record its revision and check output. Stop for setup defects; do not repair shared contracts or dependencies inside the adapter task.

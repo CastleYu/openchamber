@@ -9,7 +9,13 @@ export const AGENT_ERROR: Readonly<{
   INVALID_INPUT: 'invalid-input'; INVALID_RESPONSE: 'invalid-response';
   WRITE_UNAVAILABLE: 'write-unavailable'; BACKEND_FAILED: 'backend-failed';
   UNKNOWN_ROUTE: 'unknown-route'; UNSUPPORTED_RUNTIME: 'unsupported-runtime';
+  ATTEMPT_EXISTS: 'attempt-exists'; ATTEMPT_STORAGE: 'attempt-storage-failed'; ATTEMPT_CORRUPT: 'attempt-corrupt';
 }>;
+export const AGENT_ATTEMPT: Readonly<{
+  VERSION: 1; DIRECTORY: 'agent-attempts'; MAX_RECORD_BYTES: 65536;
+  UNKNOWN: 'unknown'; ACCEPTED: 'accepted'; COMPLETE: 'complete'; NOT_SENT: 'not-sent';
+}>;
+export const AGENT_FILE_ERROR: Readonly<{ EXISTS: 'EEXIST'; MISSING: 'ENOENT' }>;
 export const AGENT_ROUTE: Readonly<{
   PREFIX: '/api/agent-backend'; RUNTIME: '/api/agent-backend/runtime'; DISPATCH: '/api/agent-backend/dispatch';
 }>;

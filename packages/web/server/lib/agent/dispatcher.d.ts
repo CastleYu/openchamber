@@ -12,6 +12,7 @@ export type AgentOperation = typeof AGENT_OPERATION[keyof typeof AGENT_OPERATION
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type WorkspaceInput = { workspaceID: string };
 export type SessionInput = WorkspaceInput & { sessionID: string };
+export type EffectInput = { requestID: string };
 export type PageInput = { cursor?: string; limit?: number };
 export type Selection = { model?: string; agent?: string };
 export type AgentSession = {
@@ -33,24 +34,24 @@ export type AgentPage<T> = { items: T[]; next?: string };
 
 export interface AgentInputs {
   [AGENT_OPERATION.GET_SESSION]: SessionInput;
-  [AGENT_OPERATION.CREATE_SESSION]: WorkspaceInput & { title?: string };
+  [AGENT_OPERATION.CREATE_SESSION]: WorkspaceInput & EffectInput & { title?: string };
   [AGENT_OPERATION.LIST_SESSIONS]: WorkspaceInput & PageInput;
   [AGENT_OPERATION.LIST_MESSAGES]: SessionInput & PageInput;
   [AGENT_OPERATION.LIST_CHILDREN]: SessionInput & PageInput;
   [AGENT_OPERATION.LIST_ACTIVE_STATUSES]: WorkspaceInput;
   [AGENT_OPERATION.GET_SESSION_STATUS]: SessionInput;
   [AGENT_OPERATION.LIST_PENDING_PERMISSIONS]: WorkspaceInput;
-  [AGENT_OPERATION.REPLY_PERMISSION]: SessionInput & { permissionID: string; choice: string };
+  [AGENT_OPERATION.REPLY_PERMISSION]: SessionInput & EffectInput & { permissionID: string; choice: string };
   [AGENT_OPERATION.GET_MESSAGE]: SessionInput & { messageID: string };
-  [AGENT_OPERATION.ADD_SYNTHETIC]: SessionInput & { text: string };
-  [AGENT_OPERATION.SWITCH_SELECTION]: SessionInput & Selection;
+  [AGENT_OPERATION.ADD_SYNTHETIC]: SessionInput & EffectInput & { text: string };
+  [AGENT_OPERATION.SWITCH_SELECTION]: SessionInput & EffectInput & Selection;
   [AGENT_OPERATION.LIST_COMMANDS]: WorkspaceInput;
   [AGENT_OPERATION.GET_SELECTION_CATALOG]: WorkspaceInput;
   [AGENT_OPERATION.GET_DEFAULT_MODEL]: WorkspaceInput;
-  [AGENT_OPERATION.IMPORT_SESSION]: WorkspaceInput & { session: AgentSession; messages: AgentMessage[] };
-  [AGENT_OPERATION.FORK_SESSION]: SessionInput & { messageID?: string };
-  [AGENT_OPERATION.REMOVE_SESSION]: SessionInput;
-  [AGENT_OPERATION.UPDATE_SESSION]: SessionInput & { title?: string; metadata?: { [key: string]: JsonValue } };
+  [AGENT_OPERATION.IMPORT_SESSION]: WorkspaceInput & EffectInput & { session: AgentSession; messages: AgentMessage[] };
+  [AGENT_OPERATION.FORK_SESSION]: SessionInput & EffectInput & { messageID?: string };
+  [AGENT_OPERATION.REMOVE_SESSION]: SessionInput & EffectInput;
+  [AGENT_OPERATION.UPDATE_SESSION]: SessionInput & EffectInput & { title?: string; metadata?: { [key: string]: JsonValue } };
   [AGENT_OPERATION.SEND_PROMPT]: SessionInput & Selection & { requestID: string; text: string };
   [AGENT_OPERATION.SEND_COMMAND]: SessionInput & Selection & { requestID: string; commandID: string; arguments: string };
   [AGENT_OPERATION.INTERRUPT_SESSION]: SessionInput & { requestID: string };
@@ -107,7 +108,10 @@ export class AgentDispatchError extends Error {
   readonly operation: string;
   constructor(code: string, operation: string);
 }
-export function createAgentDispatcher(options: { getBinding: () => AgentBinding | null }): {
+export function createAgentDispatcher(options: {
+  getBinding: () => AgentBinding | null;
+  attempts?: import('./attempts.js').AgentAttempts;
+}): {
   captureIdentity(): AgentIdentity;
   dispatch<K extends AgentOperation>(operation: K, input: AgentInputs[K], expected?: AgentIdentity): Promise<AgentResult<K>>;
 };

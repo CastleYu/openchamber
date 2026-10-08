@@ -1,7 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { createAgentAttempts } from './attempts.js';
 import { AgentDispatchError, createAgentDispatcher } from './dispatcher.js';
+
+const roots = new Set();
+const makeAttempts = async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-agent-dispatch-'));
+  roots.add(directory);
+  return createAgentAttempts({ directory });
+};
+afterEach(async () => {
+  await Promise.all([...roots].map((directory) => fs.rm(directory, { recursive: true, force: true })));
+  roots.clear();
+});
 
 const identity = () => ({
   family: AGENT_FAMILY.OPENCODE, connectionID: 'connection-1', epoch: 1,
@@ -32,7 +47,7 @@ describe('agent dispatcher', () => {
   it.each([AGENT_SUPPORT.SUPPORTED, AGENT_SUPPORT.ADAPTED])('dispatches %s capability', async (state) => {
     const current = binding();
     current.capabilities[AGENT_OPERATION.GET_SESSION].state = state;
-    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    const dispatcher = createAgentDispatcher({ getBinding: () => current, attempts: await makeAttempts() });
     const result = await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' }, identity());
     expect(result.data).toEqual({ id: 's1', workspaceID: 'w1' });
     expect(result.identity).toEqual(identity());
@@ -59,7 +74,7 @@ describe('agent dispatcher', () => {
       else Object.assign(current, setup);
       operation = setup.operation ?? operation;
     }
-    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    const dispatcher = createAgentDispatcher({ getBinding: () => current, attempts: await makeAttempts() });
     await errorCode(dispatcher.dispatch(operation, {}, identity()), code);
     if (current) expect(current.handler).not.toHaveBeenCalled();
   });
@@ -93,7 +108,7 @@ describe('agent dispatcher', () => {
     current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
     current.acceptance.operations.push(operation);
     current.handlers[operation] = handler;
-    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    const dispatcher = createAgentDispatcher({ getBinding: () => current, attempts: operation === AGENT_OPERATION.SEND_PROMPT ? await makeAttempts() : undefined });
     const input = operation === AGENT_OPERATION.SEND_PROMPT
       ? { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }
       : { workspaceID: 'w1', sessionID: 's1' };
@@ -121,9 +136,118 @@ describe('agent dispatcher', () => {
     current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
     current.acceptance.operations.push(operation);
     current.handlers[operation] = handler;
-    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation,
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts: await makeAttempts() }).dispatch(operation,
       { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.UNKNOWN_OUTCOME);
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses mutations without an attempt store before invoking the handler', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn();
+    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.WRITE_UNAVAILABLE);
+    expect(current.handlers[operation]).not.toHaveBeenCalled();
+  });
+
+  it('reserves a mutation across dispatcher restart so the effect runs once', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    const attempts = await makeAttempts();
+    const handler = vi.fn(async () => ({ state: 'accepted', requestID: 'r1' }));
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = handler;
+    const input = { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' };
+    await createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation, input);
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation, input), AGENT_ERROR.ATTEMPT_EXISTS);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(await attempts.read(identity(), 'r1')).toMatchObject({ state: AGENT_ATTEMPT.ACCEPTED });
+  });
+
+  it('does not enter a handler when reservation fails', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    const attempts = await makeAttempts();
+    const handler = vi.fn();
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = handler;
+    await (await attempts.begin(identity(), operation, 'r1')).finish(AGENT_ATTEMPT.UNKNOWN);
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.ATTEMPT_EXISTS);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('marks a reserved attempt not-sent if the binding changes while begin waits', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn();
+    let releaseBegin;
+    let finish;
+    const attempts = {
+      begin: vi.fn(() => new Promise((resolve) => { releaseBegin = () => resolve({ finish }); })),
+      read: vi.fn(),
+    };
+    finish = vi.fn(async (state) => ({ state }));
+    const pending = createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' });
+    await vi.waitFor(() => expect(attempts.begin).toHaveBeenCalledTimes(1));
+    current.identity.epoch += 1;
+    releaseBegin();
+    await errorCode(pending, AGENT_ERROR.CHANGED);
+    expect(finish).toHaveBeenCalledWith(AGENT_ATTEMPT.NOT_SENT);
+    expect(current.handlers[operation]).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['accepted receipt', { state: 'accepted', requestID: 'r1' }, AGENT_ATTEMPT.ACCEPTED],
+    ['complete receipt', { state: 'complete', requestID: 'r1' }, AGENT_ATTEMPT.COMPLETE],
+    ['unknown receipt', { state: 'unknown', requestID: 'r1', reason: 'uncertain' }, AGENT_ATTEMPT.UNKNOWN],
+    ['mismatched receipt', { state: 'accepted', requestID: 'other' }, AGENT_ATTEMPT.UNKNOWN],
+  ])('records %s outcome', async (_label, receipt, state) => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    const attempts = await makeAttempts();
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn(async () => receipt);
+    const input = { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' };
+    if (state === AGENT_ATTEMPT.UNKNOWN) await errorCode(
+      createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation, input), AGENT_ERROR.UNKNOWN_OUTCOME,
+    );
+    else await createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation, input);
+    expect(await attempts.read(identity(), 'r1')).toMatchObject({ state });
+  });
+
+  it('reports a durable finish failure as unknown outcome', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn(async () => ({ state: 'complete', requestID: 'r1' }));
+    const attempts = { begin: vi.fn(async () => ({ finish: async () => { throw new Error('storage'); } })), read: vi.fn() };
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(current.handlers[operation]).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a result if authority changes during final persistence', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn(async () => ({ state: 'complete', requestID: 'r1' }));
+    const finish = vi.fn(async () => { current.identity.epoch += 1; });
+    const attempts = { begin: async () => ({ finish }), read: vi.fn() };
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(current.handlers[operation]).toHaveBeenCalledTimes(1);
+    expect(finish).toHaveBeenCalledTimes(1);
   });
 
   it('rejects calls when acceptance changes without an identity revision change', async () => {
@@ -199,7 +323,7 @@ describe('agent dispatcher', () => {
     const input = operation === AGENT_OPERATION.SEND_PROMPT
       ? { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }
       : { workspaceID: 'w1', sessionID: 's1' };
-    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation, input), code);
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts: operation === AGENT_OPERATION.SEND_PROMPT ? await makeAttempts() : undefined }).dispatch(operation, input), code);
     expect(handler).toHaveBeenCalledTimes(1);
   });
 });

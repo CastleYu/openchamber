@@ -17,24 +17,24 @@ const MESSAGE = { id: 'message-1', role: 'assistant', text: 'Hello', state: 'com
 const RECEIPT = { state: 'accepted', requestID: 'request-1' };
 const inputs = {
   [OP.GET_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1' },
-  [OP.CREATE_SESSION]: { workspaceID: 'workspace-1', title: 'New session' },
+  [OP.CREATE_SESSION]: { workspaceID: 'workspace-1', title: 'New session', requestID: 'request-1' },
   [OP.LIST_SESSIONS]: { workspaceID: 'workspace-1', cursor: 'cursor-1', limit: 10 },
   [OP.LIST_MESSAGES]: { workspaceID: 'workspace-1', sessionID: 'session-1', limit: 10 },
   [OP.LIST_CHILDREN]: { workspaceID: 'workspace-1', sessionID: 'session-1' },
   [OP.LIST_ACTIVE_STATUSES]: { workspaceID: 'workspace-1' },
   [OP.GET_SESSION_STATUS]: { workspaceID: 'workspace-1', sessionID: 'session-1' },
   [OP.LIST_PENDING_PERMISSIONS]: { workspaceID: 'workspace-1' },
-  [OP.REPLY_PERMISSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', permissionID: 'permission-1', choice: 'allow' },
+  [OP.REPLY_PERMISSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', permissionID: 'permission-1', choice: 'allow', requestID: 'request-1' },
   [OP.GET_MESSAGE]: { workspaceID: 'workspace-1', sessionID: 'session-1', messageID: 'message-1' },
-  [OP.ADD_SYNTHETIC]: { workspaceID: 'workspace-1', sessionID: 'session-1', text: 'Synthetic' },
-  [OP.SWITCH_SELECTION]: { workspaceID: 'workspace-1', sessionID: 'session-1', model: 'model-1', agent: 'agent-1' },
+  [OP.ADD_SYNTHETIC]: { workspaceID: 'workspace-1', sessionID: 'session-1', text: 'Synthetic', requestID: 'request-1' },
+  [OP.SWITCH_SELECTION]: { workspaceID: 'workspace-1', sessionID: 'session-1', model: 'model-1', agent: 'agent-1', requestID: 'request-1' },
   [OP.LIST_COMMANDS]: { workspaceID: 'workspace-1' },
   [OP.GET_SELECTION_CATALOG]: { workspaceID: 'workspace-1' },
   [OP.GET_DEFAULT_MODEL]: { workspaceID: 'workspace-1' },
-  [OP.IMPORT_SESSION]: { workspaceID: 'workspace-1', session: SESSION, messages: [MESSAGE] },
-  [OP.FORK_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', messageID: 'message-1' },
-  [OP.REMOVE_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1' },
-  [OP.UPDATE_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', title: 'Updated', metadata: { count: 2 } },
+  [OP.IMPORT_SESSION]: { workspaceID: 'workspace-1', session: SESSION, messages: [MESSAGE], requestID: 'request-1' },
+  [OP.FORK_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', messageID: 'message-1', requestID: 'request-1' },
+  [OP.REMOVE_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', requestID: 'request-1' },
+  [OP.UPDATE_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', title: 'Updated', metadata: { count: 2 }, requestID: 'request-1' },
   [OP.SEND_PROMPT]: { workspaceID: 'workspace-1', sessionID: 'session-1', requestID: 'request-1', text: 'Hello', model: 'model-1' },
   [OP.SEND_COMMAND]: { workspaceID: 'workspace-1', sessionID: 'session-1', requestID: 'request-1', commandID: 'command-1', arguments: '--verbose' },
   [OP.INTERRUPT_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1', requestID: 'request-1' },
@@ -117,6 +117,15 @@ describe('agent boundary schemas', () => {
       expect(AGENT_INPUT_SCHEMAS[operation].safeParse(withoutID).success, `${operation} missing ${field}`).toBe(false);
       expect(AGENT_INPUT_SCHEMAS[operation].safeParse({ ...inputs[operation], [field]: '' }).success, `${operation} empty ${field}`).toBe(false);
     }
+  });
+
+  it.each([OP.CREATE_SESSION, OP.REPLY_PERMISSION, OP.ADD_SYNTHETIC, OP.SWITCH_SELECTION,
+    OP.IMPORT_SESSION, OP.FORK_SESSION, OP.REMOVE_SESSION, OP.UPDATE_SESSION, OP.SEND_PROMPT,
+    OP.SEND_COMMAND, OP.INTERRUPT_SESSION])('%s requires a non-empty request ID', (operation) => {
+    const { requestID: omitted, ...withoutRequestID } = inputs[operation];
+    expect(omitted).toBe('request-1');
+    expect(AGENT_INPUT_SCHEMAS[operation].safeParse(withoutRequestID).success).toBe(false);
+    expect(AGENT_INPUT_SCHEMAS[operation].safeParse({ ...inputs[operation], requestID: '' }).success).toBe(false);
   });
 
   it.each(OPERATIONS)('%s rejects unknown input keys and malformed output', (operation) => {

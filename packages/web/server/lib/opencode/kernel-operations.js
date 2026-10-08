@@ -86,7 +86,14 @@ const messageView = (record, generation) => {
   const model = legacy
     ? (info.providerID && info.modelID ? { providerID: info.providerID, modelID: info.modelID } : null)
     : info.model;
-  const view = { id: info.id, role: legacy ? info.role : info.type, tools, raw: record };
+  const textParts = !legacy && (info.type === 'user' || info.type === 'synthetic')
+    ? (z.string().safeParse(info.text).success ? [info.text] : [])
+    : texts.map((part) => part.text);
+  const view = { id: info.id, role: legacy ? info.role : info.type, textParts, tools, raw: record };
+  const agent = info.agent || (legacy ? info.mode : undefined);
+  const variant = legacy ? info.variant : model?.variant;
+  if (agent) view.agent = agent;
+  if (variant) view.variant = variant;
   if (text) view.text = text;
   if (info.time?.created !== undefined) view.created = info.time.created;
   if (info.time?.completed !== undefined) view.completed = info.time.completed;

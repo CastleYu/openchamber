@@ -346,17 +346,17 @@ export const createSessionGoalRuntime = ({
       if (fetchPath.endsWith('/message')) {
         const page = (await kernelOperations.listMessages({ sessionID: id, directory, limit: Number(query?.limit) || MESSAGE_FETCH_LIMIT })).data;
         const items = page.order === 'asc' ? page.items : [...page.items].reverse();
-        return items.map((item) => item.role === 'assistant'
-          ? { info: {
-            ...(item.raw.info ?? item.raw), id: item.id, role: item.role, parentID: item.parentID,
-            sessionID: item.raw.info?.sessionID ?? item.raw.sessionID ?? id,
-            providerID: item.model?.providerID ?? item.raw.info?.providerID ?? item.raw.providerID,
-            modelID: item.model?.id ?? item.model?.modelID ?? item.raw.info?.modelID ?? item.raw.modelID,
-            variant: item.model?.variant ?? item.raw.info?.variant ?? item.raw.variant,
+        return items.map((item) => ({
+          info: {
+            id: item.id, role: item.role, parentID: item.parentID, sessionID: id,
+            providerID: item.model?.providerID,
+            modelID: item.model?.id ?? item.model?.modelID,
+            agent: item.agent, variant: item.variant,
             time: { created: item.created, completed: item.completed },
             finish: item.finish, error: item.error, summary: item.summary, tokens: item.tokens,
-          }, parts: item.raw.parts ?? item.raw.content ?? (item.text ? [{ type: 'text', text: item.text }] : []) }
-          : { info: { ...item.raw, id: item.id, role: item.role, time: { created: item.created } }, parts: item.raw.parts ?? item.raw.content ?? (item.text ? [{ type: 'text', text: item.text }] : []) });
+          },
+          parts: item.textParts.map((text) => ({ type: 'text', text })),
+        }));
       }
       if (fetchPath.endsWith('/prompt_async') && method === 'POST') {
         const identity = dispatchIdentity ?? kernelOperations.captureIdentity();

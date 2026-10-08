@@ -613,10 +613,7 @@ describe('session goal kernel operations', () => {
   const setup = (generation, generate, checker = 'small-model') => {
     const active = { ...session, metadata: { openchamber: { goal: { ...goal } } } };
     let identity = { generation, endpoint: 'http://opencode.test', epoch: 1 };
-    const raw = generation === 'oc1'
-      ? { info: { id: 'msg_answer', role: 'assistant', sessionID: SESSION_ID, providerID: 'provider', modelID: 'model', agent: 'review', variant: 'high', finish: 'stop', time: { created: 2, completed: 2 }, tokens: { input: 1, output: 1, cache: { read: 0 } } }, parts: [{ type: 'text', text: 'Progress' }] }
-      : { id: 'msg_answer', type: 'assistant', agent: 'review', model: { providerID: 'provider', id: 'model', variant: 'high' }, finish: 'stop', time: { created: 2, completed: 2 }, tokens: { input: 1, output: 1, cache: { read: 0 } }, content: [{ type: 'text', text: 'Progress' }] };
-    const item = { id: 'msg_answer', role: 'assistant', created: 2, completed: 2, finish: 'stop', tokens: { input: 1, output: 1, cache: { read: 0 } }, model: generation === 'oc1' ? { providerID: 'provider', modelID: 'model' } : raw.model, raw };
+    const item = { id: 'msg_answer', role: 'assistant', textParts: ['Progress', 'Next step'], agent: 'review', variant: 'high', created: 2, completed: 2, finish: 'stop', tokens: { input: 1, output: 1, cache: { read: 0 } }, model: generation === 'oc1' ? { providerID: 'provider', modelID: 'model' } : { providerID: 'provider', id: 'model', variant: 'high' } };
     const ops = {
       captureIdentity: () => identity,
       getSession: vi.fn(async () => ({ data: active })),
@@ -645,11 +642,14 @@ describe('session goal kernel operations', () => {
   };
 
   it.each(['oc1', 'oc2'])('keeps the %s agent, model and variant for continuation', async (generation) => {
-    const { runtime, ops } = setup(generation, async () => ({ text: generation === 'oc1'
+    const generate = vi.fn(async () => ({ text: generation === 'oc1'
       ? '{"verdict":"continue","note":"More work"}'
       : '{"all_done":false,"remaining":true,"needs_user":false}', providerID: 'provider', modelID: 'model' }));
+    const { runtime, ops } = setup(generation, generate);
     await runIdleTick(runtime);
     expect(ops.sendPrompt).toHaveBeenCalledTimes(1);
+    expect(generate.mock.calls[0][0]).toMatchObject({ sessionID: SESSION_ID, preferredProviderID: 'provider', preferredModelID: 'model' });
+    expect(generate.mock.calls[0][0].prompt).toContain('Progress\nNext step');
     const request = ops.sendPrompt.mock.calls[0][0].request;
     if (generation === 'oc1') expect(request.body).toMatchObject({ agent: 'review', variant: 'high', model: { providerID: 'provider', modelID: 'model' } });
     else expect(request).toMatchObject({ agent: 'review', model: { providerID: 'provider', id: 'model', variant: 'high' } });

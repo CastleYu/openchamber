@@ -40,6 +40,38 @@ const oc2Session = {
 const runtime = (generation, endpoint, epoch = 1) => ({ generation, endpoint, epoch, version: generation === 'oc1' ? '1.18.32' : '2.0.16' });
 
 describe('server kernel operations', () => {
+  it('normalizes ordered message text and optional model and agent fields for both generations', async () => {
+    for (const generation of ['oc1', 'oc2']) {
+      const endpoint = await serve(({ path: route }) => {
+        if (route.endsWith('/message')) return { body: generation === 'oc1'
+          ? [
+            { info: { id: 'msg_1', role: 'assistant', mode: 'legacy-agent', variant: 'legacy-variant' },
+              parts: [{ type: 'text', text: '' }, { type: 'reasoning', text: 'skip' }, { type: 'text', text: 'one' }, { type: 'text', text: 'two' }] },
+            { info: { id: 'msg_2', role: 'user' }, parts: [] },
+            { info: { id: 'msg_3', role: 'assistant' }, parts: [] },
+          ]
+          : { data: [
+            { id: 'msg_1', type: 'assistant', agent: 'current-agent', model: { providerID: 'p', modelID: 'm', variant: 'current-variant' },
+              content: [{ type: 'text', text: '' }, { type: 'reasoning', text: 'skip' }, { type: 'text', text: 'one' }, { type: 'text', text: 'two' }] },
+            { id: 'msg_2', type: 'user', text: '' },
+            { id: 'msg_3', type: 'synthetic', text: 'restored' },
+          ], cursor: { previous: null, next: null } } };
+        return { status: 404, body: { error: 'missing' } };
+      });
+      const ops = createKernelOperations({ getRuntime: () => runtime(generation, endpoint), getHeaders: () => ({}) });
+      const page = (await ops.listMessages({ sessionID: generation === 'oc1' ? 'ses_1' : 'ses_2', directory: 'C:/work' })).data;
+      const view = page.items.find((item) => item.id === 'msg_1');
+      expect(view).toMatchObject({ text: 'onetwo', textParts: ['', 'one', 'two'],
+        agent: generation === 'oc1' ? 'legacy-agent' : 'current-agent',
+        variant: generation === 'oc1' ? 'legacy-variant' : 'current-variant' });
+      const sparse = page.items.find((item) => item.id === 'msg_2');
+      expect(sparse).not.toHaveProperty('agent');
+      expect(sparse).not.toHaveProperty('variant');
+      expect(sparse.textParts).toEqual(generation === 'oc1' ? [] : ['']);
+      if (generation === 'oc2') expect(page.items.find((item) => item.id === 'msg_3')).toMatchObject({ text: 'restored', textParts: ['restored'] });
+    }
+  });
+
   it('keeps permission, message and synthetic operations on their generation routes', async () => {
     for (const generation of ['oc1', 'oc2']) {
       const requests = [];

@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: host selection and composition
+## Latest checkpoint: goal message projection
+
+The OpenCode operation adapter now exposes ordered `textParts`, `agent` and `variant` fields. The goal runtime reads those fields instead of rebuilding messages from `item.raw`. It preserves transcript separators, model selection, token accounting and the existing identity checks. Tests supply message views with no raw protocol payload and verify audit input and continuation configuration for OC1 and OC2. This removes one recorded protocol leak; the goal runtime still uses generation-specific send, metadata, status and event contracts, so CAgent goals remain disabled.
+
+The final focused regression passes 97 tests across four files: kernel operations, goal runtime, goal audit and message queue. Web type-check/lint and both changed runtime syntax checks pass. Anti-slop passes the kernel files; the goal files retain 60 findings outside the changed lines. No rule was weakened and no unrelated backlog was changed. Dead-code reports the unchanged totals of 2 files, 319 exports, 231 exported types and 1 duplicate. These checks do not establish actual CAgent API compatibility or a packaged launch.
+
+CA-01 remains in progress. Complete production selection, actual consumer migration and the remaining contracts before CA-02 offline kit acceptance. CA-03 still needs the environment's documentation, real server and local model trial. No independent remote branch or temporary Release has been published. Live weekly quota is 71% remaining. Other INT implementation remains after CA-03.
+
+## Host selection and composition checkpoint
 
 `createAgentHost` now joins immutable source loading, selection-scoped transport, uncached approval, durable dispatch and feature checks. Maintainer selection retires the old binding before asynchronous loading and allocates an epoch. Failed loads leave the host inactive. Clear or a newer selection invalidates pending loads and each retired factory's request port. Candidate factories cannot request while loading; installed operations still require independent approval. Server routes consume this host coordinator with no startup selection, preserving the five hosts' inactive/unsupported behavior.
 

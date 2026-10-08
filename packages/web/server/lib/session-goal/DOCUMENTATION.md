@@ -5,6 +5,11 @@ status, child and message operations. OC2 child sessions come from paged
 session lists. Goal metadata writes retain other metadata keys, and a
 continuation carries the epoch captured at the start of its tick.
 
+Message reads consume ordered `textParts`, model, agent, variant and accounting
+fields from the operation view. They do not inspect its raw OpenCode response.
+The [CAgent contract](../agent/DOCUMENTATION.md#goal-reader-migration) records
+why this preparation does not yet enable CAgent goals.
+
 Server-side control loop that keeps a session working toward a user-defined
 objective stored under `metadata.openchamber.goal`, with the small model as
 an independent progress auditor. Built on OpenChamber's backend-driven

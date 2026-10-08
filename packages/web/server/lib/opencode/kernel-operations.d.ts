@@ -28,6 +28,9 @@ export type MessageView = {
   id: string;
   role: LegacyMessage['role'] | SessionMessageInfo['type'];
   text?: string;
+  textParts: string[];
+  agent?: string;
+  variant?: string;
   created?: number;
   completed?: number;
   finish?: string;

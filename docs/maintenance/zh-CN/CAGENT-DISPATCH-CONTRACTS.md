@@ -72,4 +72,12 @@
 | 托管移动端 | 所选 OpenChamber 服务器暴露相同的未启用路由及拒绝行为。CAgent 不可用。 |
 | Capacitor | 所选 OpenChamber 服务器暴露相同的未启用路由及拒绝行为。CAgent 不可用。 |
 
+## 目标读取器迁移
+
+OpenCode 适配器在消息视图中提供按顺序排列的 `textParts`、`agent` 和 `variant`。目标读取器使用这些字段及现有显式模型、时间、核算字段，不再检查 `raw`。`textParts` 保留文本边界，审计文本不包含推理或工具内容。OC2 用户/合成消息文本成为单个元素；缺少文本时返回空数组。Legacy 在没有 `agent` 时使用 `mode` 提供 Agent。Legacy 的 variant 与当前版本模型的 variant 均在适配器边界投影。
+
+此修改适用于 Web 和共享进程内后端的 Electron。托管移动端和 Capacitor 保持相同的服务器目标循环。VS Code 没有新增目标运行时或 CAgent 支持。目标发送、元数据、状态、活动和事件订阅仍依赖 OpenCode 契约；启用 CAgent 目标前，必须迁移并加以能力约束。中立 CAgent 调度器尚未连接此读取器。其他 OpenCode 调用方仍保留 SDK 形状的视图类型和原始记录。这项准备工作没有启用任何验收或宿主支持条目。
+
+内核 HTTP 回归验证两个协议的投影；不含原始载荷的目标测试验证多段审计文本、模型/Agent/variant 续跑及旧身份拒绝。这些属于 fixture 测试，不能代替真实 CAgent 验收。
+
 聚焦验证使用包内 Vitest 运行器执行 `server/lib/agent/{approvals,artifacts,authority,attempts,dispatcher,schemas,content,routes}.test.js` 与 `contracts.test.ts`。批准测试使用原生文件及链接，跨读取器重启替换／删除记录，并在分发中撤销批准。内容测试检查类型化分段、缺省元数据、权限语义及嵌套导入拒绝。权威测试将合成注册与独立批准组合，涵盖不匹配、撤销及分发。HTTP 测试使用真实 Express 请求、测试认证门及合成的已验收绑定，覆盖请求体解析、拒绝码、身份／可用性快照、无效请求/结果、持久化变更/查询和代理隔离。测试未启动完整生产服务器，也不能证明真实 CAgent 兼容。VS Code 的 `src/bridge-proxy-runtime.test.js` 检查本地或上游转发之前的拒绝。还须使用已安装的 TypeScript 编译器直接编译 `contracts.test.ts`。其中仅用于编译的调用检查逐操作结果类型、完整的操作键覆盖、类型化权威端口，以及缺少工作区/请求身份和未知操作时的拒绝。Web 工作区常规类型检查仅包含 UI/src，而不包含服务器声明文件。

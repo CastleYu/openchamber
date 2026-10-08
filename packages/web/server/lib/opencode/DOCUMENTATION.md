@@ -41,6 +41,10 @@ This module provides OpenCode server integration utilities for the web server ru
 - `kernel-operations.js` selects server-side session/message/send operations from
   that descriptor. Deferred sends carry their captured identity and reject after
   a connection switch. Prompt acceptance does not imply response completion.
+  Message views expose ordered `textParts` and explicit `agent`/`variant`
+  selections. The goal reader uses these fields without inspecting protocol
+  `raw` records. The [CAgent contract](../agent/DOCUMENTATION.md#goal-reader-migration)
+  records the remaining migration boundary.
   It also owns generation-specific permission list/reply, single-message reads,
   OC2 synthetic insertion, and OC2 session model/agent switches for the web
   autonomy runtimes. Callers capture identity before multi-step work and pass

@@ -6,6 +6,8 @@ Status: planning template, 2026-10-08. Use after CA-02 delivers the executable k
 
 The [operation references](cagent-contracts/README.md) and [reference generator](../../scripts/cagent/DOCUMENTATION.md) are available now. Their checked schemas and bilingual examples are one kit component. CA-02 still must supply the complete executable bundle, protected packets, mapping/extension templates and isolated acceptance commands below.
 
+The read-only [mapping intake command](../../scripts/cagent/DOCUMENTATION.md#mapping-intake) now checks a maintainer-reviewed endpoint catalog against all operation and endpoint dispositions. It binds exact catalog content, reports missing feature dependencies and keeps all runtime availability false. The local owner must still review documentation, construct the protected catalog and supply real acceptance evidence. It does not generate implementation packets or install the complete kit.
+
 The architecture owner must provide these artifacts together at a frozen application/contract revision. CA-02 acceptance fails if a file or executable command is merely promised.
 
 | Artifact | Required contents |

@@ -1,5 +1,26 @@
 # CAgent contract reference generator
 
+## Mapping intake
+
+`mapping-intake.mjs` compares a maintainer-reviewed local endpoint catalog with operation mappings supplied by the weak Agent. The inputs are separate: the catalog belongs outside the candidate's writable workspace. A schema check cannot establish that a route is documented or that the maintainer actually reviewed it. The local owner must verify the catalog against API documentation before using this tool.
+
+```sh
+node scripts/cagent/check-mapping.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --json
+node --test scripts/cagent/mapping-intake.test.mjs scripts/cagent/check-mapping.test.mjs
+```
+
+The read-only command requires both paths, accepts `--quiet` and returns one JSON object with `--json`. It never prompts or writes files. Inputs are bounded to 1 MiB each. Setup, parse and consistency errors return fixed codes with a nonzero exit. Reports exclude source paths, API definitions, free-text questions and raw exception messages. Coverage still includes operation, endpoint and action IDs; a local owner must review a report before exporting it from a private environment.
+
+Mapping failures include a fixed check ID and next action, plus a canonical operation ID when it can be identified safely. Feature rows list the missing required operations and alternative dependency branches. A fully unresolved inventory may pass structural intake while every feature stays blocked; a zero exit here never establishes a usable adapter.
+
+The version-1 catalog records its revision, document IDs/revisions/digests/section IDs, and endpoint IDs with documented method/path, request/response references, effect and citations. Endpoints contain relative API paths, not server origins or credentials. The version-1 mapping binds both the catalog revision and its canonical digest. Each of the 22 operation rows is a mapping, a cited documented absence/incompatibility, or an unresolved question. Mapped operations name reviewed endpoints, a declarative/custom codec choice and citations for transport, authentication, scope, result, failure, completion and cancellation. Every endpoint also receives a shared-operation, extension or out-of-scope disposition. Shared references must agree in both directions.
+
+The compiler rejects missing rows, unknown IDs, uncited sections, stale catalog content, contradictory references and mismatched read/mutation effects. It derives candidate feature readiness from the application-owned dependency rules. All feature and extension availability remains false. `mapping-ready` and `candidate-ready` are workflow results, never runtime support or acceptance. A form/action/result extension requires a separate candidate and acceptance; other interactions require host development.
+
+The catalog fingerprint uses parsed JSON with recursively sorted object keys and ordered arrays. A content change requires the mapping to be reviewed and rebound, even when the revision label is unchanged. This component does not extract OpenAPI/prose documentation, generate handlers, implement codecs, run live checks or suspend an already active adapter. Those responsibilities remain in the complete CA-02 kit and host activation flow.
+
+## Operation references
+
 The [Chinese review copy](../../docs/maintenance/zh-CN/CAGENT-CONTRACT-GENERATOR.md) stays synchronized until final handoff.
 
 This maintainer tool produces one English and one Chinese page per neutral operation, one machine-readable schema/example file per operation, two indexes and a reference manifest. It imports current operation constants, input/output parsers and action dependency rules. `operation-reference.mjs` owns the reviewed bilingual semantic requirements and synthetic examples. It contains no real CAgent API mapping.
@@ -20,6 +41,6 @@ Generated pages list required/optional top-level inputs, operation-specific sema
 
 The manifest hashes the exact UTF-8 contents of the other 68 generated files. Its aggregate digest hashes the ordered file/hash list. It is a reference fingerprint, not the adapter artifact manifest, an application revision, independent evidence, an approval record or an activation grant. A completed CA-02 bundle must freeze the application, toolchain, packet definitions, protected fixtures and reference digest together.
 
-The architecture owner regenerates and reviews these files. A local weak Agent receives only its assigned operation page, that operation's schema, reviewed API excerpts and an allowed candidate packet. Reference files remain outside candidate write permissions. Schema validation and reference freshness do not implement packet generation, mapping intake, model calibration, extension templates, executable bundle installation or isolated live checks; those remain CA-02 work.
+The architecture owner regenerates and reviews these files. A local weak Agent receives only its assigned operation page, that operation's schema, reviewed API excerpts and an allowed candidate packet. Reference files remain outside candidate write permissions. Reference generation and the separate mapping intake command do not implement packet generation, model calibration, extension templates, executable bundle installation or isolated live checks; those remain CA-02 work.
 
 Web, Electron, hosted mobile and Capacitor can use the same neutral contract after host acceptance. This generator changes no runtime behavior or feature availability. VS Code keeps its unsupported Agent namespace. No OpenCode/Legacy code path or release artifact is changed by reference generation.

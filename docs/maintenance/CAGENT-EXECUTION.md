@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: operation reference generation
+## Latest checkpoint: reviewed mapping intake
+
+2026-10-09. CA-01 remains in progress. The CA-02 intake component now validates separate maintainer-reviewed endpoint catalogs and candidate mappings. All 22 shared operations and every catalog endpoint require a disposition. Bidirectional references, seven semantic evidence dimensions, exact catalog revision/content binding and read/mutation effects are checked. Feature coverage derives missing dependencies from the protected application registry. Native action IDs remain visible with candidate-required or requires-host-development disposition. No feature or extension becomes available through intake.
+
+Primary review added read-to-mutation rejection, unchanged-revision document drift, alternative dependency reporting and actionable fixed failure details. Thirteen Node tests pass, including actual piped CLI runs, bounded/malformed input, immutable sanitized coverage and stale/contradictory mappings. Changed JavaScript passes anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, without a new intake row. The existing 69 operation references pass their freshness check. These developer-tool changes do not require a new application bundle or repeated cross-workspace type checks.
+
+The local owner still must verify the catalog against API documentation and protect it from candidate edits. A successful structurally unresolved inventory grants no usable adapter or acceptance. Documentation extraction, mapping/handler packet generation, protected fixture composition, extension templates, offline bundle installation and model calibration remain CA-02 work. CA-03 still requires real target and host acceptance. Independent publication and temporary Release remain pending. Other INT work stays after CA-03. The live weekly allowance remains 64%; no reset credit was used. See the [intake guide](../../scripts/cagent/DOCUMENTATION.md#mapping-intake).
+
+## Previous checkpoint: operation reference generation
 
 2026-10-09. CA-01 remains in progress. The executable CA-02 reference component generates 22 English and Chinese operation pages, 22 structural schema/example files, two indexes and one manifest. It derives operation inventory, parsers and feature dependencies from the current application contracts. Reviewed semantic requirements and synthetic examples live in a separate catalog. The reference digest is `7493dcfc98d55e31c96e194ead4ff1aade2984ad53d07abba4f9a131e5a10a2b`. This fingerprint grants no adapter approval or activation.
 

@@ -113,4 +113,3 @@ describe('AgentRequestJournal', () => {
     expect(journal.read(owner)).toEqual(['keep']);
   });
 });
-

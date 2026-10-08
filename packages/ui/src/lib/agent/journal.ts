@@ -104,5 +104,3 @@ export class AgentRequestJournal {
     try { this.storage.removeItem(key); } catch { throw storageError(); }
   }
 }
-
-

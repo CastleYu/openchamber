@@ -92,6 +92,17 @@ export const agentRegistrationSchema = agentAdapterSchema.extend({
 export const agentSelectionSchema = agentIdentitySchema.extend({
   adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
 }).strict();
+export const agentAdapterProfileSchema = agentRegistrationSchema.pick({
+  adapterID: true, family: true, adapterRevision: true, capabilityRevision: true,
+}).extend({ family: z.literal(AGENT_FAMILY.CAGENT) }).strict();
+export const agentConnectionSchema = z.object({
+  identity: agentIdentitySchema.extend({ family: z.literal(AGENT_FAMILY.CAGENT) }),
+  baseURL: z.url(), headers: z.record(z.string(), z.string()),
+  ready: z.boolean(), authorized: z.boolean(),
+}).strict();
+export const agentHostConnectionSchema = agentConnectionSchema.omit({ identity: true }).extend({
+  connectionID: id, serverRevision: id,
+}).strict();
 export const agentApprovalSchema = z.object({
   family: z.enum(Object.values(AGENT_FAMILY)), connectionID: id, adapterID: id,
   adapterRevision: id, capabilityRevision: id, serverRevision: id,

@@ -8,6 +8,24 @@ import { createAgentFeatures, type AgentFeature, type AgentFeatureSnapshot, type
 import { loadAgentAdapter, type AgentAdapterFactory, type AgentServerTransport } from './loader.js';
 import { createAgentTransport, type AgentConnection } from './transport.js';
 import { createAgentApprovalWriter } from './approval-writer.js';
+import { createAgentHost, type AgentHostConnection } from './host.js';
+
+it('keeps host selection separate from candidate transport and approval', () => {
+  const host = createAgentHost({ getAcceptance: () => null });
+  expectTypeOf(host.select).returns.toEqualTypeOf<Promise<import('./dispatcher.js').AgentIdentity>>();
+  expectTypeOf(host.clear).returns.toBeVoid();
+  expectTypeOf(host.dispatcher).toEqualTypeOf<ReturnType<typeof createAgentDispatcher>>();
+  const check = () => {
+    // @ts-expect-error Host approval is mandatory, not supplied by the candidate adapter.
+    createAgentHost({});
+    // @ts-expect-error The host owns epoch allocation; connection input cannot choose it.
+    const connection: AgentHostConnection = { connectionID: 'c', serverRevision: 's', baseURL: 'http://localhost/', headers: {}, ready: true, authorized: true, epoch: 1 };
+    // @ts-expect-error Candidate request context has no host selection port.
+    const candidate: AgentServerTransport = host;
+    return [connection, candidate];
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps approval mutation separate from the runtime read-only store', () => {
   const writer = createAgentApprovalWriter({ directory: 'host-only' });

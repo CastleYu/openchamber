@@ -1,14 +1,11 @@
 import { z } from 'zod';
 
-import { AGENT_ADAPTER, AGENT_ERROR, AGENT_FAMILY } from './constants.js';
+import { AGENT_ADAPTER, AGENT_ERROR } from './constants.js';
 import { AgentArtifactError, readAgentAdapterArtifact } from './artifacts.js';
 import {
-  agentAdapterSchema, agentIdentitySchema, agentRegistrationSchema, agentServerRequestSchema, agentServerResponseSchema,
+  agentAdapterProfileSchema, agentAdapterSchema, agentIdentitySchema, agentServerRequestSchema, agentServerResponseSchema,
 } from './schemas.js';
 
-const profileSchema = agentRegistrationSchema.pick({
-  adapterID: true, family: true, adapterRevision: true, capabilityRevision: true,
-}).extend({ family: z.literal(AGENT_FAMILY.CAGENT) }).strict();
 const namespaceSchema = z.object({ [AGENT_ADAPTER.FACTORY]: z.function() }).strict();
 const transportSchema = z.object({ request: z.function() }).strict();
 
@@ -22,7 +19,7 @@ export class AgentAdapterError extends Error {
 
 /** Host-only loading of reviewed code. This is not a sandbox or operation approval. */
 export const loadAgentAdapter = async ({ directory, manifest, profile, transport }) => {
-  const selected = profileSchema.safeParse(profile);
+  const selected = agentAdapterProfileSchema.safeParse(profile);
   const port = transportSchema.safeParse(transport);
   if (!selected.success || !port.success) throw new AgentAdapterError(AGENT_ERROR.INVALID_INPUT);
   const context = Object.freeze({ request: async (input, identity) => {

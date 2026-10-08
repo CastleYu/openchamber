@@ -1,13 +1,8 @@
 import { z } from 'zod';
 
-import { AGENT_ERROR, AGENT_FAMILY, AGENT_HTTP, AGENT_SERVER_METHOD } from './constants.js';
-import { agentIdentitySchema, agentServerRequestSchema, agentServerResponseSchema } from './schemas.js';
+import { AGENT_ERROR, AGENT_HTTP, AGENT_SERVER_METHOD } from './constants.js';
+import { agentConnectionSchema, agentIdentitySchema, agentServerRequestSchema, agentServerResponseSchema } from './schemas.js';
 
-const connectionSchema = z.object({
-  identity: agentIdentitySchema.extend({ family: z.literal(AGENT_FAMILY.CAGENT) }),
-  baseURL: z.url(), headers: z.record(z.string(), z.string()),
-  ready: z.boolean(), authorized: z.boolean(),
-}).strict();
 const same = (left, right) => left.family === right.family && left.connectionID === right.connectionID
   && left.epoch === right.epoch && left.adapterRevision === right.adapterRevision
   && left.capabilityRevision === right.capabilityRevision;
@@ -25,7 +20,7 @@ export const createAgentTransport = ({ getConnection }) => {
   if (!z.function().safeParse(getConnection).success) throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
   const current = (expected) => {
     let selected;
-    try { selected = connectionSchema.safeParse(getConnection()); }
+    try { selected = agentConnectionSchema.safeParse(getConnection()); }
     catch { throw new AgentTransportError(AGENT_ERROR.UNAVAILABLE); }
     if (!selected.success) throw new AgentTransportError(AGENT_ERROR.UNAVAILABLE);
     const value = selected.data;

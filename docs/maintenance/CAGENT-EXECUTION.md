@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: maintainer approval persistence
+## Latest checkpoint: host selection and composition
+
+`createAgentHost` now joins immutable source loading, selection-scoped transport, uncached approval, durable dispatch and feature checks. Maintainer selection retires the old binding before asynchronous loading and allocates an epoch. Failed loads leave the host inactive. Clear or a newer selection invalidates pending loads and each retired factory's request port. Candidate factories cannot request while loading; installed operations still require independent approval. Server routes consume this host coordinator with no startup selection, preserving the five hosts' inactive/unsupported behavior.
+
+The combined fixed Web suite passes 394 tests across 16 files without skips. The lead additionally strengthened overlap synchronization to wait for native module evaluation; the final eight host integration tests pass. They use real temporary artifact files, persisted approvals and loopback HTTP, proving post-revocation no-request behavior, failed switches, stale identity refusal and rejection of an in-flight read after clear. Direct strict contract compilation, Agent module anti-slop, host/server syntax, Web type-check/lint and diff checks pass. Completed dead-code retains 2 unused files, 319 unused exports, 231 unused exported types and 1 duplicate, with no Agent module row. No actual CAgent or full packaged/server launch is covered.
+
+CA-01 remains in progress. The maintainer runner and production selector must supply independently reviewed server/readiness/auth state and preserve identity freshness across host restart; the coordinator's epoch counter is local to its instance. Actual consumers and remaining contracts, CA-02 executable kit, CA-03 target-environment acceptance, independent remote branch publication and temporary Release remain required. Weekly quota remains 71%; no reset credit was used. Lower-priority INT work stays after CA-03. English and Chinese owning contracts are synchronized.
+
+## Maintainer approval persistence checkpoint
 
 The host-only `createAgentApprovalWriter` now writes and revokes strict version-1 approval records consumed by the existing uncached reader. It requires an existing ordinary directory, validates input and the 64 KiB bound before storage, writes an exclusive same-directory temporary file, syncs its content and atomically replaces the record. Revocation affects subsequent authority checks, including the check after a read handler returns. No HTTP approval-write route is exposed. The caller must independently review evidence and protect the directory; this port validates record structure, not evidence provenance. File mode does not establish Windows ACL isolation, and file sync plus rename does not prove power-loss durability of the directory.
 

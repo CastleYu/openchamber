@@ -1,5 +1,12 @@
 # Message Queue
 
+Production starts the queue only after trusted process startup selects OpenCode.
+Selection retirement detaches subscriptions and stops dispatch. If an idle read
+finishes after stop, it cannot start a send. The pending item remains in memory
+and the persisted snapshot. An already entered mutation is not canceled or
+replayed by this guard. Return to another backend through a fresh, explicitly
+configured process startup; queue intent is not reassigned to CAgent.
+
 With `kernelOperations` injected, the server checks live status and the newest
 message through the selected OpenCode generation. Message pages state their
 order: OC1 is ascending, OC2 descending. For OC2, an idle parent with a busy descendant keeps its queue armed until the descendant settles. A failed read leaves the queue armed

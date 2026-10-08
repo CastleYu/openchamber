@@ -56,6 +56,7 @@ import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js'
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
+import { selectAgentStartup, startOpenCodeConsumers } from './lib/agent/startup.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
 import { createAgentApprovals } from './lib/agent/approvals.js';
 import { AGENT_APPROVAL, AGENT_ATTEMPT, AGENT_FAMILY } from './lib/agent/constants.js';
@@ -1074,7 +1075,7 @@ const permissionAutoAcceptRuntime = createPermissionAutoAcceptRuntime({
   dataDir: OPENCHAMBER_DATA_DIR,
   resolveLegacyEnabledMode: async () => ((await routingRuntime.legacySafetyNetEnabled()) ? 'safety' : 'auto'),
 });
-const stopPermissionAutoAccept = permissionAutoAcceptRuntime.start();
+let stopOpenCodeConsumers = null;
 // A request the safety net held still needs the user, so only one that was
 // actually answered automatically skips the notification.
 notificationTriggerRuntime.setGetIsSessionAutoAccepting(
@@ -1094,7 +1095,6 @@ const messageQueueRuntime = createMessageQueueRuntime({
   onPromptSent: (sessionId) => sessionRuntime.markUserMessageSent(sessionId),
   dataDir: OPENCHAMBER_DATA_DIR,
 });
-messageQueueRuntime.start();
 
 messageSearchRuntime = createMessageSearchRuntime({
   dataDir: OPENCHAMBER_DATA_DIR,
@@ -1757,7 +1757,7 @@ const gracefulShutdownRuntime = createGracefulShutdownRuntime({
   syncToHmrState,
   openCodeWatcherRuntime,
   globalEventHub: globalMessageStreamHub,
-  stopPermissionAutoAccept,
+  stopPermissionAutoAccept: () => stopOpenCodeConsumers?.(),
   sessionAssistRuntime,
   sessionWorkRuntime,
   sessionGoalRuntime,
@@ -1807,6 +1807,7 @@ const gracefulShutdownRuntime = createGracefulShutdownRuntime({
 const gracefulShutdown = (...args) => gracefulShutdownRuntime.gracefulShutdown(...args);
 
 async function main(options = {}) {
+  await selectAgentStartup(agentHost, options.agentBackend);
   beginGuestServiceHost();
   const port = Number.isFinite(options.port) && options.port >= 0 ? Math.trunc(options.port) : DEFAULT_PORT;
   const host = typeof options.host === 'string' && options.host.length > 0 ? options.host : undefined;
@@ -2435,6 +2436,15 @@ async function main(options = {}) {
     idleStopMs: BROWSER_PROVIDER_IDLE_MS,
   });
 
+  stopOpenCodeConsumers?.();
+  stopOpenCodeConsumers = startOpenCodeConsumers({
+    host: agentHost,
+    startPermissions: () => permissionAutoAcceptRuntime.start(),
+    startQueue: () => {
+      const detach = messageQueueRuntime.start();
+      return () => { detach(); messageQueueRuntime.stop(); };
+    },
+  });
   const startupPipelineResult = await startupPipelineRuntime.run({
     getKernelRuntime: kernelRuntime.get,
     app,

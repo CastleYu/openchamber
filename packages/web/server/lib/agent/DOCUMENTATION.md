@@ -30,7 +30,7 @@ Authority compares a host-supplied digest; it does not itself hash files or veri
 
 `createAgentHost` owns selection lifetime and composes immutable loading, current-connection transport, independent approval, durable dispatch and feature checks. Construction performs no I/O. Maintainer-only `select` validates the profile/connection, retires the old binding and allocates an epoch before asynchronous loading. Failure leaves the host inactive; it never silently restores or replays old work. A later selection or `clear` invalidates an earlier load, which cannot replace the newer binding. Each factory's request port expires with its selection, including when revisions are reused. Loading factories have no current connection. After loading, only independently approved operations can dispatch. Credentials remain in the host, and selection returns only the frozen neutral identity.
 
-The coordinator validates structural inputs and verified artifact bytes, not server identity or acceptance evidence meaning. Readiness, authorization, endpoint and server revision come from protected maintainer composition. Endpoint/auth changes require another selection and therefore a new epoch. Candidate code receives neither `select`, `clear` nor approval-writing ports. Production routes now consume this coordinator's dispatcher/features, but no user selector or runner calls `select` yet. All five runtimes retain their inactive/unsupported behavior. Native `host.test.js` joins actual temporary artifacts, persisted approvals and loopback HTTP, including revocation, failed/overlapping loads and a cleared in-flight read. These synthetic journeys do not establish real CAgent compatibility.
+The coordinator validates structural inputs and verified artifact bytes, not server identity or acceptance evidence meaning. Readiness, authorization, endpoint and server revision come from protected maintainer composition. Endpoint/auth changes require another selection and therefore a new epoch. Candidate code receives neither `select`, `clear` nor approval-writing ports. Production routes now consume this coordinator's dispatcher/features, and trusted process startup can select a reviewed candidate. No user selector or protected runner is provided yet. All five runtimes retain unsupported feature behavior. Native `host.test.js` joins actual temporary artifacts, persisted approvals and loopback HTTP, including revocation, failed/overlapping loads and a cleared in-flight read. These synthetic journeys do not establish real CAgent compatibility.
 
 `createAgentApprovals({ directory })` reads strict version-1 records from a host-owned directory. `agentApprovalName` hashes the family/connection tuple into an opaque basename. Each binding check reads one file, bounded to 64 KiB, without caching approval. Missing records return null; malformed JSON/UTF-8, extra fields, invalid evidence and scope mismatches fail closed. Linked roots/files, non-files and observed read-time changes are refused. The reader returns detached frozen approval rows and exposes no mutation methods. Unready or unauthorized selections return before filesystem access.
 
@@ -46,7 +46,7 @@ The writer validates record structure, not evidence meaning or artifact provenan
 
 The host-only loader accepts a protected CAgent profile and manifest. The single bundled entry exports only `createAdapter(context)` and returns strict operation capabilities and handlers. The host supplies adapter identity, revisions and the verified digest; candidate exports cannot override them. The factory receives a frozen JSON request port with relative paths, explicit methods, optional query/body and mandatory current runtime identity. It cannot pass origins, headers or credentials through that port. The transport owner must check the current connection/epoch and supply authentication at each call. HTTP status and JSON body remain explicit for the adapter to interpret against documented semantics. Binary and streaming contracts are not implemented by this port.
 
-Loading runs reviewed native code with host privileges. It grants no operation approval and provides no process sandbox. Bundle helper imports into `adapter.mjs`; each factory invocation must own its state because Node caches the imported module. Keep source URLs out of routes and logs. The host coordinator composes loading and transport; a production selection entrypoint and protected approval runner remain outstanding, so this loader does not activate CAgent. `loader.test.js` covers captured-byte imports, strict exports, independent approval, request validation and separate factory contexts using synthetic APIs.
+Loading runs reviewed native code with host privileges. It grants no operation approval and provides no process sandbox. Bundle helper imports into `adapter.mjs`; each factory invocation must own its state because Node caches the imported module. Keep source URLs out of routes and logs. The host coordinator composes loading and transport; trusted process startup provides selection, while protected approval runner enforcement and host feature support remain outstanding. Loading alone does not activate CAgent features. `loader.test.js` covers captured-byte imports, strict exports, independent approval, request validation and separate factory contexts using synthetic APIs.
 
 `createAgentTransport({ getConnection })` supplies the native JSON HTTP port for the loader. The protected host port returns current CAgent identity, a canonical HTTP(S) API base URL ending in `/`, headers, authorization and readiness. Endpoint or credential changes must advance the epoch. Every request parses the current connection, checks the full expected identity and preserves the API path prefix. Candidate input cannot supply headers or origins. GET bodies, path normalization and encoded path separators are refused. Query values and JSON bodies are serialized explicitly; the host supplies JSON Accept/Content-Type headers.
 
@@ -78,6 +78,22 @@ The fourth owned route, GET `/api/agent-backend/features`, returns a strictly va
 
 ## Backend family selection
 
+`startWebUiServer` accepts an optional maintainer-only `agentBackend` startup
+option. `selectAgentStartup` strictly validates its family and reviewed artifact
+candidate before any lifecycle or persisted consumer starts. Omission selects
+OpenCode. Explicit CAgent failure propagates and never falls back to OpenCode.
+This programmatic composition input is not an HTTP, settings or adapter port.
+It validates structure and artifact bytes, not server identity, readiness or
+acceptance meaning. The maintainer must supply and independently verify those
+inputs. Host feature support is still absent, so selection does not enable chat.
+
+`startOpenCodeConsumers` starts automatic permissions and the message queue only
+for the current OpenCode selection. Selection retirement stops both. Queue stop
+preserves queued items and rejects a send after a pending idle check completes.
+Already entered mutations are not canceled. These are process startup ports,
+not a complete hot switching flow. Subsequent backend use requires a fresh
+explicit startup and its independent approvals.
+
 The coordinator defaults to OpenCode and exposes an immutable `getSelection()` snapshot with family and revision. A structurally valid CAgent selection advances that revision before loading; loading failure and `clear()` retain the CAgent family with no active binding. Only the maintainer-owned `selectOpenCode()` port returns to OpenCode. It also retires pending adapter loads and selection-scoped request ports. Snapshots contain no credentials, perform no I/O and remain unchanged after later selections.
 
 The web entrypoint composes one coordinator for the Agent routes and OpenCode kernel runtime. Its selection port invalidates the OpenCode descriptor by family/revision, including a same-endpoint return. CAgent produces an unsupported descriptor and performs no OpenCode generation probe. Concurrent refresh and health probes share valid results; descriptor commits alone do not retire a connection. Tests join the real host with the kernel runtime and native adapter artifacts. Production still has no user selection entrypoint or host support approval; CAgent remains unavailable on all five hosts. This gate covers descriptor consumers, not every unmigrated owned route, lifecycle action or UI caller. Their individual migration remains required before activation.
@@ -91,7 +107,7 @@ existing owned-process shutdown remains available. Health accounting and cached
 results reset on selection revision changes. The startup wrapper does not start
 the OpenCode watcher after its selection retires. An issued detection pass can
 finish within its existing timeout, so this is not immediate network cancellation.
-Production selection, startup configuration preparation outside lifecycle,
+Protected runner enforcement and complete capability coverage,
 unmigrated owned routes/UI remain activation
 prerequisites. No CAgent host support is granted by this change.
 

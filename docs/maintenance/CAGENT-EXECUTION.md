@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: managed configuration preparation
+## Latest checkpoint: trusted startup selection
+
+2026-10-09. CA-01 remains in progress. Trusted `startWebUiServer` composition now accepts a strictly validated backend selection before lifecycle startup. Explicit CAgent loading failure never falls back to OpenCode. Automatic permissions and message queue no longer start during module import. They start only for OpenCode and stop on selection retirement. A queue idle read completing after stop cannot start a send; pending intent survives a fresh disk read. Entered mutations are not canceled. This is a process startup port, not a complete hot switching flow or user selector. Host feature support remains absent, and no CAgent feature is enabled.
+
+Twelve startup tests and 95 existing/queue regressions pass across six files. Workspace type-check and lint pass. New startup/artifact source and startup test anti-slop checks, direct strict declaration compilation and entrypoint/queue syntax checks pass. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no startup module row. These are local synthetic regressions; actual server launch, packaged startup and real CAgent acceptance have not been verified by this checkpoint.
+
+Protected runner enforcement, remaining consumers, complete capability coverage and extensions still precede activation. CA-02 runnable offline kit, CA-03 special-environment acceptance, independent remote publication and temporary Release remain pending. Other INT work stays behind CA-03.
+
+## Previous checkpoint: managed configuration preparation
 
 2026-10-09. CA-01 remains in progress. The production lifecycle now delegates managed child environment preparation to `managed-env-runtime.js`. It checks the protected OpenCode family/revision before settings access and after each asynchronous phase. Retirement prevents later tool, prompt or MCP preparation and rejects old results. OC1 switches, default behavior after settings read failure and configuration merge order remain unchanged. OC2 uses only its managed builder; unknown generations refuse before work. A preparer already entered can finish its writes; this gate does not cancel or undo them. Web/Electron and server-connected mobile share the lifecycle, while VS Code CAgent remains unavailable.
 

@@ -18,7 +18,7 @@ const fileSchema = z.object({
 const filesSchema = z.array(fileSchema).min(1).max(AGENT_ARTIFACT.MAX_FILES)
   .refine((files) => new Set(files.map((file) => file.path.toLowerCase())).size === files.length)
   .refine((files) => files.reduce((total, file) => total + file.bytes, 0) <= AGENT_ARTIFACT.MAX_TOTAL_BYTES);
-const manifestSchema = z.object({
+export const agentArtifactManifestSchema = z.object({
   version: z.literal(AGENT_ARTIFACT.VERSION), artifactDigest: digest, files: filesSchema,
 }).strict();
 
@@ -45,7 +45,7 @@ export const agentArtifactDigest = (files) => {
 
 /** Read-only verification of a dedicated artifact snapshot, never the live repository. */
 const inspectArtifacts = async ({ directory, manifest }, capture = false) => {
-  const input = manifestSchema.safeParse(manifest);
+  const input = agentArtifactManifestSchema.safeParse(manifest);
   const location = z.string().min(1).safeParse(directory);
   if (!input.success || !location.success) throw new AgentArtifactError(AGENT_ERROR.INVALID_INPUT);
   // Zod produced a detached copy before the first await.

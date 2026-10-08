@@ -666,6 +666,7 @@ export function createMessageQueueRuntime({
     }
 
     const idle = await isSessionIdle(sessionId, queue.directory);
+    if (stopped) return;
     if (idle === null) {
       armDispatch(sessionId, retryDelayMs(1));
       return;

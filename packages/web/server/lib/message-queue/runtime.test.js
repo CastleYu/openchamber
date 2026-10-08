@@ -99,6 +99,38 @@ const settle = async (ms = 30) => {
 };
 
 describe('auto routing', () => {
+  it('preserves a queued intent when stopped during the idle status read', async () => {
+    const openCode = createOpenCode();
+    const originalFetch = openCode.fetchImpl;
+    let entered;
+    let release;
+    const reading = new Promise((resolve) => { entered = resolve; });
+    const status = new Promise((resolve) => { release = resolve; });
+    openCode.fetchImpl = async (url, init) => {
+      if (new URL(url).pathname === '/session/status') {
+        entered();
+        return status;
+      }
+      return originalFetch(url, init);
+    };
+    const { runtime, promptSent, dataDir } = createRuntime({ openCode });
+    const detach = runtime.start();
+    const queued = await runtime.enqueue(SESSION, DIRECTORY, item());
+    await reading;
+    runtime.stop();
+    detach();
+    release(Response.json({}));
+    await settle();
+    await runtime.flush();
+    expect(openCode.state.sent).toEqual([]);
+    expect(promptSent).toEqual([]);
+    expect(runtime.sessionSnapshot(SESSION).items.map((entry) => entry.id)).toEqual([queued.itemId]);
+    const restored = createRuntime({ dataDir, openCode });
+    await restored.runtime.load();
+    expect(restored.runtime.sessionSnapshot(SESSION).items.map((entry) => entry.id)).toEqual([queued.itemId]);
+    restored.runtime.stop();
+  });
+
   it('lets the routing hook rewrite the model of a queued prompt and a queued command', async () => {
     const resolvePromptBody = vi.fn(async (body) => {
       if (body.model?.modelID === 'auto') body.model = { providerID: 'openai', modelID: 'gpt-6-astra' };

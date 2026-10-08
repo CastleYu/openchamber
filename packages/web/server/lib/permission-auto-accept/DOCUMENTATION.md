@@ -12,6 +12,11 @@ Policy inheritance uses the nearest explicit session value. A child `false` or `
 
 ## Runtime
 
+Production starts this OpenCode consumer only after trusted process startup
+selects OpenCode. CAgent starts no automatic permission consumer. Selection
+retirement invokes its existing disposer and detaches subscriptions. Persisted
+policies remain owned by OpenCode; CAgent selection does not grant permissions.
+
 `createPermissionAutoAcceptRuntime` loads and serializes policy writes, subscribes to the global OpenCode event hub, caches session lineage, retries transient replies, and reconciles pending permissions after startup, reconnect, and policy enablement. Enabling Auto-Accept for a session immediately accepts matching pending requests and keeps handling future requests without requiring a connected UI.
 
 Unknown lineage and failed policy loads fail closed. A failed pending-permission fetch is distinct from an empty successful response and never clears policy state.

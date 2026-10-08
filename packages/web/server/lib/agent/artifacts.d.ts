@@ -1,7 +1,10 @@
+import type { ZodType } from 'zod';
+
 export type AgentArtifactFile = Readonly<{ path: string; bytes: number; digest: string }>;
 export type AgentArtifactManifest = Readonly<{
   version: 1; artifactDigest: string; files: readonly AgentArtifactFile[];
 }>;
+export const agentArtifactManifestSchema: ZodType<AgentArtifactManifest>;
 export class AgentArtifactError extends Error {
   readonly code: string;
   constructor(code: string);

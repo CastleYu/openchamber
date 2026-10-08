@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import type { AgentStartupSelection } from './lib/agent/startup.js';
 
 export interface WebUiServerController {
   expressApp: Express;
@@ -26,6 +27,8 @@ export interface DesktopUpdater {
 }
 
 export interface StartWebUiServerOptions {
+  /** Trusted host composition only. Requires reviewed adapter artifacts and independent approval. */
+  agentBackend?: AgentStartupSelection;
   port?: number;
   host?: string;
   attachSignals?: boolean;

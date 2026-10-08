@@ -44,6 +44,7 @@ export class AgentClient {
   private revision = 0;
   private controller = new AbortController();
   private disposed = false;
+  private readonly listeners = new Set<() => void>();
   private readonly unsubscribe: () => void;
 
   constructor(private readonly ports: AgentClientPorts = {
@@ -56,6 +57,13 @@ export class AgentClient {
     this.revision += 1;
     this.controller.abort();
     this.controller = new AbortController();
+    for (const listener of this.listeners) listener();
+  }
+
+  /** Consumers clear endpoint-owned state synchronously, including A/B/A retirement. */
+  subscribeRetirement(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   dispose(): void {
@@ -63,6 +71,7 @@ export class AgentClient {
     this.disposed = true;
     this.unsubscribe();
     this.retire();
+    this.listeners.clear();
   }
 
   private capture(): EndpointScope {
@@ -106,6 +115,7 @@ export class AgentClient {
     if (!response.ok) {
       const error = agentFailureSchema.safeParse(payload);
       if (!error.success) throw this.failure(scope, signal, mutation, AGENT_ERROR.INVALID_RESPONSE);
+      if (error.data.error === AGENT_ERROR.CHANGED) this.retire();
       if (mutation && (error.data.error === AGENT_ERROR.BACKEND_FAILED || error.data.error === AGENT_ERROR.INVALID_RESPONSE)) {
         throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
       }
@@ -123,7 +133,10 @@ export class AgentClient {
     const runtime = agentRuntimeSchema.safeParse(runtimePayload);
     const availability = agentFeatureSnapshotSchema.safeParse(featurePayload);
     if (!runtime.success || !availability.success) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
-    if (!same(runtime.data.identity, availability.data.identity)) throw new AgentClientError(AGENT_ERROR.CHANGED);
+    if (!same(runtime.data.identity, availability.data.identity)) {
+      this.retire();
+      throw new AgentClientError(AGENT_ERROR.CHANGED);
+    }
     this.assertCurrent(scope);
     return Object.freeze({
       scope: Object.freeze({ ...scope, identity: Object.freeze({ ...runtime.data.identity }) }),
@@ -145,6 +158,7 @@ export class AgentClient {
       body: JSON.stringify({ operation, identity: identity.data, input: parsedInput.data }),
     }, mutation);
     const result = envelope.safeParse(payload);
+    if (result.success && !same(result.data.identity, identity.data)) this.retire();
     if (!result.success || !same(result.data.identity, identity.data)) {
       throw new AgentClientError(mutation ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE);
     }
@@ -162,6 +176,7 @@ export class AgentClient {
       headers: { [AGENT_HTTP.CONTENT_TYPE]: AGENT_HTTP.JSON }, body: JSON.stringify(input.data),
     });
     const result = agentAttemptResultSchema.safeParse(payload);
+    if (result.success && !same(result.data.identity, input.data.identity)) this.retire();
     if (!result.success || !same(result.data.identity, input.data.identity)) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
     const attempt = result.data.attempt;
     if (attempt && (attempt.requestID !== requestID || attempt.identity.family !== input.data.identity.family

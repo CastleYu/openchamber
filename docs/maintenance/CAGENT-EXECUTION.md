@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: native packet workspace
+## Latest checkpoint: neutral conversation consumer
+
+2026-10-09. CA-01 remains in progress. `AgentConversation` consumes neutral Agent session/message contracts through `AgentClient`, retaining absent OpenCode project/path/model/time facts. It owns opening, ordered partial history, obsolete-read refusal, sending and durable attempt lookup. Failed history retains earlier records. Unknown entered writes block resend and survive reopening within the controller. It does not fabricate optimistic server records or infer execution from history.
+
+Client retirement now notifies consumers synchronously, including authoritative host identity changes within one endpoint. Primary review corrected a contributed stale-history test that had actually waited on opening, replaced unparsed fixture typing and added send/read ordering, request-resolution races, retirement during send, cyclic cursors and disposal tests. Focused client/conversation checks pass 29 tests; UI type-check and changed-file anti-slop pass. Workspace type-check and lint pass, retaining five inherited warnings and no errors. Browser bundling passes for the controller and its 105 imported modules. All 37 checked local document links pass. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no Agent row.
+
+The app does not mount this state consumer yet. Actual presentation, durable renderer request identity before replacement, accepted observation strategy, remaining feature consumers/extensions and CA-02 protected kit still precede activation. CA-03 requires the target environment/API documents and local-model acceptance. Publication/temporary Release remain pending; other INT work remains after CA-03. Live weekly quota is 67% remaining. See the [consumer documentation](../../packages/ui/src/lib/agent/DOCUMENTATION.md) and [Chinese review copy](zh-CN/CAGENT-UI-CLIENT.md).
+
+## Previous checkpoint: native packet workspace
 
 2026-10-09. CA-01 remains in progress. `createAgentPacketWorkspace` now supplies native protected checkpoint persistence and process-wide workspace exclusion for the fixed packet runner. Progress is outside candidate/kit directories and isolated by kit digest. Strict bounded reads refuse corrupt records; exclusive temporary writes, file sync and atomic rename preserve earlier records when replacement fails. Missing progress is distinct from unreadable progress. Native directory identity is checked before and after fixtures.
 

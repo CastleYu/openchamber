@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: goal message projection
+## Latest checkpoint: backend family isolation
+
+2026-10-09. CA-01 remains in progress. The protected coordinator now owns the family/revision consumed by the OpenCode kernel runtime. CAgent loading, failed loading and clearing retain an unsupported OpenCode descriptor. An explicit OpenCode selection retires pending adapter work and permits fresh detection. Same-endpoint selection changes reject stale probes. Separate connection invalidation from descriptor commits so concurrent refresh and health consumers can share one valid probe.
+
+Eight focused Web test files pass 145 tests, covering native host/runtime composition, kernel operations, proxy boundaries and lifecycle regressions. After strengthening the resolved-descriptor case, all 19 kernel-runtime tests pass again. Web type-check/lint, direct strict declaration compilation with library checking skipped, entrypoint syntax and the four changed-module anti-slop checks pass. Entrypoint anti-slop reports 59 inherited findings outside the edited ranges; it is not a clean full-file check. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no Agent/kernel-runtime row. Native tests use synthetic API semantics and do not prove CAgent compatibility.
+
+The offline workbook now includes an operation-sized prompt template in both languages. Production selection UI, complete consumer/owned-route migration, remaining contracts and runner enforcement still prevent CA-01 acceptance. CA-02 executable kit, CA-03 real environment/local-model acceptance, independent remote branch and temporary Release remain outstanding. No CAgent host has been enabled. Weekly quota is 70% remaining. Next work must complete the protected selection/consumer path; lower-priority INT work still waits for CA-03.
+
+## Previous checkpoint: goal message projection
 
 The OpenCode operation adapter now exposes ordered `textParts`, `agent` and `variant` fields. The goal runtime reads those fields instead of rebuilding messages from `item.raw`. It preserves transcript separators, model selection, token accounting and the existing identity checks. Tests supply message views with no raw protocol payload and verify audit input and continuation configuration for OC1 and OC2. This removes one recorded protocol leak; the goal runtime still uses generation-specific send, metadata, status and event contracts, so CAgent goals remain disabled.
 

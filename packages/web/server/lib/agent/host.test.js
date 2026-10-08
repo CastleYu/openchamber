@@ -11,6 +11,7 @@ import { createAgentApprovals } from './approvals.js';
 import { createAgentApprovalWriter } from './approval-writer.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { createAgentHost } from './host.js';
+import { createKernelRuntime, KernelRuntimeChangedError } from '../opencode/kernel-runtime.js';
 
 const roots = new Set();
 const servers = new Set();
@@ -64,6 +65,95 @@ afterEach(async () => {
 });
 
 describe('createAgentHost', () => {
+  it('keeps OpenCode detection disabled after a failed CAgent selection until OpenCode is selected', async () => {
+    let detections = 0;
+    const host = makeHost();
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      getBackendSelection: host.getSelection,
+      detect: async ({ endpoint, epoch }) => {
+        detections += 1;
+        return { generation: 'oc1', endpoint, epoch, version: '1.18.32' };
+      },
+    });
+    const item = await artifact('export const unrelated = true;');
+
+    expect((await runtime.refresh()).generation).toBe('oc1');
+    await expect(select(host, item, connection('http://127.0.0.1/'))).rejects.toBeDefined();
+    expect(host.getSelection()).toMatchObject({ family: AGENT_FAMILY.CAGENT });
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', endpoint: null });
+    expect((await runtime.refresh()).generation).toBe('unsupported');
+    expect((await runtime.reprobe()).generation).toBe('unsupported');
+    host.clear();
+    expect(host.getSelection()).toMatchObject({ family: AGENT_FAMILY.CAGENT });
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', endpoint: null });
+    expect(detections).toBe(1);
+
+    host.selectOpenCode();
+    expect(runtime.get()).toMatchObject({ generation: 'unknown', endpoint: null });
+    expect((await runtime.refresh()).generation).toBe('oc1');
+    expect(detections).toBe(2);
+  });
+
+  it('rejects an OpenCode probe that finishes after failed CAgent selection', async () => {
+    let finish;
+    const host = makeHost();
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      getBackendSelection: host.getSelection,
+      detect: (input) => new Promise((resolve) => {
+        finish = () => resolve({ generation: 'oc1', endpoint: input.endpoint, epoch: input.epoch, version: '1.18.32' });
+      }),
+    });
+    const item = await artifact('export const unrelated = true;');
+    const pending = runtime.refresh();
+    await Promise.resolve();
+    const selection = select(host, item, connection('http://127.0.0.1/'));
+    await expect(selection).rejects.toBeDefined();
+    finish();
+
+    await expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', endpoint: null });
+  });
+
+  it('owns an explicit family choice through failed loads and clear until OpenCode is selected', async () => {
+    const host = makeHost();
+    const initial = host.getSelection();
+    expect(initial).toEqual({ family: 'opencode', revision: 0 });
+    expect(Object.isFrozen(initial)).toBe(true);
+    expect(host.getSelection()).toBe(initial);
+    const item = await artifact('export const unrelated = true;');
+    await expect(select(host, item, connection('http://127.0.0.1/'))).rejects.toBeDefined();
+    const failed = host.getSelection();
+    expect(failed).toEqual({ family: 'cagent', revision: 1 });
+    host.clear();
+    expect(host.getSelection()).toEqual({ family: 'cagent', revision: 2 });
+    host.selectOpenCode();
+    expect(host.getSelection()).toEqual({ family: 'opencode', revision: 3 });
+    expect(initial).toEqual({ family: 'opencode', revision: 0 });
+    expect(failed).toEqual({ family: 'cagent', revision: 1 });
+  });
+
+  it('retires a native pending adapter when OpenCode is selected explicitly', async () => {
+    const marker = `__agent_family_gate_${randomUUID().replaceAll('-', '')}`;
+    let enter;
+    let release;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    globalThis[marker] = { enter, wait: new Promise((resolve) => { release = resolve; }) };
+    const item = await artifact(source(`globalThis.${marker}.enter(); await globalThis.${marker}.wait;`));
+    const host = makeHost();
+    try {
+      const pending = select(host, item, connection('http://127.0.0.1/'));
+      await entered;
+      expect(host.getSelection()).toEqual({ family: 'cagent', revision: 1 });
+      host.selectOpenCode();
+      release();
+      await expect(pending).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+      expect(host.getSelection()).toEqual({ family: 'opencode', revision: 2 });
+      expect(() => host.dispatcher.captureIdentity()).toThrow(expect.objectContaining({ code: AGENT_ERROR.UNAVAILABLE }));
+    } finally { release(); delete globalThis[marker]; }
+  });
+
   it('constructs a frozen unavailable host without reading approval or making HTTP requests', async () => {
     let approvals = 0;
     let requests = 0;

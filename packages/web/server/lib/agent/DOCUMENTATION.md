@@ -72,6 +72,12 @@ The fourth owned route, GET `/api/agent-backend/features`, returns a strictly va
 | Hosted mobile | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
 | Capacitor | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
 
+## Backend family selection
+
+The coordinator defaults to OpenCode and exposes an immutable `getSelection()` snapshot with family and revision. A structurally valid CAgent selection advances that revision before loading; loading failure and `clear()` retain the CAgent family with no active binding. Only the maintainer-owned `selectOpenCode()` port returns to OpenCode. It also retires pending adapter loads and selection-scoped request ports. Snapshots contain no credentials, perform no I/O and remain unchanged after later selections.
+
+The web entrypoint composes one coordinator for the Agent routes and OpenCode kernel runtime. Its selection port invalidates the OpenCode descriptor by family/revision, including a same-endpoint return. CAgent produces an unsupported descriptor and performs no OpenCode generation probe. Concurrent refresh and health probes share valid results; descriptor commits alone do not retire a connection. Tests join the real host with the kernel runtime and native adapter artifacts. Production still has no user selection entrypoint or host support approval; CAgent remains unavailable on all five hosts. This gate covers descriptor consumers, not every unmigrated owned route, lifecycle action or UI caller. Their individual migration remains required before activation.
+
 ## Goal reader migration
 
 The OpenCode adapter exposes ordered `textParts`, `agent` and `variant` in its message view. The goal reader consumes these fields and existing explicit model/time/accounting fields instead of inspecting `raw`. `textParts` preserves text boundaries and excludes reasoning/tool content from the audit transcript. OC2 user/synthetic text is a single entry; absent text yields an empty array. Legacy `mode` supplies the agent only when `agent` is absent. The legacy variant and current model variant are projected at the adapter boundary.

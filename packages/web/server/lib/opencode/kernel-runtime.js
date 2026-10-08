@@ -1,4 +1,7 @@
 import { detectOpenCodeGeneration, OPENCODE_GENERATION } from './compatibility.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
+
+const OPEN_CODE_SELECTION = Object.freeze({ family: AGENT_FAMILY.OPENCODE, revision: 0 });
 
 export class KernelRuntimeChangedError extends Error {
   constructor() {
@@ -19,19 +22,24 @@ const isResolvedGeneration = (generation) => generation === OPENCODE_GENERATION.
   || generation === OPENCODE_GENERATION.OC2;
 
 /** Owns the descriptor for one backend instance. Restart/auth changes invalidate it explicitly. */
-export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGeneration, detect = detectOpenCodeGeneration, onChange = () => {} }) => {
+export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGeneration, getBackendSelection = () => OPEN_CODE_SELECTION, detect = detectOpenCodeGeneration, onChange = () => {} }) => {
+  let selection = getBackendSelection();
   let source = getEndpoint();
   let epoch = 0;
+  let revision = 0;
   let pendingProbe = null;
   let pendingRefresh = null;
   const unresolved = () => Object.freeze({
-    generation: OPENCODE_GENERATION.UNKNOWN, endpoint: null, epoch, version: null,
+    generation: selection.family === AGENT_FAMILY.OPENCODE ? OPENCODE_GENERATION.UNKNOWN : OPENCODE_GENERATION.UNSUPPORTED,
+    endpoint: null, epoch, version: null,
   });
   let current = unresolved();
 
   const invalidate = () => {
+    selection = getBackendSelection();
     source = getEndpoint();
     epoch += 1;
+    revision += 1;
     pendingProbe = null;
     pendingRefresh = null;
     current = unresolved();
@@ -39,11 +47,21 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
   };
 
   const get = () => {
-    if (source !== getEndpoint()) invalidate();
+    const next = getBackendSelection();
+    if (source !== getEndpoint() || next.family !== selection.family || next.revision !== selection.revision) invalidate();
     return current;
   };
 
-  const commit = (result) => {
+  const checkProbe = (probe) => {
+    get();
+    if (selection.family !== AGENT_FAMILY.OPENCODE || probe.revision !== revision || probe.endpoint !== source) {
+      throw new KernelRuntimeChangedError();
+    }
+  };
+
+  const commit = (probe) => {
+    checkProbe(probe);
+    const result = probe.result;
     const changed = current.generation !== result.generation
       || current.endpoint !== result.endpoint
       || current.version !== result.version;
@@ -53,24 +71,25 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     return current;
   };
 
-  // One in-flight raw probe shared by refresh and reprobe. The epoch/endpoint
+  // One in-flight raw probe shared by refresh and reprobe. The connection/endpoint
   // recheck after `detect` rejects a result produced for a connection that was
   // replaced while the probe was outstanding.
   const startProbe = () => {
     get();
-    if (!source) return null;
+    if (selection.family !== AGENT_FAMILY.OPENCODE || !source) return null;
     if (pendingProbe) return pendingProbe;
     const endpoint = source;
-    const revision = epoch;
+    const ticket = revision;
+    const probeEpoch = epoch;
     const headers = new Headers(getHeaders());
     const operation = Promise.resolve().then(() => {
       get();
-      if (revision !== epoch || endpoint !== source) throw new KernelRuntimeChangedError();
-      return detect({ endpoint, epoch: revision, headers, headersForGeneration });
+      if (ticket !== revision || endpoint !== source) throw new KernelRuntimeChangedError();
+      return detect({ endpoint, epoch: probeEpoch, headers, headersForGeneration });
     }).then((result) => {
       get();
-      if (revision !== epoch || endpoint !== source) throw new KernelRuntimeChangedError();
-      return result;
+      if (ticket !== revision || endpoint !== source) throw new KernelRuntimeChangedError();
+      return { result, revision: ticket, endpoint };
     }).finally(() => {
       if (pendingProbe === operation) pendingProbe = null;
     });
@@ -98,11 +117,13 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
   const reprobe = async () => {
     const probe = startProbe();
     if (!probe) return { descriptor: current, generation: current.generation, preserved: false };
-    const result = await probe;
+    const candidate = await probe;
+    checkProbe(candidate);
+    const result = candidate.result;
     if (TRANSIENT_GENERATIONS.has(result.generation) && isResolvedGeneration(current.generation)) {
       return { descriptor: current, generation: result.generation, preserved: true };
     }
-    return { descriptor: commit(result), generation: result.generation, preserved: false };
+    return { descriptor: commit(candidate), generation: result.generation, preserved: false };
   };
 
   return { get, refresh, reprobe, invalidate };

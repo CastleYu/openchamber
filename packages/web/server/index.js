@@ -720,6 +720,11 @@ const ENV_DESKTOP_NOTIFY = (() => {
 })();
 let kernelRuntime = null;
 let messageSearchRuntime = null;
+const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
+const agentHost = createAgentHost({
+  getAcceptance: agentApprovals.read,
+  attempts: createAgentAttempts({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_ATTEMPT.DIRECTORY) }),
+});
 const openCodeAuthStateRuntime = createOpenCodeAuthStateRuntime({
   crypto,
   process,
@@ -764,6 +769,7 @@ const ensureOpenCodeApiPrefix = (...args) => openCodeNetworkRuntime.ensureOpenCo
 const scheduleOpenCodeApiDetection = (...args) => openCodeNetworkRuntime.scheduleOpenCodeApiDetection(...args);
 
 kernelRuntime = createKernelRuntime({
+  getBackendSelection: agentHost.getSelection,
   getEndpoint: () => openCodePort ? buildOpenCodeUrl('/', '') : null,
   getHeaders: getOpenCodeAuthHeaders,
   headersForGeneration: getOpenCodeAuthHeaders,
@@ -2217,11 +2223,6 @@ async function main(options = {}) {
   uiAuthController = bootstrapResult.uiAuthController;
   // Reserve the owned protocol before proxy fallback. Activation is a later
   // host-owned step; candidate adapter files cannot grant dispatch authority.
-  const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
-  const agentHost = createAgentHost({
-    getAcceptance: agentApprovals.read,
-    attempts: createAgentAttempts({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_ATTEMPT.DIRECTORY) }),
-  });
   registerAgentRoutes(app, {
     dispatcher: agentHost.dispatcher,
     features: agentHost.features,

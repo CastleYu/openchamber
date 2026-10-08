@@ -85,6 +85,26 @@ The packet result file retains the documentation references, candidate files, ch
 
 CA-02 must rehearse this workflow from a fresh offline context: complete a structural mapping packet, stop a conflicting-documentation packet, and resume an interrupted packet using only saved artifacts. Record the actual executor/model when one is used and distinguish a scripted runner test from a model trial. CA-03 additionally records a trial with the environment's actual local agent; failed packets remain disabled and can be completed by a maintainer without weakening acceptance checks.
 
+## Local agent prompt template
+
+CA-02 generates the following prompt from a maintainer-checked mapping and the protected packet manifest. Substitute exact local references and commands from the delivered kit. This is a template, not an executable kit or an approved CAgent mapping.
+
+```text
+Implement operation <generated operation ID> at checkpoint <packet ID>.
+Read <one contract page> and <approved API sections>.
+Use <generated stub> and <host transport helper>.
+Edit only <packet allowlist>. Required behavior: <packet semantics>.
+Run <protected packet command>. The runner determines pass or failure.
+Return candidate file paths and the runner result reference.
+If a required semantic lacks evidence, return its contract field,
+the conflicting or missing API section, and one question. Stop this packet.
+If implementation checks fail, use the supplied smallest failure;
+stop after the packet's remaining correction budget is consumed.
+Keep the candidate disabled until maintainer acceptance.
+```
+
+The runner validates each referenced input before invoking the agent. Missing files, oversized input or an unresolved mapping are preparation failures and do not consume a model correction attempt. A model response is a candidate submission or an evidence-gap record; it never changes packet status, capability support or activation directly. Supply the prompt in a language the actual local model follows reliably, while retaining generated IDs, paths and commands exactly. CA-03 records that choice and its observed instruction-following failures.
+
 ## Local model workload budget
 
 Use deterministic generation for symbols, imports, registration, structural field mappings and test commands. The local model is a build-time author of a candidate adapter. Production dispatch executes accepted code and never asks that model to interpret documentation, choose endpoints or translate requests dynamically.

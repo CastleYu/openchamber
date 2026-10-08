@@ -38,6 +38,12 @@ This module provides OpenCode server integration utilities for the web server ru
   returns `unreachable` or `unknown`. See lifecycle health monitoring below.
   `/api/opencode/runtime` exposes the descriptor through the authenticated
   OpenChamber route with no-store caching.
+  Protected host family selection also retires this descriptor. CAgent selection,
+  loading and failed loading produce `unsupported` with no OpenCode endpoint or
+  probe. Clearing that selection does not select OpenCode. Explicit OpenCode
+  selection permits a fresh probe. Concurrent refresh and health consumers share
+  one probe; committing its descriptor does not invalidate the other consumer.
+  Connection invalidation still rejects outstanding results before commit.
 - `kernel-operations.js` selects server-side session/message/send operations from
   that descriptor. Deferred sends carry their captured identity and reject after
   a connection switch. Prompt acceptance does not imply response completion.

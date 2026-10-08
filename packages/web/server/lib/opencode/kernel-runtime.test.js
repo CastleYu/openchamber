@@ -1,12 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
 import { createKernelOperations } from './kernel-operations.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
 
 const ready = (endpoint, epoch, version = '1.18.32') => ({
   generation: 'oc1', endpoint, epoch, version,
 });
 
 describe('backend kernel identity', () => {
+  it.each(['refresh-first', 'reprobe-first'])('shares a valid probe across concurrent consumers: %s', async (order) => {
+    let finish;
+    let calls = 0;
+    const changes = [];
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      detect: (input) => {
+        calls += 1;
+        return new Promise((resolve) => { finish = () => resolve(ready(input.endpoint, input.epoch)); });
+      },
+      onChange: (descriptor) => changes.push(descriptor),
+    });
+    const first = order === 'refresh-first' ? runtime.refresh() : runtime.reprobe();
+    const second = order === 'refresh-first' ? runtime.reprobe() : runtime.refresh();
+    await Promise.resolve();
+    finish();
+    const results = await Promise.all([first, second]);
+    const descriptor = results[order === 'refresh-first' ? 0 : 1];
+    const health = results[order === 'refresh-first' ? 1 : 0];
+    expect(health.descriptor).toEqual(descriptor);
+    expect(health.generation).toBe('oc1');
+    expect(calls).toBe(1);
+    expect(changes).toHaveLength(1);
+    expect(runtime.get()).toEqual(descriptor);
+  });
+
   it('notifies stream owners only when identity changes, including invalidation', async () => {
     const changes = [];
     const runtime = createKernelRuntime({
@@ -177,5 +204,136 @@ describe('backend kernel re-probe', () => {
 
     expect(probe.preserved).toBe(false);
     expect(runtime.get().generation).toBe('unreachable');
+  });
+});
+
+describe('backend family selection', () => {
+  const openCode = (revision = 0) => ({ family: AGENT_FAMILY.OPENCODE, revision });
+  const cagent = (revision = 0) => ({ family: AGENT_FAMILY.CAGENT, revision });
+
+  it('rejects a pending probe after a family round trip without an intervening read', async () => {
+    let selection = openCode();
+    let finish;
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      getBackendSelection: () => selection,
+      detect: (input) => new Promise((resolve) => { finish = () => resolve(ready(input.endpoint, input.epoch)); }),
+    });
+    const pending = runtime.refresh();
+    await Promise.resolve();
+    selection = cagent(1);
+    selection = openCode(2);
+    finish();
+    await expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+    expect(runtime.get().generation).toBe('unknown');
+  });
+
+  it('does not resolve OpenCode while CAgent is selected, including refresh and re-probe', async () => {
+    let detections = 0;
+    let headers = 0;
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096',
+      getHeaders: () => { headers += 1; return {}; },
+      getBackendSelection: () => cagent(),
+      detect: async () => { detections += 1; return ready('http://127.0.0.1:4096', 0); },
+    });
+
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', endpoint: null, version: null });
+    expect(await runtime.refresh()).toMatchObject({ generation: 'unsupported', endpoint: null, version: null });
+    expect((await runtime.reprobe()).generation).toBe('unsupported');
+    expect(detections).toBe(0);
+    expect(headers).toBe(0);
+  });
+
+  it('retires a known OpenCode descriptor and rejects a probe when CAgent takes over', async () => {
+    let selection = openCode();
+    let finish;
+    let detections = 0;
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      getBackendSelection: () => selection,
+      detect: (input) => {
+        detections += 1;
+        if (detections === 1) return Promise.resolve(ready(input.endpoint, input.epoch));
+        return new Promise((resolve) => { finish = () => resolve(ready(input.endpoint, input.epoch)); });
+      },
+    });
+    expect((await runtime.refresh()).generation).toBe('oc1');
+    const pending = runtime.refresh();
+    await Promise.resolve();
+    selection = cagent();
+
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', endpoint: null, version: null });
+    finish();
+    await expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+    expect((await runtime.refresh()).generation).toBe('unsupported');
+    expect((await runtime.reprobe()).generation).toBe('unsupported');
+    expect(detections).toBe(2);
+  });
+
+  it('retires epochs across a same-endpoint family return and a revision-only change', async () => {
+    let selection = openCode(1);
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      getBackendSelection: () => selection,
+      detect: async ({ endpoint, epoch }) => ready(endpoint, epoch),
+    });
+    const initial = await runtime.refresh();
+
+    selection = cagent(1);
+    expect(runtime.get().generation).toBe('unsupported');
+    selection = openCode(2);
+    expect(runtime.get().generation).toBe('unknown');
+    const returned = await runtime.refresh();
+    expect(returned.endpoint).toBe(initial.endpoint);
+    expect(returned.epoch).toBeGreaterThan(initial.epoch);
+
+    selection = openCode(3);
+    expect(runtime.get().generation).toBe('unknown');
+    const revised = await runtime.refresh();
+    expect(revised.epoch).toBeGreaterThan(returned.epoch);
+  });
+});
+
+describe('CAgent kernel-operation boundary', () => {
+  const runtimeDescriptor = (family, epoch = 1) => (family === AGENT_FAMILY.CAGENT
+    ? { generation: 'unsupported', endpoint: null, epoch, version: null }
+    : { generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch, version: '1.18.32' });
+
+  it('refuses session reads and sends before issuing a fetch', async () => {
+    let calls = 0;
+    const operations = createKernelOperations({
+      getRuntime: () => runtimeDescriptor(AGENT_FAMILY.CAGENT), getHeaders: () => ({}),
+      fetchImpl: async () => { calls += 1; return new Response('{}'); },
+    });
+    const request = { generation: 'unsupported', endpoint: null, epoch: 1, body: {} };
+
+    await expect(operations.getSession({ sessionID: 'session-1', directory: 'C:/project' }))
+      .rejects.toMatchObject({ code: 'unsupported-generation' });
+    await expect(operations.sendPrompt({ sessionID: 'session-1', directory: 'C:/project', request }))
+      .rejects.toMatchObject({ code: 'unsupported-generation' });
+    expect(calls).toBe(0);
+  });
+
+  it('rejects a session read that completes after the backend family changes', async () => {
+    let descriptor = runtimeDescriptor(AGENT_FAMILY.OPENCODE);
+    let finish;
+    let markStarted;
+    const started = new Promise((resolve) => { markStarted = resolve; });
+    const operations = createKernelOperations({
+      getRuntime: () => descriptor, getHeaders: () => ({}),
+      fetchImpl: () => {
+        markStarted();
+        return new Promise((resolve) => { finish = () => resolve(new Response(JSON.stringify({
+          id: 'session-1', directory: 'C:/project',
+        }), { status: 200, headers: { 'content-type': 'application/json' } })); });
+      },
+    });
+    const pending = operations.getSession({ sessionID: 'session-1', directory: 'C:/project' });
+    await started;
+    descriptor = runtimeDescriptor(AGENT_FAMILY.CAGENT, 2);
+    finish();
+
+    await expect(pending).rejects.toMatchObject({ code: 'runtime-changed' });
   });
 });

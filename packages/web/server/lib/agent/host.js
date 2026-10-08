@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AGENT_ERROR, AGENT_HOST_OPERATION } from './constants.js';
+import { AGENT_ERROR, AGENT_FAMILY, AGENT_HOST_OPERATION } from './constants.js';
 import { createAgentAuthority } from './authority.js';
 import { AgentDispatchError, createAgentDispatcher } from './dispatcher.js';
 import { createAgentFeatures } from './features.js';
@@ -15,9 +15,17 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
   if (!z.function().safeParse(getAcceptance).success) throw refuse(AGENT_ERROR.INVALID_INPUT);
   let epoch = 0;
   let active = null;
+  let family = AGENT_FAMILY.OPENCODE;
+  let selection = Object.freeze({ family, revision: epoch });
+  const getSelection = () => selection;
   const clear = () => {
     epoch += 1;
     active = null;
+    selection = Object.freeze({ family, revision: epoch });
+  };
+  const selectOpenCode = () => {
+    family = AGENT_FAMILY.OPENCODE;
+    clear();
   };
   const dispatcher = createAgentDispatcher({ getBinding: () => active?.authority.getBinding() ?? null, attempts });
   const features = createAgentFeatures({ getRuntime: dispatcher.describeRuntime, getHostSupport });
@@ -27,6 +35,7 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
     const endpoint = agentHostConnectionSchema.safeParse(connection);
     if (!location.success || !adapter.success || !endpoint.success) throw refuse(AGENT_ERROR.INVALID_INPUT);
     // Retire the previous binding before loading. An explicit failed switch stays closed.
+    family = AGENT_FAMILY.CAGENT;
     clear();
     const ticket = epoch;
     const selected = adapter.data;
@@ -59,5 +68,5 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
     });
     return identity;
   };
-  return Object.freeze({ select, clear, dispatcher, features });
+  return Object.freeze({ select, selectOpenCode, getSelection, clear, dispatcher, features });
 };

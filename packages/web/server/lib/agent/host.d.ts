@@ -9,6 +9,7 @@ export type AgentHostConnection = Readonly<{
   connectionID: string; serverRevision: string; baseURL: string;
   headers: Readonly<{ [name: string]: string }>; ready: boolean; authorized: boolean;
 }>;
+export type AgentBackendSelection = Readonly<{ family: 'opencode' | 'cagent'; revision: number }>;
 /** Only the maintainer-owned composition may supply selection and acceptance. */
 export function createAgentHost(options: {
   getAcceptance(selection: AgentSelection): AgentApproval | null;
@@ -19,6 +20,9 @@ export function createAgentHost(options: {
     directory: string; manifest: AgentArtifactManifest; profile: AgentAdapterProfile; connection: AgentHostConnection;
   }): Promise<AgentIdentity>;
   clear(): void;
+  /** Explicitly retire CAgent selection. OpenCode must resolve its own descriptor again. */
+  selectOpenCode(): void;
+  getSelection(): AgentBackendSelection;
   dispatcher: ReturnType<typeof createAgentDispatcher>;
   features: ReturnType<typeof createAgentFeatures>;
 }>;

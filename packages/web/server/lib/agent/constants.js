@@ -57,6 +57,17 @@ export const AGENT_ATTEMPT = Object.freeze({
   UNKNOWN: 'unknown', ACCEPTED: 'accepted', COMPLETE: 'complete', NOT_SENT: 'not-sent',
 });
 export const AGENT_FILE_ERROR = Object.freeze({ EXISTS: 'EEXIST', MISSING: 'ENOENT' });
+export const AGENT_PACKET = Object.freeze({
+  VERSION: 1, MAX_CORRECTIONS: 2, MAX_FILES: 16, MAX_FILE_BYTES: 262144,
+  MAX_TOTAL_BYTES: 1048576, MAX_CHECKS: 64,
+});
+export const AGENT_PACKET_STATE = Object.freeze({ PASSED: 'fixtures-passed', FAILED: 'fixtures-failed', BLOCKED: 'blocked' });
+export const AGENT_PACKET_ERROR = Object.freeze({
+  INVALID: 'invalid-packet', PROTECTED: 'protected-kit-changed', BOUNDARY: 'candidate-boundary',
+  INPUT: 'candidate-unavailable', CHECK: 'fixture-failed', SETUP: 'check-unavailable',
+  STORAGE: 'checkpoint-unavailable', DEPENDENCY: 'packet-dependency', LIMIT: 'maintainer-required',
+  BUSY: 'runner-busy',
+});
 export const AGENT_HOST_OPERATION = Object.freeze({
   CAPTURE_IDENTITY: 'captureIdentity', READ_ATTEMPT: 'readAttempt', GET_BINDING: 'getBinding',
   DESCRIBE_RUNTIME: 'describeRuntime',

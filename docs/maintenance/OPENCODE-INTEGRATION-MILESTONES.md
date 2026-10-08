@@ -59,6 +59,8 @@ Define domain contracts from actual consumers and migrate only the protocol assu
 
 Exit: typed host operation contracts cover the CA-00 inventory; guards apply to UI and direct/autonomous callers; identity changes retire stale work without cross-backend replay. Focused OC1/OC2 regressions pass. No CAgent support is claimed without local runtime evidence.
 
+The [consumer contract migration](CAGENT-CONSUMER-CONTRACT.md) is part of this exit gate. A synthetic backend without timestamps, provider/model facts or a local-directory mapping must exercise actual chat/sync consumers without fabricated fields. Optional bootstrap failures cannot erase successful conversation data. Every enabled feature names its migrated callers; unmigrated callers keep that feature unavailable.
+
 ### CA-02: executable offline adaptation kit
 
 Deliver the complete runnable packet toolchain, not planning documents alone. Include protected reference tests and fixtures, generated operation stubs/constants, a deterministic generator, schemas, offline dependencies and commands, changed-file allowlist validation, feature-coverage checks, and task/report generation. Prove it with a deliberately sparse sample backend and a separate synthetic extension-feature sample; neither represents real CAgent behavior.

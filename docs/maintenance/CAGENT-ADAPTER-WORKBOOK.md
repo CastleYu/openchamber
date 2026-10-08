@@ -10,7 +10,7 @@ The architecture owner must provide these artifacts together at a frozen applica
 | --- | --- |
 | START-HERE | Exact offline setup and check commands, supported toolchain, kit/app digest, contract version, file allowlist and restore steps. |
 | Adapter workspace | Compiling disabled-by-default skeleton, generated operation constants, typed requests/results, bounded transport/auth hooks and explicit registration point. No whole-repository editing required. |
-| Contract reference | One short page per operation with required semantics, successful/failed/unsupported examples and related feature IDs. |
+| Contract reference | One short page per operation with required semantics, successful/failed/unsupported examples and related feature IDs. Separate required fields from optional enrichment under the [consumer contract](CAGENT-CONSUMER-CONTRACT.md). |
 | Mapping and capability templates | Schema-validated records from the tables below, generated coverage report and reasons for blocked features. |
 | Extension template | Fixed form/result vocabulary, namespaced action constants, handler stub and negative tests. |
 | Verification kit | Protected reference fixtures and tests, sample adapters, offline fixture runner, isolated live-check runner, changed-file and feature-dependency checks. |

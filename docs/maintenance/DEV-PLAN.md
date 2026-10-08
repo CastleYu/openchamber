@@ -53,6 +53,7 @@ Urgent addition on the same date: CAgent is an independent backend with an API a
 Detailed requirements and execution gates now live in:
 
 - [CAgent architecture](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md): urgent CA-00 through CA-03, contract boundaries and local acceptance.
+- [CAgent consumer contract](CAGENT-CONSUMER-CONTRACT.md): chat/sync migration, missing-field behavior and protected adaptation expectations before feature activation.
 - [Integration SPEC](OPENCODE-INTEGRATION-SPEC.md): adapter boundaries, five explicit connection modes, disposal and UI behavior.
 - [Legacy 1.2.27 SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md): profile selection, API/event/config compatibility and exact-version acceptance.
 - [Subversion milestones](OPENCODE-INTEGRATION-MILESTONES.md): common baseline, CAgent priority gate, Legacy evidence and proposed DIJIANG 5.0-5.13 delivery gates; the authoritative execution status for this milestone.

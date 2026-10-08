@@ -49,6 +49,8 @@ CA-01 freezes the concrete module map and migration inventory. Move only the pro
 
 Do not manufacture token counts, costs, timestamps, completion, remote filesystem access or cancel success. If a required semantic cannot be supplied, its dependent feature stays disabled. Preserve opaque original IDs and use the existing runtime/workspace scope for collision isolation.
 
+The [consumer contract migration](CAGENT-CONSUMER-CONTRACT.md) owns how shared chat/sync handles absent OpenCode-specific facts. CA-01 must migrate those consumers before host support is enabled; a neutral request client alone is insufficient. CA-02 freezes these rules into the local agent's operation pages and protected examples.
+
 ## Capability evidence and feature availability
 
 The architecture owner produces a complete feature-to-operation dependency registry from current consumers, including browser-closed callers. Every current feature is classified as OpenChamber-owned, backend-dependent or mixed. Git/filesystem actions remain available only where their actual owning host has the required access; a remote CAgent workspace does not establish that access.

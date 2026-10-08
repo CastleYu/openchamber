@@ -57,6 +57,7 @@
 详细要求和执行门槛现记录于：
 
 - [CAgent 架构](CAGENT-INTEGRATION-SPEC.md)及[本地适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)：紧急 CA-00 至 CA-03、契约边界及本地验收。
+- [CAgent 消费契约](CAGENT-CONSUMER-CONTRACT.md)：功能启用前的聊天／同步迁移、缺字段行为及受保护的适配预期。
 - [集成规范](OPENCODE-INTEGRATION-SPEC.md)：适配器边界、五种明确的连接模式、释放和界面行为。
 - [Legacy 1.2.27 规范](OPENCODE-LEGACY-1.2.27-SPEC.md)：配置选择、API/事件/配置兼容性和精确版本验收。
 - [子版本里程碑](OPENCODE-INTEGRATION-MILESTONES.md)：通用基线、CAgent 优先门槛、Legacy 取证及拟议的 DIJIANG 5.0-5.13 交付门槛；它是本里程碑的权威执行状态。

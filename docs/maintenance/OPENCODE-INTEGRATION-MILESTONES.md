@@ -67,11 +67,15 @@ Exit: a clean offline checkout runs the documented commands successfully. The sp
 
 Documentation intake also passes the [workbook decision cases](CAGENT-ADAPTER-WORKBOOK.md#documentation-to-adapter-decisions). Protected expectations cover structural mapping, semantic differences, absence, conflicting evidence and additional capabilities. An endpoint inventory alone cannot satisfy feature coverage.
 
+The [weak-agent packet workflow](CAGENT-ADAPTER-WORKBOOK.md#weak-agent-packet-execution) also passes its fresh-context completion, conflict-stop and interrupted-resume rehearsals. Record scripted checks separately from any model trial; no model self-report advances acceptance.
+
 ### CA-03: local CAgent adaptation and live acceptance
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.
 
 Exit: a real local server completes minimum chat with observable outcome and history/reopen where supported; live host journeys cover each host claimed available. The evidence report accounts for all existing and discovered features, including unsupported and unverified rows, and includes direct-call refusal for a disabled feature. The local maintainer reviews evidence and explicitly activates the revision. If environment access or documentation is unavailable, CA-03 stays blocked and lower-priority INT implementation does not start unless the maintainer explicitly reprioritizes. Simulation alone never passes this gate.
+
+Record an adaptation trial with the environment's actual local agent using the workbook packets. Keep failed packets disabled, report their evidence gaps, and preserve the same acceptance checks when a maintainer completes them.
 
 ### INT-00L: exact Legacy evidence
 

@@ -281,6 +281,29 @@ describe('agent dispatcher', () => {
       .rejects.toBeInstanceOf(AgentDispatchError);
   });
 
+  it.each([
+    ['epoch', AGENT_ERROR.CHANGED], ['authorized', AGENT_ERROR.UNAUTHORIZED], ['ready', AGENT_ERROR.UNAVAILABLE],
+  ])('rejects history after %s changes during its read', async (field, code) => {
+    const current = binding();
+    const read = vi.fn(async () => {
+      if (field === 'epoch') current.identity.epoch += 1;
+      else current[field] = false;
+      return null;
+    });
+    const attempts = { read, begin: vi.fn() };
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).readAttempt(identity(), 'r1'), code);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(attempts.begin).not.toHaveBeenCalled();
+  });
+
+  it('refuses history under an old identity before reading the store', async () => {
+    const current = binding();
+    const attempts = { read: vi.fn(), begin: vi.fn() };
+    await errorCode(createAgentDispatcher({ getBinding: () => current, attempts }).readAttempt(
+      { ...identity(), epoch: 0 }, 'r1'), AGENT_ERROR.CHANGED);
+    expect(attempts.read).not.toHaveBeenCalled();
+  });
+
   it('refuses a backend replacement at the final pre-effect check', async () => {
     const original = binding();
     const replacement = binding();

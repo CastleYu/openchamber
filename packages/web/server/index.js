@@ -55,6 +55,8 @@ import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentDispatcher } from './lib/agent/dispatcher.js';
+import { createAgentAttempts } from './lib/agent/attempts.js';
+import { AGENT_ATTEMPT } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
@@ -2214,7 +2216,10 @@ async function main(options = {}) {
   uiAuthController = bootstrapResult.uiAuthController;
   // Reserve the owned protocol before proxy fallback. Activation is a later
   // host-owned step; candidate adapter files cannot grant dispatch authority.
-  registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }) });
+  registerAgentRoutes(app, { dispatcher: createAgentDispatcher({
+    getBinding: () => null,
+    attempts: createAgentAttempts({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_ATTEMPT.DIRECTORY) }),
+  }) });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.
   // The slot is mounted once and reads the host at call time, so the switch can turn the feature
   // on and off live: with no host it passes every request on and no upgrade is taken.

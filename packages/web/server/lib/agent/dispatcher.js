@@ -1,5 +1,5 @@
-import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
-import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS } from './schemas.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentIdentitySchema } from './schemas.js';
 
 const operations = new Set(Object.values(AGENT_OPERATION));
 const mutations = new Set(AGENT_MUTATIONS);
@@ -53,9 +53,9 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
   };
   const captureIdentity = () => {
     const binding = getBinding();
-    if (!binding) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, 'captureIdentity');
-    if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, 'captureIdentity');
-    if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, 'captureIdentity');
+    if (!binding) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, AGENT_HOST_OPERATION.CAPTURE_IDENTITY);
+    if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, AGENT_HOST_OPERATION.CAPTURE_IDENTITY);
+    if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, AGENT_HOST_OPERATION.CAPTURE_IDENTITY);
     return Object.freeze({ ...binding.identity });
   };
   const dispatch = async (operation, input, expected) => {
@@ -118,5 +118,17 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
       throw error;
     }
   };
-  return Object.freeze({ captureIdentity, dispatch });
+  const readAttempt = async (expected, requestID) => {
+    const operation = AGENT_HOST_OPERATION.READ_ATTEMPT;
+    const parsed = agentIdentitySchema.safeParse(expected);
+    if (!parsed.success) throw new AgentDispatchError(AGENT_ERROR.INVALID_INPUT, operation);
+    const identity = captureIdentity();
+    if (!same(identity, parsed.data)) throw new AgentDispatchError(AGENT_ERROR.CHANGED, operation);
+    if (!attempts) throw new AgentDispatchError(AGENT_ERROR.WRITE_UNAVAILABLE, operation);
+    const attempt = await attempts.read(identity, requestID);
+    const current = captureIdentity();
+    if (!same(identity, current)) throw new AgentDispatchError(AGENT_ERROR.CHANGED, operation);
+    return { identity, attempt };
+  };
+  return Object.freeze({ captureIdentity, dispatch, readAttempt });
 };

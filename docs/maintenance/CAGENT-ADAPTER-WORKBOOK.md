@@ -66,6 +66,25 @@ CA-02 tests this intake with supplied sample documentation containing a renamed 
 
 The generated task packet has these fixed fields: operation ID, goal, documentation excerpt references, required input/output semantics, allowed files, fixture IDs, exact check command, success criteria and stop conditions. The architecture owner freezes the packet format; the local agent fills only the implementation and result fields.
 
+## Weak-agent packet execution
+
+The protected runner selects the next packet from satisfied dependencies. The local agent receives only that packet's contract page, cited API excerpts, allowed files and smallest failing example. The runner generates names, imports and registrations. The agent fills documented mappings or one bounded codec; an unresolved semantic question returns to the maintainer before code generation continues.
+
+Keep packet progress separate from capability support and production activation:
+
+| Packet checkpoint | Required evidence | Next action |
+| --- | --- | --- |
+| Mapping ready | Required fields cite local documentation and preserve the contract semantics. | Generate the allowed stub and fixtures. |
+| Fixture checks passed | Protected checks validate request construction, result/error parsing and semantic failure cases. | Submit the candidate for isolated live checks. |
+| Live evidence reviewed | The maintainer reviews real operation results and dependent feature behavior at the recorded revisions. | Include the operation in an explicitly accepted adapter revision. |
+| Blocked | A missing section, conflicting definition or reproducible failing case is saved. | Request the specific evidence or host change; continue independent packets. |
+
+These are workflow checkpoints, not additional runtime capability states. The runner records checkpoint results; model-written success text cannot advance them. Its failure output names the operation, check ID, sanitized expected/actual difference and one next action. It uses fixed file paths and commands, so the agent does not choose a test runner or repair repository setup.
+
+The packet result file retains the documentation references, candidate files, checks and unresolved question. Resume from those artifacts in a fresh context. After two unsuccessful correction attempts, return the smallest remaining failure to the maintainer; the candidate remains disabled. Fixture passage alone never authorizes a real mutation or activates a capability.
+
+CA-02 must rehearse this workflow from a fresh offline context: complete a structural mapping packet, stop a conflicting-documentation packet, and resume an interrupted packet using only saved artifacts. Record the actual executor/model when one is used and distinguish a scripted runner test from a model trial. CA-03 additionally records a trial with the environment's actual local agent; failed packets remain disabled and can be completed by a maintainer without weakening acceptance checks.
+
 ## Feature disposition and extensions
 
 | Feature ID | Dependency rule | Support result | User-visible result | Evidence / next owner |

@@ -113,5 +113,8 @@ export function createAgentDispatcher(options: {
   attempts?: import('./attempts.js').AgentAttempts;
 }): {
   captureIdentity(): AgentIdentity;
+  readAttempt(expected: AgentIdentity, requestID: string): Promise<{
+    identity: AgentIdentity; attempt: import('./attempts.js').AgentAttempt | null;
+  }>;
   dispatch<K extends AgentOperation>(operation: K, input: AgentInputs[K], expected?: AgentIdentity): Promise<AgentResult<K>>;
 };

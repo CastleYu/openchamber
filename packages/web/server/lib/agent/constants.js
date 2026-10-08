@@ -18,9 +18,11 @@ export const AGENT_ATTEMPT = Object.freeze({
   UNKNOWN: 'unknown', ACCEPTED: 'accepted', COMPLETE: 'complete', NOT_SENT: 'not-sent',
 });
 export const AGENT_FILE_ERROR = Object.freeze({ EXISTS: 'EEXIST', MISSING: 'ENOENT' });
+export const AGENT_HOST_OPERATION = Object.freeze({ CAPTURE_IDENTITY: 'captureIdentity', READ_ATTEMPT: 'readAttempt' });
 export const AGENT_ROUTE = Object.freeze({
   PREFIX: '/api/agent-backend', RUNTIME: '/api/agent-backend/runtime',
   DISPATCH: '/api/agent-backend/dispatch',
+  ATTEMPT: '/api/agent-backend/attempt',
 });
 export const AGENT_OPERATION = Object.freeze({
   GET_SESSION: 'getSession', CREATE_SESSION: 'createSession', LIST_SESSIONS: 'listSessions',

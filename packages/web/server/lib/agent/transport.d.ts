@@ -12,4 +12,8 @@ export class AgentTransportError extends Error {
 /** Protected host state owns endpoint/auth and advances epoch whenever either changes. */
 export function createAgentTransport(options: {
   getConnection(): AgentConnection | null;
+  /** Host-owned deadline for headers and the complete JSON body, at most five minutes. */
+  timeoutMs?: number;
+  /** Host-owned lifetime of this selection. Retirement aborts old HTTP waits. */
+  selectionSignal?: AbortSignal;
 }): AgentServerTransport;

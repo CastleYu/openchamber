@@ -23,6 +23,7 @@ export const AGENT_ERROR = Object.freeze({
   UNACCEPTED: 'unaccepted', UNAVAILABLE: 'unavailable', UNAUTHORIZED: 'unauthorized',
   MISSING_HANDLER: 'missing-handler', CHANGED: 'backend-changed', UNKNOWN_OUTCOME: 'unknown-outcome',
   INVALID_INPUT: 'invalid-input', INVALID_RESPONSE: 'invalid-response',
+  TIMEOUT: 'request-timeout', CANCELLED: 'request-cancelled',
   WRITE_UNAVAILABLE: 'write-unavailable', BACKEND_FAILED: 'backend-failed',
   UNKNOWN_ROUTE: 'unknown-route',
   UNSUPPORTED_RUNTIME: 'unsupported-runtime',
@@ -46,6 +47,7 @@ export const AGENT_SERVER_METHOD = Object.freeze({ GET: 'GET', POST: 'POST', PUT
 export const AGENT_HTTP = Object.freeze({
   HTTP: 'http:', HTTPS: 'https:', ACCEPT: 'Accept', CONTENT_TYPE: 'Content-Type', JSON: 'application/json',
   REDIRECT: 'manual', NO_CONTENT: 204, RESET_CONTENT: 205,
+  TIMEOUT_MS: 30000, MAX_TIMEOUT_MS: 300000,
 });
 export const AGENT_ARTIFACT = Object.freeze({
   VERSION: 1, MAX_FILES: 4096, MAX_FILE_BYTES: 16777216, MAX_TOTAL_BYTES: 134217728,

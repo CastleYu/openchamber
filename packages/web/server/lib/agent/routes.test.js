@@ -10,6 +10,7 @@ import { createAgentDispatcher } from './dispatcher.js';
 import { createAgentAttempts } from './attempts.js';
 import { registerAgentRoutes } from './routes.js';
 import { createAgentFeatures } from './features.js';
+import { AgentTransportError } from './transport.js';
 
 const identity = {
   family: AGENT_FAMILY.CAGENT, connectionID: 'test-connection', epoch: 1,
@@ -319,6 +320,14 @@ describe('owned agent HTTP routes', () => {
     expect((await post(app, envelope()).expect(502)).body).toEqual({ error: AGENT_ERROR.BACKEND_FAILED });
     handler.mockResolvedValueOnce({ id: 's1', workspaceID: 'w1', credential: 'wire-secret' });
     expect((await post(app, envelope()).expect(502)).body).toEqual({ error: AGENT_ERROR.INVALID_RESPONSE });
+  });
+
+  it.each([[AGENT_ERROR.TIMEOUT, 504], [AGENT_ERROR.CANCELLED, 409]])('exposes the fixed transport refusal %s', async (code, status) => {
+    const { app, handler } = fixture();
+    const failure = new AgentTransportError(code);
+    failure.message = 'private abort reason and credentials';
+    handler.mockRejectedValueOnce(failure);
+    expect((await post(app, envelope()).expect(status)).body).toEqual({ error: code });
   });
 
   it('terminates unknown owned paths and methods before generic proxy fallback', async () => {

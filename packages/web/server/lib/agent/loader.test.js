@@ -129,11 +129,44 @@ describe('loadAgentAdapter', () => {
     const [one, two] = await Promise.all([load(artifact, first), load(artifact, second)]);
     expect(await one.handlers[operation]({ workspaceID: 'w', sessionID: 's' }, identity)).toEqual(session);
     expect(await two.handlers[operation]({ workspaceID: 'w', sessionID: 's' }, identity)).toEqual(session);
-    expect(first.request).toHaveBeenCalledWith({ method: AGENT_SERVER_METHOD.POST, path: '/sessions', query: { mode: 'new' }, body: { title: 'synthetic' } }, identity);
+    expect(first.request).toHaveBeenCalledWith({ method: AGENT_SERVER_METHOD.POST, path: '/sessions', query: { mode: 'new' }, body: { title: 'synthetic' } }, identity, {});
     expect(first.request).toHaveBeenCalledTimes(1);
     expect(second.request).toHaveBeenCalledTimes(1);
     expect(Object.isFrozen(one.handlers)).toBe(true);
     expect(globalThis[marker]).toBe(true);
+  });
+
+  it('forwards the adapter factory signal unchanged to the host transport', async () => {
+    const marker = `__agent_signal_${randomUUID().replaceAll('-', '')}`;
+    globals.push(marker);
+    const transport = { request: vi.fn(async () => ({ status: 200, body: session })) };
+    const source = adapterSource(`async (_input, scope) => {
+      const signal = new AbortController().signal;
+      globalThis.${marker} = signal;
+      await context.request({ method: 'GET', path: '/sessions' }, scope, { signal });
+      return ${JSON.stringify(session)};
+    }`);
+    const registration = await load(await makeArtifact(source), transport);
+
+    await expect(registration.handlers[operation]({ workspaceID: 'w', sessionID: 's' }, identity)).resolves.toEqual(session);
+    expect(transport.request).toHaveBeenCalledTimes(1);
+    const [, , control] = transport.request.mock.calls[0];
+    expect(control.signal).toBe(globalThis[marker]);
+    expect(control.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('rejects extra request control fields before calling the host transport', async () => {
+    const transport = { request: vi.fn(async () => ({ status: 200, body: session })) };
+    const source = adapterSource(`async (_input, scope) => {
+      await context.request({ method: 'GET', path: '/sessions' }, scope,
+        { signal: new AbortController().signal, extra: true });
+      return ${JSON.stringify(session)};
+    }`);
+    const registration = await load(await makeArtifact(source), transport);
+
+    await expect(registration.handlers[operation]({ workspaceID: 'w', sessionID: 's' }, identity))
+      .rejects.toMatchObject({ code: AGENT_ERROR.INVALID_INPUT });
+    expect(transport.request).not.toHaveBeenCalled();
   });
 
   it('rejects malformed endpoint requests, identity mismatches, and malformed transport responses', async () => {
@@ -186,6 +219,6 @@ describe('loadAgentAdapter', () => {
     approved = true;
     const result = await dispatcher.dispatch(operation, { workspaceID: 'workspace-1', sessionID: 'session-1' });
     expect(result).toEqual({ identity, data: session });
-    expect(transport.request).toHaveBeenCalledWith({ method: 'GET', path: '/sessions', query: { id: 'session-1' } }, identity);
+    expect(transport.request).toHaveBeenCalledWith({ method: 'GET', path: '/sessions', query: { id: 'session-1' } }, identity, {});
   });
 });

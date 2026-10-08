@@ -5,6 +5,7 @@ import { AGENT_ERROR, AGENT_ROUTE } from './constants.js';
 import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { AgentFeatureError } from './features.js';
+import { AgentTransportError } from './transport.js';
 import { agentFeatureSnapshotSchema, agentIdentitySchema, agentOperationSchema, agentRuntimeSchema } from './schemas.js';
 
 const requestSchema = z.object({
@@ -25,6 +26,8 @@ const statuses = Object.freeze({
   [AGENT_ERROR.MISSING_HANDLER]: 501,
   [AGENT_ERROR.UNAVAILABLE]: 503,
   [AGENT_ERROR.INVALID_RESPONSE]: 502,
+  [AGENT_ERROR.TIMEOUT]: 504,
+  [AGENT_ERROR.CANCELLED]: 409,
   [AGENT_ERROR.WRITE_UNAVAILABLE]: 503,
   [AGENT_ERROR.ATTEMPT_EXISTS]: 409,
   [AGENT_ERROR.ATTEMPT_STORAGE]: 503,
@@ -34,7 +37,7 @@ const statuses = Object.freeze({
 const failure = (res, error) => {
   // Adapter exceptions can contain wire payloads, paths or credentials.
   // Only host-owned refusal codes may leave this boundary.
-  const code = (error instanceof AgentDispatchError || error instanceof AgentAttemptError || error instanceof AgentFeatureError) && Object.hasOwn(statuses, error.code)
+  const code = (error instanceof AgentDispatchError || error instanceof AgentAttemptError || error instanceof AgentFeatureError || error instanceof AgentTransportError) && Object.hasOwn(statuses, error.code)
     ? error.code : AGENT_ERROR.BACKEND_FAILED;
   return res.status(statuses[code] ?? 502).json({ error: code });
 };

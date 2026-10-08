@@ -70,6 +70,8 @@ export const agentIdentitySchema = z.object({
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
+export const agentRequestControlSchema = z.object({ signal: z.instanceof(AbortSignal).optional() }).strict();
+
 export const agentServerRequestSchema = z.object({
   method: z.enum(Object.values(AGENT_SERVER_METHOD)),
   path: z.string().regex(/^\/(?!\/)[^\\?#\u0000-\u001f]*$/),

@@ -15,6 +15,7 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
   if (!z.function().safeParse(getAcceptance).success) throw refuse(AGENT_ERROR.INVALID_INPUT);
   let epoch = 0;
   let active = null;
+  let lifetime = new AbortController();
   let family = AGENT_FAMILY.OPENCODE;
   let selection = Object.freeze({ family, revision: epoch });
   const getSelection = () => selection;
@@ -22,6 +23,8 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
     epoch += 1;
     active = null;
     selection = Object.freeze({ family, revision: epoch });
+    lifetime.abort();
+    lifetime = new AbortController();
   };
   const selectOpenCode = () => {
     family = AGENT_FAMILY.OPENCODE;
@@ -47,6 +50,7 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
     // A factory port expires with its own selection, even when revisions are reused.
     const transport = createAgentTransport({
       getConnection: () => ticket === epoch ? active?.connection ?? null : null,
+      selectionSignal: lifetime.signal,
     });
     const registration = await loadAgentAdapter({
       directory: location.data, manifest, profile: selected, transport,

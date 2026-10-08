@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { AGENT_ADAPTER, AGENT_ERROR } from './constants.js';
 import { AgentArtifactError, readAgentAdapterArtifact } from './artifacts.js';
 import {
-  agentAdapterProfileSchema, agentAdapterSchema, agentIdentitySchema, agentServerRequestSchema, agentServerResponseSchema,
+  agentAdapterProfileSchema, agentAdapterSchema, agentIdentitySchema, agentRequestControlSchema, agentServerRequestSchema, agentServerResponseSchema,
 } from './schemas.js';
 
 const namespaceSchema = z.object({ [AGENT_ADAPTER.FACTORY]: z.function() }).strict();
@@ -22,15 +22,16 @@ export const loadAgentAdapter = async ({ directory, manifest, profile, transport
   const selected = agentAdapterProfileSchema.safeParse(profile);
   const port = transportSchema.safeParse(transport);
   if (!selected.success || !port.success) throw new AgentAdapterError(AGENT_ERROR.INVALID_INPUT);
-  const context = Object.freeze({ request: async (input, identity) => {
+  const context = Object.freeze({ request: async (input, identity, control = {}) => {
     const request = agentServerRequestSchema.safeParse(input);
     const scope = agentIdentitySchema.safeParse(identity);
-    if (!request.success || !scope.success) throw new AgentAdapterError(AGENT_ERROR.INVALID_INPUT);
+    const options = agentRequestControlSchema.safeParse(control);
+    if (!request.success || !scope.success || !options.success) throw new AgentAdapterError(AGENT_ERROR.INVALID_INPUT);
     if (scope.data.family !== selected.data.family || scope.data.adapterRevision !== selected.data.adapterRevision
       || scope.data.capabilityRevision !== selected.data.capabilityRevision) {
       throw new AgentAdapterError(AGENT_ERROR.CHANGED);
     }
-    const response = agentServerResponseSchema.safeParse(await port.data.request(request.data, scope.data));
+    const response = agentServerResponseSchema.safeParse(await port.data.request(request.data, scope.data, options.data));
     if (!response.success) throw new AgentAdapterError(AGENT_ERROR.INVALID_RESPONSE);
     return response.data;
   } });

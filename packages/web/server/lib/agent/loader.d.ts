@@ -11,8 +11,9 @@ export type AgentServerRequest = {
   path: string; query?: { [key: string]: string }; body?: JsonValue;
 };
 export type AgentServerResponse = { status: number; body: JsonValue };
+export type AgentRequestControl = Readonly<{ signal?: AbortSignal }>;
 export type AgentServerTransport = Readonly<{
-  request(input: AgentServerRequest, identity: AgentIdentity): Promise<AgentServerResponse>;
+  request(input: AgentServerRequest, identity: AgentIdentity, control?: AgentRequestControl): Promise<AgentServerResponse>;
 }>;
 export type AgentAdapter = Pick<AgentRegistration, 'capabilities' | 'handlers'>;
 export type AgentAdapterFactory = (context: AgentServerTransport) => AgentAdapter | Promise<AgentAdapter>;

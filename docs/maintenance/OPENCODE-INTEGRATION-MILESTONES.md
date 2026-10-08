@@ -71,6 +71,8 @@ The [weak-agent packet workflow](CAGENT-ADAPTER-WORKBOOK.md#weak-agent-packet-ex
 
 CA-02 freezes the [local model workload budget](CAGENT-ADAPTER-WORKBOOK.md#local-model-workload-budget), demonstrates packet splitting when required input exceeds it, and records execution effort for its rehearsals. Production operation dispatch uses accepted code without model-dependent routing or conversion.
 
+CA-02 additionally delivers the [model calibration samples](CAGENT-ADAPTER-WORKBOOK.md#local-model-calibration-and-task-assignment) and demonstrates all task-assignment outcomes, including a usable maintainer-only path. CA-03 runs those samples with the actual local model before implementing real API mappings and records its selected workload. Calibration never substitutes for operation or feature acceptance.
+
 ### CA-03: local CAgent adaptation and live acceptance
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.

@@ -91,6 +91,8 @@ Dispatch ambiguity and directory disposal follow the [shared integration contrac
 
 The [local model workload budget](CAGENT-ADAPTER-WORKBOOK.md#local-model-workload-budget) bounds packet scope, context, generated files and correction attempts. The kit generates mechanical code and keeps model-authored work at the documented semantic differences. Production uses the accepted adapter code; it does not depend on the weak local model for request routing or protocol conversion. CA-02 and CA-03 record actual execution effort and maintainer interventions alongside acceptance results.
 
+Calibrate the actual authoring model before assigning real API packets. The workbook's [calibration and task assignment](CAGENT-ADAPTER-WORKBOOK.md#local-model-calibration-and-task-assignment) determines whether it fills declarative mappings, attempts bounded codecs or uses the maintainer-only path. Model limitations change task allocation; every path retains identical operation acceptance and activation gates. Raw API documentation and model transcripts stay inside the target environment.
+
 ## Host acceptance and priority
 
 | Host | CAgent execution and acceptance |

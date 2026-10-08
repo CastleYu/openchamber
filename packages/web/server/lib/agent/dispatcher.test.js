@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { createAgentAttempts } from './attempts.js';
 import { AgentDispatchError, createAgentDispatcher } from './dispatcher.js';
+import { createAgentTransport } from './transport.js';
 
 const roots = new Set();
 const makeAttempts = async () => {
@@ -44,6 +46,37 @@ const errorCode = async (promise, code) => {
 };
 
 describe('agent dispatcher', () => {
+  it('preserves an unknown durable outcome after a native HTTP mutation times out without replay', async () => {
+    let calls = 0;
+    const server = http.createServer(() => { calls += 1; });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const current = binding();
+      current.identity.family = AGENT_FAMILY.CAGENT;
+      const operation = AGENT_OPERATION.SEND_PROMPT;
+      const transport = createAgentTransport({
+        timeoutMs: 500,
+        getConnection: () => ({ identity: current.identity, authorized: true, ready: true,
+          headers: {}, baseURL: `http://127.0.0.1:${server.address().port}/` }),
+      });
+      current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['synthetic-http'] };
+      current.acceptance.operations.push(operation);
+      current.handlers[operation] = async (input, scope) => {
+        await transport.request({ method: 'POST', path: '/effect', body: input }, scope);
+      };
+      const attempts = await makeAttempts();
+      const dispatcher = createAgentDispatcher({ getBinding: () => current, attempts });
+      const input = { workspaceID: 'w1', sessionID: 's1', requestID: 'timeout-request', text: 'hello' };
+      await errorCode(dispatcher.dispatch(operation, input), AGENT_ERROR.UNKNOWN_OUTCOME);
+      expect((await attempts.read(current.identity, input.requestID)).state).toBe(AGENT_ATTEMPT.UNKNOWN);
+      await errorCode(dispatcher.dispatch(operation, input), AGENT_ERROR.ATTEMPT_EXISTS);
+      expect(calls).toBe(1);
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
   it.each([
     [AGENT_OPERATION.GET_MESSAGE, { id: 'm1', sessionID: 'other', role: 'assistant', parts: [], state: 'unknown' }],
     [AGENT_OPERATION.GET_MESSAGE, { id: 'other', sessionID: 's1', role: 'assistant', parts: [], state: 'unknown' }],

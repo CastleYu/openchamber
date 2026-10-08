@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: backend family isolation
+## Latest checkpoint: transport deadlines and selection cancellation
+
+2026-10-09. CA-01 remains in progress. Native JSON requests now have a host-owned deadline covering headers and the full body, plus validated caller cancellation. The coordinator aborts each retired selection's transport immediately on clear, reselection or explicit OpenCode selection. Retired requests reject with `backend-changed`; later selections use independent controllers. Once a mutation handler enters, timeout or cancellation preserves its durable unknown outcome. Reselection still refuses its duplicate request ID. This stops the local HTTP wait and does not prove server cancellation or grant Stop support.
+
+The fixed Web regression passes 653 tests across 26 files. Native cases hold headers or JSON bodies, prove rejection before server completion, verify subsequent selection dispatch, and preserve mutation uncertainty without replay. A first test stored its ledger inside the adapter artifact directory; artifact validation correctly rejected reselection. The corrected test uses a separate ledger root. Web type-check/lint, changed-module anti-slop and direct strict declaration compilation with library checking skipped pass. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no Agent/kernel-runtime row. Tests use synthetic APIs, not the real CAgent server.
+
+The bilingual workbook also adds local-model calibration and task assignment with a maintainer-only path. CA-02 must deliver runnable samples and CA-03 must run them with the actual local model. Production selector, complete consumer/owned-route migration, remaining contracts, UI/HTTP-disconnect propagation and protected runner enforcement remain unfinished. CA-01 has not passed; CA-02 kit, CA-03 environment acceptance, independent remote publication and temporary Release remain required. No CAgent host is enabled. Live weekly quota remains 70%. Continue the production selection/consumer path before the kit; other INT work remains after CA-03.
+
+## Previous checkpoint: backend family isolation
 
 2026-10-09. CA-01 remains in progress. The protected coordinator now owns the family/revision consumed by the OpenCode kernel runtime. CAgent loading, failed loading and clearing retain an unsupported OpenCode descriptor. An explicit OpenCode selection retires pending adapter work and permits fresh detection. Same-endpoint selection changes reject stale probes. Separate connection invalidation from descriptor commits so concurrent refresh and health consumers can share one valid probe.
 

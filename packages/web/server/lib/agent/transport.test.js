@@ -13,6 +13,7 @@ import { loadAgentAdapter } from './loader.js';
 import { AgentTransportError, createAgentTransport } from './transport.js';
 
 const servers = new Set();
+const sockets = new Map();
 const identity = (overrides = {}) => ({
   family: AGENT_FAMILY.CAGENT,
   connectionID: 'connection-1',
@@ -32,6 +33,12 @@ const connection = (overrides = {}) => ({
 const start = async (handler) => {
   const server = http.createServer(handler);
   servers.add(server);
+  const connected = new Set();
+  sockets.set(server, connected);
+  server.on('connection', (socket) => {
+    connected.add(socket);
+    socket.on('close', () => connected.delete(socket));
+  });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   return { server, url: `http://127.0.0.1:${address.port}/` };
@@ -52,7 +59,11 @@ const errorCode = async (promise, code) => {
 };
 
 afterEach(async () => {
-  await Promise.all([...servers].map((server) => new Promise((resolve) => server.close(resolve))));
+  await Promise.all([...servers].map((server) => new Promise((resolve) => {
+    for (const socket of sockets.get(server) || []) socket.destroy();
+    server.close(resolve);
+  })));
+  sockets.clear();
   servers.clear();
 });
 
@@ -303,5 +314,148 @@ describe('agent HTTP transport', () => {
 
   it('rejects a missing selector at construction', () => {
     expect(() => createAgentTransport({})).toThrowError(`Agent transport refused: ${AGENT_ERROR.INVALID_INPUT}`);
+  });
+
+  it('times out while waiting for response headers', async () => {
+    const { url } = await start(() => {});
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }), timeoutMs: 250 });
+
+    await errorCode(transport.request(request(), identity()), AGENT_ERROR.TIMEOUT);
+  });
+
+  it('times out while consuming a partial JSON body', async () => {
+    let headersSent;
+    const entered = new Promise((resolve) => { headersSent = resolve; });
+    const { url } = await start(async (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.write('{"partial":');
+      headersSent();
+      await new Promise(() => {});
+    });
+    let reads = 0;
+    const transport = createAgentTransport({ getConnection: () => {
+      reads += 1;
+      return connection({ baseURL: url });
+    }, timeoutMs: 250 });
+    const pending = transport.request(request(), identity());
+    await entered;
+
+    await errorCode(pending, AGENT_ERROR.TIMEOUT);
+    expect(reads).toBe(2);
+  });
+
+  it('rejects a pre-aborted signal without making an HTTP request', async () => {
+    let calls = 0;
+    const { url } = await start((_req, res) => { calls += 1; sendJSON(res, 200, {}); });
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }) });
+    const controller = new AbortController();
+    controller.abort();
+
+    await errorCode(transport.request(request(), identity(), { signal: controller.signal }), AGENT_ERROR.CANCELLED);
+    expect(calls).toBe(0);
+  });
+
+  it.each(['headers', 'body'])('cancels a selection-retired request while %s are pending', async (stage) => {
+    let calls = 0;
+    let inspected = 0;
+    let headersRead;
+    const headers = new Promise((resolve) => { headersRead = resolve; });
+    let enteredRequest;
+    const entered = new Promise((resolve) => { enteredRequest = resolve; });
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    const { url } = await start(async (_req, res) => {
+      calls += 1;
+      if (stage === 'body') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.write('{"partial":');
+      }
+      enteredRequest();
+      await held;
+      if (stage === 'body') res.end('true}');
+      else sendJSON(res, 200, { retired: true });
+    });
+    const retired = new AbortController();
+    const transport = createAgentTransport({ getConnection: () => {
+      inspected += 1;
+      if (inspected === 2) headersRead();
+      return connection({ baseURL: url });
+    }, selectionSignal: retired.signal });
+    const pending = transport.request(request(), identity());
+    try {
+      await entered;
+      if (stage === 'body') await headers;
+      retired.abort();
+      await errorCode(pending, AGENT_ERROR.CHANGED);
+      expect(calls).toBe(1);
+    } finally { release(); }
+  });
+
+  it('refuses a retired selection before making an HTTP request', async () => {
+    let calls = 0;
+    const { url } = await start((_req, res) => { calls += 1; sendJSON(res, 200, {}); });
+    const retired = new AbortController();
+    retired.abort();
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }), selectionSignal: retired.signal });
+
+    await errorCode(transport.request(request(), identity()), AGENT_ERROR.CHANGED);
+    expect(calls).toBe(0);
+  });
+
+  it.each(['headers', 'body'])('cancels a caller-aborted request while %s are pending', async (stage) => {
+    let enteredRequest;
+    const entered = new Promise((resolve) => { enteredRequest = resolve; });
+    const { url } = await start(async (_req, res) => {
+      if (stage === 'body') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.write('{"partial":');
+      }
+      enteredRequest();
+      await new Promise(() => {});
+    });
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }) });
+    const controller = new AbortController();
+    const pending = transport.request(request(), identity(), { signal: controller.signal });
+    await entered;
+    controller.abort();
+
+    await errorCode(pending, AGENT_ERROR.CANCELLED);
+  });
+
+  it('keeps a later request usable after the caller aborts an earlier request', async () => {
+    let calls = 0;
+    let firstEntered;
+    const entered = new Promise((resolve) => { firstEntered = resolve; });
+    const { url } = await start(async (_req, res) => {
+      calls += 1;
+      if (calls === 1) {
+        firstEntered();
+        await new Promise(() => {});
+      } else sendJSON(res, 200, { ok: true });
+    });
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }) });
+    const controller = new AbortController();
+    const first = transport.request(request(), identity(), { signal: controller.signal });
+    await entered;
+    controller.abort();
+    await errorCode(first, AGENT_ERROR.CANCELLED);
+
+    await expect(transport.request(request(), identity())).resolves.toEqual({ status: 200, body: { ok: true } });
+  });
+
+  it('rejects invalid timeout and request control values', async () => {
+    for (const selectionSignal of [null, {}]) {
+      expect(() => createAgentTransport({ getConnection: () => connection(), selectionSignal }))
+        .toThrowError(`Agent transport refused: ${AGENT_ERROR.INVALID_INPUT}`);
+    }
+    for (const timeoutMs of [0, 1.5, 300001]) {
+      expect(() => createAgentTransport({ getConnection: () => connection(), timeoutMs }))
+        .toThrowError(`Agent transport refused: ${AGENT_ERROR.INVALID_INPUT}`);
+    }
+    const { url } = await start((_req, res) => sendJSON(res, 200, {}));
+    const transport = createAgentTransport({ getConnection: () => connection({ baseURL: url }) });
+    for (const control of [null, { signal: {} }, { signal: new AbortController().signal, extra: true }]) {
+      await errorCode(transport.request(request(), identity(), control), AGENT_ERROR.INVALID_INPUT);
+    }
   });
 });

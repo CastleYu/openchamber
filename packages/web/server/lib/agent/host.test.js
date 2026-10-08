@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
+import { createAgentAttempts } from './attempts.js';
 import { agentArtifactDigest } from './artifacts.js';
 import { createAgentApprovals } from './approvals.js';
 import { createAgentApprovalWriter } from './approval-writer.js';
@@ -15,6 +16,7 @@ import { createKernelRuntime, KernelRuntimeChangedError } from '../opencode/kern
 
 const roots = new Set();
 const servers = new Set();
+const sockets = new Map();
 const operation = AGENT_OPERATION.GET_SESSION;
 const profile = Object.freeze({ adapterID: 'host-test', family: AGENT_FAMILY.CAGENT,
   adapterRevision: 'adapter-r1', capabilityRevision: 'capability-r1' });
@@ -45,6 +47,12 @@ const artifact = async (text = source()) => {
 const start = async (handler) => {
   const server = http.createServer(handler);
   servers.add(server);
+  const connected = new Set();
+  sockets.set(server, connected);
+  server.on('connection', (socket) => {
+    connected.add(socket);
+    socket.on('close', () => connected.delete(socket));
+  });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   return `http://127.0.0.1:${server.address().port}/`;
 };
@@ -58,13 +66,47 @@ const makeHost = (getAcceptance = () => null) => createAgentHost({ getAcceptance
 const select = (host, item, conn) => host.select({ ...item, profile, connection: conn });
 
 afterEach(async () => {
-  await Promise.all([...servers].map((server) => new Promise((resolve) => server.close(resolve))));
+  await Promise.all([...servers].map((server) => new Promise((resolve) => {
+    for (const socket of sockets.get(server) || []) socket.destroy();
+    server.close(resolve);
+  })));
+  sockets.clear();
   servers.clear();
   await Promise.all([...roots].map((directory) => fsp.rm(directory, { recursive: true, force: true })));
   roots.clear();
 });
 
 describe('createAgentHost', () => {
+  it('preserves entered mutation uncertainty across selection cancellation and refuses replay after reselection', async () => {
+    const effect = AGENT_OPERATION.SEND_PROMPT;
+    const item = await artifact(`export function createAdapter(context) {
+      return { capabilities: { '${effect}': { state: 'supported', evidence: ['fixture'] } },
+        handlers: { '${effect}': async (input, identity) => {
+          await context.request({ method: 'POST', path: '/effect', body: input }, identity);
+        } } };
+    }`);
+    let enter;
+    let calls = 0;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    const url = await start(() => { calls += 1; enter(); });
+    const ledger = await fsp.mkdtemp(path.join(os.tmpdir(), 'oc-agent-host-ledger-'));
+    roots.add(ledger);
+    const attempts = createAgentAttempts({ directory: ledger });
+    const host = createAgentHost({ attempts, getAcceptance: (selection) => approvalFor(selection,
+      item.manifest.artifactDigest, { operations: [{ operation: effect, evidence: ['host-reviewed fixture'] }] }) });
+    const first = await select(host, item, connection(url));
+    const input = { workspaceID: 'w1', sessionID: 's1', requestID: 'selection-mutation', text: 'hello' };
+    const pending = host.dispatcher.dispatch(effect, input, first);
+    const refused = expect(pending).rejects.toMatchObject({ code: AGENT_ERROR.UNKNOWN_OUTCOME });
+    await entered;
+    host.selectOpenCode();
+    await refused;
+    expect((await attempts.read(first, input.requestID)).state).toBe(AGENT_ATTEMPT.UNKNOWN);
+    const next = await select(host, item, connection(url));
+    await expect(host.dispatcher.dispatch(effect, input, next)).rejects.toMatchObject({ code: AGENT_ERROR.ATTEMPT_EXISTS });
+    expect(calls).toBe(1);
+  });
+
   it('keeps OpenCode detection disabled after a failed CAgent selection until OpenCode is selected', async () => {
     let detections = 0;
     const host = makeHost();
@@ -288,6 +330,87 @@ describe('createAgentHost', () => {
       host.clear();
     } finally { release(); }
     await refused;
+  });
+
+  it.each(['clear', 'selectOpenCode', 'reselection'])('rejects a held HTTP read immediately after %s retires its selection', async (action) => {
+    let received;
+    const entered = new Promise((resolve) => { received = resolve; });
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const url = await start(async (_req, res) => {
+      received();
+      await response;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(session));
+    });
+    const item = await artifact();
+    const host = makeHost((selection) => approvalFor(selection, item.manifest.artifactDigest));
+    const identity = await select(host, item, connection(url));
+    const pending = host.dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1' }, identity);
+    const refused = expect(pending).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    try {
+      await entered;
+      if (action === 'clear') host.clear();
+      if (action === 'selectOpenCode') host.selectOpenCode();
+      if (action === 'reselection') await select(host, item, connection(url, { connectionID: 'conn-2' }));
+      await refused;
+    } finally { release(); }
+  });
+
+  it('rejects a response body held after headers when its selection is cleared', async () => {
+    let received;
+    const entered = new Promise((resolve) => { received = resolve; });
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const url = await start(async (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.write('{"partial":');
+      received();
+      await response;
+      res.end('true}');
+    });
+    const item = await artifact();
+    const host = makeHost((selection) => approvalFor(selection, item.manifest.artifactDigest));
+    const identity = await select(host, item, connection(url));
+    const pending = host.dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1' }, identity);
+    const refused = expect(pending).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    try {
+      await entered;
+      host.clear();
+      await refused;
+    } finally { release(); }
+  });
+
+  it('uses the new selection after aborting a retired request', async () => {
+    let calls = 0;
+    let entered;
+    const requestStarted = new Promise((resolve) => { entered = resolve; });
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    const url = await start(async (_req, res) => {
+      calls += 1;
+      if (calls === 1) {
+        entered();
+        await held;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(session));
+    });
+    const item = await artifact();
+    const host = makeHost((selection) => approvalFor(selection, item.manifest.artifactDigest));
+    const first = await select(host, item, connection(url));
+    const pending = host.dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1' }, first);
+    const refused = expect(pending).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    try {
+      await requestStarted;
+      host.clear();
+      await refused;
+    } finally { release(); }
+
+    const second = await select(host, item, connection(url, { connectionID: 'conn-2' }));
+    await expect(host.dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1' }, second))
+      .resolves.toMatchObject({ identity: second, data: session });
+    expect(calls).toBe(2);
   });
 
   it('keeps overlapping factory loads from replacing the newest selection', async () => {

@@ -85,6 +85,22 @@ The packet result file retains the documentation references, candidate files, ch
 
 CA-02 must rehearse this workflow from a fresh offline context: complete a structural mapping packet, stop a conflicting-documentation packet, and resume an interrupted packet using only saved artifacts. Record the actual executor/model when one is used and distinguish a scripted runner test from a model trial. CA-03 additionally records a trial with the environment's actual local agent; failed packets remain disabled and can be completed by a maintainer without weakening acceptance checks.
 
+## Local model calibration and task assignment
+
+Before real API implementation, the protected runner supplies three small tasks with known answers: fill a structural mapping, implement one documented semantic conversion, and report a deliberately missing required semantic without guessing. Each uses the normal packet limits and protected checks. Record the actual model/build, prompt language, input size, correction count and observed boundary violations. These samples assess authoring workload; they establish no CAgent capability.
+
+Assign work from the observed results rather than a model name or its claimed confidence:
+
+| Observed result | Allowed authoring work | Owner of remaining work |
+| --- | --- | --- |
+| Mapping and evidence-gap checks pass; semantic conversion fails | Fill schema-validated declarative mappings. The generator produces code. | Maintainer implements custom codecs. |
+| All three checks pass within packet limits | Fill mappings and attempt one bounded codec per packet. | Maintainer resolves API ambiguity and reviews live acceptance. |
+| Mapping, evidence-gap or editing-boundary checks fail | Candidate output stays outside the accepted workspace. Use a maintainer-assisted mapping workflow. | Maintainer supplies mappings/code; the same protected checks apply. |
+
+A calibration pass grants permission to attempt a packet, not permission to enable its operation. Repeated failures reduce subsequent task scope; they never relax contract checks or expand correction budgets automatically. Run calibration again after changing the local model or its execution setup. An unsupported model does not block the kit's maintainer-only path.
+
+CA-02 delivers runnable calibration samples and demonstrates each assignment outcome with controlled candidate submissions. CA-03 runs them with the actual environment-local agent and records the chosen workflow before real mapping begins. The environment maintainer retains API documents, raw samples and model transcripts locally; exported handoff evidence contains sanitized outcomes and references only.
+
 ## Local agent prompt template
 
 CA-02 generates the following prompt from a maintainer-checked mapping and the protected packet manifest. Substitute exact local references and commands from the delivered kit. This is a template, not an executable kit or an approved CAgent mapping.

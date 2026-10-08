@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { AGENT_ERROR, AGENT_HTTP, AGENT_SERVER_METHOD } from './constants.js';
-import { agentConnectionSchema, agentIdentitySchema, agentServerRequestSchema, agentServerResponseSchema } from './schemas.js';
+import { agentConnectionSchema, agentIdentitySchema, agentRequestControlSchema, agentServerRequestSchema, agentServerResponseSchema } from './schemas.js';
 
 const same = (left, right) => left.family === right.family && left.connectionID === right.connectionID
   && left.epoch === right.epoch && left.adapterRevision === right.adapterRevision
@@ -16,8 +16,12 @@ export class AgentTransportError extends Error {
 }
 
 /** Endpoint and credentials are read from protected host state at each call. No retries. */
-export const createAgentTransport = ({ getConnection }) => {
-  if (!z.function().safeParse(getConnection).success) throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
+export const createAgentTransport = ({ getConnection, timeoutMs = AGENT_HTTP.TIMEOUT_MS, selectionSignal }) => {
+  if (!z.function().safeParse(getConnection).success
+    || !z.number().int().positive().max(AGENT_HTTP.MAX_TIMEOUT_MS).safeParse(timeoutMs).success
+    || !agentRequestControlSchema.safeParse({ signal: selectionSignal }).success) {
+    throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
+  }
   const current = (expected) => {
     let selected;
     try { selected = agentConnectionSchema.safeParse(getConnection()); }
@@ -29,10 +33,19 @@ export const createAgentTransport = ({ getConnection }) => {
     if (!value.ready) throw new AgentTransportError(AGENT_ERROR.UNAVAILABLE);
     return value;
   };
-  const request = async (input, identity) => {
+  const request = async (input, identity, control = {}) => {
     const parsed = agentServerRequestSchema.safeParse(input);
     const scope = agentIdentitySchema.safeParse(identity);
-    if (!parsed.success || !scope.success) throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
+    const options = agentRequestControlSchema.safeParse(control);
+    if (!parsed.success || !scope.success || !options.success) throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
+    const caller = options.data.signal;
+    if (selectionSignal?.aborted) throw new AgentTransportError(AGENT_ERROR.CHANGED);
+    if (caller?.aborted) throw new AgentTransportError(AGENT_ERROR.CANCELLED);
+    const deadline = AbortSignal.timeout(timeoutMs);
+    const signals = [deadline];
+    if (caller) signals.push(caller);
+    if (selectionSignal) signals.push(selectionSignal);
+    const signal = AbortSignal.any(signals);
     const wire = parsed.data;
     if (wire.method === AGENT_SERVER_METHOD.GET && wire.body !== undefined) {
       throw new AgentTransportError(AGENT_ERROR.INVALID_INPUT);
@@ -63,6 +76,7 @@ export const createAgentTransport = ({ getConnection }) => {
       if (wire.body !== undefined) headers.set(AGENT_HTTP.CONTENT_TYPE, AGENT_HTTP.JSON);
       const response = await fetch(url, {
         method: wire.method, headers, redirect: AGENT_HTTP.REDIRECT,
+        signal,
         body: wire.body === undefined ? undefined : JSON.stringify(wire.body),
       });
       let body;
@@ -87,6 +101,9 @@ export const createAgentTransport = ({ getConnection }) => {
       if (!result.success) throw new AgentTransportError(AGENT_ERROR.INVALID_RESPONSE);
       return result.data;
     } catch (error) {
+      if (selectionSignal?.aborted) throw new AgentTransportError(AGENT_ERROR.CHANGED);
+      if (caller?.aborted) throw new AgentTransportError(AGENT_ERROR.CANCELLED);
+      if (deadline.aborted) throw new AgentTransportError(AGENT_ERROR.TIMEOUT);
       if (error instanceof AgentTransportError) throw error;
       throw new AgentTransportError(AGENT_ERROR.BACKEND_FAILED);
     }

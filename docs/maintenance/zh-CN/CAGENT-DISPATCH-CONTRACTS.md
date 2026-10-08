@@ -1,5 +1,11 @@
 # Agent 调度契约
 
+## 受保护的家族读取
+
+经过认证的 GET `/api/agent-backend/selection` 独立读取宿主 `getSelection`，不依赖适配器或运行时绑定。生产服务器组合已传入该端口。响应严格为 `{ family, revision }`，家族为 OpenCode 或 CAgent，修订号为非负安全整数。响应不含凭据、连接细节、适配器文件或功能许可。缺少组合返回 503 `unavailable`；值损坏或回调意外失败返回固定的 502 `backend-failed`。路由禁止缓存，不调用处理器，也不进入 OpenCode 转发。
+
+明确选择 CAgent 后加载失败仍保留 CAgent，即使运行时检查因绑定不可用而拒绝。切回 OpenCode 必须明确执行。共享客户端可在检查绑定前读取此描述；应用根入口分流仍未完成，不能据此认定 UI 或 CAgent 验收。Web、Electron 及两类连接服务器的移动端共用该组合；VS Code 保留自有命名空间的 501 `unsupported-runtime` 拒绝。
+
 ## 共享 HTTP 契约
 
 `schemas.js` 统一管理分发、尝试查询、持久化尝试、尝试状态及固定错误 schema。路由和持久化复用这些 schema；`schemas.d.ts` 为 `packages/ui/src/lib/agent/client.ts` 提供精确的操作类型。浏览器导入只包含 Zod 和 Agent 常量。客户端解析完整快照及规范化结果、退役端点作用域，并保留不确定写入而不重试。没有实际 UI 消费方或宿主功能批准因此启用。详细中文说明见[共享客户端](CAGENT-UI-CLIENT.md)。

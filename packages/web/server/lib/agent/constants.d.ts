@@ -64,6 +64,7 @@ export const AGENT_ROUTE: Readonly<{
   PREFIX: '/api/agent-backend'; RUNTIME: '/api/agent-backend/runtime'; DISPATCH: '/api/agent-backend/dispatch';
   ATTEMPT: '/api/agent-backend/attempt';
   FEATURES: '/api/agent-backend/features';
+  SELECTION: '/api/agent-backend/selection';
 }>;
 export const AGENT_OPERATION: Readonly<{
   GET_SESSION: 'getSession'; CREATE_SESSION: 'createSession'; LIST_SESSIONS: 'listSessions';

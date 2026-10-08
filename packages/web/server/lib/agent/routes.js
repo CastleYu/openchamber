@@ -5,7 +5,7 @@ import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { AgentFeatureError } from './features.js';
 import { AgentTransportError } from './transport.js';
-import { agentFeatureSnapshotSchema, agentDispatchRequestSchema as requestSchema, agentAttemptRequestSchema as attemptSchema, agentRuntimeSchema } from './schemas.js';
+import { agentBackendSelectionSchema, agentFeatureSnapshotSchema, agentDispatchRequestSchema as requestSchema, agentAttemptRequestSchema as attemptSchema, agentRuntimeSchema } from './schemas.js';
 const statuses = Object.freeze({
   [AGENT_ERROR.INVALID_INPUT]: 400,
   [AGENT_ERROR.UNKNOWN_OPERATION]: 400,
@@ -35,7 +35,15 @@ const failure = (res, error) => {
 };
 
 /** Mount after the host's API authentication gate and before the OpenCode proxy. */
-export const registerAgentRoutes = (app, { dispatcher, features }) => {
+export const registerAgentRoutes = (app, { dispatcher, features, getSelection }) => {
+  // The protected selection survives a missing or failed adapter binding.
+  // This descriptor chooses a family; it grants no operation authority.
+  app.get(AGENT_ROUTE.SELECTION, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!getSelection) return res.status(503).json({ error: AGENT_ERROR.UNAVAILABLE });
+    try { return res.json(agentBackendSelectionSchema.parse(getSelection())); }
+    catch (error) { return failure(res, error); }
+  });
   app.get(AGENT_ROUTE.FEATURES, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     if (!features) return res.status(503).json({ error: AGENT_ERROR.UNAVAILABLE });

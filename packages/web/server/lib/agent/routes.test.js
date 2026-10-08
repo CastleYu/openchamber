@@ -11,6 +11,7 @@ import { createAgentAttempts } from './attempts.js';
 import { registerAgentRoutes } from './routes.js';
 import { createAgentFeatures } from './features.js';
 import { AgentTransportError } from './transport.js';
+import { createAgentHost } from './host.js';
 
 const identity = {
   family: AGENT_FAMILY.CAGENT, connectionID: 'test-connection', epoch: 1,
@@ -60,6 +61,72 @@ const mutationEnvelope = (requestID = 'request-1') => ({
 });
 
 describe('owned agent HTTP routes', () => {
+  it('reads protected family selection without requiring an adapter binding', async () => {
+    const host = createAgentHost({ getAcceptance: () => null });
+    const app = express();
+    registerAgentRoutes(app, {
+      dispatcher: host.dispatcher, features: host.features, getSelection: host.getSelection,
+    });
+    const initial = await request(app).get(AGENT_ROUTE.SELECTION).expect(200);
+    expect(initial.body).toEqual({ family: AGENT_FAMILY.OPENCODE, revision: 0 });
+    expect(initial.headers['cache-control']).toBe('no-store');
+    // Structurally valid CAgent selection retires OpenCode before loading fails.
+    await expect(host.select({
+      directory: '/absent-agent-test-directory', manifest: {},
+      profile: { family: AGENT_FAMILY.CAGENT, adapterID: 'test', adapterRevision: 'r1', capabilityRevision: 'c1' },
+      connection: { connectionID: 'test', serverRevision: 's1', baseURL: 'https://example.invalid',
+        headers: {}, ready: true, authorized: true },
+    })).rejects.toThrow();
+    expect((await request(app).get(AGENT_ROUTE.SELECTION).expect(200)).body)
+      .toEqual({ family: AGENT_FAMILY.CAGENT, revision: 1 });
+    expect((await request(app).get(AGENT_ROUTE.RUNTIME).expect(503)).body)
+      .toEqual({ error: AGENT_ERROR.UNAVAILABLE });
+    host.selectOpenCode();
+    expect((await request(app).get(AGENT_ROUTE.SELECTION).expect(200)).body)
+      .toEqual({ family: AGENT_FAMILY.OPENCODE, revision: 2 });
+  });
+
+  it('authenticates selection reads and owns wrong methods before proxy fallback', async () => {
+    const app = express();
+    const getSelection = vi.fn(() => ({ family: AGENT_FAMILY.CAGENT, revision: 5 }));
+    const getBinding = vi.fn(() => null);
+    const fallback = vi.fn((_req, res) => res.sendStatus(418));
+    app.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted' ? next() : res.sendStatus(401));
+    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding }), getSelection });
+    app.use('/api', fallback);
+    await request(app).get(AGENT_ROUTE.SELECTION).expect(401);
+    expect(getSelection).not.toHaveBeenCalled();
+    const selected = await request(app).get(AGENT_ROUTE.SELECTION).set('x-test-auth', 'accepted').expect(200);
+    expect(selected.body).toEqual({ family: AGENT_FAMILY.CAGENT, revision: 5 });
+    await request(app).post(AGENT_ROUTE.SELECTION).set('x-test-auth', 'accepted').send({}).expect(404);
+    await request(app).get(`${AGENT_ROUTE.SELECTION}/extra`).set('x-test-auth', 'accepted').expect(404);
+    expect(getSelection).toHaveBeenCalledTimes(1);
+    expect(getBinding).not.toHaveBeenCalled();
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { family: 'other', revision: 0 }, { family: AGENT_FAMILY.CAGENT, revision: -1 },
+    { family: AGENT_FAMILY.OPENCODE, revision: 1, secret: 'private' },
+    { family: AGENT_FAMILY.OPENCODE, revision: Number.MAX_SAFE_INTEGER + 1 },
+  ])('refuses malformed selection without leaking callback values: %j', async (value) => {
+    const app = express();
+    registerAgentRoutes(app, { getSelection: () => value });
+    const response = await request(app).get(AGENT_ROUTE.SELECTION).expect(502);
+    expect(response.body).toEqual({ error: AGENT_ERROR.BACKEND_FAILED });
+  });
+
+  it('distinguishes absent selection composition from callback failure', async () => {
+    const absent = express();
+    registerAgentRoutes(absent, {});
+    expect((await request(absent).get(AGENT_ROUTE.SELECTION).expect(503)).body)
+      .toEqual({ error: AGENT_ERROR.UNAVAILABLE });
+    const failed = express();
+    registerAgentRoutes(failed, { getSelection: () => { throw new Error('secret adapter error'); } });
+    expect((await request(failed).get(AGENT_ROUTE.SELECTION).expect(502)).body)
+      .toEqual({ error: AGENT_ERROR.BACKEND_FAILED });
+  });
+
   it('requires host authentication before reading authority or calling handlers', async () => {
     const { app, handler, getBinding } = fixture();
     await request(app).post(AGENT_ROUTE.DISPATCH).send(envelope()).expect(401);

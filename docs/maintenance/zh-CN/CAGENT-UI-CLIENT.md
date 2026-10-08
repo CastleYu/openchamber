@@ -1,5 +1,11 @@
 # 共享 Agent 客户端
 
+## 受保护的后端家族启动入口
+
+`selection()` 在适配器绑定前读取 GET `/api/agent-backend/selection`，返回受保护的后端家族、宿主选择修订号及客户端端点作用域。权威信息缺失、损坏或读取失败返回固定错误；调用方不能因此推断 OpenCode。A/B/A 退役、调用方取消及释放复用既有请求生命周期。
+
+该描述不含适配器身份、凭据或功能许可。明确选择 CAgent 后，适配器加载失败仍保留 CAgent。后续应用根入口必须先选择家族，再挂载 OpenCode 启动副作用，并拒绝过期启动结果；打开会话前仍需取得匹配的运行时及功能快照。选择描述只提供信息，不是跨后续宿主变化的租约。应用尚未挂载此入口；VS Code 保持明确的不支持响应。
+
 英文交接文档为[客户端模块文档](../../../packages/ui/src/lib/agent/DOCUMENTATION.md)。本中文副本随修改同步维护，最终交接时归档。
 
 `client.ts` 解析 OpenChamber 自有 Agent 路由，返回按操作区分的契约。它不调用 CAgent Server API，也不替代 OpenCode 门面。宿主负责适配器加载、凭据、独立批准和分发。统一 schema 与操作类型位于 `packages/web/server/lib/agent`，浏览器导入不包含宿主 I/O。

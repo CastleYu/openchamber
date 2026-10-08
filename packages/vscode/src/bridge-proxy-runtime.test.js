@@ -14,7 +14,7 @@ const createDeps = () => ({
 describe('bridge proxy runtime', () => {
   it('refuses owned agent routes at the extension host before local or OpenCode forwarding', async () => {
     const deps = createDeps();
-    for (const path of [AGENT_ROUTE.PREFIX, AGENT_ROUTE.RUNTIME, AGENT_ROUTE.DISPATCH,
+    for (const path of [AGENT_ROUTE.PREFIX, AGENT_ROUTE.RUNTIME, AGENT_ROUTE.DISPATCH, AGENT_ROUTE.SELECTION,
       '/agent-backend/runtime', '/api/x/../agent-backend/runtime', '/api/%61gent-backend/dispatch']) {
       const response = await handleProxyBridgeMessage(
         { id: path, type: 'api:proxy', payload: { method: 'POST', path } }, undefined, deps,

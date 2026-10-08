@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: neutral conversation consumer
+## Latest checkpoint: protected family bootstrap
+
+2026-10-09. CA-01 remains in progress. The authenticated selection route now reads the protected host family/revision without requiring an adapter binding. Production composition supplies the port. The shared client parses this descriptor with endpoint retirement and cancellation. Explicit failed CAgent loading stays CAgent; missing or failed authority never becomes OpenCode. The descriptor grants no feature or operation authority.
+
+Primary validation passes 51 route tests and 38 client/conversation/VS Code tests. A real loopback server startup with a synthetic adapter proves the shared client reads protected CAgent selection, all features remain closed, unverified dispatch and OpenCode configuration are refused, and no managed OpenCode process starts. Workspace type-check, lint, changed-file anti-slop and server syntax pass. Lint retains five inherited warnings with no errors. Dead-code retains the prior baseline. These results establish local host composition, not actual CAgent API or model acceptance.
+
+The app root still needs to mount the family gate before OpenCode effects, then connect the neutral conversation presentation and persist uncertain request identity. Remaining feature consumers/extensions, CA-02 offline kit and CA-03 target acceptance remain ahead of activation and temporary publication. Other INT work remains after the urgent requirement. Live weekly quota is 66% remaining.
+
+## Previous checkpoint: neutral conversation consumer
 
 2026-10-09. CA-01 remains in progress. `AgentConversation` consumes neutral Agent session/message contracts through `AgentClient`, retaining absent OpenCode project/path/model/time facts. It owns opening, ordered partial history, obsolete-read refusal, sending and durable attempt lookup. Failed history retains earlier records. Unknown entered writes block resend and survive reopening within the controller. It does not fabricate optimistic server records or infer execution from history.
 

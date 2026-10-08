@@ -37,6 +37,68 @@ const gate = <T,>() => {
 };
 
 describe('AgentClient', () => {
+  test('selection parses either protected family without runtime or feature inspection', async () => {
+    for (const family of ['opencode', 'cagent']) {
+      const h = new Harness();
+      h.answer = async () => response({ family, revision: 2 });
+      expect(await h.client.selection()).toEqual({
+        scope: { runtimeKey: 'runtime-a', revision: 0 }, selection: { family, revision: 2 },
+      });
+      expect(h.calls).toHaveLength(1);
+      expect(h.calls[0].path).toBe(AGENT_ROUTE.SELECTION);
+      expect(h.calls[0].init?.cache).toBe('no-store');
+      h.client.dispose();
+    }
+  });
+
+  test('selection never converts malformed, missing or failed authority to OpenCode', async () => {
+    const values: JsonValue[] = [
+      { family: 'other', revision: 0 }, { family: 'opencode', revision: -1 },
+      { family: 'opencode', revision: Number.MAX_SAFE_INTEGER + 1 },
+      { family: 'cagent', revision: 0, extra: true }, {},
+    ];
+    for (const value of values) {
+      const h = new Harness();
+      h.answer = async () => response(value);
+      await code(h.client.selection(), AGENT_ERROR.INVALID_RESPONSE);
+      h.client.dispose();
+    }
+    const failed = new Harness();
+    failed.answer = async () => { throw new Error('offline'); };
+    await code(failed.client.selection(), AGENT_ERROR.BACKEND_FAILED);
+    failed.answer = async () => response({ error: AGENT_ERROR.UNAVAILABLE }, 503);
+    await code(failed.client.selection(), AGENT_ERROR.UNAVAILABLE);
+    failed.client.dispose();
+  });
+
+  test('selection rejects retired A/B/A reads and refuses work after disposal', async () => {
+    const h = new Harness();
+    const pending = gate<Response>();
+    h.answer = async () => pending.promise;
+    const stale = h.client.selection();
+    h.key = 'runtime-b';
+    h.retire?.();
+    h.key = 'runtime-a';
+    h.retire?.();
+    h.answer = async () => response({ family: 'cagent', revision: 3 });
+    expect((await h.client.selection()).scope.revision).toBe(2);
+    pending.release(response({ family: 'opencode', revision: 0 }));
+    await code(stale, AGENT_ERROR.CHANGED);
+    h.client.dispose();
+    const count = h.calls.length;
+    await code(h.client.selection(), AGENT_ERROR.CHANGED);
+    expect(h.calls).toHaveLength(count);
+  });
+
+  test('pre-aborted selection reads make no HTTP request', async () => {
+    const h = new Harness();
+    const controller = new AbortController();
+    controller.abort();
+    await code(h.client.selection(controller.signal), AGENT_ERROR.CANCELLED);
+    expect(h.calls).toHaveLength(0);
+    h.client.dispose();
+  });
+
   test('inspect parses exhaustive runtime and feature snapshots and captures detached scope', async () => {
     const h = new Harness();
     h.answer = async (path) => response(String(path) === AGENT_ROUTE.RUNTIME ? runtime() : features());

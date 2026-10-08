@@ -3,7 +3,7 @@ import {
   AGENT_ERROR, AGENT_HTTP, AGENT_MUTATIONS, AGENT_ROUTE, AGENT_SERVER_METHOD,
 } from '../../../../web/server/lib/agent/constants.js';
 import {
-  AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentAttemptRequestSchema,
+  AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentBackendSelectionSchema, agentAttemptRequestSchema,
   agentAttemptResultSchema, agentFailureSchema, agentFeatureSnapshotSchema,
   agentIdentitySchema, agentOperationSchema, agentRuntimeSchema,
 } from '../../../../web/server/lib/agent/schemas.js';
@@ -11,6 +11,7 @@ import type {
   AgentIdentity, AgentInputs, AgentOperation, AgentOutputs, AgentRuntime, JsonValue,
 } from '../../../../web/server/lib/agent/dispatcher.js';
 import type { AgentFeatureSnapshot } from '../../../../web/server/lib/agent/features.js';
+import type { AgentBackendSelection } from '../../../../web/server/lib/agent/host.js';
 import { runtimeFetch, type RuntimeFetchOptions } from '../runtime-fetch';
 import { getRuntimeKey, subscribeRuntimeEndpointWillChange } from '../runtime-switch';
 
@@ -122,6 +123,18 @@ export class AgentClient {
       throw new AgentClientError(error.data.error);
     }
     return payload;
+  }
+
+  /** Read protected family selection before requiring an adapter binding. */
+  async selection(signal?: AbortSignal): Promise<Readonly<{
+    scope: EndpointScope; selection: AgentBackendSelection;
+  }>> {
+    const scope = this.capture();
+    const payload = await this.request(scope, AGENT_ROUTE.SELECTION, { signal });
+    const parsed = agentBackendSelectionSchema.safeParse(payload);
+    if (!parsed.success) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
+    this.assertCurrent(scope);
+    return Object.freeze({ scope, selection: Object.freeze(parsed.data) });
   }
 
   async inspect(signal?: AbortSignal): Promise<AgentClientSnapshot> {

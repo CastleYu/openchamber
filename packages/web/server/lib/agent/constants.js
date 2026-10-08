@@ -83,6 +83,7 @@ export const AGENT_ROUTE = Object.freeze({
   DISPATCH: '/api/agent-backend/dispatch',
   ATTEMPT: '/api/agent-backend/attempt',
   FEATURES: '/api/agent-backend/features',
+  SELECTION: '/api/agent-backend/selection',
 });
 export const AGENT_OPERATION = Object.freeze({
   GET_SESSION: 'getSession', CREATE_SESSION: 'createSession', LIST_SESSIONS: 'listSessions',

@@ -36,6 +36,22 @@ writes. The native startup probe described in `CAGENT-EXECUTION.md` also exercis
 this client against the actual loopback server. Both use synthetic adapters and
 do not establish real CAgent compatibility.
 
+## Protected family bootstrap
+
+`selection()` reads GET `/api/agent-backend/selection` before a binding is
+required. It returns the protected backend family and host selection revision,
+plus the client's endpoint scope. Missing, malformed or failed authority throws
+a fixed error; callers never infer OpenCode from failure. A/B/A retirement,
+caller cancellation and disposal use the same request lifetime as other reads.
+
+This descriptor contains no adapter identity, credentials or feature grants.
+An explicitly selected CAgent remains CAgent when adapter loading fails.
+The future app root must choose its family before mounting OpenCode startup
+effects, and reject obsolete bootstrap completions. It must obtain a matching
+runtime/feature snapshot before opening a conversation. Selection is
+informational and is not a lease across a later host change. No root mounts this
+bootstrap yet. VS Code retains its explicit unsupported response.
+
 ## Neutral conversation state
 
 `AgentConversation` in `conversation.ts` consumes the client directly, without OpenCode wire models. A caller supplies an inspected backend snapshot and explicit opaque workspace/session IDs. Opening verifies returned ownership; history rejects another session's records and duplicate identities. Missing project paths, timestamps, provider/model and usage remain absent. No local directory mapping is inferred.

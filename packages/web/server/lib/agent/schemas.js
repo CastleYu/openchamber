@@ -61,6 +61,11 @@ const receipt = z.discriminatedUnion('state', [
 const resultPage = (item) => z.object({ items: z.array(item), next: z.string().optional() }).strict();
 const labelItem = z.object({ id, label: z.string() }).strict();
 
+export const agentBackendSelectionSchema = z.object({
+  family: z.enum([AGENT_FAMILY.OPENCODE, AGENT_FAMILY.CAGENT]),
+  revision: z.number().int().nonnegative().safe(),
+}).strict();
+
 export const agentIdentitySchema = z.object({
   family: z.enum([AGENT_FAMILY.OPENCODE, AGENT_FAMILY.CAGENT]),
   connectionID: id,

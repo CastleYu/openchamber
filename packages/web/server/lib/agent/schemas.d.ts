@@ -1,7 +1,7 @@
 import type { ZodType } from 'zod';
 import type { AgentApproval, AgentRegistration, AgentSelection } from './authority.js';
 import type { AgentFeatureSnapshot } from './features.js';
-import type { AgentHostConnection } from './host.js';
+import type { AgentBackendSelection, AgentHostConnection } from './host.js';
 import type { AgentAdapterProfile, AgentRequestControl, AgentServerRequest, AgentServerResponse } from './loader.js';
 import type { AgentIdentity, AgentInputs, AgentOperation, AgentOutputs, AgentRuntime, JsonValue } from './dispatcher.js';
 import type { AgentAttempt, AgentAttemptState } from './attempts.js';
@@ -10,6 +10,7 @@ import type { AgentConnection } from './transport.js';
 import type { AgentAdapter } from './loader.js';
 
 export const agentIdentitySchema: ZodType<AgentIdentity>;
+export const agentBackendSelectionSchema: ZodType<AgentBackendSelection>;
 export const agentOperationSchema: ZodType<AgentOperation>;
 export const agentDispatchRequestSchema: ZodType<{ operation: AgentOperation; identity: AgentIdentity; input: JsonValue }>;
 export const agentAttemptRequestSchema: ZodType<{ identity: AgentIdentity; requestID: string }>;

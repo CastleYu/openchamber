@@ -88,6 +88,22 @@ No actual UI consumer or host-support approval is enabled by this addition.
 
 ## Backend family selection
 
+Authenticated GET `/api/agent-backend/selection` reads the protected host
+`getSelection` port independently of adapter/runtime binding. Production server
+composition supplies this port. The exact response is `{ family, revision }`,
+with OpenCode or CAgent family and a nonnegative safe integer host revision.
+It excludes credentials, connection details, adapter files and feature grants.
+Missing composition returns 503 `unavailable`; malformed values or unexpected
+callback errors return fixed 502 `backend-failed`. The route has no cache and
+never invokes a handler or falls through to OpenCode.
+
+An explicit failed CAgent load remains selected CAgent, even while runtime
+inspection refuses an unavailable binding. OpenCode selection must be explicit.
+The shared client can read this descriptor before inspection. App root gating
+is still unfinished, so this route does not establish UI or CAgent acceptance.
+Web, Electron and both server-connected mobile runtimes share this composition.
+VS Code keeps the owned namespace's 501 `unsupported-runtime` refusal.
+
 `startWebUiServer` accepts an optional maintainer-only `agentBackend` startup
 option. `selectAgentStartup` strictly validates its family and reviewed artifact
 candidate before any lifecycle or persisted consumer starts. Omission selects

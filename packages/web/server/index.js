@@ -2238,6 +2238,7 @@ async function main(options = {}) {
   registerAgentRoutes(app, {
     dispatcher: agentHost.dispatcher,
     features: agentHost.features,
+    getSelection: agentHost.getSelection,
   });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.
   // The slot is mounted once and reads the host at call time, so the switch can turn the feature

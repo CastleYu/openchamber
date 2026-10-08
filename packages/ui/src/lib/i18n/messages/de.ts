@@ -11,6 +11,7 @@ import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { providersI18n } from './providers.i18n';
 import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
+import { cagentChatI18n } from './cagent-chat.i18n';
 
 export const dict = {
   'agent.bootstrap.failed': 'Das ausgewählte Backend konnte nicht erkannt werden. Prüfe die Verbindung und versuche es erneut.',
@@ -72,6 +73,7 @@ export const dict = {
   ...providersI18n.de,
   ...mcpGridI18n.de,
   ...pluginsGridI18n.de,
+  ...cagentChatI18n.de,
   'common.language.german': 'Deutsch',
   'common.loading': 'Wird geladen...',
   'common.unavailable': 'Nicht verfügbar',

@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: unresolved request continuity
+## Latest checkpoint: conversation page integration
+
+2026-10-09. CA-01 remains in progress. The CAgent family now mounts a separate shared conversation page. It binds existing opaque workspace/session IDs, refreshes normalized history and authoritative status independently, checks status before sending, and exposes original-request outcome lookup without replay. Browser request records use an opaque digest namespace; storage/crypto failures are explicit. Production feature support remains closed. All 13 locales include the page copy.
+
+The focused client/conversation/journal/family-gate run passed 51 tests and 194 assertions, including five new status cases. Page DOM tests and final cross-workspace checks are recorded below once completed. This checkpoint does not establish real CAgent API compatibility, native storage/reload behavior or cookie-only account isolation. Decisions, cancellation, creation, remaining consumers/extensions, the complete CA-02 offline kit, CA-03 target-environment/model acceptance, independent remote publication and the temporary Release remain required. Other INT work stays behind CA-03. Live weekly allowance at the start of this checkpoint was 65% remaining.
+
+The seven real DOM tests use the actual page and injected neutral client/controller, without module mocks. Primary review added accepted-send/manual-result observation and failed pre-send status rejection. The tests verify one dispatch, original-ID lookup without replay, retained data, late-binding disposal and unavailable acquisition refusal. Root type-check and lint passed; lint retains five inherited warnings. Changed-file anti-slop passed. Dead-code remains at two unused files, 319 exports, 231 exported types and one duplicate. Final validation logs are in the task's `cagent-page-*` files. The DOM fixture uses synthetic transport and injected storage, not the production binding factory or a real CAgent server.
+
+The final Web production bundle and PWA worker build passed after the page and localization edits. Final UI type-check passed after the primary's extra tests. All 77 local links in the eight affected owning documents and the whitespace check passed. Browser visual/native journeys, production-binding storage recovery and real environment acceptance remain unrun.
+
+## Previous checkpoint: unresolved request continuity
 
 2026-10-09. CA-01 remains in progress. `AgentRequestJournal` now persists unresolved request identities through an injected storage port. The controller records before dispatch, refuses transport if persistence fails, restores uncertainty after recreation and queries the host ledger without replay. Known results clear only their matching record; failed cleanup and host duplicates retain uncertainty. Corruption is isolated to its conversation. Prompt text and credentials are not stored. This is not a cross-window send lock, and the application has not yet mounted this store or conversation controller.
 

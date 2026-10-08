@@ -12,6 +12,7 @@ import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { providersI18n } from './providers.i18n';
 import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
+import { cagentChatI18n } from './cagent-chat.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'agent.bootstrap.failed': '選択したバックエンドを特定できませんでした。接続を確認して、もう一度お試しください。',
@@ -73,6 +74,7 @@ export const dict: Record<I18nKey, string> = {
   ...providersI18n.ja,
   ...mcpGridI18n.ja,
   ...pluginsGridI18n.ja,
+  ...cagentChatI18n.ja,
   'terminalView.actions.attachSelection': '選択した出力を添付',
   'terminalView.actions.copySelection': '選択した出力をコピー',
   'terminalView.toast.selectionCopied': '出力をコピーしました',

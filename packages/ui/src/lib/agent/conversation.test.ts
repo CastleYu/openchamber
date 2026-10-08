@@ -329,6 +329,65 @@ describe('AgentConversation', () => {
     expect(state.history.items).toEqual([message('new')]);
   });
 
+  test('status refresh publishes the authoritative idle result', async () => {
+    const h = new Harness(); await h.open();
+    const status = { sessionID: 's', state: 'idle' as const };
+    h.dispatch = async (operation) => operation === AGENT_OPERATION.GET_SESSION_STATUS ? status : {};
+    expect(await h.conversation.status()).toEqual(status);
+    const state = h.conversation.getSnapshot();
+    if (state.state !== 'bound') throw new Error('conversation did not bind');
+    expect(state.status).toEqual({ state: 'ready', value: status });
+  });
+
+  test('status refresh rejects a response for another session', async () => {
+    const h = new Harness(); await h.open();
+    h.dispatch = async () => ({ sessionID: 'other', state: 'busy' });
+    await code(h.conversation.status(), AGENT_ERROR.INVALID_RESPONSE);
+    const state = h.conversation.getSnapshot();
+    if (state.state !== 'bound') throw new Error('conversation did not bind');
+    expect(state.status).toEqual({ state: 'failed', error: AGENT_ERROR.INVALID_RESPONSE });
+  });
+
+  test('a failed status refresh retains prior status and history', async () => {
+    const h = new Harness(); await h.open();
+    h.dispatch = async (operation): Promise<JsonValue> => operation === AGENT_OPERATION.LIST_MESSAGES
+      ? { items: [message('m1')] } : { sessionID: 's', state: 'busy' };
+    await h.conversation.history();
+    await h.conversation.status();
+    h.dispatch = async () => { throw new Error('offline'); };
+    await code(h.conversation.status(), AGENT_ERROR.BACKEND_FAILED);
+    const state = h.conversation.getSnapshot();
+    if (state.state !== 'bound') throw new Error('conversation did not bind');
+    expect(state.status).toEqual({ state: 'failed', error: AGENT_ERROR.BACKEND_FAILED,
+      previous: { sessionID: 's', state: 'busy' } });
+    expect(state.history.items).toEqual([message('m1')]);
+  });
+
+  test('newer status read wins when reads finish out of order', async () => {
+    const h = new Harness(); await h.open();
+    const first = gate<JsonValue>(); const second = gate<JsonValue>(); let reads = 0;
+    h.dispatch = async () => { reads += 1; return reads === 1 ? first.promise : second.promise; };
+    const oldRead = h.conversation.status();
+    const newRead = h.conversation.status();
+    second.release({ sessionID: 's', state: 'waiting' }); await newRead;
+    first.release({ sessionID: 's', state: 'busy' }); await code(oldRead, AGENT_ERROR.CHANGED);
+    const state = h.conversation.getSnapshot();
+    if (state.state !== 'bound') throw new Error('conversation did not bind');
+    expect(state.status).toEqual({ state: 'ready', value: { sessionID: 's', state: 'waiting' } });
+  });
+
+  test('retirement discards a late status result', async () => {
+    const h = new Harness(); await h.open();
+    const pending = gate<JsonValue>(); const entered = gate<void>();
+    h.dispatch = async () => { entered.release(); return pending.promise; };
+    const reading = h.conversation.status();
+    await entered.promise;
+    h.key = 'runtime-b'; h.retire?.();
+    pending.release({ sessionID: 's', state: 'busy' });
+    await code(reading, AGENT_ERROR.CHANGED);
+    expect(h.conversation.getSnapshot().state).toBe('unbound');
+  });
+
   test('unknown entered send is never retried and blocks further sends after reopen', async () => {
     const h = new Harness(); await h.open(); let sends = 0;
     h.dispatch = async () => { sends += 1; throw new Error('lost receipt'); };

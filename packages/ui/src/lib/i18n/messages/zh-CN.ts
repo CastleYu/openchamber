@@ -12,6 +12,7 @@ import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { providersI18n } from './providers.i18n';
 import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
+import { cagentChatI18n } from './cagent-chat.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'agent.bootstrap.failed': '无法识别所选后端。请检查连接后重试。',
@@ -73,6 +74,7 @@ export const dict: Record<I18nKey, string> = {
   ...providersI18n['zh-CN'],
   ...mcpGridI18n['zh-CN'],
   ...pluginsGridI18n['zh-CN'],
+  ...cagentChatI18n['zh-CN'],
   'terminalView.actions.attachSelection': '附加所选输出',
   'terminalView.actions.copySelection': '复制所选输出',
   'terminalView.toast.selectionCopied': '已复制输出',

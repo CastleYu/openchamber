@@ -12,6 +12,7 @@ import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { providersI18n } from './providers.i18n';
 import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
+import { cagentChatI18n } from './cagent-chat.i18n';
 
 export const dict: Record<I18nKey, string> = {
   'agent.bootstrap.failed': 'No se pudo identificar el backend seleccionado. Comprueba la conexión e inténtalo de nuevo.',
@@ -73,6 +74,7 @@ export const dict: Record<I18nKey, string> = {
   ...providersI18n.es,
   ...mcpGridI18n.es,
   ...pluginsGridI18n.es,
+  ...cagentChatI18n.es,
   'terminalView.actions.attachSelection': 'Adjuntar salida seleccionada',
   'terminalView.actions.copySelection': 'Copiar salida seleccionada',
   'terminalView.toast.selectionCopied': 'Salida copiada',

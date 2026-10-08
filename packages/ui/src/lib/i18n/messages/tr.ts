@@ -11,6 +11,7 @@ import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { providersI18n } from './providers.i18n';
 import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
+import { cagentChatI18n } from './cagent-chat.i18n';
 
 export const dict = {
   'agent.bootstrap.failed': 'Seçilen arka uç tanımlanamadı. Bağlantıyı kontrol edip tekrar deneyin.',
@@ -72,6 +73,7 @@ export const dict = {
   ...providersI18n.tr,
   ...mcpGridI18n.tr,
   ...pluginsGridI18n.tr,
+  ...cagentChatI18n.tr,
   'terminalView.actions.attachSelection': 'Seçili çıktıyı ekle',
   'terminalView.actions.copySelection': 'Seçili çıktıyı kopyala',
   'terminalView.toast.selectionCopied': 'Çıktı kopyalandı',

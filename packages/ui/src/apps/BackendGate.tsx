@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { AGENT_FAMILY } from '../../../web/server/lib/agent/constants.js';
 import { AGENT_BOOT_PENDING, AgentBootstrap } from './agentBootstrap';
+import { CAgentApp } from './lazyBackendApps';
 
 const noSubscribe = () => () => {};
 const pending = () => AGENT_BOOT_PENDING;
@@ -21,6 +22,9 @@ export function BackendGate({ children, create = createBootstrap }: { children: 
   const state = React.useSyncExternalStore(owner?.subscribe ?? noSubscribe, owner?.getSnapshot ?? pending, pending);
   if (state.state === 'selected' && state.value.selection.family === AGENT_FAMILY.OPENCODE) {
     return <React.Suspense fallback={<p role="status">{t('common.loading')}</p>}>{children}</React.Suspense>;
+  }
+  if (state.state === 'selected' && state.value.selection.family === AGENT_FAMILY.CAGENT) {
+    return <React.Suspense fallback={<p role="status">{t('common.loading')}</p>}><CAgentApp /></React.Suspense>;
   }
   const selected = state.state === 'selected';
   return (

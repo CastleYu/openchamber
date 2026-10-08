@@ -26,7 +26,7 @@ but must match the requested ID, family and connection.
 
 Web, Electron, hosted mobile and Capacitor use their existing HTTP runtime ports.
 VS Code keeps the owned-route `unsupported-runtime` refusal until its host is
-implemented. App roots now use its protected family selection, but no conversation presentation or existing OpenCode sync consumer uses its operation client yet. Production host
+implemented. App roots use protected family selection and the separate CAgent conversation page consumes this client. Existing OpenCode sync consumers remain separate. Production host
 feature support remains absent; this module enables no CAgent feature.
 
 Focused checks use `client.test.ts` and the adjacent runtime-fetch/runtime-switch
@@ -53,10 +53,9 @@ Capacitor first reuses native saved-instance connection/authentication through
 OpenCode. Endpoint retirement removes the selected application; stale responses
 and disposed StrictMode owners cannot restore it. Common appearance settings
 and runtime reset remain outside the gate; the gate does not remove every
-OpenCode module import. CAgent currently displays an unavailable integration
-page, with no conversation or backend actions. All 13 locales include its copy.
+OpenCode module import. CAgent mounts its own conversation page with capability-gated actions. All 13 locales include its copy.
 
-A future conversation root must obtain a matching runtime/feature snapshot
+The conversation root obtains a matching runtime/feature snapshot
 before opening. Selection is informational and is not a lease across a later
 host change. Same-endpoint family changes require rediscovery; no hot selector
 or CAgent native-resume journey is delivered here. VS Code retains its explicit
@@ -70,10 +69,16 @@ The controller preserves normalized page order, updates overlapping IDs in place
 
 Before reads or writes it checks the operation and feature snapshot; host dispatch independently rechecks current authority. Send captures its workspace/session and request ID once. Entered writes with unknown outcomes are retained and block another send. `resolve()` consults the durable host attempt ledger without replay; null evidence leaves uncertainty unchanged, and a changed request cannot be overwritten by an earlier lookup. Accepted/complete send receipts do not establish assistant or tool completion. Dispose releases listeners and in-memory state.
 
-`AgentRequestJournal` is an injected durable identity store. A production owner must supply its storage port and an opaque namespace derived from its endpoint/auth runtime identity before constructing the controller. Never use a raw URL or credential as that namespace. No application mounts this store yet. Without injection, continuity remains limited to the controller's lifetime.
+`AgentRequestJournal` is an injected durable identity store. A production owner supplies its storage port and an opaque namespace before constructing the controller. `createAgentChatBinding()` hashes the endpoint key, bearer and extra headers in memory and supplies browser storage. It rechecks this scope after inspection; unavailable crypto/storage fails explicitly without a memory-only fallback. No raw URL or credential becomes a storage key. Cookie-only principal changes are not represented by this digest; account-level isolation is not established for that case. Without journal injection, continuity remains limited to the controller's lifetime.
 
 With a journal, send records family, connection, workspace, session and request ID synchronously before dispatch; failed persistence prevents transport. It stores no prompt, credential or wire payload. Each request has an independent versioned strict-schema record, bounded to 16,384 UTF-16 code units, with IDs bounded to 1,024 and namespace to 128. Storage failure and corrupt records are explicit errors. Reads examine only the requested owner; corruption cannot block another session. Records have no automatic eviction. Multiple instances preserve distinct request records; this is not a cross-window send lock.
 
-Reopening a controller restores unresolved records as unknown and blocks new sends. Matching authoritative accepted/complete/not-sent evidence clears only its request; another pending request remains unknown. Failed cleanup keeps uncertainty and the record. A host duplicate also keeps uncertainty until the prior outcome is queried. A pre-transport cancellation removes its known-unsent marker. Request identity continuity does not infer live activity or assistant completion. The future app owner must keep its namespace stable across reload and isolated across runtime identities, and expose recovery errors without deleting uncertain records.
+Reopening a controller restores unresolved records as unknown and blocks new sends. Matching authoritative accepted/complete/not-sent evidence clears only its request; another pending request remains unknown. Failed cleanup keeps uncertainty and the record. A host duplicate also keeps uncertainty until the prior outcome is queried. A pre-transport cancellation removes its known-unsent marker. Request identity continuity does not infer live activity or assistant completion. The current namespace remains stable only while endpoint and credential inputs remain stable; credential rotation changes it. Recovery across rotation and cookie-only principal separation need identity support before production activation. Recovery errors never delete uncertain records.
 
-Web, Electron, hosted mobile and Capacitor can use this shared state controller. VS Code retains the owned-route refusal. No app mounts it yet, and host support remains unavailable until presentation, observation strategy and all recorded feature consumers pass their gates. These synthetic state tests are preparation for actual chat integration, not CAgent or UI acceptance.
+Web, Electron, hosted mobile and Capacitor mount this controller through the CAgent page. VS Code retains the owned-route refusal. Host support remains unavailable until presentation, observation strategy and all recorded feature consumers pass their gates. Synthetic tests do not establish real CAgent acceptance.
+
+## CAgent conversation page
+
+`CAgentApp` owns a binding and disposes it on unmount, including a binding that resolves after cleanup. It binds an existing opaque workspace/session; it does not create a conversation or infer IDs from local paths. Actions use the inspected operation and feature gates. Refresh explicitly reads history and status independently, retaining successful data if another read fails. Status comes only from `getSessionStatus`; failed status is displayed as unknown rather than current prior activity.
+
+Before sending, the page reads status again and dispatches only when that result is idle for its bound conversation. One new request gets one UUID. Unknown outcomes preserve the draft and block another send; result lookup queries the original request without replay. Accepted/complete receipts are presented as acceptance, not assistant completion. Pagination and normalized text, reasoning, structured tool data and attachment labels are supported; no attachment download URL is invented. Decisions, cancellation, creation, catalogs and CAgent extensions remain later work, so production feature support stays closed.

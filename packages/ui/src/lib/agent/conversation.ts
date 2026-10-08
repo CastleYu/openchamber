@@ -2,7 +2,7 @@ import {
   AGENT_ERROR, AGENT_FEATURE, AGENT_OPERATION,
 } from '../../../../web/server/lib/agent/constants.js';
 import type {
-  AgentInputs, AgentMessage, AgentOperation, AgentSession, DispatchReceipt,
+  AgentInputs, AgentMessage, AgentOperation, AgentSession, AgentStatus, DispatchReceipt,
 } from '../../../../web/server/lib/agent/dispatcher.js';
 import type { AgentFeature } from '../../../../web/server/lib/agent/features.js';
 import { AgentClient, AgentClientError, type AgentClientSnapshot } from './client';
@@ -23,10 +23,14 @@ type ConversationHistory = Readonly<{
 type ConversationWrite =
   | Readonly<{ state: 'idle' }>
   | Readonly<{ state: 'sending' | 'accepted' | 'complete' | 'unknown' | 'not-sent'; requestID: string; error?: Code }>;
+type ConversationStatus =
+  | Readonly<{ state: 'empty' }>
+  | Readonly<{ state: 'ready'; value: AgentStatus }>
+  | Readonly<{ state: 'failed'; error: Code; previous?: AgentStatus }>;
 export type ConversationState =
   | Readonly<{ state: 'unbound' }>
   | Readonly<{ state: 'bound'; snapshot: AgentClientSnapshot; workspaceID: string;
-      session: AgentSession; history: ConversationHistory; write: ConversationWrite }>;
+      session: AgentSession; history: ConversationHistory; write: ConversationWrite; status: ConversationStatus }>;
 
 const reconcile = (old: readonly AgentMessage[], incoming: readonly AgentMessage[]): AgentMessage[] => {
   const result = [...old];
@@ -46,6 +50,7 @@ export class AgentConversation {
   private value: ConversationState = Object.freeze({ state: AGENT_CONVERSATION.UNBOUND });
   private revision = 0;
   private loadRevision = 0;
+  private statusRevision = 0;
   private disposed = false;
   private readonly listeners = new Set<() => void>();
   private readonly requests = new Set<string>();
@@ -74,6 +79,7 @@ export class AgentConversation {
     }
     this.revision += 1;
     this.loadRevision += 1;
+    this.statusRevision += 1;
     this.cursors.clear();
     this.publish({ state: AGENT_CONVERSATION.UNBOUND });
   }
@@ -125,11 +131,36 @@ export class AgentConversation {
     if (session.id !== sessionID || session.workspaceID !== workspaceID) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
     const bound = { state: AGENT_CONVERSATION.BOUND, snapshot, workspaceID, session,
       history: Object.freeze({ state: AGENT_CONVERSATION.EMPTY, items: Object.freeze([]) }),
+      status: Object.freeze({ state: AGENT_CONVERSATION.EMPTY }),
       write: Object.freeze({ state: AGENT_CONVERSATION.IDLE }) };
     const pending = this.journal?.read(this.requestOwner(bound))[0];
     this.publish({ ...bound, write: pending
       ? Object.freeze({ state: AGENT_CONVERSATION.UNKNOWN, requestID: pending })
       : this.writes.get(this.owner(bound)) ?? bound.write });
+  }
+
+  /** Explicit refresh only. Historical messages never imply live execution. */
+  async status(signal?: AbortSignal): Promise<AgentStatus> {
+    const current = this.bound();
+    this.available(current.snapshot, AGENT_OPERATION.GET_SESSION_STATUS, AGENT_FEATURE.PROMPT);
+    const revision = this.revision;
+    const read = ++this.statusRevision;
+    try {
+      const value = await this.client.dispatch(current.snapshot.scope, AGENT_OPERATION.GET_SESSION_STATUS,
+        { workspaceID: current.workspaceID, sessionID: current.session.id }, signal);
+      if (revision !== this.revision || read !== this.statusRevision) throw new AgentClientError(AGENT_ERROR.CHANGED);
+      if (value.sessionID !== current.session.id) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
+      this.publish({ ...this.bound(), status: Object.freeze({ state: AGENT_CONVERSATION.READY, value }) });
+      return value;
+    } catch (error) {
+      if (revision === this.revision && read === this.statusRevision) {
+        const old = this.bound().status;
+        this.publish({ ...this.bound(), status: Object.freeze({ state: AGENT_CONVERSATION.FAILED,
+          error: error instanceof AgentClientError ? error.code : AGENT_ERROR.BACKEND_FAILED,
+          previous: old.state === AGENT_CONVERSATION.READY ? old.value : old.state === AGENT_CONVERSATION.FAILED ? old.previous : undefined }) });
+      }
+      throw error;
+    }
   }
 
   /** Explicit refresh only. Historical messages never imply live execution. */

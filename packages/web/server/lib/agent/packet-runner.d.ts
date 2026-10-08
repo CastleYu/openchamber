@@ -1,5 +1,6 @@
 import type { AgentArtifactManifest } from './artifacts.js';
 import type { AgentOperation } from './dispatcher.js';
+import type { ZodType } from 'zod';
 
 /** Text is captured before checks. It must never be returned in reports or persisted progress. */
 export type AgentPacketSource = Readonly<{ path: string; text: string }>;
@@ -35,6 +36,7 @@ export class AgentPacketError extends Error {
   readonly code: string;
   constructor(code: string);
 }
+export const agentPacketProgressSchema: ZodType<AgentPacketProgress>;
 /** Ports and packet definitions are protected host inputs, never candidate workspace files. */
 export function createAgentPacketRunner(options: {
   protectedDirectory: string;

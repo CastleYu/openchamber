@@ -133,7 +133,17 @@ The runner verifies protected files, current candidate content and all direct/tr
 
 A false fixture result consumes one implementation attempt. The initial attempt plus two corrections are permitted; the third failure requires a maintainer and stops further checks. Setup, boundary and checkpoint-port failures return a blocked result without consuming an implementation attempt. A fresh runner reads protected progress and revalidates dependency content; changing an accepted ancestor blocks its descendants. Each run still checks its own candidate, even if an earlier record says passed. Independent packets remain runnable.
 
-One runner serializes its calls. The kit's owning process must serialize workspace/checkpoint access across runner instances and provide atomic protected persistence. This module does not configure filesystem ACLs, persist progress by itself, create the offline bundle or write activation approvals. CA-02 must prove those boundaries and its executable commands. Native file and fixture tests establish the implemented checks, not OS permission isolation or real CAgent compatibility.
+One runner serializes its calls. The native workspace composition below adds persistence and exclusion across instances. Neither module configures filesystem ACLs, creates the offline bundle or writes activation approvals. CA-02 must prove those boundaries and its executable commands. Native file and fixture tests establish the implemented checks, not OS permission isolation or real CAgent compatibility.
+
+### Native packet workspace
+
+`createAgentPacketWorkspace` in `packet-workspace.js` composes the runner with an existing maintainer-owned progress directory outside protected-kit and candidate directories. It validates canonical native paths, regular single-link checkpoint files, bounded UTF-8 records and kit/operation identity. Missing checkpoints start an operation; corrupt or inaccessible checkpoints block it. Records are isolated by frozen kit digest, with no conversion of old kits.
+
+Checkpoint writes use an exclusive owner-readable/writable temporary file, file sync and a same-directory rename. A failed replacement preserves the earlier record and cleans only this write's temporary file. This provides atomic visibility, not a power-loss durability guarantee. Maintainers must keep progress and protected definitions inaccessible to candidate writers through OS permissions; runtime path checks do not establish that permission boundary.
+
+An IPC listener keyed by the progress directory's native device/inode identity excludes competing workspace processes for the entire run. Windows uses a named pipe; Linux uses an abstract Unix socket. These process-owned handles release after normal or abrupt process exit, following [Node IPC semantics](https://nodejs.org/api/net.html#ipc-support). Other operating systems return a storage refusal until an independently validated execution boundary exists. This restriction applies to the maintainer adaptation runner, not to app runtime support. The listener accepts no commands and closes incoming connections. No browser route exposes it.
+
+Native Windows tests verify contention, forced owner exit, fresh-process recovery and the persisted three-failure ceiling. They do not prove Linux operation, desktop console visibility, ACL isolation or CAgent compatibility. Fixture success remains separate from maintainer activation and real environment acceptance.
 
 ## Goal reader migration
 

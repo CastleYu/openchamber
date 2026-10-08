@@ -77,3 +77,16 @@ export const AGENT_OPERATION: Readonly<{
   INTERRUPT_SESSION: 'interruptSession';
 }>;
 export const AGENT_MUTATIONS: readonly typeof AGENT_OPERATION[keyof typeof AGENT_OPERATION][];
+export const AGENT_PACKET: Readonly<{
+  VERSION: 1; MAX_CORRECTIONS: 2; MAX_FILES: 16; MAX_FILE_BYTES: 262144; MAX_TOTAL_BYTES: 1048576; MAX_CHECKS: 64;
+}>;
+export const AGENT_PACKET_STATE: Readonly<{ PASSED: 'fixtures-passed'; FAILED: 'fixtures-failed'; BLOCKED: 'blocked' }>;
+export const AGENT_PACKET_ERROR: Readonly<{
+  INVALID: 'invalid-packet'; PROTECTED: 'protected-kit-changed'; BOUNDARY: 'candidate-boundary';
+  INPUT: 'candidate-unavailable'; CHECK: 'fixture-failed'; SETUP: 'check-unavailable';
+  STORAGE: 'checkpoint-unavailable'; DEPENDENCY: 'packet-dependency'; LIMIT: 'maintainer-required'; BUSY: 'runner-busy';
+}>;
+export const AGENT_PACKET_STORAGE: Readonly<{
+  MAX_RECORD_BYTES: 65536; DIRECTORY_MODE: 448; READ: 'r'; SUFFIX: '.json'; TEMP_SUFFIX: '.tmp';
+  WINDOWS: 'win32'; LINUX: 'linux'; PIPE_PREFIX: string; ABSTRACT_PREFIX: string; BUSY: 'EADDRINUSE'; ERROR: 'error';
+}>;

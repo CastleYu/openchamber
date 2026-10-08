@@ -62,6 +62,11 @@ export const AGENT_PACKET = Object.freeze({
   MAX_TOTAL_BYTES: 1048576, MAX_CHECKS: 64,
 });
 export const AGENT_PACKET_STATE = Object.freeze({ PASSED: 'fixtures-passed', FAILED: 'fixtures-failed', BLOCKED: 'blocked' });
+export const AGENT_PACKET_STORAGE = Object.freeze({
+  MAX_RECORD_BYTES: 65536, DIRECTORY_MODE: 0o700, READ: 'r', SUFFIX: '.json', TEMP_SUFFIX: '.tmp',
+  WINDOWS: 'win32', LINUX: 'linux', PIPE_PREFIX: '\\\\.\\pipe\\oc-cagent-',
+  ABSTRACT_PREFIX: '\0oc-cagent-', BUSY: 'EADDRINUSE', ERROR: 'error',
+});
 export const AGENT_PACKET_ERROR = Object.freeze({
   INVALID: 'invalid-packet', PROTECTED: 'protected-kit-changed', BOUNDARY: 'candidate-boundary',
   INPUT: 'candidate-unavailable', CHECK: 'fixture-failed', SETUP: 'check-unavailable',

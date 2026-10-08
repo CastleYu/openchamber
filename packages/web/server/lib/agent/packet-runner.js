@@ -18,12 +18,13 @@ const packetSchema = z.object({
   checks: z.array(checkSchema).min(1).max(AGENT_PACKET.MAX_CHECKS),
 }).strict();
 const checkResultSchema = z.object({ id: idSchema, passed: z.boolean() }).strict();
-const progressSchema = z.object({
+export const agentPacketProgressSchema = z.object({
   version: z.literal(AGENT_PACKET.VERSION), kitDigest: digestSchema, operation: operationSchema,
   state: z.enum(Object.values(AGENT_PACKET_STATE)), candidateDigest: digestSchema,
   failures: z.number().int().min(0).max(AGENT_PACKET.MAX_CORRECTIONS + 1),
   checks: z.array(checkResultSchema).min(1).max(AGENT_PACKET.MAX_CHECKS),
 }).strict();
+const progressSchema = agentPacketProgressSchema;
 const optionsSchema = z.object({
   protectedDirectory: z.string().refine(path.isAbsolute), manifest: agentArtifactManifestSchema,
   packets: z.array(packetSchema).min(1).max(Object.keys(AGENT_OPERATION).length),

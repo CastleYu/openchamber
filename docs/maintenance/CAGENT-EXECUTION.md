@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: shared UI request boundary
+## Latest checkpoint: native packet workspace
+
+2026-10-09. CA-01 remains in progress. `createAgentPacketWorkspace` now supplies native protected checkpoint persistence and process-wide workspace exclusion for the fixed packet runner. Progress is outside candidate/kit directories and isolated by kit digest. Strict bounded reads refuse corrupt records; exclusive temporary writes, file sync and atomic rename preserve earlier records when replacement fails. Missing progress is distinct from unreadable progress. Native directory identity is checked before and after fixtures.
+
+Windows process tests prove simultaneous contenders are refused, forced owner exit releases execution, fresh processes resume and three failed implementations stop further checks. Native file tests cover restarted dependencies, corruption, hard links, directory links/replacement and preservation of earlier progress after a write-boundary failure. These checks do not prove filesystem ACL isolation, Linux operation, packaged desktop behavior or real CAgent semantics. The owning [module documentation](../../packages/web/server/lib/agent/DOCUMENTATION.md) and [Chinese review copy](zh-CN/CAGENT-DISPATCH-CONTRACTS.md) define the exact boundary.
+
+Validation passed 80 tests in six files with no skips, including the native workspace/process tests and runner, artifact, loader and approval-writer regressions. Direct strict declaration compilation, changed JavaScript anti-slop, syntax checks and 34 local documentation links passed. Workspace type-check and lint passed with five inherited UI warnings and no errors. Dead-code remains at 2 unused files, 319 exports, 231 exported types and 1 duplicate; no Agent row is reported.
+
+The complete runnable CA-02 kit still needs its protected composition, permission boundary and commands. Actual UI/sync consumers, capability coverage and extensions remain unfinished. CA-03 still requires the unavailable target environment/API documents and weak-model acceptance. Independent publication and temporary Release remain pending. Other INT work stays after CA-03. Live weekly quota is 67% remaining.
+
+## Previous checkpoint: shared UI request boundary
 
 2026-10-09. CA-01 remains in progress. `AgentClient` now uses the existing
 runtime HTTP/auth ports for strict runtime/feature inspection, typed dispatch

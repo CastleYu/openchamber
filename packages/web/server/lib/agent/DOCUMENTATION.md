@@ -76,6 +76,16 @@ The fourth owned route, GET `/api/agent-backend/features`, returns a strictly va
 | Hosted mobile | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
 | Capacitor | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
 
+## Shared HTTP contracts
+
+`schemas.js` owns dispatch, attempt lookup, persisted attempt, attempt state and
+fixed error schemas. Routes and durable storage reuse those schemas;
+`schemas.d.ts` exposes precise operation-specific types for the shared UI
+client at `packages/ui/src/lib/agent/client.ts`. Browser imports use only Zod
+and Agent constants. The client parses complete snapshots and normalized
+results, retires endpoint scopes and preserves uncertain writes without retry.
+No actual UI consumer or host-support approval is enabled by this addition.
+
 ## Backend family selection
 
 `startWebUiServer` accepts an optional maintainer-only `agentBackend` startup

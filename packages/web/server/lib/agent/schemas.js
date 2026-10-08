@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION,
+  AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_MUTATIONS, AGENT_OPERATION,
   AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_SERVER_METHOD, AGENT_SUPPORT, AGENT_TOOL_STATE,
 } from './constants.js';
 
@@ -70,6 +70,17 @@ export const agentIdentitySchema = z.object({
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
+export const agentDispatchRequestSchema = z.object({ operation: agentOperationSchema, identity: agentIdentitySchema, input: json }).strict();
+export const agentAttemptRequestSchema = z.object({ identity: agentIdentitySchema, requestID: id }).strict();
+export const agentAttemptStateSchema = z.enum([AGENT_ATTEMPT.UNKNOWN, AGENT_ATTEMPT.ACCEPTED, AGENT_ATTEMPT.COMPLETE, AGENT_ATTEMPT.NOT_SENT]);
+export const agentAttemptSchema = z.object({
+  version: z.literal(AGENT_ATTEMPT.VERSION), identity: agentIdentitySchema,
+  operation: agentOperationSchema.refine((operation) => AGENT_MUTATIONS.includes(operation)),
+  requestID: id,
+  state: agentAttemptStateSchema,
+}).strict();
+export const agentAttemptResultSchema = z.object({ identity: agentIdentitySchema, attempt: agentAttemptSchema.nullable() }).strict();
+export const agentFailureSchema = z.object({ error: z.enum(Object.values(AGENT_ERROR)) }).strict();
 export const agentRequestControlSchema = z.object({ signal: z.instanceof(AbortSignal).optional() }).strict();
 
 export const agentServerRequestSchema = z.object({

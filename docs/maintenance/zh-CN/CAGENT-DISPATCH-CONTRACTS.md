@@ -1,5 +1,9 @@
 # Agent 调度契约
 
+## 共享 HTTP 契约
+
+`schemas.js` 统一管理分发、尝试查询、持久化尝试、尝试状态及固定错误 schema。路由和持久化复用这些 schema；`schemas.d.ts` 为 `packages/ui/src/lib/agent/client.ts` 提供精确的操作类型。浏览器导入只包含 Zod 和 Agent 常量。客户端解析完整快照及规范化结果、退役端点作用域，并保留不确定写入而不重试。没有实际 UI 消费方或宿主功能批准因此启用。详细中文说明见[共享客户端](CAGENT-UI-CLIENT.md)。
+
 ## 受保护的进程启动选择
 
 `startWebUiServer` 现在接受维护者专用的 `agentBackend` 启动选项。`selectAgentStartup` 在生命周期或持久化消费者启动前，严格校验家族及已审查的工件候选。省略时选择 OpenCode；显式 CAgent 加载失败会向上传递，不回退。这个编程组合入口不通过 HTTP、设置或适配器开放。维护者仍须独立验证服务器身份、就绪、授权与验收含义；工件结构校验不能替代这些证据。宿主功能支持仍未启用，选择不代表聊天可用。

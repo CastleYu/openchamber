@@ -1,6 +1,45 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: trusted startup selection
+## Latest checkpoint: shared UI request boundary
+
+2026-10-09. CA-01 remains in progress. `AgentClient` now uses the existing
+runtime HTTP/auth ports for strict runtime/feature inspection, typed dispatch
+and durable attempt lookup. Endpoint retirement aborts pending requests and
+invalidates scopes even across A/B/A switches. Input refusal happens before
+transport; entered writes with lost or invalid responses remain unknown and
+are never retried. Routes, persistence and the client reuse canonical schemas.
+No UI/sync consumer is migrated yet, and no host feature support is enabled.
+The owning [client documentation](../../packages/ui/src/lib/agent/DOCUMENTATION.md)
+and its [Chinese review copy](zh-CN/CAGENT-UI-CLIENT.md) describe caller obligations.
+
+The focused client/runtime regressions pass 51 Bun tests. Shared schema,
+attempt, route and dispatcher regressions pass 192 Vitest tests. Direct strict
+declaration compilation and changed-module anti-slop pass. The lead corrected
+the contributed tests' missing type import, nullable signals and unused
+parameter before final workspace validation.
+Workspace type-check and lint pass, with five inherited UI lint warnings and
+no errors. Browser bundling passes for the client and its 104 imported modules.
+Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate.
+No Agent row is reported; actual consumer migration is still separately required.
+
+A native loopback probe launched the actual `startWebUiServer` with a verified
+synthetic adapter and temporary data directory. The shared client read CAgent
+snapshots and received `unverified` for an unapproved operation. All features
+stayed closed, OpenCode configuration returned 501 and managed OpenCode process
+info remained empty. Shutdown completed and the probe directory was removed.
+The server copied its existing project/speech-model defaults into that directory;
+this was not an empty-user-profile test. The first client probe used the wrong
+operation literal and failed its assertion; the corrected probe uses canonical
+constants and checks both its explicit success marker and process exit code.
+This is production composition evidence with synthetic semantics, not packaged
+startup or real CAgent acceptance.
+
+Complete UI/sync migration, capability coverage, extensions and the protected
+runner still precede activation. CA-02 executable kit, CA-03 environment/local
+model acceptance, independent remote publication and temporary Release remain
+pending. Other INT work stays after CA-03. Live weekly quota is 68% remaining.
+
+## Previous checkpoint: trusted startup selection
 
 2026-10-09. CA-01 remains in progress. Trusted `startWebUiServer` composition now accepts a strictly validated backend selection before lifecycle startup. Explicit CAgent loading failure never falls back to OpenCode. Automatic permissions and message queue no longer start during module import. They start only for OpenCode and stop on selection retirement. A queue idle read completing after stop cannot start a send; pending intent survives a fresh disk read. Entered mutations are not canceled. This is a process startup port, not a complete hot switching flow or user selector. Host feature support remains absent, and no CAgent feature is enabled.
 

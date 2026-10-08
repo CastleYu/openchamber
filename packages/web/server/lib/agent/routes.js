@@ -1,19 +1,11 @@
 import express from 'express';
-import { z } from 'zod';
 
 import { AGENT_ERROR, AGENT_ROUTE } from './constants.js';
 import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { AgentFeatureError } from './features.js';
 import { AgentTransportError } from './transport.js';
-import { agentFeatureSnapshotSchema, agentIdentitySchema, agentOperationSchema, agentRuntimeSchema } from './schemas.js';
-
-const requestSchema = z.object({
-  operation: agentOperationSchema,
-  identity: agentIdentitySchema,
-  input: z.json(),
-}).strict();
-const attemptSchema = z.object({ identity: agentIdentitySchema, requestID: z.string().min(1) }).strict();
+import { agentFeatureSnapshotSchema, agentDispatchRequestSchema as requestSchema, agentAttemptRequestSchema as attemptSchema, agentRuntimeSchema } from './schemas.js';
 const statuses = Object.freeze({
   [AGENT_ERROR.INVALID_INPUT]: 400,
   [AGENT_ERROR.UNKNOWN_OPERATION]: 400,

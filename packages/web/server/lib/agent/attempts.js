@@ -4,16 +4,9 @@ import path from 'node:path';
 import { z } from 'zod';
 
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FILE_ERROR, AGENT_MUTATIONS } from './constants.js';
-import { agentIdentitySchema, agentOperationSchema } from './schemas.js';
+import { agentAttemptSchema as recordSchema, agentAttemptRequestSchema as keySchema, agentAttemptStateSchema as stateSchema } from './schemas.js';
 
 const mutations = new Set(AGENT_MUTATIONS);
-const stateSchema = z.enum([AGENT_ATTEMPT.UNKNOWN, AGENT_ATTEMPT.ACCEPTED, AGENT_ATTEMPT.COMPLETE, AGENT_ATTEMPT.NOT_SENT]);
-const recordSchema = z.object({
-  version: z.literal(AGENT_ATTEMPT.VERSION), identity: agentIdentitySchema,
-  operation: agentOperationSchema.refine((operation) => mutations.has(operation)),
-  requestID: z.string().min(1), state: stateSchema,
-}).strict();
-const keySchema = z.object({ identity: agentIdentitySchema, requestID: z.string().min(1) }).strict();
 
 export class AgentAttemptError extends Error {
   constructor(code) {

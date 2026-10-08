@@ -2,7 +2,7 @@
 
 > 中文审阅稿：本译文供审阅使用，英文文档是实现交接的规范版本。
 
-状态：计划中，2026-10-08。CAgent 有独立的 Server API，且只能在目标环境内访问。此处尚未验证任何 CAgent 端点、schema、功能或成功集成。
+状态：计划中，2026-10-08。CAgent 有独立的 Server API，且只能在目标环境内访问。此处尚未验证任何 CAgent 端点、schema、功能或成功集成。CA-01 实施前，使用已冻结的[调用边界](CAGENT-BOUNDARIES.md)及其完整方法处理注册表。
 
 这项紧急需求优先于[集成里程碑](OPENCODE-INTEGRATION-MILESTONES.md)中的其他实现工作。它扩展[集成规范](OPENCODE-INTEGRATION-SPEC.md)，并取代其中原先排除独立 Agent 服务器的条款。CAgent 是明确命名的第二类后端；通用插件市场和任意协议框架仍不在范围内。[英文原文](../CAGENT-INTEGRATION-SPEC.md)用于实现交接；本中文副本遵循共享的双语审阅规则。
 

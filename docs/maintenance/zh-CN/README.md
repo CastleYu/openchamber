@@ -1,12 +1,13 @@
 # Agent 集成优化：中文审阅与归档
 
-更新于 2026-10-08。当前状态：审阅中，中英文同步维护。本目录覆盖本次新增和调整的十份文档；链接引用的其他历史资料保留原文。
+更新于 2026-10-09。当前状态：审阅中，中英文同步维护。本目录覆盖本次新增和调整的十一份文档；链接引用的其他历史资料保留原文。
 
 ## 文档入口
 
 | 内容 | 中文审阅副本 | 英文交接源 |
 | --- | --- | --- |
 | 紧急 CAgent 架构 | [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) | [英文](../CAGENT-INTEGRATION-SPEC.md) |
+| 调用方与责任边界 | [调用边界](CAGENT-BOUNDARIES.md) | [英文](../CAGENT-BOUNDARIES.md) |
 | 执行证据与检查点 | [执行记录](CAGENT-EXECUTION.md) | [英文](../CAGENT-EXECUTION.md) |
 | 环境内适配流程 | [适配工作手册](CAGENT-ADAPTER-WORKBOOK.md) | [英文](../CAGENT-ADAPTER-WORKBOOK.md) |
 | 集成需求与架构 | [集成 SPEC](OPENCODE-INTEGRATION-SPEC.md) | [英文](../OPENCODE-INTEGRATION-SPEC.md) |
@@ -29,4 +30,4 @@
 
 | 状态 | 日期 | 对应英文版本 |
 | --- | --- | --- |
-| 审阅中 | 2026-10-08 | 已同步反设计评审修订、紧急 CAgent 前置需求及 INT-00 执行证据；对应十份英文文档，尚未冻结最终交接版本 |
+| 审阅中 | 2026-10-09 | 已同步反设计评审修订、紧急 CAgent 前置需求、INT-00 执行证据及 CA-00 调用边界；对应十一份英文文档，尚未冻结最终交接版本 |

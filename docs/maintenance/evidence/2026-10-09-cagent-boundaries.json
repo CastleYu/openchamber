@@ -1,0 +1,95 @@
+{
+  "schema": "cagent-consumer-disposition/v1",
+  "sourceRevision": "a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6",
+  "inventory": "2026-10-08-cagent-consumers.json",
+  "evidenceKind": "source classification, not CAgent support",
+  "groups": [
+    {
+      "id": "connection", "ownership": "mixed", "owner": "host identity and UI runtime binding",
+      "decision": "Extend identity with backend family; preserve OpenCode generation behind its adapter. Bind operations and cached results to backend, connection epoch and capability revision.", "gate": "CA-01",
+      "ui": ["getBaseUrl", "bindRuntime", "getBoundRuntime", "subscribeRuntime", "discoverRuntime", "getSyncSource", "reconnectToRuntimeBaseUrl", "setDirectory", "getDirectory", "withDirectory", "getSystemInfo", "checkHealth"],
+      "host": ["captureIdentity"]
+    },
+    {
+      "id": "sdk-escape", "ownership": "backend-dependent", "owner": "OpenCode adapter",
+      "decision": "Retain raw SDK access for OpenCode only. Refuse for CAgent and migrate a consumer to a neutral operation before enabling its feature.", "gate": "CA-01",
+      "ui": ["getSdkClient", "getV2Sessions", "getScopedSdkClient", "getScopedApiClient", "getApiClient"], "host": []
+    },
+    {
+      "id": "host-files", "ownership": "OpenChamber-owned", "owner": "existing filesystem runtime and bridges",
+      "decision": "Retain host-local semantics and authorization. Never infer access from a CAgent workspace ID or path.", "gate": "CA-01",
+      "ui": ["probeDirectory", "getDirectoryAvailability", "cloneRepository", "listLocalDirectory", "getFilesystemHome", "getFilesystemHomeInfo"], "host": []
+    },
+    {
+      "id": "workspace-mutation", "ownership": "mixed", "owner": "filesystem runtime plus backend workspace binding",
+      "decision": "Split local mkdir from createDirectory(asProject), which calls /opencode/directory. Gate project creation and setOpenCodeWorkingDirectory through selected backend binding; no OpenCode restart for CAgent.", "gate": "CA-01",
+      "ui": ["createDirectory", "setOpenCodeWorkingDirectory"], "host": []
+    },
+    {
+      "id": "conversation", "ownership": "backend-dependent", "owner": "neutral conversation operations",
+      "decision": "Map verified conversation IDs and workspace ownership; normalize metadata with provenance. OpenChamber archive metadata is separately scoped by backend identity. Never fabricate OpenCode wire fields.", "gate": "CA-01",
+      "ui": ["listSessions", "createSession", "getSession", "deleteSession", "updateSession", "listSessionsPage", "listSyncSessions", "renameSession"],
+      "host": ["getSession", "createSession", "listSessions", "removeSession", "updateSession"]
+    },
+    {
+      "id": "history", "ownership": "backend-dependent", "owner": "neutral history and message operations",
+      "decision": "Normalize messages, pagination and completion without SDK raw payloads. Disable history/reopen when unavailable; failure is distinct from an empty page.", "gate": "CA-01",
+      "ui": ["getSessionMessages", "getSessionMessagePage", "getSessionMessage"], "host": ["listMessages", "getMessage"]
+    },
+    {
+      "id": "dispatch", "ownership": "backend-dependent", "owner": "guarded host dispatcher",
+      "decision": "Preserve prompt, command and selection semantics separately. Track durable intent and unknown outcomes before effects; no implicit resend across backend changes.", "gate": "CA-01",
+      "ui": ["sendMessage", "sendCommand", "generateSessionText", "generateText", "switchSessionModel", "switchSessionAgent"],
+      "host": ["sendPrompt", "sendCommand", "switchSessionSelection", "getSelectionCatalog", "getDefaultModel"]
+    },
+    {
+      "id": "activity", "ownership": "mixed", "owner": "backend activity observation and OpenChamber aggregation",
+      "decision": "Translate live status and descendant activity through neutral contracts. Host aggregation needs proven backend observation; persisted history cannot establish liveness.", "gate": "CA-01",
+      "ui": ["getSessionStatus", "getSessionStatusForDirectory", "getGlobalSessionStatus", "getHostSessionStatusSnapshot", "getWebServerSessionActivity"],
+      "host": ["listActiveStatuses", "getSessionStatus", "listChildren"]
+    },
+    {
+      "id": "cancel", "ownership": "backend-dependent", "owner": "guarded cancellation operation",
+      "decision": "Require verified cancellation semantics, including unknown outcome. Disable cancellation-dependent unattended modes if absent.", "gate": "CA-01",
+      "ui": ["abortSession"], "host": ["interruptSession"]
+    },
+    {
+      "id": "advanced-conversation", "ownership": "backend-dependent", "owner": "optional conversation operations",
+      "decision": "Gate each method independently. Import and synthetic messages need real server persistence semantics; fork, share, move and revert cannot be approximated by relabeling or local-only changes.", "gate": "CA-01",
+      "ui": ["shareSession", "unshareSession", "moveSession", "getSessionInbox", "cancelSessionInbox", "getSessionTurnDiff", "getSessionTodos", "backgroundSessionWork", "listRunningShells", "readShellOutput", "stopBackgroundShell", "shellSession", "revertSession", "summarizeSession", "unrevertSession", "forkSession", "stageRevert", "commitRevert", "clearRevert"],
+      "host": ["addSynthetic", "importSession", "forkSession"]
+    },
+    {
+      "id": "workspace-discovery", "ownership": "backend-dependent", "owner": "neutral workspace/catalog operations",
+      "decision": "Separate backend workspace discovery and file search from host-local filesystem/Git. Gate projects, VCS, LSP, tool IDs, commands and skills independently.", "gate": "CA-01",
+      "ui": ["getBootstrapPath", "getLocation", "listProjects", "getCurrentProject", "getVcs", "getLspStatus", "listToolIds", "listAgents", "listTaggedAgents", "listCommandsWithDetails", "listCommands", "listSkills", "searchFiles"],
+      "host": ["listCommands"]
+    },
+    {
+      "id": "decisions", "ownership": "backend-dependent", "owner": "neutral permission/question/form operations",
+      "decision": "Keep permission, question and form semantics distinct. A chat mode capable of demanding an unanswerable decision remains disabled.", "gate": "CA-01",
+      "ui": ["replyToPermission", "createPermission", "fetchPermission", "listPendingPermissions", "listTaggedPermissions", "replyToQuestion", "rejectQuestion", "listPendingQuestions", "listTaggedInputs", "replyToForm", "cancelForm", "getForm"],
+      "host": ["listPendingPermissions", "replyPermission"]
+    },
+    {
+      "id": "configuration", "ownership": "mixed", "owner": "backend configuration adapter and host cache",
+      "decision": "Keep cache invalidation host-owned. Gate every server read/write and provider catalog operation. Existing OpenCode settings writers remain OpenCode-only; CAgent never inherits their paths or config format.", "gate": "CA-01",
+      "ui": ["getTaggedConfig", "getConfigSources", "configDeniesAnyProvider", "getProviderCatalog", "clearConfigCache", "getConfig", "updateConfig", "updateConfigPartial", "getProviders", "getProvidersForConfig", "getApp", "initApp"], "host": []
+    },
+    {
+      "id": "mcp", "ownership": "backend-dependent", "owner": "optional backend MCP operations",
+      "decision": "Use verified backend catalog, connection and resource semantics. Disable raw SDK OAuth/reconnect actions until explicit operations exist.", "gate": "CA-01",
+      "ui": ["listMcpServers", "getMcpCatalog", "connectMcpServer", "disconnectMcpServer", "listMcpResources"], "host": []
+    },
+    {
+      "id": "credentials", "ownership": "backend-dependent", "owner": "backend credential operations with existing secret owner",
+      "decision": "Gate each credential and integration operation. Never substitute OpenCode provider OAuth for CAgent authentication; exported fixtures contain no secrets.", "gate": "CA-01",
+      "ui": ["listIntegrations", "connectIntegrationKey", "startIntegrationOAuth", "getIntegrationOAuthStatus", "completeIntegrationOAuth", "cancelIntegrationOAuth", "removeCredential", "activateCredential", "renameCredential"], "host": []
+    }
+  ],
+  "acceptance": {
+    "CA-01": "Typed contracts and guards, including direct and browser-closed callers, with OC1/OC2 regressions. No real CAgent support claim.",
+    "CA-02": "Protected offline kit validates per-operation semantics, feature rules and denied edits against sparse and extension samples.",
+    "CA-03": "Actual API evidence and live accepted adapter revision determine support and host availability. Unexamined operations stay unverified."
+  }
+}

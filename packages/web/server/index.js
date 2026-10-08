@@ -54,6 +54,8 @@ import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
+import { createAgentDispatcher } from './lib/agent/dispatcher.js';
+import { registerAgentRoutes } from './lib/agent/routes.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
 import { resolveOpenCodeEnvConfig } from './lib/opencode/env-config.js';
@@ -2210,6 +2212,9 @@ async function main(options = {}) {
     skipBodyParsing: (req) => spacesHost?.skipsBodyParsing(req) === true,
   });
   uiAuthController = bootstrapResult.uiAuthController;
+  // Reserve the owned protocol before proxy fallback. Activation is a later
+  // host-owned step; candidate adapter files cannot grant dispatch authority.
+  registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }) });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.
   // The slot is mounted once and reads the host at call time, so the switch can turn the feature
   // on and off live: with no host it passes every request on and no upgrade is taken.

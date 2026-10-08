@@ -1,4 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
+import { AGENT_ERROR, AGENT_ROUTE } from '../../web/server/lib/agent/constants.js';
 
 const { handleProxyBridgeMessage } = await import('./bridge-proxy-runtime');
 
@@ -11,6 +12,20 @@ const createDeps = () => ({
 });
 
 describe('bridge proxy runtime', () => {
+  it('refuses owned agent routes at the extension host before local or OpenCode forwarding', async () => {
+    const deps = createDeps();
+    for (const path of [AGENT_ROUTE.PREFIX, AGENT_ROUTE.RUNTIME, AGENT_ROUTE.DISPATCH,
+      '/agent-backend/runtime', '/api/x/../agent-backend/runtime', '/api/%61gent-backend/dispatch']) {
+      const response = await handleProxyBridgeMessage(
+        { id: path, type: 'api:proxy', payload: { method: 'POST', path } }, undefined, deps,
+      );
+      expect(response?.data).toMatchObject({ status: 501 });
+      expect(JSON.parse(response?.data.bodyText)).toEqual({ error: AGENT_ERROR.UNSUPPORTED_RUNTIME });
+    }
+    expect(deps.tryHandleLocalFsProxy).not.toHaveBeenCalled();
+    expect(deps.buildUnavailableApiResponse).not.toHaveBeenCalled();
+  });
+
   it('blocks OC1 and OC2 provider connections in enterprise mode before proxying', async () => {
     const previous = process.env.OPENCHAMBER_ENTERPRISE_MODE;
     process.env.OPENCHAMBER_ENTERPRISE_MODE = '1';

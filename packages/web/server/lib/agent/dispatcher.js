@@ -1,4 +1,5 @@
 import { AGENT_ERROR, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS } from './schemas.js';
 
 const operations = new Set(Object.values(AGENT_OPERATION));
 const mutations = new Set(AGENT_MUTATIONS);
@@ -53,24 +54,35 @@ export const createAgentDispatcher = ({ getBinding }) => {
   const captureIdentity = () => {
     const binding = getBinding();
     if (!binding) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, 'captureIdentity');
+    if (!binding.authorized) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, 'captureIdentity');
+    if (!binding.ready) throw new AgentDispatchError(AGENT_ERROR.UNAVAILABLE, 'captureIdentity');
     return Object.freeze({ ...binding.identity });
   };
   const dispatch = async (operation, input, expected) => {
     const binding = requireBinding(operation, expected);
+    const request = AGENT_INPUT_SCHEMAS[operation].safeParse(input);
+    if (!request.success) throw new AgentDispatchError(AGENT_ERROR.INVALID_INPUT, operation);
     const identity = Object.freeze({ ...binding.identity });
     const handler = binding.handlers[operation];
     // Re-read at the point of effect. The host can replace a binding while
     // earlier checks run. No handler may run under a stale lease.
     requireBinding(operation, identity);
     try {
-      const data = await handler(input, identity);
+      const data = await handler(request.data, identity);
       const current = getBinding();
       if (!current || !same(identity, current.identity)) {
         throw new AgentDispatchError(
           mutations.has(operation) ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.CHANGED, operation,
         );
       }
-      return { identity, data };
+      requireBinding(operation, identity);
+      const response = AGENT_OUTPUT_SCHEMAS[operation].safeParse(data);
+      if (!response.success) {
+        throw new AgentDispatchError(
+          mutations.has(operation) ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE, operation,
+        );
+      }
+      return { identity, data: response.data };
     } catch (error) {
       const current = getBinding();
       if (!current || !same(identity, current.identity)) {
@@ -78,6 +90,7 @@ export const createAgentDispatcher = ({ getBinding }) => {
           mutations.has(operation) ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.CHANGED, operation,
         );
       }
+      if (mutations.has(operation)) throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OUTCOME, operation);
       throw error;
     }
   };

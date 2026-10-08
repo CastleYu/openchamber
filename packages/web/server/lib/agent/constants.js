@@ -6,6 +6,14 @@ export const AGENT_ERROR = Object.freeze({
   UNKNOWN_OPERATION: 'unknown-operation', UNVERIFIED: 'unverified', UNSUPPORTED: 'unsupported',
   UNACCEPTED: 'unaccepted', UNAVAILABLE: 'unavailable', UNAUTHORIZED: 'unauthorized',
   MISSING_HANDLER: 'missing-handler', CHANGED: 'backend-changed', UNKNOWN_OUTCOME: 'unknown-outcome',
+  INVALID_INPUT: 'invalid-input', INVALID_RESPONSE: 'invalid-response',
+  WRITE_UNAVAILABLE: 'write-unavailable', BACKEND_FAILED: 'backend-failed',
+  UNKNOWN_ROUTE: 'unknown-route',
+  UNSUPPORTED_RUNTIME: 'unsupported-runtime',
+});
+export const AGENT_ROUTE = Object.freeze({
+  PREFIX: '/api/agent-backend', RUNTIME: '/api/agent-backend/runtime',
+  DISPATCH: '/api/agent-backend/dispatch',
 });
 export const AGENT_OPERATION = Object.freeze({
   GET_SESSION: 'getSession', CREATE_SESSION: 'createSession', LIST_SESSIONS: 'listSessions',

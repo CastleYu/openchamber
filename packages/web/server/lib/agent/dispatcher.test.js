@@ -10,7 +10,7 @@ const identity = () => ({
 
 const binding = (overrides = {}) => {
   const id = identity();
-  const handler = vi.fn(async (input) => input);
+  const handler = vi.fn(async (input) => ({ id: input.sessionID, workspaceID: input.workspaceID }));
   return {
     identity: id,
     ready: true,
@@ -33,8 +33,8 @@ describe('agent dispatcher', () => {
     const current = binding();
     current.capabilities[AGENT_OPERATION.GET_SESSION].state = state;
     const dispatcher = createAgentDispatcher({ getBinding: () => current });
-    const result = await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { sessionID: 's1' }, identity());
-    expect(result.data).toEqual({ sessionID: 's1' });
+    const result = await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' }, identity());
+    expect(result.data).toEqual({ id: 's1', workspaceID: 'w1' });
     expect(result.identity).toEqual(identity());
     expect(current.handler).toHaveBeenCalledTimes(1);
   });
@@ -94,7 +94,10 @@ describe('agent dispatcher', () => {
     current.acceptance.operations.push(operation);
     current.handlers[operation] = handler;
     const dispatcher = createAgentDispatcher({ getBinding: () => current });
-    const dispatched = dispatcher.dispatch(operation, {}, identity());
+    const input = operation === AGENT_OPERATION.SEND_PROMPT
+      ? { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }
+      : { workspaceID: 'w1', sessionID: 's1' };
+    const dispatched = dispatcher.dispatch(operation, input, identity());
     await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(1));
     current.identity.epoch += 1;
     resolveHandler('done');
@@ -107,17 +110,45 @@ describe('agent dispatcher', () => {
     const original = new Error('handler failed');
     current.handlers[AGENT_OPERATION.GET_SESSION] = vi.fn(async () => { throw original; });
     const dispatcher = createAgentDispatcher({ getBinding: () => current });
-    await expect(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, {}, identity())).rejects.toBe(original);
+    await expect(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' }, identity())).rejects.toBe(original);
     expect(current.handlers[AGENT_OPERATION.GET_SESSION]).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports an entered mutation failure as unknown without retry', async () => {
+    const current = binding();
+    const operation = AGENT_OPERATION.SEND_PROMPT;
+    const handler = vi.fn(async () => { throw new Error('response lost after effect'); });
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = handler;
+    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation,
+      { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('rejects calls when acceptance changes without an identity revision change', async () => {
     const current = binding();
     const dispatcher = createAgentDispatcher({ getBinding: () => current });
-    await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, {}, identity());
+    await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' }, identity());
     current.acceptance.operations = [];
     await errorCode(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, {}, identity()), AGENT_ERROR.UNACCEPTED);
     expect(current.handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an in-flight read when acceptance is revoked before its result', async () => {
+    const current = binding();
+    current.handlers[AGENT_OPERATION.GET_SESSION] = vi.fn(async () => {
+      current.acceptance = null;
+      return { id: 's1', workspaceID: 'w1' };
+    });
+    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(AGENT_OPERATION.GET_SESSION,
+      { workspaceID: 'w1', sessionID: 's1' }), AGENT_ERROR.UNACCEPTED);
+    expect(current.handlers[AGENT_OPERATION.GET_SESSION]).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([{ authorized: false }, { ready: false }])('refuses identity capture from an inaccessible binding: %j', (patch) => {
+    const current = binding(patch);
+    expect(() => createAgentDispatcher({ getBinding: () => current }).captureIdentity()).toThrow(AgentDispatchError);
   });
 
   it('exposes dispatch errors as AgentDispatchError', async () => {
@@ -132,8 +163,43 @@ describe('agent dispatcher', () => {
     replacement.identity.family = AGENT_FAMILY.CAGENT;
     let reads = 0;
     const dispatcher = createAgentDispatcher({ getBinding: () => ++reads === 1 ? original : replacement });
-    await errorCode(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, {}, identity()), AGENT_ERROR.CHANGED);
+    await errorCode(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' }, identity()), AGENT_ERROR.CHANGED);
     expect(original.handler).not.toHaveBeenCalled();
     expect(replacement.handler).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed input before entering a supported handler', async () => {
+    const current = binding();
+    const dispatcher = createAgentDispatcher({ getBinding: () => current });
+    await errorCode(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { sessionID: 's1' }, identity()), AGENT_ERROR.INVALID_INPUT);
+    expect(current.handler).not.toHaveBeenCalled();
+  });
+
+  it('passes parsed copies across the handler boundary', async () => {
+    const current = binding();
+    const input = { workspaceID: 'w1', sessionID: 's1' };
+    const output = { id: 's1', workspaceID: 'w1' };
+    current.handlers[AGENT_OPERATION.GET_SESSION] = vi.fn(async () => output);
+    const result = await createAgentDispatcher({ getBinding: () => current }).dispatch(AGENT_OPERATION.GET_SESSION, input);
+    expect(current.handlers[AGENT_OPERATION.GET_SESSION].mock.calls[0][0]).toEqual(input);
+    expect(current.handlers[AGENT_OPERATION.GET_SESSION].mock.calls[0][0]).not.toBe(input);
+    expect(result.data).toEqual(output);
+    expect(result.data).not.toBe(output);
+  });
+
+  it.each([
+    [AGENT_OPERATION.GET_SESSION, AGENT_ERROR.INVALID_RESPONSE],
+    [AGENT_OPERATION.SEND_PROMPT, AGENT_ERROR.UNKNOWN_OUTCOME],
+  ])('refuses malformed %s results without retry', async (operation, code) => {
+    const current = binding();
+    const handler = vi.fn(async () => ({ wireSecret: 'must not escape' }));
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['evidence-1'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = handler;
+    const input = operation === AGENT_OPERATION.SEND_PROMPT
+      ? { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'hello' }
+      : { workspaceID: 'w1', sessionID: 's1' };
+    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation, input), code);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 });

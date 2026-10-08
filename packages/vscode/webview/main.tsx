@@ -1,4 +1,5 @@
 import { createVSCodeAPIs } from './api';
+import { AGENT_ERROR, AGENT_ROUTE } from '../../web/server/lib/agent/constants.js';
 import { createRemovalTombstones } from './inlineCommentRemovals';
 import { resolveCommentTarget } from './inlineCommentTarget';
 import { onCommand, onThemeChange, postBridgeNotification, proxyApiRequest, proxySessionMessageRequest, sendBridgeMessage, startSseProxy, stopSseProxy } from './api/bridge';
@@ -388,6 +389,10 @@ const isLocalRuntimePath = (pathname: string) => isApiPath(pathname) || pathname
 const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: RequestInit | undefined, method: string) => {
   const pathname = url.pathname;
   const normalizedPathname = pathname !== '/' ? pathname.replace(/\/+$/, '') : pathname;
+
+  if (normalizedPathname === AGENT_ROUTE.PREFIX || normalizedPathname.startsWith(`${AGENT_ROUTE.PREFIX}/`)) {
+    return jsonResponse({ error: AGENT_ERROR.UNSUPPORTED_RUNTIME }, 501);
+  }
 
   if (normalizedPathname === '/api/system/info' && method === 'GET') {
     const config = window.__VSCODE_CONFIG__;

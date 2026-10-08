@@ -1,5 +1,6 @@
 import type { BridgeContext, BridgeResponse } from './bridge';
 import { waitForApiUrl } from './opencode-ready';
+import { AGENT_ERROR, AGENT_ROUTE } from '../../web/server/lib/agent/constants.js';
 import {
   CREDENTIAL_LIST_ERROR,
   ENTERPRISE_MODE_ERROR,
@@ -61,6 +62,16 @@ const isSseProxyPath = (requestPath: string): boolean => {
     return parsed.pathname === '/event' || parsed.pathname === '/global/event';
   } catch {
     return requestPath === '/event' || requestPath === '/global/event';
+  }
+};
+
+const agentPrefixes = [AGENT_ROUTE.PREFIX, AGENT_ROUTE.PREFIX.slice('/api'.length)];
+const isAgentProxyPath = (requestPath: string): boolean => {
+  try {
+    const pathname = decodeURIComponent(new URL(requestPath, 'https://openchamber.invalid').pathname);
+    return agentPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  } catch {
+    return false;
   }
 };
 
@@ -175,6 +186,15 @@ export async function handleProxyBridgeMessage(
           status: 400,
           headers: { 'content-type': 'application/json' },
           bodyText: JSON.stringify({ error: 'SSE requests must use api:sse:start' }),
+        };
+        return { id, type, success: true, data };
+      }
+
+      if (isAgentProxyPath(normalizedPath)) {
+        const data: ApiProxyResponsePayload = {
+          status: 501,
+          headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+          bodyText: JSON.stringify({ error: AGENT_ERROR.UNSUPPORTED_RUNTIME }),
         };
         return { id, type, success: true, data };
       }

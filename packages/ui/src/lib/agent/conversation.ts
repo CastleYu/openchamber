@@ -6,6 +6,7 @@ import type {
 } from '../../../../web/server/lib/agent/dispatcher.js';
 import type { AgentFeature } from '../../../../web/server/lib/agent/features.js';
 import { AgentClient, AgentClientError, type AgentClientSnapshot } from './client';
+import { type AgentRequestJournal, type AgentRequestOwner } from './journal';
 
 type Code = typeof AGENT_ERROR[keyof typeof AGENT_ERROR];
 const AGENT_CONVERSATION = Object.freeze({
@@ -52,7 +53,7 @@ export class AgentConversation {
   private readonly cursors = new Set<string>();
   private readonly unsubscribe: () => void;
 
-  constructor(private readonly client: AgentClient) {
+  constructor(private readonly client: AgentClient, private readonly journal?: AgentRequestJournal) {
     this.unsubscribe = client.subscribeRetirement(() => this.clear());
   }
 
@@ -94,7 +95,12 @@ export class AgentConversation {
 
   private owner(current: Extract<ConversationState, { state: 'bound' }>): string {
     const identity = current.snapshot.scope.identity;
-    return JSON.stringify([identity.family, identity.connectionID, current.workspaceID, current.session.id]);
+    return JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, current.workspaceID, current.session.id]);
+  }
+
+  private requestOwner(current: Extract<ConversationState, { state: 'bound' }>): AgentRequestOwner {
+    const { family, connectionID } = current.snapshot.scope.identity;
+    return { family, connectionID, workspaceID: current.workspaceID, sessionID: current.session.id };
   }
 
   private write(current: Extract<ConversationState, { state: 'bound' }>, value: ConversationWrite): void {
@@ -120,7 +126,10 @@ export class AgentConversation {
     const bound = { state: AGENT_CONVERSATION.BOUND, snapshot, workspaceID, session,
       history: Object.freeze({ state: AGENT_CONVERSATION.EMPTY, items: Object.freeze([]) }),
       write: Object.freeze({ state: AGENT_CONVERSATION.IDLE }) };
-    this.publish({ ...bound, write: this.writes.get(this.owner(bound)) ?? bound.write });
+    const pending = this.journal?.read(this.requestOwner(bound))[0];
+    this.publish({ ...bound, write: pending
+      ? Object.freeze({ state: AGENT_CONVERSATION.UNKNOWN, requestID: pending })
+      : this.writes.get(this.owner(bound)) ?? bound.write });
   }
 
   /** Explicit refresh only. Historical messages never imply live execution. */
@@ -167,8 +176,11 @@ export class AgentConversation {
       throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
     }
     const identity = current.snapshot.scope.identity;
-    const key = JSON.stringify([identity.family, identity.connectionID, requestID]);
+    const owner = this.requestOwner(current);
+    if (this.journal?.read(owner).length) throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
+    const key = JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, requestID]);
     if (this.requests.has(key)) throw new AgentClientError(AGENT_ERROR.ATTEMPT_EXISTS);
+    this.journal?.mark(owner, requestID);
     this.requests.add(key);
     const revision = this.revision;
     this.loadRevision += 1;
@@ -181,17 +193,27 @@ export class AgentConversation {
       const receipt = await this.client.dispatch(current.snapshot.scope, AGENT_OPERATION.SEND_PROMPT,
         { workspaceID: current.workspaceID, sessionID: current.session.id, requestID, text }, signal);
       if (receipt.requestID !== requestID) throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
+      if (receipt.state !== AGENT_CONVERSATION.UNKNOWN) {
+        try { this.journal?.clear(owner, requestID); }
+        catch { throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME); }
+      }
       if (revision === this.revision) {
         this.write(current, Object.freeze({ state: receipt.state, requestID }));
       }
       return receipt;
     } catch (error) {
-      const code = error instanceof AgentClientError ? error.code : AGENT_ERROR.BACKEND_FAILED;
+      let code = error instanceof AgentClientError ? error.code : AGENT_ERROR.BACKEND_FAILED;
+      // A host duplicate proves a prior attempt exists, not that it was unsent.
+      if (code === AGENT_ERROR.ATTEMPT_EXISTS) code = AGENT_ERROR.UNKNOWN_OUTCOME;
+      if (code !== AGENT_ERROR.UNKNOWN_OUTCOME) {
+        try { this.journal?.clear(owner, requestID); }
+        catch { code = AGENT_ERROR.UNKNOWN_OUTCOME; }
+      }
       if (revision === this.revision) {
         this.write(current, Object.freeze({ state: code === AGENT_ERROR.UNKNOWN_OUTCOME
           ? AGENT_CONVERSATION.UNKNOWN : AGENT_CONVERSATION.NOT_SENT, requestID, error: code }));
       }
-      throw error;
+      throw new AgentClientError(code);
     }
   }
 
@@ -210,6 +232,10 @@ export class AgentConversation {
     if (latest.state === AGENT_CONVERSATION.ACCEPTED && attempt.state === AGENT_CONVERSATION.NOT_SENT) {
       throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
     }
-    this.write(current, Object.freeze({ state: attempt.state, requestID }));
+    if (attempt.state !== AGENT_CONVERSATION.UNKNOWN) this.journal?.clear(this.requestOwner(current), requestID);
+    const pending = this.journal?.read(this.requestOwner(current))[0];
+    this.write(current, Object.freeze(pending
+      ? { state: AGENT_CONVERSATION.UNKNOWN, requestID: pending }
+      : { state: attempt.state, requestID }));
   }
 }

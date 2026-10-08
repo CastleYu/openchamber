@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: application family gate
+## Latest checkpoint: unresolved request continuity
+
+2026-10-09. CA-01 remains in progress. `AgentRequestJournal` now persists unresolved request identities through an injected storage port. The controller records before dispatch, refuses transport if persistence fails, restores uncertainty after recreation and queries the host ledger without replay. Known results clear only their matching record; failed cleanup and host duplicates retain uncertainty. Corruption is isolated to its conversation. Prompt text and credentials are not stored. This is not a cross-window send lock, and the application has not yet mounted this store or conversation controller.
+
+Primary review added conversation-level recreation, storage failure, pre-abort, multiple pending identities and duplicate-host tests, and journal corruption-isolation/input-bound tests. The focused client/conversation/journal run passed 43 tests with 161 assertions. Changed-file anti-slop passed. Root type-check and lint passed, with five inherited lint warnings; final UI type-check and changed-file lint also passed after duplicate handling changed. Dead-code retains two unused files, 319 exports, 231 exported types and one duplicate, with no Agent row. All 95 local links in ten touched documents and the whitespace check passed. These synthetic tests do not establish browser reload, native storage or real CAgent acceptance. No new browser bundle or native journey was run for this controller-only checkpoint.
+
+The paired workbook now defines required feature disposition columns and runner rejection of missing rows. Next: actual conversation presentation, runtime-scoped storage composition and authoritative outcome observation. Remaining feature callers/extensions, complete CA-02 offline kit, CA-03 target-environment/model acceptance, independent remote branch publication and temporary Release remain required. Lower-priority INT work stays after CA-03. Live weekly quota remains 66% available.
+
+## Previous checkpoint: application family gate
 
 2026-10-09. CA-01 remains in progress. Web, Electron main/mini-chat and hosted-mobile roots now read protected family selection before evaluating their lazy OpenCode application. Capacitor first reuses native saved-instance connection/authentication, then selects the backend. CAgent displays an explicitly unavailable integration page; authority failure stays retryable. No CAgent operation or conversation is enabled. VS Code retains its existing OpenCode root and explicit Agent-route refusal.
 

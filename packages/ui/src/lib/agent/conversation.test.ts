@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FEATURE, AGENT_MESSAGE_STATE, AGENT_OPERATION, AGENT_PART, AGENT_ROLE, AGENT_ROUTE } from '../../../../web/server/lib/agent/constants.js';
 import { AgentClient, AgentClientError, type AgentClientPorts, type AgentClientSnapshot } from './client';
 import { AgentConversation } from './conversation';
+import { AgentRequestJournal } from './journal';
 import type { RuntimeFetchOptions } from '../runtime-fetch';
 import type { AgentOperation, JsonValue } from '../../../../web/server/lib/agent/dispatcher.js';
 import { AGENT_INPUT_SCHEMAS, agentDispatchRequestSchema } from '../../../../web/server/lib/agent/schemas.js';
@@ -59,6 +60,112 @@ const code = async (work: Promise<unknown>, expected: string) => {
     expect(error.code).toBe(expected);
   }
 };
+
+class RequestStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'> {
+  private readonly values = new Map<string, string>();
+  fail: 'set' | 'remove' | undefined;
+  get length(): number { return this.values.size; }
+  key(index: number): string | null { return [...this.values.keys()][index] ?? null; }
+  getItem(key: string): string | null { return this.values.get(key) ?? null; }
+  setItem(key: string, value: string): void {
+    if (this.fail === 'set') throw new Error('storage failure');
+    this.values.set(key, value);
+  }
+  removeItem(key: string): void {
+    if (this.fail === 'remove') throw new Error('storage failure');
+    this.values.delete(key);
+  }
+}
+
+describe('AgentConversation durable request identity', () => {
+  const owner = { family: identity.family, connectionID: identity.connectionID, workspaceID: 'w', sessionID: 's' };
+  test('records before dispatch and restores uncertainty after the controller is recreated', async () => {
+    const h = new Harness();
+    const storage = new RequestStorage();
+    const journal = new AgentRequestJournal(storage, 'runtime-hash');
+    h.conversation.dispose();
+    h.conversation = new AgentConversation(h.client, journal);
+    await h.open();
+    h.dispatch = async () => {
+      expect(new AgentRequestJournal(storage, 'runtime-hash').read(owner)).toEqual(['r']);
+      throw new Error('lost acknowledgement');
+    };
+    await code(h.conversation.send('r', 'private prompt'), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(storage.getItem(storage.key(0) ?? '')).not.toContain('private prompt');
+    h.conversation.dispose();
+    h.conversation = new AgentConversation(h.client, new AgentRequestJournal(storage, 'runtime-hash'));
+    h.dispatch = async () => ({ id: 's', workspaceID: 'w' });
+    await h.open();
+    const restored = h.conversation.getSnapshot();
+    if (restored.state !== 'bound') throw new Error('conversation did not bind');
+    expect(restored.write).toEqual({ state: 'unknown', requestID: 'r' });
+    const calls = h.calls.length;
+    await code(h.conversation.send('new', 'another prompt'), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(h.calls.length).toBe(calls);
+    await h.conversation.resolve();
+    expect(journal.read(owner)).toEqual(['r']);
+    h.attempt = { version: 1, identity, operation: AGENT_OPERATION.SEND_PROMPT, requestID: 'r', state: 'accepted' };
+    await h.conversation.resolve();
+    expect(journal.read(owner)).toEqual([]);
+    const resolved = h.conversation.getSnapshot();
+    if (resolved.state !== 'bound') throw new Error('conversation did not bind');
+    expect(resolved.write).toEqual({ state: 'accepted', requestID: 'r' });
+  });
+
+  test('failed persistence prevents dispatch and failed cleanup preserves uncertainty', async () => {
+    const h = new Harness(); const storage = new RequestStorage();
+    const journal = new AgentRequestJournal(storage, 'runtime-hash');
+    h.conversation.dispose(); h.conversation = new AgentConversation(h.client, journal);
+    await h.open();
+    const calls = h.calls.length;
+    storage.fail = 'set';
+    await code(h.conversation.send('r', 'hello'), AGENT_ERROR.ATTEMPT_STORAGE);
+    expect(h.calls.length).toBe(calls);
+    const unchanged = h.conversation.getSnapshot();
+    if (unchanged.state !== 'bound') throw new Error('conversation did not bind');
+    expect(unchanged.write).toEqual({ state: 'idle' });
+    storage.fail = 'remove';
+    h.dispatch = async () => ({ state: 'accepted', requestID: 'r' });
+    await code(h.conversation.send('r', 'hello'), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(journal.read(owner)).toEqual(['r']);
+    const uncertain = h.conversation.getSnapshot();
+    if (uncertain.state !== 'bound') throw new Error('conversation did not bind');
+    expect(uncertain.write.state).toBe('unknown');
+  });
+
+  test('a host duplicate keeps request identity until its prior outcome is queried', async () => {
+    const h = new Harness(); const journal = new AgentRequestJournal(new RequestStorage(), 'runtime-hash');
+    h.conversation.dispose(); h.conversation = new AgentConversation(h.client, journal);
+    await h.open(); h.failure = AGENT_ERROR.ATTEMPT_EXISTS;
+    await code(h.conversation.send('prior', 'hello'), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect(journal.read(owner)).toEqual(['prior']);
+    await h.conversation.resolve();
+    expect(journal.read(owner)).toEqual(['prior']);
+    h.attempt = { version: 1, identity, operation: AGENT_OPERATION.SEND_PROMPT, requestID: 'prior', state: 'complete' };
+    await h.conversation.resolve();
+    expect(journal.read(owner)).toEqual([]);
+  });
+
+  test('resolves independent pending identities one at a time and pre-abort clears a known unsent request', async () => {
+    const h = new Harness(); const journal = new AgentRequestJournal(new RequestStorage(), 'runtime-hash');
+    journal.mark(owner, 'r1'); journal.mark(owner, 'r2');
+    h.conversation.dispose(); h.conversation = new AgentConversation(h.client, journal);
+    await h.open();
+    h.attempt = { version: 1, identity, operation: AGENT_OPERATION.SEND_PROMPT, requestID: 'r1', state: 'complete' };
+    await h.conversation.resolve();
+    const pending = h.conversation.getSnapshot();
+    if (pending.state !== 'bound') throw new Error('conversation did not bind');
+    expect(pending.write).toEqual({ state: 'unknown', requestID: 'r2' });
+    h.attempt = { version: 1, identity, operation: AGENT_OPERATION.SEND_PROMPT, requestID: 'r2', state: 'not-sent' };
+    await h.conversation.resolve();
+    expect(journal.read(owner)).toEqual([]);
+    const controller = new AbortController(); controller.abort();
+    const calls = h.calls.length;
+    await code(h.conversation.send('r3', 'hello', controller.signal), AGENT_ERROR.CANCELLED);
+    expect(h.calls.length).toBe(calls);
+    expect(journal.read(owner)).toEqual([]);
+  });
+});
 
 describe('AgentConversation', () => {
   test('a changed host identity retires visible state even without endpoint navigation', async () => {

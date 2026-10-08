@@ -75,7 +75,7 @@ Effective feature availability is the intersection of verified operation support
 | Missing stop | Disable Stop and unattended modes that require cancellation. An explicitly chosen interactive mode can remain available only if completion is observable and the UI states that cancellation is unavailable. Closing the view does not claim server cancellation. |
 | Config, plugins, MCP, OAuth and reload | Disable each unsupported operation independently. Do not write OpenCode config, inject OpenCode plugins, migrate storage or call dispose against CAgent. |
 
-No actual CAgent feature classification is possible outside the environment. The local capability report must distinguish proven unsupported operations from work not yet verified. The Legacy promise remains unchanged; CAgent may deliver a deliberately reduced feature set with explicit acceptance.
+No actual CAgent feature classification is possible outside the environment. The local capability report must distinguish proven unsupported operations from work not yet verified. Use the [workbook report fields](CAGENT-ADAPTER-WORKBOOK.md#feature-disposition-and-extensions) to account for every existing feature and documented new capability, with host ownership and computed availability. The Legacy promise remains unchanged; CAgent may deliver a deliberately reduced feature set with explicit acceptance.
 
 ## CAgent-specific capabilities
 

@@ -143,10 +143,21 @@ For CA-02 rehearsals and the CA-03 local-model trial, record packets attempted, 
 
 ## Feature disposition and extensions
 
-| Feature ID | Dependency rule | Support result | User-visible result | Evidence / next owner |
-| --- | --- | --- | --- | --- |
-| Generated existing ID | Fixed all-of/any-of rule | Unverified until evidence | Disabled with reason until accepted | Local documentation, fixture/live report |
-| Generated CAgent extension ID | Versioned schemas and registered handler | Unverified until evidence | Extension panel only after acceptance | Template-compatible or requires-host-development |
+The protected runner generates existing feature rows from the frozen consumer registry and additional CAgent capability rows from the documented endpoint inventory. The local agent fills evidence and candidate mappings; the runner computes dependencies and availability. Missing rows fail report validation.
+
+| Required column | Fill rule |
+| --- | --- |
+| Feature ID and owner | Generated existing ID or registered CAgent extension ID, owning host and actual callers. |
+| Required semantics | Fixed all-of/any-of operation dependencies and required outcome, decision, cancellation or workspace semantics. |
+| Documentation disposition | Shared semantics, bounded conversion, documented incompatibility, evidence gap, or CAgent-only capability. |
+| Evidence and implementation | Document sections, mapping/codec revision, protected checks and separate real-server evidence IDs. |
+| Host disposition | Implemented on the named host, or `requires-host-development` with the missing interaction or privilege. |
+| Effective availability | Runner-computed result with a fixed reason for every unmet prerequisite; UI and direct callers receive the same result. |
+| Follow-up owner | Local mapping/codec task, maintainer evidence question, or architecture-owner host task. |
+
+An evidence gap keeps a feature disabled pending verification. Documented incompatibility keeps it disabled until an implementation preserves the required semantics. Only the latter establishes unsupported behavior. A CAgent-only capability uses the finite extension contract; an interaction that contract cannot express becomes an architecture-owner task. The local agent cannot change dependencies or rename a failed check as a limitation to enable a feature.
+
+CA-02 supplies protected report examples for each disposition and verifies missing-row rejection. CA-03 replaces sample evidence with local documentation and live results. Endpoint counts and model confidence never establish support.
 
 The rows are templates, not findings about the real CAgent. The report must enumerate all existing consumer features and all additional CAgent features found in the provided API documentation. Where the documentation inventory is incomplete, state that limitation. Do not label unexamined features unsupported or claim exhaustive server coverage.
 

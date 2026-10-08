@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: OpenCode route family refusal
+## Latest checkpoint: configuration family refusal
+
+2026-10-09. CA-01 remains in progress. All Agent, command, MCP, plugin and skill configuration prefixes now use the same request-entry family check as the OpenCode routes. Production passes the protected host selection to each registrar. CAgent refuses before generation/directory/configuration access, npm registry lookup, skill scan or installation. App-owned snippets remain available. The entity generation readiness check now lives with its registrar, following family refusal. Web/Electron and server-connected mobile clients share these checks; VS Code remains unavailable for CAgent.
+
+Nine focused family tests pass. The lead changed the default-selection test to exercise a guarded agent route, added unresolved-generation mutation refusal and verified CAgent refusal before generation access. Four Vitest regression files pass 42 tests; the existing plugin suite passes 32 tests using its native Bun runner. Web type-check/lint, six module syntax checks and new module/test anti-slop checks pass. Full touched route files retain inherited anti-slop findings outside the added guard. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, without an affected guard/registration row.
+
+These are local request-entry regressions. They do not prove retirement of every in-flight legacy operation, packaged/native launch or real CAgent support. Remaining CA-01 work includes protected production selection, startup configuration preparation, active watcher retirement and complete consumer/feature migration. CA-02 kit and CA-03 environment acceptance remain pending. Other INT work stays behind CA-03. Independent remote publication and temporary Release are still required.
+
+## Previous checkpoint: OpenCode route family refusal
 
 2026-10-09. CA-01 remains in progress. Production route composition now supplies the protected host selection to 18 OpenCode-owned methods in `routes.js`. Resolution, upgrades, health/version, MCP OAuth, provider configuration/credentials, websearch, warming, directory switching and managed AGENTS.md refuse CAgent before handlers. Pending MCP auth refuses before its route-local JSON parser. Runtime discovery and OpenChamber settings remain available. Web and Electron share these checks; hosted mobile and Capacitor use their selected server. VS Code remains unavailable for CAgent.
 

@@ -4,6 +4,7 @@ import os from 'os';
 import { getNpmInfo as defaultGetNpmInfo } from './npm-registry.js';
 import { isExactSemver as defaultIsExactSemver, isPathSpec as defaultIsPathSpec, parseNpmSpec as defaultParseNpmSpec, parsePathSpec as defaultParsePathSpec } from './plugin-spec.js';
 import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
+import { createOpenCodeFamilyGuard } from './family-guard.js';
 
 const ENTRY_EXISTS_CODES = new Set(['ENTRY_EXISTS', 'EEXIST']);
 const FILE_EXISTS_CODES = new Set(['FILE_EXISTS', 'EEXIST']);
@@ -13,6 +14,7 @@ const BAD_REQUEST_CODES = new Set(['INVALID_FILENAME', 'INVALID_SCOPE', 'INVALID
 export const registerPluginRoutes = (app, dependencies) => {
   const {
     getKernelRuntime = () => ({ generation: 'oc1' }),
+    getBackendSelection,
     resolveOptionalProjectDirectory,
     listPluginEntries,
     getPluginEntry,
@@ -31,6 +33,8 @@ export const registerPluginRoutes = (app, dependencies) => {
     isExactSemver = defaultIsExactSemver,
     isPathSpec = defaultIsPathSpec,
   } = dependencies;
+
+  app.use('/api/config/plugins', createOpenCodeFamilyGuard(getBackendSelection));
 
   const parsedKindForSpec = (spec) => (isPathSpec(spec) ? 'path' : 'npm');
   const requestKernels = new WeakMap();

@@ -270,14 +270,9 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       if (active === 'oc2') return current(...args);
       throw new Error('OpenCode generation is not ready for configuration access');
     };
-    for (const segment of ['agents', 'commands', 'mcp']) {
-      app.use(`/api/config/${segment}`, (_req, res, next) => {
-        if (generation() !== 'oc1' && generation() !== 'oc2') return res.status(503).json({ error: 'OpenCode generation is not ready' });
-        return next();
-      });
-    }
     registerConfigEntityRoutes(app, {
       getGeneration: generation,
+      getBackendSelection,
       resolveProjectDirectory,
       resolveOptionalProjectDirectory,
       refreshOpenCodeAfterConfigChange,
@@ -314,6 +309,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     };
     registerPluginRoutes(app, {
       getKernelRuntime: () => kernelRuntime.get(),
+      getBackendSelection,
       resolveOptionalProjectDirectory,
       refreshOpenCodeAfterConfigChange,
       clientReloadDelayMs,
@@ -338,6 +334,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
 
     registerSkillRoutes(app, {
       kernelRuntime,
+      getBackendSelection,
       fs,
       path,
       os,

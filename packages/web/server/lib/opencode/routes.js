@@ -11,7 +11,7 @@ import { OPENCODE_CONFIG_DIR, readConfigLayers as readLegacyConfigLayers } from 
 import { readConfigLayers as readCurrentConfigLayers } from './shared-v2.js';
 import { settingsSurfaceOf } from './settings-files.js';
 import { OPENCODE_GENERATION } from './compatibility.js';
-import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
+import { createOpenCodeFamilyGuard } from './family-guard.js';
 import { parseWebSearchSelection, readStoredProviderEntry } from './config-v2.js';
 import { getWebSearchSource, setWarmingEnabled, setWebSearchSelection } from './websearch-config.js';
 import { CREDENTIAL_LIST_ERROR, ENTERPRISE_MODE_ERROR, isCredentialListRequest, isEnterpriseMode, isProviderConnectRequest } from '../enterprise-mode.js';
@@ -20,7 +20,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
   const {
     crypto,
     kernelRuntime,
-    getBackendSelection = () => ({ family: AGENT_FAMILY.OPENCODE, revision: 0 }),
+    getBackendSelection,
     getOpenCodeResolutionSnapshot,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
@@ -41,11 +41,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     fsPromises = fs.promises,
   } = dependencies;
 
-  const requireOpenCode = (_req, res, next) => {
-    if (getBackendSelection().family === AGENT_FAMILY.OPENCODE) return next();
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(501).json({ error: AGENT_ERROR.UNMIGRATED });
-  };
+  const requireOpenCode = createOpenCodeFamilyGuard(getBackendSelection);
 
   const authLibraries = new Map();
   const selectedKernel = () => {

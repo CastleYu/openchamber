@@ -1,8 +1,11 @@
 import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
+import { createOpenCodeFamilyGuard } from './family-guard.js';
+import { OPENCODE_GENERATION } from './compatibility.js';
 
 export const registerConfigEntityRoutes = (app, dependencies) => {
   const {
     getGeneration = () => 'oc1',
+    getBackendSelection,
     resolveProjectDirectory,
     resolveOptionalProjectDirectory,
     getAgentSources,
@@ -28,6 +31,18 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     deleteSnippet,
     expandSnippets,
   } = dependencies;
+
+  app.use(
+    ['/api/config/agents', '/api/config/commands', '/api/config/mcp'],
+    createOpenCodeFamilyGuard(getBackendSelection),
+    (_req, res, next) => {
+      const generation = getGeneration();
+      if (generation !== OPENCODE_GENERATION.OC1 && generation !== OPENCODE_GENERATION.OC2) {
+        return res.status(503).json({ error: 'OpenCode generation is not ready' });
+      }
+      return next();
+    },
+  );
 
   const complete = (message, details) => getGeneration() === 'oc2'
     ? buildAppliedResponse(message.replace(/\. Restart OpenCode to apply\.?$/, '.'), details)

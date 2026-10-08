@@ -85,6 +85,15 @@ This module provides OpenCode server integration utilities for the web server ru
   available. This is an entry check, not a lease across asynchronous work or
   complete migration of all configuration routes. See the bilingual
   [execution checkpoint](../../../../../docs/maintenance/CAGENT-EXECUTION.md).
+- `family-guard.js` owns request-entry family refusal shared by the OpenCode,
+  configuration entity, plugin and skill registrars. Production supplies the
+  protected host selection to all four. Agent, command, MCP, plugin and skill
+  route prefixes refuse CAgent before directory resolution, file access or
+  registry/scan/install calls. The entity registrar then checks generation
+  readiness for OpenCode. App-owned snippets are outside these prefixes.
+  The compatibility default for callers without host selection is OpenCode;
+  it must not be used by a CAgent-enabled production composition. These checks
+  do not retire already entered asynchronous operations.
 - `packages/web/server/lib/opencode/v1-migration-topup.js`: re-arms OpenCode's own V1 -> V2 session import for V1 sessions changed by 1.x after the last completed import. `startOpenCodeOnce` runs it only before a managed OC2 spawn. OC1 credential reads and writes stay on their existing path. See "v1-migration-topup.js" below.
 - `packages/web/server/lib/opencode/lifecycle.js`: OpenCode process lifecycle runtime (startup, restart, readiness, health monitoring). After readiness it warms the most recently used directories (`getWarmupDirectories` dep, sequential and best-effort) because OpenCode initializes each directory lazily on first request and that cost would otherwise be paid by the user's first interactive session open. The Desktop runtime warms the last-used directory only, because its UI bootstraps the directories it shows in its own priority order.
 - `packages/web/server/lib/opencode/provider-env-aliases.js`: mirrors known provider credential env aliases into the managed OpenCode process environment (for example `GEMINI_API_KEY` → `GOOGLE_GENERATIVE_AI_API_KEY`) so OpenCode connection detection and the upstream AI SDK agree on the same key names. Canonical implementation shared by web lifecycle and the VS Code managed spawn path (`packages/vscode/src/provider-env-aliases.ts` re-exports this module).

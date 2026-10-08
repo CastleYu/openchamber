@@ -3,6 +3,7 @@ import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
 import { buildDeferredRestartResponse } from './config-mutation-response.js';
 import { OPENCODE_CONFIG_DIR } from './shared.js';
+import { createOpenCodeFamilyGuard } from './family-guard.js';
 
 /**
  * Matches how OpenCode reads its own boolean env flags: any value other than
@@ -29,6 +30,7 @@ export const registerSkillRoutes = (app, dependencies) => {
     getOpenCodeAuthHeaders,
     getOpenCodePort,
     kernelRuntime,
+    getBackendSelection,
     getSkillSources,
     discoverSkills,
     mergeDiscoveredSkills,
@@ -52,6 +54,8 @@ export const registerSkillRoutes = (app, dependencies) => {
     getProfiles,
     getProfile,
   } = dependencies;
+
+  app.use('/api/config/skills', createOpenCodeFamilyGuard(getBackendSelection));
 
   const findWorktreeRootForSkills = (workingDirectory) => {
     if (!workingDirectory) return null;

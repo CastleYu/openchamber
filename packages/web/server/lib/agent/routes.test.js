@@ -74,6 +74,34 @@ describe('owned agent HTTP routes', () => {
     expect(handler).toHaveBeenCalledWith({ workspaceID: 'w1', sessionID: 's1' }, identity);
   });
 
+  it('serializes typed message parts without inventing optional observations', async () => {
+    const operation = AGENT_OPERATION.GET_MESSAGE;
+    const message = {
+      id: 'm1', sessionID: 's1', role: 'assistant', state: 'unknown',
+      parts: [
+        { id: 'r1', type: 'reasoning', text: 'Reasoning' },
+        { id: 't1', type: 'tool', callID: 'c1', name: 'read', state: { status: 'complete', output: null } },
+        { id: 'p1', type: 'text', text: 'Response' },
+      ],
+    };
+    const { app } = fixture(mutationBinding(async () => message, operation));
+    const response = await post(app, envelope({ operation, input: { workspaceID: 'w1', sessionID: 's1', messageID: 'm1' } })).expect(200);
+    expect(response.body).toEqual({ identity, data: message });
+    expect(response.body.data).not.toHaveProperty('model');
+    expect(response.body.data).not.toHaveProperty('usage');
+    expect(response.body.data).not.toHaveProperty('time');
+  });
+
+  it('refuses message results from another session at the authenticated boundary', async () => {
+    const operation = AGENT_OPERATION.GET_MESSAGE;
+    const { app, fallback } = fixture(mutationBinding(async () => ({
+      id: 'm1', sessionID: 'other', role: 'assistant', state: 'unknown', parts: [],
+    }), operation));
+    const response = await post(app, envelope({ operation, input: { workspaceID: 'w1', sessionID: 's1', messageID: 'm1' } })).expect(502);
+    expect(response.body).toEqual({ error: AGENT_ERROR.INVALID_RESPONSE });
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
   it.each([
     { identity: undefined }, { identity: { ...identity, extra: true } },
     { operation: 'unknown' }, { extra: true }, { input: { sessionID: 's1' } },

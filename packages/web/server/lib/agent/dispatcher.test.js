@@ -44,6 +44,33 @@ const errorCode = async (promise, code) => {
 };
 
 describe('agent dispatcher', () => {
+  it.each([
+    [AGENT_OPERATION.GET_MESSAGE, { id: 'm1', sessionID: 'other', role: 'assistant', parts: [], state: 'unknown' }],
+    [AGENT_OPERATION.GET_MESSAGE, { id: 'other', sessionID: 's1', role: 'assistant', parts: [], state: 'unknown' }],
+    [AGENT_OPERATION.LIST_MESSAGES, { items: [{ id: 'm1', sessionID: 'other', role: 'assistant', parts: [], state: 'unknown' }] }],
+  ])('rejects a valid %s payload belonging to another requested entity', async (operation, result) => {
+    const current = binding();
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['fixture'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn(async () => result);
+    const input = { workspaceID: 'w1', sessionID: 's1' };
+    if (operation === AGENT_OPERATION.GET_MESSAGE) input.messageID = 'm1';
+    await errorCode(createAgentDispatcher({ getBinding: () => current }).dispatch(operation, input), AGENT_ERROR.INVALID_RESPONSE);
+  });
+
+  it('preserves unknown outcome when synthetic insertion returns another session', async () => {
+    const operation = AGENT_OPERATION.ADD_SYNTHETIC;
+    const current = binding();
+    current.capabilities[operation] = { state: AGENT_SUPPORT.SUPPORTED, evidence: ['fixture'] };
+    current.acceptance.operations.push(operation);
+    current.handlers[operation] = vi.fn(async () => ({ id: 'm1', sessionID: 'other', role: 'synthetic', parts: [], state: 'complete' }));
+    const attempts = await makeAttempts();
+    const dispatcher = createAgentDispatcher({ getBinding: () => current, attempts });
+    await errorCode(dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1', requestID: 'r1', text: 'context' }), AGENT_ERROR.UNKNOWN_OUTCOME);
+    expect((await attempts.read(current.identity, 'r1')).state).toBe(AGENT_ATTEMPT.UNKNOWN);
+    expect(current.handlers[operation]).toHaveBeenCalledTimes(1);
+  });
+
   it('describes every operation from one host snapshot without handler effects', () => {
     const current = binding();
     current.capabilities[AGENT_OPERATION.LIST_SESSIONS] = { state: AGENT_SUPPORT.UNSUPPORTED, evidence: ['absence'] };

@@ -4,6 +4,19 @@ import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentIdentitySchema } from '
 const operations = new Set(Object.values(AGENT_OPERATION));
 const mutations = new Set(AGENT_MUTATIONS);
 
+const matchesScope = (operation, request, result) => {
+  switch (operation) {
+    case AGENT_OPERATION.GET_MESSAGE:
+      return result.sessionID === request.sessionID && result.id === request.messageID;
+    case AGENT_OPERATION.LIST_MESSAGES:
+      return result.items.every((item) => item.sessionID === request.sessionID);
+    case AGENT_OPERATION.ADD_SYNTHETIC:
+      return result.sessionID === request.sessionID;
+    default:
+      return true;
+  }
+};
+
 export class AgentDispatchError extends Error {
   constructor(code, operation) {
     super(`Agent operation ${operation} refused: ${code}`);
@@ -99,7 +112,7 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
       }
       requireBinding(operation, identity);
       const response = AGENT_OUTPUT_SCHEMAS[operation].safeParse(data);
-      if (!response.success) {
+      if (!response.success || !matchesScope(operation, request.data, response.data)) {
         throw new AgentDispatchError(
           mutations.has(operation) ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE, operation,
         );

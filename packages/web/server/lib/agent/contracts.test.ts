@@ -1,6 +1,6 @@
 import { expectTypeOf, it } from 'vitest';
-import { AGENT_OPERATION } from './constants.js';
-import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentOperation, type AgentOutputs, type AgentRuntime, type AgentSession } from './dispatcher.js';
+import { AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
+import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentMessage, type AgentOperation, type AgentOutputs, type AgentPart, type AgentPermission, type AgentRuntime, type AgentSession } from './dispatcher.js';
 import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
 
 it('preserves operation-specific inputs and results without SDK wire types', () => {
@@ -45,6 +45,23 @@ it('keeps selection and independent approval in typed host ports', () => {
     // @ts-expect-error Approval rows require independent evidence, not operation IDs alone.
     const operations: AgentApproval['operations'] = [AGENT_OPERATION.GET_SESSION];
     return operations;
+  };
+  expectTypeOf(check).toBeFunction();
+});
+
+it('preserves message parts and decision semantics without invented metadata', () => {
+  expectTypeOf<AgentOutputs[typeof AGENT_OPERATION.GET_MESSAGE]>().toEqualTypeOf<AgentMessage>();
+  expectTypeOf<AgentMessage['model']>().toEqualTypeOf<{ id: string; providerID?: string; variant?: string } | undefined>();
+  expectTypeOf<AgentMessage['time']>().toEqualTypeOf<{ created?: number; completed?: number } | undefined>();
+  expectTypeOf<AgentPermission['choices'][number]['scope']>().toEqualTypeOf<'once' | 'session' | 'persistent'>();
+  const check = () => {
+    // @ts-expect-error A completed tool must supply its result, including an explicit null result.
+    const incomplete: AgentPart = { id: 'p', type: AGENT_PART.TOOL, callID: 'c', name: 'tool', state: { status: AGENT_TOOL_STATE.COMPLETE } };
+    // @ts-expect-error A direct remote URL is not an owned attachment reference.
+    const remote: AgentPart = { id: 'p', type: AGENT_PART.ATTACHMENT, assetID: 'a', mime: 'text/plain', url: 'https://example.invalid' };
+    // @ts-expect-error Permission choices carry outcome and scope, not free strings.
+    const permission: AgentPermission = { id: 'p', sessionID: 's', description: '', choices: ['allow'] };
+    return [incomplete, remote, permission];
   };
   expectTypeOf(check).toBeFunction();
 });

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
+import {
+  AGENT_ERROR, AGENT_FAMILY, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION,
+  AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_TOOL_STATE,
+} from './constants.js';
 
 const id = z.string().min(1);
 const json = z.json();
@@ -13,12 +16,42 @@ const effect = { requestID: id };
 const sessionRecord = z.object({
   id, workspaceID: id, title: z.string().optional(), parentID: id.optional(), metadata: metadata.optional(),
 }).strict();
+const measure = z.number().nonnegative();
+const count = z.number().int().nonnegative();
+const messageError = z.object({ kind: z.enum(Object.values(AGENT_MESSAGE_ERROR)), message: z.string() }).strict();
+const toolState = z.discriminatedUnion('status', [
+  z.object({ status: z.literal(AGENT_TOOL_STATE.PENDING), input: json.optional() }).strict(),
+  z.object({ status: z.literal(AGENT_TOOL_STATE.RUNNING), input: json.optional() }).strict(),
+  z.object({ status: z.literal(AGENT_TOOL_STATE.UNKNOWN), input: json.optional() }).strict(),
+  z.object({ status: z.literal(AGENT_TOOL_STATE.COMPLETE), input: json.optional(), output: json }).strict(),
+  z.object({ status: z.literal(AGENT_TOOL_STATE.FAILED), input: json.optional(), error: messageError, output: json.optional() }).strict(),
+]);
+const part = z.discriminatedUnion('type', [
+  z.object({ id, type: z.literal(AGENT_PART.TEXT), text: z.string(), synthetic: z.boolean().optional(), ignored: z.boolean().optional() }).strict(),
+  z.object({ id, type: z.literal(AGENT_PART.REASONING), text: z.string() }).strict(),
+  z.object({ id, type: z.literal(AGENT_PART.TOOL), callID: id, name: id, state: toolState }).strict(),
+  z.object({ id, type: z.literal(AGENT_PART.ATTACHMENT), assetID: id, mime: id, filename: z.string().optional() }).strict(),
+]);
 const message = z.object({
-  id, role: z.enum(['user', 'assistant', 'system']), text: z.string(),
-  state: z.enum(['pending', 'complete', 'failed']),
+  id, sessionID: id, role: z.enum(Object.values(AGENT_ROLE)),
+  parts: z.array(part).refine((items) => new Set(items.map((item) => item.id)).size === items.length),
+  state: z.enum(Object.values(AGENT_MESSAGE_STATE)),
+  time: z.object({ created: measure.optional(), completed: measure.optional() }).strict().optional(),
+  parentID: id.optional(), agent: id.optional(),
+  model: z.object({ id, providerID: id.optional(), variant: id.optional() }).strict().optional(),
+  summary: z.boolean().optional(), finish: z.enum(Object.values(AGENT_FINISH)).optional(), error: messageError.optional(),
+  usage: z.object({
+    input: count.optional(), output: count.optional(), reasoning: count.optional(),
+    cacheRead: count.optional(), cacheWrite: count.optional(), cost: measure.optional(),
+  }).strict().optional(),
 }).strict();
 const status = z.object({ sessionID: id, state: z.enum(['idle', 'busy', 'waiting', 'unknown']) }).strict();
-const permission = z.object({ id, sessionID: id, description: z.string(), choices: z.array(z.string()) }).strict();
+const permission = z.object({
+  id, sessionID: id, description: z.string(),
+  choices: z.array(z.object({
+    id, label: id, outcome: z.enum(Object.values(AGENT_PERMISSION_OUTCOME)), scope: z.enum(Object.values(AGENT_PERMISSION_SCOPE)),
+  }).strict()).min(1).refine((items) => new Set(items.map((item) => item.id)).size === items.length),
+}).strict();
 const command = z.object({ id, label: z.string(), description: z.string().optional() }).strict();
 const receipt = z.discriminatedUnion('state', [
   z.object({ state: z.literal('accepted'), requestID: id }).strict(),
@@ -61,7 +94,8 @@ export const AGENT_INPUT_SCHEMAS = Object.freeze({
   [AGENT_OPERATION.LIST_COMMANDS]: workspace,
   [AGENT_OPERATION.GET_SELECTION_CATALOG]: workspace,
   [AGENT_OPERATION.GET_DEFAULT_MODEL]: workspace,
-  [AGENT_OPERATION.IMPORT_SESSION]: z.object({ workspaceID: id, session: sessionRecord, messages: z.array(message), ...effect }).strict(),
+  [AGENT_OPERATION.IMPORT_SESSION]: z.object({ workspaceID: id, session: sessionRecord, messages: z.array(message), ...effect }).strict()
+    .refine((item) => item.workspaceID === item.session.workspaceID && item.messages.every((record) => record.sessionID === item.session.id)),
   [AGENT_OPERATION.FORK_SESSION]: z.object({ workspaceID: id, sessionID: id, messageID: id.optional(), ...effect }).strict(),
   [AGENT_OPERATION.REMOVE_SESSION]: session.extend(effect).strict(),
   [AGENT_OPERATION.UPDATE_SESSION]: z.object({ workspaceID: id, sessionID: id, title: z.string().optional(), metadata: metadata.optional(), ...effect }).strict(),

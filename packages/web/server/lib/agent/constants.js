@@ -1,4 +1,18 @@
 export const AGENT_FAMILY = Object.freeze({ OPENCODE: 'opencode', CAGENT: 'cagent' });
+export const AGENT_ROLE = Object.freeze({ USER: 'user', ASSISTANT: 'assistant', SYSTEM: 'system', SYNTHETIC: 'synthetic' });
+export const AGENT_PART = Object.freeze({ TEXT: 'text', REASONING: 'reasoning', TOOL: 'tool', ATTACHMENT: 'attachment' });
+export const AGENT_MESSAGE_STATE = Object.freeze({
+  PENDING: 'pending', COMPLETE: 'complete', FAILED: 'failed', INTERRUPTED: 'interrupted', UNKNOWN: 'unknown',
+});
+export const AGENT_TOOL_STATE = Object.freeze({
+  PENDING: 'pending', RUNNING: 'running', COMPLETE: 'complete', FAILED: 'failed', UNKNOWN: 'unknown',
+});
+export const AGENT_FINISH = Object.freeze({ STOP: 'stop', LENGTH: 'length', INTERRUPTED: 'interrupted', UNKNOWN: 'unknown' });
+export const AGENT_MESSAGE_ERROR = Object.freeze({
+  BACKEND: 'backend', AUTH: 'auth', LENGTH: 'length', CONTEXT: 'context', INTERRUPTED: 'interrupted', UNKNOWN: 'unknown',
+});
+export const AGENT_PERMISSION_OUTCOME = Object.freeze({ ALLOW: 'allow', DENY: 'deny' });
+export const AGENT_PERMISSION_SCOPE = Object.freeze({ ONCE: 'once', SESSION: 'session', PERSISTENT: 'persistent' });
 export const AGENT_SUPPORT = Object.freeze({
   UNVERIFIED: 'unverified', SUPPORTED: 'supported', ADAPTED: 'adapted', UNSUPPORTED: 'unsupported',
 });

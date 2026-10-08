@@ -13,7 +13,7 @@ const OPERATIONS = [
 ];
 
 const SESSION = { id: 'session-1', workspaceID: 'workspace-1', title: 'Session', metadata: { source: 'test' } };
-const MESSAGE = { id: 'message-1', role: 'assistant', text: 'Hello', state: 'complete' };
+const MESSAGE = { id: 'message-1', sessionID: 'session-1', role: 'assistant', parts: [{ id: 'part-1', type: 'text', text: 'Hello' }], state: 'complete' };
 const RECEIPT = { state: 'accepted', requestID: 'request-1' };
 const inputs = {
   [OP.GET_SESSION]: { workspaceID: 'workspace-1', sessionID: 'session-1' },
@@ -47,7 +47,10 @@ const outputs = {
   [OP.LIST_CHILDREN]: { items: [SESSION] },
   [OP.LIST_ACTIVE_STATUSES]: [{ sessionID: 'session-1', state: 'busy' }],
   [OP.GET_SESSION_STATUS]: { sessionID: 'session-1', state: 'idle' },
-  [OP.LIST_PENDING_PERMISSIONS]: [{ id: 'permission-1', sessionID: 'session-1', description: 'Allow access', choices: ['allow', 'deny'] }],
+  [OP.LIST_PENDING_PERMISSIONS]: [{ id: 'permission-1', sessionID: 'session-1', description: 'Allow access', choices: [
+    { id: 'allow', label: 'Allow once', outcome: 'allow', scope: 'once' },
+    { id: 'deny', label: 'Deny', outcome: 'deny', scope: 'once' },
+  ] }],
   [OP.REPLY_PERMISSION]: RECEIPT,
   [OP.GET_MESSAGE]: MESSAGE,
   [OP.ADD_SYNTHETIC]: MESSAGE,

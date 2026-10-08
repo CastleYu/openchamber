@@ -1,4 +1,4 @@
-import { AGENT_ERROR, AGENT_OPERATION } from './constants.js';
+import { AGENT_ERROR, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION, AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_TOOL_STATE } from './constants.js';
 
 export type AgentFamily = 'opencode' | 'cagent';
 export type AgentIdentity = Readonly<{
@@ -19,12 +19,35 @@ export type AgentSession = {
   id: string; workspaceID: string; title?: string; parentID?: string;
   metadata?: { [key: string]: JsonValue };
 };
+export type AgentMessageError = {
+  kind: typeof AGENT_MESSAGE_ERROR[keyof typeof AGENT_MESSAGE_ERROR]; message: string;
+};
+export type AgentToolState =
+  | { status: typeof AGENT_TOOL_STATE.PENDING | typeof AGENT_TOOL_STATE.RUNNING | typeof AGENT_TOOL_STATE.UNKNOWN; input?: JsonValue }
+  | { status: typeof AGENT_TOOL_STATE.COMPLETE; input?: JsonValue; output: JsonValue }
+  | { status: typeof AGENT_TOOL_STATE.FAILED; input?: JsonValue; error: AgentMessageError; output?: JsonValue };
+export type AgentPart =
+  | { id: string; type: typeof AGENT_PART.TEXT; text: string; synthetic?: boolean; ignored?: boolean }
+  | { id: string; type: typeof AGENT_PART.REASONING; text: string }
+  | { id: string; type: typeof AGENT_PART.TOOL; callID: string; name: string; state: AgentToolState }
+  | { id: string; type: typeof AGENT_PART.ATTACHMENT; assetID: string; mime: string; filename?: string };
 export type AgentMessage = {
-  id: string; role: 'user' | 'assistant' | 'system'; text: string;
-  state: 'pending' | 'complete' | 'failed';
+  id: string; sessionID: string; role: typeof AGENT_ROLE[keyof typeof AGENT_ROLE]; parts: AgentPart[];
+  state: typeof AGENT_MESSAGE_STATE[keyof typeof AGENT_MESSAGE_STATE];
+  time?: { created?: number; completed?: number };
+  parentID?: string; agent?: string; model?: { id: string; providerID?: string; variant?: string };
+  summary?: boolean; finish?: typeof AGENT_FINISH[keyof typeof AGENT_FINISH]; error?: AgentMessageError;
+  usage?: { input?: number; output?: number; reasoning?: number; cacheRead?: number; cacheWrite?: number; cost?: number };
 };
 export type AgentStatus = { sessionID: string; state: 'idle' | 'busy' | 'waiting' | 'unknown' };
-export type AgentPermission = { id: string; sessionID: string; description: string; choices: string[] };
+export type AgentPermission = {
+  id: string; sessionID: string; description: string;
+  choices: {
+    id: string; label: string;
+    outcome: typeof AGENT_PERMISSION_OUTCOME[keyof typeof AGENT_PERMISSION_OUTCOME];
+    scope: typeof AGENT_PERMISSION_SCOPE[keyof typeof AGENT_PERMISSION_SCOPE];
+  }[];
+};
 export type AgentCommand = { id: string; label: string; description?: string };
 export type DispatchReceipt =
   | { state: 'accepted'; requestID: string }

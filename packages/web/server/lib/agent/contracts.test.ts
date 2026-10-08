@@ -3,6 +3,21 @@ import { AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
 import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentMessage, type AgentOperation, type AgentOutputs, type AgentPart, type AgentPermission, type AgentRuntime, type AgentSession } from './dispatcher.js';
 import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
 import { agentArtifactDigest, verifyAgentArtifacts, type AgentArtifactFile, type AgentArtifactManifest } from './artifacts.js';
+import { agentApprovalName, createAgentApprovals } from './approvals.js';
+
+it('keeps the protected approval reader synchronous and host-owned', () => {
+  const reader = createAgentApprovals({ directory: 'protected-approvals' });
+  expectTypeOf(reader.read).parameter(0).toEqualTypeOf<AgentSelection>();
+  expectTypeOf(reader.read).returns.toEqualTypeOf<AgentApproval | null>();
+  expectTypeOf(agentApprovalName).returns.toBeString();
+  const check = () => {
+    // @ts-expect-error The approval reader exposes no candidate-controlled write port.
+    reader.write({});
+    // @ts-expect-error A candidate family alone is not an authorized current selection.
+    reader.read({ family: 'cagent' });
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps protected artifact manifests and verification results typed', () => {
   expectTypeOf(agentArtifactDigest).parameter(0).toEqualTypeOf<readonly AgentArtifactFile[]>();

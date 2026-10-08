@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { AGENT_ERROR, AGENT_FAMILY, AGENT_HOST_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AgentDispatchError } from './dispatcher.js';
-import { agentIdentitySchema, agentOperationSchema } from './schemas.js';
+import { agentApprovalSchema, agentOperationSchema, agentSelectionSchema } from './schemas.js';
 
 const id = z.string().min(1);
 const evidence = z.array(id).refine((items) => new Set(items).size === items.length);
@@ -18,20 +18,6 @@ const registration = z.object({
   artifactDigest: digest,
   capabilities: z.partialRecord(agentOperationSchema, capability),
   handlers: z.partialRecord(agentOperationSchema, z.function()),
-}).strict();
-const selection = agentIdentitySchema.extend({
-  adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
-}).strict();
-const approval = z.object({
-  family: z.enum(Object.values(AGENT_FAMILY)),
-  connectionID: id,
-  adapterID: id,
-  adapterRevision: id,
-  capabilityRevision: id,
-  serverRevision: id,
-  artifactDigest: digest,
-  operations: z.array(z.object({ operation: agentOperationSchema, evidence: evidence.min(1) }).strict())
-    .refine((items) => new Set(items.map((item) => item.operation)).size === items.length),
 }).strict();
 
 const key = (item) => JSON.stringify([
@@ -55,7 +41,7 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
   const getBinding = () => {
     let selected;
     try {
-      selected = selection.safeParse(getSelection());
+      selected = agentSelectionSchema.safeParse(getSelection());
     } catch {
       throw refuse(AGENT_ERROR.UNAVAILABLE);
     }
@@ -65,7 +51,7 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
     if (!adapter) return null;
     let accepted;
     try {
-      accepted = approval.safeParse(current.authorized && current.ready ? getAcceptance(current) : null);
+      accepted = agentApprovalSchema.safeParse(current.authorized && current.ready ? getAcceptance(current) : null);
     } catch {
       throw refuse(AGENT_ERROR.UNAVAILABLE);
     }

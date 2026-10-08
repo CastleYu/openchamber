@@ -70,6 +70,18 @@ export const agentIdentitySchema = z.object({
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
+export const agentSelectionSchema = agentIdentitySchema.extend({
+  adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
+}).strict();
+export const agentApprovalSchema = z.object({
+  family: z.enum(Object.values(AGENT_FAMILY)), connectionID: id, adapterID: id,
+  adapterRevision: id, capabilityRevision: id, serverRevision: id,
+  artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
+  operations: z.array(z.object({
+    operation: agentOperationSchema,
+    evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
+  }).strict()).refine((items) => new Set(items.map((item) => item.operation)).size === items.length),
+}).strict();
 export const agentRuntimeSchema = z.object({
   identity: agentIdentitySchema,
   operations: z.record(agentOperationSchema, z.discriminatedUnion('available', [

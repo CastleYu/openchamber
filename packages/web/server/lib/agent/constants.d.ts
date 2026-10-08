@@ -25,7 +25,9 @@ export const AGENT_ERROR: Readonly<{
   UNKNOWN_ROUTE: 'unknown-route'; UNSUPPORTED_RUNTIME: 'unsupported-runtime';
   ATTEMPT_EXISTS: 'attempt-exists'; ATTEMPT_STORAGE: 'attempt-storage-failed'; ATTEMPT_CORRUPT: 'attempt-corrupt';
   ARTIFACT_BOUNDARY: 'artifact-boundary'; ARTIFACT_MISMATCH: 'artifact-mismatch'; ARTIFACT_UNAVAILABLE: 'artifact-unavailable';
+  APPROVAL_STORAGE: 'approval-storage-failed'; APPROVAL_CORRUPT: 'approval-corrupt';
 }>;
+export const AGENT_APPROVAL: Readonly<{ VERSION: 1; DIRECTORY: 'agent-approvals'; MAX_RECORD_BYTES: 65536 }>;
 export const AGENT_ARTIFACT: Readonly<{
   VERSION: 1; MAX_FILES: 4096; MAX_FILE_BYTES: 16777216; MAX_TOTAL_BYTES: 134217728;
 }>;

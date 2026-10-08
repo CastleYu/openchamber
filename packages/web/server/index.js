@@ -57,7 +57,8 @@ import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentDispatcher } from './lib/agent/dispatcher.js';
 import { createAgentAuthority } from './lib/agent/authority.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
-import { AGENT_ATTEMPT } from './lib/agent/constants.js';
+import { createAgentApprovals } from './lib/agent/approvals.js';
+import { AGENT_APPROVAL, AGENT_ATTEMPT } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
@@ -2217,8 +2218,9 @@ async function main(options = {}) {
   uiAuthController = bootstrapResult.uiAuthController;
   // Reserve the owned protocol before proxy fallback. Activation is a later
   // host-owned step; candidate adapter files cannot grant dispatch authority.
+  const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
   const agentAuthority = createAgentAuthority({
-    registrations: [], getSelection: () => null, getAcceptance: () => null,
+    registrations: [], getSelection: () => null, getAcceptance: agentApprovals.read,
   });
   registerAgentRoutes(app, { dispatcher: createAgentDispatcher({
     getBinding: agentAuthority.getBinding,

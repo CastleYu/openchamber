@@ -14,7 +14,8 @@ import { initializeLocale, I18nProvider } from '@/lib/i18n';
 import { initializeAppearancePreferences, syncDesktopSettings } from '@/lib/persistence';
 import { startModelPrefsAutoSave } from '@/lib/modelPrefsAutoSave';
 import { startTypographyWatcher } from '@/lib/typographyWatcher';
-import { ElectronMiniChatApp } from './ElectronMiniChatApp';
+import { BackendGate } from './BackendGate';
+import { ElectronMiniChatApp } from './lazyBackendApps';
 
 const initializeSharedPreferences = () => {
   initializeLocale();
@@ -49,7 +50,7 @@ export function renderElectronMiniChatApp(apis: RuntimeAPIs) {
         <ThemeSystemProvider>
           <ThemeProvider>
             <SessionAuthGate>
-              <ElectronMiniChatApp apis={apis} />
+              <BackendGate><ElectronMiniChatApp apis={apis} /></BackendGate>
             </SessionAuthGate>
           </ThemeProvider>
         </ThemeSystemProvider>

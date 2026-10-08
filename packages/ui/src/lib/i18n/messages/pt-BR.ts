@@ -14,6 +14,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'agent.bootstrap.failed': 'Não foi possível identificar o backend selecionado. Verifique a conexão e tente novamente.',
+  'agent.bootstrap.retry': 'Tentar novamente',
+  'agent.bootstrap.cagent': 'A integração com o CAgent ainda não foi aprovada.',
+  'agent.bootstrap.closed': 'As conversas e as ações do backend continuarão indisponíveis até que este ambiente passe pelas verificações de integração.',
   "opencodeCompatibility.bundled": "O OpenCode está incluído no OpenChamber. Atualize o OpenChamber para obter o OpenCode v2.",
   "opencodeCompatibility.title": "OpenCode v2 necessário",
   "opencodeCompatibility.outdatedTitle": "Atualize o OpenCode",

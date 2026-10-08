@@ -26,7 +26,7 @@ but must match the requested ID, family and connection.
 
 Web, Electron, hosted mobile and Capacitor use their existing HTTP runtime ports.
 VS Code keeps the owned-route `unsupported-runtime` refusal until its host is
-implemented. No app presentation or existing OpenCode sync consumer uses this client yet. Production host
+implemented. App roots now use its protected family selection, but no conversation presentation or existing OpenCode sync consumer uses its operation client yet. Production host
 feature support remains absent; this module enables no CAgent feature.
 
 Focused checks use `client.test.ts` and the adjacent runtime-fetch/runtime-switch
@@ -46,11 +46,21 @@ caller cancellation and disposal use the same request lifetime as other reads.
 
 This descriptor contains no adapter identity, credentials or feature grants.
 An explicitly selected CAgent remains CAgent when adapter loading fails.
-The future app root must choose its family before mounting OpenCode startup
-effects, and reject obsolete bootstrap completions. It must obtain a matching
-runtime/feature snapshot before opening a conversation. Selection is
-informational and is not a lease across a later host change. No root mounts this
-bootstrap yet. VS Code retains its explicit unsupported response.
+`AgentBootstrap` and `BackendGate` choose the family before mounting the lazy
+OpenCode application in Web, Electron main/mini-chat and hosted-mobile roots.
+Capacitor first reuses native saved-instance connection/authentication through
+`MobileBackendGate`. Discovery failure remains retryable and never selects
+OpenCode. Endpoint retirement removes the selected application; stale responses
+and disposed StrictMode owners cannot restore it. Common appearance settings
+and runtime reset remain outside the gate; the gate does not remove every
+OpenCode module import. CAgent currently displays an unavailable integration
+page, with no conversation or backend actions. All 13 locales include its copy.
+
+A future conversation root must obtain a matching runtime/feature snapshot
+before opening. Selection is informational and is not a lease across a later
+host change. Same-endpoint family changes require rediscovery; no hot selector
+or CAgent native-resume journey is delivered here. VS Code retains its explicit
+unsupported response and its existing OpenCode root.
 
 ## Neutral conversation state
 

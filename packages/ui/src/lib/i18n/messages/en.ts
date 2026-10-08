@@ -13,6 +13,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'agent.bootstrap.failed': 'Could not identify the selected backend. Check the connection and try again.',
+  'agent.bootstrap.retry': 'Try again',
+  'agent.bootstrap.cagent': 'CAgent integration is not yet approved.',
+  'agent.bootstrap.closed': 'Conversation and backend actions remain unavailable until this environment passes integration checks.',
   "opencodeCompatibility.bundled": "OpenCode is bundled with OpenChamber. Update OpenChamber to get OpenCode v2.",
   "opencodeCompatibility.title": "OpenCode v2 required",
   "opencodeCompatibility.outdatedTitle": "Update OpenCode",

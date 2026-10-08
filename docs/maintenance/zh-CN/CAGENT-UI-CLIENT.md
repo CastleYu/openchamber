@@ -4,7 +4,11 @@
 
 `selection()` 在适配器绑定前读取 GET `/api/agent-backend/selection`，返回受保护的后端家族、宿主选择修订号及客户端端点作用域。权威信息缺失、损坏或读取失败返回固定错误；调用方不能因此推断 OpenCode。A/B/A 退役、调用方取消及释放复用既有请求生命周期。
 
-该描述不含适配器身份、凭据或功能许可。明确选择 CAgent 后，适配器加载失败仍保留 CAgent。后续应用根入口必须先选择家族，再挂载 OpenCode 启动副作用，并拒绝过期启动结果；打开会话前仍需取得匹配的运行时及功能快照。选择描述只提供信息，不是跨后续宿主变化的租约。应用尚未挂载此入口；VS Code 保持明确的不支持响应。
+该描述不含适配器身份、凭据或功能许可。明确选择 CAgent 后，适配器加载失败仍保留 CAgent。
+
+`AgentBootstrap` 和 `BackendGate` 在 Web、Electron 主窗口／迷你聊天及托管移动入口挂载懒加载的 OpenCode 应用前选择家族。Capacitor 先通过 `MobileBackendGate` 复用原生保存实例的连接／认证流程。探测失败允许重试，不能因此选择 OpenCode。端点退役时移除所选应用；过期响应和已释放的 StrictMode 所属实例不能恢复应用。通用外观设置与运行时重置保留在门控之外；门控不会移除所有 OpenCode 模块导入。CAgent 当前显示集成不可用页面，不提供会话或后端操作。全部 13 种语言均包含文案。
+
+后续会话根入口在打开会话前仍需取得匹配的运行时及功能快照。选择描述只提供信息，不是跨后续宿主变化的租约。同端点家族变化需要重新探测；本轮未交付热切换选择器或 CAgent 原生恢复流程。VS Code 保持明确的不支持响应及既有 OpenCode 根入口。
 
 英文交接文档为[客户端模块文档](../../../packages/ui/src/lib/agent/DOCUMENTATION.md)。本中文副本随修改同步维护，最终交接时归档。
 
@@ -14,7 +18,7 @@
 
 传输前解析输入，消费前解析输出。权威读取失败抛出固定 `AgentClientError`，不能变成空成功。分发只发送一次。已进入的写操作若响应丢失、无效或退役，返回 `unknown-outcome`；消费方须保留原请求 ID，使用 `readAttempt()`，不能自动重发。明确的 null 表示没有账本记录。历史记录允许较旧修订，但须匹配请求 ID、家族和连接。
 
-Web、Electron、托管移动端和 Capacitor 使用各自既有 HTTP 运行时入口。VS Code 在宿主实现前，继续对自有路由返回 `unsupported-runtime`。应用页面及既有 OpenCode 同步消费方尚未使用这个客户端；生产宿主功能支持仍未提供，本模块没有启用 CAgent 功能。
+Web、Electron、托管移动端和 Capacitor 使用各自既有 HTTP 运行时入口。VS Code 在宿主实现前，继续对自有路由返回 `unsupported-runtime`。应用根入口已使用其受保护的家族选择，但会话页面及既有 OpenCode 同步消费方尚未使用其操作客户端；生产宿主功能支持仍未提供，本模块没有启用 CAgent 功能。
 
 聚焦检查通过 Bun 运行 `client.test.ts` 和相邻运行时请求／切换测试。测试注入传输入口，不模拟模块，覆盖请求保真、完整快照、A/B/A 退役、释放及不确定写入。[执行检查点](CAGENT-EXECUTION.md)中的原生启动探针还通过该客户端访问真实 loopback 服务。两者使用合成适配器，不构成真实 CAgent 兼容性验收。
 

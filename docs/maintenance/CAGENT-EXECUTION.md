@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: protected family bootstrap
+## Latest checkpoint: application family gate
+
+2026-10-09. CA-01 remains in progress. Web, Electron main/mini-chat and hosted-mobile roots now read protected family selection before evaluating their lazy OpenCode application. Capacitor first reuses native saved-instance connection/authentication, then selects the backend. CAgent displays an explicitly unavailable integration page; authority failure stays retryable. No CAgent operation or conversation is enabled. VS Code retains its existing OpenCode root and explicit Agent-route refusal.
+
+Controller and React DOM tests prove pending, CAgent and failed selection do not evaluate the lazy application, valid OpenCode selection mounts it, retirement unmounts it, and stale responses or disposed StrictMode owners cannot reopen it. Primary review strengthened terminal-state assertions. The focused client/conversation/bootstrap/DOM run passed 42 tests; the strengthened bootstrap/DOM run passed 9, and existing mobile connection tests passed 14. These are synthetic lifecycle/connection checks, not native device or real CAgent journeys. All 13 locale dictionaries include the four new keys.
+
+Root type-check passed. Final UI type-check, root lint, changed-file anti-slop, actual Web production build and dead-code checks are recorded in this checkpoint's validation logs. Lint retains five inherited warnings. The build retains its large-chunk advisory. Common preference initialization and runtime reset still run outside the gate. Same-endpoint family hot switching, CAgent native resume and visual/native acceptance remain unverified.
+
+The next step is actual neutral conversation presentation with durable unresolved request identity and documented outcome observation. Remaining feature callers/extensions, CA-02 executable offline kit, CA-03 environment/model acceptance, independent branch publication and temporary Release are still required. Keep lower-priority INT work after CA-03. The paired SPEC also requires a minimum conversation pilot before expanding optional operation coverage. Weekly quota at the start of this checkpoint was 66% remaining.
+
+## Previous checkpoint: protected family bootstrap
 
 2026-10-09. CA-01 remains in progress. The authenticated selection route now reads the protected host family/revision without requiring an adapter binding. Production composition supplies the port. The shared client parses this descriptor with endpoint retirement and cancellation. Explicit failed CAgent loading stays CAgent; missing or failed authority never becomes OpenCode. The descriptor grants no feature or operation authority.
 

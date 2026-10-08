@@ -13,6 +13,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'agent.bootstrap.failed': 'Seçilen arka uç tanımlanamadı. Bağlantıyı kontrol edip tekrar deneyin.',
+  'agent.bootstrap.retry': 'Tekrar dene',
+  'agent.bootstrap.cagent': 'CAgent entegrasyonu henüz onaylanmadı.',
+  'agent.bootstrap.closed': 'Bu ortam entegrasyon kontrollerini geçene kadar görüşmeler ve arka uç işlemleri kullanılamaz.',
   "opencodeCompatibility.bundled": "OpenCode, OpenChamber ile birlikte gelir. OpenCode v2 için OpenChamber’ı güncelleyin.",
   "opencodeCompatibility.title": "OpenCode v2 gerekli",
   "opencodeCompatibility.outdatedTitle": "OpenCode’u güncelleyin",

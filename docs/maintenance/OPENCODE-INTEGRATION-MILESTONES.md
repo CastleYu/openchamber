@@ -55,6 +55,8 @@ Accepted source classification: [consumer boundaries](CAGENT-BOUNDARIES.md) and 
 
 ### CA-01: typed host contracts and guards
 
+Implementation starts with the [minimum conversation path](CAGENT-INTEGRATION-SPEC.md#minimum-path-before-breadth) through an actual application consumer and a sparse sample backend. Complete its failure and unavailable-feature checks before expanding optional operation coverage. This internal pilot adds no release label and does not relax the full exit contract below.
+
 Define domain contracts from actual consumers and migrate only the protocol assumptions required by them. Keep one runtime-neutral CAgent adapter in the trusted web backend or VS Code extension host; Electron reuses its in-process backend. Add authoritative backend identity, capability checks at dispatch, and explicit refusal of unsupported operations before side effects. Preserve OpenCode behavior and run OC1/OC2 regressions.
 
 Exit: typed host operation contracts cover the CA-00 inventory; guards apply to UI and direct/autonomous callers; identity changes retire stale work without cross-backend replay. Focused OC1/OC2 regressions pass. No CAgent support is claimed without local runtime evidence.
@@ -76,6 +78,8 @@ CA-02 freezes the [local model workload budget](CAGENT-ADAPTER-WORKBOOK.md#local
 CA-02 additionally delivers the [model calibration samples](CAGENT-ADAPTER-WORKBOOK.md#local-model-calibration-and-task-assignment) and demonstrates all task-assignment outcomes, including a usable maintainer-only path. CA-03 runs those samples with the actual local model before implementing real API mappings and records its selected workload. Calibration never substitutes for operation or feature acceptance.
 
 ### CA-03: local CAgent adaptation and live acceptance
+
+First prove the same minimum path against documented real CAgent operations. If it cannot preserve required chat semantics, record the gap and keep chat disabled. Accepting read-only operations alone does not complete this checkpoint. After the path works, account for the full feature inventory and extensions before acceptance.
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.
 

@@ -14,6 +14,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'agent.bootstrap.failed': '無法識別所選的後端。請檢查連線後再試一次。',
+  'agent.bootstrap.retry': '重試',
+  'agent.bootstrap.cagent': 'CAgent 整合尚未核准。',
+  'agent.bootstrap.closed': '此環境通過整合檢查前，對話和後端操作皆無法使用。',
   "opencodeCompatibility.bundled": "OpenCode 隨 OpenChamber 一起提供。請更新 OpenChamber 以取得 OpenCode v2。",
   "opencodeCompatibility.title": "需要 OpenCode v2",
   "opencodeCompatibility.outdatedTitle": "請更新 OpenCode",

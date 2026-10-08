@@ -14,6 +14,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'agent.bootstrap.failed': '選択したバックエンドを特定できませんでした。接続を確認して、もう一度お試しください。',
+  'agent.bootstrap.retry': '再試行',
+  'agent.bootstrap.cagent': 'CAgent の連携はまだ承認されていません。',
+  'agent.bootstrap.closed': 'この環境が連携チェックに合格するまで、会話とバックエンドの操作は利用できません。',
   "opencodeCompatibility.bundled": "OpenCode は OpenChamber に同梱されています。OpenCode v2 を利用するには OpenChamber を更新してください。",
   "opencodeCompatibility.title": "OpenCode v2 が必要です",
   "opencodeCompatibility.outdatedTitle": "OpenCode を更新してください",

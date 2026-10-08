@@ -14,6 +14,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'agent.bootstrap.failed': 'Не вдалося визначити вибраний бекенд. Перевірте з’єднання та спробуйте ще раз.',
+  'agent.bootstrap.retry': 'Спробувати ще раз',
+  'agent.bootstrap.cagent': 'Інтеграцію CAgent ще не схвалено.',
+  'agent.bootstrap.closed': 'Розмови та дії з бекендом залишатимуться недоступними, доки це середовище не пройде перевірки інтеграції.',
   "opencodeCompatibility.bundled": "OpenCode входить до складу OpenChamber. Оновіть OpenChamber, щоб отримати OpenCode v2.",
   "opencodeCompatibility.title": "Потрібен OpenCode v2",
   "opencodeCompatibility.outdatedTitle": "Оновіть OpenCode",

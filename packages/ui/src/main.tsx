@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './styles/fonts'
 import './styles/katex-css'
 import './index.css'
-import App from './App.tsx'
+import { BackendGate } from './apps/BackendGate'
+import { App } from './apps/lazyBackendApps'
 import { SessionAuthGate } from './components/auth/SessionAuthGate'
 import { ThemeSystemProvider } from './contexts/ThemeSystemContext'
 import { ThemeProvider } from './components/providers/ThemeProvider'
@@ -24,7 +25,7 @@ declare global {
   }
 }
 
-const runtimeAPIs = (typeof window !== 'undefined' && window.__OPENCHAMBER_RUNTIME_APIS__) || (() => {
+const runtimeAPIs = window.__OPENCHAMBER_RUNTIME_APIS__ || (() => {
   throw new Error('Runtime APIs not provided for legacy UI entrypoint.');
 })();
 
@@ -68,7 +69,7 @@ createRoot(rootElement).render(
       <ThemeSystemProvider>
         <ThemeProvider>
           <SessionAuthGate>
-            <App apis={runtimeAPIs} />
+            <BackendGate><App apis={runtimeAPIs} /></BackendGate>
           </SessionAuthGate>
         </ThemeProvider>
       </ThemeSystemProvider>

@@ -14,6 +14,10 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'agent.bootstrap.failed': '선택한 백엔드를 확인할 수 없습니다. 연결을 확인하고 다시 시도하세요.',
+  'agent.bootstrap.retry': '다시 시도',
+  'agent.bootstrap.cagent': 'CAgent 연동은 아직 승인되지 않았습니다.',
+  'agent.bootstrap.closed': '이 환경이 연동 검사를 통과할 때까지 대화와 백엔드 작업을 사용할 수 없습니다.',
   "opencodeCompatibility.bundled": "OpenCode는 OpenChamber에 포함되어 있습니다. OpenCode v2를 사용하려면 OpenChamber를 업데이트하세요.",
   "opencodeCompatibility.title": "OpenCode v2가 필요합니다",
   "opencodeCompatibility.outdatedTitle": "OpenCode를 업데이트하세요",

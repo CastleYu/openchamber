@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createKernelRuntime } from './kernel-runtime.js';
+import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
 
 const spawnMock = vi.fn();
 const spawnSyncMock = vi.fn();
@@ -140,6 +141,27 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
 };
 
 describe('OpenCode lifecycle', () => {
+  it('closes a newly spawned process when selection retires during readiness', async () => {
+    let backend = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+    let release;
+    const pending = new Promise((resolve) => { release = resolve; });
+    const child = createMockChild();
+    spawnMock.mockImplementation(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    const waitForReady = vi.fn(async () => pending);
+    const runtime = createRuntime({ getBackendSelection: () => backend, waitForReady });
+    const startup = runtime.startOpenCode();
+    await vi.waitFor(() => expect(waitForReady).toHaveBeenCalledOnce());
+    backend = { family: AGENT_FAMILY.CAGENT, revision: 2 };
+    release(true);
+    await expect(startup).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    expect(child.kill).toHaveBeenCalled();
+    expect(spawnMock).toHaveBeenCalledOnce();
+    expect(runtime.testState.isOpenCodeReady).toBe(false);
+    expect(runtime.testState.lastOpenCodeError).toBeNull();
+  });
   it('retires an identity refreshed while the old process is closing', async () => {
     const kernelRuntime = createKernelRuntime({
       getEndpoint: () => 'http://127.0.0.1:45678', getHeaders: () => ({}),

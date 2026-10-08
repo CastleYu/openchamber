@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createOpenCodeNetworkRuntime } from './network-runtime.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -15,9 +16,40 @@ const createRuntime = (overrides = {}) => createOpenCodeNetworkRuntime({
   },
   getOpenCodeAuthHeaders: () => ({}),
   configuredOpenCodeHostname: overrides.configuredOpenCodeHostname,
+  getBackendSelection: overrides.getBackendSelection,
 });
 
 describe('OpenCode network runtime', () => {
+  it('refuses CAgent readiness before reading credentials or sending HTTP', async () => {
+    const headers = vi.fn();
+    globalThis.fetch = vi.fn();
+    const runtime = createOpenCodeNetworkRuntime({
+      state: {}, getOpenCodeAuthHeaders: headers,
+      getBackendSelection: () => ({ family: AGENT_FAMILY.CAGENT, revision: 1 }),
+    });
+    await expect(runtime.waitForReady('http://127.0.0.1:4096')).resolves.toBe(false);
+    expect(headers).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a stale ready result after a same-family round trip', async () => {
+    let selected = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+    let release;
+    const pending = new Promise((resolve) => { release = resolve; });
+    globalThis.fetch = vi.fn(async () => {
+      await pending;
+      return Response.json({ healthy: true, version: '1.18.32' });
+    });
+    const runtime = createRuntime({ getBackendSelection: () => selected });
+    const ready = runtime.waitForReady('http://127.0.0.1:4096');
+    // One detection pass starts both documented generation probes.
+    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+    selected = { family: AGENT_FAMILY.CAGENT, revision: 2 };
+    selected = { family: AGENT_FAMILY.OPENCODE, revision: 3 };
+    release();
+    await expect(ready).resolves.toBe(false);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
   afterEach(() => {
     vi.useRealTimers();
     globalThis.fetch = originalFetch;

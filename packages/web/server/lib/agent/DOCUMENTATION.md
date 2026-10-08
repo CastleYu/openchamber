@@ -82,6 +82,19 @@ The coordinator defaults to OpenCode and exposes an immutable `getSelection()` s
 
 The web entrypoint composes one coordinator for the Agent routes and OpenCode kernel runtime. Its selection port invalidates the OpenCode descriptor by family/revision, including a same-endpoint return. CAgent produces an unsupported descriptor and performs no OpenCode generation probe. Concurrent refresh and health probes share valid results; descriptor commits alone do not retire a connection. Tests join the real host with the kernel runtime and native adapter artifacts. Production still has no user selection entrypoint or host support approval; CAgent remains unavailable on all five hosts. This gate covers descriptor consumers, not every unmigrated owned route, lifecycle action or UI caller. Their individual migration remains required before activation.
 
+## OpenCode lifecycle isolation
+The Web lifecycle and readiness loop now consume the same family/revision
+snapshot. CAgent skips OpenCode bootstrap and monitoring; direct OpenCode
+lifecycle calls refuse before work, and await boundaries reject retired startup
+or readiness results. Freshly spawned instances from retired startup are closed;
+existing owned-process shutdown remains available. Health accounting and cached
+results reset on selection revision changes. The startup wrapper does not start
+the OpenCode watcher after its selection retires. An issued detection pass can
+finish within its existing timeout, so this is not immediate network cancellation.
+Production selection, startup configuration preparation outside lifecycle,
+existing watcher retirement and unmigrated owned routes/UI remain activation
+prerequisites. No CAgent host support is granted by this change.
+
 ## Goal reader migration
 
 The OpenCode adapter exposes ordered `textParts`, `agent` and `variant` in its message view. The goal reader consumes these fields and existing explicit model/time/accounting fields instead of inspecting `raw`. `textParts` preserves text boundaries and excludes reasoning/tool content from the audit transcript. OC2 user/synthetic text is a single entry; absent text yields an empty array. Legacy `mode` supplies the agent only when `agent` is absent. The legacy variant and current model variant are projected at the adapter boundary.

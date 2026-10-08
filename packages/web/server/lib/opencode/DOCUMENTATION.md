@@ -267,6 +267,21 @@ the completion stamp against v2.0.16:
 The runtime maintains active-session count incrementally from idempotent activity phase transitions. Upstream stall-timeout and lifecycle health checks read it in O(1); the hourly cleanup removes activity phases older than 24 hours without broadcasting synthetic state transitions. Snapshot generation remains reserved for the session-activity API.
 
 ## Public exports (lifecycle.js)
+The optional `getBackendSelection` dependency binds lifecycle work to the host's
+family/revision snapshot. Production uses the same coordinator as Agent dispatch.
+CAgent skips bootstrap and health monitoring; direct OpenCode start, restart,
+readiness, agent-presence and config-refresh calls reject with `backend-changed`
+before work begins. Await boundaries retire old work before subsequent launch,
+credential preparation or readiness commits, including a return to OpenCode at
+the same endpoint. A newly spawned instance from retired startup is closed.
+Existing owned-process shutdown remains available. Readiness polling also checks
+the selection before each detection pass and rejects a stale successful result.
+An already issued detection pass can finish under its existing timeout; this is
+not immediate HTTP cancellation or CAgent server cancellation. The production
+selector and remaining route/UI migrations still precede CAgent activation.
+See the [Agent contract](../agent/DOCUMENTATION.md) and its
+[Chinese review copy](../../../../../docs/maintenance/zh-CN/CAGENT-DISPATCH-CONTRACTS.md).
+
 - `createOpenCodeLifecycleRuntime(dependencies)`: creates lifecycle runtime for managed/external OpenCode process orchestration. The optional `onOpenCodeRestarted` dependency (default `null`) is fired after a successful managed restart. `index.js` rebinds event-stream readers to the possibly-new port (#2638), then calls `interruptBusySessionsAfterRestart()` and broadcasts one `opencode-restart-interrupted` UI notification when interrupted turns exist (#2943).
 - Returned API:
   - `startOpenCode()`

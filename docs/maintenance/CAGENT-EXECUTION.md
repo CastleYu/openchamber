@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: transport deadlines and selection cancellation
+## Latest checkpoint: OpenCode lifecycle isolation
+
+2026-10-09. CA-01 remains in progress. The shared Web/Electron lifecycle now uses the protected host's family/revision. CAgent skips OpenCode bootstrap and health monitoring. Direct OpenCode lifecycle calls reject before work; asynchronous boundaries reject retired startup/readiness results and close newly spawned instances. Health accounting resets across selection revisions. Readiness loops stop starting new detection passes after a selection changes. An already issued pass may finish under its existing timeout. Hosted mobile and Capacitor share these server checks; VS Code remains unsupported.
+
+Production selection, startup configuration preparation outside lifecycle, existing watcher retirement, complete route/consumer migration, CA-02 kit and CA-03 real-environment acceptance remain required. No CAgent host is enabled. Other INT work remains after CA-03. Independent remote publication and temporary Release are still outstanding.
+
+Seven focused Web files pass 90 tests, including zero-work CAgent refusal, selection changes across preparation/readiness and newly spawned process cleanup. A first network test assumed one request per detection pass; the implementation probes both official generations concurrently. The corrected held-response test verifies both issued probes finish without starting another pass or accepting a retired result. Web type-check/lint, three runtime syntax checks, both new/changed focused test anti-slop checks and documentation target checks pass. Full lifecycle/network anti-slop reports nine inherited `typeof` findings outside the additions; they remain backlog. Dead-code remains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no affected Agent/lifecycle/network row. These regressions do not prove real CAgent compatibility or packaged desktop startup.
+
+## Previous checkpoint: transport deadlines and selection cancellation
 
 2026-10-09. CA-01 remains in progress. Native JSON requests now have a host-owned deadline covering headers and the full body, plus validated caller cancellation. The coordinator aborts each retired selection's transport immediately on clear, reselection or explicit OpenCode selection. Retired requests reject with `backend-changed`; later selections use independent controllers. Once a mutation handler enters, timeout or cancellation preserves its durable unknown outcome. Reselection still refuses its duplicate request ID. This stops the local HTTP wait and does not prove server cancellation or grant Stop support.
 

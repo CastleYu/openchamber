@@ -57,7 +57,7 @@ import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
 import { createAgentApprovals } from './lib/agent/approvals.js';
-import { AGENT_APPROVAL, AGENT_ATTEMPT } from './lib/agent/constants.js';
+import { AGENT_APPROVAL, AGENT_ATTEMPT, AGENT_FAMILY } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
@@ -757,6 +757,7 @@ Object.defineProperties(openCodeNetworkState, {
 
 const openCodeNetworkRuntime = createOpenCodeNetworkRuntime({
   state: openCodeNetworkState,
+  getBackendSelection: agentHost.getSelection,
   getOpenCodeAuthHeaders,
   configuredOpenCodeHostname: ENV_CONFIGURED_OPENCODE_HOSTNAME,
 });
@@ -766,7 +767,10 @@ const normalizeApiPrefix = (...args) => openCodeNetworkRuntime.normalizeApiPrefi
 const setDetectedOpenCodeApiPrefix = (...args) => openCodeNetworkRuntime.setDetectedOpenCodeApiPrefix(...args);
 const buildOpenCodeUrl = (...args) => openCodeNetworkRuntime.buildOpenCodeUrl(...args);
 const ensureOpenCodeApiPrefix = (...args) => openCodeNetworkRuntime.ensureOpenCodeApiPrefix(...args);
-const scheduleOpenCodeApiDetection = (...args) => openCodeNetworkRuntime.scheduleOpenCodeApiDetection(...args);
+const scheduleOpenCodeApiDetection = (...args) => {
+  if (agentHost.getSelection().family !== AGENT_FAMILY.OPENCODE) return;
+  return openCodeNetworkRuntime.scheduleOpenCodeApiDetection(...args);
+};
 
 kernelRuntime = createKernelRuntime({
   getBackendSelection: agentHost.getSelection,
@@ -1359,6 +1363,7 @@ Object.defineProperties(openCodeLifecycleState, {
 
 const openCodeLifecycleRuntime = createOpenCodeLifecycleRuntime({
   kernelRuntime,
+  getBackendSelection: agentHost.getSelection,
   state: openCodeLifecycleState,
   env: {
     ENV_CONFIGURED_OPENCODE_PORT,
@@ -1704,6 +1709,7 @@ const openChamberControlService = createOpenChamberControlService({
 });
 
 const ensureGlobalWatcherStarted = async () => {
+  if (agentHost.getSelection().family !== AGENT_FAMILY.OPENCODE) return;
   if (globalWatcherStartPromise) {
     return globalWatcherStartPromise;
   }
@@ -1716,7 +1722,11 @@ const ensureGlobalWatcherStarted = async () => {
   return globalWatcherStartPromise;
 };
 const bootstrapOpenCodeAtStartup = async (...args) => {
+  const selection = agentHost.getSelection();
+  if (selection.family !== AGENT_FAMILY.OPENCODE) return;
   await openCodeLifecycleRuntime.bootstrapOpenCodeAtStartup(...args);
+  const current = agentHost.getSelection();
+  if (current.family !== selection.family || current.revision !== selection.revision) return;
   scheduleOpenCodeApiDetection();
   if (openCodeLifecycleState.openCodeProcess && !openCodeLifecycleState.isExternalOpenCode) {
     startHealthMonitoring();

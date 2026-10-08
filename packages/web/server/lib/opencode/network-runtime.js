@@ -1,10 +1,12 @@
 import { detectOpenCodeGeneration, OPENCODE_GENERATION } from './compatibility.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
 
 export const createOpenCodeNetworkRuntime = (deps) => {
   const {
     state,
     getOpenCodeAuthHeaders,
     configuredOpenCodeHostname = '127.0.0.1',
+    getBackendSelection = () => ({ family: AGENT_FAMILY.OPENCODE, revision: 0 }),
   } = deps;
 
   const resolveConnectHostname = () => {
@@ -42,8 +44,15 @@ export const createOpenCodeNetworkRuntime = (deps) => {
   };
 
   const waitForReady = async (url, timeoutMs = 10000) => {
+    const selection = getBackendSelection();
+    const isCurrent = () => {
+      const current = getBackendSelection();
+      return selection.family === AGENT_FAMILY.OPENCODE
+        && current.family === selection.family && current.revision === selection.revision;
+    };
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
+      if (!isCurrent()) return false;
       let timeout = null;
       try {
         const controller = new AbortController();
@@ -56,6 +65,7 @@ export const createOpenCodeNetworkRuntime = (deps) => {
         });
         clearTimeout(timeout);
         timeout = null;
+        if (!isCurrent()) return false;
 
         if (descriptor.generation === OPENCODE_GENERATION.OC1
           || descriptor.generation === OPENCODE_GENERATION.OC2) return true;

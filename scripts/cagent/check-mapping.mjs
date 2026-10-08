@@ -1,33 +1,13 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { compileMapping, MappingError } from './mapping-intake.mjs';
+import { LOCAL_INPUT, readLocalJSON } from './read-input.mjs';
 
 export const MAPPING_COMMAND = Object.freeze({
-  JSON: '--json', MAX_BYTES: 1048576, INVALID: 'invalid-arguments', INPUT: 'mapping-input-unavailable',
+  JSON: '--json', MAX_BYTES: LOCAL_INPUT.MAX_BYTES, INVALID: 'invalid-arguments', INPUT: 'mapping-input-unavailable',
   FAILED: 'mapping-check-failed',
 });
-
-/** Captures bounded local JSON. Reports never include source paths or private documents. */
-const read = async (name) => {
-  const handle = await fs.open(name, 'r');
-  try {
-    const stat = await handle.stat();
-    if (!stat.isFile() || stat.size > MAPPING_COMMAND.MAX_BYTES) throw new Error(MAPPING_COMMAND.INPUT);
-    const bytes = Buffer.alloc(MAPPING_COMMAND.MAX_BYTES + 1);
-    let count = 0;
-    while (count < bytes.length) {
-      const result = await handle.read(bytes, count, bytes.length - count, null);
-      if (result.bytesRead === 0) break;
-      count += result.bytesRead;
-    }
-    if (count > MAPPING_COMMAND.MAX_BYTES) throw new Error(MAPPING_COMMAND.INPUT);
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, count)));
-  } finally {
-    await handle.close();
-  }
-};
 
 /** Read-only intake command. It grants no execution, evidence acceptance or activation. */
 export async function runMappingCommand(args, output) {
@@ -45,7 +25,7 @@ export async function runMappingCommand(args, output) {
   }
   let sources;
   try {
-    sources = await Promise.all([read(values.catalog), read(values.mapping)]);
+    sources = await Promise.all([readLocalJSON(values.catalog), readLocalJSON(values.mapping)]);
   } catch {
     output(jsonMode ? JSON.stringify({ ok: false, error: MAPPING_COMMAND.INPUT }) : MAPPING_COMMAND.INPUT);
     return 1;

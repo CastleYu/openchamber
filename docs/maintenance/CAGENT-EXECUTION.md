@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: reviewed mapping intake
+## Latest checkpoint: candidate packet preparation
+
+2026-10-09. CA-01 remains in progress. The CA-02 preparation component now creates fresh operation-sized candidate workspaces from reviewed mappings. Fixed protected definitions contain scoped mapping metadata, schema and paired references. Registration keeps all capabilities unverified. Refusal stubs expose one operation factory and no inferred transport calls. The protected manifest is outside its verified tree and published last; existing work is never overwritten.
+
+Eighteen Node tests pass across mapping intake and packet preparation, including native piped commands, real generated snapshot verification, candidate edit tolerance, protected tamper rejection, deterministic bytes and refusal of unresolved mappings. Changed JavaScript passes anti-slop and ESLint. This is a developer-tool checkpoint, not runtime or real CAgent acceptance. See the [preparation guide](../../scripts/cagent/DOCUMENTATION.md#candidate-packet-preparation).
+
+Protected semantic fixture composition, final single-file adapter assembly, enforced environment permissions, model calibration, extension packets and complete offline installation remain CA-02 work. CA-03, independent publication and temporary Release remain pending. Other INT work stays after CA-03.
+
+Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no new CAgent tool row. All 69 references pass freshness checking, and whitespace checking passes. The final atomic manifest publication change passes both native preparation tests and static checks. Live weekly allowance remains 64%; no reset credit was used.
+
+## Previous checkpoint: reviewed mapping intake
 
 2026-10-09. CA-01 remains in progress. The CA-02 intake component now validates separate maintainer-reviewed endpoint catalogs and candidate mappings. All 22 shared operations and every catalog endpoint require a disposition. Bidirectional references, seven semantic evidence dimensions, exact catalog revision/content binding and read/mutation effects are checked. Feature coverage derives missing dependencies from the protected application registry. Native action IDs remain visible with candidate-required or requires-host-development disposition. No feature or extension becomes available through intake.
 

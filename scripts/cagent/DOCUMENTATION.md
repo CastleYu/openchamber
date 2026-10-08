@@ -1,5 +1,20 @@
 # CAgent contract reference generator
 
+## Candidate packet preparation
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --out /local/new-workspace --json
+node --test scripts/cagent/packet-plan.test.mjs scripts/cagent/prepare-packets.test.mjs
+```
+
+Preparation reuses strict mapping intake and generates one packet per mapping-ready operation. Each packet contains its English goal, seven evidence dimensions, cited endpoint/document metadata, current schema and paired references. Only `candidate/<operation>/handler.mjs` belongs to the candidate's edit scope. Its generated factory refuses execution as unverified until implemented. A fixed registration inventory keeps all 22 capabilities unverified. No API route is inferred or called.
+
+The protected snapshot lives under `protected/`. Its exact file manifest is written last to `control/manifest.json`, outside the verified tree. Candidate files are intentionally excluded from that snapshot. The manifest is a fingerprint, not acceptance or activation authority. Directory names and owner permission modes alone do not establish Windows ACL isolation; the complete kit must enforce separate candidate and host write permissions.
+
+The command requires a fresh output directory under an existing canonical parent. Existing output is refused without modifying it. A failed write leaves a partial directory, reports `workspace-incomplete` and does not publish the final manifest; preserve it for inspection and use a fresh directory after correcting the cause. Inputs use the shared 1 MiB bounded reader. All modes are noninteractive; JSON output contains counts, digest and fixed errors without private paths or API documents. `--quiet` emits one concise result line.
+
+The emitted check command is syntax-only metadata. Preparation does not execute candidate code or protected semantic fixtures. It does not assemble the loader's final single-file adapter, grant capabilities or implement model calibration, extension packets, offline installation or live acceptance. Those remain CA-02/CA-03 work. The final adapter must bundle helpers rather than import the candidate workspace.
+
 ## Mapping intake
 
 `mapping-intake.mjs` compares a maintainer-reviewed local endpoint catalog with operation mappings supplied by the weak Agent. The inputs are separate: the catalog belongs outside the candidate's writable workspace. A schema check cannot establish that a route is documented or that the maintainer actually reviewed it. The local owner must verify the catalog against API documentation before using this tool.

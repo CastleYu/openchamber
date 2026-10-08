@@ -1,5 +1,20 @@
 # CAgent 契约参考生成器
 
+## 候选任务包准备
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --out /local/new-workspace --json
+node --test scripts/cagent/packet-plan.test.mjs scripts/cagent/prepare-packets.test.mjs
+```
+
+准备过程复用严格映射接收，为每个 mapping-ready 操作生成一个任务包。任务包含英文目标、七项证据维度、引用的端点／文档元数据、当前 schema 及双语参考。候选编辑范围仅为 `candidate/<operation>/handler.mjs`。生成的工厂在实现前以 unverified 拒绝执行。固定注册清单保持全部 22 项能力未验证。不推断或调用任何 API 路由。
+
+保护快照位于 `protected/`，准确文件清单最后写入校验树外的 `control/manifest.json`。候选文件有意不纳入该快照。清单是指纹，不是验收或启用许可。目录名和所有者权限模式本身不能证明 Windows ACL 隔离；完整工具包仍须落实候选和宿主的独立写权限。
+
+命令要求输出为现有规范父目录下的新目录。已有输出会被拒绝，不作修改。写入失败保留部分目录，报告 `workspace-incomplete`，不发布最终清单；保留现场检查，修正原因后使用新目录。输入复用每份 1 MiB 的有界读取器。全部模式不交互；JSON 输出仅包含数量、摘要和固定错误，不包含私有路径或 API 文档。`--quiet` 输出一行简要结果。
+
+生成的检查命令只是语法检查元数据。准备过程不执行候选代码或受保护语义夹具，不组装加载器要求的最终单文件适配器、不授予能力，也不实现模型校准、扩展任务包、离线安装或真实验收。这些仍属 CA-02／CA-03。最终适配器须打包辅助代码，不能引用候选工作目录。
+
 ## 映射接收
 
 `mapping-intake.mjs` 比较维护者核准的本地端点目录与弱 Agent 提交的操作映射。输入分开存放：目录位于候选代码可写工作区之外。schema 检查不能证明路由来自文档，也不能证明维护者已经审阅。环境内维护者必须先核对 API 文档，再使用本工具。

@@ -18,6 +18,7 @@ export const AGENT_SUPPORT = Object.freeze({
 });
 export const AGENT_ERROR = Object.freeze({
   UNKNOWN_FEATURE: 'unknown-feature', UNMIGRATED: 'unmigrated-consumer', DEPENDENCY: 'missing-dependency',
+  ADAPTER_FAILED: 'adapter-load-failed',
   UNKNOWN_OPERATION: 'unknown-operation', UNVERIFIED: 'unverified', UNSUPPORTED: 'unsupported',
   UNACCEPTED: 'unaccepted', UNAVAILABLE: 'unavailable', UNAUTHORIZED: 'unauthorized',
   MISSING_HANDLER: 'missing-handler', CHANGED: 'backend-changed', UNKNOWN_OUTCOME: 'unknown-outcome',
@@ -37,6 +38,8 @@ export const AGENT_FEATURE = Object.freeze({
   IMPORT: 'import', FORK: 'fork', REMOVE: 'remove', UPDATE: 'update',
 });
 export const AGENT_APPROVAL = Object.freeze({ VERSION: 1, DIRECTORY: 'agent-approvals', MAX_RECORD_BYTES: 65536 });
+export const AGENT_ADAPTER = Object.freeze({ ENTRY: 'adapter.mjs', FACTORY: 'createAdapter' });
+export const AGENT_SERVER_METHOD = Object.freeze({ GET: 'GET', POST: 'POST', PUT: 'PUT', PATCH: 'PATCH', DELETE: 'DELETE' });
 export const AGENT_ARTIFACT = Object.freeze({
   VERSION: 1, MAX_FILES: 4096, MAX_FILE_BYTES: 16777216, MAX_TOTAL_BYTES: 134217728,
 });

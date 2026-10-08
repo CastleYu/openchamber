@@ -11,3 +11,7 @@ export function agentArtifactDigest(files: readonly AgentArtifactFile[]): string
 export function verifyAgentArtifacts(options: {
   directory: string; manifest: AgentArtifactManifest;
 }): Promise<Readonly<{ artifactDigest: string; files: number }>>;
+/** The module URL contains source bytes. Never expose it through routes or logs. */
+export function readAgentAdapterArtifact(options: {
+  directory: string; manifest: AgentArtifactManifest;
+}): Promise<Readonly<{ artifactDigest: string; moduleURL: string }>>;

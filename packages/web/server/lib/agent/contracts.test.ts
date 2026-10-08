@@ -2,9 +2,24 @@ import { expectTypeOf, it } from 'vitest';
 import { AGENT_FEATURE, AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
 import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentMessage, type AgentOperation, type AgentOutputs, type AgentPart, type AgentPermission, type AgentRuntime, type AgentSession } from './dispatcher.js';
 import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
-import { agentArtifactDigest, verifyAgentArtifacts, type AgentArtifactFile, type AgentArtifactManifest } from './artifacts.js';
+import { agentArtifactDigest, readAgentAdapterArtifact, verifyAgentArtifacts, type AgentArtifactFile, type AgentArtifactManifest } from './artifacts.js';
 import { agentApprovalName, createAgentApprovals } from './approvals.js';
 import { createAgentFeatures, type AgentFeature, type AgentFeatureSnapshot, type AgentHostSupport } from './features.js';
+import { loadAgentAdapter, type AgentAdapterFactory, type AgentServerTransport } from './loader.js';
+
+it('keeps adapter loading and factory transport scoped to typed host contracts', () => {
+  expectTypeOf(loadAgentAdapter).returns.resolves.toEqualTypeOf<import('./authority.js').AgentRegistration>();
+  expectTypeOf(readAgentAdapterArtifact).returns.resolves.toEqualTypeOf<Readonly<{ artifactDigest: string; moduleURL: string }>>();
+  expectTypeOf<AgentAdapterFactory>().parameter(0).toEqualTypeOf<AgentServerTransport>();
+  expectTypeOf<AgentServerTransport['request']>().parameter(1).toEqualTypeOf<import('./dispatcher.js').AgentIdentity>();
+  const check = (transport: AgentServerTransport) => {
+    // @ts-expect-error A wire request requires the current full backend identity.
+    transport.request({ method: 'GET', path: '/sessions' });
+    // @ts-expect-error Candidate codecs cannot supply an auth header to the fixed request port.
+    transport.request({ method: 'GET', path: '/sessions', headers: { Authorization: 'candidate' } }, createAgentDispatcher({ getBinding: () => null }).captureIdentity());
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps current host feature support and exact feature keys typed', () => {
   const dispatcher = createAgentDispatcher({ getBinding: () => null });

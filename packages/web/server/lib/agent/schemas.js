@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import {
   AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION,
-  AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_TOOL_STATE,
+  AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_SUPPORT, AGENT_TOOL_STATE,
 } from './constants.js';
 
 const id = z.string().min(1);
@@ -70,6 +70,17 @@ export const agentIdentitySchema = z.object({
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));
+export const agentAdapterSchema = z.object({
+  capabilities: z.partialRecord(agentOperationSchema, z.object({
+    state: z.enum(Object.values(AGENT_SUPPORT)),
+    evidence: z.array(id).refine((items) => new Set(items).size === items.length), reason: id.optional(),
+  }).strict()),
+  handlers: z.partialRecord(agentOperationSchema, z.function()),
+}).strict();
+export const agentRegistrationSchema = agentAdapterSchema.extend({
+  adapterID: id, family: z.enum(Object.values(AGENT_FAMILY)), adapterRevision: id, capabilityRevision: id,
+  artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
+}).strict();
 export const agentSelectionSchema = agentIdentitySchema.extend({
   adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
 }).strict();

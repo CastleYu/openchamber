@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 
-import { AGENT_ARTIFACT, AGENT_ERROR } from './constants.js';
+import { AGENT_ADAPTER, AGENT_ARTIFACT, AGENT_ERROR } from './constants.js';
 
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
 const portable = (name) => name.split('/').every((segment) => segment.length > 0
@@ -44,7 +44,7 @@ export const agentArtifactDigest = (files) => {
 };
 
 /** Read-only verification of a dedicated artifact snapshot, never the live repository. */
-export const verifyAgentArtifacts = async ({ directory, manifest }) => {
+const inspectArtifacts = async ({ directory, manifest }, capture = false) => {
   const input = manifestSchema.safeParse(manifest);
   const location = z.string().min(1).safeParse(directory);
   if (!input.success || !location.success) throw new AgentArtifactError(AGENT_ERROR.INVALID_INPUT);
@@ -53,6 +53,8 @@ export const verifyAgentArtifacts = async ({ directory, manifest }) => {
   if (canonical(expected.files) !== expected.artifactDigest) throw new AgentArtifactError(AGENT_ERROR.ARTIFACT_MISMATCH);
   const root = path.resolve(location.data);
   const files = new Map(expected.files.map((file) => [file.path, file]));
+  if (capture && !files.has(AGENT_ADAPTER.ENTRY)) throw new AgentArtifactError(AGENT_ERROR.ARTIFACT_UNAVAILABLE);
+  const chunks = [];
   const directories = new Set();
   for (const name of files.keys()) {
     const segments = name.split('/');
@@ -97,6 +99,7 @@ export const verifyAgentArtifacts = async ({ directory, manifest }) => {
             bytes += read.bytesRead;
             if (bytes > record.bytes) throw new AgentArtifactError(AGENT_ERROR.ARTIFACT_MISMATCH);
             hash.update(buffer.subarray(0, read.bytesRead));
+            if (capture && name === AGENT_ADAPTER.ENTRY) chunks.push(Buffer.from(buffer.subarray(0, read.bytesRead)));
           }
           const after = await handle.stat();
           if (bytes !== record.bytes || hash.digest('hex') !== record.digest
@@ -111,9 +114,21 @@ export const verifyAgentArtifacts = async ({ directory, manifest }) => {
     };
     await visit();
     if (seen.size !== files.size) throw new AgentArtifactError(AGENT_ERROR.ARTIFACT_UNAVAILABLE);
-    return Object.freeze({ artifactDigest: expected.artifactDigest, files: seen.size });
+    return Object.freeze({ artifactDigest: expected.artifactDigest, files: seen.size,
+      moduleURL: capture ? `data:text/javascript;base64,${Buffer.concat(chunks).toString('base64')}` : null });
   } catch (error) {
     if (error instanceof AgentArtifactError) throw error;
     throw new AgentArtifactError(AGENT_ERROR.ARTIFACT_UNAVAILABLE);
   }
+};
+
+export const verifyAgentArtifacts = async (options) => {
+  const result = await inspectArtifacts(options);
+  return Object.freeze({ artifactDigest: result.artifactDigest, files: result.files });
+};
+
+/** Captures only the fixed entry's verified bytes; import never reopens its source path. */
+export const readAgentAdapterArtifact = async (options) => {
+  const result = await inspectArtifacts(options, true);
+  return Object.freeze({ artifactDigest: result.artifactDigest, moduleURL: result.moduleURL });
 };

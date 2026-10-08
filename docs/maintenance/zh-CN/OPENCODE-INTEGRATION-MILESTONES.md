@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-09。INT-00 和 CA-00 已通过，CA-01 可以开始。当前证据与交接见[执行检查点](CAGENT-EXECUTION.md)。
+状态：执行中，2026-10-09。INT-00 和 CA-00 已通过，CA-01 正在进行。当前证据与交接见[执行检查点](CAGENT-EXECUTION.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
 ## 版本边界
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- | --- |
 | INT-00 | 预检，不升版本 | 固定当前 OC1/OC2 基线及相关验证 | 无 | done |
 | CA-00 | 不升版本 | 盘点已使用操作并冻结 CAgent 责任边界 | INT-00 | done |
-| CA-01 | 5.0 | 类型化宿主契约、能力守卫及 OC1/OC2 回归 | CA-00 | ready |
+| CA-01 | 5.0 | 类型化宿主契约、能力守卫及 OC1/OC2 回归 | CA-00 | in progress |
 | CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | planned |
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-03 | planned |

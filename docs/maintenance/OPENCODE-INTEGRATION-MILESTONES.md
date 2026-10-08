@@ -1,6 +1,6 @@
 # Agent integration milestones
 
-Status: executing, 2026-10-09. INT-00 and CA-00 passed; CA-01 is ready. Current evidence and handoff: [execution checkpoint](CAGENT-EXECUTION.md).
+Status: executing, 2026-10-09. INT-00 and CA-00 passed; CA-01 is in progress. Current evidence and handoff: [execution checkpoint](CAGENT-EXECUTION.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
 
 ## Version boundary
@@ -19,7 +19,7 @@ The lead owns INT-00 and CA-00; later owners remain unassigned. `ready` means wo
 | --- | --- | --- | --- | --- |
 | INT-00 | Preflight, no version bump | Freeze current OC1/OC2 baseline and relevant validation | None | done |
 | CA-00 | No version bump | Inventory consumed operations and freeze CAgent ownership boundaries | INT-00 | done |
-| CA-01 | 5.0 | Typed host contracts, capability guards and OC1/OC2 regressions | CA-00 | ready |
+| CA-01 | 5.0 | Typed host contracts, capability guards and OC1/OC2 regressions | CA-00 | in progress |
 | CA-02 | 5.1 | Complete offline adapter kit with protected tests, generator, sparse and synthetic-extension samples, allowlist validation and runnable toolchain | CA-01 | planned |
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
 | INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-03 | planned |

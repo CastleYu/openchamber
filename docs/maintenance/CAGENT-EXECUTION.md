@@ -99,3 +99,11 @@ Nine fixed Web Vitest files pass 270 tests, including new content/type and authe
 CA-01 remains in progress. Continue with protected approval/artifact verification and actual feature/consumer migration before CA-02 kit acceptance. No real CAgent API, packaged runtime, remote publication or temporary Release has been accepted here. English owning documentation and the full Chinese review copy remain synchronized.
 
 Final live weekly quota remains 73%. The milestone and publication goal are still active; this checkpoint does not satisfy their completion gates.
+
+## CA-01 artifact verification checkpoint
+
+`artifacts.js` now validates a dedicated snapshot against a protected versioned manifest, hashes each file in bounded chunks and checks the canonical aggregate digest. It rejects unsafe or aliased paths, unlisted or missing entries, links, mismatched bytes and observed read-time changes. The expected manifest is a detached copy before asynchronous reads. Verification does not import code, activate capabilities or establish evidence semantics. Protected immutable snapshot loading and independent approval storage remain outstanding.
+
+Final focused validation passes 292 tests in ten Web Vitest files, including native filesystem and directory-junction checks without skips, plus existing kernel regressions. Direct strict contract compilation, module anti-slop, source syntax, Web package type-check/lint and diff checks pass. No real CAgent API, full server launch, packaged app or release is covered. The preceding workbook changes also bound weak-model packet scope, context, output and correction attempts; English and Chinese copies remain synchronized.
+
+Live weekly quota is 73% remaining. CA-01 remains in progress. Next connect protected acceptance/loading to host authority, complete the missing consumed contracts and migrate feature dependency guards and actual UI/autonomous callers. CA-02 kit, CA-03 real local acceptance, independent remote publication and temporary Release are still required. Lower-priority INT implementation remains behind CA-03.

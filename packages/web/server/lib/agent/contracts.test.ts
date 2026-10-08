@@ -2,6 +2,20 @@ import { expectTypeOf, it } from 'vitest';
 import { AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
 import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentMessage, type AgentOperation, type AgentOutputs, type AgentPart, type AgentPermission, type AgentRuntime, type AgentSession } from './dispatcher.js';
 import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
+import { agentArtifactDigest, verifyAgentArtifacts, type AgentArtifactFile, type AgentArtifactManifest } from './artifacts.js';
+
+it('keeps protected artifact manifests and verification results typed', () => {
+  expectTypeOf(agentArtifactDigest).parameter(0).toEqualTypeOf<readonly AgentArtifactFile[]>();
+  expectTypeOf<AgentArtifactManifest['version']>().toEqualTypeOf<1>();
+  expectTypeOf(verifyAgentArtifacts).returns.resolves.toEqualTypeOf<Readonly<{ artifactDigest: string; files: number }>>();
+  const check = () => {
+    // @ts-expect-error A candidate digest alone does not describe the protected files.
+    verifyAgentArtifacts({ directory: 'snapshot', manifest: { version: 1, artifactDigest: 'digest' } });
+    // @ts-expect-error Artifact byte lengths must be numeric.
+    agentArtifactDigest([{ path: 'adapter.js', bytes: '1', digest: 'digest' }]);
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('preserves operation-specific inputs and results without SDK wire types', () => {
   const dispatcher = createAgentDispatcher({ getBinding: () => null });

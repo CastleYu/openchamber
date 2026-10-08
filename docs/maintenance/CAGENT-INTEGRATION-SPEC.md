@@ -85,6 +85,8 @@ The architecture owner supplies negative fixtures and baseline tests; the local 
 
 Dispatch ambiguity and directory disposal follow the [shared integration contract](OPENCODE-INTEGRATION-SPEC.md) and the evidence standard in the [Legacy dispatch contract](OPENCODE-LEGACY-1.2.27-SPEC.md). CAgent must independently prove any idempotency, result lookup or directory-dispose semantics. Legacy evidence cannot establish CAgent support.
 
+The [local model workload budget](CAGENT-ADAPTER-WORKBOOK.md#local-model-workload-budget) bounds packet scope, context, generated files and correction attempts. The kit generates mechanical code and keeps model-authored work at the documented semantic differences. Production uses the accepted adapter code; it does not depend on the weak local model for request routing or protocol conversion. CA-02 and CA-03 record actual execution effort and maintainer interventions alongside acceptance results.
+
 ## Host acceptance and priority
 
 | Host | CAgent execution and acceptance |

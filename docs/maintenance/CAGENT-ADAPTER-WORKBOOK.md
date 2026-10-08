@@ -85,6 +85,26 @@ The packet result file retains the documentation references, candidate files, ch
 
 CA-02 must rehearse this workflow from a fresh offline context: complete a structural mapping packet, stop a conflicting-documentation packet, and resume an interrupted packet using only saved artifacts. Record the actual executor/model when one is used and distinguish a scripted runner test from a model trial. CA-03 additionally records a trial with the environment's actual local agent; failed packets remain disabled and can be completed by a maintainer without weakening acceptance checks.
 
+## Local model workload budget
+
+Use deterministic generation for symbols, imports, registration, structural field mappings and test commands. The local model is a build-time author of a candidate adapter. Production dispatch executes accepted code and never asks that model to interpret documentation, choose endpoints or translate requests dynamically.
+
+The kit supplies these initial packet limits. A maintainer may revise them after measuring the actual local model; save the revised limits with the kit revision.
+
+| Budget | Initial limit | When exceeded |
+| --- | --- | --- |
+| Semantic scope | One operation and at most one custom codec | Split at a documented dependency or return an architecture question. |
+| Writable implementation files | At most four generated files | Generator handles shared changes; the architecture owner handles changes outside the adapter boundary. |
+| Model input | At most 8,000 tokens, including instructions, excerpts, code and failure output | Split the packet or have the maintainer select the required excerpts. Never truncate required semantics silently. |
+| Model output | At most 2,000 tokens per attempt | Reduce the generated stub's remaining work or split the codec. |
+| Corrections | At most two correction attempts after the initial candidate | Save the smallest remaining failure and return it to the maintainer. |
+
+Count tokens with the supplied offline tokenizer where available. If the model tokenizer is unavailable, record that gap and use a maintainer-approved measured input-size bound; do not report a byte or character count as an exact token count. These limits bound work and cost, not semantic correctness.
+
+The runner separates setup failures, missing or conflicting API evidence, implementation failures and failed live acceptance. Only an implementation failure consumes a model correction attempt. A setup defect returns to the kit owner; an evidence gap returns to the local maintainer. Neither asks the weak model to repair shared infrastructure or guess API behavior.
+
+For CA-02 rehearsals and the CA-03 local-model trial, record packets attempted, protected checks passed, correction attempts, maintainer interventions and elapsed time. Record input size and its counting method. Retain each failed packet's evidence gap. No minimum model success percentage replaces the per-operation activation gate; the report shows whether the supplied workload is practical for that environment.
+
 ## Feature disposition and extensions
 
 | Feature ID | Dependency rule | Support result | User-visible result | Evidence / next owner |

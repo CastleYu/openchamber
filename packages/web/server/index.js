@@ -52,6 +52,7 @@ import {
 } from './lib/event-stream/index.js';
 import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/search.js';
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
+import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
@@ -1449,26 +1450,16 @@ const openCodeLifecycleRuntime = createOpenCodeLifecycleRuntime({
       console.warn('Failed to reconcile sessions after OpenCode restart:', error?.message ?? error);
     }
   },
-  getManagedOpenCodeEnv: async (selectedKernel) => {
-    if (selectedKernel.generation === 'oc2') return managedConfigRuntime.buildManagedChildEnv();
-    const settings = await readSettingsFromDiskMigrated().catch(() => null);
-    // Each capability is its own tool and its own switch; the plugin is only
-    // injected while at least one of them is on.
-    const includeControl = settings?.agentControlToolEnabled !== false;
-    const includeWeb = settings?.agentWebToolEnabled !== false;
-    const includeMemory = isAgentMemoryFeatureAvailable() && settings?.agentMemoryToolEnabled === true;
-    const managedEnv = includeControl || includeWeb || includeMemory
-      ? await (agentToolRuntime?.prepareManagedOpenCodeEnv({ includeControl, includeWeb, includeMemory }) || {})
-      : {};
-
-    if (settings?.optimizeSystemPrompt === true) {
-      const configContent = managedEnv.OPENCODE_CONFIG_CONTENT ?? process.env.OPENCODE_CONFIG_CONTENT;
-      Object.assign(managedEnv, await systemPromptRuntime.prepareManagedOpenCodeEnv(configContent));
-    }
-    const configContent = managedEnv.OPENCODE_CONFIG_CONTENT ?? process.env.OPENCODE_CONFIG_CONTENT;
-    Object.assign(managedEnv, await mcpReconnectRuntime.prepareManagedOpenCodeEnv(configContent));
-    return managedEnv;
-  },
+  getManagedOpenCodeEnv: createManagedOpenCodeEnv({
+    getBackendSelection: agentHost.getSelection,
+    readSettings: readSettingsFromDiskMigrated,
+    isMemoryAvailable: isAgentMemoryFeatureAvailable,
+    prepareTools: (flags) => agentToolRuntime?.prepareManagedOpenCodeEnv(flags) || {},
+    preparePrompt: (content) => systemPromptRuntime.prepareManagedOpenCodeEnv(content),
+    prepareMcp: (content) => mcpReconnectRuntime.prepareManagedOpenCodeEnv(content),
+    prepareOc2: () => managedConfigRuntime.buildManagedChildEnv(),
+    getConfigContent: () => process.env.OPENCODE_CONFIG_CONTENT,
+  }),
 });
 
 configureOpenCodeCredentials(kernelRuntime.get, openCodeCredentialSource({

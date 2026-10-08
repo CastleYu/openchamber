@@ -6,6 +6,14 @@ Personal-build OpenChamber update checks include `notifyOnly`. The install route
 This module provides OpenCode server integration utilities for the web server runtime, including configuration management and provider authentication.
 
 ## Entrypoints and structure
+- `managed-env-runtime.js` owns the managed child configuration sequence. It
+  requires the protected OpenCode family/revision before reading settings and
+  after each asynchronous preparation phase. Retirement prevents subsequent
+  tool/prompt/MCP phases and rejects the result; it cannot undo writes already
+  performed by an entered preparer. OC1 retains the tool/prompt/MCP merge order
+  and switches; OC2 uses only its managed configuration builder. Unknown
+  generations refuse before configuration work. Lifecycle still checks its
+  original selection before spawning. This gate does not activate CAgent.
 - `managed-generation.js` probes the selected CLI through its resolved launch
   specification before managed configuration or plugin writes. Lifecycle spawning
   reuses that specification. An unknown generation stops startup before writing.

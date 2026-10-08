@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: event selection retirement
+## Latest checkpoint: managed configuration preparation
+
+2026-10-09. CA-01 remains in progress. The production lifecycle now delegates managed child environment preparation to `managed-env-runtime.js`. It checks the protected OpenCode family/revision before settings access and after each asynchronous phase. Retirement prevents later tool, prompt or MCP preparation and rejects old results. OC1 switches, default behavior after settings read failure and configuration merge order remain unchanged. OC2 uses only its managed builder; unknown generations refuse before work. A preparer already entered can finish its writes; this gate does not cancel or undo them. Web/Electron and server-connected mobile share the lifecycle, while VS Code CAgent remains unavailable.
+
+Twelve new tests and 55 existing lifecycle/startup tests pass. The lead strengthened settings/memory zero-work assertions, bounded test synchronization and added normal OC2 and disabled-tool cases. Web type-check/lint, two runtime syntax checks, new source/test anti-slop and diff checks pass. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, without a new module row. These are local synthetic regressions, not packaged startup or real CAgent acceptance.
+
+Protected production selection, remaining owned routes/consumers, capability coverage and extensions still precede activation. CA-02 runnable kit, CA-03 environment acceptance, independent remote publication and temporary Release remain pending. Other INT work stays behind CA-03.
+
+## Previous checkpoint: event selection retirement
 
 2026-10-09. The protected host now exposes its selection lifetime to the shared global event hub and OpenCode push watcher. CAgent skips their startup. Selection retirement aborts the upstream stream, detaches watcher subscriptions and clears replay without depending on a kernel descriptor update. Retired commits and Space injections are rejected. Readiness completion checks the captured revision, and restarting an unused hub under a new revision clears its retained replay. Web/Electron and server-connected mobile share this composition; VS Code CAgent remains unavailable.
 

@@ -40,6 +40,10 @@ export const AGENT_FEATURE = Object.freeze({
 export const AGENT_APPROVAL = Object.freeze({ VERSION: 1, DIRECTORY: 'agent-approvals', MAX_RECORD_BYTES: 65536 });
 export const AGENT_ADAPTER = Object.freeze({ ENTRY: 'adapter.mjs', FACTORY: 'createAdapter' });
 export const AGENT_SERVER_METHOD = Object.freeze({ GET: 'GET', POST: 'POST', PUT: 'PUT', PATCH: 'PATCH', DELETE: 'DELETE' });
+export const AGENT_HTTP = Object.freeze({
+  HTTP: 'http:', HTTPS: 'https:', ACCEPT: 'Accept', CONTENT_TYPE: 'Content-Type', JSON: 'application/json',
+  REDIRECT: 'manual', NO_CONTENT: 204, RESET_CONTENT: 205,
+});
 export const AGENT_ARTIFACT = Object.freeze({
   VERSION: 1, MAX_FILES: 4096, MAX_FILE_BYTES: 16777216, MAX_TOTAL_BYTES: 134217728,
 });

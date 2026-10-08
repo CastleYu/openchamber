@@ -6,6 +6,21 @@ import { agentArtifactDigest, readAgentAdapterArtifact, verifyAgentArtifacts, ty
 import { agentApprovalName, createAgentApprovals } from './approvals.js';
 import { createAgentFeatures, type AgentFeature, type AgentFeatureSnapshot, type AgentHostSupport } from './features.js';
 import { loadAgentAdapter, type AgentAdapterFactory, type AgentServerTransport } from './loader.js';
+import { createAgentTransport, type AgentConnection } from './transport.js';
+
+it('keeps transport endpoint ownership and current connection typed', () => {
+  expectTypeOf(createAgentTransport).returns.toEqualTypeOf<AgentServerTransport>();
+  expectTypeOf<AgentConnection>().pick<'identity'>().toEqualTypeOf<Readonly<{
+    identity: import('./dispatcher.js').AgentIdentity & { family: 'cagent' };
+  }>>();
+  const check = () => {
+    // @ts-expect-error Host transport requires a current connection port.
+    createAgentTransport({});
+    // @ts-expect-error A static candidate origin cannot replace protected current host state.
+    createAgentTransport({ baseURL: 'http://localhost/' });
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps adapter loading and factory transport scoped to typed host contracts', () => {
   expectTypeOf(loadAgentAdapter).returns.resolves.toEqualTypeOf<import('./authority.js').AgentRegistration>();

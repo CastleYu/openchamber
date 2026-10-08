@@ -4,6 +4,7 @@ import { createUpstreamSseReader } from './upstream-reader.js';
 import { serializeMessageStreamWsEvent } from './protocol.js';
 import { createDeltaCoalescer, DELTA_COALESCE_WINDOW_MS } from './delta-coalescer.js';
 import { translateWireEvent } from './translate-v2.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
 
 // Raised from 512 → 2048 to improve recovery after brief disconnects during
 // long-running agent sessions where many events accumulate quickly.
@@ -55,6 +56,8 @@ export const waitForKernelReady = async (getKernelRuntime, {
 export function createGlobalMessageStreamHub({
   buildOpenCodeUrl,
   getKernelRuntime,
+  getBackendSelection = () => ({ family: AGENT_FAMILY.OPENCODE, revision: 0 }),
+  getSelectionSignal = () => null,
   getOpenCodeAuthHeaders,
   fetchImpl = fetch,
   upstreamStallTimeoutMs,
@@ -91,6 +94,13 @@ export function createGlobalMessageStreamHub({
   let buildUrlFailed = false;
   let connectionKey;
   let attached;
+  let selection = getBackendSelection();
+  let selectionSignal = null;
+  let retireSelection = null;
+  const isCurrent = () => {
+    const current = getBackendSelection();
+    return current.family === AGENT_FAMILY.OPENCODE && current.revision === selection.revision;
+  };
   const descriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
   const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}`;
 
@@ -144,6 +154,7 @@ export function createGlobalMessageStreamHub({
   // replay buffer in the same step that delivers it, so a client's cursor
   // always names a frame the buffer can find.
   const commitEvent = (event) => {
+    if (!isCurrent() || selectionSignal?.aborted) return;
     // A timer or stop() may flush after the upstream epoch was retired.
     // Same-identity stop still commits pending text for replay continuity.
     const eventKey = event.envelope?.kernelKey ?? connectionKey;
@@ -174,11 +185,35 @@ export function createGlobalMessageStreamHub({
   const coalescer = createDeltaCoalescer({ emit: commitEvent, windowMs: deltaCoalesceWindowMs });
 
   const start = () => {
+    const current = getBackendSelection();
+    if (current.family !== AGENT_FAMILY.OPENCODE) return;
     if (reader || controller) {
       return;
     }
 
+    if (selection.revision !== current.revision) {
+      replay.length = 0;
+      replayBytes = 0;
+      latestEventId = undefined;
+      connectionKey = undefined;
+      notifyStatus({ type: 'identity-change' });
+    }
     controller = new AbortController();
+    selection = current;
+    selectionSignal = getSelectionSignal();
+    retireSelection = () => {
+      stop();
+      replay.length = 0;
+      replayBytes = 0;
+      latestEventId = undefined;
+      connectionKey = undefined;
+      notifyStatus({ type: 'identity-change' });
+    };
+    selectionSignal?.addEventListener('abort', retireSelection, { once: true });
+    if (selectionSignal?.aborted) {
+      retireSelection();
+      return;
+    }
     const readerController = controller;
     const startToken = ++startSequence;
     void (async () => {
@@ -188,6 +223,7 @@ export function createGlobalMessageStreamHub({
       });
       if (startToken !== startSequence
         || controller !== readerController
+        || !isCurrent()
         || readerController.signal.aborted) {
         return;
       }
@@ -201,6 +237,7 @@ export function createGlobalMessageStreamHub({
           buildUrlFailed = false;
           try {
             const next = descriptor();
+            if (!isCurrent()) throw new Error('OpenCode selection retired');
             if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
             const nextKey = keyOf(next);
             if (connectionKey !== undefined && connectionKey !== nextKey) {
@@ -221,7 +258,7 @@ export function createGlobalMessageStreamHub({
         getHeaders: getOpenCodeAuthHeaders,
         getConnectionKey: () => connectionKey,
         onConnect() {
-          if (controller !== readerController || readerController.signal.aborted) return;
+          if (controller !== readerController || readerController.signal.aborted || !isCurrent()) return;
           connected = true;
           const wasReady = everConnected;
           everConnected = true;
@@ -233,7 +270,7 @@ export function createGlobalMessageStreamHub({
           notifyStatus({ type: 'disconnect', reason });
         },
         onEvent(event) {
-          if (controller !== readerController || readerController.signal.aborted) return;
+          if (controller !== readerController || readerController.signal.aborted || !isCurrent()) return;
           if (keyOf(descriptor()) !== connectionKey) return;
           coalescer.push(event);
         },
@@ -255,6 +292,8 @@ export function createGlobalMessageStreamHub({
   };
 
   const stop = () => {
+    selectionSignal?.removeEventListener('abort', retireSelection);
+    retireSelection = null;
     startSequence += 1;
     connected = false;
     // Text that already arrived belongs in the retained replay suffix.
@@ -287,6 +326,7 @@ export function createGlobalMessageStreamHub({
       };
     },
     injectEvent({ payload, directory, spaceId }) {
+      if (!isCurrent() || selectionSignal?.aborted) return;
       coalescer.push({ envelope: { directory, spaceId, kernelKey: keyOf(descriptor()) }, payload });
     },
     subscribeStatus(subscriber) {
@@ -302,6 +342,7 @@ export function createGlobalMessageStreamHub({
       coalescer.flush();
     },
     replayAfter(eventId) {
+      if (!isCurrent() || selectionSignal?.aborted) return null;
       if (!eventId) {
         return [];
       }

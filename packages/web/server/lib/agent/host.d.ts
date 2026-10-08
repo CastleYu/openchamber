@@ -23,6 +23,8 @@ export function createAgentHost(options: {
   /** Explicitly retire CAgent selection. OpenCode must resolve its own descriptor again. */
   selectOpenCode(): void;
   getSelection(): AgentBackendSelection;
+  /** Aborts when this selection retires, including failed or repeated switches. */
+  getSelectionSignal(): AbortSignal;
   dispatcher: ReturnType<typeof createAgentDispatcher>;
   features: ReturnType<typeof createAgentFeatures>;
 }>;

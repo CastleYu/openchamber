@@ -92,8 +92,10 @@ results reset on selection revision changes. The startup wrapper does not start
 the OpenCode watcher after its selection retires. An issued detection pass can
 finish within its existing timeout, so this is not immediate network cancellation.
 Production selection, startup configuration preparation outside lifecycle,
-existing watcher retirement and unmigrated owned routes/UI remain activation
+unmigrated owned routes/UI remain activation
 prerequisites. No CAgent host support is granted by this change.
+
+`getSelectionSignal()` exposes the current host lifetime to owned OpenCode event consumers. Selection and clear abort the previous signal. The shared global hub stops its reader and clears replay; the push watcher detaches its subscriptions. Both reject retired readiness results and skip startup for CAgent. An unused hub also clears old replay when restarted under a different selection revision. This port grants no adapter authority and adds no HTTP selector.
 
 ## Goal reader migration
 

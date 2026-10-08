@@ -632,6 +632,7 @@ let relayServiceInstance = null;
 let relayReconcileTimer = null;
 let activeTunnelController = null;
 let globalWatcherStartPromise = null;
+let globalWatcherStartRevision = null;
 const tunnelProviderRegistry = createTunnelProviderRegistry([
   createCloudflareTunnelProvider(),
   createNgrokTunnelProvider(),
@@ -1016,6 +1017,8 @@ const linearSessionStatusRuntime = createLinearSessionStatusRuntime();
 
 const globalMessageStreamHub = createGlobalMessageStreamHub({
   getKernelRuntime: kernelRuntime.get,
+  getBackendSelection: agentHost.getSelection,
+  getSelectionSignal: agentHost.getSelectionSignal,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   upstreamStallTimeoutMs: getUpstreamStallTimeoutMs,
@@ -1109,6 +1112,8 @@ messageSearchRuntime = createMessageSearchRuntime({
 
 const openCodeWatcherRuntime = createOpenCodeWatcherRuntime({
   getKernelRuntime: kernelRuntime.get,
+  getBackendSelection: agentHost.getSelection,
+  getSelectionSignal: agentHost.getSelectionSignal,
   waitForOpenCodePort: (...args) => waitForOpenCodePort(...args),
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
@@ -1709,13 +1714,18 @@ const openChamberControlService = createOpenChamberControlService({
 });
 
 const ensureGlobalWatcherStarted = async () => {
-  if (agentHost.getSelection().family !== AGENT_FAMILY.OPENCODE) return;
+  const selection = agentHost.getSelection();
+  if (selection.family !== AGENT_FAMILY.OPENCODE) return;
+  if (globalWatcherStartRevision !== selection.revision) {
+    globalWatcherStartPromise = null;
+    globalWatcherStartRevision = selection.revision;
+  }
   if (globalWatcherStartPromise) {
     return globalWatcherStartPromise;
   }
 
   globalWatcherStartPromise = openCodeWatcherRuntime.start().catch((error) => {
-    globalWatcherStartPromise = null;
+    if (globalWatcherStartRevision === selection.revision) globalWatcherStartPromise = null;
     throw error;
   });
 

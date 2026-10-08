@@ -19,6 +19,7 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
   let family = AGENT_FAMILY.OPENCODE;
   let selection = Object.freeze({ family, revision: epoch });
   const getSelection = () => selection;
+  const getSelectionSignal = () => lifetime.signal;
   const clear = () => {
     epoch += 1;
     active = null;
@@ -72,5 +73,5 @@ export const createAgentHost = ({ getAcceptance, attempts, getHostSupport }) => 
     });
     return identity;
   };
-  return Object.freeze({ select, selectOpenCode, getSelection, clear, dispatcher, features });
+  return Object.freeze({ select, selectOpenCode, getSelection, getSelectionSignal, clear, dispatcher, features });
 };

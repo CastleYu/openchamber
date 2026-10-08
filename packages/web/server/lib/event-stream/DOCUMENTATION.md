@@ -77,6 +77,9 @@ Verified against a live server by dropping the socket every 150ms to 3s during a
 The directory WS bridge and the SSE proxy (`/api/global/event`, used by Capacitor) still forward unmerged events.
 
 ## Notes for contributors
+
+The production global hub and OpenCode push watcher consume the Agent host's family/revision snapshot and selection signal. CAgent startup does no OpenCode readiness, kernel or HTTP work. Retirement stops the active upstream reader, detaches watcher subscriptions and clears hub replay even when the kernel descriptor has not changed. Event commits and Space injections reject a retired selection. Normal stop preserves same-selection replay; restarting an unused hub after a selection change clears it. The existing global WS identity-change frame resets client cursors. These synthetic lifecycle tests establish isolation, not CAgent event support or browser/native acceptance.
+
 - Keep protocol helpers pure and small so they can be unit tested without spinning up a server.
 - Keep `runtime.js` focused on WebSocket upgrade and endpoint dispatch. Put global browser-client lifecycle in `global-ws-bridge.js`, directory stream lifecycle in `directory-ws-bridge.js`, and upstream stream sharing in `global-hub.js`.
 - Do not change upstream OpenCode transport assumptions here; OpenCode remains SSE-based.

@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: configuration family refusal
+## Latest checkpoint: event selection retirement
+
+2026-10-09. The protected host now exposes its selection lifetime to the shared global event hub and OpenCode push watcher. CAgent skips their startup. Selection retirement aborts the upstream stream, detaches watcher subscriptions and clears replay without depending on a kernel descriptor update. Retired commits and Space injections are rejected. Readiness completion checks the captured revision, and restarting an unused hub under a new revision clears its retained replay. Web/Electron and server-connected mobile share this composition; VS Code CAgent remains unavailable.
+
+Four focused Vitest files pass 43 tests. The lead added explicit direct-reader guards, a zero-kernel-work Space injection assertion and a stopped-hub restart assertion. These use synthetic SSE data and do not establish real CAgent event compatibility. CA-01 remains in progress. Protected production selection, startup configuration preparation, remaining routes/consumers and feature migration still precede activation. CA-02 runnable kit, CA-03 environment acceptance, independent publication and temporary Release remain pending. Other INT work stays behind CA-03.
+
+Validation for the event-retirement checkpoint also passes Web type-check/lint, direct strict host declaration compilation, four runtime syntax checks and host/new-test anti-slop. Full hub/watcher anti-slop retains six inherited `typeof` findings outside the added guards. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, without an affected module row. Live weekly quota is 69% remaining. No reset credit was used.
+
+## Previous checkpoint: configuration family refusal
 
 2026-10-09. CA-01 remains in progress. All Agent, command, MCP, plugin and skill configuration prefixes now use the same request-entry family check as the OpenCode routes. Production passes the protected host selection to each registrar. CAgent refuses before generation/directory/configuration access, npm registry lookup, skill scan or installation. App-owned snippets remain available. The entity generation readiness check now lives with its registrar, following family refusal. Web/Electron and server-connected mobile clients share these checks; VS Code remains unavailable for CAgent.
 

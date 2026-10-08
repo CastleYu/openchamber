@@ -1,5 +1,11 @@
 # Personal maintenance plan
 
+## OpenCode integration milestone, 2026-10-08
+
+Urgent CAgent work takes priority after common baseline INT-00. Follow CA-00 through CA-03 in the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md), using the [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md). The remaining INT implementation waits for actual local CAgent acceptance or an explicit maintainer reprioritization. API evidence is unavailable here; no CAgent implementation is claimed.
+
+The [integration SPEC](OPENCODE-INTEGRATION-SPEC.md) and [Legacy 1.2.27 SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md) replace the old DEV-PLAN section 3 details. The [INT milestone queue](OPENCODE-INTEGRATION-MILESTONES.md) owns their execution status, dependencies and acceptance. RUN-01/RUN-02 are migrated planning entries, not completed implementation. See the [source audit](OPENCODE-INTEGRATION-AUDIT.md) for current coverage.
+
 ## DIJIANG 3.2 update history and release automation, 2026-09-14
 
 - Settings has a lazy-loaded, offline Update history page on web, desktop,
@@ -108,8 +114,8 @@ Statuses: `backlog` → `ready` → `running` → `review` → `done`. Alternati
 | HOST-02 | P1 | Extract GitHub repository/PR read adapter | backlog | HOST-01 | unclaimed | Runtime parity and migration review |
 | HOST-03 | P2 | Extract platform mutations and auth | backlog | HOST-02 | unclaimed | Privilege, identity and failure review |
 | HOST-04 | P2 | Prove replacement using a second host adapter | backlog | HOST-03 | unclaimed | Requires chosen platform and test endpoint |
-| RUN-01 | P1 | Design SERVER / managed command lifecycle | ready | none | unclaimed | High-capability design review |
-| RUN-02 | P1 | Persist mode, enforce lifecycle, expose switch | backlog | RUN-01 | unclaimed | Native process and UX review |
+| RUN-01 | P1 | Connection contract; routed to INT-00/INT-01 | migrated | See INT queue | unclaimed | Integration SPEC review |
+| RUN-02 | P1 | Explicit modes and reload; routed to INT-02/INT-06/INT-06L | migrated | See INT queue | unclaimed | Native process and UX review |
 | LOG-01 | P1 | Audit existing logs against bounded diagnostics needs | ready | none | unclaimed | Redaction and retention review |
 | LOG-02 | P2 | Implement reviewed log gaps | backlog | LOG-01 | unclaimed | Fault and resource-budget review |
 | VIEW-01 | P2 | Define dual-screen and workspace-tab behavior | ready | none | unclaimed | User interaction design review |
@@ -164,9 +170,7 @@ HOST-01 finishes with actual caller/file inventory and a capability table, inclu
 
 ### RUN-01 and RUN-02, controlled OpenCode startup
 
-`SERVER` means connect to an explicitly configured existing OpenCode endpoint. Never spawn, upgrade, stop or reap the external process. Failure remains an external connection error. `managed command` means OpenChamber starts the selected executable, owns its PID/process tree and stops only what it owns. On Windows, resolve `.cmd` shims safely; keep background helpers hidden. Do not equate command mode with a visible console unless selected by the user.
-
-Start from `OPENCODE_HOST`, `OPENCODE_PORT`, `OPENCODE_SKIP_START` and the existing lifecycle module. Define precedence among saved mode, environment and launch arguments, migration of existing installs, executable arguments/cwd, endpoint/auth validation and mode display. A failed SERVER connection must never fall back to command mode. Busy-session switching needs a deliberate transition policy and explicit user action. Acceptance includes both modes, invalid endpoint/binary, restart, stale PID, shutdown, and switching with active work. The in-process OpenChamber server stays in-process.
+Replaced on 2026-10-08 by the five-mode connection and profile-aware reload contracts in the [integration SPEC](OPENCODE-INTEGRATION-SPEC.md). Track implementation under INT-00/INT-00L/INT-01/INT-02/INT-06/INT-06L in the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md). This migration does not claim the old tasks are implemented. External process ownership, explicit failures and the in-process OpenChamber backend remain required.
 
 ### LOG-01 and LOG-02, diagnostics
 

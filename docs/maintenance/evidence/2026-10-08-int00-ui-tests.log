@@ -1,0 +1,291 @@
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\client.protocol.test.ts:
+(pass) authoritative runtime discovery > OC2 sharing is rejected before dispatch [7.17ms]
+(pass) authoritative runtime discovery > OC1 unshare removes a stale URL echoed by the server [7.10ms]
+(pass) authoritative runtime discovery > coalesces discovery and binds before health succeeds [2.90ms]
+(pass) authoritative runtime discovery > an unavailable descriptor clears the previous kernel binding [0.55ms]
+(pass) authoritative runtime discovery > a late descriptor cannot rebind after reconnect [0.73ms]
+(pass) directory-scoped protocol ownership > selects one sync source per bound epoch and uses OC2 active sessions [1.33ms]
+(pass) directory-scoped protocol ownership > blocks both retained and new OC1 SDK clients after binding OC2 [1.24ms]
+(pass) directory-scoped protocol ownership > routes bound OC2 session pages through /api with encoded directory scope [1.08ms]
+
+ 8 pass
+ 0 fail
+ 27 expect() calls
+Ran 8 tests across 1 file. [598.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\client.facade.test.ts:
+(pass) bound OC2 facade > keeps the complete provider/model catalog and effective config [14.74ms]
+(pass) bound OC2 facade > waits for OC2 plugin activation before model and agent catalogs [1.34ms]
+(pass) bound OC2 facade > stops an OC2 catalog read when the runtime changes during plugin activation [0.76ms]
+(pass) bound OC2 facade > does not turn a failed OC2 activation barrier into an empty catalog [0.87ms]
+(pass) bound OC2 facade > sends selection, synthetic context, and prompt through distinct OC2 routes [4.23ms]
+(pass) bound OC2 facade > keeps form answers structured on the OC2 form route [0.82ms]
+(pass) bound OC2 facade > runs OC2 shell after selecting model and agent, with completion left to events [1.54ms]
+(pass) bound OC2 facade > compacts OC2 through model selection and the compact admission route [1.15ms]
+Failed to search files: ZodError: [
+  {
+    "expected": "array",
+    "code": "invalid_type",
+    "path": [],
+    "message": "Invalid input: expected array, received undefined"
+  }
+]
+
+(pass) bound OC2 facade > maps OC2 file.find entries and refuses malformed file search success [5.58ms]
+(pass) bound OC2 facade > routes OC2 VCS and move while gating removed todo and LSP operations [2.23ms]
+(pass) bound OC2 facade > updates OC2 metadata through the owned merge route and retains other namespaces [3.65ms]
+(pass) OC1 paging keeps inclusive archive query and decreasing numeric cursor [3.67ms]
+(pass) OC1 shell, summarize, and file search retain their legacy request and response shapes [3.00ms]
+(pass) OC1 keeps native todo, LSP, and VCS reads [2.16ms]
+
+ 14 pass
+ 0 fail
+ 60 expect() calls
+Ran 14 tests across 1 file. [607.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\runtime.test.ts:
+(pass) OpenCode runtime binding > does not guess OC1 before the first descriptor is bound [0.31ms]
+(pass) OpenCode runtime binding > rejects OC1 operations on a detected OC2 endpoint [0.14ms]
+(pass) OpenCode runtime binding > invalidates an in-flight result after endpoint or epoch changes [0.39ms]
+(pass) OpenCode runtime binding > does not invalidate a request for a duplicate descriptor [0.15ms]
+(pass) OpenCode runtime binding > requires a new descriptor after reconnect [0.07ms]
+
+ 5 pass
+ 0 fail
+ 6 expect() calls
+Ran 5 tests across 1 file. [91.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\events.test.ts:
+(pass) OC2 event projection > catalog events preserve the list that changed [2.35ms]
+(pass) OC2 event projection > validates a raw WebSocket event with the pinned OC2 schema [11.09ms]
+(pass) OC2 event projection > projects the pinned optional VCS branch event with its directory [2.53ms]
+(pass) OC2 event projection > keeps the same text and reasoning part IDs as HTTP history [0.14ms]
+(pass) OC2 event projection > keeps permissions and forms tagged separately [0.11ms]
+(pass) OC2 event projection > does not invent a full session from a partial metadata event [0.08ms]
+(pass) OC2 event projection > publishes only session-owned background shell lifecycle events [1.28ms]
+
+ 7 pass
+ 0 fail
+ 20 expect() calls
+Ran 7 tests across 1 file. [530.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\v1\sessions.test.ts:
+(pass) OC1 session adapter > keeps old SDK path, directory, and message query [4.02ms]
+(pass) OC1 session adapter > does not turn failed reads into empty success [3.87ms]
+(pass) OC1 session adapter > keeps OC1 create and update fields without inventing archive null writes [1.17ms]
+
+ 3 pass
+ 0 fail
+ 5 expect() calls
+Ran 3 tests across 1 file. [166.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\v1\projection.test.ts:
+(pass) OC1 domain projection > preserves every actual session and message field without replacing IDs [4.95ms]
+(pass) OC1 domain projection > preserves each OC1 part variant and nested JSON payload [1.19ms]
+(pass) OC1 domain projection > keeps legacy error names, retryability and OC2 structured errors distinct [2.12ms]
+(pass) OC1 domain projection > rejects injected non-JSON payloads at ingress [1.44ms]
+
+ 4 pass
+ 0 fail
+ 21 expect() calls
+Ran 4 tests across 1 file. [130.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\opencode\v2\sessions.test.ts:
+(pass) OC2 session adapter > uses /api cursor pages and projects wire sessions without fabricating absent fields [2.22ms]
+(pass) OC2 session adapter > projects inline message parts and stops paging on a short final page [0.71ms]
+(pass) OC2 session adapter > sends prompt to OC2 admission route with its delivery and signal [0.46ms]
+(pass) OC2 session adapter > keeps command, interrupt, and staged revert as distinct OC2 operations [0.83ms]
+
+ 4 pass
+ 0 fail
+ 13 expect() calls
+Ran 4 tests across 1 file. [156.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\sync\source.test.ts:
+(pass) sync source epoch > a retained source cannot start a request after a same-generation rebind [0.77ms]
+(pass) sync source epoch > an OC1 source keeps the complete event vocabulary intact at ingress [0.64ms]
+
+ 2 pass
+ 0 fail
+ 3 expect() calls
+Ran 2 tests across 1 file. [537.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\sync\bootstrap.test.ts:
+(pass) bootstrapGlobal > never enumerates projects while the visible directory is still loading [11.20ms]
+[bootstrap] optional enrichment failed for /repo OpenCodeRuntimeError: OpenCode unknown does not support shell.list in this client
+ generation: "unknown",
+  operation: "shell.list",
+
+      at assert (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\opencode\runtime.ts:57:30)
+      at run (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\opencode\runtime.ts:64:10)
+      at listRunningShells (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\opencode\client.ts:1535:48)
+      at <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\background-shells.ts:140:24)
+      at run (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\background-network.ts:56:18)
+      at async retry (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\retry.ts:52:20)
+
+(pass) bootstrapDirectory > OC2 cold bootstrap publishes its VCS branch to the tray state [3.94ms]
+(pass) bootstrapDirectory > metadata discovery does not activate MCP status or command prompts [3.66ms]
+(pass) bootstrapDirectory > session loading finishes before deferred environment fields [0.97ms]
+(pass) bootstrapDirectory > stale bootstrap work does not commit [0.18ms]
+(pass) bootstrapDirectory > finishes session loading while /config is unresolved [0.94ms]
+[bootstrap] session load failed for /repo 130 |     const cached = [{
+131 |       id: "cached", slug: "cached", projectID: "project-a", directory: "/repo",
+132 |       title: "Cached", version: "1", time: { created: 1, updated: 1 },
+133 |     }]
+134 |     const input = inputFor(createSdk(), { session: cached })
+135 |     const bootstrap = bootstrapDirectory({ ...input, loadSessions: async () => { throw new Error("unavailable") } })
+                                                                                                 ^
+error: unavailable
+      at loadSessions (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.test.ts:135:92)
+      at <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:158:19)
+      at bootstrapDirectory (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:163:14)
+      at <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.test.ts:135:23)
+
+(pass) bootstrapDirectory > keeps session-list failure separate from successful environment initialization [1.48ms]
+[bootstrap] environment initialization failed for /repo 39 | ): T {
+40 |   if (result.error) {
+41 |     const status = result.response?.status
+42 |     const parsed = sdkErrorMessage.safeParse(result.error)
+43 |     const message = parsed.success ? parsed.data.message : String(result.error)
+44 |     throw Object.assign(new Error(`${name} failed${status ? ` (${status})` : ""}: ${message}`), { status })
+                                 ^
+error: config.get failed (400): invalid config
+ status: 400,
+
+      at unwrap (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:44:29)
+      at <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:247:24)
+      at async run (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\background-network.ts:56:18)
+      at async retry (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\retry.ts:52:20)
+
+(pass) bootstrapDirectory > a config failure cannot suppress status or pending-question recovery [2.14ms]
+[bootstrap] environment initialization failed for /repo 39 | ): T {
+40 |   if (result.error) {
+41 |     const status = result.response?.status
+42 |     const parsed = sdkErrorMessage.safeParse(result.error)
+43 |     const message = parsed.success ? parsed.data.message : String(result.error)
+44 |     throw Object.assign(new Error(`${name} failed${status ? ` (${status})` : ""}: ${message}`), { status })
+                                 ^
+error: session.status failed (400): status unavailable
+ status: 400,
+
+      at unwrap (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:44:29)
+      at <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:207:45)
+      at async <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\directory-recovery-snapshots.ts:145:33)
+      at async withRecoveryObserver (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\directory-recovery-snapshots.ts:119:18)
+      at async <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:206:17)
+      at async run (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\background-network.ts:56:18)
+      at async retry (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\retry.ts:52:20)
+
+(pass) bootstrapDirectory > a failed status request does not grant idle authority [1.03ms]
+[bootstrap] environment initialization failed for /repo ZodError: [
+  {
+    "expected": "record",
+    "code": "invalid_type",
+    "path": [],
+    "message": "Invalid input: expected record, received array"
+  }
+]
+
+(pass) bootstrapDirectory > malformed status success does not clear live state or grant idle authority [1.29ms]
+(pass) bootstrapDirectory > never reads MCP-initializing endpoints during directory initialization [0.75ms]
+(pass) bootstrapDirectory > rejects stale work before starting either phase [0.17ms]
+(pass) bootstrapDirectory > drops queued initialization reads after the directory generation changes [0.59ms]
+(pass) bootstrapDirectory > an in-flight response cannot commit after its initialization is superseded [1.22ms]
+(pass) bootstrapDirectory > addresses every environment read to its directory rather than the SDK default [4.42ms]
+(pass) bootstrapDirectory > an authoritative empty question list clears old records [0.73ms]
+[bootstrap] environment initialization failed for /repo 39 | ): T {
+40 |   if (result.error) {
+41 |     const status = result.response?.status
+42 |     const parsed = sdkErrorMessage.safeParse(result.error)
+43 |     const message = parsed.success ? parsed.data.message : String(result.error)
+44 |     throw Object.assign(new Error(`${name} failed${status ? ` (${status})` : ""}: ${message}`), { status })
+                                 ^
+error: question.list failed (400): unavailable
+ status: 400,
+
+      at unwrap (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:44:29)
+      at async <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\directory-recovery-snapshots.ts:182:27)
+      at async withRecoveryObserver (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\directory-recovery-snapshots.ts:119:18)
+      at async <anonymous> (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\bootstrap.ts:216:32)
+      at async run (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\lib\background-network.ts:56:18)
+      at async retry (C:\Users\74756\.codex\worktrees\dijiang-next\openchamber\packages\ui\src\sync\retry.ts:52:20)
+
+(pass) bootstrapDirectory > failed question recovery preserves previous questions [1.16ms]
+(pass) bootstrapDirectory > retries transient question failures without replaying the session list [511.76ms]
+
+ 18 pass
+ 0 fail
+ 87 expect() calls
+Ran 18 tests across 1 file. [1134.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\sync\domain-event-reducer.test.ts:
+(pass) OC2 domain event reducer > updates and clears the tray branch without losing the default branch [2.46ms]
+(pass) OC2 domain event reducer > appends repeated text deltas and ignores a replayed durable sequence [0.28ms]
+(pass) OC2 domain event reducer > keeps permission and form requests in separately tagged state [0.18ms]
+(pass) OC2 domain event reducer > requests authoritative message recovery for an orphan delta [0.06ms]
+
+ 4 pass
+ 0 fail
+ 15 expect() calls
+Ran 4 tests across 1 file. [154.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\sync\domain-batch-authority.test.ts:
+(pass) a late OC2 refresh cannot restore a deleted session in either cache [25.64ms]
+(pass) OC2 VCS events update only their directory in the current runtime [0.57ms]
+(pass) OC2 child settlement releases only the current completed parent turn (resumed=false) [2.50ms]
+(pass) OC2 child settlement releases only the current completed parent turn (resumed=true) [0.58ms]
+(pass) a replacement OC2 source cannot release the previous source deferred outcome [0.54ms]
+(pass) a no-op sequence advance is committed before older status arrives [0.24ms]
+(pass) a stale terminal event cannot publish a global idle side effect [0.20ms]
+
+ 7 pass
+ 0 fail
+ 16 expect() calls
+Ran 7 tests across 1 file. [781.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\sync\event-pipeline-domain.test.ts:
+(pass) default flush timers preserve browser timer receivers [20.25ms]
+(pass) OC1 routes an unknown session using its event envelope directory [12.36ms]
+(pass) OC2 SSE events stay typed and duplicate event IDs are delivered once [12.35ms]
+
+ 3 pass
+ 0 fail
+ 4 expect() calls
+Ran 3 tests across 1 file. [575.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\lib\guests\load-catalog.test.ts:
+(pass) catalog request diagnostics > retains HTTP failures and clears them on a successful retry [6.48ms]
+(pass) catalog request diagnostics > distinguishes unexpected responses and network failures [0.35ms]
+(pass) catalog request diagnostics > late failures cannot contaminate the next runtime [10.59ms]
+
+ 3 pass
+ 0 fail
+ 8 expect() calls
+Ran 3 tests across 1 file. [164.00ms]
+bun test v1.3.14 (0d9b296a)
+
+packages\ui\src\stores\catalogRefresh.test.ts:
+(pass) catalogRefreshTasks > websearch events reload an opened OC2 page but make no OC1 request [1.40ms]
+(pass) catalogRefreshTasks > a config rebuild re-reads every list a config file can carry [0.05ms]
+(pass) catalogRefreshTasks > a single-catalog rebuild re-reads only that list [0.11ms]
+(pass) catalogRefreshTasks > a credential change re-reads providers and web search keys [0.03ms]
+(pass) catalogRefreshTasks > projects belong to the sync stores, not to the settings lists [0.04ms]
+
+ 5 pass
+ 0 fail
+ 11 expect() calls
+Ran 5 tests across 1 file. [778.00ms]

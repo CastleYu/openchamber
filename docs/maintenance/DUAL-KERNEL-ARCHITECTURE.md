@@ -2,6 +2,8 @@
 
 Status: accepted design, implemented on the OC1 core. The adoption ledger records contract and runtime evidence; publication is a separate gate.
 
+Urgent follow-up, 2026-10-08: this document remains the historical OC1/OC2 baseline. The [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) adds an independent backend family and host-owned adapter kit before the remaining integration work. Its capability and extension contracts supersede a two-protocol-only scope for the new milestone; they do not claim CAgent is already implemented.
+
 ## Decision
 
 Start from personal OC1 commit `4ac81115c17c203c89c5b52f93a930af32ea2163`. Preserve its complete behavior while integrating the product changes in upstream OpenChamber `v2.0.1`, commit `63bd5070c8620432817e1e67de77791f801bcf3e`. OpenChamber's tag is not the OpenCode binary version. The final product has one application, two protocol implementations, and deliberate feature behavior for each protocol.
@@ -49,7 +51,9 @@ Maintain OC1 config/auth/plugin implementations alongside the specific OC2 alter
 
 ### Runtime identity and selection
 
-Resolve one generation descriptor per active endpoint/epoch before bootstrap. Use explicit generation and capabilities, not UI-owned guesses. Unsupported/unreachable/unknown remain different outcomes; failed probing must not silently choose OC1. Ignore OC1 minor-version branching during design, as requested. The maintainer subsequently authorized the currently available OC1 runtime for this delivery; 1.2.27-specific execution is deferred and is not a release gate.
+Resolve one generation descriptor per active endpoint/epoch before bootstrap. Use explicit generation and capabilities, not UI-owned guesses. Unsupported/unreachable/unknown remain different outcomes; failed probing must not silently choose OC1. The initial delivery ignored OC1 minor-version branching and used the maintainer-authorized available OC1 runtime; exact 1.2.27 execution was deferred for that delivery.
+
+Follow-up, 2026-10-08: the [integration SPEC](OPENCODE-INTEGRATION-SPEC.md) extends this architecture with a dedicated OC1 compatibility profile. The [Legacy 1.2.27 SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md) makes exact-version execution a gate for the new Legacy claim. The earlier deferral remains historical evidence, not an exemption for the new milestone.
 
 A changed endpoint or generation invalidates clients, in-flight result authority, stream, stores, and protocol-scoped caches through the existing switch flow. Resolve URLs and credentials at call time. Keep the descriptor scoped to runtime identity rather than a process-global mutable mode that a second window can overwrite.
 

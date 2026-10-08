@@ -1,0 +1,7 @@
+$ bun run --filter '*' type-check
+@openchamber/mobile type-check: Exited with code 0
+@openchamber/sdk type-check: Exited with code 0
+@openchamber/ui type-check: Exited with code 0
+@openchamber/web type-check: Exited with code 0
+@openchamber/electron type-check: Exited with code 0
+openchamber type-check: Exited with code 0

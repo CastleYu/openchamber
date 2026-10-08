@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "operation": "forkSession",
+  "mutation": true,
+  "features": [
+    "fork"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "messageID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID",
+      "requestID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "parentID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "metadata": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/__schema0"
+        }
+      }
+    },
+    "required": [
+      "id",
+      "workspaceID"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session",
+      "messageID": "fixture-message",
+      "requestID": "fixture-request"
+    },
+    "output": {
+      "id": "fixture-child",
+      "workspaceID": "fixture-workspace",
+      "title": "Fixture session",
+      "parentID": "fixture-session"
+    },
+    "invalidOutput": {
+      "id": "fixture-child"
+    }
+  },
+  "semantics": {
+    "en": [
+      "Document whether the selected message is included, and the default cut when messageID is omitted. A maintainer must approve that behavior for the consuming feature before activation.",
+      "The returned record identifies a new child in the selected workspace; the source session stays intact."
+    ],
+    "zh": [
+      "记录指定消息是否保留，以及省略 messageID 时的默认截断位置。启用前须由维护者批准此行为满足消费功能。",
+      "返回记录标识所选工作区中新建的子会话；源会话保持完整。"
+    ]
+  }
+}

@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: configured authentication retirement
+## Latest checkpoint: operation reference generation
+
+2026-10-09. CA-01 remains in progress. The executable CA-02 reference component generates 22 English and Chinese operation pages, 22 structural schema/example files, two indexes and one manifest. It derives operation inventory, parsers and feature dependencies from the current application contracts. Reviewed semantic requirements and synthetic examples live in a separate catalog. The reference digest is `7493dcfc98d55e31c96e194ead4ff1aade2984ad53d07abba4f9a131e5a10a2b`. This fingerprint grants no adapter approval or activation.
+
+Six Node tests pass, covering complete operation coverage, example validation, deterministic bytes, ownership semantics, fixed filesystem generation/checking, obsolete-file detection and noninteractive failure output. Root type-check and lint pass with five inherited lint warnings. Changed JavaScript passes anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no new generator row. The generated references pass their executable freshness check. No new runtime or production bundle is required for this reference-only checkpoint.
+
+The tool needs the checkout's installed dependencies. Mapping intake, candidate packet generation, protected fixture composition, extension templates, offline bundle installation and weak-model calibration remain CA-02 work. Runtime parser refinements and documented request semantics still require protected checks. Real CAgent acceptance, independent publication and temporary Release remain pending. Other INT work stays after CA-03. Live weekly allowance is 64% remaining; no reset credit was used. See the [generator guide](../../scripts/cagent/DOCUMENTATION.md) and [operation index](cagent-contracts/README.md).
+
+## Previous checkpoint: configured authentication retirement
 
 2026-10-09. CA-01 remains in progress. The production Agent client now subscribes to configured bearer/provider/header changes as well as endpoint retirement. Changes synchronously abort pending work and clear conversation state. Old scopes refuse dispatch at an unchanged endpoint. Entered mutations retain unknown-outcome semantics and their journal markers without replay. Binding creation rejects retirement during hashing or inspection. URL-auth token refresh is independent and does not retire a conversation.
 

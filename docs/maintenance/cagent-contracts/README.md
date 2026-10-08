@@ -1,0 +1,26 @@
+# CAgent operation references
+
+Generated from the current operation schemas, action dependency rules and reviewed bilingual semantics. Read only the operation assigned by your protected packet. These references grant no capability or activation.
+
+- [getSession](getSession.md)
+- [createSession](createSession.md)
+- [listSessions](listSessions.md)
+- [listMessages](listMessages.md)
+- [listChildren](listChildren.md)
+- [listActiveStatuses](listActiveStatuses.md)
+- [getSessionStatus](getSessionStatus.md)
+- [listPendingPermissions](listPendingPermissions.md)
+- [replyPermission](replyPermission.md)
+- [getMessage](getMessage.md)
+- [addSynthetic](addSynthetic.md)
+- [switchSessionSelection](switchSessionSelection.md)
+- [listCommands](listCommands.md)
+- [getSelectionCatalog](getSelectionCatalog.md)
+- [getDefaultModel](getDefaultModel.md)
+- [importSession](importSession.md)
+- [forkSession](forkSession.md)
+- [removeSession](removeSession.md)
+- [updateSession](updateSession.md)
+- [sendPrompt](sendPrompt.md)
+- [sendCommand](sendCommand.md)
+- [interruptSession](interruptSession.md)

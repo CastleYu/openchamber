@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "operation": "listActiveStatuses",
+  "mutation": false,
+  "features": [
+    "activity"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "sessionID": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "idle",
+            "busy",
+            "waiting",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "sessionID",
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace"
+    },
+    "output": [
+      {
+        "sessionID": "fixture-session",
+        "state": "idle"
+      }
+    ],
+    "invalidOutput": [
+      {
+        "sessionID": "fixture-session"
+      }
+    ]
+  },
+  "semantics": {
+    "en": [
+      "Each row names its own session.",
+      "An empty array means no statuses were returned, not a failed read."
+    ],
+    "zh": [
+      "每一项都标明所属会话。",
+      "空数组表示没有返回状态，不表示读取失败。"
+    ]
+  }
+}

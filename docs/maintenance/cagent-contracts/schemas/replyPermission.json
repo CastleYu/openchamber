@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "operation": "replyPermission",
+  "mutation": true,
+  "features": [
+    "permission"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "permissionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "choice": {
+        "type": "string"
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID",
+      "permissionID",
+      "choice",
+      "requestID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "accepted"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "complete"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "unknown"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "requestID",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session",
+      "permissionID": "fixture-permission",
+      "choice": "allow-once",
+      "requestID": "fixture-request"
+    },
+    "output": {
+      "state": "complete",
+      "requestID": "fixture-request"
+    },
+    "invalidOutput": {
+      "state": "complete"
+    }
+  },
+  "semantics": {
+    "en": [
+      "Check permissionID and choice against the current pending request in this session. Preserve the documented outcome and scope; never widen once/session approval to persistent approval.",
+      "A complete receipt records the reply operation, not success of the action that requested permission."
+    ],
+    "zh": [
+      "根据本会话当前待处理请求核对 permissionID 和 choice。保留文档规定的结果和范围；不能把单次／会话批准扩大为永久批准。",
+      "complete 回执表示回复操作完成，不证明请求权限的动作成功。"
+    ]
+  }
+}

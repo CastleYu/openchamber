@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "operation": "listPendingPermissions",
+  "mutation": false,
+  "features": [
+    "permission"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sessionID": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "choices": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "allow",
+                  "deny"
+                ]
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "once",
+                  "session",
+                  "persistent"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "outcome",
+              "scope"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "sessionID",
+        "description",
+        "choices"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace"
+    },
+    "output": [
+      {
+        "id": "fixture-permission",
+        "sessionID": "fixture-session",
+        "description": "Read a fixture file",
+        "choices": [
+          {
+            "id": "allow-once",
+            "label": "Allow once",
+            "outcome": "allow",
+            "scope": "once"
+          }
+        ]
+      }
+    ],
+    "invalidOutput": [
+      {
+        "id": "fixture-permission",
+        "sessionID": "fixture-session",
+        "description": "Read a fixture file",
+        "choices": []
+      }
+    ]
+  },
+  "semantics": {
+    "en": [
+      "Each permission names its session and offers explicit choices.",
+      "Each choice carries both an allow or deny outcome and a valid scope."
+    ],
+    "zh": [
+      "每项权限都注明会话并提供明确选项。",
+      "每个选项都包含允许或拒绝结果以及有效范围。"
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "operation": "getSession",
+  "mutation": false,
+  "features": [
+    "acquireSession",
+    "history",
+    "message",
+    "children",
+    "prompt",
+    "command",
+    "stop",
+    "selection",
+    "synthetic",
+    "fork",
+    "remove",
+    "update"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "parentID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "metadata": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/__schema0"
+        }
+      }
+    },
+    "required": [
+      "id",
+      "workspaceID"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session"
+    },
+    "output": {
+      "id": "fixture-session",
+      "workspaceID": "fixture-workspace",
+      "title": "Fixture session"
+    },
+    "invalidOutput": {
+      "id": "fixture-session"
+    }
+  },
+  "semantics": {
+    "en": [
+      "workspaceID and sessionID identify the same backend-owned session.",
+      "Missing optional title, parentID, and metadata stay absent."
+    ],
+    "zh": [
+      "workspaceID 与 sessionID 必须指向同一后端会话。",
+      "可选的 title、parentID 和 metadata 缺失时保持缺失。"
+    ]
+  }
+}

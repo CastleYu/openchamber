@@ -12,6 +12,8 @@
 | 宿主调度契约 | [调度契约](CAGENT-DISPATCH-CONTRACTS.md) | [英文](../../../packages/web/server/lib/agent/DOCUMENTATION.md) |
 | 执行证据与检查点 | [执行记录](CAGENT-EXECUTION.md) | [英文](../CAGENT-EXECUTION.md) |
 | 环境内适配流程 | [适配工作手册](CAGENT-ADAPTER-WORKBOOK.md) | [英文](../CAGENT-ADAPTER-WORKBOOK.md) |
+| 单操作契约生成工具 | [生成工具](CAGENT-CONTRACT-GENERATOR.md) | [英文](../../../scripts/cagent/DOCUMENTATION.md) |
+| 单操作契约参考 | [22 个操作](cagent-contracts/README.md) | [英文](../cagent-contracts/README.md) |
 | 集成需求与架构 | [集成 SPEC](OPENCODE-INTEGRATION-SPEC.md) | [英文](../OPENCODE-INTEGRATION-SPEC.md) |
 | Legacy 1.2.27 适配 | [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md) | [英文](../OPENCODE-LEGACY-1.2.27-SPEC.md) |
 | 子版本与验收门槛 | [里程碑](OPENCODE-INTEGRATION-MILESTONES.md) | [英文](../OPENCODE-INTEGRATION-MILESTONES.md) |

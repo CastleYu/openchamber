@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "digest": "7493dcfc98d55e31c96e194ead4ff1aade2984ad53d07abba4f9a131e5a10a2b",
+  "operations": [
+    "getSession",
+    "createSession",
+    "listSessions",
+    "listMessages",
+    "listChildren",
+    "listActiveStatuses",
+    "getSessionStatus",
+    "listPendingPermissions",
+    "replyPermission",
+    "getMessage",
+    "addSynthetic",
+    "switchSessionSelection",
+    "listCommands",
+    "getSelectionCatalog",
+    "getDefaultModel",
+    "importSession",
+    "forkSession",
+    "removeSession",
+    "updateSession",
+    "sendPrompt",
+    "sendCommand",
+    "interruptSession"
+  ],
+  "files": [
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/getSession.json",
+      "sha256": "a1e743c4d0f80417c8c5c7a27ab46ccafa14e7dafe3f7a4522a74bfcabcaa981"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/getSession.md",
+      "sha256": "13609dfb0dd9ac4a73fcad44b99b2b5dc45da76d15000fc358fe38660b26d8e5"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/getSession.md",
+      "sha256": "143ab7eacb37c1ed21ebc29906a78833d4baa6d1c61041b75b4779cdf13af9ba"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/createSession.json",
+      "sha256": "b0b26cf31f3c549f7a0b365ccf30b0040368078d2101c13313437ac7f49b0b5d"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/createSession.md",
+      "sha256": "e0dc76f81172d320bde99c212b7187064966d2c211d4702a6c4c07f7df4378ae"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/createSession.md",
+      "sha256": "ad243735086045da8fdd0aa7d7a61333f86729fcd11b8857d29fd05b5442081e"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listSessions.json",
+      "sha256": "0fd30e74aa237199b50b556ba7d194232c3cb29136e5e8f161b4ad26a79130b9"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listSessions.md",
+      "sha256": "c44e3ecf7b93e05c63a0ad65e5cec5607394d4f9f918f20e01ec091d32fd2d28"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listSessions.md",
+      "sha256": "d782195e8f116c52b92712cc71115a2e2e6a902ff9c84fabbb311075eae70c10"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listMessages.json",
+      "sha256": "9793a476dc41334fa40c6dc2a3b19643607b5e3827c0613bfd23d8692c5424b4"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listMessages.md",
+      "sha256": "61ad3ab44bc4a2daad0a2c8d2e1a494ae814732515ae5d4ed72c6f2f8b4ce36f"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listMessages.md",
+      "sha256": "e468b69ff7512d6476f8279d114b303e14b48f915128c117dfd2f042a606f689"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listChildren.json",
+      "sha256": "8c290557604443feb4e76557bc6c7c1da17923dd3f53b2be7b98c57d585f17c8"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listChildren.md",
+      "sha256": "8b65372e0e8d4bdaff76a894e5d28616f984dd59ed762d0842586e87d314ebc0"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listChildren.md",
+      "sha256": "d177558f6421f4133e562e03c276a5770e6bc46282e1784b1d72a28b63afe196"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listActiveStatuses.json",
+      "sha256": "f142dc847066a55730acc7f9f09a7b9c8bb2afa5fbc2dd6070fc7bc3a4dcf217"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listActiveStatuses.md",
+      "sha256": "55fb79346fd7bb3850dd66cb5e8e80f813fe37ed39c48c135dcad9136f5374cb"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listActiveStatuses.md",
+      "sha256": "fd7538d17d03332f07d9eefdef5790d2c50867a513be7b165b45a06cdad41b03"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/getSessionStatus.json",
+      "sha256": "d2f0b6a867940f8b9c65a66343e12ba74216f403cf80ab7c43ad5aa429fb26ef"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/getSessionStatus.md",
+      "sha256": "042e1590516e9d1d2e3e9643d01b9c26dd9461c452acf8fdd8c7596aa444ee45"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/getSessionStatus.md",
+      "sha256": "c83e03535d7958ecc8b10a181402c192c03c9dec000a83d9e6a3c0832c1b9b96"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listPendingPermissions.json",
+      "sha256": "67d42af2a9b4e23a099bb4a675c8719ece19d6f08922722f2eb02ac6611ba904"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listPendingPermissions.md",
+      "sha256": "670ee5e1435e504925e4988039ac63304e4b3b4377a0eb2d853b2db6a7a84e53"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listPendingPermissions.md",
+      "sha256": "5924db5b41d8f4788705e9a8252bf6245b1df404695f1cab79b4563bfe22e470"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/replyPermission.json",
+      "sha256": "64fc397f8f55d7413355dcb6c098e98ab22017219cbcab8c0dc79c4224622e24"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/replyPermission.md",
+      "sha256": "d0eacc7469696712bc2124b0e1d5e2608105b33afe2a10d9cc639225a4671488"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/replyPermission.md",
+      "sha256": "f5884740b59c5d6c9661833197d7fc9d4beca0644125fec65c4e1bef49b29edd"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/getMessage.json",
+      "sha256": "2f2b0e840d4264df613cd038026496c69d572db321195bdf0f0769c67abf4a75"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/getMessage.md",
+      "sha256": "1a850e3bb3ac6dc9838e3305fac51e29dda869a876b9eca58cab35bf3567553c"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/getMessage.md",
+      "sha256": "830698e2079f2126bb91e90cc9bcea6c6064c98b73c27e3209e80a35b6b08aea"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/addSynthetic.json",
+      "sha256": "f9e35ddb488524c188b6a66330cbfe8a520848516b905cba472d437ffc9a2fd4"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/addSynthetic.md",
+      "sha256": "32fa318d7efabf3a4e6272d2c8c3eaa9ed35cfecb11499f727f8a888d21d7b48"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/addSynthetic.md",
+      "sha256": "1b540e3ebb984c5128c7716cda8833f1478c62ad3ed5ebd7bbe2a27d37a43210"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/switchSessionSelection.json",
+      "sha256": "4a8f1b15606c1314ad10323ef6694b7ae2d2621496c5b43535cb5f7bab4bd999"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/switchSessionSelection.md",
+      "sha256": "ac44a4c1bf3628e5a99736bf5692a9d14baf188cf52a8396dd0385dce3a73630"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/switchSessionSelection.md",
+      "sha256": "4b34279db92d7118b3d95028995ea964974e647cc3c35aa6f35458c9ec275c70"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/listCommands.json",
+      "sha256": "89a5388a3740df70056cb9592e6d08e66eed9bfe00f0182ad8f0e272e22d724f"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/listCommands.md",
+      "sha256": "f722abc8776de5cb29219f229c995fcdecc2ab0c9239a13dd71953655607f498"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/listCommands.md",
+      "sha256": "3367b00bbf71407b3446e178c16f930e90baf4e305b00ff95fbca8fb028683c4"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/getSelectionCatalog.json",
+      "sha256": "e258c9c508920a385cc6df3bf65227dbe086b45fe1e4e3ad9781a042f7afb946"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/getSelectionCatalog.md",
+      "sha256": "03c5524fa8fa37b3cde170c1abc790764b58557b7f24baf0156339c31b64245c"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/getSelectionCatalog.md",
+      "sha256": "1f8ff4e058647fe97c2fa6fd90ff9fd8c62e3169f8297edab9ea597f2126e063"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/getDefaultModel.json",
+      "sha256": "c25f7d4469bba24351b74220846d0fab6f53879cd36bc1940601500efbcbad15"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/getDefaultModel.md",
+      "sha256": "ddf7ec3e04429ead9645b959951128775d5a1c83468f4d1806d8ec01c3b6a6fc"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/getDefaultModel.md",
+      "sha256": "0c125fd05d4a20ab21f3622f5b14f0a94207dc4eebc1ad62bd4b05312df246ca"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/importSession.json",
+      "sha256": "b04a7805bf4877076f1b91d87babdcdf58262688bb5b4006517589e91eae26d8"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/importSession.md",
+      "sha256": "d8072688d980d7489ba322b5edb1298e157449622f893fa78c32890d6dd48c7f"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/importSession.md",
+      "sha256": "f30a8babcfbacbab069bd9b6b3520f86e224b888af8873f7dc861acf9d4d7423"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/forkSession.json",
+      "sha256": "35c064c11fd8ebe9be00ac8f02e5d7b70498c48acc8fa1d39e4203d07efe2593"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/forkSession.md",
+      "sha256": "5f3de2721ec05a8daaa4ba982830db856090726e54024d987fd4d865b84f6362"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/forkSession.md",
+      "sha256": "b22a98005afd1c9f247342e85dd8dea4791f7ba33362772a60d466133174fc71"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/removeSession.json",
+      "sha256": "b124e9914764315b9f5e8c0ff5f4e7e540e7665e63664930b2c20697fb5470ce"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/removeSession.md",
+      "sha256": "08cc0cebf4698c240cfeec192b0a243d1ed9d355f14d775438dff30016e9d7f0"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/removeSession.md",
+      "sha256": "7560ba15239f0919fd00e4bd6feaa47faa000647e2e7c9765adf13a3ab58134a"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/updateSession.json",
+      "sha256": "b93176dba04d8cd93cfffc3a7884f5ff3fa9251f4c8ca1c4f8fcdda8e1f65c85"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/updateSession.md",
+      "sha256": "bcbc73107903299ebf0fb8c2dfd9ee5cea61c1b541983bf7bf76987840742524"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/updateSession.md",
+      "sha256": "8e25e69ce2de07ef8cf6d90875f505f4e743574149b246bba7335b0c802beb57"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/sendPrompt.json",
+      "sha256": "65f0ba5556164b4a5c15e498d55d50def6feaa3de2612c22b2f51994dc235ce7"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/sendPrompt.md",
+      "sha256": "69e4d92e01f9f126ac59c404f903619dc76e9c1e088d40a643c0d2550e0d4d64"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/sendPrompt.md",
+      "sha256": "53ff8eb3bae9309812f21e3555a8e02a965c6e44f7b31172a587497c8f4acd4a"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/sendCommand.json",
+      "sha256": "4be482b71cdd4bf97274c0219fbaf480424ea4518ec26ed7ca6141b3a6b46ce4"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/sendCommand.md",
+      "sha256": "570541f979c63836d0a97e86b7891735ede6b4d96bb59568825df241687f9220"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/sendCommand.md",
+      "sha256": "dc93765674000495a73051140b035d459c628e1337677a53c3f634b56a076a82"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/schemas/interruptSession.json",
+      "sha256": "6b02a8d35aac0bb8c7c9aa7bf1f60faf370740d3426a82b0db0020d2db906809"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/interruptSession.md",
+      "sha256": "152e65a50a913a6f176a62fe2b2317bc6870fd179f53fe77a14bc7db5cb1f445"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/interruptSession.md",
+      "sha256": "d47d8bee402b8f9414b832d25146d6d4fc38691c29a57dd860bad1e14cf6942b"
+    },
+    {
+      "path": "docs/maintenance/cagent-contracts/README.md",
+      "sha256": "b71745a94710adbb19507754a35d090de2aa37a1efeaa01ca38a821a2177b641"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/cagent-contracts/README.md",
+      "sha256": "e869976afebeedfe1b299f99adaca9698d215ae3f9e0bb6bf47b2f21fb138b05"
+    }
+  ]
+}

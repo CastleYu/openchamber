@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "operation": "getSessionStatus",
+  "mutation": false,
+  "features": [
+    "prompt",
+    "command",
+    "stop"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "idle",
+          "busy",
+          "waiting",
+          "unknown"
+        ]
+      }
+    },
+    "required": [
+      "sessionID",
+      "state"
+    ],
+    "additionalProperties": false
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session"
+    },
+    "output": {
+      "sessionID": "fixture-session",
+      "state": "idle"
+    },
+    "invalidOutput": {
+      "sessionID": "fixture-session",
+      "state": "done"
+    }
+  },
+  "semantics": {
+    "en": [
+      "The result is scoped by workspaceID and sessionID.",
+      "The status is a snapshot, not a completion receipt."
+    ],
+    "zh": [
+      "结果由 workspaceID 和 sessionID 共同限定。",
+      "状态是快照，不是任务完成回执。"
+    ]
+  }
+}

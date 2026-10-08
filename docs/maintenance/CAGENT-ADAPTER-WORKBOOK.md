@@ -4,6 +4,8 @@ Status: planning template, 2026-10-08. Use after CA-02 delivers the executable k
 
 ## Packet delivered into the environment
 
+The [operation references](cagent-contracts/README.md) and [reference generator](../../scripts/cagent/DOCUMENTATION.md) are available now. Their checked schemas and bilingual examples are one kit component. CA-02 still must supply the complete executable bundle, protected packets, mapping/extension templates and isolated acceptance commands below.
+
 The architecture owner must provide these artifacts together at a frozen application/contract revision. CA-02 acceptance fails if a file or executable command is merely promised.
 
 | Artifact | Required contents |

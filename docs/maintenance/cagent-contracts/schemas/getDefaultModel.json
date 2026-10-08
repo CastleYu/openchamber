@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "operation": "getDefaultModel",
+  "mutation": false,
+  "features": [
+    "defaultModel"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "modelID": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "modelID"
+    ],
+    "additionalProperties": false
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace"
+    },
+    "output": {
+      "modelID": null
+    },
+    "invalidOutput": {
+      "modelID": 3
+    }
+  },
+  "semantics": {
+    "en": [
+      "modelID is null when the backend reports no default.",
+      "This does not enumerate the model catalog."
+    ],
+    "zh": [
+      "后端未报告默认模型时 modelID 为 null。",
+      "此操作不会枚举模型目录。"
+    ]
+  }
+}

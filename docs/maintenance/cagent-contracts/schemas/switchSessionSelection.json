@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "operation": "switchSessionSelection",
+  "mutation": true,
+  "features": [
+    "selection"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "model": {
+        "type": "string"
+      },
+      "agent": {
+        "type": "string"
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID",
+      "requestID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string"
+      },
+      "agent": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session",
+      "model": "fixture-model",
+      "requestID": "fixture-request"
+    },
+    "output": {
+      "model": "fixture-model"
+    },
+    "invalidOutput": {
+      "model": 4
+    }
+  },
+  "semantics": {
+    "en": [
+      "model and agent are independently optional.",
+      "The returned selection reports selected values, not proof a later generation used them."
+    ],
+    "zh": [
+      "model 与 agent 可分别省略。",
+      "返回值说明已选择的值，不证明后续生成实际使用了它们。"
+    ]
+  }
+}

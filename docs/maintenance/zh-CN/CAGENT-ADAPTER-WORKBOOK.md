@@ -1,5 +1,7 @@
 # CAgent 本地适配工作手册
 
+[操作参考](cagent-contracts/README.md)及[参考生成器](CAGENT-CONTRACT-GENERATOR.md)现已可用。经检查的 schema 与双语样例只是工具包的一部分。CA-02 仍须提供下述完整可执行工具包、受保护任务包、映射／扩展模板及隔离验收命令。
+
 > 中文审阅稿：本译文供审阅使用，英文文档是实现交接的规范版本。
 
 状态：规划模板，2026-10-08。在 CA-02 交付 [CAgent 规范](CAGENT-INTEGRATION-SPEC.md)中说明的可执行工具包后使用。本文不包含猜测的 CAgent API 路径。以下所有占位内容都须根据本地文档和证据填写后才能确定。

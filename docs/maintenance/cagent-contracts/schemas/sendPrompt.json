@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "operation": "sendPrompt",
+  "mutation": true,
+  "features": [
+    "prompt"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "model": {
+        "type": "string"
+      },
+      "agent": {
+        "type": "string"
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "text": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID",
+      "requestID",
+      "text"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "accepted"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "complete"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "unknown"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "requestID",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session",
+      "requestID": "fixture-request",
+      "text": "Fixture prompt",
+      "model": "fixture-model"
+    },
+    "output": {
+      "state": "accepted",
+      "requestID": "fixture-request"
+    },
+    "invalidOutput": {
+      "state": "accepted"
+    }
+  },
+  "semantics": {
+    "en": [
+      "model and agent are optional explicit selection overrides.",
+      "An accepted receipt means accepted for processing, not that generation completed; unknown preserves an indeterminate outcome."
+    ],
+    "zh": [
+      "model 和 agent 是可选的显式选择覆盖值。",
+      "accepted 表示已受理处理，不表示生成完成；unknown 保留结果不确定这一事实。"
+    ]
+  }
+}

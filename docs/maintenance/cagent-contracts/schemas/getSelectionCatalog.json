@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "operation": "getSelectionCatalog",
+  "mutation": false,
+  "features": [
+    "selection"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "models": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "label"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "agents": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "label"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "models",
+      "agents"
+    ],
+    "additionalProperties": false
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace"
+    },
+    "output": {
+      "models": [
+        {
+          "id": "fixture-model",
+          "label": "Fixture model"
+        }
+      ],
+      "agents": []
+    },
+    "invalidOutput": {
+      "models": [
+        {
+          "id": "fixture-model"
+        }
+      ],
+      "agents": []
+    }
+  },
+  "semantics": {
+    "en": [
+      "Models and agents are separate lists.",
+      "An empty list means the catalog reported no entries; no model is inferred as default."
+    ],
+    "zh": [
+      "模型和 agent 分属两个列表。",
+      "空列表表示目录没有报告条目，不会据此推断默认模型。"
+    ]
+  }
+}

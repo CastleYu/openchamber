@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "operation": "createSession",
+  "mutation": true,
+  "features": [
+    "acquireSession"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID",
+      "requestID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "parentID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "metadata": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/__schema0"
+        }
+      }
+    },
+    "required": [
+      "id",
+      "workspaceID"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "requestID": "fixture-request"
+    },
+    "output": {
+      "id": "fixture-session",
+      "workspaceID": "fixture-workspace",
+      "title": "Fixture session"
+    },
+    "invalidOutput": {
+      "id": "fixture-session"
+    }
+  },
+  "semantics": {
+    "en": [
+      "requestID identifies the write attempt.",
+      "The returned session is the created record, not proof of later prompt completion."
+    ],
+    "zh": [
+      "requestID 标识这次写入尝试。",
+      "返回会话表示创建记录，不代表后续提示词已经完成。"
+    ]
+  }
+}

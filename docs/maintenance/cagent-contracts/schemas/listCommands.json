@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "operation": "listCommands",
+  "mutation": false,
+  "features": [
+    "command"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "workspaceID"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace"
+    },
+    "output": [
+      {
+        "id": "fixture-command",
+        "label": "Fixture command"
+      }
+    ],
+    "invalidOutput": [
+      {
+        "id": "fixture-command"
+      }
+    ]
+  },
+  "semantics": {
+    "en": [
+      "Commands are explicit backend entries.",
+      "Optional descriptions may be absent."
+    ],
+    "zh": [
+      "命令是后端明确提供的条目。",
+      "可选 description 可以缺失。"
+    ]
+  }
+}

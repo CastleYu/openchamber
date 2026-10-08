@@ -1,0 +1,26 @@
+# CAgent 操作契约参考
+
+由当前操作 schema、功能依赖规则及已审查的双语语义生成。只读取受保护任务包指定的操作。本参考不授予能力或启用许可。
+
+- [getSession](getSession.md)
+- [createSession](createSession.md)
+- [listSessions](listSessions.md)
+- [listMessages](listMessages.md)
+- [listChildren](listChildren.md)
+- [listActiveStatuses](listActiveStatuses.md)
+- [getSessionStatus](getSessionStatus.md)
+- [listPendingPermissions](listPendingPermissions.md)
+- [replyPermission](replyPermission.md)
+- [getMessage](getMessage.md)
+- [addSynthetic](addSynthetic.md)
+- [switchSessionSelection](switchSessionSelection.md)
+- [listCommands](listCommands.md)
+- [getSelectionCatalog](getSelectionCatalog.md)
+- [getDefaultModel](getDefaultModel.md)
+- [importSession](importSession.md)
+- [forkSession](forkSession.md)
+- [removeSession](removeSession.md)
+- [updateSession](updateSession.md)
+- [sendPrompt](sendPrompt.md)
+- [sendCommand](sendCommand.md)
+- [interruptSession](interruptSession.md)

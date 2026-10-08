@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "operation": "sendCommand",
+  "mutation": true,
+  "features": [
+    "command"
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "workspaceID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sessionID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "model": {
+        "type": "string"
+      },
+      "agent": {
+        "type": "string"
+      },
+      "requestID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "commandID": {
+        "type": "string",
+        "minLength": 1
+      },
+      "arguments": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "workspaceID",
+      "sessionID",
+      "requestID",
+      "commandID",
+      "arguments"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "accepted"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "complete"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageID": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "state",
+          "requestID"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "const": "unknown"
+          },
+          "requestID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "requestID",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "examples": {
+    "input": {
+      "workspaceID": "fixture-workspace",
+      "sessionID": "fixture-session",
+      "requestID": "fixture-request",
+      "commandID": "fixture-command",
+      "arguments": ""
+    },
+    "output": {
+      "state": "accepted",
+      "requestID": "fixture-request"
+    },
+    "invalidOutput": {
+      "state": "complete"
+    }
+  },
+  "semantics": {
+    "en": [
+      "commandID selects the command and arguments may be empty.",
+      "Acceptance is not command completion."
+    ],
+    "zh": [
+      "commandID 选择命令，arguments 可以为空字符串。",
+      "已受理不等于命令执行完成。"
+    ]
+  }
+}

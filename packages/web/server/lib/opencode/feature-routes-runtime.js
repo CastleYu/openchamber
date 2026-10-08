@@ -142,6 +142,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       getOpenCodeAuthHeaders,
       getOpenCodePort,
       kernelRuntime,
+      getBackendSelection,
       getOwnPorts,
       devServerScanner,
       buildAugmentedPath,
@@ -180,6 +181,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
 
     registerOpenCodeRoutes(app, {
       kernelRuntime,
+      getBackendSelection,
       crypto,
       clientReloadDelayMs,
       getOpenCodeResolutionSnapshot,

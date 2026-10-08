@@ -77,6 +77,14 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/opencode/cli-options.js`: CLI/environment option parsing for server startup arguments.
 - `packages/web/server/lib/opencode/cli-entry-runtime.js`: CLI entrypoint runtime that detects direct execution, parses CLI options, and starts server bootstrap.
 - `packages/web/server/lib/opencode/routes.js`: OpenCode/provider settings and auth-related route registration.
+  Its OpenCode resolution, upgrade, health/version, MCP OAuth, provider,
+  websearch, warming, directory and managed AGENTS.md routes check the protected
+  host family before their handlers. CAgent receives HTTP 501 with
+  `unmigrated-consumer` and no-store caching. MCP pending-auth checks precede its
+  route-local JSON parser. OpenChamber settings and the runtime descriptor remain
+  available. This is an entry check, not a lease across asynchronous work or
+  complete migration of all configuration routes. See the bilingual
+  [execution checkpoint](../../../../../docs/maintenance/CAGENT-EXECUTION.md).
 - `packages/web/server/lib/opencode/v1-migration-topup.js`: re-arms OpenCode's own V1 -> V2 session import for V1 sessions changed by 1.x after the last completed import. `startOpenCodeOnce` runs it only before a managed OC2 spawn. OC1 credential reads and writes stay on their existing path. See "v1-migration-topup.js" below.
 - `packages/web/server/lib/opencode/lifecycle.js`: OpenCode process lifecycle runtime (startup, restart, readiness, health monitoring). After readiness it warms the most recently used directories (`getWarmupDirectories` dep, sequential and best-effort) because OpenCode initializes each directory lazily on first request and that cost would otherwise be paid by the user's first interactive session open. The Desktop runtime warms the last-used directory only, because its UI bootstraps the directories it shows in its own priority order.
 - `packages/web/server/lib/opencode/provider-env-aliases.js`: mirrors known provider credential env aliases into the managed OpenCode process environment (for example `GEMINI_API_KEY` → `GOOGLE_GENERATIVE_AI_API_KEY`) so OpenCode connection detection and the upstream AI SDK agree on the same key names. Canonical implementation shared by web lifecycle and the VS Code managed spawn path (`packages/vscode/src/provider-env-aliases.ts` re-exports this module).

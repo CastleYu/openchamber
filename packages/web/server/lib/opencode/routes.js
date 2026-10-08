@@ -11,6 +11,7 @@ import { OPENCODE_CONFIG_DIR, readConfigLayers as readLegacyConfigLayers } from 
 import { readConfigLayers as readCurrentConfigLayers } from './shared-v2.js';
 import { settingsSurfaceOf } from './settings-files.js';
 import { OPENCODE_GENERATION } from './compatibility.js';
+import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
 import { parseWebSearchSelection, readStoredProviderEntry } from './config-v2.js';
 import { getWebSearchSource, setWarmingEnabled, setWebSearchSelection } from './websearch-config.js';
 import { CREDENTIAL_LIST_ERROR, ENTERPRISE_MODE_ERROR, isCredentialListRequest, isEnterpriseMode, isProviderConnectRequest } from '../enterprise-mode.js';
@@ -19,6 +20,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
   const {
     crypto,
     kernelRuntime,
+    getBackendSelection = () => ({ family: AGENT_FAMILY.OPENCODE, revision: 0 }),
     getOpenCodeResolutionSnapshot,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
@@ -38,6 +40,12 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     webSearchConfig = { getWebSearchSource, setWebSearchSelection },
     fsPromises = fs.promises,
   } = dependencies;
+
+  const requireOpenCode = (_req, res, next) => {
+    if (getBackendSelection().family === AGENT_FAMILY.OPENCODE) return next();
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(501).json({ error: AGENT_ERROR.UNMIGRATED });
+  };
 
   const authLibraries = new Map();
   const selectedKernel = () => {
@@ -266,7 +274,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/config/opencode-resolution', async (_req, res) => {
+  app.get('/api/config/opencode-resolution', requireOpenCode, async (_req, res) => {
     try {
       const settings = await readSettingsFromDiskMigrated();
       const resolution = await getOpenCodeResolutionSnapshot(settings);
@@ -279,7 +287,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 
   let openCodeUpgradePromise = null;
 
-  app.post('/api/opencode/upgrade', async (req, res) => {
+  app.post('/api/opencode/upgrade', requireOpenCode, async (req, res) => {
     try {
       const capability = getOpenCodeUpgradeCapability();
       if (!capability.supported) {
@@ -389,7 +397,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/opencode/upgrade-status', async (_req, res) => {
+  app.get('/api/opencode/upgrade-status', requireOpenCode, async (_req, res) => {
     try {
       const capability = getOpenCodeUpgradeCapability();
       if (!capability.supported) {
@@ -431,7 +439,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/opencode/health', async (_req, res) => {
+  app.get('/api/opencode/health', requireOpenCode, async (_req, res) => {
     try {
       if (kernelRuntime) {
         const descriptor = await kernelRuntime.refresh();
@@ -459,7 +467,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/opencode/version', async (_req, res) => {
+  app.get('/api/opencode/version', requireOpenCode, async (_req, res) => {
     try {
       const current = await readOpenCodeCurrentVersion();
       if (!current.ok) {
@@ -491,7 +499,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
   // The body parser is per-route on this server; without it req.body is
   // undefined here, the state read as absent, and the "parked" context was
   // silently never stored — the callback then always failed as unknown.
-  app.post('/api/mcp/auth/pending', express.json({ limit: '16kb' }), async (req, res) => {
+  app.post('/api/mcp/auth/pending', requireOpenCode, express.json({ limit: '16kb' }), async (req, res) => {
     try {
       pruneExpiredPendingMcpAuthContexts();
 
@@ -531,7 +539,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/mcp/auth/pending', async (req, res) => {
+  app.get('/api/mcp/auth/pending', requireOpenCode, async (req, res) => {
     try {
       pruneExpiredPendingMcpAuthContexts();
 
@@ -552,7 +560,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.delete('/api/mcp/auth/pending', async (req, res) => {
+  app.delete('/api/mcp/auth/pending', requireOpenCode, async (req, res) => {
     try {
       const state = normalizePendingString(Array.isArray(req.query?.state) ? req.query.state[0] : req.query?.state);
       if (!state) {
@@ -581,7 +589,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
   // unauthenticated caller cannot bind this server's MCP entry to a foreign
   // account by fabricating a callback. The endpoint reads nothing and mutates
   // nothing else.
-  app.get('/mcp/oauth/callback', async (req, res) => {
+  app.get('/mcp/oauth/callback', requireOpenCode, async (req, res) => {
     const queryValue = (key) => normalizePendingString(Array.isArray(req.query?.[key]) ? req.query[key][0] : req.query?.[key]);
     const state = queryValue('state');
     const code = queryValue('code');
@@ -650,7 +658,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/provider/:providerId/source', async (req, res) => {
+  app.get('/api/provider/:providerId/source', requireOpenCode, async (req, res) => {
     try {
       const selected = selectedKernel();
       const { providerId } = req.params;
@@ -723,7 +731,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       : next()
   ));
 
-  app.put('/api/provider', refuseInEnterpriseMode, async (req, res) => {
+  app.put('/api/provider', requireOpenCode, refuseInEnterpriseMode, async (req, res) => {
     try {
       const selected = selectedKernel();
       const providerID = typeof req.body?.providerID === 'string'
@@ -781,7 +789,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/config/websearch', async (req, res) => {
+  app.get('/api/config/websearch', requireOpenCode, async (req, res) => {
     try {
       const selected = requireWebSearchKernel();
       const resolved = await resolveProjectDirectory(req);
@@ -794,7 +802,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.put('/api/config/websearch', (req, res) => {
+  app.put('/api/config/websearch', requireOpenCode, (req, res) => {
     try {
       const selected = requireWebSearchKernel();
       const selection = parseWebSearchSelection(req.body?.selection);
@@ -807,7 +815,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.put('/api/config/warming', (req, res) => {
+  app.put('/api/config/warming', requireOpenCode, (req, res) => {
     try {
       const selected = requireWebSearchKernel();
       if (typeof req.body?.enabled !== 'boolean') return res.status(400).json({ error: 'enabled must be a boolean' });
@@ -819,7 +827,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.delete('/api/provider/:providerId/auth', async (req, res) => {
+  app.delete('/api/provider/:providerId/auth', requireOpenCode, async (req, res) => {
     try {
       const selected = selectedKernel();
       const { providerId } = req.params;
@@ -897,7 +905,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.post('/api/opencode/directory', async (req, res) => {
+  app.post('/api/opencode/directory', requireOpenCode, async (req, res) => {
     try {
       const requestedPath = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
       if (!requestedPath) {
@@ -954,7 +962,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
   const AGENTS_MD_PATH = path.join(OPENCODE_CONFIG_DIR, 'AGENTS.md');
   const MAX_BEHAVIOR_PROMPT_SIZE = 1024 * 1024; // 1 MB
 
-  app.get('/api/behavior/agents-md', async (_req, res) => {
+  app.get('/api/behavior/agents-md', requireOpenCode, async (_req, res) => {
     try {
       try {
         await fs.promises.access(AGENTS_MD_PATH);
@@ -969,7 +977,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.put('/api/behavior/agents-md', async (req, res) => {
+  app.put('/api/behavior/agents-md', requireOpenCode, async (req, res) => {
     try {
       const content = typeof req.body?.content === 'string' ? req.body.content : '';
 

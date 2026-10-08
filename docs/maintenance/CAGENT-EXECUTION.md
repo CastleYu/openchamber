@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: OpenCode lifecycle isolation
+## Latest checkpoint: OpenCode route family refusal
+
+2026-10-09. CA-01 remains in progress. Production route composition now supplies the protected host selection to 18 OpenCode-owned methods in `routes.js`. Resolution, upgrades, health/version, MCP OAuth, provider configuration/credentials, websearch, warming, directory switching and managed AGENTS.md refuse CAgent before handlers. Pending MCP auth refuses before its route-local JSON parser. Runtime discovery and OpenChamber settings remain available. Web and Electron share these checks; hosted mobile and Capacitor use their selected server. VS Code remains unavailable for CAgent.
+
+Twenty focused tests pass, including all 18 methods, malformed pending-auth input, zero kernel/filesystem calls, repeated family switches in the same application and preserved settings/runtime access. Four existing route suites pass 24 tests. These checks establish request-entry refusal only. They do not prove safe retirement during every asynchronous legacy handler, complete configuration/consumer migration, production activation or real CAgent compatibility. Production selection, startup configuration preparation, existing watcher retirement, the remaining owned routes and consumers still precede CA-01 acceptance. CA-02 and CA-03 remain pending; other INT work stays behind CA-03. Remote publication and temporary Release remain outstanding. Live weekly quota is 69% remaining.
+
+Web package type-check/lint, three source syntax checks and the new test's anti-slop check pass. The complete route module still reports inherited anti-slop findings outside the added guard. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no affected Agent/route registration row. Bun required an absolute `run --cwd=...` invocation under scoped escalation to resolve the existing scripts. This is a local regression checkpoint, not a packaged-runtime or environment acceptance result.
+
+## Previous checkpoint: OpenCode lifecycle isolation
 
 2026-10-09. CA-01 remains in progress. The shared Web/Electron lifecycle now uses the protected host's family/revision. CAgent skips OpenCode bootstrap and health monitoring. Direct OpenCode lifecycle calls reject before work; asynchronous boundaries reject retired startup/readiness results and close newly spawned instances. Health accounting resets across selection revisions. Readiness loops stop starting new detection passes after a selection changes. An already issued pass may finish under its existing timeout. Hosted mobile and Capacitor share these server checks; VS Code remains unsupported.
 

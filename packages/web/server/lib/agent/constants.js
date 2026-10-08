@@ -17,6 +17,7 @@ export const AGENT_SUPPORT = Object.freeze({
   UNVERIFIED: 'unverified', SUPPORTED: 'supported', ADAPTED: 'adapted', UNSUPPORTED: 'unsupported',
 });
 export const AGENT_ERROR = Object.freeze({
+  UNKNOWN_FEATURE: 'unknown-feature', UNMIGRATED: 'unmigrated-consumer', DEPENDENCY: 'missing-dependency',
   UNKNOWN_OPERATION: 'unknown-operation', UNVERIFIED: 'unverified', UNSUPPORTED: 'unsupported',
   UNACCEPTED: 'unaccepted', UNAVAILABLE: 'unavailable', UNAUTHORIZED: 'unauthorized',
   MISSING_HANDLER: 'missing-handler', CHANGED: 'backend-changed', UNKNOWN_OUTCOME: 'unknown-outcome',
@@ -28,6 +29,12 @@ export const AGENT_ERROR = Object.freeze({
   ATTEMPT_CORRUPT: 'attempt-corrupt',
   ARTIFACT_BOUNDARY: 'artifact-boundary', ARTIFACT_MISMATCH: 'artifact-mismatch', ARTIFACT_UNAVAILABLE: 'artifact-unavailable',
   APPROVAL_STORAGE: 'approval-storage-failed', APPROVAL_CORRUPT: 'approval-corrupt',
+});
+export const AGENT_FEATURE = Object.freeze({
+  ACQUIRE_SESSION: 'acquireSession', SESSION_LIST: 'sessionList', HISTORY: 'history', MESSAGE: 'message',
+  CHILDREN: 'children', ACTIVITY: 'activity', PROMPT: 'prompt', COMMAND: 'command', STOP: 'stop',
+  PERMISSION: 'permission', SELECTION: 'selection', DEFAULT_MODEL: 'defaultModel', SYNTHETIC: 'synthetic',
+  IMPORT: 'import', FORK: 'fork', REMOVE: 'remove', UPDATE: 'update',
 });
 export const AGENT_APPROVAL = Object.freeze({ VERSION: 1, DIRECTORY: 'agent-approvals', MAX_RECORD_BYTES: 65536 });
 export const AGENT_ARTIFACT = Object.freeze({
@@ -41,11 +48,13 @@ export const AGENT_FILE_ERROR = Object.freeze({ EXISTS: 'EEXIST', MISSING: 'ENOE
 export const AGENT_HOST_OPERATION = Object.freeze({
   CAPTURE_IDENTITY: 'captureIdentity', READ_ATTEMPT: 'readAttempt', GET_BINDING: 'getBinding',
   DESCRIBE_RUNTIME: 'describeRuntime',
+  DESCRIBE_FEATURES: 'describeFeatures',
 });
 export const AGENT_ROUTE = Object.freeze({
   PREFIX: '/api/agent-backend', RUNTIME: '/api/agent-backend/runtime',
   DISPATCH: '/api/agent-backend/dispatch',
   ATTEMPT: '/api/agent-backend/attempt',
+  FEATURES: '/api/agent-backend/features',
 });
 export const AGENT_OPERATION = Object.freeze({
   GET_SESSION: 'getSession', CREATE_SESSION: 'createSession', LIST_SESSIONS: 'listSessions',

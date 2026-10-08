@@ -1,9 +1,26 @@
 import { expectTypeOf, it } from 'vitest';
-import { AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
+import { AGENT_FEATURE, AGENT_OPERATION, AGENT_PART, AGENT_TOOL_STATE } from './constants.js';
 import { createAgentDispatcher, type AgentAvailability, type AgentInputs, type AgentMessage, type AgentOperation, type AgentOutputs, type AgentPart, type AgentPermission, type AgentRuntime, type AgentSession } from './dispatcher.js';
 import { createAgentAuthority, type AgentApproval, type AgentSelection } from './authority.js';
 import { agentArtifactDigest, verifyAgentArtifacts, type AgentArtifactFile, type AgentArtifactManifest } from './artifacts.js';
 import { agentApprovalName, createAgentApprovals } from './approvals.js';
+import { createAgentFeatures, type AgentFeature, type AgentFeatureSnapshot, type AgentHostSupport } from './features.js';
+
+it('keeps current host feature support and exact feature keys typed', () => {
+  const dispatcher = createAgentDispatcher({ getBinding: () => null });
+  const features = createAgentFeatures({ getRuntime: dispatcher.describeRuntime,
+    getHostSupport: (): AgentHostSupport | null => null });
+  expectTypeOf(features.describe).returns.toEqualTypeOf<AgentFeatureSnapshot>();
+  expectTypeOf<keyof AgentFeatureSnapshot['features']>().toEqualTypeOf<AgentFeature>();
+  expectTypeOf(features.requireFeature).parameter(1).toEqualTypeOf<import('./dispatcher.js').AgentIdentity>();
+  const check = () => {
+    // @ts-expect-error Arbitrary candidate actions cannot create a host feature.
+    features.requireFeature('candidateAction', dispatcher.captureIdentity());
+    // @ts-expect-error Feature authorization requires an exact expected identity.
+    features.requireFeature(AGENT_FEATURE.PROMPT);
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps the protected approval reader synchronous and host-owned', () => {
   const reader = createAgentApprovals({ directory: 'protected-approvals' });

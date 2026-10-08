@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { AGENT_ERROR, AGENT_ROUTE } from './constants.js';
 import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
-import { agentIdentitySchema, agentOperationSchema, agentRuntimeSchema } from './schemas.js';
+import { AgentFeatureError } from './features.js';
+import { agentFeatureSnapshotSchema, agentIdentitySchema, agentOperationSchema, agentRuntimeSchema } from './schemas.js';
 
 const requestSchema = z.object({
   operation: agentOperationSchema,
@@ -33,13 +34,19 @@ const statuses = Object.freeze({
 const failure = (res, error) => {
   // Adapter exceptions can contain wire payloads, paths or credentials.
   // Only host-owned refusal codes may leave this boundary.
-  const code = (error instanceof AgentDispatchError || error instanceof AgentAttemptError) && Object.hasOwn(statuses, error.code)
+  const code = (error instanceof AgentDispatchError || error instanceof AgentAttemptError || error instanceof AgentFeatureError) && Object.hasOwn(statuses, error.code)
     ? error.code : AGENT_ERROR.BACKEND_FAILED;
   return res.status(statuses[code] ?? 502).json({ error: code });
 };
 
 /** Mount after the host's API authentication gate and before the OpenCode proxy. */
-export const registerAgentRoutes = (app, { dispatcher }) => {
+export const registerAgentRoutes = (app, { dispatcher, features }) => {
+  app.get(AGENT_ROUTE.FEATURES, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!features) return res.status(503).json({ error: AGENT_ERROR.UNAVAILABLE });
+    try { return res.json(agentFeatureSnapshotSchema.parse(features.describe())); }
+    catch (error) { return failure(res, error); }
+  });
   app.get(AGENT_ROUTE.RUNTIME, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {

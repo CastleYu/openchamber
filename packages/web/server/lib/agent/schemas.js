@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  AGENT_ERROR, AGENT_FAMILY, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION,
+  AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION,
   AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_TOOL_STATE,
 } from './constants.js';
 
@@ -85,6 +85,13 @@ export const agentApprovalSchema = z.object({
 export const agentRuntimeSchema = z.object({
   identity: agentIdentitySchema,
   operations: z.record(agentOperationSchema, z.discriminatedUnion('available', [
+    z.object({ available: z.literal(true) }).strict(),
+    z.object({ available: z.literal(false), reason: z.enum(Object.values(AGENT_ERROR)) }).strict(),
+  ])),
+}).strict();
+export const agentFeatureSnapshotSchema = z.object({
+  identity: agentIdentitySchema,
+  features: z.record(z.enum(Object.values(AGENT_FEATURE)), z.discriminatedUnion('available', [
     z.object({ available: z.literal(true) }).strict(),
     z.object({ available: z.literal(false), reason: z.enum(Object.values(AGENT_ERROR)) }).strict(),
   ])),

@@ -5,10 +5,11 @@ import path from 'node:path';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_ROUTE, AGENT_SUPPORT } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_ROUTE, AGENT_SUPPORT } from './constants.js';
 import { createAgentDispatcher } from './dispatcher.js';
 import { createAgentAttempts } from './attempts.js';
 import { registerAgentRoutes } from './routes.js';
+import { createAgentFeatures } from './features.js';
 
 const identity = {
   family: AGENT_FAMILY.CAGENT, connectionID: 'test-connection', epoch: 1,
@@ -18,7 +19,7 @@ const envelope = (patch = {}) => ({
   operation: AGENT_OPERATION.GET_SESSION, identity,
   input: { workspaceID: 'w1', sessionID: 's1' }, ...patch,
 });
-const fixture = (patch = {}, { attempts } = {}) => {
+const fixture = (patch = {}, { attempts, getHostSupport } = {}) => {
   const handler = vi.fn(async () => ({ id: 's1', workspaceID: 'w1' }));
   const binding = {
     identity, ready: true, authorized: true,
@@ -32,7 +33,8 @@ const fixture = (patch = {}, { attempts } = {}) => {
   // Deliberately no global body parser. The owning route must parse its body.
   app.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted'
     ? next() : res.status(401).json({ error: 'test-auth-required' }));
-  registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding, attempts }) });
+  const dispatcher = createAgentDispatcher({ getBinding, attempts });
+  registerAgentRoutes(app, { dispatcher, features: createAgentFeatures({ getRuntime: dispatcher.describeRuntime, getHostSupport }) });
   const fallback = vi.fn((_req, res) => res.status(418).end());
   app.use('/api', fallback);
   return { app, handler, getBinding, fallback, binding };
@@ -258,6 +260,49 @@ describe('owned agent HTTP routes', () => {
     expect(response.body.operations[AGENT_OPERATION.SEND_PROMPT])
       .toEqual({ available: false, reason: AGENT_ERROR.UNVERIFIED });
     expect(response.headers['cache-control']).toBe('no-store');
+  });
+
+  it('keeps the complete feature snapshot authenticated and closed until host migration', async () => {
+    const { app, handler, fallback } = fixture();
+    await request(app).get(AGENT_ROUTE.FEATURES).expect(401);
+    const response = await request(app).get(AGENT_ROUTE.FEATURES).set('x-test-auth', 'accepted').expect(200);
+    expect(response.body.identity).toEqual(identity);
+    expect(Object.keys(response.body.features).sort()).toEqual(Object.values(AGENT_FEATURE).sort());
+    for (const availability of Object.values(response.body.features)) {
+      expect(availability).toEqual({ available: false, reason: AGENT_ERROR.UNMIGRATED });
+    }
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(handler).not.toHaveBeenCalled();
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('combines accepted operations and current host support without running handlers', async () => {
+    let implemented = [AGENT_FEATURE.ACQUIRE_SESSION, AGENT_FEATURE.MESSAGE];
+    const { app, handler } = fixture({}, { getHostSupport: () => ({ identity, implemented }) });
+    const get = () => request(app).get(AGENT_ROUTE.FEATURES).set('x-test-auth', 'accepted');
+    const response = await get().expect(200);
+    expect(response.body.features[AGENT_FEATURE.ACQUIRE_SESSION]).toEqual({ available: true });
+    expect(response.body.features[AGENT_FEATURE.MESSAGE]).toEqual({ available: false, reason: AGENT_ERROR.UNVERIFIED });
+    implemented = [];
+    expect((await get().expect(200)).body.features[AGENT_FEATURE.ACQUIRE_SESSION])
+      .toEqual({ available: false, reason: AGENT_ERROR.UNMIGRATED });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('rejects stale feature support and hides host-port exception text', async () => {
+    const stale = fixture({}, { getHostSupport: () => ({ identity: { ...identity, epoch: 0 }, implemented: [] }) });
+    expect((await request(stale.app).get(AGENT_ROUTE.FEATURES).set('x-test-auth', 'accepted').expect(409)).body)
+      .toEqual({ error: AGENT_ERROR.CHANGED });
+    const failed = fixture({}, { getHostSupport: () => { throw new Error('secret=host-data'); } });
+    expect((await request(failed.app).get(AGENT_ROUTE.FEATURES).set('x-test-auth', 'accepted').expect(503)).body)
+      .toEqual({ error: AGENT_ERROR.UNAVAILABLE });
+  });
+
+  it('refuses feature access when its owner is not composed', async () => {
+    const app = express();
+    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }) });
+    expect((await request(app).get(AGENT_ROUTE.FEATURES).expect(503)).body).toEqual({ error: AGENT_ERROR.UNAVAILABLE });
+    await request(app).post(AGENT_ROUTE.FEATURES).expect(404);
   });
 
   it('reports an inactive production-style binding as unavailable', async () => {

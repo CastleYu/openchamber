@@ -7,6 +7,23 @@ import { agentApprovalName, createAgentApprovals } from './approvals.js';
 import { createAgentFeatures, type AgentFeature, type AgentFeatureSnapshot, type AgentHostSupport } from './features.js';
 import { loadAgentAdapter, type AgentAdapterFactory, type AgentServerTransport } from './loader.js';
 import { createAgentTransport, type AgentConnection } from './transport.js';
+import { createAgentApprovalWriter } from './approval-writer.js';
+
+it('keeps approval mutation separate from the runtime read-only store', () => {
+  const writer = createAgentApprovalWriter({ directory: 'host-only' });
+  expectTypeOf(writer.write).parameter(0).toEqualTypeOf<import('./authority.js').AgentApproval>();
+  expectTypeOf(writer.write).returns.toBeVoid();
+  expectTypeOf(writer.revoke).returns.toBeBoolean();
+  const check = () => {
+    // @ts-expect-error Approval mutation requires the complete independently reviewed contract.
+    writer.write({ family: 'cagent', connectionID: 'candidate' });
+    // @ts-expect-error A candidate operation cannot supply an approval writer via the read store.
+    createAgentApprovals({ directory: 'host-only' }).write({});
+    // @ts-expect-error Revocation has an exact family/connection scope, not a filesystem path.
+    writer.revoke({ path: 'candidate.json' });
+  };
+  expectTypeOf(check).toBeFunction();
+});
 
 it('keeps transport endpoint ownership and current connection typed', () => {
   expectTypeOf(createAgentTransport).returns.toEqualTypeOf<AgentServerTransport>();

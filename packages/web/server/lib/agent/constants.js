@@ -37,7 +37,10 @@ export const AGENT_FEATURE = Object.freeze({
   PERMISSION: 'permission', SELECTION: 'selection', DEFAULT_MODEL: 'defaultModel', SYNTHETIC: 'synthetic',
   IMPORT: 'import', FORK: 'fork', REMOVE: 'remove', UPDATE: 'update',
 });
-export const AGENT_APPROVAL = Object.freeze({ VERSION: 1, DIRECTORY: 'agent-approvals', MAX_RECORD_BYTES: 65536 });
+export const AGENT_APPROVAL = Object.freeze({
+  VERSION: 1, DIRECTORY: 'agent-approvals', MAX_RECORD_BYTES: 65536, TEMP_SUFFIX: '.tmp',
+});
+export const AGENT_FILE_MODE = Object.freeze({ EXCLUSIVE: 'wx', OWNER_READ_WRITE: 0o600 });
 export const AGENT_ADAPTER = Object.freeze({ ENTRY: 'adapter.mjs', FACTORY: 'createAdapter' });
 export const AGENT_SERVER_METHOD = Object.freeze({ GET: 'GET', POST: 'POST', PUT: 'PUT', PATCH: 'PATCH', DELETE: 'DELETE' });
 export const AGENT_HTTP = Object.freeze({

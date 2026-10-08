@@ -1,5 +1,13 @@
 # CAgent execution checkpoint
 
+## Latest checkpoint: maintainer approval persistence
+
+The host-only `createAgentApprovalWriter` now writes and revokes strict version-1 approval records consumed by the existing uncached reader. It requires an existing ordinary directory, validates input and the 64 KiB bound before storage, writes an exclusive same-directory temporary file, syncs its content and atomically replaces the record. Revocation affects subsequent authority checks, including the check after a read handler returns. No HTTP approval-write route is exposed. The caller must independently review evidence and protect the directory; this port validates record structure, not evidence provenance. File mode does not establish Windows ACL isolation, and file sync plus rename does not prove power-loss durability of the directory.
+
+Fifteen fixed Web Vitest files pass 385 tests with no skips. Native filesystem cases cover reader restart, replacement, scoped revocation, malformed/oversized input, missing roots, links, and dispatcher refusal before approval and after revocation. Direct strict declaration compilation, Agent module anti-slop, writer syntax and diff checks pass. The completed Web type-check/lint/dead-code process exited successfully. Dead-code retains 2 unused files, 319 unused exports, 231 unused exported types and 1 duplicate, with no Agent module row. No real CAgent API, full production/native launch or publication is covered.
+
+CA-01 remains in progress. Protected runner composition, current selection/loading, actual UI/autonomous consumers and remaining consumed contracts still precede CA-02 kit acceptance. CA-03 requires the target environment. Independent remote publication and the temporary Release remain required. Live weekly quota is 71% remaining; no reset credit was used. The bilingual SPEC also separates adapter-authoring agent authority from runtime CAgent and protocol acceptance from model task quality. Older checkpoints below describe their then-current implementation.
+
 Updated 2026-10-09. English implementation handoff. The [Chinese review copy](zh-CN/CAGENT-EXECUTION.md) stays synchronized until a recorded handoff revision.
 
 ## Frozen baseline and independent branch

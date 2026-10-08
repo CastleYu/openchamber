@@ -6,6 +6,10 @@ This urgent requirement precedes the other implementation work in the [integrati
 
 ## Delivery split and ownership
 
+Two agents have different roles. CAgent is the runtime backend whose Server API the application calls. The environment-local adaptation agent is a development tool that reads documentation and produces a candidate adapter. They may use the same model, but neither role grants the other authority. The adaptation agent does not approve its output, and runtime CAgent does not modify the application's capability registry.
+
+Adapter correctness and CAgent task quality have separate acceptance evidence. The kit can reduce mapping and instruction-following errors through generated code, bounded packets and independent checks. It cannot improve the backend model's reasoning accuracy. A successful API call proves only its documented operation semantics. Before enabling an unattended workflow, verify that workflow's required decisions, outcome observation and cancellation independently; record task-quality limitations in the local report without presenting them as protocol incompatibility.
+
 The architecture owner prepares a working adaptation kit before handing work to the environment-local agent. The local agent reads the supplied API documentation and changes only a generated CAgent adapter workspace. It does not redesign shared UI, stores, scheduling, authentication or transport. A maintainer reviews the resulting evidence and authorizes activation in that environment.
 
 | Delivery | Owner and evidence |

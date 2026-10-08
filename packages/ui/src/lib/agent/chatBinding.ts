@@ -16,13 +16,15 @@ const authScope = (): string => JSON.stringify([
 /** Secrets are input to the digest in memory only, never stored or returned. */
 export async function createAgentChatBinding(): Promise<AgentChatBinding> {
   const client = new AgentClient();
+  let retired = false;
+  const unsubscribe = client.subscribeRetirement(() => { retired = true; });
   try {
     const runtimeKey = getRuntimeKey();
     const auth = authScope();
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([runtimeKey, auth])));
     const namespace = `agent-${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
     const snapshot = await client.inspect();
-    if (snapshot.scope.runtimeKey !== runtimeKey || authScope() !== auth) throw new AgentClientError(AGENT_ERROR.CHANGED);
+    if (retired || snapshot.scope.runtimeKey !== runtimeKey || authScope() !== auth) throw new AgentClientError(AGENT_ERROR.CHANGED);
     if (snapshot.scope.identity.family !== AGENT_FAMILY.CAGENT) throw new AgentClientError(AGENT_ERROR.CHANGED);
     const journal = new AgentRequestJournal(localStorage, namespace);
     const conversation = new AgentConversation(client, journal);
@@ -30,5 +32,7 @@ export async function createAgentChatBinding(): Promise<AgentChatBinding> {
   } catch (error) {
     client.dispose();
     throw error instanceof AgentClientError ? error : new AgentClientError(AGENT_ERROR.ATTEMPT_STORAGE);
+  } finally {
+    unsubscribe();
   }
 }

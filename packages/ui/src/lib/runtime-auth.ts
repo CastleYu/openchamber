@@ -20,6 +20,7 @@ let localRuntimeUrlAuthRefreshPromise: Promise<string> | null = null;
 let localRuntimeUrlAuthRefreshOrigin = '';
 let localRuntimeUrlAuthGeneration = 0;
 let runtimeAuthGeneration = 0;
+const runtimeAuthListeners = new Set<() => void>();
 
 const URL_AUTH_REFRESH_SKEW_MS = 10_000;
 
@@ -97,27 +98,45 @@ const resetRuntimeAuthGeneration = (): void => {
   runtimeAuthGeneration += 1;
   runtimeUrlAuthRefreshPromise = null;
   clearRuntimeUrlAuthToken();
+  notifyRuntimeAuthChanged();
   // Credentials changed: if a consumer is active, re-mint promptly.
   scheduleUrlAuthRefresh();
 };
 
+const notifyRuntimeAuthChanged = (): void => {
+  for (const listener of runtimeAuthListeners) {
+    try {
+      listener();
+    } catch {
+      // A listener throwing must not break auth updates.
+    }
+  }
+};
+
+export const subscribeRuntimeAuthChanged = (listener: () => void): (() => void) => {
+  runtimeAuthListeners.add(listener);
+  return () => {
+    runtimeAuthListeners.delete(listener);
+  };
+};
+
 export const setRuntimeAuthCredentialProvider = (provider: RuntimeAuthCredentialProvider): void => {
   runtimeBearerToken = '';
-  resetRuntimeAuthGeneration();
   credentialProvider = provider;
+  resetRuntimeAuthGeneration();
 };
 
 export const clearRuntimeAuthCredentialProvider = (): void => {
   runtimeBearerToken = '';
-  resetRuntimeAuthGeneration();
   credentialProvider = () => null;
+  resetRuntimeAuthGeneration();
 };
 
 export const setRuntimeBearerToken = (token: string | null | undefined): void => {
   const normalized = normalizeBearerToken(token);
   runtimeBearerToken = normalized;
-  resetRuntimeAuthGeneration();
   credentialProvider = () => normalized ? { type: 'bearer', token: normalized } : null;
+  resetRuntimeAuthGeneration();
 };
 
 export const setRuntimeExtraHeaders = (headers: Record<string, string> | null | undefined): void => {

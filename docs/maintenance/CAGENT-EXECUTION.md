@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: conversation page integration
+## Latest checkpoint: configured authentication retirement
+
+2026-10-09. CA-01 remains in progress. The production Agent client now subscribes to configured bearer/provider/header changes as well as endpoint retirement. Changes synchronously abort pending work and clear conversation state. Old scopes refuse dispatch at an unchanged endpoint. Entered mutations retain unknown-outcome semantics and their journal markers without replay. Binding creation rejects retirement during hashing or inspection. URL-auth token refresh is independent and does not retire a conversation.
+
+The focused runtime-auth/fetch/switch and Agent client/conversation/journal run passed 94 tests with 308 assertions. Seven page DOM tests passed. Tests cover synchronous provider replacement, unchanged headers, unsubscribe, stale scopes, aborted reads and one entered mutation with no retry. These fixtures do not establish cookie-only principal isolation, asynchronous provider principal changes or journal recovery across credential rotation. Host identity support, remaining consumers/extensions, CA-02 executable kit and CA-03 target acceptance remain prerequisites for activation and temporary release. The live weekly allowance is 65% remaining; no reset credit was used.
+
+Root type-check and the final UI type-check passed. Final root lint passed with five inherited warnings after removing two unused test parameters. Changed Agent files pass anti-slop; the minimally changed runtime-auth files retain 25 pre-existing anti-slop findings, with none in the new subscription code. Dead-code remains at 2 unused files, 319 exports, 231 exported types and 1 duplicate; the new subscription is consumed. All 37 local links in the four edited documents and the diff whitespace check pass. This patch has no new production bundle or native/browser journey acceptance; the preceding page bundle remains its own checkpoint.
+
+## Previous checkpoint: conversation page integration
 
 2026-10-09. CA-01 remains in progress. The CAgent family now mounts a separate shared conversation page. It binds existing opaque workspace/session IDs, refreshes normalized history and authoritative status independently, checks status before sending, and exposes original-request outcome lookup without replay. Browser request records use an opaque digest namespace; storage/crypto failures are explicit. Production feature support remains closed. All 13 locales include the page copy.
 

@@ -3,12 +3,39 @@ import { AGENT_ERROR, AGENT_FEATURE, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_ROU
 import { AgentClient, AgentClientError, type AgentClientPorts, type AgentClientScope } from './client';
 import type { JsonValue } from '../../../../web/server/lib/agent/dispatcher.js';
 import type { RuntimeFetchOptions } from '../runtime-fetch';
+import { clearRuntimeAuthCredentialProvider, setRuntimeBearerToken, setRuntimeExtraHeaders, subscribeRuntimeAuthChanged } from '../runtime-auth';
+import { getRuntimeKey } from '../runtime-switch';
 
 const identity = Object.freeze({ family: 'cagent' as const, connectionID: 'conn-a', epoch: 3, adapterRevision: 'adapter-1', capabilityRevision: 'caps-1' });
 const runtime = () => ({ identity, operations: Object.fromEntries(Object.values(AGENT_OPERATION).map((operation) => [operation, { available: true }])) });
 const features = () => ({ identity, features: Object.fromEntries(Object.values(AGENT_FEATURE).map((feature) => [feature, { available: true }])) });
 const response = (body: JsonValue, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const scopeOf = (): AgentClientScope => ({ runtimeKey: 'runtime-a', revision: 0, identity });
+
+describe('production Agent authentication lifetime', () => {
+  test('retires scopes on same-endpoint credentials and releases both listeners', async () => {
+    const client = new AgentClient();
+    const scope = { ...scopeOf(), runtimeKey: getRuntimeKey() };
+    let retired = 0;
+    client.subscribeRetirement(() => { retired += 1; });
+    try {
+      setRuntimeBearerToken('fixture-rotated-token');
+      expect(retired).toBe(1);
+      expect(getRuntimeKey()).toBe(scope.runtimeKey);
+      await code(client.dispatch(scope, AGENT_OPERATION.GET_SESSION, { workspaceID: 'workspace-a', sessionID: 'session-a' }), AGENT_ERROR.CHANGED);
+      setRuntimeExtraHeaders({ 'x-fixture-account': 'fixture-account' });
+      expect(retired).toBe(2);
+      client.dispose();
+      expect(retired).toBe(3);
+      setRuntimeBearerToken('fixture-after-disposal');
+      expect(retired).toBe(3);
+    } finally {
+      client.dispose();
+      setRuntimeExtraHeaders({});
+      clearRuntimeAuthCredentialProvider();
+    }
+  });
+});
 
 class Harness {
   key = 'runtime-a';
@@ -37,6 +64,31 @@ const gate = <T,>() => {
 };
 
 describe('AgentClient', () => {
+  test('authentication retirement aborts reads and preserves entered write uncertainty without replay', async () => {
+    for (const operation of [AGENT_OPERATION.GET_DEFAULT_MODEL, AGENT_OPERATION.SEND_PROMPT]) {
+      const waiting = gate<Response>();
+      let calls = 0;
+      let signal: AbortSignal | null | undefined;
+      const client = new AgentClient({
+        getRuntimeKey: () => 'runtime-a', subscribe: subscribeRuntimeAuthChanged,
+        fetch: async (_path, init) => { calls += 1; signal = init?.signal; return waiting.promise; },
+      });
+      try {
+        const request = operation === AGENT_OPERATION.GET_DEFAULT_MODEL
+          ? client.dispatch(scopeOf(), operation, { workspaceID: 'w' })
+          : client.dispatch(scopeOf(), operation, { workspaceID: 'w', sessionID: 's', requestID: 'r', text: 'x' });
+        expect(calls).toBe(1);
+        setRuntimeBearerToken('fixture-auth-retirement');
+        expect(signal?.aborted).toBe(true);
+        waiting.release(response({ identity, data: operation === AGENT_OPERATION.GET_DEFAULT_MODEL ? { modelID: null } : { state: 'accepted', requestID: 'r' } }));
+        await code(request, operation === AGENT_OPERATION.GET_DEFAULT_MODEL ? AGENT_ERROR.CHANGED : AGENT_ERROR.UNKNOWN_OUTCOME);
+        expect(calls).toBe(1);
+      } finally {
+        client.dispose();
+        clearRuntimeAuthCredentialProvider();
+      }
+    }
+  });
   test('selection parses either protected family without runtime or feature inspection', async () => {
     for (const family of ['opencode', 'cagent']) {
       const h = new Harness();

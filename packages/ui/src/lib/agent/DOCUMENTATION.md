@@ -11,7 +11,7 @@ The canonical schemas and operation types live in
 
 Create one `AgentClient` for the consuming lifecycle and dispose it on teardown.
 Its production ports use `runtimeFetch` for current endpoint/auth resolution and
-subscribe to endpoint retirement. `inspect()` requires complete runtime and
+subscribe to endpoint and configured authentication retirement. `inspect()` requires complete runtime and
 feature snapshots with matching identities. Carry its returned scope into later
 requests. A scope includes a local endpoint revision, so switching A to B to A
 still retires old work. Host dispatch independently rechecks backend identity.
@@ -62,6 +62,18 @@ or CAgent native-resume journey is delivered here. VS Code retains its explicit
 unsupported response and its existing OpenCode root.
 
 ## Neutral conversation state
+
+Configured bearer, credential-provider or extra-header changes synchronously retire the production Agent client, abort pending requests and clear its conversation. Old scopes refuse dispatch even when the endpoint is unchanged. Entered writes retain their journal markers for later outcome lookup; retirement never replays a mutation. Binding creation also rejects any retirement during namespace hashing or inspection, including A/B/A changes.
+
+| Runtime | Authentication retirement |
+| --- | --- |
+| Web | Shared Agent client clears the CAgent conversation. |
+| Electron | Main and mini-chat use the shared client. |
+| Hosted mobile | Shared client behavior applies. |
+| Capacitor | Configured native HTTP credentials use the shared client. |
+| VS Code | Owned Agent routes remain unsupported; this adds no CAgent host. |
+
+This event contains no credentials and grants no feature support. URL-auth token refresh alone does not retire the client. Changes outside the configured setters, such as cookie-only account changes or an asynchronous provider returning a different principal, need host identity support. Credential rotation still changes the journal namespace; this change does not provide cross-rotation recovery.
 
 `AgentConversation` in `conversation.ts` consumes the client directly, without OpenCode wire models. A caller supplies an inspected backend snapshot and explicit opaque workspace/session IDs. Opening verifies returned ownership; history rejects another session's records and duplicate identities. Missing project paths, timestamps, provider/model and usage remain absent. No local directory mapping is inferred.
 

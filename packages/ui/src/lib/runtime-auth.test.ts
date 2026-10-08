@@ -10,9 +10,92 @@ import {
   setRuntimeAuthCredentialProvider,
   setRuntimeBearerToken,
   setRuntimeExtraHeaders,
+  subscribeRuntimeAuthChanged,
 } from './runtime-auth';
 
 describe('runtime auth headers', () => {
+  test('notifies synchronously after bearer and provider changes, and supports idempotent unsubscribe', async () => {
+    const observed: string[] = [];
+    const unsubscribe = subscribeRuntimeAuthChanged(() => {
+      observed.push(getRuntimeBearerTokenSync());
+    });
+    try {
+      setRuntimeBearerToken('first-token');
+      expect(observed).toEqual(['first-token']);
+
+      setRuntimeAuthCredentialProvider(() => ({ type: 'bearer', token: 'provider-token' }));
+      expect(observed).toEqual(['first-token', '']);
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer provider-token');
+
+      setRuntimeAuthCredentialProvider(() => ({ type: 'bearer', token: 'replacement-token' }));
+      expect(observed).toEqual(['first-token', '', '']);
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer replacement-token');
+
+      clearRuntimeAuthCredentialProvider();
+      expect(observed).toEqual(['first-token', '', '', '']);
+      expect((await buildRuntimeAuthHeaders()).has('Authorization')).toBe(false);
+
+      unsubscribe();
+      unsubscribe();
+      setRuntimeBearerToken('after-unsubscribe');
+      expect(observed).toHaveLength(4);
+    } finally {
+      unsubscribe();
+      clearRuntimeAuthCredentialProvider();
+    }
+  });
+
+  test('notifies for changed extra headers only', () => {
+    let notifications = 0;
+    const unsubscribe = subscribeRuntimeAuthChanged(() => {
+      notifications += 1;
+    });
+    try {
+      setRuntimeExtraHeaders({ 'X-Runtime': 'one' });
+      expect(notifications).toBe(1);
+
+      setRuntimeExtraHeaders({ 'X-Runtime': 'one' });
+      expect(notifications).toBe(1);
+
+      setRuntimeExtraHeaders({ 'X-Runtime': 'two' });
+      expect(notifications).toBe(2);
+    } finally {
+      unsubscribe();
+      setRuntimeExtraHeaders(null);
+    }
+  });
+
+  test('does not notify when a URL auth token refreshes', async () => {
+    const previousFetch = globalThis.fetch;
+    let notifications = 0;
+    let fetchCount = 0;
+    let unsubscribe = () => {};
+    try {
+      setRuntimeBearerToken('runtime-token');
+      unsubscribe = subscribeRuntimeAuthChanged(() => {
+        notifications += 1;
+      });
+      globalThis.fetch = async () => {
+        fetchCount += 1;
+        return Response.json({
+          token: `url-token-${fetchCount}`,
+          expiresAt: Date.now() + (fetchCount === 1 ? 1_000 : 60_000),
+        });
+      };
+
+      expect(await refreshRuntimeUrlAuthToken('https://runtime.example')).toBe('url-token-1');
+      expect(await refreshRuntimeUrlAuthToken('https://runtime.example')).toBe('url-token-2');
+
+      expect(notifications).toBe(0);
+      expect(fetchCount).toBe(2);
+    } finally {
+      unsubscribe();
+      globalThis.fetch = previousFetch;
+      clearRuntimeUrlAuthToken();
+      clearRuntimeAuthCredentialProvider();
+    }
+  });
+
   test('does not add authorization by default', async () => {
     clearRuntimeAuthCredentialProvider();
     const headers = await buildRuntimeAuthHeaders({ Accept: 'application/json' });

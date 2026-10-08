@@ -13,6 +13,7 @@ import type {
 import type { AgentFeatureSnapshot } from '../../../../web/server/lib/agent/features.js';
 import type { AgentBackendSelection } from '../../../../web/server/lib/agent/host.js';
 import { runtimeFetch, type RuntimeFetchOptions } from '../runtime-fetch';
+import { subscribeRuntimeAuthChanged } from '../runtime-auth';
 import { getRuntimeKey, subscribeRuntimeEndpointWillChange } from '../runtime-switch';
 
 type ErrorCode = typeof AGENT_ERROR[keyof typeof AGENT_ERROR];
@@ -32,6 +33,11 @@ const same = (left: AgentIdentity, right: AgentIdentity): boolean => left.family
   && left.adapterRevision === right.adapterRevision && left.capabilityRevision === right.capabilityRevision;
 const envelope = z.object({ identity: agentIdentitySchema, data: z.json() }).strict();
 const mutations = new Set(AGENT_MUTATIONS);
+const subscribeRuntimeLifetime = (onChange: () => void): (() => void) => {
+  const endpoint = subscribeRuntimeEndpointWillChange(onChange);
+  const auth = subscribeRuntimeAuthChanged(onChange);
+  return () => { endpoint(); auth(); };
+};
 
 export class AgentClientError extends Error {
   constructor(readonly code: ErrorCode) {
@@ -49,7 +55,7 @@ export class AgentClient {
   private readonly unsubscribe: () => void;
 
   constructor(private readonly ports: AgentClientPorts = {
-    fetch: runtimeFetch, getRuntimeKey, subscribe: subscribeRuntimeEndpointWillChange,
+    fetch: runtimeFetch, getRuntimeKey, subscribe: subscribeRuntimeLifetime,
   }) {
     this.unsubscribe = ports.subscribe(() => this.retire());
   }

@@ -25,6 +25,18 @@ The ten documents listed in the [Chinese review index](zh-CN/README.md) have com
 
 Use the English documents for the next implementation handoff. Before handoff, reconcile both languages and record the handoff date and English revision or commit in the Chinese index. Mark the Chinese directory archived at that point and retain it as the review record, not a second execution queue. Until handoff it remains under review. If the maintainer later requests plan revisions, reopen review, update both languages and record a new archive revision. Resolve discrepancies using the maintainer's latest explicit decision; English handoff ownership does not override Chinese feedback.
 
+## Development temporary-file cleanup
+
+Added 2026-10-10 at the maintainer's request. This requirement applies throughout CA and INT development, verification, packaging and handoff.
+
+- Record task-created temporary paths and their purpose in the existing task notes when creating them. Remove obsolete helper scripts, isolated test homes, extracted packages, intermediate bundles and duplicate build outputs once their replacement is verified and no subsequent step needs them. Clean after the relevant process exits, before advancing a goal round, and before build/release handoff. Avoid accumulating repeated successful runs.
+- Retain the minimum evidence needed to reproduce and assess the checkpoint: commands/results, source revision or fingerprints, failure records, and the selected acceptance/release artifacts. Keep fixtures, binaries and rollback copies while a named remaining check or recovery step needs them. Record the reason and next cleanup point for any large retained item.
+- Before removing evidence directories, consolidate required summaries, hashes and relevant failure details into the existing evidence record and update references. A checkpoint must not depend on a deleted log or path. Preserve useful unexpected-command failure records after removing their temporary environment.
+- Limit deletion to verified task-owned files. Resolve and check absolute paths against the intended temporary directory; check reparse points and active process use before recursive removal. Use one shell with literal paths. Preserve source, user data, credentials, dependency/toolchain installations, shared caches and unrelated worktrees. Age or a filename pattern alone does not establish that a file is disposable.
+- At each checkpoint, record what was removed, approximate space reclaimed, and retained temporary files with their reason and next cleanup point. An applicable round is complete only after obsolete temporary files are removed or a concrete retention reason is recorded. Cleanup failures remain explicit follow-up items.
+
+Use the existing task notes and evidence files. This requirement does not introduce a cleanup service, scheduler, dependency or framework.
+
 ## Existing architecture and target model
 
 The current product already has `opencodeClient`, UI `v1/` and `v2/` operations, server `kernel-operations.js`, a runtime descriptor, generation-specific config/auth/plugin owners and runtime-epoch checks. OC1 uses the SDK namespace `@opencode-ai/sdk/v2`; that name does not mean OpenCode 2.x. OC2 uses `@opencode/client`.

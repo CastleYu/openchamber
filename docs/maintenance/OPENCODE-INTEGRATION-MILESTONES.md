@@ -41,6 +41,8 @@ Updated 2026-10-10 at the maintainer's request. A goal round delivers a usable w
 
 Each implementation round includes the related implementation, focused failure and regression checks, applicable runtime/build verification, review of the actual diff, synchronized English handoff and Chinese archive, and a local commit with an evidence checkpoint. Read live weekly quota before committing to the batch and at each milestone boundary. Stop below 10 percent remaining or when the projected batch exceeds available quota. Record verified, failed and unavailable checks separately.
 
+Every round also applies the [temporary-file cleanup requirement](OPENCODE-INTEGRATION-SPEC.md#development-temporary-file-cleanup). Record cleanup and justified retention in its evidence checkpoint before advancing.
+
 | Round | Related tasks | Complete workflow for the round |
 | --- | --- | --- |
 | R1 | Remaining INT-01 / INT-02 | Complete connection switching: preserve queue intent under its original configured target, hold unknown or mismatched items, retain edit/take/cancel, show activity and pending decisions, implement explicit switch confirmation and previous-configuration recovery, retire stale requests, and complete shared-host and VS Code ownership/parity checks. Verify persistence, repeated switch, failed readiness, same-target restart and external-process preservation together. |

@@ -19,6 +19,6 @@ The offline kit includes eleven commands and 95 protected files. The [workbook](
 
 ## Release and remaining work
 
-The preview identity is `2.0.4-DIJIANG.5.0-DEBUG`, with notification-only updates. Rebuild the corrected title from the frozen source commit and repeat the portable journey before publishing. Deliver the portable EXE, offline kit, build metadata and checksums through a prerelease on the independent branch; do not alter `codex/personal` or the parallel DIJIANG 4.1 build.
+The preview identity is `2.0.4-DIJIANG.5.0-DEBUG`, with notification-only updates. The [prerelease](https://github.com/CastleYu/openchamber/releases/tag/v2.0.4-DIJIANG.5.0-DEBUG) is published from source `c4b2f1da3f2ae752902355a30bd342e7722efc20`. Its final portable build passes the title and synthetic conversation journey. All seven assets are uploaded, including the EXE, offline kit, documentation archive, metadata and checksums. The personal branch and parallel DIJIANG 4.1 build remain unchanged.
 
 The maintainer explicitly set the order: architecture/documentation, existing-feature regression, build/Release, then remaining INT development. CA-03 is environment-local adaptation and acceptance, not a prerequisite to publish this kit. Real API mappings, local-model calibration, target permission setup and real workflow quality remain unverified here. This preview does not claim full CAgent consumer migration, Legacy 1.2.27 support or completion of remaining INT work. Follow the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md).

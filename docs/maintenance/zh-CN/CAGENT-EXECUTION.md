@@ -19,6 +19,6 @@
 
 ## 发布与后续工作
 
-预览标识为 `2.0.4-DIJIANG.5.0-DEBUG`，更新仅通知。从固定源码提交重建标题修正后，再次验证便携流程后发布。通过独立分支的预发布版交付便携 EXE、离线工具包、构建元数据及校验和；不修改 `codex/personal` 或并行 DIJIANG 4.1 构建。
+预览标识为 `2.0.4-DIJIANG.5.0-DEBUG`，更新仅通知。[预发布版](https://github.com/CastleYu/openchamber/releases/tag/v2.0.4-DIJIANG.5.0-DEBUG)已从源码 `c4b2f1da3f2ae752902355a30bd342e7722efc20` 构建并发布。最终便携构建通过标题及合成会话流程验收。七个资产全部上传，包括 EXE、离线工具包、文档归档、元数据和校验和。个人分支与并行 DIJIANG 4.1 构建保持原状。
 
 维护者明确顺序为：架构／文档、既有功能回归、构建／Release、其余 INT 开发。CA-03 是环境内适配与验收，不是工具包发布前置条件。真实 API 映射、本地模型校准、目标权限配置和真实工作流质量在此处仍未验证。预览不声称完成全部 CAgent 消费者迁移、Legacy 1.2.27 支持或其余 INT。遵循[里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)。

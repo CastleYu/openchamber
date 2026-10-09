@@ -1,6 +1,6 @@
 # CAgent integration architecture
 
-Status: architecture and offline kit implemented; release validation in progress, 2026-10-09. CAgent has an independent Server API available only inside the target environment. No CAgent endpoint, schema, feature or successful integration has been verified here.
+Status: architecture and offline kit implemented; temporary Release published and host regression verified, 2026-10-09. See the [execution checkpoint](CAGENT-EXECUTION.md). CAgent has an independent Server API available only inside the target environment. No CAgent endpoint, schema, feature or successful integration has been verified here.
 
 This urgent requirement precedes the other implementation work in the [integration milestones](OPENCODE-INTEGRATION-MILESTONES.md). It extends [the integration SPEC](OPENCODE-INTEGRATION-SPEC.md) and supersedes its former exclusion of an independent agent server. CAgent is a named second backend family; a general plugin marketplace and arbitrary protocol framework remain outside scope. English is the implementation handoff; the [Chinese copy](zh-CN/CAGENT-INTEGRATION-SPEC.md) follows the shared bilingual review rules.
 

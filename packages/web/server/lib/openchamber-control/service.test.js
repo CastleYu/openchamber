@@ -433,3 +433,117 @@ describe('control readiness ownership', () => {
     await expect(service.execute('projects.list')).resolves.toMatchObject({ projects: [{ id: 'project-1' }] });
   });
 });
+
+describe('session control action ownership', () => {
+  const setup = (overrides = {}) => {
+    let profile;
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', profile, endpoint: 'http://test', epoch: 1 }),
+      listSessions: vi.fn(async () => ({ data: { items: [] } })),
+      listMessages: vi.fn(async () => ({ data: { items: [] } })),
+      getSessionStatus: vi.fn(async () => ({ data: { type: 'idle' } })),
+      listActiveStatuses: vi.fn(async () => ({ data: {} })),
+    };
+    return { ...createService({ kernelOperations, ...overrides }), kernelOperations,
+      change: () => { profile = 'oc2'; } };
+  };
+
+  it('rejects changed-owner project resolution before reading sessions', async () => {
+    const { service, sessionService, kernelOperations, change } = setup();
+    sessionService.resolveDirectory.mockImplementation(async () => { change(); return '/repo'; });
+    await expect(service.execute('session.list', { projectId: 'project-1' })).rejects.toMatchObject({ statusCode: 409 });
+    expect(kernelOperations.listSessions).not.toHaveBeenCalled();
+  });
+
+  it.each(['result', 'failure'])('does not use the fallback directory after a changed-owner lookup %s', async (outcome) => {
+    const { service, sessionService, kernelOperations, change } = setup();
+    kernelOperations.listSessions.mockImplementation(async () => {
+      change();
+      if (outcome === 'failure') throw new Error('lookup failed');
+      return { data: { items: [], cursor: { next: 'page2' } } };
+    });
+    await expect(service.execute('session.send', { sessionId: 'ses_1', prompt: 'continue' }, '/repo'))
+      .rejects.toMatchObject({ statusCode: 409 });
+    expect(kernelOperations.listSessions).toHaveBeenCalledTimes(1);
+    expect(sessionService.send).not.toHaveBeenCalled();
+  });
+
+  it('retains the context fallback for an ordinary same-owner lookup failure', async () => {
+    const { service, sessionService, kernelOperations } = setup();
+    kernelOperations.listSessions.mockRejectedValue(new Error('lookup unavailable'));
+    sessionService.send.mockResolvedValue({ sessionId: 'ses_1', directory: '/repo', promptDispatched: true });
+    await expect(service.execute('session.send', { sessionId: 'ses_1', prompt: 'continue' }, '/repo'))
+      .resolves.toMatchObject({ sessionId: 'ses_1', promptDispatched: true });
+    expect(sessionService.send).toHaveBeenCalledWith('ses_1', { directory: '/repo', prompt: 'continue' });
+  });
+
+  it('stops message pagination after a profile change rather than reading the new owner', async () => {
+    const { service, kernelOperations, change } = setup();
+    kernelOperations.listMessages.mockImplementation(async () => {
+      change();
+      return { data: { items: [{ id: 'old', role: 'assistant', text: 'old answer' }], cursor: { next: 'page2' } } };
+    });
+    await expect(service.execute('session.messages', { sessionId: 'ses_1', directory: '/repo', all: true }))
+      .rejects.toMatchObject({ statusCode: 409 });
+    expect(kernelOperations.listMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['result', 'failure'])('rejects changed-owner status collection %s instead of returning idle or unknown', async (outcome) => {
+    const { service, kernelOperations, change } = setup();
+    kernelOperations.listSessions.mockResolvedValue({ data: { items: [{ id: 'ses_1', directory: '/repo' }] } });
+    kernelOperations.listActiveStatuses.mockImplementation(async () => {
+      change();
+      if (outcome === 'failure') throw new Error('status failed');
+      return { data: {} };
+    });
+    await expect(service.execute('session.list', { withStatus: true })).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('keeps same-owner failed directory status unknown', async () => {
+    const { service, kernelOperations } = setup();
+    kernelOperations.listSessions.mockResolvedValue({ data: { items: [{ id: 'ses_1', directory: '/repo' }] } });
+    kernelOperations.listActiveStatuses.mockRejectedValue(new Error('unavailable'));
+    await expect(service.execute('session.list', { withStatus: true })).resolves.toMatchObject({
+      sessions: [{ id: 'ses_1', status: { type: 'unknown' } }],
+    });
+  });
+
+  it('stops after a poll sleep switches the owner, without a second status read', async () => {
+    let change;
+    const fixture = setup({ sleep: async () => change() });
+    change = fixture.change;
+    fixture.kernelOperations.getSessionStatus.mockResolvedValue({ data: { type: 'busy' } });
+    await expect(fixture.service.execute('session.messages', { sessionId: 'ses_1', directory: '/repo', wait: true }))
+      .rejects.toMatchObject({ statusCode: 409 });
+    expect(fixture.kernelOperations.getSessionStatus).toHaveBeenCalledTimes(1);
+    expect(fixture.kernelOperations.listMessages).not.toHaveBeenCalled();
+  });
+
+  it.each([['session.create', 'create'], ['session.send', 'send'], ['session.fork', 'fork']])
+    ('reports completed %s as partial after a profile change, without beginning its wait', async (action, method) => {
+    const { service, sessionService, kernelOperations, change } = setup();
+    sessionService[method].mockImplementation(async () => {
+      change();
+      return { sessionId: 'ses_created', directory: '/repo', promptDispatched: true };
+    });
+    await expect(service.execute(action, { sessionId: 'ses_1', directory: '/repo', prompt: 'work', wait: true }))
+      .rejects.toMatchObject({ statusCode: 409, partial: true, partialAction: action, sessionId: 'ses_created', directory: '/repo' });
+    expect(sessionService[method]).toHaveBeenCalledTimes(1);
+    expect(kernelOperations.getSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it('reports the existing session after an ordinary wait failure', async () => {
+    const { service, kernelOperations } = setup();
+    kernelOperations.getSessionStatus.mockRejectedValue(new Error('status unavailable'));
+    await expect(service.execute('session.create', { directory: '/repo', wait: true }))
+      .rejects.toMatchObject({ statusCode: 500, message: 'status unavailable', partial: true, partialAction: 'session.create', sessionId: 'ses_1' });
+  });
+
+  it('rejects changed-owner idle status after dispatch and preserves the created session', async () => {
+    const { service, kernelOperations, change } = setup();
+    kernelOperations.getSessionStatus.mockImplementation(async () => { change(); return { data: { type: 'idle' } }; });
+    await expect(service.execute('session.create', { directory: '/repo', wait: true, lastAssistant: true }))
+      .rejects.toMatchObject({ statusCode: 409, partial: true, sessionId: 'ses_1' });
+    expect(kernelOperations.listMessages).not.toHaveBeenCalled();
+  });
+});

@@ -1,6 +1,6 @@
 # OpenChamber session routes
 
-`routes.js` owns the `/api/openchamber/sessions` create, send, fork, archive, unarchive, and metadata routes. Server-side OpenCode calls go through `kernelOperations`. A request captures its generation, endpoint, and epoch before deferred work. A changed runtime rejects the request before another mutation.
+`routes.js` owns the `/api/openchamber/sessions` create, send, fork, archive, unarchive, and metadata routes. Server-side OpenCode calls go through `kernelOperations`. A request captures its generation, profile, endpoint, and epoch before deferred work. A changed runtime rejects the request before another mutation.
 
 ## Generation behavior
 

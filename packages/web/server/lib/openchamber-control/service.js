@@ -172,15 +172,19 @@ export const createOpenChamberControlService = (dependencies) => {
     });
   };
 
-  const getClient = async () => {
-    const identity = kernelOperations?.captureIdentity();
+  const assertIdentity = (identity, message = 'OpenCode runtime changed during control action') => {
+    if (!identity) return;
+    const current = kernelOperations.captureIdentity();
+    if (identity.generation !== current.generation || identity.profile !== current.profile
+      || identity.endpoint !== current.endpoint || identity.epoch !== current.epoch) {
+      throw new OpenChamberControlError(message, 409);
+    }
+  };
+
+  const getClient = async (identity = kernelOperations?.captureIdentity()) => {
     if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
     if (kernelOperations) {
-      const current = kernelOperations.captureIdentity();
-      if (identity.generation !== current.generation || identity.profile !== current.profile
-        || identity.endpoint !== current.endpoint || identity.epoch !== current.epoch) {
-        throw new OpenChamberControlError('OpenCode runtime changed during readiness', 409);
-      }
+      assertIdentity(identity, 'OpenCode runtime changed during readiness');
       return null;
     }
     return createClient({
@@ -222,8 +226,13 @@ export const createOpenChamberControlService = (dependencies) => {
     return sessionService.resolveDirectory({ projectId: projectID });
   };
 
-  const sessionStatus = async (client, sessionID, directory) => {
-    if (kernelOperations) return (await kernelOperations.getSessionStatus({ sessionID, directory })).data;
+  const sessionStatus = async (client, sessionID, directory, identity) => {
+    assertIdentity(identity);
+    if (kernelOperations) {
+      const response = await kernelOperations.getSessionStatus({ sessionID, directory });
+      assertIdentity(identity);
+      return response.data;
+    }
     const response = await client.session.status({ directory });
     const statuses = response?.data;
     if (!statuses || typeof statuses !== 'object' || Array.isArray(statuses)) {
@@ -232,13 +241,16 @@ export const createOpenChamberControlService = (dependencies) => {
     return statuses[sessionID] || { type: 'idle' };
   };
 
-  const sessionMessages = async (client, sessionID, directory, role, limit) => {
+  const sessionMessages = async (client, sessionID, directory, role, limit, identity) => {
+    assertIdentity(identity);
     if (kernelOperations) {
       const messages = [];
       const seen = new Set();
       let cursor;
       do {
+        assertIdentity(identity);
         const page = (await kernelOperations.listMessages({ sessionID, directory, limit: 100, cursor })).data;
+        assertIdentity(identity);
         for (const item of page.items) {
           if ((item.role !== 'user' && item.role !== 'assistant') || (role !== 'all' && role !== item.role) || !item.text?.trim()) continue;
           messages.push({ id: item.id, role: item.role, createdAt: item.created ?? null,
@@ -266,18 +278,19 @@ export const createOpenChamberControlService = (dependencies) => {
     return limit === undefined ? messages : messages.slice(-limit);
   };
 
-  const waitForIdle = async ({ client, sessionID, directory, timeoutMs, requireActivity, baselineMessageID, startedAt, signal }) => {
+  const waitForIdle = async ({ client, sessionID, directory, timeoutMs, requireActivity, baselineMessageID, startedAt, signal, identity }) => {
     const deadline = now() + timeoutMs;
     let observedActivity = false;
     while (true) {
+      assertIdentity(identity);
       if (signal?.aborted) throw new OpenChamberControlError('OpenChamber action was cancelled', 499);
-      const status = await sessionStatus(client, sessionID, directory);
+      const status = await sessionStatus(client, sessionID, directory, identity);
       if (status.type === 'busy' || status.type === 'retry') {
         observedActivity = true;
       } else if (!requireActivity || observedActivity) {
         return status;
       } else {
-        const messages = await sessionMessages(client, sessionID, directory, 'assistant', 1);
+        const messages = await sessionMessages(client, sessionID, directory, 'assistant', 1, identity);
         const message = messages[0];
         if (message?.completedAt && (baselineMessageID ? message.id !== baselineMessageID : message.completedAt >= startedAt)) {
           return status;
@@ -296,12 +309,15 @@ export const createOpenChamberControlService = (dependencies) => {
   // targets an instance that does not hold the session and the run dies with
   // UnknownError. Resolve the target session's directory from the global
   // session list when the caller did not scope explicitly.
-  const resolveSessionDirectory = async (sessionID) => {
+  const resolveSessionDirectory = async (sessionID, identity) => {
     try {
+      assertIdentity(identity);
       if (kernelOperations) {
         let cursor;
         do {
+          assertIdentity(identity);
           const page = (await kernelOperations.listSessions({ limit: 100, cursor })).data;
+          assertIdentity(identity);
           const match = page.items.find((item) => item.id === sessionID);
           if (match) return match.directory;
           cursor = page.cursor?.next ?? undefined;
@@ -314,6 +330,7 @@ export const createOpenChamberControlService = (dependencies) => {
       const session = sessions.find((item) => item?.id === sessionID);
       return asNonEmptyString(session?.directory) || null;
     } catch {
+      assertIdentity(identity);
       return null;
     }
   };
@@ -322,10 +339,12 @@ export const createOpenChamberControlService = (dependencies) => {
     if (input.timeout !== undefined && input.wait !== true) throw new OpenChamberControlError('timeout requires wait', 400);
     if (input.lastAssistant === true && input.wait !== true) throw new OpenChamberControlError('lastAssistant requires wait', 400);
     assertSingleScope(input);
+    const identity = kernelOperations?.captureIdentity();
     const sessionID = asNonEmptyString(input.sessionId);
     let directory = asNonEmptyString(input.directory) || (!input.projectId ? asNonEmptyString(contextDirectory) : null);
     if (sessionID && action !== 'session.create' && !asNonEmptyString(input.directory) && !input.projectId) {
-      const resolvedSessionDirectory = await resolveSessionDirectory(sessionID);
+      const resolvedSessionDirectory = await resolveSessionDirectory(sessionID, identity);
+      assertIdentity(identity);
       if (resolvedSessionDirectory) directory = resolvedSessionDirectory;
     }
     const payload = {
@@ -346,6 +365,7 @@ export const createOpenChamberControlService = (dependencies) => {
       ...(typeof input.setUpstream === 'boolean' ? { setUpstream: input.setUpstream } : {}),
       ...(asNonEmptyString(input.messageId) ? { messageId: input.messageId.trim() } : {}),
     };
+    assertIdentity(identity);
     const startedAt = now();
     let result;
     if (action === 'session.create') {
@@ -358,28 +378,37 @@ export const createOpenChamberControlService = (dependencies) => {
         result = await sessionService.fork(sessionID, payload);
       }
     }
-    if (input.wait !== true) {
-      const publicResult = { ...result };
+    try {
+      assertIdentity(identity);
+      if (input.wait !== true) {
+        const publicResult = { ...result };
+        delete publicResult.baselineAssistantMessageId;
+        return publicResult;
+      }
+      const client = await getClient(identity);
+      const status = await waitForIdle({
+        client,
+        sessionID: result.sessionId,
+        directory: result.directory,
+        timeoutMs: normalizeWaitTimeoutMs(input.timeout),
+        requireActivity: result.promptDispatched === true,
+        baselineMessageID: result.baselineAssistantMessageId,
+        startedAt,
+        signal,
+        identity,
+      });
+      const publicResult = { ...result, sessionStatus: status };
       delete publicResult.baselineAssistantMessageId;
+      if (input.lastAssistant === true) {
+        publicResult.lastAssistantMessage = (await sessionMessages(client, result.sessionId, result.directory, 'assistant', 1, identity))[0] || null;
+      }
       return publicResult;
+    } catch (error) {
+      const failure = asControlError(error, 'Session action wait failed');
+      throw new OpenChamberControlError(failure.message, failure.statusCode, {
+        partial: true, partialAction: action, sessionId: result.sessionId, directory: result.directory,
+      });
     }
-    const client = await getClient();
-    const status = await waitForIdle({
-      client,
-      sessionID: result.sessionId,
-      directory: result.directory,
-      timeoutMs: normalizeWaitTimeoutMs(input.timeout),
-      requireActivity: result.promptDispatched === true,
-      baselineMessageID: result.baselineAssistantMessageId,
-      startedAt,
-      signal,
-    });
-    const publicResult = { ...result, sessionStatus: status };
-    delete publicResult.baselineAssistantMessageId;
-    if (input.lastAssistant === true) {
-      publicResult.lastAssistantMessage = (await sessionMessages(client, result.sessionId, result.directory, 'assistant', 1))[0] || null;
-    }
-    return publicResult;
   };
 
   /**
@@ -610,36 +639,45 @@ export const createOpenChamberControlService = (dependencies) => {
       if (action.startsWith('session.')) {
         const sessionID = asNonEmptyString(input.sessionId);
         if (action !== 'session.list' && !sessionID) throw new OpenChamberControlError('sessionId is required', 400);
+        const identity = kernelOperations?.captureIdentity();
         const directory = await resolveReadDirectory(input, contextDirectory);
-        const client = await getClient();
+        assertIdentity(identity);
+        const client = await getClient(identity);
         if (action === 'session.list') {
           const limit = positiveInteger(input.limit, 10, 'limit');
           const response = kernelOperations
             ? await kernelOperations.listSessions({ directory, limit })
             : await client.session.list(directory ? { directory } : {});
+          assertIdentity(identity);
           let sessions = kernelOperations ? response.data.items : Array.isArray(response?.data) ? response.data : [];
           if (input.all !== true) sessions = sessions.filter((session) => !session?.time?.archived);
           sessions = sessions.slice(0, limit);
           if (input.withStatus === true) {
             const cache = new Map();
             sessions = await Promise.all(sessions.map(async (session) => {
+              assertIdentity(identity);
               const sessionDirectory = asNonEmptyString(session?.directory);
               if (!sessionDirectory) return { ...session, status: { type: 'unknown' } };
               if (!cache.has(sessionDirectory)) {
                 const statusRequest = (kernelOperations
                   ? kernelOperations.listActiveStatuses({ directory: sessionDirectory })
-                  : client.session.status({ directory: sessionDirectory })).catch(() => null);
+                  : client.session.status({ directory: sessionDirectory })).catch(() => {
+                    assertIdentity(identity);
+                    return null;
+                  });
                 cache.set(sessionDirectory, statusRequest);
               }
               const statusResponse = await cache.get(sessionDirectory);
+              assertIdentity(identity);
               return { ...session, status: statusResponse?.data?.[session.id] || (statusResponse ? { type: 'idle' } : { type: 'unknown' }) };
             }));
           }
+          assertIdentity(identity);
           return { sessions, limit, directory, archived: input.all === true ? 'included' : 'excluded' };
         }
         if (!directory) throw new OpenChamberControlError('directory is required', 400);
         if (action === 'session.status') {
-          return { sessionId: sessionID, directory, sessionStatus: await sessionStatus(client, sessionID, directory) };
+          return { sessionId: sessionID, directory, sessionStatus: await sessionStatus(client, sessionID, directory, identity) };
         }
         if (action === 'session.messages') {
           if (input.timeout !== undefined && input.wait !== true) throw new OpenChamberControlError('timeout requires wait', 400);
@@ -649,10 +687,10 @@ export const createOpenChamberControlService = (dependencies) => {
           if (input.all === true && (last || input.limit !== undefined)) throw new OpenChamberControlError('all cannot be combined with last or limit', 400);
           if (last && input.limit !== undefined) throw new OpenChamberControlError('last cannot be combined with limit', 400);
           const currentStatus = input.wait === true
-            ? await waitForIdle({ client, sessionID, directory, timeoutMs: normalizeWaitTimeoutMs(input.timeout), requireActivity: false, startedAt: now(), signal: options.signal })
-            : await sessionStatus(client, sessionID, directory);
+            ? await waitForIdle({ client, sessionID, directory, timeoutMs: normalizeWaitTimeoutMs(input.timeout), requireActivity: false, startedAt: now(), signal: options.signal, identity })
+            : await sessionStatus(client, sessionID, directory, identity);
           const limit = input.all === true ? undefined : (last ? 1 : positiveInteger(input.limit, 10, 'limit'));
-          return { sessionId: sessionID, directory, role, sessionStatus: currentStatus, messages: await sessionMessages(client, sessionID, directory, role, limit) };
+          return { sessionId: sessionID, directory, role, sessionStatus: currentStatus, messages: await sessionMessages(client, sessionID, directory, role, limit, identity) };
         }
       }
       throw new OpenChamberControlError(`Unsupported OpenChamber action: ${action || 'missing'}`, 400);

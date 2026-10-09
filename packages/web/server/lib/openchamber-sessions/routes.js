@@ -349,7 +349,7 @@ export const createOpenChamberSessionService = (dependencies) => {
   if (!kernelOperations) throw new Error('kernelOperations is required for session routes');
   const current = (identity) => {
     const now = kernelOperations.captureIdentity();
-    if (now.generation !== identity.generation || now.endpoint !== identity.endpoint || now.epoch !== identity.epoch) {
+    if (now.generation !== identity.generation || now.profile !== identity.profile || now.endpoint !== identity.endpoint || now.epoch !== identity.epoch) {
       throw new OpenChamberControlError('OpenCode runtime changed during session operation', 409);
     }
   };

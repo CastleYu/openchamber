@@ -277,12 +277,16 @@ describe('OpenChamber session HTTP contracts', () => {
     expect(readObjectiveForFork).not.toHaveBeenCalled();
   });
 
-  it('stops an OC2 fork after a runtime switch during objective read', async () => {
+  it.each(['epoch', 'profile'])('stops an OC2 fork after a %s switch during objective read', async (field) => {
     const { app, kernelOperations, changeEpoch } = setup('oc2');
     kernelOperations.forkSession.mockResolvedValue({ data: { id: 'ses_fork', directory: '/repo/app', metadata: { openchamber: {
       goal: { id: 'goal_1', status: 'active', objectiveFile: true },
     } } } });
-    readObjectiveForFork.mockImplementation(async () => { changeEpoch(); return 'Inherited objective'; });
+    readObjectiveForFork.mockImplementation(async () => {
+      if (field === 'epoch') changeEpoch();
+      else kernelOperations.captureIdentity.mockReturnValue({ ...identity('oc2'), profile: 'oc2' });
+      return 'Inherited objective';
+    });
     const response = await request(app).post('/api/openchamber/sessions/ses_source/fork')
       .send({ directory: '/repo/app', prompt: 'Try again', model: 'openai/gpt-5.5' }).expect(409);
     expect(response.body).toMatchObject({ partial: true, partialAction: 'fork-created', sessionId: 'ses_fork' });

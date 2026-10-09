@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { BrowserControlError } from '../browser-control/broker.js';
 import { OpenChamberControlError } from './error.js';
 import { registerOpenChamberControlRoutes } from './routes.js';
+import { createOpenChamberControlService } from './service.js';
 
 const createApp = (execute) => {
   const app = express();
@@ -54,5 +55,24 @@ describe('OpenChamber control route', () => {
       .send({ action: 'browser.click', input: {} })
       .expect(409);
     expect(response.body).toEqual({ error: 'The user is interacting with this page in the panel right now.' });
+  });
+});
+
+describe('control HTTP completed-action details', () => {
+  it('returns 409 with the existing session after a changed-owner wait', async () => {
+    let profile;
+    const create = vi.fn(async () => ({ sessionId: 'ses_created', directory: '/repo', promptDispatched: true }));
+    const service = createOpenChamberControlService({
+      kernelOperations: {
+        captureIdentity: () => ({ generation: 'oc2', profile, endpoint: 'http://test', epoch: 1 }),
+        getSessionStatus: async () => { profile = 'oc2'; return { data: { type: 'idle' } }; },
+      },
+      sessionService: { create }, waitForOpenCodeReady: async () => undefined,
+    });
+    const response = await request(createApp(service.execute)).post('/api/openchamber/control')
+      .send({ action: 'session.create', input: { directory: '/repo', prompt: 'work', wait: true } }).expect(409);
+    expect(response.body).toEqual({ error: 'OpenCode runtime changed during control action', partial: true,
+      partialAction: 'session.create', sessionId: 'ses_created', directory: '/repo' });
+    expect(create).toHaveBeenCalledTimes(1);
   });
 });

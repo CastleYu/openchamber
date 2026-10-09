@@ -1,8 +1,26 @@
+import path from 'node:path';
 import { spawnOwnedProcess } from './owned-process';
 import { registerManagedProcess, unregisterManagedProcess } from './opencodeProcessRegistry';
 
 // OC1 and OC2 emit different exact readiness prefixes.
 const READY_PREFIXES = Object.freeze(['opencode server listening', 'server listening']);
+
+const CMD_META = /([()\][%!^"`<>&|;, *?])/g;
+const CMD_LIMIT = 8191;
+
+// A batch wrapper reparses %*. Protect both parser passes; CALL adds an unsafe
+// third expansion and must not be used for a confirmed argument vector.
+export function resolveManagedLaunch(binary: string, args: string[]) {
+  if (process.platform !== 'win32' || !['.cmd', '.bat'].includes(path.extname(binary).toLowerCase())) return { binary, args };
+  if ([binary, ...args].some(value => /[\r\n]/.test(value))) throw new Error('Windows batch connections cannot represent line breaks');
+  const escaped = args.map(value => {
+    const quoted = '"' + value.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/g, '$1$1') + '"';
+    return quoted.replace(CMD_META, '^$1').replace(CMD_META, '^$1');
+  });
+  const command = '"' + binary.replace(CMD_META, '^$1') + ' ' + escaped.join(' ') + '"';
+  if (command.length > CMD_LIMIT) throw new Error('Windows batch connection exceeds the command-line limit');
+  return { binary: process.env.ComSpec || 'cmd.exe', args: ['/d', '/v:off', '/s', '/c', command], windowsVerbatimArguments: true };
+}
 
 export function spawnManagedOpenCodeProcess(
   binary: string,
@@ -10,7 +28,8 @@ export function spawnManagedOpenCodeProcess(
   options: { cwd: string; env: NodeJS.ProcessEnv; port: number; timeoutMs: number; signal: AbortSignal; sourceBinary: string; appBundleHint: string },
 ) {
   options.signal.throwIfAborted();
-  const owned = spawnOwnedProcess(binary, args, { cwd: options.cwd, env: options.env });
+  const launch = resolveManagedLaunch(binary, args);
+  const owned = spawnOwnedProcess(launch.binary, launch.args, { cwd: options.cwd, env: options.env, windowsVerbatimArguments: launch.windowsVerbatimArguments });
   const registration = registerManagedProcess({
     pid: owned.child.pid, ownerPid: process.pid, port: options.port, binary: options.sourceBinary, runtime: 'vscode',
   });

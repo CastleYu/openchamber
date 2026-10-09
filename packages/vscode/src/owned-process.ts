@@ -4,7 +4,7 @@ type ProcessExit = { code: number | null; signal: NodeJS.Signals | null; error: 
 
 // Each background command gets its own POSIX group. Never signal the extension
 // host's group, which can also contain unrelated extensions and editor work.
-export function spawnOwnedProcess(binary: string, args: string[], options: Pick<SpawnOptions, 'cwd' | 'env'>) {
+export function spawnOwnedProcess(binary: string, args: string[], options: Pick<SpawnOptions, 'cwd' | 'env' | 'windowsVerbatimArguments'>) {
   const child = spawn(binary, args, {
     ...options,
     stdio: ['ignore', 'pipe', 'pipe'],

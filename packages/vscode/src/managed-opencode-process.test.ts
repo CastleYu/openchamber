@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnManagedOpenCodeProcess } from './managed-opencode-process';
+import { resolveManagedLaunch, spawnManagedOpenCodeProcess } from './managed-opencode-process';
 
 const alive = (pid: number) => {
   try { process.kill(pid, 0); return true; } catch { return false; }
@@ -176,4 +176,40 @@ test('failed Windows termination retains ownership and allows explicit retry', {
     else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
     await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
+});
+
+for (const ext of ['.cmd', '.bat']) {
+  test('managed Windows ' + ext + ' preserves literal arguments through a forwarding shim', { skip: process.platform !== 'win32' }, async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-shim-'));
+    const registry = path.join(cwd, 'registry');
+    const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+    const binary = path.join(cwd, 'launcher space & (test) %OC_TEST% !OC_TEST!' + ext);
+    const capture = path.join(cwd, 'capture.cjs');
+    const result = path.join(cwd, 'args.json');
+    const args = ['serve', 'space value', '', 'quote"value', 'trailing\\', '%OC_TEST%', '!OC_TEST!', '& echo injected', 'a|b', '(x)', '^caret', 'semi;comma,'];
+    await fs.writeFile(capture, "require('node:fs').writeFileSync(" + JSON.stringify(result) + ", JSON.stringify(process.argv.slice(2))); process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setInterval(() => {}, 1000);");
+    await fs.writeFile(binary, '@echo off\r\n"' + process.execPath + '" "' + capture + '" %*\r\n');
+    const server = spawnManagedOpenCodeProcess(binary, args, {
+      cwd, env: { ...process.env, OC_TEST: 'expanded-sentinel' }, port: 45678, timeoutMs: 3000,
+      signal: new AbortController().signal, sourceBinary: binary, appBundleHint: '',
+    });
+    try {
+      await server.ready;
+      assert.deepEqual(JSON.parse(await fs.readFile(result, 'utf8')), args);
+      assert.equal(server.url, 'http://127.0.0.1:45678');
+    } finally {
+      await server.close();
+      if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+      else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+      await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  });
+}
+
+test('Windows batch rejects unrepresentable input before launch', { skip: process.platform !== 'win32' }, () => {
+  assert.throws(() => resolveManagedLaunch('C:\\launcher.cmd', ['line\nvalue']), /line breaks/);
+  assert.throws(() => resolveManagedLaunch('C:\\launcher.bat', ['x'.repeat(8192)]), /command-line limit/);
+  const native = resolveManagedLaunch('C:\\launcher.exe', ['line\nvalue']);
+  assert.deepEqual(native.args, ['line\nvalue']);
 });

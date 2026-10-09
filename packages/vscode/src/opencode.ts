@@ -14,7 +14,7 @@ import { resolveWorkingDirectoryChange } from './workingDirectoryChange';
 import { reapOrphanedProcesses } from './opencodeProcessRegistry';
 import { applyProviderEnvAliases } from './provider-env-aliases';
 import { isSameOpenCodeServer } from './opencodeServiceUrl';
-import { spawnManagedOpenCodeProcess } from './managed-opencode-process';
+import { resolveManagedLaunch, spawnManagedOpenCodeProcess } from './managed-opencode-process';
 import { createKernelRuntime } from '../../web/server/lib/opencode/kernel-runtime.js';
 import { runOpenCodeCliUpgrade } from '../../web/server/lib/opencode/cli-upgrade.js';
 import { detectOpenCodeGeneration, parseOpenCodeSelection, OPENCODE_SELECTION, type OpenCodeSelection, type OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
@@ -795,8 +795,8 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     const binary = record.mode === CONNECTION_MODE.PATH ? findExecutableInPath('opencode')
       : record.mode === CONNECTION_MODE.COMMAND || record.mode === CONNECTION_MODE.CONFIGURED ? record.exe : null;
     if (!binary || !isExecutable(binary) || isKnownOpenCodeDesktopAppPath(binary)) throw new OpenCodeConnectionError('The selected executable is unavailable');
-    // A shell shim cannot preserve the confirmed argv contract. Native executables remain direct launches.
-    if (process.platform === 'win32' && ['.cmd', '.bat'].includes(path.extname(binary).toLowerCase())) throw new OpenCodeConnectionError('A native executable is required for this connection', 501);
+    // Reject unrepresentable batch input during preparation, before retiring the active target.
+    resolveManagedLaunch(binary, record.mode === CONNECTION_MODE.COMMAND ? record.args : ['serve', '--hostname', '127.0.0.1', '--port', '65535']);
     return binary;
   };
   const connections = createVSCodeConnectionRuntime({

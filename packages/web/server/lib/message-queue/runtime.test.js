@@ -731,3 +731,82 @@ it('keeps the queue when the replacement runtime cannot admit an identity', asyn
   expect(sent).not.toHaveBeenCalled();
   expect(runtime.sessionSnapshot(SESSION).items.map(entry => entry.id)).toEqual([queued.itemId]);
 });
+
+
+describe('connection transition dispatch drain', () => {
+  const pendingSend = () => {
+    const openCode = createOpenCode();
+    const original = openCode.fetchImpl.getMockImplementation();
+    let release;
+    const pending = new Promise(resolve => { release = resolve; });
+    openCode.fetchImpl.mockImplementation(async (url, init) => {
+      if (init?.method === 'POST') await pending;
+      return original(url, init);
+    });
+    return { openCode, release };
+  };
+  it('waits for accepted sends and disk writes, rejects new enqueue and resumes exactly once', async () => {
+    const { openCode, release } = pendingSend();
+    const dataDir = makeDataDir();
+    const { runtime } = createRuntime({ openCode, dataDir });
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(runtime.sessionSnapshot(SESSION).sendingId).not.toBeNull());
+    let drained = false;
+    const pause = runtime.pauseDispatch().then(resume => { drained = true; return resume; });
+    await expect(runtime.enqueue(SESSION, DIRECTORY, item())).rejects.toMatchObject({ status: 409 });
+    expect(drained).toBe(false);
+    release(); const resume = await pause;
+    expect(openCode.state.sent).toHaveLength(1);
+    expect(runtime.sessionSnapshot(SESSION).items).toEqual([]);
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'message-queue.json'), 'utf8')).sessions).toEqual({});
+    resume(); resume();
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(openCode.state.sent).toHaveLength(2));
+  });
+  it('drains pending status reads without letting them enter a send', async () => {
+    const openCode = createOpenCode(); const original = openCode.fetchImpl.getMockImplementation();
+    let release; const pending = new Promise(resolve => { release = resolve; });
+    openCode.fetchImpl.mockImplementation(async (url, init) => {
+      if (new URL(url).pathname === '/session/status') await pending;
+      return original(url, init);
+    });
+    const { runtime } = createRuntime({ openCode });
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(openCode.fetchImpl).toHaveBeenCalled());
+    const pause = runtime.pauseDispatch(); release(); const resume = await pause;
+    expect(openCode.state.sent).toEqual([]); expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(1);
+    resume(); await vi.waitFor(() => expect(openCode.state.sent).toHaveLength(1));
+  });
+  it('times out without canceling or replaying an entered send', async () => {
+    const { openCode, release } = pendingSend(); const { runtime } = createRuntime({ openCode });
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(runtime.sessionSnapshot(SESSION).sendingId).not.toBeNull());
+    await expect(runtime.pauseDispatch(5)).rejects.toMatchObject({ status: 409 });
+    expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(1);
+    release(); await vi.waitFor(() => expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(0));
+    expect(openCode.state.sent).toHaveLength(1);
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(openCode.state.sent).toHaveLength(2));
+  });
+  it('rejects retirement when the accepted-send snapshot cannot be persisted', async () => {
+    const { openCode, release } = pendingSend(); const dataDir = makeDataDir();
+    const { runtime } = createRuntime({ openCode, dataDir });
+    await runtime.enqueue(SESSION, DIRECTORY, item()); await runtime.flush();
+    await vi.waitFor(() => expect(runtime.sessionSnapshot(SESSION).sendingId).not.toBeNull());
+    const file = path.join(dataDir, 'message-queue.json'); fs.unlinkSync(file); fs.mkdirSync(file);
+    const pause = runtime.pauseDispatch(); release();
+    await expect(pause).rejects.toMatchObject({ status: 503 });
+    expect(openCode.state.sent).toHaveLength(1);
+    fs.rmdirSync(file);
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    await vi.waitFor(() => expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(0));
+    const resume = await runtime.pauseDispatch(); resume();
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).sessions).toEqual({});
+  });
+  it('does not resume dispatch after the owner stops', async () => {
+    const openCode = createOpenCode(); const { runtime } = createRuntime({ openCode });
+    const resume = await runtime.pauseDispatch(); runtime.stop(); resume();
+    await runtime.enqueue(SESSION, DIRECTORY, item());
+    expect(openCode.fetchImpl).not.toHaveBeenCalled();
+  });
+});

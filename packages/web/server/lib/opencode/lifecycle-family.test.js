@@ -344,3 +344,40 @@ describe('confirmed target serialized replacement', () => {
     expect(getConnection).toHaveBeenCalledOnce();
   });
 });
+
+
+describe('confirmed restart queue-drain boundary', () => {
+  const target = { mode: 'external', endpoint: 'https://replacement.test/base' };
+  it('keeps the old owner live until queue drain completes and resumes after replacement', async () => {
+    let release; const pending = new Promise(resolve => { release = resolve; });
+    const resume = vi.fn();
+    const kernelRuntime = { invalidate: vi.fn(), refresh: vi.fn(async () => ({ generation: 'oc2' })) };
+    const pauseQueuedDispatch = vi.fn(async () => { await pending; return resume; });
+    const { runtime, state } = createRuntime({ getConnection: async () => target, kernelRuntime, pauseQueuedDispatch });
+    const old = { close: vi.fn() }; state.openCodeProcess = old; state.isOpenCodeReady = true;
+    const restarting = runtime.restartOpenCode();
+    await vi.waitFor(() => expect(pauseQueuedDispatch).toHaveBeenCalledOnce());
+    expect(old.close).not.toHaveBeenCalled(); expect(state.isOpenCodeReady).toBe(true);
+    expect(kernelRuntime.invalidate).not.toHaveBeenCalled();
+    release(); await restarting;
+    expect(old.close).toHaveBeenCalledOnce(); expect(resume).toHaveBeenCalledOnce();
+    expect(state.isOpenCodeReady).toBe(true);
+  });
+  it('rejects drain failure before invalidating or closing the old owner', async () => {
+    const kernelRuntime = { invalidate: vi.fn() };
+    const { runtime, state } = createRuntime({ getConnection: async () => target, kernelRuntime,
+      pauseQueuedDispatch: async () => { throw new Error('Queue has an unresolved send'); } });
+    const old = { close: vi.fn() }; state.openCodeProcess = old; state.isOpenCodeReady = true;
+    await expect(runtime.restartOpenCode()).rejects.toThrow('Queue has an unresolved send');
+    expect(old.close).not.toHaveBeenCalled(); expect(kernelRuntime.invalidate).not.toHaveBeenCalled();
+    expect(state.isOpenCodeReady).toBe(true); expect(state.openCodePort).toBe(45678);
+    expect(state.currentRestartPromise).toBeNull();
+  });
+  it('releases the pause after owned-child cleanup failure', async () => {
+    const resume = vi.fn();
+    const { runtime, state } = createRuntime({ getConnection: async () => target, pauseQueuedDispatch: async () => resume });
+    state.openCodeProcess = { close: vi.fn(async () => { throw new Error('Still owned'); }) };
+    await expect(runtime.restartOpenCode()).rejects.toThrow('Still owned');
+    expect(resume).toHaveBeenCalledOnce(); expect(state.isOpenCodeReady).toBe(false);
+  });
+});

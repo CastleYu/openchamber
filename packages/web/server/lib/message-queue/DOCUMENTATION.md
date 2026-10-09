@@ -194,3 +194,12 @@ by the route family's 50 MB JSON limit.
 section in `packages/ui/src/stores/DOCUMENTATION.md`. VS Code intentionally
 does not use this module; with all OpenChamber webviews closed, queued
 messages there are not delivered.
+
+
+## Saved-target restart boundary
+
+The host calls pauseDispatch after validating the saved connection and before retiring its endpoint. This pauses timers and new enqueue requests. Pending status reads finish without entering sends. Sends already entered are neither canceled nor replayed; their dispatch promises and subsequent queue writes must finish before the lifecycle can close the old child. The returned resume function is idempotent and cannot restart a stopped queue.
+
+Drain has a 15-second deadline. Timeout restores dispatch and rejects restart before changing the live owner. A queue write failure also refuses retirement; a later successful write clears that failure. Cleanup/startup failure releases the pause, while existing readiness and identity guards keep an unavailable backend from dispatching. This is restart of the confirmed saved target, not permission to reassign queued intent to another target. Public active-record changes remain rejected until busy-session, queued-intent, pending-approval and peer-client confirmation are implemented.
+
+Web owns the boundary; Electron reuses it in process. Hosted and Capacitor mobile observe their connected host. VS Code keeps its separate foreground queue and has no saved-record switching support yet. No queue wire shape or persisted format changes. This adds one in-flight promise per dispatch and one bounded drain at a requested restart, without new upstream requests or polling. Chinese archive: [queue and lifecycle drain](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md).

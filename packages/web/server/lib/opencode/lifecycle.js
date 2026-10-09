@@ -142,6 +142,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     onOpenCodeRestarted = null,
     kernelRuntime = null,
     getConnection = null,
+    pauseQueuedDispatch = null,
     managedStartupTimeoutMs = 30_000,
     now = Date.now,
     topUpV1SessionMigration = topUpV1Migration,
@@ -995,6 +996,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
     let retired = false;
     let previous = null;
+    let resumeQueuedDispatch = null;
     state.currentRestartPromise = (async () => {
       if (getConnection) {
         if (connectionTransitions > 0) throw new OpenCodeConnectionError('OpenCode startup is already in progress', 409);
@@ -1002,6 +1004,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         // settings service still refuses active-record changes until its busy
         // work and peer-client confirmation contract is implemented.
         const connection = await getConnection();
+        requireSelection(selection);
+        resumeQueuedDispatch = await pauseQueuedDispatch?.();
         requireSelection(selection);
         if (state.isShuttingDown) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
         previous = state.openCodeProcess;
@@ -1172,6 +1176,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     } finally {
       state.currentRestartPromise = null;
       state.isRestartingOpenCode = false;
+      resumeQueuedDispatch?.();
     }
   };
 

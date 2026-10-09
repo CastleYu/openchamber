@@ -246,6 +246,9 @@ export function createMessageQueueRuntime({
   let loadPromise = null;
   let writePromise = Promise.resolve();
   let stopped = false;
+  let paused = false;
+  let writeError = null;
+  const dispatches = new Set();
 
   // An unfinished assistant message older than this marker is a run that died
   // with the previous server, not a streaming turn: no completion event will
@@ -333,8 +336,10 @@ export function createMessageQueueRuntime({
         const tmpPath = `${filePath}.${process.pid}.tmp`;
         await fs.promises.writeFile(tmpPath, payload, 'utf8');
         await fs.promises.rename(tmpPath, filePath);
+        writeError = null;
       })
       .catch((error) => {
+        writeError = error;
         console.warn('[message-queue] failed to persist queue:', error?.message ?? error);
       });
     return writePromise;
@@ -640,13 +645,14 @@ export function createMessageQueueRuntime({
   };
 
   const armDispatch = (sessionId, delayMs = dispatchQuietMs) => {
-    if (stopped || !queues.has(sessionId)) return;
+    if (stopped || paused || !queues.has(sessionId)) return;
     clearTimer(sessionId);
     const timer = setTimeout(() => {
       timers.delete(sessionId);
-      tick(sessionId).catch((error) => {
+      const dispatch = tick(sessionId).catch((error) => {
         console.warn('[message-queue] dispatch tick failed:', error?.message ?? error);
-      });
+      }).finally(() => dispatches.delete(dispatch));
+      dispatches.add(dispatch);
     }, Math.max(0, delayMs));
     timer.unref?.();
     timers.set(sessionId, timer);
@@ -661,7 +667,7 @@ export function createMessageQueueRuntime({
   };
 
   async function tick(sessionId) {
-    if (stopped) return;
+    if (stopped || paused) return;
     const queue = queues.get(sessionId);
     if (!queue || queue.items.length === 0 || sending.has(sessionId) || isHeld(sessionId)) return;
 
@@ -681,7 +687,7 @@ export function createMessageQueueRuntime({
 
     const identity = kernelOperations?.captureIdentity();
     const idle = await isSessionIdle(sessionId, queue.directory, identity);
-    if (stopped) return;
+    if (stopped || paused) return;
     if (idle === null || !isCurrent(identity)) {
       armDispatch(sessionId, retryDelayMs(1));
       return;
@@ -730,6 +736,41 @@ export function createMessageQueueRuntime({
     }
   };
 
+  // Pausing is an explicit host boundary, never a polling loop. Existing
+  // reads finish without entering a send; entered sends and writes finish
+  // before their endpoint can retire. A timeout leaves that endpoint intact.
+  const pauseDispatch = async (timeoutMs = FETCH_TIMEOUT_MS) => {
+    if (paused) throw httpError('Queue dispatch is already paused', 409);
+    paused = true;
+    for (const timer of timers.values()) clearTimeout(timer);
+    timers.clear();
+    let released = false;
+    const resume = () => {
+      if (released) return;
+      released = true;
+      paused = false;
+      if (!stopped) reconcileAll();
+    };
+    let deadline;
+    try {
+      await Promise.race([
+        Promise.allSettled([...dispatches]).then(async () => {
+          await writePromise;
+          if (writeError) throw httpError('Queue persistence failed before connection retirement', 503);
+        }),
+        new Promise((_, reject) => {
+          deadline = setTimeout(() => reject(httpError('Queued dispatch did not drain before connection retirement', 409)), timeoutMs);
+        }),
+      ]);
+      return resume;
+    } catch (error) {
+      resume();
+      throw error;
+    } finally {
+      clearTimeout(deadline);
+    }
+  };
+
   // --- public mutations ----------------------------------------------------
 
   const requireSessionId = (sessionId) => {
@@ -743,6 +784,7 @@ export function createMessageQueueRuntime({
     if (!directory) throw new TypeError('directory is required');
     const parsed = parseQueuedItemInput(itemInput);
     await load();
+    if (paused) throw httpError('OpenCode connection transition is in progress', 409);
     const item = {
       id: `queued-${now()}-${Math.random().toString(36).slice(2, 9)}`,
       createdAt: now(),
@@ -925,6 +967,7 @@ export function createMessageQueueRuntime({
     load,
     snapshot,
     sessionSnapshot,
+    pauseDispatch,
     enqueue,
     remove,
     take,

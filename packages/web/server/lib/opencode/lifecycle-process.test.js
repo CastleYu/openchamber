@@ -2,7 +2,8 @@ import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createMessageQueueRuntime } from '../message-queue/runtime.js';
 import { createOpenCodeLifecycleRuntime } from './lifecycle.js';
 
 const alive = (pid) => {
@@ -74,7 +75,7 @@ describe('managed process lifecycle with real children', () => {
         const pids = (await fs.readFile(marker, 'utf8')).trim().split('\n').map(Number);
         expect(pids).toHaveLength(failure === 'none' || failure === 'shutdown-during-startup' ? 2 : 4);
         await expect.poll(() => pids.filter(alive), { timeout: 3000 }).toEqual([]);
-        expect(await fs.readdir(path.join(root, 'registry')).catch(() => [])).toEqual([]);
+        await expect.poll(() => fs.readdir(path.join(root, 'registry')), { timeout: 3000 }).toEqual([]);
       } finally {
         const pids = (await fs.readFile(marker, 'utf8').catch(() => '')).trim().split('\n').map(Number).filter((pid) => pid > 0);
         for (const pid of pids.reverse()) {
@@ -137,9 +138,23 @@ describe('confirmed restart with real owned children', () => {
     const state = { openCodeWorkingDirectory: root, useWslForOpencode: false, openCodePort: null, currentRestartPromise: null };
     const command = { mode: 'command', binary: process.execPath, launchSpec: { binary: process.execPath, args: [] }, args: [script], cwd: root, commandEnv: {} };
     let record = command; let resolutions = 0; let revision = 1; let retire = false;
+    let releaseSend; let entered = false; let delivered = 0; let pauseEntered = false;
+    const accepted = new Promise(resolve => { releaseSend = resolve; });
+    const queue = createMessageQueueRuntime({
+      dataDir: path.join(root, 'queue'), dispatchQuietMs: 0,
+      globalEventHub: { subscribeEvent: () => () => {}, subscribeStatus: () => () => {} },
+      kernelOperations: {
+        captureIdentity: () => ({ generation: 'oc2', profile: 'oc2', endpoint: 'fixture', epoch: 1 }),
+        listActiveStatuses: async () => ({ data: {} }),
+        listChildren: async () => ({ data: [] }),
+        listMessages: async () => ({ data: { order: 'desc', items: [] } }),
+        sendPrompt: async () => { entered = true; await accepted; delivered += 1; },
+      },
+    });
     const runtime = createOpenCodeLifecycleRuntime({
       state, env: { ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
       getConnection: async () => { resolutions += 1; return record; },
+      pauseQueuedDispatch: () => { pauseEntered = true; return queue.pauseDispatch(); },
       getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
       syncToHmrState() {}, ensureLocalOpenCodeServerPassword: async () => 'fixture-only',
       getManagedOpenCodeEnv: () => { throw new Error('Command owns config'); },
@@ -153,7 +168,14 @@ describe('confirmed restart with real owned children', () => {
     try {
       await runtime.bootstrapOpenCodeAtStartup(); const first = state.openCodeProcess.pid; pids.push(first);
       expect(alive(first)).toBe(true); expect(state.isOpenCodeReady).toBe(true);
-      await Promise.all([runtime.restartOpenCode(), runtime.restartOpenCode()]);
+      await queue.enqueue('ses_drain_real', root, { content: 'fixture', text: 'fixture', sendConfig: { providerID: 'fixture', modelID: 'fixture' } });
+      await vi.waitFor(() => expect(entered).toBe(true));
+      const replacements = Promise.all([runtime.restartOpenCode(), runtime.restartOpenCode()]);
+      await vi.waitFor(() => expect(pauseEntered).toBe(true));
+      expect(alive(first)).toBe(true); expect(state.isOpenCodeReady).toBe(true);
+      releaseSend(); await replacements;
+      expect(delivered).toBe(1);
+      expect(JSON.parse(await fs.readFile(path.join(root, 'queue', 'message-queue.json'), 'utf8')).sessions).toEqual({});
       const second = state.openCodeProcess.pid; pids.push(second);
       expect(second).not.toBe(first); expect(alive(first)).toBe(false); expect(alive(second)).toBe(true);
       expect(resolutions).toBe(2); expect(await fs.readdir(path.join(root, 'registry'))).toHaveLength(1);
@@ -179,6 +201,7 @@ describe('confirmed restart with real owned children', () => {
       expect(state.isOpenCodeReady).toBe(false); expect(pids.every(pid => !alive(pid))).toBe(true);
       expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
     } finally {
+      releaseSend(); queue.stop(); await queue.flush();
       await state.openCodeProcess?.close();
       for (const pid of pids) if (alive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* already exited */ } }
       if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY; else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;

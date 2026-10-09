@@ -142,6 +142,7 @@ describe('confirmed restart with real owned children', () => {
     const accepted = new Promise(resolve => { releaseSend = resolve; });
     const queue = createMessageQueueRuntime({
       dataDir: path.join(root, 'queue'), dispatchQuietMs: 0,
+      getQueueTarget: async () => 'a'.repeat(64),
       globalEventHub: { subscribeEvent: () => () => {}, subscribeStatus: () => () => {} },
       kernelOperations: {
         captureIdentity: () => ({ generation: 'oc2', profile: 'oc2', endpoint: 'fixture', epoch: 1 }),

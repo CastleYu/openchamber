@@ -89,7 +89,11 @@ export function registerRoutingPromptRewrite(app, runtime) {
   const withParsedBody = (handler) => (req, res, next) => {
     const contentType = String(req.headers['content-type'] ?? '').toLowerCase();
     if (!contentType.includes('application/json')) return next();
-    parseJson(req, res, (parseError) => parseError ? next(parseError) : handler(req, res, next));
+    parseJson(req, res, (parseError) => {
+      if (parseError) return next(parseError);
+      try { return handler(req, res, next); }
+      catch (error) { return sendError(res, error); }
+    });
   };
   const directoryOf = (req) => {
     const url = new URL(req.url, 'http://localhost');

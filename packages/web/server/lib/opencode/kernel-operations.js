@@ -44,9 +44,11 @@ const mergeMetadataPatch = (current, patch) => {
   return next;
 };
 
-const kernelError = (code, message, generation = null) => Object.assign(new Error(message), {
-  name: 'KernelOperationError', code, generation,
-});
+const kernelError = (code, message, generation = null) => {
+  const error = Object.assign(new Error(message), { name: 'KernelOperationError', code, generation });
+  if (code === ERROR_CODE.UNSUPPORTED_GENERATION || code === ERROR_CODE.UNSUPPORTED_OPERATION) error.status = 501;
+  return error;
+};
 
 const requireData = (response, schema, label) => {
   const parsed = schema.safeParse(response?.data);

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registerRoutingPromptRewrite, registerRoutingRoutes } from './routes.js';
 import { createRoutingRuntime } from './runtime.js';
 import { resolveEffectiveConfig } from './store.js';
+import { createKernelOperations } from '../opencode/kernel-operations.js';
 
 /**
  * The prompt rewrite sits in front of the generic OpenCode proxy, which
@@ -160,4 +161,19 @@ describe('changed-profile prompt HTTP refusal', () => {
     expect(forwarded).toEqual([]);
     expect(jev.ask).not.toHaveBeenCalled();
   });
+});
+
+
+it('returns an unsupported profile error from parsed routing callbacks without forwarding', async () => {
+  let descriptor = { generation: 'unsupported', endpoint: null, epoch: 1 };
+  const operations = createKernelOperations({ getRuntime: () => descriptor, getHeaders: () => ({}) });
+  const { app, runtime, forwarded } = createApp({ generation: 'oc1' });
+  runtime.generation = () => operations.captureIdentity().generation;
+  await request(app).post('/api/session').send({ title: 'Rejected' }).expect(501);
+  await request(app).post('/api/session/s1/model').send({ model: { providerID: 'provider', id: 'model' } }).expect(501);
+  expect(forwarded).toEqual([]);
+  expect(runtime.noteModelSelection).not.toHaveBeenCalled();
+  descriptor = { generation: 'oc1', endpoint: 'http://127.0.0.1:1', epoch: 2 };
+  await request(app).post('/api/session').send({ title: 'Recovered' }).expect(204);
+  expect(forwarded).toEqual([{ path: '/session', parsed: true, body: { title: 'Recovered' } }]);
 });

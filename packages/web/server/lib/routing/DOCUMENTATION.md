@@ -98,3 +98,6 @@ rewrite and fallback paths, safety net hold/skip/off), `routes.http.test.js`
 auto-accept tests cover their hooks.
 
 Routing identity includes generation, profile, endpoint and epoch. Permission evaluation captures identity before cache lookup, clearing old decisions and Auto-session entries after a switch. OC1 prompt routing checks identity after configuration, history, credential and classifier waits before rewriting the body. OC2 selection checks classifier access and model catalog waits before publishing. Changed-owner success and failure reject with status 409 rather than invoking fallback. Ordinary classifier errors retain the OC1 fallback and OC2 hold policy. Web owns these checks; Electron uses its in-process backend, and hosted/Capacitor mobile inherit their connected host. VS Code does not offer server Auto routing.
+
+
+Parsed session-create/model middleware catches synchronous profile admission errors inside the body-parser callback and returns the route error response. Express cannot catch a later callback throw on behalf of this middleware. Kernel unsupported-generation/operation errors carry HTTP 501; refused requests do not reach the proxy or routing state owner. A later valid profile can use the same routes normally.

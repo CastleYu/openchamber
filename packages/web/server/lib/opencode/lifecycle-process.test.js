@@ -185,6 +185,7 @@ describe('confirmed restart with real owned children', () => {
       const external = { mode: 'external', endpoint: 'https://external.test/base' };
       await runtime.restartOpenCode('confirmed-change', {
         resolve: async () => external,
+        beforeRetire: async () => {},
         commit: async () => {
           expect(alive(second)).toBe(false);
           record = external; connectionRevision += 1;
@@ -196,6 +197,7 @@ describe('confirmed restart with real owned children', () => {
       expect(state.isExternalOpenCode).toBe(true); expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
       await runtime.restartOpenCode('explicit-return', {
         resolve: async () => command,
+        beforeRetire: async () => {},
         commit: async () => {
           record = command; connectionRevision += 1;
           return { family: AGENT_FAMILY.OPENCODE, revision, connectionRevision };

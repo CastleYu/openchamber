@@ -1,4 +1,4 @@
-import { OPENCODE_CONNECTION, OpenCodeConnectionError } from './connection.js';
+import { OPENCODE_CONNECTION, CONNECTION_SWITCH, OpenCodeConnectionError } from './connection.js';
 import express from 'express';
 import { createProjectIdFromPath } from '../projects/project-id.js';
 import fs from 'fs';
@@ -25,6 +25,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     getOpenCodeResolutionSnapshot,
     getOpenCodeConnectionOptions,
     getOpenCodeConnectionActivity,
+    connectionSwitch,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
     formatSettingsResponse,
@@ -503,6 +504,24 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
       const status = error instanceof OpenCodeConnectionError ? error.status : error?.status === 501 ? 501 : 503;
       return res.status(status).json({ error: status === 409 ? 'activity_changed' : status === 501 ? 'unsupported_runtime' : 'activity_unavailable' });
     }
+  });
+
+  for (const [route, operation] of [[CONNECTION_SWITCH.PREPARE_ROUTE, value => connectionSwitch.prepare(value)], [CONNECTION_SWITCH.APPLY_ROUTE, value => connectionSwitch.apply(value)]]) {
+    app.post(route, express.json({ limit: '32kb' }), async (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      if (!connectionSwitch) return res.status(501).json({ error: 'unsupported_runtime' });
+      try { return res.json(await operation(req.body)); }
+      catch (error) {
+        const status = error instanceof OpenCodeConnectionError ? error.status : 503;
+        return res.status(status).json({ error: status === 501 ? 'unsupported_runtime' : status === 409 ? 'connection_changed' : 'connection_failed' });
+      }
+    });
+  }
+  app.get(CONNECTION_SWITCH.PREVIOUS_ROUTE, async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!connectionSwitch) return res.status(501).json({ error: 'unsupported_runtime' });
+    try { return res.json({ connection: await connectionSwitch.previous() }); }
+    catch (error) { return res.status(error instanceof OpenCodeConnectionError ? error.status : 503).json({ error: 'previous_connection_unavailable' }); }
   });
 
   app.put('/api/config/settings', express.json({ limit: '1mb' }), async (req, res) => {

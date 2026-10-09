@@ -393,7 +393,7 @@ describe('confirmed connection settings commit', () => {
       pauseQueuedDispatch: async () => resume, getBackendSelection: () => ({ ...current }) });
     const old = { close: vi.fn() };
     fixture.state.openCodeProcess = old; fixture.state.isOpenCodeReady = true;
-    const replacement = { resolve: vi.fn(async () => target), commit: vi.fn(async () => {
+    const replacement = { resolve: vi.fn(async () => target), beforeRetire: vi.fn(), commit: vi.fn(async () => {
       current = { ...current, connectionRevision: current.connectionRevision + 1 };
       return { ...current };
     }) };
@@ -424,6 +424,14 @@ describe('confirmed connection settings commit', () => {
     await expect(f.runtime.restartOpenCode('different-change', other)).rejects.toMatchObject({ status: 409 });
     expect(other.resolve).not.toHaveBeenCalled(); expect(other.commit).not.toHaveBeenCalled();
     release(); await switching;
+  });
+
+  it('preserves the live owner and resumes the queue when fresh confirmation refuses retirement',async()=>{
+    const f=setup();f.replacement.beforeRetire.mockRejectedValue(new Error('Busy activity changed'));
+    await expect(f.runtime.restartOpenCode('confirmed-change',f.replacement)).rejects.toThrow('Busy activity changed');
+    expect(f.old.close).not.toHaveBeenCalled();expect(f.replacement.commit).not.toHaveBeenCalled();
+    expect(f.kernelRuntime.invalidate).not.toHaveBeenCalled();expect(f.state.isOpenCodeReady).toBe(true);
+    expect(f.resume).toHaveBeenCalledOnce();expect(f.state.currentRestartPromise).toBeNull();
   });
 
   it('preserves the live connection when candidate validation fails', async () => {

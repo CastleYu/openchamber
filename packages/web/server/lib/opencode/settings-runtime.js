@@ -1047,7 +1047,7 @@ export const createSettingsRuntime = (deps) => {
     return normalizeSettingsSurface(surface) ? readSettingsFromDisk({ surface }) : migration8.settings;
   };
 
-  const persistSettings = async (changes, { surface = null } = {}) => {
+  const persistSettings = async (changes, { surface = null, connectionPermit = null } = {}) => {
     persistSettingsLock = persistSettingsLock.catch(() => {}).then(async () => {
       // Log field names only — changes can carry credentials (UI password,
       // client tokens, tunnel tokens) that must never reach the log file.
@@ -1059,7 +1059,7 @@ export const createSettingsRuntime = (deps) => {
         !== JSON.stringify(sanitized[OPENCODE_CONNECTION.SETTING]);
       if (touchesConnection) {
         const record = parseOpenCodeConnection(sanitized[OPENCODE_CONNECTION.SETTING]);
-        if (connectionChanged) await validateOpenCodeConnection(record);
+        if (connectionChanged) await validateOpenCodeConnection(record, connectionPermit);
       }
       for (const key of Object.keys(sanitized)) {
         // Device state belongs to the install in front of the user, never to

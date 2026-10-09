@@ -1012,6 +1012,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         requireSelection(selection);
         resumeQueuedDispatch = await pauseQueuedDispatch?.();
         requireSelection(selection);
+        if (replacement) await replacement.beforeRetire();
+        requireSelection(selection);
         if (state.isShuttingDown) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
         previous = state.openCodeProcess;
         captureRestartDiagnostics(reason);
@@ -1051,7 +1053,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         }
         await bootstrapOpenCodeAtStartup(connection);
         requireSelection(selection);
-        if (!state.isOpenCodeReady) throw new OpenCodeConnectionError(state.lastOpenCodeError || 'OpenCode is not ready');
+        if (!state.isOpenCodeReady) throw new OpenCodeConnectionError(state.lastOpenCodeError || 'OpenCode is not ready', 503);
         if (state.expressApp) {
           setupProxy(state.expressApp);
           ensureOpenCodeApiPrefix();

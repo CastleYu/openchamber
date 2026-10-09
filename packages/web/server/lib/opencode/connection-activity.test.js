@@ -83,3 +83,33 @@ it('keeps missing directory coverage distinct from an authoritative global empty
   expect(result.permissions).toEqual({ state: 'unknown', observedCount: 0 });
   expect(result.questions).toEqual({ state: 'unknown', observedCount: 0 });
 });
+
+describe('confirmed external interruption', () => {
+  it.each(['oc1','oc2'])('interrupts busy %s sessions in their scope and verifies idle again', async generation => {
+    const f=fixture(generation);const stopped=new Set();const interrupted=[];
+    f.kernelOperations.listActiveStatuses=async ({directory,signal})=>{
+      expect(signal).toBeInstanceOf(AbortSignal);
+      return {...f.kernelOperations.captureIdentity(),data:stopped.has(directory)?{ses:{type:'idle'}}:{ses:{type:'busy'},idle:{type:'idle'}}};
+    };
+    f.kernelOperations.interruptSession=async ({sessionID,directory,signal})=>{expect(signal).toBeInstanceOf(AbortSignal);interrupted.push({sessionID,directory});stopped.add(directory);};
+    await f.activity.stop({scope:{busy:generation==='oc2'?'global':'configured-directories',directories:['C:/one','C:/two']}});
+    expect(interrupted).toEqual(generation==='oc2'?[{sessionID:'ses',directory:undefined}]:[{sessionID:'ses',directory:'C:/one'},{sessionID:'ses',directory:'C:/two'}]);
+  });
+  it('does not treat accepted interruption as authoritative idle',async()=>{
+    const f=fixture();f.kernelOperations.interruptSession=async()=>{};
+    await expect(f.activity.stop({scope:{busy:'global',directories:[]}})).rejects.toMatchObject({status:409});
+  });
+  it('rejects an old status result before interrupting another owner',async()=>{
+    const f=fixture();let interrupted=false;
+    f.kernelOperations.listActiveStatuses=async()=>{const old=f.kernelOperations.captureIdentity();f.retire();return {...old,data:{ses:{type:'busy'}}};};
+    f.kernelOperations.interruptSession=async()=>{interrupted=true;};
+    await expect(f.activity.stop({scope:{busy:'global',directories:[]}})).rejects.toMatchObject({status:409});
+    expect(interrupted).toBe(false);
+  });
+  it('preserves authoritative read failures without issuing interruption',async()=>{
+    const f=fixture();let interrupted=false;
+    f.kernelOperations.listActiveStatuses=async()=>{throw new Error('status unavailable');};
+    f.kernelOperations.interruptSession=async()=>{interrupted=true;};
+    await expect(f.activity.stop({scope:{busy:'global',directories:[]}})).rejects.toThrow('status unavailable');expect(interrupted).toBe(false);
+  });
+});

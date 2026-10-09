@@ -4,6 +4,7 @@ import { OPENCODE_SETTING } from './compatibility.js';
 
 export const OPENCODE_CONNECTION = Object.freeze({ SETTING: OPENCODE_SETTING.CONNECTION, BACKUP: 'settings.opencode-previous.json', ERROR: 'opencodeConnectionError', ROUTE: '/api/config/opencode-connection', ACTIVITY_ROUTE: '/api/config/opencode-connection/activity', BINARY_ENV_KEYS: Object.freeze(['OPENCODE_BINARY', 'OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_BIN']) });
 export const CONNECTION_MODE = Object.freeze({ EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' });
+export const CONNECTION_SWITCH = Object.freeze({ PREPARE_ROUTE: '/api/config/opencode-connection/prepare', APPLY_ROUTE: '/api/config/opencode-connection/apply', PREVIOUS_ROUTE: '/api/config/opencode-connection/previous', CANDIDATE: 'candidate', PREVIOUS: 'previous', WAIT: 'wait', STOP: 'stop', READY: 'ready' });
 const VERSION = 1;
 const variable = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
 const absolute = z.string().trim().min(1).refine(value => path.isAbsolute(value));

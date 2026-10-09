@@ -10,9 +10,9 @@ const known = count => ({ state: STATE.KNOWN, count });
 
 // Inspection is evidence for confirmation, never a switch authorization.
 export const createConnectionActivity = ({ kernelOperations, queue, getDirectories, getState }) => {
-  const inspect = async () => {
+  const inspect = async ({ duringTransition = false } = {}) => {
     const before = getState();
-    const identity = before.ready && !before.transitioning ? kernelOperations.captureIdentity() : null;
+    const identity = before.ready && (!before.transitioning || duringTransition) ? kernelOperations.captureIdentity() : null;
     await queue.load();
     const queued = queue.snapshot();
     const directories = [...new Set([...(await getDirectories()),
@@ -25,7 +25,7 @@ export const createConnectionActivity = ({ kernelOperations, queue, getDirectori
         sending: queued.sessions.filter(session => session.sendingId !== null).length, revision: queued.revision },
       clients: unknown(),
     };
-    if (identity && !before.transitioning) {
+    if (identity) {
       const summarize = async (read, scopes, project) => {
         const results = await Promise.allSettled(scopes.map(directory => read({ directory, signal: AbortSignal.timeout(15000) })));
         const ids = new Set();
@@ -53,5 +53,20 @@ export const createConnectionActivity = ({ kernelOperations, queue, getDirectori
     }
     return report;
   };
-  return { inspect };
+  // Only the confirmation owner calls this after explicit stop-and-switch intent.
+  const stop = async report => {
+    const scopes = report.scope.busy === SCOPE.GLOBAL ? [undefined] : report.scope.directories;
+    const identity = kernelOperations.captureIdentity();
+    for (const directory of scopes) {
+      const statuses = await kernelOperations.listActiveStatuses({ directory, signal: AbortSignal.timeout(15000) });
+      if (!sameOwner(identity, statuses) || !sameOwner(identity, kernelOperations.captureIdentity())) throw new OpenCodeConnectionError('External activity changed', 409);
+      for (const [sessionID, status] of Object.entries(statuses.data)) {
+        if (status.type !== 'idle') await kernelOperations.interruptSession({ sessionID, directory, signal: AbortSignal.timeout(15000) });
+      }
+      const settled = await kernelOperations.listActiveStatuses({ directory, signal: AbortSignal.timeout(15000) });
+      if (!sameOwner(identity, settled) || !sameOwner(identity, kernelOperations.captureIdentity())) throw new OpenCodeConnectionError('External activity changed', 409);
+      if (Object.values(settled.data).some(status => status.type !== 'idle')) throw new OpenCodeConnectionError('External interruption is not yet settled', 409);
+    }
+  };
+  return { inspect, stop };
 };

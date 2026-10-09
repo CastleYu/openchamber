@@ -51,12 +51,13 @@ import {
   UPSTREAM_STALL_TIMEOUT_CONCURRENT_MS,
 } from './lib/event-stream/index.js';
 import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/search.js';
-import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection, describeOpenCodeConnections } from './lib/opencode/connection.js';
+import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection, describeOpenCodeConnections, parseOpenCodeConnection } from './lib/opencode/connection.js';
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { parseOpenCodeSelection, OPENCODE_SELECTION } from './lib/opencode/compatibility.js';
 import { createConnectionActivity } from './lib/opencode/connection-activity.js';
+import { createConnectionSwitch } from './lib/opencode/connection-switch.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
@@ -436,9 +437,10 @@ const validateDirectoryPath = (...args) => projectDirectoryRuntime.validateDirec
 const resolveProjectDirectory = (...args) => projectDirectoryRuntime.resolveProjectDirectory(...args);
 const resolveOptionalProjectDirectory = (...args) => projectDirectoryRuntime.resolveOptionalProjectDirectory(...args);
 
+const connectionPermit = Symbol('confirmedConnectionChange');
 const settingsRuntime = createSettingsRuntime({
-  validateOpenCodeConnection: async (record) => {
-    if (isOpenCodeReady || openCodeProcess || openCodeLifecycleRuntime.isConnectionTransitioning()) {
+  validateOpenCodeConnection: async (record, permit) => {
+    if (isOpenCodeReady || openCodeProcess || (openCodeLifecycleRuntime.isConnectionTransitioning() && permit !== connectionPermit)) {
       throw new OpenCodeConnectionError('Stop the active connection before changing its record', 409);
     }
     if (record) await prepareConnection(record);
@@ -1526,6 +1528,23 @@ const getOpenCodeUpgradeCapability = () => {
   });
 };
 
+const connectionState = () => ({ ready: isOpenCodeReady, external: isExternalOpenCode, transitioning: openCodeLifecycleRuntime.isConnectionTransitioning() });
+const connectionSelection = () => ({ ...agentHost.getSelection(), connectionRevision: openCodeConnectionRevision });
+const connectionActivity = createConnectionActivity({
+  kernelOperations, queue: messageQueueRuntime,
+  getDirectories: async () => [openCodeWorkingDirectory, ...sanitizeProjects((await readSettingsFromDiskStrict()).projects || []).map(project => project.path)],
+  getState: connectionState,
+});
+const connectionSwitch = createConnectionSwitch({
+  activity: connectionActivity, lifecycle: openCodeLifecycleRuntime, prepareConnection,
+  readConnection: async () => (await readSettingsFromDiskStrict())[OPENCODE_CONNECTION.SETTING] ?? null,
+  readPrevious: async () => parseOpenCodeConnection(JSON.parse(await fsPromises.readFile(path.join(path.dirname(SETTINGS_FILE_PATH), OPENCODE_CONNECTION.BACKUP), 'utf8'))[OPENCODE_CONNECTION.SETTING] ?? null),
+  saveConnection: record => persistSettings({ [OPENCODE_CONNECTION.SETTING]: record }, { connectionPermit }),
+  getOwner: () => ({ ...connectionSelection(), ...kernelRuntime.get() }),
+  getSelection: connectionSelection, getState: connectionState,
+  stopExternal: connectionActivity.stop,
+});
+
 const restartOpenCode = (...args) => openCodeLifecycleRuntime.restartOpenCode(...args);
 const waitForOpenCodeReady = (...args) => openCodeLifecycleRuntime.waitForOpenCodeReady(...args);
 const waitForAgentPresence = (...args) => openCodeLifecycleRuntime.waitForAgentPresence(...args);
@@ -2433,11 +2452,8 @@ async function main(options = {}) {
     deleteImportedTheme,
     refreshOpenCodeAfterConfigChange,
     getOpenCodeResolutionSnapshot,
-    getOpenCodeConnectionActivity: createConnectionActivity({
-      kernelOperations, queue: messageQueueRuntime,
-      getDirectories: async () => [openCodeWorkingDirectory, ...sanitizeProjects((await readSettingsFromDiskStrict()).projects || []).map(project => project.path)],
-      getState: () => ({ ready: isOpenCodeReady, transitioning: openCodeLifecycleRuntime.isConnectionTransitioning() }),
-    }).inspect,
+    getOpenCodeConnectionActivity: () => connectionActivity.inspect(),
+    connectionSwitch,
     getOpenCodeConnectionOptions: async () => describeOpenCodeConnections({ settings: await readSettingsFromDiskStrict(), env: process.env, resolveBinary: openCodeEnvRuntime.resolveConnectionBinary }),
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli: async () => {

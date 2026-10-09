@@ -45,3 +45,6 @@ export type OpenCodeProfileAdmission =
   | { status: 'invalid-selection' }
   | { status: Exclude<typeof PROFILE_STATUS[keyof typeof PROFILE_STATUS], 'ready' | 'invalid-selection'>; selection: OpenCodeSelection; descriptor: OpenCodeGenerationDescriptor };
 export function detectOpenCodeProfile(options: Parameters<typeof detectOpenCodeGeneration>[0] & { selection: OpenCodeSelection }): Promise<OpenCodeProfileAdmission>;
+
+export const OPENCODE_SETTING: Readonly<{ SELECTION: 'opencodeSelection' }>;
+export function isOpenCodeSelection(value: unknown): value is OpenCodeSelection;

@@ -225,3 +225,14 @@ describe('settings registry', () => {
     for (const key of DESKTOP_SHELL_KEYS) expect(snapshot.fields[key].owner).toBe('desktop-shell');
   });
 });
+
+test('keeps the requested OpenCode selection as an instance fact and rejects inferred or invalid values', () => {
+  for (const value of ['auto', 'oc1', 'oc2', 'legacy-1.2.27']) {
+    expect(parseSettingsDocument({ opencodeSelection: value })?.opencodeSelection).toBe(value);
+  }
+  for (const value of ['', 'unknown', null, 1, { profile: 'oc1' }]) {
+    expect(parseSettingsDocument({ opencodeSelection: value })?.opencodeSelection).toBeUndefined();
+  }
+  expect(SETTINGS_REGISTRY.opencodeSelection.scope).toBe('instance');
+  expect(parseSettingsDocument({ profile: 'legacy-1.2.27' })?.opencodeSelection).toBeUndefined();
+});

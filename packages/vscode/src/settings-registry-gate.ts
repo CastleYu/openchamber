@@ -6,6 +6,7 @@
 //
 // Kept free of `vscode` imports so it is unit-tested directly.
 import registrySnapshot from './settings-registry.json';
+import { isOpenCodeSelection, OPENCODE_SETTING } from '../../web/server/lib/opencode/compatibility.js';
 
 type SettingsRegistryGateField = {
   scope: string;
@@ -41,6 +42,7 @@ export const filterPersistableSettingsChanges = (
   for (const [key, value] of Object.entries(changes)) {
     if (!Object.prototype.hasOwnProperty.call(fields, key)) continue;
     if (!isPersistableField(fields[key])) continue;
+    if (key === OPENCODE_SETTING.SELECTION && !isOpenCodeSelection(value)) continue;
     next[key] = value;
   }
   return next;

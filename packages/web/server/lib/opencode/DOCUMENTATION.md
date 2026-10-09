@@ -735,3 +735,9 @@ path without deriving a directory from the browser environment.
 ## Profile admission
 
 `compatibility.js` owns `detectOpenCodeProfile` and the selection/profile/status constants. The result separates requested selection, resolved descriptor and server versus user-declared version provenance. Legacy admission requires GET-only health, session list/status, pending permissions/questions and command catalog contracts. Explicit version-absent Legacy declarations never probe `/api/info`, and failed authentication cannot be overridden. Admission is distinct from operation acceptance. Production hosts still use generation detection until selection persistence and capability dispatch are adopted together. Web and Electron share this owner; VS Code must adopt the same contract; hosted and Capacitor mobile inherit their selected host. The isolated executable harness consumes the admission helper now.
+
+## Selection persistence and runtime adoption
+
+settings-helpers.js accepts only the shared selection enum. Its existing merge preserves a valid saved choice when an update omits or rejects that key. settings-runtime.js stores the choice in instance settings.json, separately from profile preferences and the runtime descriptor.
+
+createKernelRuntime accepts an optional getRequestedSelection dependency. A null selection preserves the existing generation detector; a configured selection uses profile admission. Selection changes retire in-flight probes even at the same URL. getAdmission() returns the current diagnostics after checking identity. Admission failures retract the ready descriptor except temporary unreachability, which retains the existing health-monitoring behavior. Production callers still omit this dependency. Enable it only with capability dispatch and host adoption; storage alone does not activate Legacy. See the [paired INT-01 checkpoint](../../../../../docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-01-implementation-checkpoint).

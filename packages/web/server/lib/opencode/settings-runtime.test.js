@@ -576,3 +576,15 @@ describe('settings runtime: per-surface profile keys', () => {
     }
   });
 });
+
+it('persists requested OpenCode selection in instance settings without generating a resolved profile', async () => {
+  const { runtime, settingsFilePath, cleanup } = await createRuntime();
+  try {
+    for (const opencodeSelection of ['auto', 'oc1', 'oc2', 'legacy-1.2.27']) {
+      await runtime.persistSettings({ opencodeSelection });
+      expect(await runtime.readSettingsFromDisk()).toEqual({ opencodeSelection });
+      const saved = JSON.parse(await fsPromises.readFile(settingsFilePath, 'utf8'));
+      expect(saved).toEqual({ opencodeSelection });
+    }
+  } finally { await cleanup(); }
+});

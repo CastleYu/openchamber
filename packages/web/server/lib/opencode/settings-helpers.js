@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { isOpenCodeSelection, OPENCODE_SETTING } from './compatibility.js';
 
 import { isAgentMemoryFeatureAvailable } from '../agent-memory/feature-flag.js';
 import { isRoutingFeatureAvailable } from '../routing/feature-flag.js';
@@ -218,6 +219,9 @@ export const createSettingsHelpers = (dependencies) => {
       }
     }
 
+    if (isOpenCodeSelection(candidate[OPENCODE_SETTING.SELECTION])) {
+      result[OPENCODE_SETTING.SELECTION] = candidate[OPENCODE_SETTING.SELECTION];
+    }
     // Absolute path to the opencode CLI binary (optional override).
     // Accept empty-string to clear (we persist an empty string sentinel so the running
     // process can reliably drop a previously applied OPENCODE_BINARY override).

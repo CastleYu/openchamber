@@ -20,6 +20,7 @@ const PROBE_PATH = Object.freeze({
 
 export const OPENCODE_PROFILE = Object.freeze({ OC1: 'oc1', OC2: 'oc2', LEGACY: 'legacy-1.2.27' });
 export const OPENCODE_SELECTION = Object.freeze({ AUTO: 'auto', ...OPENCODE_PROFILE });
+export const OPENCODE_SETTING = Object.freeze({ SELECTION: 'opencodeSelection' });
 export const PROFILE_STATUS = Object.freeze({
   READY: 'ready', AUTH: 'auth', UNREACHABLE: 'unreachable', CONFLICT: 'conflict',
   MISMATCH: 'mismatch', UNSUPPORTED: 'unsupported', UNVERIFIED: 'unverified',
@@ -27,6 +28,7 @@ export const PROFILE_STATUS = Object.freeze({
 });
 const VERSION_PROVENANCE = Object.freeze({ SERVER: 'server', USER: 'user-declared' });
 const selectionSchema = z.enum(Object.values(OPENCODE_SELECTION));
+export const isOpenCodeSelection = value => selectionSchema.safeParse(value).success;
 const idSchema = z.object({ id: z.string().min(1) });
 const LEGACY_READ_CHECKS = Object.freeze([
   { path: '/session', schema: z.array(idSchema) },

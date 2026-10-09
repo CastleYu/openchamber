@@ -778,7 +778,7 @@ describe('settings registry gate', () => {
     mermaidStyle: 'openchamber',
     themeId: 'openchamber-dark', useSystemTheme: true, themeVariant: 'dark', lightThemeId: 'openchamber-light', darkThemeId: 'openchamber-dark',
     splashBgLight: '#fff', splashFgLight: '#000', splashBgDark: '#000', splashFgDark: '#fff',
-    lastDirectory: '/home/testuser/project', homeDirectory: '/home/testuser', opencodeBinary: '/usr/local/bin/opencode',
+    lastDirectory: '/home/testuser/project', homeDirectory: '/home/testuser', opencodeBinary: '/usr/local/bin/opencode', opencodeSelection: 'auto',
     projects: [{ id: 'p', path: '/home/testuser/project' }], activeProjectId: 'p',
     securityScopedBookmarks: ['bookmark'], pinnedDirectories: ['/home/testuser/project'],
     desktopLanAccessEnabled: true, desktopKeepAwakeEnabled: true, desktopMinimizeToTrayEnabled: true, desktopMacMenuBarEnabled: true,
@@ -914,4 +914,18 @@ describe('settings registry gate', () => {
     });
     expect(helpers.sanitizeSettingsUpdate({ largeTextPasteBehavior: 'maybe', fileEditorKeymap: 'emacs' })).toEqual({});
   });
+});
+
+it('round-trips only requested OpenCode selections through the settings boundary', () => {
+  const helpers = createTestHelpers();
+  for (const opencodeSelection of ['auto', 'oc1', 'oc2', 'legacy-1.2.27']) {
+    expect(helpers.sanitizeSettingsUpdate({ opencodeSelection }).opencodeSelection).toBe(opencodeSelection);
+    expect(helpers.formatSettingsResponse({ opencodeSelection }).opencodeSelection).toBe(opencodeSelection);
+  }
+  const saved = helpers.mergePersistedSettings({}, helpers.sanitizeSettingsUpdate({ opencodeSelection: 'legacy-1.2.27' }));
+  for (const opencodeSelection of ['guessed', null, {}, undefined]) {
+    const changes = helpers.sanitizeSettingsUpdate({ opencodeSelection, profile: 'oc1' });
+    expect(changes.opencodeSelection).toBeUndefined();
+    expect(helpers.formatSettingsResponse(helpers.mergePersistedSettings(saved, changes)).opencodeSelection).toBe('legacy-1.2.27');
+  }
 });

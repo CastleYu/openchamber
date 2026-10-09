@@ -357,3 +357,58 @@ describe('resolved profile identity', () => {
     expect(changes).toHaveLength(2);
   });
 });
+
+describe('requested OpenCode selection binding', () => {
+  it('retires old-profile probes immediately when requested selection changes at the same endpoint', async () => {
+    let selected = 'auto'; let finish; const calls = [];
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}),
+      getRequestedSelection: () => selected,
+      detectProfile: ({ selection, endpoint, epoch }) => { calls.push(selection); return new Promise(resolve => { finish = () => resolve({ status: 'ready', selection,
+        provenance: 'server', exactVersion: true, descriptor: { ...ready(endpoint, epoch, '1.2.27'), profile: 'legacy-1.2.27' } }); }); },
+    });
+    const pending = runtime.refresh();
+    await Promise.resolve();
+    selected = 'legacy-1.2.27';
+    expect(runtime.getAdmission()).toBeNull();
+    finish(); await expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+    const next = runtime.refresh(); await Promise.resolve(); finish(); await next;
+    expect(calls).toEqual(['auto', 'legacy-1.2.27']);
+    expect(runtime.getAdmission()).toMatchObject({ selection: selected, status: 'ready' });
+    expect(runtime.get().profile).toBe('legacy-1.2.27');
+  });
+  it('refuses mismatches and commits admission diagnostics instead of keeping a ready generation', async () => {
+    let status = 'ready';
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}), getRequestedSelection: () => 'oc1',
+      detectProfile: async ({ endpoint, epoch, selection }) => ({ status, selection, provenance: 'server', exactVersion: false,
+        descriptor: { ...ready(endpoint, epoch, '1.18.32'), profile: 'oc1' } }),
+    });
+    await runtime.refresh(); status = 'mismatch';
+    await runtime.reprobe();
+    expect(runtime.get().generation).toBe('unsupported');
+    expect(runtime.getAdmission().status).toBe('mismatch');
+  });
+  it('does not preserve a ready identity when health and info authoritatively conflict', async () => {
+    let status = 'ready';
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}), getRequestedSelection: () => 'auto',
+      detectProfile: async ({ endpoint, epoch, selection }) => ({ status, selection, provenance: 'server', exactVersion: false,
+        descriptor: { ...ready(endpoint, epoch, '1.18.32'), profile: 'oc1' } }),
+    });
+    await runtime.refresh(); status = 'conflict';
+    expect((await runtime.reprobe()).preserved).toBe(false);
+    expect(runtime.get().generation).toBe('unknown');
+    expect(runtime.getAdmission().status).toBe('conflict');
+  });
+  it.each(['auth', 'unverified', 'invalid-selection'])('retracts a ready identity after %s admission', async status => {
+    let failed = false;
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}), getRequestedSelection: () => 'auto',
+      detectProfile: async ({ endpoint, epoch, selection }) => failed ? { status, selection }
+        : { status: 'ready', selection, provenance: 'server', exactVersion: false, descriptor: { ...ready(endpoint, epoch, '1.18.32'), profile: 'oc1' } },
+    });
+    const before = await runtime.refresh(); failed = true;
+    expect((await runtime.reprobe()).preserved).toBe(false);
+    expect(runtime.get().generation).toBe('unknown');
+    expect(runtime.get().epoch).toBeGreaterThan(before.epoch);
+    expect(runtime.getAdmission().status).toBe(status);
+  });
+
+});

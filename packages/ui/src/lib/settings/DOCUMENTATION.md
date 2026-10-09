@@ -46,3 +46,7 @@
 4. Add the Settings control and search entry per `.agents/skills/settings-ui-patterns`.
 
 `DesktopSettings`, `SettingsPayload`, the client sanitizer, the mirror, the apply step and the auto-save all follow from step 1; there is no second list to update.
+
+## Requested OpenCode selection
+
+opencodeSelection is an instance setting parsed from Auto, OC1, OC2 or Legacy 1.2.27 constants in lib/opencode/runtime.ts. It stores user intent, never a resolved profile. Invalid and omitted values are dropped without substituting a default. Both generated host snapshots include the field. The registry currently has no store binding or visible control for it; production selection activation remains part of INT-01. The [paired milestone checkpoint](../../../../../docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-01-implementation-checkpoint) records the accepted scope and Chinese handoff.

@@ -14,6 +14,9 @@ export const OPEN_CODE_PROFILE = {
   LEGACY: 'legacy-1.2.27',
 } as const;
 
+export const OPEN_CODE_SELECTION = { AUTO: 'auto', ...OPEN_CODE_PROFILE } as const;
+export const OPEN_CODE_SETTING = { SELECTION: 'opencodeSelection' } as const;
+
 export type OpenCodeProfile = typeof OPEN_CODE_PROFILE[keyof typeof OPEN_CODE_PROFILE];
 
 export type OpenCodeRuntime = Readonly<{

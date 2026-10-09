@@ -78,3 +78,10 @@ describe('filterPersistableSettingsChanges', () => {
     assert.deepEqual(filterPersistableSettingsChanges(blocked), {});
   });
 });
+
+test('persists only valid requested OpenCode selections through the extension boundary', () => {
+  for (const opencodeSelection of ['auto', 'oc1', 'oc2', 'legacy-1.2.27']) {
+    assert.deepEqual(filterPersistableSettingsChanges({ opencodeSelection }), { opencodeSelection });
+  }
+  assert.deepEqual(filterPersistableSettingsChanges({ opencodeSelection: 'guessed', profile: 'oc1' }), {});
+});

@@ -301,3 +301,7 @@ Git description result. The Git PR description helper retains the OC1 temporary
 session flow and uses OC2's `generate.text` operation without creating a session.
 The extension status command probes each kernel's own paths. An unknown kernel
 produces no OpenCode probes and reports its unknown generation.
+
+## Requested OpenCode selection
+
+The generated instance-settings gate accepts opencodeSelection only when the shared compatibility parser accepts Auto, OC1, OC2 or Legacy 1.2.27. Invalid values are omitted from changes, and inferred profile fields remain outside persistence. This does not enable profile selection in the manager or add a Settings control. The [paired INT-01 checkpoint](../../../docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-01-implementation-checkpoint) owns activation and runtime acceptance scope.

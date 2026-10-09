@@ -24,6 +24,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     getBackendSelection,
     getOpenCodeResolutionSnapshot,
     getOpenCodeConnectionOptions,
+    getOpenCodeConnectionActivity,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
     formatSettingsResponse,
@@ -492,6 +493,16 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     if (!getOpenCodeConnectionOptions) return res.status(501).json({ error: 'unsupported_runtime' });
     try { return res.json(await getOpenCodeConnectionOptions()); }
     catch { return res.status(503).json({ error: 'settings_unavailable' }); }
+  });
+
+  app.get(OPENCODE_CONNECTION.ACTIVITY_ROUTE, async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!getOpenCodeConnectionActivity) return res.status(501).json({ error: 'unsupported_runtime' });
+    try { return res.json(await getOpenCodeConnectionActivity()); }
+    catch (error) {
+      const status = error instanceof OpenCodeConnectionError ? error.status : error?.status === 501 ? 501 : 503;
+      return res.status(status).json({ error: status === 409 ? 'activity_changed' : status === 501 ? 'unsupported_runtime' : 'activity_unavailable' });
+    }
   });
 
   app.put('/api/config/settings', express.json({ limit: '1mb' }), async (req, res) => {

@@ -352,7 +352,7 @@ const splitConfigEntityPath = (pathname: string, prefix: string) => {
   return { name: decodeURIComponent(segments.join('/')), resource: undefined };
 };
 
-const HOST_CONNECTION = { ROUTE: '/api/config/opencode-connection', SETTING: 'opencodeConnection', ERROR: 'unsupported_runtime' } as const;
+const HOST_CONNECTION = { ROUTE: '/api/config/opencode-connection', ACTIVITY_ROUTE: '/api/config/opencode-connection/activity', SETTING: 'opencodeConnection', ERROR: 'unsupported_runtime' } as const;
 
 const unsupportedWebRouteResponse = (feature: string): Response => {
   return jsonResponse({ error: `${feature} is not supported in VS Code` }, 501);
@@ -910,7 +910,7 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     }
   }
 
-  if (pathname === HOST_CONNECTION.ROUTE) return jsonResponse({ error: HOST_CONNECTION.ERROR }, 501);
+  if (pathname === HOST_CONNECTION.ROUTE || pathname === HOST_CONNECTION.ACTIVITY_ROUTE) return jsonResponse({ error: HOST_CONNECTION.ERROR }, 501);
 
   if (pathname.startsWith('/api/config/settings')) {
     if (method === 'GET') {

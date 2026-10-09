@@ -2,7 +2,7 @@ import { z } from 'zod';
 import path from 'node:path';
 import { OPENCODE_SETTING } from './compatibility.js';
 
-export const OPENCODE_CONNECTION = Object.freeze({ SETTING: OPENCODE_SETTING.CONNECTION, BACKUP: 'settings.opencode-previous.json', ERROR: 'opencodeConnectionError', ROUTE: '/api/config/opencode-connection', BINARY_ENV_KEYS: Object.freeze(['OPENCODE_BINARY', 'OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_BIN']) });
+export const OPENCODE_CONNECTION = Object.freeze({ SETTING: OPENCODE_SETTING.CONNECTION, BACKUP: 'settings.opencode-previous.json', ERROR: 'opencodeConnectionError', ROUTE: '/api/config/opencode-connection', ACTIVITY_ROUTE: '/api/config/opencode-connection/activity', BINARY_ENV_KEYS: Object.freeze(['OPENCODE_BINARY', 'OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_BIN']) });
 export const CONNECTION_MODE = Object.freeze({ EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' });
 const VERSION = 1;
 const variable = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);

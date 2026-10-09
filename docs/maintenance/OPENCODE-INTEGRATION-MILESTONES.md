@@ -336,3 +336,21 @@ Saved-target restart now validates, pauses queue dispatch, waits for entered req
 Validation: 124 focused queue/lifecycle regressions passed. The updated seven-test real-child suite passed, with a queue/lifecycle composition assertion that the old PID remains alive until the entered synthetic dispatch completes and its removal is persisted. Production Web with real OC2 2.0.20 passed 14 host checks, including React confirmation, restart, session CRUD and shutdown cleanup; that host probe had no model conversation or in-flight model request. Web types/lint and syntax passed; anti-slop retains 70 inherited findings and zero authored findings. Dead-code retains two files, 319 exports and 231 types. No new UI bundle or packaged Electron/IDE/mobile acceptance is claimed. Chinese module archive: [queue drain](zh-CN/QUEUE-CONNECTION-DRAIN.md). Evidence: artifacts/int02-drain-*.log and int02-drain-final-evidence.json. The frozen Release is unchanged; live weekly quota has 44 percent remaining.
 
 Remaining in this milestone: inspect and display authoritative busy sessions, queued intent, pending approvals and peer clients; confirm wait or stop-and-switch; preserve each queued intent's original target; expose transition/failure recovery to clients; adopt the contract in the VS Code manager before release acceptance.
+
+### INT-02 activity evidence checkpoint, 2026-10-10
+
+The host now exposes scoped activity inspection through an authenticated no-store
+route. Kernel-owned OC1 questions and OC2 forms join live statuses, permissions
+and the loaded queue projection. Partial category failures remain unknown with
+an observed lower bound; stale owners and queue revisions reject the snapshot.
+Clients remain explicitly unknown. Web/Electron/mobile share the route and
+VS Code rejects it with 501 before upstream fallback. The owning contract and
+[Chinese archive](zh-CN/CONNECTION-ACTIVITY.md) define the evidence boundary.
+
+Queue review confirmed that persisted records contain directory/items but no
+original connection owner. Dispatch-time epoch checks cover an entered request,
+not target retention after replacement. Complete persistent ownership, client
+coordination and confirmation/recovery together before removing active-write 409.
+INT-02 remains in progress; the existing CA-02 Release is unchanged.
+
+Validation: 80 focused tests pass, including SDK request fidelity, empty/failed reads, missing coverage, partial results and retirement. An isolated production host with real OC2 2.0.20 passed 16 checks, including route authentication, actual empty status/permission/form reads, React confirmation, restart, session CRUD and owned cleanup. Workspace type-check/lint and the VS Code consumer build pass. Lint retains five warnings; the anti-slop scan has 175 findings outside authored lines and none in the new activity module/tests. Dead-code remains two files, 319 exports and 231 types. No model conversation, real CAgent, Legacy, managed OC1 plugin, IDE or packaged desktop/mobile acceptance is claimed. Final evidence: artifacts/int02-activity-final-evidence.json. Live weekly quota has 43 percent remaining.

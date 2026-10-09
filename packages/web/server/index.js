@@ -56,6 +56,7 @@ import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { parseOpenCodeSelection, OPENCODE_SELECTION } from './lib/opencode/compatibility.js';
+import { createConnectionActivity } from './lib/opencode/connection-activity.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
@@ -2425,6 +2426,11 @@ async function main(options = {}) {
     deleteImportedTheme,
     refreshOpenCodeAfterConfigChange,
     getOpenCodeResolutionSnapshot,
+    getOpenCodeConnectionActivity: createConnectionActivity({
+      kernelOperations, queue: messageQueueRuntime,
+      getDirectories: async () => [openCodeWorkingDirectory, ...sanitizeProjects((await readSettingsFromDiskStrict()).projects || []).map(project => project.path)],
+      getState: () => ({ ready: isOpenCodeReady, transitioning: openCodeLifecycleRuntime.isConnectionTransitioning() }),
+    }).inspect,
     getOpenCodeConnectionOptions: async () => describeOpenCodeConnections({ settings: await readSettingsFromDiskStrict(), env: process.env, resolveBinary: openCodeEnvRuntime.resolveConnectionBinary }),
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli: async () => {

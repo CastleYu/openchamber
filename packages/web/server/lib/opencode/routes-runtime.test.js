@@ -165,3 +165,24 @@ describe('connection setup route', () => {
     await request(failed).get('/api/config/opencode-connection').expect(503, { error: 'settings_unavailable' });
   });
 });
+
+describe('connection activity HTTP boundary', () => {
+  it('serves read-only uncached evidence before proxy fallback', async () => {
+    const app = express(); let calls = 0;
+    registerOpenCodeRoutes(app, { getOpenCodeConnectionActivity: async () => ({ state: 'inactive', questions: { state: 'unknown' }, calls: ++calls }) });
+    app.use((_req, res) => res.status(418).end());
+    const response = await request(app).get('/api/config/opencode-connection/activity').expect(200);
+    expect(response.headers['cache-control']).toBe('no-store'); expect(response.body.calls).toBe(1);
+    await request(app).post('/api/config/opencode-connection/activity').expect(418);
+    expect(calls).toBe(1);
+  });
+  it('keeps unavailable, unsupported and stale evidence distinct without error detail', async () => {
+    const unsupported = express(); registerOpenCodeRoutes(unsupported, {});
+    await request(unsupported).get('/api/config/opencode-connection/activity').expect(501, { error: 'unsupported_runtime' });
+    for (const [error, status, code] of [[new Error('private endpoint'), 503, 'activity_unavailable'],
+      [new OpenCodeConnectionError('private endpoint', 409), 409, 'activity_changed']]) {
+      const app = express(); registerOpenCodeRoutes(app, { getOpenCodeConnectionActivity: async () => { throw error; } });
+      await request(app).get('/api/config/opencode-connection/activity').expect(status, { error: code });
+    }
+  });
+});

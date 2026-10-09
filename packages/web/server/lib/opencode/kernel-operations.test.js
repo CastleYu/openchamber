@@ -640,3 +640,46 @@ describe('profile preparation and accepted writes', () => {
       .resolves.toMatchObject({ profile: 'oc1', data: { id: 'ses_1' } });
   });
 });
+
+describe('pending question and form inspection', () => {
+  it.each(['oc1', 'oc2'])('preserves %s SDK read, auth and directory fidelity', async generation => {
+    const requests = [];
+    const endpoint = await serve(() => ({ body: generation === 'oc1'
+      ? [{ id: 'input_1', sessionID: 'ses_1', questions: [{ text: 'private' }] }]
+      : { location: { directory: 'C:/work ü' }, data: [{ id: 'input_1', sessionID: 'ses_1', title: 'private', fields: [] }] } }), requests);
+    const ops = createKernelOperations({ getRuntime: () => runtime(generation, endpoint), getHeaders: () => ({ authorization: 'Basic fixture' }) });
+    const result = await ops.listPendingQuestions({ directory: 'C:/work ü' });
+    expect(result).toMatchObject({ generation, epoch: 1, data: [{ id: 'input_1', sessionID: 'ses_1' }] });
+    expect(result.data[0]).not.toHaveProperty('title');
+    expect(result.data[0]).not.toHaveProperty('questions');
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ method: 'GET', path: generation === 'oc1' ? '/question' : '/api/form', headers: { authorization: 'Basic fixture' } });
+    if (generation === 'oc1') expect(requests[0].search.get('directory')).toBe('C:/work ü');
+    else { expect(requests[0].search.get('location[directory]')).toBe('C:/work ü');
+      expect(requests[0].headers['x-opencode-directory']).toBe(encodeURIComponent('C:/work ü')); }
+  });
+  it.each(['oc1', 'oc2'])('distinguishes empty, malformed and failed %s reads', async generation => {
+    let body = generation === 'oc1' ? [] : { data: [] };
+    let status = 200;
+    const endpoint = await serve(() => ({ body, status }));
+    const ops = createKernelOperations({ getRuntime: () => runtime(generation, endpoint), getHeaders: () => ({}) });
+    expect((await ops.listPendingQuestions()).data).toEqual([]);
+    body = generation === 'oc1' ? [{}] : { data: [{}] };
+    await expect(ops.listPendingQuestions()).rejects.toBeDefined();
+    status = 503;
+    await expect(ops.listPendingQuestions()).rejects.toBeDefined();
+  });
+  it('rejects retirement, Legacy and canceled reads', async () => {
+    let state;
+    const requests = [];
+    const endpoint = await serve(() => { state = runtime('oc2', endpoint, 2); return { body: { data: [] } }; }, requests);
+    state = runtime('oc2', endpoint);
+    const ops = createKernelOperations({ getRuntime: () => state, getHeaders: () => ({}) });
+    await expect(ops.listPendingQuestions()).rejects.toMatchObject({ code: 'runtime-changed' });
+    state = { ...runtime('oc1', endpoint), profile: 'legacy-1.2.27' };
+    await expect(ops.listPendingQuestions()).rejects.toMatchObject({ code: 'unsupported-operation' });
+    state = runtime('oc2', endpoint);
+    await expect(ops.listPendingQuestions({ signal: AbortSignal.abort() })).rejects.toBeDefined();
+    expect(requests).toHaveLength(1);
+  });
+});

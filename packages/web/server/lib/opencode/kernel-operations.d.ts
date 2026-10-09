@@ -95,6 +95,7 @@ export function createKernelOperations(dependencies: {
   listActiveStatuses(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ [sessionID: string]: { type: 'busy' | 'retry' | 'idle' } }>>;
   getSessionStatus(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ type: 'busy' | 'retry' | 'idle' }>>;
   listPendingPermissions(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<{ id: string; sessionID: string; directory?: string }>>>;
+  listPendingQuestions(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<{ id: string; sessionID: string }>>>;
   replyPermission(input: { requestID: string; sessionID: string; directory?: string; decision?: 'once' | 'always' | 'reject'; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean | void>>;
   getMessage(input: { sessionID: string; messageID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<LegacyMessageRecord | SessionMessageInfo>>;
   addSynthetic(input: { sessionID: string; directory?: string; text: string; resume?: boolean; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionMessageInfo>>;

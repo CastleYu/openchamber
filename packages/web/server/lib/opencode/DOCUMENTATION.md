@@ -778,3 +778,38 @@ Web and Electron own these machine values. Hosted and Capacitor mobile observe t
 ### Saved-target queue drain
 
 Confirmed saved-target restart now pauses and drains the owning message queue after target validation, before endpoint invalidation or owned-child cleanup. A drain timeout or persistence failure leaves the old process and readiness intact. The queue resumes after restart finishes or fails. Read the [queue contract](../message-queue/DOCUMENTATION.md#saved-target-restart-boundary) and its [Chinese archive](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md). Active-record writes remain gated; this does not authorize busy-session interruption or queue migration to another connection.
+
+### Activity inspection before active replacement
+
+GET /api/config/opencode-connection/activity returns authenticated, uncached
+inspection evidence. connection-activity.js owns aggregation; the host composes
+the current working directory, strict configured projects and queue directories.
+It uses kernel-operations.js rather than the event caches, which have no complete
+initial permission/question snapshot. OC1 question.list and OC2 form.list retain
+their SDK transport, directory, auth and abort behavior. The projected input
+records contain only request/session IDs, not questions, answers or form fields.
+
+The response reports active/inactive/transitioning host state, scope, busy,
+permissions, questions, queue and clients. Busy reads are global on OC2 and
+directory-scoped on OC1. Permission and input coverage is limited to the listed
+directories. Known counts are unique request/session IDs within that coverage.
+An empty directory set or a failed category/scope produces unknown with an
+observedCount, a lower bound from successful reads. Other complete categories
+remain available. Inactive/transitioning hosts leave upstream categories unknown.
+Clients always remain unknown until client identity and coordination are owned;
+event subscriptions do not establish a count of other users or tabs.
+
+The queue count is the owning runtime's loaded in-memory projection, including
+its revision and entered sends, not proof of durable target ownership. Queue
+loading retains its existing recovery behavior. A queue/settings read failure
+returns 503 activity_unavailable. Kernel retirement, transition/readiness changes
+or queue revision changes reject with 409 activity_changed. Unsupported profiles
+or runtimes return 501 unsupported_runtime. Responses omit endpoints, credentials,
+queued text and input payloads. The read does not start, stop or replace a target.
+
+Web and Electron share the host route. Hosted and Capacitor mobile inspect their
+selected host. VS Code explicitly returns 501 before generic upstream forwarding.
+This snapshot is not an authorization token and is not an atomic upstream
+transaction. Active connection-record writes remain 409. The confirmation UI,
+peer coordination and persistent original-target queue ownership must be completed
+before replacement can use this evidence. See the [Chinese archive](../../../../../docs/maintenance/zh-CN/CONNECTION-ACTIVITY.md).

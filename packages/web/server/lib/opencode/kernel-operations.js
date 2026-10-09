@@ -292,6 +292,19 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     return stamped(context, data);
   };
 
+  const listPendingQuestions = async ({ directory, signal } = {}) => {
+    const context = capture(directory);
+    const response = await (context.generation === GENERATION.OC1
+      ? context.client.question.list({ directory }, requestOptions(signal))
+      : context.client.form.list({ location: directory ? { directory } : undefined }, requestOptions(signal)));
+    check(context);
+    const schema = z.array(z.object({ id: z.string().min(1), sessionID: z.string().min(1) }));
+    const data = context.generation === GENERATION.OC1
+      ? schema.parse(requireData(response, schema, 'Pending questions'))
+      : schema.parse(response?.data);
+    return stamped(context, data);
+  };
+
   const replyPermission = async ({ requestID, sessionID, directory, decision = 'once', signal, expectedIdentity }) => {
     const context = capture(directory);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
@@ -547,6 +560,6 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
     listCommands, getSelectionCatalog, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
-    listPendingPermissions, replyPermission, getMessage, addSynthetic, switchSessionSelection,
+    listPendingPermissions, listPendingQuestions, replyPermission, getMessage, addSynthetic, switchSessionSelection,
   };
 };

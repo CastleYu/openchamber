@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: executable authoring calibration
+## Latest checkpoint: constrained declarative generation
+
+2026-10-09. Reviewed single-endpoint mappings can now supply strict declarative bindings. The generator binds recipes to the exact mapping digest, derives methods and routes from the reviewed catalog and refuses missing or extra bindings, unsafe keys, invalid scopes, mismatched placeholders and GET bodies. Request projections read input, including items from input lists; response projections preserve list order. Optional fields may be omitted. Semantic differences remain custom codec work. Generated sources still require protected semantic fixtures, persistent packet checks and independent host approval; all 22 capabilities remain unverified.
+
+Fourteen focused tests pass across generation, packet planning, preparation and standalone bundling. The actual offline journey generates a handler without hand-written code, checks it in a bounded Node process and finalizes the candidate outside the checkout without node_modules. Negative fixtures cover stale mappings, invalid projections, missing wire fields, unexpected status and transport failure. Six changed JavaScript files pass anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. No unrelated application build or real API check was run.
+
+The ignored output `artifacts/cagent-offline-declarative-handoff-20261009` contains eight commands and 83 protected files, including the declarative binding schema. Its actual bundled Node verifier passes the independently supplied digest `7126c3b5267e049fe5610bb895d7f06c178d0b75b1f281199953454ef1ee73e1`. Existing outputs are retained. English and Chinese generator instructions are synchronized.
+
+CA-01 remains in progress. CA-02 still needs documentation extraction, extension templates, real authoring-model trials and target permissions. Remaining host consumers and identity boundaries precede CA-03 real acceptance. Independent remote publication and temporary Release remain outstanding. Production capabilities stay closed. Live weekly quota is 62% remaining; other INT work stays after CA-03. Continue with the missing intake and host integration paths on the independent branch.
+
+## Earlier checkpoint: executable authoring calibration
 
 2026-10-09. Calibration now prepares frozen bilingual synthetic tasks and checks mapping, bounded codec and evidence-gap submissions through native persistent packet progress. Controlled submissions demonstrate bounded-codec, declarative-only and maintainer-assisted assignment. Five codec fixtures include transport failure; swallowed failures and out-of-scope files cannot earn codec admission. Trial identity mismatch and protected edits stop before candidate attempts. Reopening preserves the initial submission plus two corrections. No operation activation or runtime model-quality approval follows from calibration.
 

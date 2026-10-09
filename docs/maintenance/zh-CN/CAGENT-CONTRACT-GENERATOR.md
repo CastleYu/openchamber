@@ -10,7 +10,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 命令包包含八个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包提供可执行命令流程，仍未完成全部 CA-02 交付：文档提取、声明式代码生成、扩展模板、真实本地模型校准及目标权限尚待落实。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含受约束的声明式生成和可执行适配模型校准。文档提取、扩展模板、真实本地模型试验及目标权限仍属 CA-02 待办。
 
 最终组装读取保护注册表，以原生持久化修正上限重新检查每项注册任务，并将捕获且通过检查的字节一起打包。随后在新的有界子进程中，对组合适配器执行每项操作的保护夹具。多个工厂组合后的行为不一致会阻止发布。命令不将候选进度报告当作验收证据。
 
@@ -21,6 +21,24 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 ```
 
 Windows 应先设置进程环境变量 `CAGENT_TEST_NODE` 再运行 Bun。
+
+## 声明式结构生成
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/catalog.json --mapping /local/mapping.json --fixtures /local/fixtures.json --bindings /local/bindings.json --out /local/new-workspace --json
+```
+
+`--bindings` 为准备步骤加入确定性源代码生成。维护者先对照私有文档审阅绑定，再冻结它们。版本 1 绑定 `check-mapping --json` 返回的 `coverage.digest`。准确包含标为 `codec: declarative` 的操作；custom 操作保留拒绝执行的桩。每个生成操作只映射一个目录端点。生成要求为全部 mapping-ready 操作提供完整保护夹具，将每份配方写入保护区 `<operation>/bindings.json`，将候选标为 awaiting-validation。不执行候选或 API，也不授予支持。
+
+离线包提供 `schemas/declarative-bindings.json`。结构 schema 不能表达跨文档一致性、投影深度上限和全部运行时细化约束；准备命令仍是权威校验器。下面是目录路由 `/records/{record}` 的合成配方，不是 CAgent 端点。将摘要替换为实际核查过的映射摘要。
+
+```json
+{"version":1,"mappingDigest":"<coverage.digest>","operations":{"getSession":{"endpointID":"read","successStatuses":[200],"path":{"record":{"kind":"field","from":"input","path":["sessionID"]}},"query":{"space":{"kind":"field","from":"input","path":["workspaceID"]}},"result":{"kind":"object","fields":{"id":{"kind":"field","from":"response","path":["body","record"]},"workspaceID":{"kind":"field","from":"input","path":["workspaceID"]},"title":{"kind":"field","from":"response","path":["body","label"],"optional":true}}}}}}
+```
+
+有限投影节点为 `field`、基础类型 `literal`、`object` 和 `list`。字段使用 input 或 response 的自身属性路径；列表项加入 `item` 作用域。结果列表保留顺序，可选字段缺失时省略，不填默认值。请求字段读取 input 或来自输入列表的元素。路径／查询值须为字符串、数字或布尔值，查询值转为字符串。路径占位符要求精确绑定，编码参数，并在传输前拒绝空值、点路径或斜线段。拒绝 GET 请求体。identity／control 和传输失败原样保留。仅明确列出的成功 2xx 状态进入结果投影，其他状态返回 backend-failed；文档要求不同 HTTP 错误分类时使用 custom codec。
+
+每棵投影树最多八层、256 个节点。未知节点、可执行表达式、不安全属性键、未绑定占位符、过期／缺失／额外绑定及依赖响应的请求，都在准备阶段被拒绝。等价对象键顺序产生相同源代码。生成器不在候选源码中使用 eval、导入或直接联网。它不提供枚举转换、语义强制转换、多调用编排或语义推断；需要这些能力时使用受限 custom codec。受保护夹具及实际宿主／真实验收仍负责判断语义、作用域及可用性。
 
 ## 适配模型校准
 

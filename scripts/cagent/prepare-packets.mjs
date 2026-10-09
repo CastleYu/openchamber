@@ -6,6 +6,7 @@ import { buildPacketPlan, PacketPlanError, PACKET_PLAN } from './packet-plan.mjs
 import { MappingError } from './mapping-intake.mjs';
 import { readLocalJSON } from './read-input.mjs';
 import { AGENT_FILE_ERROR, AGENT_FILE_MODE, AGENT_PACKET_STORAGE } from '../../packages/web/server/lib/agent/constants.js';
+import { DeclarativeError } from './declarative-codec.mjs';
 
 export const PREPARE_COMMAND = Object.freeze({
   JSON: '--json', INVALID: 'invalid-arguments', INPUT: 'mapping-input-unavailable', FAILED: 'packet-preparation-failed',
@@ -62,7 +63,7 @@ export async function runPrepareCommand(args, output) {
   let values;
   try {
     ({ values } = parseArgs({ args, options: {
-      catalog: { type: 'string' }, mapping: { type: 'string' }, out: { type: 'string' }, fixtures: { type: 'string' },
+      catalog: { type: 'string' }, mapping: { type: 'string' }, out: { type: 'string' }, fixtures: { type: 'string' }, bindings: { type: 'string' },
       json: { type: 'boolean' }, quiet: { type: 'boolean' },
     }, allowPositionals: false }));
     if (!values.catalog || !values.mapping || !values.out) return fail(PREPARE_COMMAND.INVALID);
@@ -71,7 +72,7 @@ export async function runPrepareCommand(args, output) {
   }
   let sources;
   try { sources = await Promise.all([readLocalJSON(values.catalog), readLocalJSON(values.mapping),
-    values.fixtures ? readLocalJSON(values.fixtures) : undefined]); }
+    values.fixtures ? readLocalJSON(values.fixtures) : undefined, values.bindings ? readLocalJSON(values.bindings) : undefined]); }
   catch { return fail(PREPARE_COMMAND.INPUT); }
   try {
     const plan = buildPacketPlan(...sources);
@@ -82,7 +83,7 @@ export async function runPrepareCommand(args, output) {
     return 0;
   } catch (error) {
     if (error instanceof MappingError) return fail(error.code, error.details);
-    if (error instanceof PacketPlanError || error instanceof PreparationError) return fail(error.code);
+    if (error instanceof PacketPlanError || error instanceof PreparationError || error instanceof DeclarativeError) return fail(error.code);
     return fail(PREPARE_COMMAND.FAILED);
   }
 }

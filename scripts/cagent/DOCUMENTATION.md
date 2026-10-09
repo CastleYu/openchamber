@@ -10,7 +10,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 The bundle includes eight standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run calibration, mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
 
-Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle contains the executable command workflow, not the complete CA-02 deliverable: document extraction, declarative code generation, extension templates, actual local-model calibration and target permissions still remain.
+Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle includes constrained declarative generation and executable authoring calibration. Document extraction, extension templates, actual local-model trials and target permissions remain CA-02 work.
 
 Finalization reads the protected registration, rechecks every registered packet using native persistent correction limits, and bundles captured passing bytes together. It then executes each operation's protected fixtures against that combined adapter in fresh bounded child processes. A combined-factory mismatch stops publication. The command never treats a candidate's progress report as acceptance evidence.
 
@@ -21,6 +21,24 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 ```
 
 On Windows set `CAGENT_TEST_NODE` as a process environment variable before running Bun.
+
+## Declarative structural generation
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/catalog.json --mapping /local/mapping.json --fixtures /local/fixtures.json --bindings /local/bindings.json --out /local/new-workspace --json
+```
+
+`--bindings` adds deterministic source generation to preparation. The owner reviews bindings against the private documentation before freezing them. Bind version 1 to `coverage.digest` from `check-mapping --json`. Include exactly the operations marked `codec: declarative`; custom operations keep refusal stubs. Each generated operation must map one catalog endpoint. Generation requires the complete protected fixtures for all mapping-ready operations, writes each recipe into protected `<operation>/bindings.json`, and marks the candidate awaiting-validation. It runs no candidate or API call and grants no support.
+
+The bundle provides `schemas/declarative-bindings.json`. This structural schema does not encode cross-document matching, projection-depth limits or all runtime refinements; preparation remains the authoritative validator. The following is a synthetic recipe for a catalog route `/records/{record}`, not a CAgent endpoint. Replace the digest with the actual checked mapping digest.
+
+```json
+{"version":1,"mappingDigest":"<coverage.digest>","operations":{"getSession":{"endpointID":"read","successStatuses":[200],"path":{"record":{"kind":"field","from":"input","path":["sessionID"]}},"query":{"space":{"kind":"field","from":"input","path":["workspaceID"]}},"result":{"kind":"object","fields":{"id":{"kind":"field","from":"response","path":["body","record"]},"workspaceID":{"kind":"field","from":"input","path":["workspaceID"]},"title":{"kind":"field","from":"response","path":["body","label"],"optional":true}}}}}}
+```
+
+The finite projection nodes are `field`, primitive `literal`, `object` and `list`. Fields use own-property paths from input or response; list items add an `item` scope. Result lists preserve order; optional absent fields are omitted without defaults. Request fields read input or items from input-derived lists. Path/query values are scalar strings, numbers or booleans; query values serialize to strings. Path placeholders require exact bindings, encode values and refuse empty, dot or slash segments before transport. GET bodies are rejected. Identity/control and transport failures pass through unchanged. Only explicitly listed successful 2xx statuses reach result projection; other statuses produce backend-failed. Documentation requiring distinct HTTP-error classification uses a custom codec.
+
+Projection nesting is at most eight nodes with at most 256 nodes per tree. Unknown node kinds, executable expressions, unsafe property keys, unbound placeholders, stale/missing/extra bindings and response-dependent requests fail preparation. Equivalent object key ordering produces identical source. The generator uses no eval, imports or direct networking in candidate source. It supplies no enum conversion, semantic coercion, multi-call orchestration or semantic inference. Use a bounded custom codec when those are required. Protected fixtures and actual host/live acceptance still decide semantics, scope and availability.
 
 ## Authoring-model calibration
 

@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { runBundleKit } from './bundle-kit.mjs';
 import { runVerifyKit } from './verify-kit.mjs';
-import { catalogDigest } from './mapping-intake.mjs';
+import { catalogDigest, compileMapping } from './mapping-intake.mjs';
 import { AGENT_OPERATION } from '../../packages/web/server/lib/agent/constants.js';
 
 test('existing output and invalid flags fail without overwriting files', async () => {
@@ -42,24 +42,28 @@ test('standalone bundle runs outside checkout without installed dependencies and
     };
     assert.equal(run(node, 'verify-kit', ['--kit', kit, '--digest', built.digest]).ok, true);
     assert.equal(run(node, 'build-contracts', ['--check']).ok, true);
+    assert.ok(JSON.parse(await fs.readFile(path.join(protectedRoot, 'schemas/declarative-bindings.json'), 'utf8')).properties.operations);
     const citations = [{ document: 'guide', section: 'read' }];
     const catalog = { version: 1, revision: 'r1', documents: [{ id: 'guide', revision: 'r1', digest: 'a'.repeat(64), sections: ['read'] }],
       endpoints: [{ id: 'read', method: 'GET', path: '/fixture/session', requestRef: 'input', responseRef: 'output', effect: 'read', citations }] };
     const mapping = { version: 1, catalogRevision: 'r1', catalogDigest: catalogDigest(catalog),
       operations: Object.fromEntries(Object.values(AGENT_OPERATION).map((operation) => [operation, operation === 'getSession'
-        ? { kind: 'mapping', endpointIDs: ['read'], codec: 'custom', evidence: Object.fromEntries(['transport', 'auth', 'scope', 'result', 'failure', 'completion', 'cancellation'].map((key) => [key, citations])) }
+        ? { kind: 'mapping', endpointIDs: ['read'], codec: 'declarative', evidence: Object.fromEntries(['transport', 'auth', 'scope', 'result', 'failure', 'completion', 'cancellation'].map((key) => [key, citations])) }
         : { kind: 'unverified', question: 'Review locally' }])), endpoints: { read: { kind: 'shared', operations: ['getSession'] } } };
     const fixtures = { getSession: { version: 1, operation: 'getSession', cases: [{ id: 'scope', input: { workspaceID: 'space', sessionID: 'session' },
       identity: { family: 'cagent', connectionID: 'fixture', epoch: 1, adapterRevision: 'a', capabilityRevision: 'c' },
       exchanges: [{ request: { method: 'GET', path: '/fixture/session' }, outcome: { kind: 'response', response: { status: 200, body: { id: 'session', workspaceID: 'space' } } } }],
       expected: { kind: 'result', result: { id: 'session', workspaceID: 'space' } } }] } };
-    for (const [name, value] of Object.entries({ catalog, mapping, fixtures })) await fs.writeFile(path.join(root, `${name}.json`), JSON.stringify(value));
+    const bindings = { version: 1, mappingDigest: compileMapping(catalog, mapping).digest, operations: { getSession: {
+      endpointID: 'read', successStatuses: [200], path: {}, result: { kind: 'field', from: 'response', path: ['body'] },
+    } } };
+    for (const [name, value] of Object.entries({ catalog, mapping, fixtures, bindings })) await fs.writeFile(path.join(root, `${name}.json`), JSON.stringify(value));
     const inputs = ['--catalog', path.join(root, 'catalog.json'), '--mapping', path.join(root, 'mapping.json')];
     assert.equal(run(node, 'check-mapping', inputs).ok, true);
     const workspace = path.join(root, 'workspace');
-    const prepared = run(node, 'prepare-packets', [...inputs, '--fixtures', path.join(root, 'fixtures.json'), '--out', workspace]);
-    await fs.writeFile(path.join(workspace, 'candidate/getSession/handler.mjs'),
-      'export function createOperation(context) { return async (input,identity,control) => (await context.request({method:"GET",path:"/fixture/session"},identity,control)).body; }');
+    const prepared = run(node, 'prepare-packets', [...inputs, '--fixtures', path.join(root, 'fixtures.json'),
+      '--bindings', path.join(root, 'bindings.json'), '--out', workspace]);
+    assert.equal(JSON.parse(await fs.readFile(path.join(workspace, 'protected/getSession/packet.json'), 'utf8')).status, 'awaiting-validation');
     assert.equal(run(process.execPath, 'check-packet', ['--workspace', workspace, '--operation', 'getSession', '--node', node, '--kit-digest', prepared.digest]).ok, true);
     const artifact = run(process.execPath, 'finalize-adapter', ['--workspace', workspace, '--node', node, '--kit-digest', prepared.digest, '--out', path.join(root, 'artifact')]);
     assert.equal(artifact.ok, true);

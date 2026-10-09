@@ -6,13 +6,14 @@ import { buildContractPages, CONTRACT_REFERENCE } from './contract-pages.mjs';
 import { OPERATION_REFERENCE } from './operation-reference.mjs';
 import { z } from 'zod';
 import { createFixtureChecks, FIXTURE, FixtureError } from './fixture-checks.mjs';
+import { compileBindings, DeclarativeError, DECLARATIVE } from './declarative-codec.mjs';
 
 export const PACKET_PLAN = Object.freeze({
   VERSION: 1,
   ERROR: Object.freeze({ INVALID: 'invalid-packet-plan', NO_READY: 'no-ready-operations' }),
   DIRECTORY: Object.freeze({ PROTECTED: 'protected', CANDIDATE: 'candidate', CONTROL: 'control' }),
   FILE: Object.freeze({ REGISTRATION: 'registration.json', MANIFEST: 'manifest.json', COVERAGE: 'coverage.json', PACKET: 'packet.json', MAPPING: 'mapping.json', SCHEMA: 'schema.json', REFERENCE_EN: 'reference.en.md', REFERENCE_ZH: 'reference.zh-CN.md', HANDLER: 'handler.mjs', FIXTURES: 'fixtures.json' }),
-  CHECK: Object.freeze({ SCOPE: 'syntax-only', SEMANTIC: 'semantic-fixtures', STATUS: 'awaiting-implementation' }),
+  CHECK: Object.freeze({ SCOPE: 'syntax-only', SEMANTIC: 'semantic-fixtures', STATUS: 'awaiting-implementation', GENERATED: 'awaiting-validation' }),
 });
 
 export class PacketPlanError extends Error {
@@ -49,11 +50,13 @@ const operationFiles = (operation, contractFiles) => {
 };
 
 /** Builds review packets and an immutable protected snapshot description; it never writes or executes candidates. */
-export function buildPacketPlan(catalogInput, mappingInput, fixtureInput) {
+export function buildPacketPlan(catalogInput, mappingInput, fixtureInput, bindingInput) {
   try {
     const coverage = compileMapping(catalogInput, mappingInput);
     const catalog = MAPPING_CATALOG_SCHEMA.parse(catalogInput);
     const mapping = MAPPING_SCHEMA.parse(mappingInput);
+    if (bindingInput !== undefined && fixtureInput === undefined) throw new PacketPlanError(FIXTURE.INVALID);
+    const generated = bindingInput === undefined ? null : compileBindings(catalogInput, mappingInput, bindingInput);
     const contract = buildContractPages();
     const ready = Object.values(AGENT_OPERATION).filter((operation) =>
       mapping.operations[operation].kind === MAPPING.OPERATION_KIND.MAPPING && coverage.operations[operation] === MAPPING.STATE.READY);
@@ -85,13 +88,15 @@ export function buildPacketPlan(catalogInput, mappingInput, fixtureInput) {
         checkCommand: definition
           ? ['bun', 'scripts/cagent/check-packet.mjs', '--workspace', '<workspace>', '--operation', operation, '--node', '<node>', '--kit-digest', '<protected-digest>', '--json']
           : ['node', '--check', `${candidate}/${PACKET_PLAN.FILE.HANDLER}`],
-        checkScope: definition ? PACKET_PLAN.CHECK.SEMANTIC : PACKET_PLAN.CHECK.SCOPE, status: PACKET_PLAN.CHECK.STATUS,
+        checkScope: definition ? PACKET_PLAN.CHECK.SEMANTIC : PACKET_PLAN.CHECK.SCOPE,
+        status: generated?.sources.has(operation) ? PACKET_PLAN.CHECK.GENERATED : PACKET_PLAN.CHECK.STATUS,
         maxCorrections: AGENT_PACKET.MAX_CORRECTIONS,
         mappingDigest: coverage.digest, referenceDigest: contract.digest,
       });
       const local = operationFiles(operation, contract.files);
       const base = `${PACKET_PLAN.DIRECTORY.PROTECTED}/${operation}`;
-      files.set(`${candidate}/${PACKET_PLAN.FILE.HANDLER}`, handler(operation));
+      files.set(`${candidate}/${PACKET_PLAN.FILE.HANDLER}`, generated?.sources.get(operation) ?? handler(operation));
+      if (generated?.sources.has(operation)) files.set(`${base}/${DECLARATIVE.FILE}`, json(generated.bindings.operations[operation]));
       files.set(`${base}/${PACKET_PLAN.FILE.PACKET}`, json(packet));
       files.set(`${base}/${PACKET_PLAN.FILE.MAPPING}`, json({ operation, row, endpoints, documents }));
       files.set(`${base}/${PACKET_PLAN.FILE.SCHEMA}`, local.schema);
@@ -112,7 +117,7 @@ export function buildPacketPlan(catalogInput, mappingInput, fixtureInput) {
     return freeze({ version: PACKET_PLAN.VERSION, digest: artifactDigest, coverage, packets, files });
   } catch (error) {
     if (error instanceof FixtureError) throw new PacketPlanError(FIXTURE.INVALID);
-    if (error instanceof PacketPlanError || error instanceof MappingError) throw error;
+    if (error instanceof PacketPlanError || error instanceof MappingError || error instanceof DeclarativeError) throw error;
     throw new PacketPlanError(PACKET_PLAN.ERROR.INVALID);
   }
 }

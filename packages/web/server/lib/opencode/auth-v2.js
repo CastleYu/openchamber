@@ -116,7 +116,7 @@ const coalesce = () => {
     const current = source;
     if (!current) return Promise.reject(new Error('OpenCode is not connected yet'));
     const identity = current.identity?.();
-    const key = `${identity?.generation ?? 'oc2'}:${identity?.endpoint ?? ''}:${identity?.epoch ?? ''}`;
+    const key = `${identity?.generation ?? 'oc2'}:${identity?.profile ?? ''}:${identity?.endpoint ?? ''}:${identity?.epoch ?? ''}`;
     if (pending.has(key)) return pending.get(key);
     const run = read(current).finally(() => { if (pending.get(key) === run) pending.delete(key); });
     pending.set(key, run);

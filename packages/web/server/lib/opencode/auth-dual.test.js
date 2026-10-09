@@ -2,9 +2,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { configureOpenCodeCredentials, getProviderAuth, readOpenCodeCredentials } from './auth.js';
+import { configureOpenCodeCredentials, getProviderAuth, readOpenCodeCredentials, readAuthFile, writeAuthFile, getOpenCodeCredentialGeneration } from './auth.js';
+import { OPENCODE_PROFILE } from './compatibility.js';
+import { AGENT_ERROR } from '../agent/constants.js';
 
 describe('dual OC2 credential owner', () => {
   let directory;
@@ -26,6 +28,7 @@ describe('dual OC2 credential owner', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     configureOpenCodeCredentials(() => ({ generation: 'oc1' }), null);
     if (previousDb === undefined) delete process.env.OPENCODE_DB;
     else process.env.OPENCODE_DB = previousDb;
@@ -58,4 +61,56 @@ describe('dual OC2 credential owner', () => {
     finish([]);
     await expect(pending).rejects.toThrow('runtime changed');
   });
+  it.each(['oc1', 'oc2'])('refuses Legacy %s credentials before filesystem or API access', async generation => {
+    identity = { generation, profile: OPENCODE_PROFILE.LEGACY, version: '1.2.27' };
+    const exists = vi.spyOn(fs, 'existsSync');
+    let calls = 0;
+    configureOpenCodeCredentials(() => identity, { list: async () => { calls++; return []; } });
+    await expect(readOpenCodeCredentials()).rejects.toMatchObject({ statusCode: 501, code: AGENT_ERROR.UNACCEPTED });
+    await expect(getProviderAuth('openai')).rejects.toMatchObject({ statusCode: 501, code: AGENT_ERROR.UNACCEPTED });
+    expect(() => readAuthFile()).toThrow('Legacy credential access');
+    expect(() => writeAuthFile({})).toThrow('Legacy credential access');
+    expect(() => getOpenCodeCredentialGeneration()).toThrow('Legacy credential access');
+    expect(exists).not.toHaveBeenCalled();
+    expect(calls).toBe(0);
+  });
+
+  it.each(['all', 'provider'])('rejects late %s credentials after a profile-only change', async (kind) => {
+    identity = { ...identity, version: '2.0.20', profile: OPENCODE_PROFILE.OC2 };
+    let finish;
+    configureOpenCodeCredentials(() => identity, { identity: () => identity,
+      list: () => new Promise(resolve => { finish = resolve; }) });
+    const pending = kind === 'all' ? readOpenCodeCredentials() : getProviderAuth('openai');
+    await Promise.resolve();
+    identity = { ...identity, profile: OPENCODE_PROFILE.LEGACY };
+    finish([]);
+    await expect(pending).rejects.toThrow('runtime changed');
+  });
+
+  it('does not coalesce a new profile onto an old credential request', async () => {
+    identity = { ...identity, version: '2.0.20' };
+    const finishes = [];
+    configureOpenCodeCredentials(() => identity, { identity: () => identity,
+      list: () => new Promise(resolve => { finishes.push(resolve); }) });
+    const before = readOpenCodeCredentials();
+    const rejected = expect(before).rejects.toThrow('runtime changed');
+    await Promise.resolve();
+    identity = { ...identity, profile: OPENCODE_PROFILE.OC2 };
+    const after = readOpenCodeCredentials();
+    expect(finishes).toHaveLength(2);
+    finishes[0]([]);
+    finishes[1]([{ integrationID: 'openai', active: true, value: { type: 'key', key: 'current-key' } }]);
+    await rejected;
+    await expect(after).resolves.toEqual({ openai: { type: 'api', key: 'current-key' } });
+  });
+
+  it('preserves ordinary OC1 file credential reads', async () => {
+    identity = { generation: 'oc1', profile: OPENCODE_PROFILE.OC1 };
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ openai: { type: 'api', key: 'fixture-key' } }));
+    await expect(readOpenCodeCredentials()).resolves.toEqual({ openai: { type: 'api', key: 'fixture-key' } });
+    await expect(getProviderAuth('openai')).resolves.toEqual({ type: 'api', key: 'fixture-key' });
+    expect(getOpenCodeCredentialGeneration()).toBe('oc1');
+  });
+
 });

@@ -3,12 +3,20 @@ import path from 'path';
 import os from 'os';
 import { configureOpenCodeCredentials as configureV2Credentials, getProviderAuth as getV2ProviderAuth, openCodeCredentialSource, readOpenCodeCredentials as readV2Credentials } from './auth-v2.js';
 import { getProviderAuth as getLegacyV2ProviderAuth, readAuthFile as readLegacyV2Credentials } from './auth-v2-legacy.js';
-import { isSupportedOpenCodeVersion, supportsCredentialApi } from './compatibility.js';
+import { OPENCODE_PROFILE, isSupportedOpenCodeVersion, supportsCredentialApi } from './compatibility.js';
+
+import { AGENT_ERROR } from '../agent/constants.js';
 
 let getRuntime = () => ({ generation: 'oc1' });
 
 export { openCodeCredentialSource };
-export const getOpenCodeCredentialGeneration = () => getRuntime().generation;
+const assertProfile = (runtime = getRuntime()) => {
+  if (runtime.profile === OPENCODE_PROFILE.LEGACY) {
+    throw Object.assign(new Error('Legacy credential access is not accepted'), { statusCode: 501, code: AGENT_ERROR.UNACCEPTED });
+  }
+  return runtime;
+};
+export const getOpenCodeCredentialGeneration = () => assertProfile().generation;
 
 export function configureOpenCodeCredentials(runtime, source) {
   getRuntime = runtime;
@@ -17,7 +25,7 @@ export function configureOpenCodeCredentials(runtime, source) {
 
 /** Read the active kernel's credentials without letting OC2 use the OC1 file. */
 export async function readOpenCodeCredentials() {
-  const selected = getRuntime();
+  const selected = assertProfile();
   if (selected.generation === 'oc1') return readAuthFile();
   if (selected.generation !== 'oc2') throw new Error('OpenCode generation is not ready');
   if (!selected.version || !isSupportedOpenCodeVersion(selected.version)) throw new Error('OpenCode version is not known for credential access');
@@ -25,7 +33,7 @@ export async function readOpenCodeCredentials() {
     ? await readV2Credentials()
     : readLegacyV2Credentials();
   const current = getRuntime();
-  if (current.generation !== selected.generation || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+  if (current.generation !== selected.generation || current.profile !== selected.profile || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
     throw new Error('OpenCode runtime changed during credential read');
   }
   return credentials;
@@ -35,6 +43,7 @@ const OPENCODE_DATA_DIR = path.join(os.homedir(), '.local', 'share', 'opencode')
 const AUTH_FILE = path.join(OPENCODE_DATA_DIR, 'auth.json');
 
 function readAuthFile() {
+  assertProfile();
   if (!fs.existsSync(AUTH_FILE)) {
     return {};
   }
@@ -52,6 +61,7 @@ function readAuthFile() {
 }
 
 function writeAuthFile(auth) {
+  assertProfile();
   try {
     if (!fs.existsSync(OPENCODE_DATA_DIR)) {
       fs.mkdirSync(OPENCODE_DATA_DIR, { recursive: true, mode: 0o700 });
@@ -93,7 +103,7 @@ function removeProviderAuth(providerId) {
 }
 
 async function getProviderAuth(providerId) {
-  const selected = getRuntime();
+  const selected = assertProfile();
   if (selected.generation === 'oc1') return readAuthFile()[providerId] || null;
   if (selected.generation !== 'oc2' || !selected.version || !isSupportedOpenCodeVersion(selected.version)) {
     throw new Error('OpenCode version is not known for credential access');
@@ -102,7 +112,7 @@ async function getProviderAuth(providerId) {
     ? await getV2ProviderAuth(providerId)
     : getLegacyV2ProviderAuth(providerId);
   const current = getRuntime();
-  if (current.generation !== selected.generation || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+  if (current.generation !== selected.generation || current.profile !== selected.profile || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
     throw new Error('OpenCode runtime changed during credential read');
   }
   return auth;

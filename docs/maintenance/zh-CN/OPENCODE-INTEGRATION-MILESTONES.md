@@ -225,3 +225,7 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 2026-10-09 验证：安装器、Skill 路由及 family 三个文件共 65 项测试通过。九项安装测试采用本地 Git 样本和真实文件复制，远端重写仅作用于测试子进程，并定点注入复制/重命名失败。覆盖替换、取消暂存、跳过策略、部分进度、恢复失败，以及真实路由的 HTTP 409 进度响应。工作区类型检查/lint 和 Web 构建通过；lint 保留五条既有警告。Oxlint 与 HEAD 的 34 条既有诊断按规则一致；dead-code 仍为 2 个文件、319 项导出及 231 个类型。未新增依赖。INT-01 继续进行中，CA-02 Release 未改变。
 
 暂存目录现已移出递归扫描的 Skill 集合。真实复制测试确认提交前扫描仍只发现原 Skill。若集合位于独立挂载文件系统，重命名可能失败，此时保留原文件并报告跳过安装。
+
+基于 ed3fa2b21 的凭据检查点：尚未验收的 Legacy 凭据读取、原始认证文件写入及 generation 查询，在文件系统/API 访问前拒绝。OC2 迟到读取的身份比较加入 profile，并发请求合并也按 profile 区分。原 OC1 文件读取及两种 OC2 凭据来源保留既有行为。共享读取覆盖 Web/Electron 和 VS Code；VS Code 独立文件写入、后台直接客户端入口及生产模式选择启用仍待处理。INT-01 继续进行中，CA-02 Release 未改变。2026-10-09 验证：三个凭据文件共 24 项测试通过。工作区类型检查/lint 通过，保留五条既有 lint 警告。Anti-slop 保留一条既有 no-runtime-typeof 诊断，没有新增。
+
+VS Code 扩展与 webview 构建通过；保留既有 credential-db CJS import.meta、CSS highlight、浏览器 url 外置及包体积警告。不宣称扩展宿主运行验收通过。Dead-code 仍为 2 个文件、319 项导出和 231 个类型。

@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: candidate packet preparation
+## Latest checkpoint: protected semantic checks and single-file assembly
+
+2026-10-09. CA-01 remains in progress. CA-02 now has a strict host-owned fixture engine and in-memory single-file adapter assembler. Fixture checks compare ordered requests, identity, abort control and exact neutral results or expected failures. Candidate sources are captured by the existing packet runner. Assembly uses actual Bun bundling, preserves fresh factory state and declares all 22 capabilities unverified. It grants no approval or activation.
+
+Four Node fixture tests and five Bun assembly/workspace tests pass. The combination uses actual filesystem snapshots and native persisted progress: a missing-request candidate fails, the corrected candidate passes, reconstruction resumes, the three-failure ceiling survives and protected fixture tampering is refused. The actual artifact loader loads the resulting single-file adapter. Primary review replaced source-text export matching with syntax parsing, addressed Bun 1.3.14 omitting require-call from its scan, and verified asynchronous factories and comments. Changed JavaScript passes anti-slop and ESLint. No runtime behavior or application dependency manifest changes.
+
+The fixture loading port still executes candidate code in-process. Process isolation and time limits must precede environment-local execution. Frozen executable kit composition, fixture/document intake, extension packets and model calibration remain CA-02 work. Real target and host acceptance remain CA-03. Independent publication and temporary Release remain pending; other INT work stays after CA-03. Live weekly allowance remains 64%; no reset credit was used. See the [checks and assembly guide](../../scripts/cagent/DOCUMENTATION.md#protected-fixture-checks-and-adapter-assembly).
+
+Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no new CAgent tool row. Documentation whitespace checks pass. This checkpoint does not rerun unrelated application builds or live API checks.
+
+## Previous checkpoint: candidate packet preparation
 
 2026-10-09. CA-01 remains in progress. The CA-02 preparation component now creates fresh operation-sized candidate workspaces from reviewed mappings. Fixed protected definitions contain scoped mapping metadata, schema and paired references. Registration keeps all capabilities unverified. Refusal stubs expose one operation factory and no inferred transport calls. The protected manifest is outside its verified tree and published last; existing work is never overwritten.
 

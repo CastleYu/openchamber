@@ -1,5 +1,22 @@
 # CAgent contract reference generator
 
+## Protected fixture checks and adapter assembly
+
+`fixture-checks.mjs` validates a host-owned version-1 fixture definition with an operation ID and unique cases. Each case supplies canonical input, identity, ordered request/response or transport-failure exchanges, and an expected neutral result or fixed failure. It checks input/output with the application's runtime parsers before execution. The host supplies the factory-loading port; this port receives captured candidate sources from the packet runner.
+
+Each check creates a fresh handler and compares every transport request, identity and forwarded abort signal. Wrong or extra requests remain a failure even when the candidate catches the exception. Every expected exchange must be consumed. Matching schemas alone cannot pass a cross-scope result because the expected projection is also compared exactly. A documented backend failure must stay a failure. Fixture construction/loading failures are setup errors, not a failed operation's semantic evidence. Case IDs are local owner-reviewed report identifiers.
+
+`adapter-assembly.mjs` uses the installed Bun builder and TypeScript parser to bundle captured single-file operation modules in memory. It reads no candidate paths and executes no candidate factories while building. Source count/bytes use packet limits, duplicate and unknown operations fail, and input order is canonicalized. Each module must export only `createOperation`; parsed imports and `require`/`eval` identifiers are refused. The bundler resolves only its generated virtual module inventory. Comments are parsed as comments. This dependency restriction is not a JavaScript sandbox and cannot establish that arbitrary candidate code is safe.
+
+The output contains one asynchronous `createAdapter` factory that creates fresh handlers and keeps all capabilities unverified. It can be loaded through the existing artifact loader after the host creates an exact artifact manifest. Assembly returns source bytes and a digest, without changing runtime selection, evidence or approval.
+
+```sh
+node --test scripts/cagent/fixture-checks.test.mjs
+bun test scripts/cagent/adapter-assembly.test.mjs scripts/cagent/fixture-workspace.test.mjs
+```
+
+The combination test uses actual temporary files, bundling, protected snapshot verification and native checkpoint persistence. It fails a candidate returning plausible data without a request, accepts the corrected projection, resumes from disk, preserves the three-failure ceiling and refuses protected fixture tampering. These synthetic tests do not prove the real CAgent API. The complete kit still needs isolated execution with time/process limits, fixture/document intake commands, frozen executable host composition, extension templates, calibration and live acceptance. A candidate can otherwise hang or access process globals; run it only in the intended isolated check environment.
+
 ## Candidate packet preparation
 
 ```sh

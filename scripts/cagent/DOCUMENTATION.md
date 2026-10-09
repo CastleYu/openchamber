@@ -8,9 +8,9 @@ node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit
 bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
 ```
 
-The bundle includes eight standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run calibration, mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
+The bundle includes nine standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run OpenAPI import, calibration, mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
 
-Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle includes reviewed source-section extraction, constrained declarative generation and executable authoring calibration. Automatic endpoint inventory, extension templates, actual local-model trials and target permissions remain CA-02 work.
+Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle includes reviewed source-section extraction, constrained declarative generation and executable authoring calibration. Extension templates, actual local-model trials and target permissions remain CA-02 work.
 
 Finalization reads the protected registration, rechecks every registered packet using native persistent correction limits, and bundles captured passing bytes together. It then executes each operation's protected fixtures against that combined adapter in fresh bounded child processes. A combined-factory mismatch stops publication. The command never treats a candidate's progress report as acceptance evidence.
 
@@ -22,6 +22,18 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 
 On Windows set `CAGENT_TEST_NODE` as a process environment variable before running Bun.
 
+## OpenAPI structural inventory
+
+```sh
+node scripts/cagent/import-openapi.mjs --source /local/source.json --review /local/review.json --out /local/new-intake --json
+```
+
+`schemas/openapi-source.json` describes the version-1 source record with `id`, `revision` and exact OpenAPI JSON in `text`. `schemas/openapi-review.json` describes the owner record with catalog `revision`, `endpoints` keyed by each documented `operationId`, and additional section locators. Each endpoint review supplies `effect`, `requestRef` and `responseRef`. For example, a reviewed row can be `{"read":{"effect":"read","requestRef":"read-input","responseRef":"read-output"}}`. These references name owner-reviewed contract definitions; they do not infer request or result semantics from examples.
+
+The importer reads methods and paths from OpenAPI 3.0/3.1 `paths`, retaining operation IDs and source digest. Every path operation requires exactly one owner row. Effects are explicit even for GET. Missing/duplicate IDs, missing/extra review rows, unsupported HTTP methods, path references, callbacks and webhooks are refused. Such documents require a complete manually reviewed catalog or focused host work. YAML conversion and full OpenAPI specification validation are outside this importer. Nested schema references remain literal source evidence. Add needed auth, shared parameter, error and definition sections through the owner section locators before mapping their semantics.
+
+Fresh output contains `catalog.json`, `documents.json` and a final `report.json`; existing output is preserved. A write failure leaves an incomplete directory with a fixed error. Source is kept local and never included in console output. The imported catalog and documents feed `check-mapping` and `prepare-packets --documents`; owner-reviewed mapping, protected fixtures and live acceptance remain required. Importing neither calls an API nor grants support.
+
 ## Reviewed API excerpts
 
 Add `--documents /local/documents.json` to preparation to freeze relevant API source alongside each operation. The bundle supplies `schemas/document-excerpts.json`. The owner supplies source text and selected locators, checks the resulting meaning and binds the catalog document digest to SHA-256 of the exact UTF-8 text, including line endings. Source text is evidence data, not instructions for the authoring agent. Keep credentials and personal samples out of it. Reports contain fixed outcomes and digests, never raw source.
@@ -30,7 +42,7 @@ Add `--documents /local/documents.json` to preparation to freeze relevant API so
 {"version":1,"documents":[{"id":"guide","revision":"r1","format":"text","text":"Title\nSynthetic request and result facts.","sections":[{"id":"read","fromLine":2,"toLine":2}]}]}
 ```
 
-Text ranges are inclusive and one-based; extracted line endings normalize to LF. For OpenAPI 3.0/3.1 JSON, use `format: openapi-json` and section locators such as `{"id":"read","pointer":"/paths/~1records/get"}`. JSON Pointers use `~1` for slash and `~0` for tilde. The extractor retains `$ref` values without dereferencing, fetching or inferring missing semantics. YAML conversion and automatic endpoint inventory are not implemented. The catalog's methods, paths, request/result references and effect classification still require owner review.
+Text ranges are inclusive and one-based; extracted line endings normalize to LF. For OpenAPI 3.0/3.1 JSON, use `format: openapi-json` and section locators such as `{"id":"read","pointer":"/paths/~1records/get"}`. JSON Pointers use `~1` for slash and `~0` for tilde. The extractor retains `$ref` values without dereferencing, fetching or inferring missing semantics. The structural importer above supplies supported path inventories. The catalog's methods, paths, request/result references and effect classification still require owner review.
 
 The document IDs, revisions, source digests and section inventories must match the complete reviewed catalog. Missing/extra documents or sections, duplicate IDs, stale text, invalid locators and unsupported document formats fail before workspace creation. Preparation writes only sections cited by each mapping and its endpoint rows into protected `<operation>/api-excerpts.json`; unrelated sections stay out of that packet. The protected manifest covers these bytes. A packet with the option omitted has references only and requires the owner to supply those documents separately.
 

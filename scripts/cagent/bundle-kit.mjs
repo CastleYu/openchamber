@@ -9,10 +9,11 @@ import { AGENT_ARTIFACT } from '../../packages/web/server/lib/agent/constants.js
 import { buildContractPages } from './contract-pages.mjs';
 import { buildBindingSchema } from './declarative-codec.mjs';
 import { buildDocumentSchema } from './document-excerpts.mjs';
+import { buildOpenAPISchemas } from './openapi-catalog.mjs';
 
 export const KIT = Object.freeze({
   ROOT: fileURLToPath(new URL('../../', import.meta.url)),
-  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit', 'calibrate']),
+  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit', 'calibrate', 'import-openapi']),
   LICENSES: Object.freeze(['LICENSE', 'node_modules/zod/LICENSE', 'node_modules/typescript/LICENSE.txt']),
   ERROR: Object.freeze({ INVALID: 'invalid-arguments', EXISTS: 'kit-exists', BOUNDARY: 'kit-boundary', BUILD: 'kit-build-failed', INCOMPLETE: 'kit-incomplete' }),
 });
@@ -41,6 +42,7 @@ const commands = `
 \`\`\`sh
 node scripts/cagent/verify-kit.mjs --kit <bundle-root> --digest <owner-digest> --json
 node scripts/cagent/build-contracts.mjs --check --json
+node scripts/cagent/import-openapi.mjs --source <local-openapi-source> --review <owner-semantic-review> --out <new-intake> --json
 bun scripts/cagent/calibrate.mjs --prepare --model-record <owner-model-record> --out <new-calibration-workspace> --json
 bun scripts/cagent/calibrate.mjs --check --workspace <calibration-workspace> --kit-digest <calibration-digest> --node <absolute-node> --trial-record <owner-trial-outside-workspace> --json
 node scripts/cagent/check-mapping.mjs --catalog <catalog> --mapping <mapping> --json
@@ -56,6 +58,7 @@ export async function buildOfflineKit() {
   const files = new Map([...buildContractPages().files].map(([name, text]) => [name, Buffer.from(text)]));
   files.set('schemas/declarative-bindings.json', Buffer.from(json(buildBindingSchema())));
   files.set('schemas/document-excerpts.json', Buffer.from(json(buildDocumentSchema())));
+  for (const [name, schema] of Object.entries(buildOpenAPISchemas())) files.set(`schemas/openapi-${name}.json`, Buffer.from(json(schema)));
   for (const name of KIT.COMMANDS) {
     const relative = `scripts/cagent/${name}.mjs`;
     const built = await Bun.build({ entrypoints: [path.join(KIT.ROOT, relative)], target: 'node', format: 'esm',

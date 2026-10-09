@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: reviewed document excerpts
+## Latest checkpoint: OpenAPI structural inventory
+
+2026-10-09. The offline kit imports OpenAPI 3.0/3.1 path operations into a catalog and source-selection record. Methods/routes come from source, while effects and request/result contract references require one explicit owner review per operation ID. Missing/duplicate IDs, incomplete reviews, unsupported methods, path references, callbacks and webhooks are refused. These cases retain the manually reviewed catalog path; no API semantics or support is inferred. Source remains local, and new output preserves existing evidence.
+
+Six focused import/bundle tests pass, including the actual standalone Node command outside the checkout without node_modules. That journey now carries imported catalog and excerpts through mapping checks, declarative generation, bounded fixtures and finalization. Five changed JavaScript files pass anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. No real CAgent API, local authoring model or production runtime was exercised.
+
+The ignored output `artifacts/cagent-offline-openapi-20261009` contains nine commands and 87 protected files. Its actual bundled Node verifier passes the independent digest `f1bc06bc107a93f1c203684aa469ef4bcaa2e14a19e48a3e7b4e55300ffb0f95`. English and Chinese instructions are synchronized. CA-01 remains in progress; CA-02 still needs extensions, actual model trials and target permissions. Host completion, CA-03 real acceptance, independent remote publication and temporary Release remain outstanding. Production capabilities stay closed. Live weekly quota remains 62%; other INT work stays after CA-03.
+
+## Earlier checkpoint: reviewed document excerpts
 
 2026-10-09. Packet preparation now accepts strict owner-selected text and OpenAPI 3.0/3.1 JSON source sections. Source IDs, revisions, exact UTF-8 digests and section inventories must match the reviewed catalog. Text uses inclusive line ranges; JSON uses bounded own-property pointers and retains unresolved references. Each operation receives only its cited excerpts, covered by the protected artifact manifest. Missing, stale or oversized evidence stops preparation before workspace creation. Source text totals at most 1 MiB and serialized excerpts at most 16 KiB per packet; the owner still measures complete input against the calibrated model budget.
 

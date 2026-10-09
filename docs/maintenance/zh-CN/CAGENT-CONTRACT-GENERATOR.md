@@ -10,7 +10,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 命令包包含八个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成和可执行适配模型校准。自动端点清单、扩展模板、真实本地模型试验及目标权限仍属 CA-02 待办。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成和可执行适配模型校准。扩展模板、真实本地模型试验及目标权限仍属 CA-02 待办。
 
 最终组装读取保护注册表，以原生持久化修正上限重新检查每项注册任务，并将捕获且通过检查的字节一起打包。随后在新的有界子进程中，对组合适配器执行每项操作的保护夹具。多个工厂组合后的行为不一致会阻止发布。命令不将候选进度报告当作验收证据。
 
@@ -22,6 +22,18 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 
 Windows 应先设置进程环境变量 `CAGENT_TEST_NODE` 再运行 Bun。
 
+## OpenAPI 结构清单
+
+```sh
+node scripts/cagent/import-openapi.mjs --source /local/source.json --review /local/review.json --out /local/new-intake --json
+```
+
+`schemas/openapi-source.json` 定义版本 1 原文记录，包含 `id`、`revision` 和放在 `text` 中的准确 OpenAPI JSON。`schemas/openapi-review.json` 定义维护者记录，包含目录 `revision`、以文档 `operationId` 为键的 `endpoints` 及额外章节定位。每项端点审核提供 `effect`、`requestRef` 和 `responseRef`。审核行例如 `{"read":{"effect":"read","requestRef":"read-input","responseRef":"read-output"}}`。这些引用标识维护者核查的契约定义，不从示例推断请求或结果语义。
+
+导入器从 OpenAPI 3.0／3.1 的 `paths` 读取方法和路径，保留操作 ID 和原文摘要。每项路径操作须恰有一项维护者审核，即使 GET 也须明确副作用。缺失／重复 ID、缺少／额外审核行、不支持的 HTTP 方法、路径引用、callbacks 和 webhooks 都会被拒绝。这类文档须使用完整人工核查目录或针对性的宿主开发。导入器不负责 YAML 转换及完整 OpenAPI 规范校验。嵌套 schema 引用保留为原文证据。映射语义前，通过维护者章节定位加入所需认证、共用参数、错误及定义章节。
+
+新输出包含 `catalog.json`、`documents.json` 和最后写入的 `report.json`，保留已有输出。写入失败会留下不完整目录并返回固定错误。原文仅在本地保存，不进入控制台输出。导入目录及原文记录供 `check-mapping` 和 `prepare-packets --documents` 使用；仍须维护者核查映射、保护夹具及真实验收。导入不调用 API，也不授予支持。
+
 ## 核查过的 API 摘录
 
 准备命令追加 `--documents /local/documents.json`，即可将相关 API 原文与每个操作一起冻结。离线包提供 `schemas/document-excerpts.json`。维护者提供原文和明确定位，核查摘录含义，并将目录中的文档摘要绑定到原文准确 UTF-8 字节的 SHA-256，包含换行。原文属于证据数据，不是适配 Agent 的指令。原文须排除凭据及个人样本。报告只包含固定结果和摘要，不输出原文。
@@ -30,7 +42,7 @@ Windows 应先设置进程环境变量 `CAGENT_TEST_NODE` 再运行 Bun。
 {"version":1,"documents":[{"id":"guide","revision":"r1","format":"text","text":"Title\nSynthetic request and result facts.","sections":[{"id":"read","fromLine":2,"toLine":2}]}]}
 ```
 
-文本范围从第一行开始计数，包含两端；摘录换行统一为 LF。OpenAPI 3.0／3.1 JSON 使用 `format: openapi-json`，章节定位例如 `{"id":"read","pointer":"/paths/~1records/get"}`。JSON Pointer 用 `~1` 表示斜线，`~0` 表示波浪号。提取器原样保留 `$ref`，不解引用、获取外部内容或推断缺失语义。尚未实现 YAML 转换及自动端点清单。目录的方法、路径、请求／结果引用及副作用分类仍须维护者核查。
+文本范围从第一行开始计数，包含两端；摘录换行统一为 LF。OpenAPI 3.0／3.1 JSON 使用 `format: openapi-json`，章节定位例如 `{"id":"read","pointer":"/paths/~1records/get"}`。JSON Pointer 用 `~1` 表示斜线，`~0` 表示波浪号。提取器原样保留 `$ref`，不解引用、获取外部内容或推断缺失语义。上面的结构导入器可提供受支持的路径清单。目录的方法、路径、请求／结果引用及副作用分类仍须维护者核查。
 
 文档 ID、版本、原文摘要及章节清单须匹配完整核查目录。缺少／额外文档或章节、重复 ID、过期原文、无效定位和不支持的格式，都会在创建工作区前被拒绝。准备只将各映射及其端点行引用的章节写入受保护 `<operation>/api-excerpts.json`；无关章节不进入该任务包。保护清单覆盖这些字节。省略该选项时，任务包只有引用，维护者须另行提供对应文档。
 

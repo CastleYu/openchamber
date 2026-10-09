@@ -4,7 +4,7 @@ import { isMessageNotFoundError, isPermissionNotFoundError, type FormAnswer, typ
 import type { PermissionV2Request, PermissionV2Effect, PermissionV2Source } from "@opencode-ai/sdk/v2/client";
 import { z } from "zod";
 import { OpencodeRequestError, toUpstreamErrorDetail, upstreamErrorPayloadSchema } from "./upstreamError";
-import { OPEN_CODE_GENERATION, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntime } from './runtime';
+import { OPEN_CODE_GENERATION, OPEN_CODE_PROFILE, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntime } from './runtime';
 import { V1SessionOperations } from './v1/sessions';
 import { projectLegacyMessage, projectLegacyPart, projectLegacySession } from './v1/projection';
 import type { Message as DomainMessage, Metadata, ModelRef, Part as DomainPart, Project as DomainProject, Session as DomainSession, Vcs as DomainVcs } from './model';
@@ -284,6 +284,7 @@ const fsHomeResponseSchema = z.object({
 });
 
 const runtimeDescriptorSchema = z.object({
+  profile: z.enum(OPEN_CODE_PROFILE).optional(),
   generation: z.enum(OPEN_CODE_GENERATION),
   endpoint: z.string().min(1).nullable(),
   epoch: z.union([z.string().min(1), z.number().finite()]),
@@ -341,7 +342,8 @@ class OpencodeService {
     if (current?.endpoint === runtime.endpoint
       && current.epoch === runtime.epoch
       && current.generation === runtime.generation
-      && current.version === runtime.version) return;
+      && current.version === runtime.version
+      && current.profile === runtime.profile) return;
     this.runtimeBinding.set(runtime);
     this.reconnectToRuntimeBaseUrl(true);
   }

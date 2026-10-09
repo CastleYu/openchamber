@@ -152,3 +152,56 @@ describe('directory-scoped protocol ownership', () => {
     }
   });
 });
+
+describe('resolved profile at the service boundary', () => {
+  test('retains the selected profile after authoritative runtime discovery', async () => {
+    const descriptor = { generation: 'oc1', profile: 'legacy-1.2.27', endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.2.27' };
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(descriptor));
+    try {
+      expect(await opencodeClient.discoverRuntime()).toEqual(descriptor);
+      expect(opencodeClient.getBoundRuntime()?.profile).toBe(descriptor.profile);
+    } finally { fetch.mockRestore(); }
+  });
+
+  test('rejects an invalid profile and clears the previous binding', async () => {
+    opencodeClient.bindRuntime({ generation: 'oc1', profile: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.18.32' });
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ generation: 'oc1', profile: 'guessed', endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.18.32' }));
+    try {
+      await expect(opencodeClient.discoverRuntime()).rejects.toThrow();
+      expect(opencodeClient.getBoundRuntime()).toBeNull();
+    } finally { fetch.mockRestore(); }
+  });
+
+  test('retires a pending read and sync source when only the profile changes', async () => {
+    const descriptor = { generation: 'oc1' as const, endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.2.27' };
+    opencodeClient.bindRuntime({ ...descriptor, profile: 'oc1' });
+    const source = opencodeClient.getSyncSource();
+    let finish: (response: Response) => void = () => {};
+    let begin: () => void = () => {};
+    const started = new Promise<void>(resolve => { begin = resolve; });
+    const fetch = spyOn(globalThis, 'fetch').mockImplementation(() => { begin(); return new Promise<Response>(resolve => { finish = resolve; }); });
+    try {
+      const pending = opencodeClient.listSessions();
+      await started;
+      opencodeClient.bindRuntime({ ...descriptor, profile: 'legacy-1.2.27' });
+      expect(opencodeClient.getBoundRuntime()?.profile).toBe('legacy-1.2.27');
+      expect(opencodeClient.getSyncSource()).not.toBe(source);
+      finish(Response.json([]));
+      await expect(pending).rejects.toThrow(OpenCodeRuntimeChangedError);
+    } finally { fetch.mockRestore(); }
+  });
+
+  test('refuses unaccepted Legacy reads, writes and retained SDK calls before transport', async () => {
+    const descriptor = { generation: 'oc1' as const, endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.2.27' };
+    opencodeClient.bindRuntime({ ...descriptor, profile: 'oc1' });
+    const retained = opencodeClient.getScopedApiClient('/repo');
+    opencodeClient.bindRuntime({ ...descriptor, profile: 'legacy-1.2.27' });
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json([]));
+    try {
+      await expect(opencodeClient.listSessions()).rejects.toThrow(OpenCodeRuntimeError);
+      await expect(opencodeClient.createSession({ title: 'blocked' }, '/repo')).rejects.toThrow(OpenCodeRuntimeError);
+      await expect(retained.session.list({}, { throwOnError: true })).rejects.toThrow(OpenCodeRuntimeError);
+      expect(fetch.mock.calls).toHaveLength(0);
+    } finally { fetch.mockRestore(); }
+  });
+});

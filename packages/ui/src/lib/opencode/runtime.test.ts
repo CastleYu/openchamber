@@ -55,7 +55,7 @@ describe('OpenCode profile identity', () => {
   });
   test('keeps a current request when the resolved profile is unchanged', async () => {
     const binding = new OpenCodeRuntimeBinding();
-    const descriptor = { generation: 'oc1' as const, endpoint: 'http://localhost:4099', epoch: 1, version: '1.2.27', profile: OPEN_CODE_PROFILE.LEGACY };
+    const descriptor = { generation: 'oc1' as const, endpoint: 'http://localhost:4099', epoch: 1, version: '1.18.32', profile: OPEN_CODE_PROFILE.OC1 };
     binding.set(descriptor);
     let finish!: (value: string) => void;
     const pending = binding.run('oc1', 'session.list', () => new Promise<string>(resolve => { finish = resolve; }));

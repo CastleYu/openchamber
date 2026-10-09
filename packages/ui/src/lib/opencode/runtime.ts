@@ -28,8 +28,8 @@ export type OpenCodeRuntime = Readonly<{
 }>;
 
 export class OpenCodeRuntimeError extends Error {
-  constructor(readonly generation: OpenCodeGeneration, readonly operation: string) {
-    super(`OpenCode ${generation} does not support ${operation} in this client`);
+  constructor(readonly generation: OpenCodeGeneration, readonly operation: string, readonly profile?: OpenCodeProfile) {
+    super(`OpenCode ${profile ?? generation} does not support ${operation} in this client`);
     this.name = 'OpenCodeRuntimeError';
   }
 }
@@ -68,6 +68,9 @@ export class OpenCodeRuntimeBinding {
 
   assert(generation: 'oc1' | 'oc2', operation: string): void {
     if (!this.current) throw new OpenCodeRuntimeError('unknown', operation);
+    if (this.current.profile === OPEN_CODE_PROFILE.LEGACY) {
+      throw new OpenCodeRuntimeError(this.current.generation, operation, this.current.profile);
+    }
     if (this.current && this.current.generation !== generation) {
       throw new OpenCodeRuntimeError(this.current.generation, operation);
     }

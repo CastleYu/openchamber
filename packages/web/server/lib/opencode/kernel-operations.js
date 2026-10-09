@@ -1,6 +1,7 @@
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
+import { OPENCODE_PROFILE } from './compatibility.js';
 
 const GENERATION = Object.freeze({ OC1: 'oc1', OC2: 'oc2' });
 const STATUS = Object.freeze({ BUSY: 'busy', RETRY: 'retry', IDLE: 'idle', RUNNING: 'running' });
@@ -118,6 +119,10 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   const capture = (directory) => {
     const runtime = getRuntime();
     const generation = runtime?.generation;
+    if (runtime?.profile === OPENCODE_PROFILE.LEGACY) {
+      throw Object.assign(kernelError(ERROR_CODE.UNSUPPORTED_OPERATION,
+        'OpenCode ' + OPENCODE_PROFILE.LEGACY + ' operations are not yet accepted', generation), { profile: runtime.profile });
+    }
     if (generation !== GENERATION.OC1 && generation !== GENERATION.OC2) {
       throw kernelError(ERROR_CODE.UNSUPPORTED_GENERATION, 'OpenCode generation is not ready', generation);
     }
@@ -132,12 +137,12 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     const client = generation === GENERATION.OC1
       ? createOpencodeClient({ ...options, throwOnError: true })
       : OpenCode.make(options);
-    return { generation, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory };
+    return { generation, profile: runtime.profile, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory };
   };
 
   const check = (context) => {
     const current = getRuntime();
-    if (current?.generation !== context.generation || current.endpoint !== context.endpoint || current.epoch !== context.epoch) {
+    if (current?.generation !== context.generation || current.profile !== context.profile || current.endpoint !== context.endpoint || current.epoch !== context.epoch) {
       throw kernelError(ERROR_CODE.RUNTIME_CHANGED, 'OpenCode runtime changed during operation', context.generation);
     }
   };

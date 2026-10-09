@@ -578,3 +578,30 @@ describe('server kernel operations', () => {
   });
 
 });
+
+describe('Legacy operation acceptance boundary', () => {
+  it('refuses reads and mutations before client headers, transport or session preparation', async () => {
+    let calls = 0;
+    const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc1', 'http://fixture.test'), profile: 'legacy-1.2.27' }),
+      getHeaders: () => { calls += 1; return {}; },
+      fetchImpl: async () => { calls += 1; return Response.json({}); },
+      prepareSession: async () => { calls += 1; },
+    });
+    await expect(ops.listSessions()).rejects.toMatchObject({ code: 'unsupported-operation', profile: 'legacy-1.2.27' });
+    await expect(ops.createSession({ directory: 'C:/work' })).rejects.toMatchObject({ code: 'unsupported-operation' });
+    await expect(ops.updateSession({ sessionID: 'ses_1', title: 'blocked' })).rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(() => ops.captureIdentity()).toThrow('legacy-1.2.27');
+    expect(calls).toBe(0);
+  });
+
+  it('rejects a read completed after a profile-only change at the same endpoint and epoch', async () => {
+    const endpoint = await serve(() => ({ body: [oc1Session] }));
+    let selected = { ...runtime('oc1', endpoint), profile: 'oc1' };
+    const ops = createKernelOperations({ getRuntime: () => selected, getHeaders: () => ({}), fetchImpl: async (url, init) => {
+      const response = await fetch(url, init);
+      selected = { ...selected, profile: 'legacy-1.2.27' };
+      return response;
+    } });
+    await expect(ops.listSessions()).rejects.toMatchObject({ code: 'runtime-changed' });
+  });
+});

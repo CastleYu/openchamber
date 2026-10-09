@@ -11,7 +11,7 @@ The server injects `kernelOperations` for OpenCode session creation, command
 lookup and dispatch. OC1 keeps its prompt body. OC2 selects model and agent
 on the session, admits non-resuming context before the prompt or command, and
 sends the authored text through the OC2 request body. Each run captures an
-epoch before creating its session; a later kernel switch rejects dispatch.
+identity before readiness, including generation, profile, endpoint and epoch. It rechecks after readiness, directory creation, session creation, permission enrollment and command lookup, and passes the identity into goal preparation. A switch rejects further dispatch. If session creation returned an ID before a later identity guard fails, the error result and task state retain it. The runtime does not delete or replay that session. A failed directory preparation removes its empty chat directory.
 
 Server-owned scheduled task runtime and routes for OpenChamber-only automation.
 

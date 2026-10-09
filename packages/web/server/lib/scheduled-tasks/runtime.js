@@ -615,15 +615,29 @@ export const createScheduledTasksRuntime = (deps) => {
       throw new Error('project path is unavailable');
     }
 
+    const identity = kernelOperations?.captureIdentity();
+    let sessionID;
+    let directory;
+    const checkCurrent = () => {
+      if (!identity) return;
+      const current = kernelOperations.captureIdentity();
+      if (current.generation !== identity.generation || current.profile !== identity.profile
+        || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+        const error = new Error('OpenCode runtime changed during scheduled task preparation');
+        error.sessionID = sessionID;
+        error.directory = sessionID ? directory : undefined;
+        throw error;
+      }
+    };
     if (typeof waitForOpenCodeReady === 'function') {
       await waitForOpenCodeReady(10_000, 250);
     }
 
-    const identity = kernelOperations?.captureIdentity();
+    checkCurrent();
     if (isChatsScope(projectID) && identity?.generation !== 'oc2') {
       throw new Error('Scheduled chats require OpenCode 2');
     }
-    const directory = isChatsScope(projectID)
+    directory = isChatsScope(projectID)
       ? await chatsScope.createChatDirectory(new Date(startedAt))
       : projectPath;
     const baseUrl = buildOpenCodeUrl('/', '').replace(/\/$/, '');
@@ -633,8 +647,8 @@ export const createScheduledTasksRuntime = (deps) => {
       headers: authHeaders,
     });
 
-    let sessionID;
     try {
+      checkCurrent();
       const sessionResponse = kernelOperations
         ? await kernelOperations.createSession({ directory, title })
         : await client.session.create({ directory, title });
@@ -645,6 +659,7 @@ export const createScheduledTasksRuntime = (deps) => {
       throw error;
     }
 
+    checkCurrent();
     try {
       emitTaskRunEvent?.({
         projectID,
@@ -667,8 +682,10 @@ export const createScheduledTasksRuntime = (deps) => {
       }
     }
 
+    checkCurrent();
     const scheduledCommand = await resolveScheduledCommand({ client, projectPath: directory, task });
 
+    checkCurrent();
     if (task.execution.goalEnabled) {
       const commandObjective = scheduledCommand
         ? expandCommandGoalObjective(scheduledCommand.template, scheduledCommand.arguments)
@@ -677,6 +694,7 @@ export const createScheduledTasksRuntime = (deps) => {
         baseUrl,
         authHeaders,
         kernelOperations,
+        expectedIdentity: identity,
         sessionID,
         directory,
         objective: commandObjective ?? expandSnippets(task.execution.prompt, directory),
@@ -687,6 +705,7 @@ export const createScheduledTasksRuntime = (deps) => {
       });
     }
 
+    checkCurrent();
     if (scheduledCommand) {
       await runScheduledCommand({ client, projectPath: directory, sessionID, task, command: scheduledCommand, identity });
     } else {
@@ -958,6 +977,8 @@ export const createScheduledTasksRuntime = (deps) => {
           { projectID, taskID, status, reason, sessionID, durationMs }
         );
       } catch (error) {
+        sessionID = error.sessionID;
+        sessionDirectory = error.directory;
         status = 'error';
         errorMessage = safeErrorMessage(error);
         logger.warn?.('[ScheduledTasks] run failed', {
@@ -998,7 +1019,7 @@ export const createScheduledTasksRuntime = (deps) => {
         lastStatus: status,
         lastDurationMs: durationMs,
         lastError: status === 'error' ? errorMessage : undefined,
-        lastSessionId: status === 'success' ? sessionID : undefined,
+        lastSessionId: sessionID,
         nextRunAt: Number.isFinite(nextRunAt) ? nextRunAt : undefined,
         updatedAt: finishedAt,
       };
@@ -1035,7 +1056,7 @@ export const createScheduledTasksRuntime = (deps) => {
             lastStatus: status,
             lastDurationMs: durationMs,
             lastError: status === 'error' ? errorMessage : undefined,
-            lastSessionId: status === 'success' ? sessionID : undefined,
+            lastSessionId: sessionID,
             nextRunAt: Number.isFinite(nextRunAt) ? nextRunAt : undefined,
             updatedAt: finishedAt,
           },

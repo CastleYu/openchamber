@@ -144,7 +144,7 @@ describe('scheduled chat scope with the dual-kernel operations', () => {
     state: { createdAt: 1, updatedAt: 1 },
   };
 
-  const setup = async (generation = 'oc2', failCreate = false, canRun = () => true) => {
+  const setup = async (generation = 'oc2', failCreate = false, canRun = () => true, extras = {}) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'oc-scheduled-chat-'));
     const chatsScope = createChatsScope(path.join(root, 'chats'));
     const createSession = vi.fn(async ({ directory }) => {
@@ -171,10 +171,68 @@ describe('scheduled chat scope with the dual-kernel operations', () => {
       buildOpenCodeUrl: () => 'http://local/',
       getOpenCodeAuthHeaders: () => ({}),
       waitForOpenCodeReady: async () => {},
+      ...extras,
       logger: { info: () => {}, warn: () => {}, error: () => {} },
     });
     return { root, chatsScope, runtime, config, createSession, sendPrompt };
   };
+
+  it.each(['readiness', 'directory', 'created', 'permissions', 'commands'])('stops a profile switch during %s and retains a created session', async (stage) => {
+    let profile = 'oc2';
+    const switchProfile = () => { profile = 'legacy-1.2.27'; };
+    const createSession = vi.fn(async () => {
+      if (stage === 'created') switchProfile();
+      return { data: { id: 'ses_created' } };
+    });
+    const sendPrompt = vi.fn();
+    const sendCommand = vi.fn();
+    const listCommands = vi.fn(async () => { switchProfile(); return { data: [{ name: 'review' }] }; });
+    const fixture = await setup('oc2', false, () => true, {
+      kernelOperations: {
+        captureIdentity: () => ({ generation: 'oc2', profile, endpoint: 'http://local', epoch: 1 }),
+        createSession, sendPrompt, sendCommand, listCommands,
+      },
+      waitForOpenCodeReady: async () => { if (stage === 'readiness') switchProfile(); },
+      setSessionAutoAccept: async () => { if (stage === 'permissions') switchProfile(); },
+    });
+    if (stage === 'directory') {
+      const create = fixture.chatsScope.createChatDirectory;
+      fixture.chatsScope.createChatDirectory = async (...args) => {
+        const directory = await create(...args);
+        switchProfile();
+        return directory;
+      };
+    }
+    if (['permissions', 'commands'].includes(stage)) {
+      const selected = { ...task, execution: { ...task.execution, prompt: stage === 'commands' ? '/review' : 'Summarize', permissionAutoAccept: stage === 'permissions' } };
+      fixture.config.listScheduledTasks.mockResolvedValue([selected]);
+      fixture.config.reconcileLoopTasks.mockResolvedValue([selected]);
+      fixture.config.updateScheduledTaskState.mockResolvedValue({ task: selected });
+      fixture.config.updateScheduledTaskStateIf.mockResolvedValue({ task: selected });
+    }
+    try {
+      await fixture.runtime.start();
+      const result = await fixture.runtime.runNow(fixture.chatsScope.id, task.id);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('OpenCode runtime changed');
+      expect(createSession).toHaveBeenCalledTimes(['created', 'permissions', 'commands'].includes(stage) ? 1 : 0);
+      expect(sendPrompt).not.toHaveBeenCalled();
+      expect(sendCommand).not.toHaveBeenCalled();
+      if (['created', 'permissions', 'commands'].includes(stage)) {
+        expect(result.sessionID).toBe('ses_created');
+        expect(fixture.config.updateScheduledTaskState.mock.calls.at(-1)[2]).toMatchObject({ lastStatus: 'error', lastSessionId: 'ses_created' });
+      }
+      if (stage === 'directory') {
+        const dates = await readdir(fixture.chatsScope.root);
+        expect(await readdir(path.join(fixture.chatsScope.root, dates[0]))).toEqual([]);
+        expect(result.directory).toBeUndefined();
+      }
+      expect(fixture.runtime.getStatus().runningScheduledTasksCount).toBe(0);
+    } finally {
+      fixture.runtime.stop();
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
 
   it('preserves task intent when startup and manual execution are unavailable', async () => {
     const fixture = await setup('oc2', false, () => false);

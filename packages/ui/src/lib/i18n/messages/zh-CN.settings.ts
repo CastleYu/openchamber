@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "自动检测",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "无法加载连接模式。",
+  'settings.openchamber.opencodeMode.connectionFailed': "模式已保存，但连接检查未通过。请选择自动检测或与服务器匹配的模式。",
   'settings.openchamber.opencodeMode.saveFailed': "无法保存连接模式。",
   'settings.themeImport.selectAll': '全选',
   'settings.themeImport.deselectAll': '取消全选',

@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "Auto-detect",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "Could not load connection mode.",
+  'settings.openchamber.opencodeMode.connectionFailed': "Mode saved, but the connection check failed. Select Auto or a mode matching the server.",
   'settings.openchamber.opencodeMode.saveFailed': "Could not save connection mode.",
   'settings.themeImport.selectAll': 'Select all',
   'settings.themeImport.deselectAll': 'Deselect all',

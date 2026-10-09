@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "自動偵測",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "無法載入連線模式。",
+  'settings.openchamber.opencodeMode.connectionFailed': "模式已儲存，但連線檢查未通過。請選擇自動偵測或與伺服器相符的模式。",
   'settings.openchamber.opencodeMode.saveFailed': "無法儲存連線模式。",
   'settings.themeImport.selectAll': '全選',
   'settings.themeImport.deselectAll': '取消全選',

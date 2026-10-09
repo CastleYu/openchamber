@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "Otomatik algıla",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "Bağlantı modu yüklenemedi.",
+  'settings.openchamber.opencodeMode.connectionFailed': "Mod kaydedildi ancak bağlantı denetimi başarısız oldu. Otomatik veya sunucuyla eşleşen bir mod seçin.",
   'settings.openchamber.opencodeMode.saveFailed': "Bağlantı modu kaydedilemedi.",
   'settings.themeImport.selectAll': 'Tümünü seç',
   'settings.themeImport.deselectAll': 'Tümünün seçimini kaldır',

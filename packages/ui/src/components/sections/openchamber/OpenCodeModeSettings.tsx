@@ -2,6 +2,8 @@ import * as React from 'react';
 import { SettingsSection, SettingsFieldRow, SettingsChipGroup, SETTINGS_DESCRIPTION_CLASS } from '@/components/sections/shared/SettingsSection';
 import { loadDesktopSettings, updateDesktopSettings } from '@/lib/persistence';
 import { OPEN_CODE_SELECTION, OPEN_CODE_SETTING } from '@/lib/opencode/runtime';
+import { opencodeClient } from '@/lib/opencode/client';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 import { useI18n } from '@/lib/i18n';
 
@@ -11,7 +13,7 @@ export const OpenCodeModeSettings: React.FC = () => {
   const { t } = useI18n();
   const [selection, setSelection] = React.useState<Selection | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<'load' | 'save' | null>(null);
+  const [error, setError] = React.useState<'load' | 'save' | 'connection' | null>(null);
   React.useEffect(() => {
     let active = true;
     void loadDesktopSettings().then(data => {
@@ -30,8 +32,11 @@ export const OpenCodeModeSettings: React.FC = () => {
     try {
       const result = await updateDesktopSettings({ [OPEN_CODE_SETTING.SELECTION]: value });
       if (owner !== getRuntimeKey()) return;
-      if (result.ok) setSelection(value);
-      else setError('save');
+      if (!result.ok) { setError('save'); return; }
+      setSelection(value);
+      opencodeClient.reconnectToRuntimeBaseUrl();
+      const connected = await useConfigStore.getState().checkConnection();
+      if (owner === getRuntimeKey() && !connected) setError('connection');
     } catch {
       if (owner === getRuntimeKey()) setError('save');
     } finally {
@@ -48,6 +53,6 @@ export const OpenCodeModeSettings: React.FC = () => {
         { value: OPEN_CODE_SELECTION.LEGACY, label: t('settings.openchamber.opencodeMode.legacy'), disabled: selection === null || saving },
       ]} />
     </SettingsFieldRow>
-    {error && <p role="alert" className={SETTINGS_DESCRIPTION_CLASS}>{t(error === 'load' ? 'settings.openchamber.opencodeMode.loadFailed' : 'settings.openchamber.opencodeMode.saveFailed')}</p>}
+    {error && <p role="alert" className={SETTINGS_DESCRIPTION_CLASS}>{t(error === 'load' ? 'settings.openchamber.opencodeMode.loadFailed' : error === 'save' ? 'settings.openchamber.opencodeMode.saveFailed' : 'settings.openchamber.opencodeMode.connectionFailed')}</p>}
   </SettingsSection>;
 };

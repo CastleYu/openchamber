@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "Wykryj automatycznie",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "Nie udało się wczytać trybu połączenia.",
+  'settings.openchamber.opencodeMode.connectionFailed': "Tryb zapisany, ale sprawdzenie połączenia nie powiodło się. Wybierz Auto lub tryb zgodny z serwerem.",
   'settings.openchamber.opencodeMode.saveFailed': "Nie udało się zapisać trybu połączenia.",
   'settings.themeImport.selectAll': 'Zaznacz wszystkie',
   'settings.themeImport.deselectAll': 'Odznacz wszystkie',

@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "自動検出",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "接続モードを読み込めませんでした。",
+  'settings.openchamber.opencodeMode.connectionFailed': "モードは保存されましたが、接続確認に失敗しました。自動検出またはサーバーに合うモードを選択してください。",
   'settings.openchamber.opencodeMode.saveFailed': "接続モードを保存できませんでした。",
   'settings.themeImport.selectAll': 'すべて選択',
   'settings.themeImport.deselectAll': 'すべて選択解除',

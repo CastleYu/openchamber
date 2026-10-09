@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "자동 감지",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "연결 모드를 불러오지 못했습니다.",
+  'settings.openchamber.opencodeMode.connectionFailed': "모드는 저장되었지만 연결 확인에 실패했습니다. 자동 감지 또는 서버와 일치하는 모드를 선택하세요.",
   'settings.openchamber.opencodeMode.saveFailed': "연결 모드를 저장하지 못했습니다.",
   'settings.themeImport.selectAll': '모두 선택',
   'settings.themeImport.deselectAll': '모두 선택 해제',

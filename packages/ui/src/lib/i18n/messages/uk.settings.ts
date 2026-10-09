@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "Автовизначення",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "Не вдалося завантажити режим підключення.",
+  'settings.openchamber.opencodeMode.connectionFailed': "Режим збережено, але перевірка з’єднання не вдалася. Виберіть Auto або режим, що відповідає серверу.",
   'settings.openchamber.opencodeMode.saveFailed': "Не вдалося зберегти режим підключення.",
   'settings.themeImport.selectAll': 'Вибрати всі',
   'settings.themeImport.deselectAll': 'Зняти вибір',

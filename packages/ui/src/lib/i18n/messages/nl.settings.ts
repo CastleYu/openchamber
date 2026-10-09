@@ -10,6 +10,7 @@ export const settingsDict = {
   'settings.openchamber.opencodeMode.auto': "Automatisch detecteren",
   'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
   'settings.openchamber.opencodeMode.loadFailed': "De verbindingsmodus kon niet worden geladen.",
+  'settings.openchamber.opencodeMode.connectionFailed': "Modus opgeslagen, maar de verbindingscontrole is mislukt. Kies Auto of een modus die bij de server past.",
   'settings.openchamber.opencodeMode.saveFailed': "De verbindingsmodus kon niet worden opgeslagen.",
   'settings.openchamber.tunnel.enterpriseMode': 'Externe tunnels zijn niet beschikbaar in enterprise-modus, omdat de tunneldienst het verkeer zou kunnen lezen. Koppel andere apparaten via uw netwerk of de relay van uw organisatie om deze server te bereiken.',
   'settings.voice.page.enterpriseMode': 'In enterprise-modus blijft voorlezen op deze computer. Gebruik een lokale stem of een aangepaste server die hier draait.',

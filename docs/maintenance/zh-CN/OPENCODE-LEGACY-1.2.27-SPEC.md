@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-LEGACY-1.2.27-SPEC.md)。同步与交接规则见 [README](README.md)。
 
-状态：计划中，2026-10-08。精确版本 wire 契约和现场验收仍待采集。
+状态：准确源码／schema 已取得，2026-10-09；实际程序验收仍未完成。参见[Legacy 证据检查点](OPENCODE-LEGACY-EVIDENCE.md)。
 上级文档：[OpenCode 集成规范](OPENCODE-INTEGRATION-SPEC.md)。
 
 ## 兼容承诺

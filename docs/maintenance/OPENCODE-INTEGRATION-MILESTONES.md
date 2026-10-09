@@ -22,7 +22,7 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | CA-01 | 5.0 | Typed host contracts, capability guards and OC1/OC2 regressions | CA-00 | in progress |
 | CA-02 | 5.1 | Complete offline adapter kit with protected tests, generator, sparse and synthetic-extension samples, allowlist validation and runnable toolchain | CA-01 | planned |
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
-| INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | planned |
+| INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | in progress; [source evidence](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | planned |
 | INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | planned |
 | INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |

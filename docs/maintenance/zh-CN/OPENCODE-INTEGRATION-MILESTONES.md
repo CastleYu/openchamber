@@ -24,7 +24,7 @@
 | CA-01 | 5.0 | 类型化宿主契约、能力守卫及 OC1/OC2 回归 | CA-00 | in progress |
 | CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | planned |
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
-| INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | planned |
+| INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | in progress；[源码证据](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | planned |
 | INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | planned |
 | INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | planned |

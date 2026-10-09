@@ -1,6 +1,6 @@
 # OpenCode 1.2.27 Legacy specification
 
-Status: planned, 2026-10-08. Exact-version wire contracts and live acceptance remain to be captured.
+Status: exact source/schema acquired, 2026-10-09; executable acceptance remains open. See the [Legacy evidence checkpoint](OPENCODE-LEGACY-EVIDENCE.md).
 Parent: [OpenCode integration specification](OPENCODE-INTEGRATION-SPEC.md).
 
 ## Compatibility promise

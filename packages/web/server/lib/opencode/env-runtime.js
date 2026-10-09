@@ -14,6 +14,12 @@ const SHELL_PROBE_TIMEOUT_MS = 5_000;
 // PowerShell profile on a stuck OneDrive folder, `where` walking a dead
 // network drive in PATH) hangs the whole process with no output.
 const WINDOWS_PROBE_TIMEOUT_MS = 10_000;
+const OPENCODE_BINARY_ENV_KEYS = Object.freeze([
+  'OPENCODE_BINARY',
+  'OPENCODE_PATH',
+  'OPENCHAMBER_OPENCODE_PATH',
+  'OPENCHAMBER_OPENCODE_BIN',
+]);
 
 // Interactive rc files may print a banner, motd or other text to stdout before
 // the shell runs the probe command. That text would otherwise fuse with the
@@ -390,21 +396,15 @@ export const createOpenCodeEnvRuntime = (deps) => {
   };
 
   const resolveOpencodeCliPath = () => {
-    const explicit = [
-      process.env.OPENCODE_BINARY,
-      process.env.OPENCODE_PATH,
-      process.env.OPENCHAMBER_OPENCODE_PATH,
-      process.env.OPENCHAMBER_OPENCODE_BIN,
-    ]
-      .map(stripWrappingQuotes)
-      .filter(Boolean);
-
-    for (const candidate of explicit) {
-      if (isExecutable(candidate) && !isWindowsOpenCodeDesktopAppPath(candidate)) {
-        clearWslOpencodeResolution();
-        state.resolvedOpencodeBinarySource = 'env';
-        return candidate;
+    for (const key of OPENCODE_BINARY_ENV_KEYS) {
+      const candidate = stripWrappingQuotes(process.env[key]);
+      if (!candidate) continue;
+      if (!isExecutable(candidate) || isKnownOpenCodeDesktopAppPath(candidate)) {
+        throw createConfiguredOpencodeBinaryError(candidate, candidate);
       }
+      clearWslOpencodeResolution();
+      state.resolvedOpencodeBinarySource = 'env';
+      return candidate;
     }
 
     const bundled = bundledOpenCodeCliFallback();
@@ -1122,16 +1122,6 @@ export const createOpenCodeEnvRuntime = (deps) => {
         return state.resolvedOpencodeBinary;
       }
       ensureOpencodeShimRuntime(state.resolvedOpencodeBinary);
-      return state.resolvedOpencodeBinary;
-    }
-
-    const existing = typeof process.env.OPENCODE_BINARY === 'string' ? process.env.OPENCODE_BINARY.trim() : '';
-    if (existing && isExecutable(existing)) {
-      clearWslOpencodeResolution();
-      state.resolvedOpencodeBinary = existing;
-      state.resolvedOpencodeBinarySource = state.resolvedOpencodeBinarySource || 'env';
-      prependToPath(path.dirname(existing));
-      ensureOpencodeShimRuntime(existing);
       return state.resolvedOpencodeBinary;
     }
 

@@ -280,3 +280,12 @@ VS Code 选择检查点：Web 与 VS Code 现共用严格的模式解析。扩�
 验证：85 项内核与路由测试、Web 类型检查和 lint 通过。修改的 JavaScript 没有 Anti-slop 诊断。死代码仍为两个文件、319 个导出及 231 个类型。证据：artifacts/int01-real-routing-*.log 和 artifacts/int01-real/oc1-9QAyH3/evidence.json。真实 OC1 已在提交后的源码 d0ae8c9b9 上复验通过。INT-01/INT-02 其余主机门槛仍待完成。已发布的 CA-02 Release 保持冻结。
 
 官方固定 Windows x64 baseline OC2 2.0.20 包现已通过 npm SHA512 完整性校验及精确 CLI 版本确认。隔离真实服务在源码 d0ae8c9b9 上通过九项检查：自动身份识别、上游认证拒绝、不匹配模式冷启动后的认证配置入口可用、修正为 Auto 后主机准入、通过生产内核门面与 Web 代理创建会话及重开空历史、持久化不匹配模式后的写入拒绝、重复切换与 Auto 恢复、删除，以及主机退出时保留外部进程。在 OC2 上手动选择 Legacy 返回未验证，因为仅健康接口的探测没有取得 OC1 身份；写入返回 501，保留 Legacy 托管路径边界。首次沿用 OC1 原始路径的验收脚本已改为生产 OC2 SDK 门面。本阶段没有修改生产源码。证据：artifacts/int01-real/oc2-2.0.20/provenance.json、artifacts/int01-real/oc2-s6cGQF/evidence.json 和 artifacts/int01-real-oc2-accepted.log。模型对话、附件、打包主机、真实 IDE 及其余连接模式门槛仍未验收。
+
+
+### INT-02 显式启动路径与托管验收
+
+首个非空 CLI 环境路径失效或指向已识别的桌面程序时，现返回 OPENCODE_BINARY_INVALID，不再选择后续别名、捆绑 CLI 或 PATH 候选。托管启动与路径探测共用既有验证，包括带引号的路径。没有新增依赖、导出、源码模块或重试策略。五模式连接记录与切换界面仍待实现。
+
+验证：68 项聚焦测试通过，一项平台专属测试跳过。Web 类型检查与 lint 通过。Anti-slop 保留 47 项既有诊断，每项对应源码行均存在于同一文件的前一 HEAD，新代码没有诊断。实际认证 Web 主机验证确认失效路径不创建受管进程，即使存在 OC2 捆绑候选也不回退，且仍能读取设置并持久化修正后的二进制路径。未验证该主机保存修正后原地重启。另一次真实托管 OC2 2.0.20 回归通过精确模式启动、唯一归属注册、创建会话及重开历史、删除、进程与注册清理。证据：artifacts/int02-strict-tests-final.log、int02-strict-anti-review.json、int02-invalid-env-live.log 和 int02-strict-oc2-live.log。
+
+真实托管 OC1 1.18.33 仍未验收。原生直接对照中，不注入插件时 2644 毫秒创建会话；注入既有受管 MCP 插件时，20 秒和 180 秒请求窗口均超时。固定版本的 [插件加载器](https://github.com/anomalyco/opencode/blob/v1.18.33/packages/opencode/src/plugin/index.ts) 在加载外部插件前等待配置依赖安装；[配置实现](https://github.com/anomalyco/opencode/blob/v1.18.33/packages/opencode/src/config/config.ts) 会在配置目录调度安装 @opencode-ai/plugin。注入运行产生了该包的 npm 元数据。因此调查已缩小到上游依赖阶段，不能据此认定插件钩子有缺陷。没有伪造缓存条目、手动安装包、禁用插件或修改上游源码。证据：artifacts/int02-plugin-isolate-results.json 和 int02-plugin-isolate-long-results.json。打包桌面、模型对话、附件及其余连接模式仍未验收。已发布的 CA-02 Release 保持冻结。

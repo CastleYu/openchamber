@@ -363,6 +363,65 @@ describe('OpenCode env runtime', () => {
     expect(state.resolvedOpencodeBinarySource).toBeNull();
   });
 
+  it.each(['OPENCODE_BINARY', 'OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_BIN'])('rejects invalid %s without a bundled or PATH fallback', (key) => {
+    const keys = ['OPENCODE_BINARY', 'OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_PATH', 'OPENCHAMBER_OPENCODE_BIN'];
+    const previous = keys.map((name) => process.env[name]);
+    try {
+      for (const name of keys) delete process.env[name];
+      const bundled = createBundledCli();
+      process.env.PATH = path.dirname(bundled);
+      process.env[key] = path.join(path.dirname(bundled), 'missing-cli');
+      const { runtime, state } = createRuntime({});
+      expect(() => runtime.ensureOpencodeCliEnv()).toThrow(expect.objectContaining({ code: 'OPENCODE_BINARY_INVALID' }));
+      expect(state.resolvedOpencodeBinary).toBeNull();
+      expect(state.resolvedOpencodeBinarySource).toBeNull();
+    } finally {
+      keys.forEach((name, index) => { if (previous[index] === undefined) delete process.env[name]; else process.env[name] = previous[index]; });
+    }
+  });
+
+  it('rejects the first explicit override even when a later alias is valid', () => {
+    const previous = process.env.OPENCODE_PATH;
+    try {
+      const binary = createBundledCli();
+      process.env.OPENCODE_BINARY = path.join(path.dirname(binary), 'missing-cli');
+      process.env.OPENCODE_PATH = binary;
+      expect(() => createRuntime({}).runtime.resolveOpencodeCliPath()).toThrow(expect.objectContaining({ code: 'OPENCODE_BINARY_INVALID' }));
+    } finally {
+      if (previous === undefined) delete process.env.OPENCODE_PATH; else process.env.OPENCODE_PATH = previous;
+    }
+  });
+
+  it('uses the common validator for a quoted explicit CLI', () => {
+    const binary = createBundledCli();
+    process.env.OPENCODE_BINARY = '"' + binary + '"';
+    const { runtime, state } = createRuntime({});
+    expect(runtime.ensureOpencodeCliEnv()).toBe(binary);
+    expect(state.resolvedOpencodeBinarySource).toBe('env');
+  });
+
+  it('rejects a Windows desktop application instead of launching it as the CLI', () => {
+    setPlatform('win32');
+    const root = createTempDir('openchamber-desktop-app-');
+    process.env.LOCALAPPDATA = root;
+    const directory = path.join(root, 'Programs', 'OpenCode');
+    fs.mkdirSync(directory, { recursive: true });
+    const binary = path.join(directory, 'OpenCode.exe');
+    fs.writeFileSync(binary, 'desktop fixture');
+    process.env.OPENCODE_BINARY = binary;
+    expect(() => createRuntime({}).runtime.ensureOpencodeCliEnv()).toThrow(expect.objectContaining({ code: 'OPENCODE_BINARY_INVALID' }));
+  });
+
+  it('rejects a macOS desktop bundle from an explicit override', () => {
+    setPlatform('darwin');
+    const directory = path.join(createTempDir('openchamber-app-bundle-'), 'OpenCode.app', 'Contents', 'MacOS');
+    fs.mkdirSync(directory, { recursive: true });
+    const binary = path.join(directory, 'OpenCode');
+    fs.writeFileSync(binary, 'desktop fixture', { mode: 0o755 });
+    process.env.OPENCODE_BINARY = binary.replaceAll('\\', '/');
+    expect(() => createRuntime({}).runtime.ensureOpencodeCliEnv()).toThrow(expect.objectContaining({ code: 'OPENCODE_BINARY_INVALID' }));
+  });
+
   it('prefers the bundled CLI over a user-installed OpenCode from PATH', () => {
     const bundledDir = createTempDir('openchamber-bundled-opencode-');
     const bundledBinary = path.join(bundledDir, process.platform === 'win32' ? 'opencode.exe' : 'opencode');

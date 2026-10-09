@@ -15,6 +15,10 @@ let failure: 'auth' | 'unreachable' | null = null;
 const schema = z.object({ [OPEN_CODE_SETTING.SELECTION]: z.enum(Object.values(OPEN_CODE_SELECTION)).optional() });
 const server = createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
+  if (req.url === '/health') {
+    res.end(JSON.stringify({ isOpenCodeReady: false, lastOpenCodeError: 'Synthetic startup failure', opencodeBinaryResolved: '/fixture/opencode' }));
+    return;
+  }
   if (req.url?.startsWith('/api/opencode/runtime')) {
     probes++;
     const accepted = failure === null && (selection === OPEN_CODE_SELECTION.AUTO || selection === generation);
@@ -50,6 +54,7 @@ const { I18nProvider, useI18nStore } = await import('@/lib/i18n');
 const { opencodeClient } = await import('@/lib/opencode/client');
 const { useConfigStore } = await import('@/stores/useConfigStore');
 const { OpenCodeModeSettings } = await import('./OpenCodeModeSettings');
+const { StartupInitializationRecovery } = await import('@/apps/StartupInitializationRecovery');
 configureRuntimeUrlResolver({ apiBaseUrl: url });
 const container = document.createElement('div');
 document.body.append(container);
@@ -75,15 +80,18 @@ afterAll(async () => {
 });
 
 test('mode control loads and saves explicit intent, retains choice on failure and reacts to locale', async () => {
-  await act(async () => root.render(<I18nProvider><OpenCodeModeSettings /></I18nProvider>));
+  await act(async () => root.render(<I18nProvider><StartupInitializationRecovery onRetry={() => { void useConfigStore.getState().initializeApp(); }} isRetrying={false} /></I18nProvider>));
   await wait(() => button('OC1').getAttribute('aria-pressed') === 'true');
   await act(async () => button('OC2').click());
   await wait(() => button('OC2').getAttribute('aria-pressed') === 'true');
+  expect(document.body.textContent).toContain('Synthetic startup failure');
+  expect(document.body.textContent).toContain('/fixture/opencode');
   expect(selection).toBe(OPEN_CODE_SELECTION.OC2);
   expect(writes).toBe(1);
   await wait(() => Boolean(document.querySelector('[role="alert"]')) && !button('OC2').disabled);
   expect(opencodeClient.getBoundRuntime()).toBeNull();
   expect(useConfigStore.getState().isConnected).toBe(false);
+  expect(useConfigStore.getState().isInitialized).toBe(false);
   expect(document.querySelector('[role="alert"]')?.textContent).toContain('Mode saved');
   expect(document.querySelector('[role="status"]')?.textContent).toBe('Selected mode does not match the server');
   expect(document.body.textContent).toContain('Server version: 1.18.32');
@@ -100,6 +108,7 @@ test('mode control loads and saves explicit intent, retains choice on failure an
   await act(async () => button('OC1').click());
   await wait(() => button('OC1').getAttribute('aria-pressed') === 'true' && !button('OC1').disabled);
   expect(opencodeClient.getBoundRuntime()?.generation).toBe('oc1');
+  expect(useConfigStore.getState().isInitialized).toBe(true);
   expect(useConfigStore.getState().isConnected).toBe(true);
   expect(document.querySelector('[role="status"]')?.textContent).toBe('Profile verified');
   expect(document.body.textContent).toContain('Resolved mode: OC1');
@@ -145,6 +154,12 @@ test('mode control loads and saves explicit intent, retains choice on failure an
   failure = null;
   await act(async () => { await opencodeClient.discoverRuntime(); });
   expect(document.querySelector('[role="status"]')?.textContent).toBe('兼容配置已验证');
+  useConfigStore.setState({ isInitialized: false });
+  const beforeRetry = writes;
+  await act(async () => button('重试').click());
+  await wait(() => useConfigStore.getState().isInitialized);
+  expect(writes).toBe(beforeRetry);
+  expect(opencodeClient.getBoundRuntime()?.generation).toBe('oc2');
   invalidateSettingsCache();
   failRead = true;
   await act(async () => root.render(<I18nProvider><OpenCodeModeSettings key="unreadable" /></I18nProvider>));

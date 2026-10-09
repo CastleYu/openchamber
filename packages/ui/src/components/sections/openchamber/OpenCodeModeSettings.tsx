@@ -44,18 +44,24 @@ export const OpenCodeModeSettings: React.FC = () => {
   const save = async (value: Selection) => {
     if (saving || selection === null || value === selection) return;
     const owner = getRuntimeKey();
+    let saved = false;
     setSaving(true);
     setError(null);
     try {
       const result = await updateDesktopSettings({ [OPEN_CODE_SETTING.SELECTION]: value });
       if (owner !== getRuntimeKey()) return;
       if (!result.ok) { setError('save'); return; }
+      saved = true;
       setSelection(value);
       opencodeClient.reconnectToRuntimeBaseUrl();
-      const connected = await useConfigStore.getState().checkConnection();
-      if (owner === getRuntimeKey() && !connected) setError('connection');
+      const state = useConfigStore.getState();
+      if (state.isInitialized) await state.checkConnection();
+      else await state.initializeApp();
+      if (owner !== getRuntimeKey()) return;
+      const current = useConfigStore.getState();
+      if (!current.isConnected || !current.isInitialized) setError('connection');
     } catch {
-      if (owner === getRuntimeKey()) setError('save');
+      if (owner === getRuntimeKey()) setError(saved ? 'connection' : 'save');
     } finally {
       if (owner === getRuntimeKey()) setSaving(false);
     }

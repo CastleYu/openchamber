@@ -2,13 +2,16 @@ import { Window } from 'happy-dom';
 import { z } from 'zod';
 import { describe, expect, test } from 'bun:test';
 import {
-  AGENT_FAMILY, AGENT_FEATURE, AGENT_MESSAGE_STATE, AGENT_OPERATION, AGENT_PART, AGENT_ROLE, AGENT_ROUTE,
+  AGENT_EXTENSION, AGENT_FAMILY, AGENT_FEATURE, AGENT_MESSAGE_STATE, AGENT_OPERATION, AGENT_PART, AGENT_ROLE, AGENT_ROUTE,
 } from '../../../web/server/lib/agent/constants.js';
 import type { AgentOperation, JsonValue } from '../../../web/server/lib/agent/dispatcher.js';
 import type { AgentFeature } from '../../../web/server/lib/agent/features.js';
+import type { ExtensionManifest } from '../../../web/server/lib/agent/extensions.js';
 import { AgentClient, type AgentClientPorts } from '@/lib/agent/client';
 import { AgentConversation } from '@/lib/agent/conversation';
 import { AgentRequestJournal } from '@/lib/agent/journal';
+import { AgentExtensionJournal } from '@/lib/agent/extension-journal';
+import { AgentExtensions } from '@/lib/agent/extensions';
 import { I18nProvider } from '@/lib/i18n';
 import type { AgentChatBinding } from '@/lib/agent/chatBinding';
 import CAgentApp from './CAgentApp';
@@ -32,7 +35,7 @@ const { default: React, act } = await import('react');
 const { createRoot } = await import('react-dom/client');
 
 const identity = Object.freeze({
-  family: AGENT_FAMILY.CAGENT, connectionID: 'connection-1', epoch: 1, adapterRevision: 'adapter-1', capabilityRevision: 'caps-1',
+  family: AGENT_FAMILY.CAGENT, connectionID: 'connection-1', principalID: `principal-${'a'.repeat(64)}`, epoch: 1, adapterRevision: 'adapter-1', capabilityRevision: 'caps-1',
 });
 const response = (value: JsonValue, status = 200) => new Response(JSON.stringify(value), {
   status, headers: { 'content-type': 'application/json' },
@@ -48,6 +51,24 @@ const gate = <T,>() => {
 };
 const attemptInput = z.object({ requestID: z.string() });
 const dispatchInput = z.object({ operation: z.enum(Object.values(AGENT_OPERATION)), input: z.json() });
+const extensionInput = z.object({ actionID: z.string(), identity: z.json(), input: z.object({
+  values: z.record(z.string(), z.json()), requestID: z.string().optional(),
+}).passthrough() }).passthrough();
+const extensionLabel = { key: 'cagent.extension.panel', en: 'Panel action', zhCN: '面板操作' };
+const extensionFieldLabel = { key: 'cagent.extension.value', en: 'Value', zhCN: '数值' };
+const extensionValue = (kind: 'number' | 'text' = 'number'): ExtensionManifest['input'][number]['value'] => {
+  if (kind === 'text') return { kind: AGENT_EXTENSION.KIND.TEXT, maxLength: 40 };
+  return { kind: AGENT_EXTENSION.KIND.NUMBER, min: 1, max: 5 };
+};
+const extensionManifest = (options: { actionID?: string; context?: { workspace: boolean; session: boolean }; effect?: 'read' | 'mutation'; kind?: 'number' | 'text' } = {}) => ({
+  version: AGENT_EXTENSION.VERSION, actionID: options.actionID ?? 'cagent.extension.panel', revision: 'rev-1', label: extensionLabel,
+  context: options.context ?? { workspace: true, session: true }, effect: options.effect ?? 'mutation', authorization: 'current-principal',
+  cancellation: 'none', outcome: 'accepted-only',
+  input: [{ key: 'value', label: extensionFieldLabel, required: true, value: extensionValue(options.kind) }],
+  output: { kind: AGENT_EXTENSION.KIND.TEXT, maxLength: 200 }, evidence: [{ document: 'extensions', section: 'verified' }],
+} satisfies ExtensionManifest);
+const extensionAction = (options: Parameters<typeof extensionManifest>[0] = {}, available = true) => ({ manifest: extensionManifest(options),
+  availability: available ? { available: true } : { available: false, reason: 'unavailable' as const } });
 
 class MemoryStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'> {
   private readonly values = new Map<string, string>();
@@ -67,6 +88,10 @@ class Harness {
   sendFails = false;
   unavailable: AgentOperation | undefined;
   unavailableFeature: AgentFeature | undefined;
+  extensionActions = [extensionAction()];
+  extensionCatalogFails = false;
+  extensionCalls: Array<{ actionID: string; values: JsonValue }> = [];
+  extensionResult = '<img src=x onerror=alert(1)> raw result';
   attempt: JsonValue | null = null;
   factoryCalls = 0;
   disposed = 0;
@@ -83,6 +108,9 @@ class Harness {
 
   private async fetch(path: string | URL | Request, init?: RequestInit): Promise<Response> {
     const route = String(path);
+    if (route === AGENT_ROUTE.EXTENSIONS) return this.extensionCatalogFails
+      ? response({ error: 'backend-failed' }, 503)
+      : response(z.json().parse(JSON.parse(JSON.stringify({ identity, actions: this.extensionActions }))));
     if (route === AGENT_ROUTE.RUNTIME || route === AGENT_ROUTE.FEATURES) {
       const operations: Record<string, JsonValue> = {};
       for (const operation of Object.values(AGENT_OPERATION)) {
@@ -101,6 +129,13 @@ class Harness {
       const input = attemptInput.parse(JSON.parse(String(init?.body)));
       this.attempts.push(input.requestID);
       return response({ identity, attempt: this.attempt });
+    }
+    if (route === AGENT_ROUTE.EXTENSION_DISPATCH) {
+      const body = extensionInput.parse(JSON.parse(String(init?.body)));
+      this.extensionCalls.push({ actionID: body.actionID, values: body.input.values });
+      const result = { identity, result: { text: this.extensionResult } };
+      if (body.input.requestID) return response({ ...result, receipt: { requestID: body.input.requestID, state: 'accepted' } });
+      return response(result);
     }
     if (route !== AGENT_ROUTE.DISPATCH) throw new Error(`Unexpected route: ${route}`);
     const body = dispatchInput.parse(JSON.parse(String(init?.body)));
@@ -124,9 +159,10 @@ class Harness {
     this.factoryCalls += 1;
     const snapshot = await this.client.inspect();
     const conversation = new AgentConversation(this.client, new AgentRequestJournal(new MemoryStorage(), 'cagent-app-test'));
+    const extensions = new AgentExtensions(this.client, snapshot, new AgentExtensionJournal(new MemoryStorage(), 'cagent-app-test'));
     return Object.freeze({
-      client: this.client, snapshot, conversation,
-      dispose: () => { this.disposed += 1; conversation.dispose(); this.client.dispose(); },
+      client: this.client, snapshot, conversation, extensions,
+      dispose: () => { this.disposed += 1; extensions.dispose(); conversation.dispose(); this.client.dispose(); },
     });
   }
 
@@ -188,6 +224,68 @@ const mount = async (create: () => Promise<AgentChatBinding>) => {
 };
 
 describe('CAgentApp conversations', () => {
+  test('rejects an out-of-range extension number before dispatch', async () => {
+    const harness = new Harness();
+    const view = await mount(harness.create.bind(harness));
+    try {
+      await view.open();
+      await view.click('Panel action');
+      const number = view.container.querySelector<HTMLInputElement>('input[type="number"]');
+      if (!number) throw new Error('extension number input missing');
+      await view.input(number, '8');
+      expect(number.value).toBe('8');
+      await view.click('Run action');
+      expect(number.validity.valid).toBe(false);
+      expect(harness.extensionCalls).toHaveLength(0);
+    } finally { await view.close(); }
+  });
+
+  test('shows extension text as literal content and treats accepted as pending completion', async () => {
+    const harness = new Harness();
+    harness.extensionResult = '<img src=x onerror=alert(1)> accepted payload';
+    const view = await mount(harness.create.bind(harness));
+    try {
+      await view.open();
+      await view.click('Panel action');
+      const number = view.container.querySelector<HTMLInputElement>('input[type="number"]');
+      if (!number) throw new Error('extension number input missing');
+      await view.input(number, '3');
+      await view.click('Run action');
+      expect(harness.extensionCalls).toHaveLength(1);
+      expect(harness.extensionCalls[0]?.values).toEqual({ value: 3 });
+      expect(view.container.textContent).toContain(harness.extensionResult);
+      expect(view.container.querySelector('img')).toBeNull();
+      expect(view.container.textContent).toContain('Request accepted. Completion is not confirmed.');
+      expect(view.container.querySelectorAll('[data-role="assistant"]')).toHaveLength(1);
+      expect(view.container.querySelector('[data-role="assistant"]')?.textContent).toContain('Existing answer');
+    } finally { await view.close(); }
+  });
+
+  test('disables required-scope and unavailable extension actions', async () => {
+    const harness = new Harness();
+    harness.extensionActions = [extensionAction(), extensionAction({ actionID: 'cagent.extension.unavailable' }, false)];
+    const view = await mount(harness.create.bind(harness));
+    try {
+      await view.click('Panel action');
+      expect(view.container.textContent).toContain('This action requires conversation context.');
+      expect(view.button('Run action')?.disabled).toBe(true);
+      expect([...view.container.querySelectorAll<HTMLButtonElement>('button')]
+        .some((button) => button.textContent?.includes('Panel action') && button.disabled)).toBe(true);
+    } finally { await view.close(); }
+  });
+
+  test('recovers a failed extension catalog through its retry action', async () => {
+    const harness = new Harness(); harness.extensionCatalogFails = true;
+    const view = await mount(harness.create.bind(harness));
+    try {
+      expect(view.container.querySelector('[role="alert"]')?.textContent).toContain('Could not load extensions.');
+      harness.extensionCatalogFails = false;
+      await view.click('Retry');
+      expect(view.container.textContent).toContain('Panel action');
+      expect(view.button('Panel action')?.disabled).toBe(false);
+    } finally { await view.close(); }
+  });
+
   test('dispatches one accepted prompt and observes the answer only through refreshed history', async () => {
     const harness = new Harness();
     const view = await mount(harness.create.bind(harness));

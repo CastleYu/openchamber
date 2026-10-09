@@ -20,13 +20,28 @@ The browser imports no host loader or extension runtime implementation. Web,
 Electron, hosted mobile and Capacitor use existing runtime HTTP/auth ports. VS Code
 retains the explicit owned-route unsupported refusal.
 
-This adds a client boundary, not a rendered action panel. Extension controls,
-results and durable action-specific recovery still need an owning UI controller.
-The conversation journal cannot identify extension actions and must not be reused
-as a prompt recovery journal. The client alone does not record unresolved IDs.
-Production extension support stays closed until assembly, UI and real acceptance
-pass. `extension-client.test.ts` uses synthetic transport and does not establish
-CAgent API compatibility.
+`AgentExtensions` owns catalog loading, dispatch and outcome recovery. Its journal
+stores only action/request IDs and the backend, principal and declared context.
+It records mutation intent before transport; storage failure prevents dispatch.
+Global pending writes apply to every conversation, workspace writes to that
+workspace and session writes to that session. Relevant uncertainty blocks another
+extension mutation while reads remain usable. Outcome lookup checks the original
+action and never replays it. Matching accepted, complete or not-sent host evidence
+clears only that record. Failed refresh retains prior results and disables new
+dispatch until the catalog is read successfully. Retirement clears visible state.
+
+`AgentExtensionsPanel` renders the finite text, number, boolean, choice and list
+inputs and text, field or bounded table results. Optional fields require explicit
+inclusion. Missing context and unavailable actions disable execution. Results are
+rendered as text, never HTML. English and Simplified Chinese labels come from the
+manifest; other locales use its English label. Generic controls use all 13 app
+locales. The panel receives verified conversation context, including global actions
+before binding. Chat activity and uncertainty block extension mutations.
+
+Production extension support stays closed until adapter assembly and real
+acceptance pass. The offline loader still assembles only core operation packets.
+Synthetic client, controller and DOM tests do not establish CAgent API compatibility
+or native/browser acceptance.
 
 The [Chinese review copy](../../../../../docs/maintenance/zh-CN/CAGENT-UI-CLIENT.md)
 is synchronized during review and archived at final handoff.
@@ -123,4 +138,4 @@ Web, Electron, hosted mobile and Capacitor mount this controller through the CAg
 
 `CAgentApp` owns a binding and disposes it on unmount, including a binding that resolves after cleanup. It binds an existing opaque workspace/session; it does not create a conversation or infer IDs from local paths. Actions use the inspected operation and feature gates. Refresh explicitly reads history and status independently, retaining successful data if another read fails. Status comes only from `getSessionStatus`; failed status is displayed as unknown rather than current prior activity.
 
-Before sending, the page reads status again and dispatches only when that result is idle for its bound conversation. One new request gets one UUID. Unknown outcomes preserve the draft and block another send; result lookup queries the original request without replay. Accepted/complete receipts are presented as acceptance, not assistant completion. Pagination and normalized text, reasoning, structured tool data and attachment labels are supported; no attachment download URL is invented. Decisions, cancellation, creation, catalogs and CAgent extensions remain later work, so production feature support stays closed.
+Before sending, the page reads status again and dispatches only when that result is idle for its bound conversation. One new request gets one UUID. Unknown outcomes preserve the draft and block another send; result lookup queries the original request without replay. Accepted/complete receipts are presented as acceptance, not assistant completion. Pagination and normalized text, reasoning, structured tool data and attachment labels are supported; no attachment download URL is invented. The finite extension panel uses its own action journal. Decisions, cancellation, creation and core catalogs remain later work, so production feature support stays closed.

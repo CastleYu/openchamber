@@ -3,9 +3,11 @@ import { getRuntimeKey } from '../runtime-switch';
 import { AgentClient, AgentClientError, type AgentClientSnapshot } from './client';
 import { AgentConversation } from './conversation';
 import { AgentRequestJournal } from './journal';
+import { AgentExtensionJournal } from './extension-journal';
+import { AgentExtensions } from './extensions';
 
 export type AgentChatBinding = Readonly<{
-  client: AgentClient; snapshot: AgentClientSnapshot; conversation: AgentConversation; dispose(): void;
+  client: AgentClient; snapshot: AgentClientSnapshot; conversation: AgentConversation; extensions: AgentExtensions; dispose(): void;
 }>;
 /** The host principal scopes recovery independently of rotated credentials. */
 export async function createAgentChatBinding(): Promise<AgentChatBinding> {
@@ -23,7 +25,9 @@ export async function createAgentChatBinding(): Promise<AgentChatBinding> {
     if (snapshot.scope.identity.family !== AGENT_FAMILY.CAGENT) throw new AgentClientError(AGENT_ERROR.CHANGED);
     const journal = new AgentRequestJournal(localStorage, namespace);
     const conversation = new AgentConversation(client, journal);
-    return Object.freeze({ client, snapshot, conversation, dispose: () => { conversation.dispose(); client.dispose(); } });
+    const extensions = new AgentExtensions(client, snapshot, new AgentExtensionJournal(localStorage, namespace));
+    return Object.freeze({ client, snapshot, conversation, extensions,
+      dispose: () => { extensions.dispose(); conversation.dispose(); client.dispose(); } });
   } catch (error) {
     client.dispose();
     throw error instanceof AgentClientError ? error : new AgentClientError(AGENT_ERROR.ATTEMPT_STORAGE);

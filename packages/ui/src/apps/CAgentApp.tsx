@@ -8,6 +8,7 @@ import type { AgentClientSnapshot } from '@/lib/agent/client';
 import { AGENT_FEATURE, AGENT_OPERATION, AGENT_PART, AGENT_ROLE } from '../../../web/server/lib/agent/constants.js';
 import type { AgentMessage, AgentOperation, AgentPart, AgentStatus } from '../../../web/server/lib/agent/dispatcher.js';
 import type { AgentFeature } from '../../../web/server/lib/agent/features.js';
+import { AgentExtensionsPanel } from './AgentExtensions';
 
 const STATUS_KEYS = {
   idle: 'agent.chat.idle', busy: 'agent.chat.busy', waiting: 'agent.chat.waiting', unknown: 'agent.chat.unknownStatus',
@@ -119,6 +120,9 @@ function ConversationView({ binding }: { binding: AgentChatBinding }) {
             {!canPrompt ? <p>{t('agent.chat.unavailable')}</p> : null}
           </form>
         </> : null}
+        <AgentExtensionsPanel controller={binding.extensions}
+          context={state.state === 'bound' ? { workspaceID: state.workspaceID, sessionID: state.session.id } : {}}
+          blocked={busy || uncertain || sending} />
       </section>
     </main>
   );

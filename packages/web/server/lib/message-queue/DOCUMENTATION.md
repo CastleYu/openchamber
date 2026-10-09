@@ -122,7 +122,12 @@ persisted "sending" flag would strand a message forever.
    runtime started does not block: its run died with the previous server and
    will never complete, so a restored queue would wait on it forever. A reply
    with no `created` time still blocks. A failed fetch is unknown, never idle:
-   the tick re-arms with backoff.
+   the tick re-arms with backoff. Kernel-backed dispatch captures one
+   generation/profile/endpoint/epoch before these reads and retains it through
+   sending. Status, message-tail and descendant waits recheck that identity;
+   a retired or no-longer-admitted owner is unknown, so its queue stays intact
+   and the tick re-arms. Command discovery also rechecks before dispatch.
+   These checks add no OpenCode network requests.
 5. The head is marked in flight (broadcast), then sent:
    - text starting with `/` that names a command in OpenCode's `/command`
      list (skills included) and carries no captured context goes to

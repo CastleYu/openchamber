@@ -16,14 +16,18 @@ const item = (overrides = {}) => ({
 });
 
 const tempDirs = [];
+const runtimes = [];
 const makeDataDir = () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-message-queue-'));
   tempDirs.push(dir);
   return dir;
 };
 
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
+  const active = runtimes.splice(0);
+  for (const runtime of active) runtime.stop();
+  await Promise.all(active.map(runtime => runtime.flush()));
   for (const dir of tempDirs.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -83,6 +87,7 @@ const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), k
   if (resolvePromptBody) options.resolvePromptBody = resolvePromptBody;
   if (now) options.now = now;
   const runtime = createMessageQueueRuntime(options);
+  runtimes.push(runtime);
   return {
     runtime,
     openCode,
@@ -636,4 +641,93 @@ describe('message queue runtime', () => {
     ]);
     expect(recorded).toEqual([{ sessionId: SESSION, directory: DIRECTORY, signature: 'sig-1' }]);
   });
+});
+
+describe('queued idleness runtime ownership', () => {
+  for (const generation of ['oc1', 'oc2']) {
+    for (const stage of ['status', 'messages', 'commands']) {
+      it('keeps ' + generation + ' queue when profile changes during ' + stage, async () => {
+        let identity = { generation, profile: generation, endpoint: 'http://opencode.test', epoch: 1 };
+        const retired = () => { identity = { ...identity, profile: 'legacy-1.2.27' }; };
+        const sent = vi.fn(async () => ({ accepted: true }));
+        const messages = vi.fn(async () => {
+          if (stage === 'messages') retired();
+          return { data: { order: 'desc', items: [] } };
+        });
+        const children = vi.fn(async () => ({ data: [] }));
+        const kernelOperations = {
+          captureIdentity: () => identity,
+          listActiveStatuses: async () => { if (stage === 'status') retired(); return { data: {} }; },
+          listMessages: messages, listChildren: children,
+          listCommands: async () => { if (stage === 'commands') retired(); return { data: [{ name: 'review' }] }; },
+          sendPrompt: sent, sendCommand: sent,
+        };
+        const { runtime, promptSent, dataDir } = createRuntime({ kernelOperations, retryDelayMs: () => 10_000 });
+        runtime.start();
+        const queued = await runtime.enqueue(SESSION, DIRECTORY, item({ text: stage === 'commands' ? '/review' : 'follow up' }));
+        await settle();
+        runtime.stop();
+        await runtime.flush();
+        expect(sent).not.toHaveBeenCalled();
+        expect(promptSent).toEqual([]);
+        expect(runtime.sessionSnapshot(SESSION).items.map(entry => entry.id)).toEqual([queued.itemId]);
+        if (stage === 'status') expect(messages).not.toHaveBeenCalled();
+        if (stage === 'messages') expect(children).not.toHaveBeenCalled();
+        const restored = createRuntime({ dataDir });
+        await restored.runtime.load();
+        expect(restored.runtime.sessionSnapshot(SESSION).items.map(entry => entry.id)).toEqual([queued.itemId]);
+      });
+    }
+  }
+});
+
+describe('current queue owner delivery', () => {
+  for (const generation of ['oc1', 'oc2']) {
+    it('delivers one stamped ' + generation + ' prompt without additional network reads', async () => {
+      const identity = { generation, profile: generation, endpoint: 'http://opencode.test', epoch: 1 };
+      const status = vi.fn(async () => ({ data: {} }));
+      const messages = vi.fn(async () => ({ data: { order: 'desc', items: [] } }));
+      const children = vi.fn(async () => ({ data: [] }));
+      const sent = vi.fn(async () => ({ accepted: true }));
+      const { runtime, dataDir } = createRuntime({ kernelOperations: {
+        captureIdentity: () => identity, listActiveStatuses: status, listMessages: messages,
+        listChildren: children, sendPrompt: sent,
+      } });
+      runtime.start();
+      await runtime.enqueue(SESSION, DIRECTORY, item());
+      await settle();
+      runtime.stop();
+      await runtime.flush();
+      expect(sent).toHaveBeenCalledTimes(1);
+      expect(sent.mock.calls[0][0].request).toMatchObject(identity);
+      expect(status).toHaveBeenCalledTimes(1);
+      expect(messages).toHaveBeenCalledTimes(1);
+      expect(children).toHaveBeenCalledTimes(generation === 'oc2' ? 1 : 0);
+      const restored = createRuntime({ dataDir });
+      await restored.runtime.load();
+      expect(restored.runtime.sessionSnapshot(SESSION).items).toEqual([]);
+    });
+  }
+});
+
+it('keeps the queue when the replacement runtime cannot admit an identity', async () => {
+  let retired = false;
+  const messages = vi.fn();
+  const sent = vi.fn();
+  const { runtime } = createRuntime({ retryDelayMs: () => 10_000, kernelOperations: {
+    captureIdentity: () => {
+      if (retired) throw new Error('Legacy operations are not yet accepted');
+      return { generation: 'oc1', profile: 'oc1', endpoint: 'http://opencode.test', epoch: 1 };
+    },
+    listActiveStatuses: async () => { retired = true; return { data: {} }; },
+    listMessages: messages, sendPrompt: sent,
+  } });
+  runtime.start();
+  const queued = await runtime.enqueue(SESSION, DIRECTORY, item());
+  await settle();
+  runtime.stop();
+  await runtime.flush();
+  expect(messages).not.toHaveBeenCalled();
+  expect(sent).not.toHaveBeenCalled();
+  expect(runtime.sessionSnapshot(SESSION).items.map(entry => entry.id)).toEqual([queued.itemId]);
 });

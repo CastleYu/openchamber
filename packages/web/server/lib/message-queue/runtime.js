@@ -406,20 +406,33 @@ export function createMessageQueueRuntime({
    * Live idleness, or null when it could not be established. Unknown is never
    * idle: a fetch failure re-arms instead of sending into a running turn.
    */
-  const isSessionIdle = async (sessionId, directory) => {
+  const isCurrent = (identity) => {
+    if (!kernelOperations) return true;
+    try {
+      const current = kernelOperations.captureIdentity();
+      return current.generation === identity.generation && current.profile === identity.profile
+        && current.endpoint === identity.endpoint && current.epoch === identity.epoch;
+    } catch {
+      return false;
+    }
+  };
+
+  const isSessionIdle = async (sessionId, directory, identity) => {
     if (kernelOperations) {
       let statuses;
       let page;
-      const identity = kernelOperations.captureIdentity();
       try {
+        if (!isCurrent(identity)) return null;
         statuses = (await kernelOperations.listActiveStatuses({ directory })).data;
+        if (!isCurrent(identity)) return null;
         page = (await kernelOperations.listMessages({ sessionID: sessionId, directory, limit: MESSAGE_TAIL_LIMIT })).data;
+        if (!isCurrent(identity)) return null;
       } catch {
         return null;
       }
       if (statuses[sessionId]?.type === 'busy' || statuses[sessionId]?.type === 'retry') return false;
       const descendantBusy = await readDescendantActivity(kernelOperations, sessionId, directory, statuses, identity);
-      if (descendantBusy === null) return null;
+      if (descendantBusy === null || !isCurrent(identity)) return null;
       if (descendantBusy) return 'descendant-busy';
       const last = page.order === 'asc' ? page.items.at(-1) : page.items[0];
       if (last?.role === 'assistant' && last.completed === undefined) {
@@ -511,8 +524,8 @@ export function createMessageQueueRuntime({
       : [synthetic];
   };
 
-  const sendItem = async (sessionId, directory, item) => {
-    const identity = kernelOperations?.captureIdentity();
+  const sendItem = async (sessionId, directory, item, identity) => {
+    if (!isCurrent(identity)) throw httpError('OpenCode runtime changed before queued dispatch', 409);
     const { providerID, modelID, agent, variant } = item.sendConfig;
     const fileParts = item.attachments.map(toFilePart);
     const contextParts = item.context.flatMap(toContextParts);
@@ -522,6 +535,7 @@ export function createMessageQueueRuntime({
     // prompt route carries the expanded template (or the skill invocation as an
     // explicit instruction) together with the context.
     const command = await resolveSlashCommand(item.text, directory);
+    if (!isCurrent(identity)) throw httpError('OpenCode runtime changed during queued dispatch', 409);
     if (command && (contextParts.length === 0 || identity?.generation === 'oc2')) {
       const body = { command: command.name, arguments: command.arguments, model: `${providerID}/${modelID}` };
       if (agent) body.agent = agent;
@@ -665,9 +679,10 @@ export function createMessageQueueRuntime({
       return;
     }
 
-    const idle = await isSessionIdle(sessionId, queue.directory);
+    const identity = kernelOperations?.captureIdentity();
+    const idle = await isSessionIdle(sessionId, queue.directory, identity);
     if (stopped) return;
-    if (idle === null) {
+    if (idle === null || !isCurrent(identity)) {
       armDispatch(sessionId, retryDelayMs(1));
       return;
     }
@@ -686,7 +701,7 @@ export function createMessageQueueRuntime({
     sending.set(sessionId, item.id);
     broadcast(sessionId);
     try {
-      await sendItem(sessionId, current.directory, item);
+      await sendItem(sessionId, current.directory, item, identity);
       const after = queues.get(sessionId);
       if (after) setQueueItems(sessionId, after.directory, after.items.filter((entry) => entry.id !== item.id));
       failures.delete(sessionId);

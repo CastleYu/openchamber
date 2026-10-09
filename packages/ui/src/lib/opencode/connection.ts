@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 
-export const CONNECTION = { SETTING: 'opencodeConnection', ROUTE: '/api/config/opencode-connection', RELOAD: '/api/config/reload', ITEM: 'general.opencode-connection' } as const;
+export const CONNECTION = { SETTING: 'opencodeConnection', ROUTE: '/api/config/opencode-connection', PREPARE: '/api/config/opencode-connection/prepare', APPLY: '/api/config/opencode-connection/apply', RELOAD: '/api/config/reload', ITEM: 'general.opencode-connection' } as const;
 export const CONNECTION_MODE = { EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' } as const;
 export const CONNECTION_ISSUE = { INVALID: 'invalid', UNAVAILABLE: 'unavailable', CONFLICT: 'conflict' } as const;
 const modeSchema = z.enum(Object.values(CONNECTION_MODE));
@@ -66,4 +66,36 @@ export const readConnections = async (signal: AbortSignal): Promise<{ status: 'r
   if (response.status === 501) return { status: 'unsupported' };
   if (!response.ok) throw new Error('Connection discovery failed');
   return { status: 'ready', data: discoverySchema.parse(await response.json()) };
+};
+
+export const CONNECTION_SOURCE = { CANDIDATE: 'candidate', PREVIOUS: 'previous' } as const;
+export const CONNECTION_DECISION = { WAIT: 'wait', STOP: 'stop' } as const;
+export const ACTIVITY_SCOPE = { GLOBAL: 'global', DIRECTORIES: 'configured-directories' } as const;
+export const ACTIVITY_STATE = { KNOWN: 'known', UNKNOWN: 'unknown' } as const;
+const countSchema = z.discriminatedUnion('state', [
+  z.strictObject({ state: z.literal(ACTIVITY_STATE.KNOWN), count: z.number().int().nonnegative() }),
+  z.strictObject({ state: z.literal(ACTIVITY_STATE.UNKNOWN), observedCount: z.number().int().nonnegative() }),
+]);
+const reviewSchema = z.strictObject({ token: z.uuid(), connection: connectionSchema,
+  activity: z.strictObject({ state: z.enum(['active', 'inactive', 'transitioning']),
+    scope: z.strictObject({ coverage: z.literal(ACTIVITY_SCOPE.DIRECTORIES), busy: z.enum(Object.values(ACTIVITY_SCOPE)), directories: z.array(z.string()) }),
+    busy: countSchema, permissions: countSchema, questions: countSchema,
+    queue: z.strictObject({ state: z.literal(ACTIVITY_STATE.KNOWN), count: z.number().int().nonnegative(), sending: z.number().int().nonnegative(), revision: z.number().int().nonnegative() }),
+    clients: z.strictObject({ state: z.literal(ACTIVITY_STATE.UNKNOWN), observedCount: z.number().int().nonnegative() }),
+  }),
+});
+export type ConnectionReview = z.infer<typeof reviewSchema>;
+export type ConnectionRequest = { source: typeof CONNECTION_SOURCE.CANDIDATE; connection: ConnectionRecord } | { source: typeof CONNECTION_SOURCE.PREVIOUS };
+type ConnectionFailure = { status: 'changed' | 'unsupported' | 'failed' };
+const failure = (response: Response): ConnectionFailure => ({ status: response.status === 409 ? 'changed' : response.status === 501 ? 'unsupported' : 'failed' });
+export const prepareConnection = async (request: ConnectionRequest, signal: AbortSignal): Promise<{ status: 'ready'; review: ConnectionReview } | ConnectionFailure> => {
+  const response = await runtimeFetch(CONNECTION.PREPARE, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  if (!response.ok) return failure(response);
+  return { status: 'ready', review: reviewSchema.parse(await response.json()) };
+};
+export const applyConnection = async (review: ConnectionReview, decision: typeof CONNECTION_DECISION[keyof typeof CONNECTION_DECISION], signal: AbortSignal): Promise<{ status: 'ready'; connection: ConnectionRecord } | ConnectionFailure> => {
+  const response = await runtimeFetch(CONNECTION.APPLY, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: review.token, decision, acknowledgeClients: true }) });
+  if (!response.ok) return failure(response);
+  const result = z.strictObject({ state: z.literal('ready'), connection: connectionSchema }).parse(await response.json());
+  return { status: 'ready', connection: result.connection };
 };

@@ -12,7 +12,7 @@ run('React confirmation recovers a real OC2 cold host and initializes the existi
   const { origin, cookie } = fixture.data;
   const browser = new Window({ url: origin });
   const descriptors = new Map<string, PropertyDescriptor | undefined>();
-  for (const [key, value] of Object.entries({ window: browser, document: browser.document, navigator: browser.navigator, localStorage: browser.localStorage, Element: browser.Element, HTMLElement: browser.HTMLElement, CustomEvent: browser.CustomEvent, IS_REACT_ACT_ENVIRONMENT: true })) {
+  for (const [key, value] of Object.entries({ window: browser, document: browser.document, navigator: browser.navigator, localStorage: browser.localStorage, Element: browser.Element, HTMLElement: browser.HTMLElement, CustomEvent: browser.CustomEvent, Event: browser.Event, PointerEvent: browser.PointerEvent, requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser), IS_REACT_ACT_ENVIRONMENT: true })) {
     descriptors.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
     Object.defineProperty(globalThis, key, { value, configurable: true });
   }
@@ -51,6 +51,13 @@ run('React confirmation recovers a real OC2 cold host and initializes the existi
     const confirm = Array.from(document.querySelectorAll('button')).find(item => item.textContent === 'Confirm and connect');
     if (!confirm) throw new Error('Missing confirmation');
     await act(async () => confirm.click());
+    await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+    const acknowledgement = document.querySelector('[role="checkbox"]');
+    if (!acknowledgement) throw new Error('Missing acknowledgement');
+    await act(async () => acknowledgement.parentElement?.click());
+    const apply = Array.from(document.querySelectorAll('button')).find(item => item.textContent === 'Switch if idle');
+    if (!apply || apply.disabled) throw new Error('Missing enabled idle switch');
+    await act(async () => apply.click());
     await wait(() => !confirm.disabled);
     expect(document.querySelector('[role="alert"]')).toBeNull();
     expect(await inspect()).toMatchObject({ status: 'ready', profile: 'oc2', version: '2.0.20' });
@@ -58,6 +65,48 @@ run('React confirmation recovers a real OC2 cold host and initializes the existi
     expect(useConfigStore.getState().isInitialized).toBe(true);
     expect(useConfigStore.getState().isConnected).toBe(true);
     expect(document.body.textContent).not.toContain('Use candidate');
+    const button = (label: string) => {
+      const control = Array.from(document.querySelectorAll('button')).find(item => item.textContent === label);
+      if (!control) throw new Error('Missing control '+label);
+      return control;
+    };
+    const accept = async () => {
+      const checkbox = document.querySelector('[role="checkbox"]');
+      if (!checkbox) throw new Error('Missing acknowledgement');
+      await act(async () => checkbox.parentElement?.click());
+      expect(button('Switch if idle').disabled).toBe(false);
+      await act(async () => button('Switch if idle').click());
+    };
+    // The same active record must pass through review rather than generic reload.
+    await act(async () => button('Retry').click());
+    await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+    expect(button('Switch if idle').disabled).toBe(true);
+    await accept();
+    await wait(() => Array.from(document.querySelectorAll('button')).some(item => item.textContent === 'Confirm and connect' && !item.disabled));
+    expect(await inspect()).toMatchObject({status:'ready',profile:'oc2'});
+    await act(async () => button('External server').click());
+    const input = document.querySelector('input[aria-label="Server URL"]');
+    if (!input) throw new Error('Missing endpoint input');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(browser.HTMLInputElement.prototype, 'value')?.set?.call(input, 'http://127.0.0.1:9');
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+    await act(async () => button('Confirm and connect').click());
+    await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+    await accept();
+    await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('change failed') === true);
+    expect((await inspect()).status).toBe('unreachable');
+    await wait(() => !button('Return to previous connection').disabled);
+    expect(useConfigStore.getState().isConnected).toBe(false);
+    await act(async () => button('Return to previous connection').click());
+    await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+    expect(button('Switch if idle').disabled).toBe(true);
+    expect((await inspect()).status).toBe('unreachable');
+    await accept();
+    await wait(() => Array.from(document.querySelectorAll('button')).some(item => item.textContent === 'Confirm and connect' && !item.disabled));
+    expect(document.querySelector('[role="alert"]')).toBeNull();
+    expect(await inspect()).toMatchObject({status:'ready',profile:'oc2',version:'2.0.20'});
+    expect(useConfigStore.getState().isConnected).toBe(true);
   } finally {
     await act(async () => root.unmount());
     setRuntimeExtraHeaders(null);

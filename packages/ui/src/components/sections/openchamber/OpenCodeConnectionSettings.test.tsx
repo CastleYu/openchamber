@@ -7,6 +7,11 @@ import { CONNECTION, CONNECTION_MODE, connectionSchema, connectionDraft, parseCo
 
 const modes = Object.values(CONNECTION_MODE).map(mode => ({ mode, available: mode !== CONNECTION_MODE.PATH }));
 let saved: z.infer<typeof connectionSchema> | null = null;
+let previous: z.infer<typeof connectionSchema> | null = null;
+let pending: z.infer<typeof connectionSchema> | null = null;
+let busyCount = 0;
+const decisions: string[] = [];
+let preparations = 0;
 let failRead = false;
 let failWrite = false;
 let failStart = false;
@@ -28,30 +33,35 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ saved, error: saved ? null : 'conflict', modes, candidates: saved ? [] : [candidate], recommendation: null }));
     return;
   }
-  if (req.url === CONNECTION.RELOAD) {
-    starts++;
-    res.statusCode = failStart ? 500 : 200;
-    res.end(JSON.stringify({ success: !failStart })); return;
+  if (req.url === CONNECTION.PREPARE) {
+    preparations++;
+    let body = ''; for await (const chunk of req) body += chunk.toString();
+    const input = z.discriminatedUnion('source', [z.strictObject({source: z.literal('candidate'), connection: connectionSchema}), z.strictObject({source: z.literal('previous')})]).parse(JSON.parse(body));
+    pending = input.source === 'previous' ? previous : input.connection;
+    if (!pending) { res.statusCode = 422; res.end('{}'); return; }
+    res.end(JSON.stringify({ token: '74e51929-8307-43d8-8496-3c3856352e98', connection: pending,
+      activity: { state: saved ? 'active' : 'inactive', scope: { coverage: 'configured-directories', busy: 'global', directories: ['C:/Work'] },
+        busy: {state:'known',count:busyCount}, permissions:{state:'known',count:0}, questions:{state:'unknown',observedCount:1},
+        queue:{state:'known',count:2,sending:0,revision:1}, clients:{state:'unknown',observedCount:0} } })); return;
+  }
+  if (req.url === CONNECTION.APPLY) {
+    let body = ''; for await (const chunk of req) body += chunk.toString();
+    const input = z.strictObject({token:z.uuid(),decision:z.enum(['wait','stop']),acknowledgeClients:z.literal(true)}).parse(JSON.parse(body));
+    decisions.push(input.decision);
+    if (delayWrite) { delayWrite = false; await new Promise<void>(resolve => { holdWrite = resolve; }); }
+    if (failWrite || input.decision === 'wait' && busyCount > 0) { res.statusCode = 409; res.end('{}'); return; }
+    if (!pending) throw new Error('Missing reviewed candidate');
+    previous = saved; saved = pending; writes++; starts++;
+    res.statusCode = failStart ? 503 : 200;
+    res.end(JSON.stringify({ state:'ready',connection:saved })); return;
   }
   if (req.url?.startsWith('/api/config/settings')) {
-    if (req.method === 'PUT') {
-      let body = '';
-      for await (const chunk of req) body += chunk.toString();
-      const value = z.object({ [CONNECTION.SETTING]: connectionSchema.optional() }).parse(JSON.parse(body));
-      const requested = value[CONNECTION.SETTING];
-      if (requested) {
-        writes++;
-        if (delayWrite) { delayWrite = false; await new Promise<void>(resolve => { holdWrite = resolve; }); }
-        if (failWrite) { res.statusCode = 409; res.end('{}'); return; }
-        saved = requested;
-      }
-    }
     res.end(JSON.stringify({ [CONNECTION.SETTING]: saved })); return;
   }
   if (req.url?.startsWith('/api/opencode/runtime')) {
-    res.end(JSON.stringify({ status: 'ready', generation: 'oc2', endpoint: url, epoch: writes, version: '2.0.20', profile: 'oc2' })); return;
+    res.end(JSON.stringify({ status: failStart ? 'unreachable' : 'ready', generation: 'oc2', endpoint: url, epoch: writes, version: '2.0.20', profile: 'oc2' })); return;
   }
-  if (req.url === '/health') { res.end(JSON.stringify({ isOpenCodeReady: true })); return; }
+  if (req.url === '/health') { res.end(JSON.stringify({ isOpenCodeReady: !failStart })); return; }
   res.end('{}');
 });
 await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -59,7 +69,7 @@ const address = z.object({ port: z.number().int().positive() }).parse(server.add
 const url = 'http://127.0.0.1:' + address.port;
 const browser = new Window({ url });
 const descriptors = new Map<string, PropertyDescriptor | undefined>();
-for (const [key, value] of Object.entries({ window: browser, document: browser.document, navigator: browser.navigator, localStorage: browser.localStorage, Element: browser.Element, HTMLElement: browser.HTMLElement, CustomEvent: browser.CustomEvent, IS_REACT_ACT_ENVIRONMENT: true })) {
+for (const [key, value] of Object.entries({ window: browser, document: browser.document, navigator: browser.navigator, localStorage: browser.localStorage, Element: browser.Element, HTMLElement: browser.HTMLElement, CustomEvent: browser.CustomEvent, PointerEvent: browser.PointerEvent, requestAnimationFrame: browser.requestAnimationFrame.bind(browser), cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser), IS_REACT_ACT_ENVIRONMENT: true })) {
   descriptors.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
   Object.defineProperty(globalThis, key, { value, configurable: true });
 }
@@ -110,47 +120,90 @@ test('draft preserves exact argument boundaries, validates references and normal
     expect(parseConnectionDraft({ ...connectionDraft(), mode: CONNECTION_MODE.EXTERNAL, endpoint: value }).success).toBe(false);
 });
 
-test('candidate needs confirmation; failures preserve draft and saved connection; locale does not write', async () => {
+const acknowledge = async () => {
+  const checkbox = document.querySelector('[role="checkbox"]');
+  if (!checkbox) throw new Error('Missing acknowledgement');
+  await act(async () => checkbox.parentElement?.click());
+};
+const review = async () => {
+  await act(async () => button('Confirm and connect').click());
+  await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+};
+test('confirmation displays activity, preserves drafts and requires renewed acknowledgement', async () => {
   await mount('initial');
   await wait(() => document.body.textContent?.includes('Candidates disagree') === true);
   expect(writes).toBe(0); expect(starts).toBe(0);
   expect(button('Confirm and connect').disabled).toBe(true);
   expect(button('Server PATH').disabled).toBe(true);
   await act(async () => button('Custom command').click());
-  expect(document.querySelectorAll('textarea').length).toBe(2);
-  expect(document.querySelectorAll('input').length).toBe(2);
   await act(async () => button('Confirm and connect').click());
   expect(document.querySelector('[role="alert"]')?.textContent).toContain('Invalid connection');
-  expect(writes).toBe(0); expect(starts).toBe(0);
   await act(async () => button('Use candidate').click());
+  await review();
   expect(writes).toBe(0); expect(starts).toBe(0);
-  expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
+  expect(document.body.textContent).toContain('Busy sessions across the server: 0');
+  expect(document.body.textContent).toContain('Pending questions: Unknown');
+  expect(document.body.textContent).toContain('Queued messages: 2');
+  expect(button('Switch if idle').disabled).toBe(true);
   await act(async () => useI18nStore.getState().setLocale('zh-CN'));
+  await wait(() => document.body.textContent?.includes('待处理问题：未知') === true);
+  expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
+  await act(async () => useI18nStore.getState().setLocale('en'));
+  await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+  await acknowledge();
+  expect(button('Switch if idle').disabled).toBe(false);
+  await act(async () => button('Refresh activity').click());
+  await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+  expect(button('Switch if idle').disabled).toBe(true);
+  await act(async () => button('Cancel').click());
   expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
   expect(writes).toBe(0);
-  await act(async () => useI18nStore.getState().setLocale('en'));
+  await review(); await acknowledge();
   failWrite = true;
-  await act(async () => button('Confirm and connect').click());
-  await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('not saved') === true);
+  await act(async () => button('Switch if idle').click());
+  await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('changed') === true);
   expect(starts).toBe(0); expect(saved).toBeNull();
-  expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
-  failWrite = false; failStart = true;
-  const confirmation = button('Confirm and connect');
-  await act(async () => { confirmation.click(); confirmation.click(); });
-  await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('Connection saved') === true);
-  expect(saved).toEqual({ ...candidate.record, confirmed: true });
-  expect(writes).toBe(2); expect(starts).toBe(1);
-  expect(document.body.textContent).not.toContain('Candidates disagree');
-  expect(document.body.textContent).not.toContain('Use candidate');
-  failStart = false;
-  await act(async () => button('Retry').click());
-  await wait(() => !confirmation.disabled);
-  expect(writes).toBe(2); expect(starts).toBe(2);
+  failWrite = false;
+  await review(); await acknowledge();
+  const apply = button('Switch if idle');
+  await act(async () => { apply.click(); apply.click(); });
+  await wait(() => Array.from(document.querySelectorAll('button')).some(item => item.textContent === 'Confirm and connect' && !item.disabled));
+  expect(writes).toBe(1); expect(starts).toBe(1);
   expect(document.querySelector('[role="alert"]')).toBeNull();
   expect(useConfigStore.getState().isConnected).toBe(true);
   expect(useConfigStore.getState().isInitialized).toBe(true);
   expect(document.querySelector('[data-settings-item="general.opencode-connection"]')).not.toBeNull();
 }, 20000);
+
+test('busy rejection requires a fresh review; explicit stop and failed-start recovery are separate decisions', async () => {
+  const original = saved;
+  await act(async () => button('Bundled CLI').click());
+  busyCount = 1;
+  await review(); await acknowledge();
+  const before = starts;
+  await act(async () => button('Switch if idle').click());
+  await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('changed') === true);
+  expect(starts).toBe(before); expect(saved).toEqual(original);
+  await review(); await acknowledge();
+  failStart = true;
+  await act(async () => button('Stop and switch').click());
+  await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('change failed') === true);
+  expect(saved?.mode).toBe('bundled'); expect(previous).toEqual(original);
+  expect(decisions.at(-1)).toBe('stop');
+  await wait(() => !button('Return to previous connection').disabled);
+  expect(useConfigStore.getState().isConnected).toBe(false);
+  failStart = false; busyCount = 0;
+  const count = preparations;
+  await act(async () => button('Return to previous connection').click());
+  await wait(() => document.body.textContent?.includes('Review connection switch') === true);
+  expect(preparations).toBe(count+1);
+  expect(button('Switch if idle').disabled).toBe(true);
+  expect(saved?.mode).toBe('bundled');
+  await acknowledge();
+  await act(async () => button('Switch if idle').click());
+  await wait(() => Array.from(document.querySelectorAll('button')).some(item => item.textContent === 'Confirm and connect' && !item.disabled));
+  expect(saved).toEqual(original); expect(document.querySelector('[role="alert"]')).toBeNull();
+},20000);
 
 test('failed discovery can retry, unsupported never offers writes, retired response cannot refill form', async () => {
   failRead = true;
@@ -180,13 +233,14 @@ test('failed discovery can retry, unsupported never offers writes, retired respo
   await act(async () => button('Bundled CLI').click());
   delayWrite = true;
   const startCount = starts;
-  await act(async () => button('Confirm and connect').click());
+  await review(); await acknowledge();
+  await act(async () => button('Switch if idle').click());
   await wait(() => holdWrite !== null);
   unsupported = true;
   await act(async () => switchRuntimeEndpoint({ apiBaseUrl: url, runtimeKey: 'editor-final-host' }));
   await wait(() => document.body.textContent?.includes('does not support') === true);
   await act(async () => { holdWrite?.(); await new Promise(resolve => setTimeout(resolve, 30)); });
-  expect(starts).toBe(startCount);
+  expect(starts).toBe(startCount + 1);
   expect(document.querySelector('input')).toBeNull();
   expect(document.querySelector('[role="alert"]')).toBeNull();
 }, 20000);

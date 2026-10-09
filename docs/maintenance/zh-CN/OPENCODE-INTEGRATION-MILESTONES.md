@@ -394,3 +394,11 @@ R1 仍进行中：活动写入继续返回 409，待完成活动／批准／客�
 专项回归 231 项通过、1 项已有跳过；真实子进程生命周期 7 项通过。外部身份审查补强后，最终 owner 测试 29 项通过。工作区类型／lint、Web／VS Code 构建通过，lint 保留 5 项已有警告。dead-code 完成，新确认 owner 无报告。anti-slop 的 311 项诊断均位于既有行，新增行无诊断；最终四份 owner／测试文件检查无诊断。真实 OC2 2.0.20 宿主 24 项验证通过，包括鉴权、活动 PID 替换、外部目标就绪失败返回 503 及显式恢复旧目标；未调用模型对话。证据：artifacts/int02-host-switch-live-evidence.json、artifacts/int02-host-switch-check-status.json、artifacts/int02-host-switch-anti-review.json。
 
 核对进程／注册表及路径后清理四个完成的隔离测试目录，释放 51,503,732 字节。保留精简日志／证据和真实 OC2 程序供剩余 R1 验收；实际宿主脚本供共享编辑器流程复用，一次性修改脚本删除。清理记录：artifacts/int02-host-switch-cleanup.json。R1 仍进行中，下一阶段完成共享确认／恢复界面、客户端协调、VS Code manager 接入及适用运行时验收。实时周额度剩余 41%。已冻结 CA-02 Release 不变。
+
+### R1 共用确认与恢复界面检查点，2026-10-10
+
+General 设置与冷启动恢复现已 prepare 实际候选，显示活动数量及检查范围，要求确认未知其他客户端的影响，再显式选择仅空闲时切换或停止并切换。刷新清除确认，取消保留草稿。就绪失败刷新保存意图及共用连接状态，不自动恢复。重试与返回上一个连接都重新审阅。宿主变化拒绝过期完成结果。18 个新增键在 13 种语言中均有实际翻译。未新增控制器、依赖或清理服务。
+
+四项 React／HTTP 测试通过，共 79 项断言。真实 OC2 2.0.20 的 React 流程通过 37 项断言，覆盖冷启动、活动替换、外部目标就绪失败及显式返回；24 项生产宿主检查也通过，未调用模型。最终全工作区类型检查／lint、自编文件 oxlint、dead-code 及 Web／VS Code 构建通过。Lint 保留五条既有警告；dead-code 保留两个文件、319 项导出及 231 个类型，新增确认契约无发现。VS Code 产物包含最终活动范围文案，管理器写入仍明确不支持。证据：artifacts/int02-ui-switch-evidence.json；源码指纹：artifacts/int02-ui-switch-live-evidence.json。
+
+经边界、归属、重解析点、进程及注册表检查，删除五个已完成隔离测试目录和 14 个一次性脚本，释放 64533828 字节。真实 OC2 程序及可复用 UI 验收夹具保留给明确的后续 R1 检查。清理记录：artifacts/int02-ui-switch-cleanup.json。R1 仍待其他客户端协调、VS Code 管理器及适用运行时验收。不宣称原生视觉、打包宿主、模型对话、精确 Legacy 或真实 CAgent 已验收。周额度剩余 40%。冻结的 CA-02 Release 不变。

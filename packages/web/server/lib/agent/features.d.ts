@@ -2,6 +2,7 @@ import type { AgentAvailability, AgentIdentity, AgentOperation, AgentRuntime } f
 import { AGENT_FEATURE } from './constants.js';
 
 export type AgentFeature = typeof AGENT_FEATURE[keyof typeof AGENT_FEATURE];
+export const AGENT_CONVERSATION_FEATURES: readonly AgentFeature[];
 export type AgentHostSupport = Readonly<{ identity: AgentIdentity; implemented: readonly AgentFeature[] }>;
 export type AgentFeatureSnapshot = Readonly<{
   identity: AgentIdentity; features: Readonly<{ [K in AgentFeature]: AgentAvailability }>;

@@ -38,8 +38,8 @@ manifest; other locales use its English label. Generic controls use all 13 app
 locales. The panel receives verified conversation context, including global actions
 before binding. Chat activity and uncertainty block extension mutations.
 
-Production extension support stays closed until adapter assembly and real
-acceptance pass. The offline loader still assembles only core operation packets.
+The offline pipeline assembles core and finite extension packets. Production
+actions require exact independent approval and a verified current manifest.
 Synthetic client, controller and DOM tests do not establish CAgent API compatibility
 or native/browser acceptance.
 
@@ -70,7 +70,8 @@ but must match the requested ID, family and connection.
 Web, Electron, hosted mobile and Capacitor use their existing HTTP runtime ports.
 VS Code keeps the owned-route `unsupported-runtime` refusal until its host is
 implemented. App roots use protected family selection and the separate CAgent conversation page consumes this client. Existing OpenCode sync consumers remain separate. Production host
-feature support remains absent; this module enables no CAgent feature.
+feature support registers only the separate page's acquisition, history and prompt
+consumers. Their operation dependencies still require independent approval.
 
 Focused checks use `client.test.ts` and the adjacent runtime-fetch/runtime-switch
 tests with Bun. Tests inject transport ports without mocking modules. They cover
@@ -132,10 +133,10 @@ With a journal, send records family, connection, optional host principal, worksp
 
 Reopening a controller restores unresolved records as unknown and blocks new sends. Matching authoritative accepted/complete/not-sent evidence clears only its request; another pending request remains unknown. Failed cleanup keeps uncertainty and the record. A host duplicate also keeps uncertainty until the prior outcome is queried. A pre-transport cancellation removes its known-unsent marker. Request identity continuity does not infer live activity or assistant completion. Recovery errors never delete uncertain records.
 
-Web, Electron, hosted mobile and Capacitor mount this controller through the CAgent page. VS Code retains the owned-route refusal. Host support remains unavailable until presentation, observation strategy and all recorded feature consumers pass their gates. Synthetic tests do not establish real CAgent acceptance.
+Web, Electron, hosted mobile and Capacitor mount this controller through the CAgent page. VS Code retains the owned-route refusal. Production registers only acquisition, history and prompt support, bound to the current host identity. Other core features remain unmigrated. Synthetic tests do not establish real CAgent acceptance.
 
 ## CAgent conversation page
 
 `CAgentApp` owns a binding and disposes it on unmount, including a binding that resolves after cleanup. It binds an existing opaque workspace/session; it does not create a conversation or infer IDs from local paths. Actions use the inspected operation and feature gates. Refresh explicitly reads history and status independently, retaining successful data if another read fails. Status comes only from `getSessionStatus`; failed status is displayed as unknown rather than current prior activity.
 
-Before sending, the page reads status again and dispatches only when that result is idle for its bound conversation. One new request gets one UUID. Unknown outcomes preserve the draft and block another send; result lookup queries the original request without replay. Accepted/complete receipts are presented as acceptance, not assistant completion. Pagination and normalized text, reasoning, structured tool data and attachment labels are supported; no attachment download URL is invented. The finite extension panel uses its own action journal. Decisions, cancellation, creation and core catalogs remain later work, so production feature support stays closed.
+Before sending, the page reads status again and dispatches only when that result is idle for its bound conversation. One new request gets one UUID. Unknown outcomes preserve the draft and block another send; result lookup queries the original request without replay. Accepted/complete receipts are presented as acceptance, not assistant completion. Pagination and normalized text, reasoning, structured tool data and attachment labels are supported; no attachment download URL is invented. The finite extension panel uses its own action journal. Decisions, cancellation, creation and core catalogs remain later work. Production host support lists only acquisition, history and prompt; the page additionally requires GET_SESSION to open an existing session, so a create-only adapter cannot open this page. Exact independent operation approval and a durable write ledger remain required. Revocation closes the affected operation on its next host check.

@@ -7,6 +7,10 @@ const rule = (all, any = []) => Object.freeze({
   all: Object.freeze(all), any: Object.freeze(any.map((items) => Object.freeze(items))),
 });
 const op = AGENT_OPERATION;
+/** Features consumed by the separate CAgent conversation page, not the OpenCode app. */
+export const AGENT_CONVERSATION_FEATURES = Object.freeze([
+  AGENT_FEATURE.ACQUIRE_SESSION, AGENT_FEATURE.HISTORY, AGENT_FEATURE.PROMPT,
+]);
 /** Maintainer-owned action dependencies. Candidate adapters cannot replace these rules. */
 export const AGENT_FEATURE_RULES = Object.freeze({
   [AGENT_FEATURE.ACQUIRE_SESSION]: rule([], [[op.CREATE_SESSION], [op.GET_SESSION]]),

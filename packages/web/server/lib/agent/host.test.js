@@ -5,13 +5,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { createAgentAttempts } from './attempts.js';
 import { agentArtifactDigest } from './artifacts.js';
 import { createAgentApprovals } from './approvals.js';
 import { createAgentApprovalWriter } from './approval-writer.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { createAgentHost } from './host.js';
+import { AGENT_CONVERSATION_FEATURES } from './features.js';
 import { createKernelRuntime, KernelRuntimeChangedError } from '../opencode/kernel-runtime.js';
 
 const roots = new Set();
@@ -77,6 +78,50 @@ afterEach(async () => {
 });
 
 describe('createAgentHost', () => {
+  it('opens only migrated conversation features after exact review and closes them on revocation', async () => {
+    const operations = [operation, AGENT_OPERATION.LIST_MESSAGES, AGENT_OPERATION.SEND_PROMPT, AGENT_OPERATION.GET_SESSION_STATUS];
+    const item = await artifact(`export function createAdapter() {
+      return { capabilities: { ${operations.map((id) => `'${id}': { state: 'unverified', evidence: ['synthetic-packet'] }`).join(',')} },
+        handlers: { ${operations.map((id) => `'${id}': async () => (${JSON.stringify(session)})`).join(',')} } };
+    }`);
+    const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'oc-agent-conversation-review-'));
+    roots.add(directory);
+    const ledger = await fsp.mkdtemp(path.join(os.tmpdir(), 'oc-agent-conversation-ledger-'));
+    roots.add(ledger);
+    const store = createAgentApprovals({ directory });
+    const writer = createAgentApprovalWriter({ directory });
+    const host = createAgentHost({
+      getAcceptance: store.read, attempts: createAgentAttempts({ directory: ledger }),
+      getHostSupport: () => ({ identity: host.dispatcher.captureIdentity(), implemented: AGENT_CONVERSATION_FEATURES }),
+    });
+    const identity = await select(host, item, connection('http://127.0.0.1/'));
+    expect(Object.isFrozen(AGENT_CONVERSATION_FEATURES)).toBe(true);
+    for (const id of AGENT_CONVERSATION_FEATURES) expect(host.features.describe().features[id].available).toBe(false);
+    const review = (ids) => approvalFor(identity, item.manifest.artifactDigest, { operations: ids.map((id) => ({
+      operation: id, state: AGENT_SUPPORT.ADAPTED, evidence: ['independent-synthetic-review'],
+    })) });
+    writer.write(review(operations));
+    const snapshot = host.features.describe();
+    expect(Object.entries(snapshot.features).filter(([, state]) => state.available).map(([id]) => id).sort())
+      .toEqual([...AGENT_CONVERSATION_FEATURES].sort());
+    for (const [id, state] of Object.entries(snapshot.features)) {
+      if (!AGENT_CONVERSATION_FEATURES.includes(id)) expect(state).toEqual({ available: false, reason: AGENT_ERROR.UNMIGRATED });
+    }
+    expect((await host.dispatcher.dispatch(operation, { workspaceID: 'w1', sessionID: 's1' }, identity)).data).toEqual(session);
+    writer.write(review(operations.filter((id) => id !== AGENT_OPERATION.GET_SESSION_STATUS)));
+    expect(host.features.describe().features[AGENT_FEATURE.PROMPT].available).toBe(false);
+    expect(host.features.describe().features[AGENT_FEATURE.HISTORY].available).toBe(true);
+    writer.revoke({ family: profile.family, connectionID: identity.connectionID });
+    for (const id of AGENT_CONVERSATION_FEATURES) expect(host.features.describe().features[id].available).toBe(false);
+    host.selectOpenCode();
+    expect(() => host.features.describe()).toThrow(expect.objectContaining({ code: AGENT_ERROR.UNAVAILABLE }));
+    const closed = makeHost(() => review(operations));
+    await select(closed, item, connection('http://127.0.0.1/'));
+    for (const state of Object.values(closed.features.describe().features)) {
+      expect(state).toEqual({ available: false, reason: AGENT_ERROR.UNMIGRATED });
+    }
+  });
+
   it('loads an unverified artifact and dispatches only while its persisted live review remains exact', async () => {
     const item = await artifact(source().replace("state: 'supported'", "state: 'unverified'"));
     let calls = 0;

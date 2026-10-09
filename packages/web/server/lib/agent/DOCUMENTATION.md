@@ -12,11 +12,11 @@ values through `extensions.js`. The shared client checks exact identity, declare
 context, bounded results and receipt semantics without importing host I/O. Client
 parsing grants no authority and does not provide durable extension recovery.
 
-This module implements part of CA-01. The server reserves authenticated owned routes, but its binding remains inactive and CAgent is unavailable. Current OpenCode runtime behavior is unchanged. The remaining migration is tracked in [the execution checkpoint](../../../../../docs/maintenance/CAGENT-EXECUTION.md).
+This module implements part of CA-01. Authenticated owned routes support protected startup selection and independently approved operations. Production registers only the separate conversation page's acquisition, history and prompt consumers; it defaults to OpenCode. Real CAgent acceptance and the remaining migration are tracked in [the execution checkpoint](../../../../../docs/maintenance/CAGENT-EXECUTION.md).
 
 `constants.js` owns backend-family, support, operation and refusal constants. `dispatcher.d.ts` defines runtime-neutral requests/results for the 22 effect/read operations consumed by the host inventory. Identity capture is the 23rd host operation and belongs to the dispatcher rather than the adapter. Workspace IDs are backend-owned identifiers, never implicit local directories. No SDK raw payload is required by these contracts. More detailed message/decision contracts and UI operations must be added from consumer semantics before their migration is accepted.
 
-`extensions.js` owns strict finite CAgent extension manifests and value parsers. Inputs are bounded scalar controls or scalar lists; outputs are text, fields or tables. Manifest metadata has no activation authority. Host registration, dispatch, shared UI controls and recovery exist. Candidate preparation, fixture checks, assembly and loading accept finite extensions; independent approval promotion and real acceptance still require completion. Production support stays closed. Web and Electron reuse the host; hosted mobile and Capacitor connect through its HTTP boundary. VS Code retains its explicit unsupported route behavior.
+`extensions.js` owns strict finite CAgent extension manifests and value parsers. Inputs are bounded scalar controls or scalar lists; outputs are text, fields or tables. Manifest metadata has no activation authority. Host registration, dispatch, shared UI controls and recovery exist. Candidate preparation, fixture checks, assembly and loading accept finite extensions. Exact independent approval can promote unverified finite actions; real acceptance remains required in the target environment. Web and Electron reuse the host; hosted mobile and Capacitor connect through its HTTP boundary. VS Code retains its explicit unsupported route behavior.
 
 `createAgentAuthority` accepts up to 64 unique optional extension registrations, each with a detached frozen manifest, capability evidence and host handler. Optional independent approval rows bind action ID, manifest revision and `agentExtensionDigest(manifest)` in addition to the existing connection/server/adapter/artifact requirements. The digest hashes JSON serialization of the parsed canonical manifest. Old approvals without extension rows grant no extension. A failed action row does not remove unrelated accepted actions. This is host registration, not permission for the environment-local author to edit host code.
 
@@ -88,19 +88,19 @@ Old unscoped host attempts remain on disk but are not adopted into principal-sco
 
 `features.js` owns 17 fixed action dependency rules covering the current 22-operation inventory. All-of rules require every operation and prerequisite read. Session acquisition accepts either verified creation or reading an existing session. An optional action's failure leaves unrelated actions available. These rules are not the complete product registry. Queue, goals, sync, assets, decisions beyond permissions and CAgent extensions still need their consumed contracts and rules.
 
-`createAgentFeatures({ getRuntime, getHostSupport })` intersects current operation availability with host-owned implementation support bound to the exact identity. Its optional support port defaults to null. Missing, malformed or duplicate implementation rows close all actions with `unmigrated-consumer`; a throwing port refuses availability, and stale identity is `backend-changed`. Candidate adapters cannot supply this port or replace the frozen rules. Production supplies no implementation port, so it asserts no actual caller migration.
+`createAgentFeatures({ getRuntime, getHostSupport })` intersects current operation availability with host-owned implementation support bound to the exact identity. Its optional support port defaults to null. Missing, malformed or duplicate implementation rows close all actions with `unmigrated-consumer`; a throwing port refuses availability, and stale identity is `backend-changed`. Candidate adapters cannot supply this port or replace the frozen rules. Production supplies the frozen `AGENT_CONVERSATION_FEATURES` list for the separate CAgent page: acquisition, history and prompt only. The port captures current host identity on every read. This records consumer implementation, not CAgent server acceptance; each dependency still requires current independent operation approval and mutations require durable storage. All other core features remain unmigrated.
 
-`requireFeature(feature, expectedIdentity)` rechecks both ports on every call. Consumers must check before taking queued intent or entering a workflow, then use guarded operation dispatch. This is not a lease and executes no effects. Direct operation guards remain; actual UI, shortcuts and browser-closed callers are not yet migrated to feature checks. Prompt/status availability alone cannot prove interactive chat or unattended completion semantics.
+`requireFeature(feature, expectedIdentity)` rechecks both ports on every call. Consumers must check before taking queued intent or entering a workflow, then use guarded operation dispatch. This is not a lease and executes no effects. Direct operation guards remain. The separate conversation client/page checks operation and feature snapshots; existing OpenCode UI, shortcuts and browser-closed callers stay outside CAgent. Prompt/status availability alone cannot prove assistant completion or unattended workflow semantics.
 
 The fourth owned route, GET `/api/agent-backend/features`, returns a strictly validated complete feature snapshot after authentication. It invokes no handlers and sends fixed refusal codes. Missing composition returns 503; production's inactive dispatcher also returns 503 `unavailable`. VS Code refuses it with the existing namespace guard. Feature snapshots provide information and grant no later dispatch authority. `features.test.js` and the feature HTTP tests check dependencies, alternative acquisition, host migration, identity, revocation and handler isolation.
 
 | Runtime | Current behavior |
 | --- | --- |
-| Web | Owned routes and durable storage are composed with an inactive binding. Identity, dispatch and lookup return 503 `unavailable`. CAgent unavailable. |
-| Electron | Same in-process web backend and refusals. No native protocol implementation. CAgent unavailable. |
+| Web | Defaults to OpenCode. Protected startup may select CAgent; the separate conversation page requires exact independent operation approval. Other core features remain unmigrated. |
+| Electron | Same in-process web backend and guards. No separate native CAgent protocol implementation. |
 | VS Code | Webview and extension-host generic proxy refuse owned agent routes with 501 `unsupported-runtime`; no OpenCode forwarding. CAgent unavailable. |
-| Hosted mobile | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
-| Capacitor | Selected OpenChamber server exposes the same inactive routes and refusals. CAgent unavailable. |
+| Hosted mobile | Selected OpenChamber server supplies the same protected selection and guarded conversation routes. |
+| Capacitor | Selected OpenChamber server supplies the same protected selection and guarded conversation routes through existing runtime HTTP/auth. |
 
 ## Shared HTTP contracts
 
@@ -137,7 +137,8 @@ OpenCode. Explicit CAgent failure propagates and never falls back to OpenCode.
 This programmatic composition input is not an HTTP, settings or adapter port.
 It validates structure and artifact bytes, not server identity, readiness or
 acceptance meaning. The maintainer must supply and independently verify those
-inputs. Host feature support is still absent, so selection does not enable chat.
+inputs. Selection alone grants nothing; the conversation feature port intersects
+the three migrated consumers with exact current operation approval.
 
 `startOpenCodeConsumers` starts automatic permissions and the message queue only
 for the current OpenCode selection. Selection retirement stops both. Queue stop
@@ -148,7 +149,7 @@ explicit startup and its independent approvals.
 
 The coordinator defaults to OpenCode and exposes an immutable `getSelection()` snapshot with family and revision. A structurally valid CAgent selection advances that revision before loading; loading failure and `clear()` retain the CAgent family with no active binding. Only the maintainer-owned `selectOpenCode()` port returns to OpenCode. It also retires pending adapter loads and selection-scoped request ports. Snapshots contain no credentials, perform no I/O and remain unchanged after later selections.
 
-The web entrypoint composes one coordinator for the Agent routes and OpenCode kernel runtime. Its selection port invalidates the OpenCode descriptor by family/revision, including a same-endpoint return. CAgent produces an unsupported descriptor and performs no OpenCode generation probe. Concurrent refresh and health probes share valid results; descriptor commits alone do not retire a connection. Tests join the real host with the kernel runtime and native adapter artifacts. Production still has no user selection entrypoint or host support approval; CAgent remains unavailable on all five hosts. This gate covers descriptor consumers, not every unmigrated owned route, lifecycle action or UI caller. Their individual migration remains required before activation.
+The web entrypoint composes one coordinator for the Agent routes and OpenCode kernel runtime. Its selection port invalidates the OpenCode descriptor by family/revision, including a same-endpoint return. CAgent produces an unsupported descriptor and performs no OpenCode generation probe. Concurrent refresh and health probes share valid results; descriptor commits alone do not retire a connection. Tests join the real host with the kernel runtime and native adapter artifacts. Selection remains a protected process-startup input, with no user settings selector. The three conversation features have host implementation support; their operation approvals remain independent. VS Code remains unsupported. This gate covers descriptor consumers, not every unmigrated owned route, lifecycle action or UI caller. Their individual migration remains required before activation.
 
 ## OpenCode lifecycle isolation
 The Web lifecycle and readiness loop now consume the same family/revision

@@ -56,6 +56,7 @@ import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js'
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
+import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
 import { selectAgentStartup, startOpenCodeConsumers } from './lib/agent/startup.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
 import { createAgentApprovals } from './lib/agent/approvals.js';
@@ -728,6 +729,9 @@ const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_D
 const agentHost = createAgentHost({
   getAcceptance: agentApprovals.read,
   attempts: createAgentAttempts({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_ATTEMPT.DIRECTORY) }),
+  getHostSupport: () => ({
+    identity: agentHost.dispatcher.captureIdentity(), implemented: AGENT_CONVERSATION_FEATURES,
+  }),
 });
 const openCodeAuthStateRuntime = createOpenCodeAuthStateRuntime({
   crypto,

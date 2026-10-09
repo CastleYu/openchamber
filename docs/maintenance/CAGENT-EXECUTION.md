@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: reviewed extension inventory binding
+## Latest checkpoint: asynchronous credential retirement
+
+2026-10-09. Shared runtime authentication now observes changes in one asynchronous provider's resolved credential, including removal and return. Replaced-provider results and older conflicting results are refused with a fixed error. Agent client regression coverage verifies retirement, aborted signals and refusal of stale scopes through an injected transport. Detection occurs during header resolution; this does not establish a host principal or background account-change detection.
+
+Ninety-six focused authentication, fetch, client, conversation and journal tests pass. Workspace type-check and lint pass; lint retains five unrelated warnings. Changed-file ESLint passes. Anti-slop reports 25 existing diagnostics outside the added lines, so that whole-file check does not pass. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. No actual CAgent API, native relay dispatch or real identity journey was tested.
+
+English and Chinese client documentation are synchronized. Cookie-only principal isolation, custom-provider journal namespaces and recovery across credential rotation remain outstanding. CA-01, CA-02 and CA-03 remain incomplete; production capabilities remain closed. Host identity and consumer completion, registered extension dispatch/rendering, target acceptance, independent remote publication and temporary Release are still required before advancing the other INT milestones. Live weekly quota is 61% remaining.
+
+## Earlier checkpoint: reviewed extension inventory binding
 
 2026-10-09. Extension checking now binds the full finite manifest array to the reviewed catalog and mapping digest. Every documented form-action-result action requires exactly one manifest; missing, duplicate or extra actions fail. Multi-endpoint actions retain every endpoint, cannot weaken a mutation to a read, and must cite all reviewed action sections. Conflicting interaction classifications fail. Requires-host-development actions remain explicitly unavailable and cannot supply a finite manifest. This checks additional-action inventory, not complete existing-consumer migration or real support.
 

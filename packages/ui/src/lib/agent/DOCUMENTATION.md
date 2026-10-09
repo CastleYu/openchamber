@@ -73,7 +73,9 @@ Configured bearer, credential-provider or extra-header changes synchronously ret
 | Capacitor | Configured native HTTP credentials use the shared client. |
 | VS Code | Owned Agent routes remain unsupported; this adds no CAgent host. |
 
-This event contains no credentials and grants no feature support. URL-auth token refresh alone does not retire the client. Changes outside the configured setters, such as cookie-only account changes or an asynchronous provider returning a different principal, need host identity support. Credential rotation still changes the journal namespace; this change does not provide cross-rotation recovery.
+An asynchronous provider's first resolved credential establishes its comparison baseline. Subsequent changes, including credential removal and return, retire the client when observed during header resolution. Results from replaced providers or older reads with different credentials are refused. This is observation at a request boundary, not background detection or authoritative principal identification.
+
+This event contains no credentials and grants no feature support. URL-auth token refresh alone does not retire the client. Cookie-only account changes still need host identity support. The journal digest reads configured synchronous credentials and does not represent custom provider results. Credential rotation still changes that namespace; this change provides neither custom-provider principal isolation nor cross-rotation recovery.
 
 `AgentConversation` in `conversation.ts` consumes the client directly, without OpenCode wire models. A caller supplies an inspected backend snapshot and explicit opaque workspace/session IDs. Opening verifies returned ownership; history rejects another session's records and duplicate identities. Missing project paths, timestamps, provider/model and usage remain absent. No local directory mapping is inferred.
 

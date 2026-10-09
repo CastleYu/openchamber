@@ -20,6 +20,10 @@ let localRuntimeUrlAuthRefreshPromise: Promise<string> | null = null;
 let localRuntimeUrlAuthRefreshOrigin = '';
 let localRuntimeUrlAuthGeneration = 0;
 let runtimeAuthGeneration = 0;
+let resolvedRuntimeCredential: string | undefined;
+let credentialRead = 0;
+let acceptedCredentialRead = 0;
+const AUTH_ERROR = Object.freeze({ CHANGED: 'runtime-auth-changed' });
 const runtimeAuthListeners = new Set<() => void>();
 
 const URL_AUTH_REFRESH_SKEW_MS = 10_000;
@@ -94,8 +98,10 @@ export const clearRuntimeUrlAuthToken = (): void => {
   clearLocalRuntimeUrlAuthToken();
 };
 
-const resetRuntimeAuthGeneration = (): void => {
+const resetRuntimeAuthGeneration = (credential?: string): void => {
   runtimeAuthGeneration += 1;
+  resolvedRuntimeCredential = credential;
+  acceptedCredentialRead = 0;
   runtimeUrlAuthRefreshPromise = null;
   clearRuntimeUrlAuthToken();
   notifyRuntimeAuthChanged();
@@ -227,10 +233,22 @@ export const getLocalRuntimeUrlAuthTokenSync = (localOrigin?: string | null): st
 };
 
 const getRuntimeAuthCredential = async (): Promise<RuntimeAuthCredential> => {
-  const credential = await credentialProvider();
+  const generation = runtimeAuthGeneration;
+  const provider = credentialProvider;
+  const ticket = ++credentialRead;
+  const credential = await provider();
+  if (generation !== runtimeAuthGeneration || provider !== credentialProvider) throw new Error(AUTH_ERROR.CHANGED);
   const token = credential?.type === 'bearer'
     ? normalizeBearerToken(credential.token)
     : getRuntimeBearerTokenSync();
+  // A late provider result cannot replace credentials accepted from a newer read.
+  if (ticket < acceptedCredentialRead && token !== resolvedRuntimeCredential) throw new Error(AUTH_ERROR.CHANGED);
+  if (resolvedRuntimeCredential !== undefined && token !== resolvedRuntimeCredential) {
+    resetRuntimeAuthGeneration(token);
+  } else {
+    resolvedRuntimeCredential = token;
+  }
+  acceptedCredentialRead = Math.max(acceptedCredentialRead, ticket);
   return token ? { type: 'bearer', token } : null;
 };
 

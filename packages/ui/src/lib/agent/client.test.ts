@@ -3,7 +3,7 @@ import { AGENT_ERROR, AGENT_FEATURE, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_ROU
 import { AgentClient, AgentClientError, type AgentClientPorts, type AgentClientScope } from './client';
 import type { JsonValue } from '../../../../web/server/lib/agent/dispatcher.js';
 import type { RuntimeFetchOptions } from '../runtime-fetch';
-import { clearRuntimeAuthCredentialProvider, setRuntimeBearerToken, setRuntimeExtraHeaders, subscribeRuntimeAuthChanged } from '../runtime-auth';
+import { buildRuntimeAuthHeaders, clearRuntimeAuthCredentialProvider, setRuntimeAuthCredentialProvider, setRuntimeBearerToken, setRuntimeExtraHeaders, subscribeRuntimeAuthChanged } from '../runtime-auth';
 import { getRuntimeKey } from '../runtime-switch';
 
 const identity = Object.freeze({ family: 'cagent' as const, connectionID: 'conn-a', epoch: 3, adapterRevision: 'adapter-1', capabilityRevision: 'caps-1' });
@@ -13,6 +13,36 @@ const response = (body: JsonValue, status = 200) => new Response(JSON.stringify(
 const scopeOf = (): AgentClientScope => ({ runtimeKey: 'runtime-a', revision: 0, identity });
 
 describe('production Agent authentication lifetime', () => {
+  test('changed asynchronous credentials retire the client before the test transport accepts a request', async () => {
+    let token = 'fixture-first';
+    setRuntimeAuthCredentialProvider(async () => ({ type: 'bearer', token }));
+    await buildRuntimeAuthHeaders();
+    let calls = 0;
+    const client = new AgentClient({
+      getRuntimeKey: () => 'runtime-a', subscribe: subscribeRuntimeAuthChanged,
+      fetch: async (_path, init) => {
+        await buildRuntimeAuthHeaders(init?.headers);
+        init?.signal?.throwIfAborted();
+        calls += 1;
+        return response({ identity, data: { modelID: null } });
+      },
+    });
+    let retired = 0;
+    client.subscribeRetirement(() => { retired += 1; });
+    try {
+      expect(await client.dispatch(scopeOf(), AGENT_OPERATION.GET_DEFAULT_MODEL, { workspaceID: 'w' })).toEqual({ modelID: null });
+      token = 'fixture-second';
+      await code(client.dispatch(scopeOf(), AGENT_OPERATION.GET_DEFAULT_MODEL, { workspaceID: 'w' }), AGENT_ERROR.CHANGED);
+      expect(retired).toBe(1);
+      expect(calls).toBe(1);
+      await code(client.dispatch(scopeOf(), AGENT_OPERATION.GET_DEFAULT_MODEL, { workspaceID: 'w' }), AGENT_ERROR.CHANGED);
+      expect(calls).toBe(1);
+    } finally {
+      client.dispose();
+      clearRuntimeAuthCredentialProvider();
+    }
+  });
+
   test('retires scopes on same-endpoint credentials and releases both listeners', async () => {
     const client = new AgentClient();
     const scope = { ...scopeOf(), runtimeKey: getRuntimeKey() };

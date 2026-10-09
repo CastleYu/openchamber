@@ -14,6 +14,69 @@ import {
 } from './runtime-auth';
 
 describe('runtime auth headers', () => {
+  test('retires consumers when one provider resolves changed credentials, including removal and return', async () => {
+    let token = 'first';
+    setRuntimeAuthCredentialProvider(async () => token ? { type: 'bearer', token } : null);
+    let changes = 0;
+    const unsubscribe = subscribeRuntimeAuthChanged(() => { changes += 1; });
+    try {
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer first');
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer first');
+      expect(changes).toBe(0);
+      token = 'second';
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer second');
+      expect(changes).toBe(1);
+      token = '';
+      expect((await buildRuntimeAuthHeaders()).has('Authorization')).toBe(false);
+      expect(changes).toBe(2);
+      token = 'first';
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer first');
+      expect(changes).toBe(3);
+    } finally { unsubscribe(); clearRuntimeAuthCredentialProvider(); }
+  });
+
+  test('refuses a replaced provider result without exposing its token', async () => {
+    let finish: ((token: string) => void) | undefined;
+    const pending = new Promise<string>((resolve) => { finish = resolve; });
+    setRuntimeAuthCredentialProvider(async () => ({ type: 'bearer', token: await pending }));
+    const reading = buildRuntimeAuthHeaders();
+    setRuntimeBearerToken('current');
+    finish?.('private-stale-token');
+    try {
+      await expect(reading).rejects.toThrow('runtime-auth-changed');
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer current');
+    } finally { clearRuntimeAuthCredentialProvider(); }
+  });
+
+  test('out-of-order provider results preserve the newer accepted credential', async () => {
+    let calls = 0;
+    let finish: ((token: string) => void) | undefined;
+    const pending = new Promise<string>((resolve) => { finish = resolve; });
+    setRuntimeAuthCredentialProvider(async () => ({ type: 'bearer', token: ++calls === 1 ? await pending : 'current' }));
+    const older = buildRuntimeAuthHeaders();
+    try {
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer current');
+      finish?.('stale');
+      await expect(older).rejects.toThrow('runtime-auth-changed');
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer current');
+    } finally { finish?.('stale'); clearRuntimeAuthCredentialProvider(); }
+  });
+
+  test('same-credential out-of-order resolutions do not retire consumers', async () => {
+    let calls = 0;
+    let finish: ((token: string) => void) | undefined;
+    const pending = new Promise<string>((resolve) => { finish = resolve; });
+    setRuntimeAuthCredentialProvider(async () => ({ type: 'bearer', token: ++calls === 1 ? await pending : 'current' }));
+    let changes = 0;
+    const unsubscribe = subscribeRuntimeAuthChanged(() => { changes += 1; });
+    const older = buildRuntimeAuthHeaders();
+    try {
+      expect((await buildRuntimeAuthHeaders()).get('Authorization')).toBe('Bearer current');
+      finish?.('current');
+      expect((await older).get('Authorization')).toBe('Bearer current');
+      expect(changes).toBe(0);
+    } finally { finish?.('current'); unsubscribe(); clearRuntimeAuthCredentialProvider(); }
+  });
   test('notifies synchronously after bearer and provider changes, and supports idempotent unsubscribe', async () => {
     const observed: string[] = [];
     const unsubscribe = subscribeRuntimeAuthChanged(() => {

@@ -1,3 +1,4 @@
+import { OPENCODE_SETTING } from './compatibility.js';
 import { createProjectIdFromPath, projectConfigFileStemOf } from '../projects/project-id.js';
 import {
   buildPreferencesFields,
@@ -68,6 +69,7 @@ export const createSettingsRuntime = (deps) => {
     syncManagedRemoteTunnelConfigWithPresets,
     upsertManagedRemoteTunnelToken,
     onManagedPluginSettingsChanged = async () => {},
+    onOpenCodeSelectionChanged = () => {},
     onMessageSearchEnabledChanged = () => {},
     onMessageSearchReasoningChanged = () => {},
   } = deps;
@@ -1124,6 +1126,10 @@ export const createSettingsRuntime = (deps) => {
 
       const changedKeys = Object.keys(sanitized);
       await writeSettingsToDisk(next, { surface, changedKeys });
+      if (changedKeys.includes(OPENCODE_SETTING.SELECTION)
+        && next[OPENCODE_SETTING.SELECTION] !== current[OPENCODE_SETTING.SELECTION]) {
+        onOpenCodeSelectionChanged(next[OPENCODE_SETTING.SELECTION]);
+      }
       if (changedKeys.some((key) => MANAGED_PLUGIN_SETTINGS_KEYS.has(key))) {
         await Promise.resolve(onManagedPluginSettingsChanged(next)).catch((error) => {
           console.warn('Failed to refresh the managed OpenCode config:', error?.message ?? error);

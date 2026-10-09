@@ -54,6 +54,7 @@ import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
+import { isOpenCodeSelection, OPENCODE_SELECTION, OPENCODE_SETTING } from './lib/opencode/compatibility.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
@@ -433,6 +434,10 @@ const resolveProjectDirectory = (...args) => projectDirectoryRuntime.resolveProj
 const resolveOptionalProjectDirectory = (...args) => projectDirectoryRuntime.resolveOptionalProjectDirectory(...args);
 
 const settingsRuntime = createSettingsRuntime({
+  onOpenCodeSelectionChanged: (selection) => {
+    requestedOpenCodeSelection = selection;
+    kernelRuntime.invalidate();
+  },
   onMessageSearchEnabledChanged: (enabled) => messageSearchRuntime?.setEnabled(kernelRuntime?.get().generation === 'oc2' && enabled),
   onMessageSearchReasoningChanged: (enabled) => messageSearchRuntime?.setReasoningEnabled(enabled),
   onManagedPluginSettingsChanged: () => {
@@ -724,6 +729,7 @@ const ENV_DESKTOP_NOTIFY = (() => {
   return /openchamber-server/i.test(argv0) || /openchamber-server/i.test(argv1);
 })();
 let kernelRuntime = null;
+let requestedOpenCodeSelection = OPENCODE_SELECTION.AUTO;
 let messageSearchRuntime = null;
 const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
 const agentHost = createAgentHost({
@@ -782,6 +788,7 @@ const scheduleOpenCodeApiDetection = (...args) => {
 
 kernelRuntime = createKernelRuntime({
   getBackendSelection: agentHost.getSelection,
+  getRequestedSelection: () => requestedOpenCodeSelection,
   getEndpoint: () => openCodePort ? buildOpenCodeUrl('/', '') : null,
   getHeaders: getOpenCodeAuthHeaders,
   headersForGeneration: getOpenCodeAuthHeaders,
@@ -1814,6 +1821,14 @@ const gracefulShutdown = (...args) => gracefulShutdownRuntime.gracefulShutdown(.
 
 async function main(options = {}) {
   await selectAgentStartup(agentHost, options.agentBackend, process.env[AGENT_STARTUP.ENV]);
+  if (agentHost.getSelection().family === AGENT_FAMILY.OPENCODE) {
+    const settings = await readSettingsFromDiskStrict();
+    const selection = settings[OPENCODE_SETTING.SELECTION] === undefined
+      ? OPENCODE_SELECTION.AUTO : settings[OPENCODE_SETTING.SELECTION];
+    if (!isOpenCodeSelection(selection)) throw new Error("Invalid saved OpenCode selection");
+    requestedOpenCodeSelection = selection;
+    kernelRuntime.invalidate();
+  }
   beginGuestServiceHost();
   const port = Number.isFinite(options.port) && options.port >= 0 ? Math.trunc(options.port) : DEFAULT_PORT;
   const host = typeof options.host === 'string' && options.host.length > 0 ? options.host : undefined;

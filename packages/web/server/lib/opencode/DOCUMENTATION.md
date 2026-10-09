@@ -39,7 +39,7 @@ This module provides OpenCode server integration utilities for the web server ru
   empty source; OC1 cannot read or write this OC2 setting. The VS Code bridge
   forwards the same GET/PUT contract through `api:config/websearch`.
 - `compatibility.js` resolves OC1/OC2 from authoritative HTTP health/info responses. It reads health first and stops for stable 1.2.27, including normalized v/build metadata. That version has no `/api/info` API and forwards unknown paths with request headers to its hosted web app. Other versions retain health/info comparison; this exception does not enable the dedicated Legacy profile.
-- `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Its optional resolved profile participates in identity changes; a changed profile advances epoch even at the same endpoint/version. Profile selection and Legacy activation remain separate adoption work. Unknown
+- `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Its optional resolved profile participates in identity changes; a changed profile advances epoch even at the same endpoint/version. Web/Electron bind the requested `opencodeSelection` from strict instance settings before startup. An absent field selects Auto; an invalid field or unreadable settings aborts OpenCode startup. After a successful settings write, a changed selection retires the descriptor before the save response. Failed or repeated saves do not retire it. The next runtime/readiness probe resolves the new profile. VS Code selection adoption remains pending. Legacy profile admission does not enable its unaccepted operations. Unknown
   startup endpoints are not probed. Credential changes and managed restarts retire
   old request identities, including discovery performed while the old process is
   closing. A health `reprobe` keeps a resolved OC1 or OC2 descriptor when detection
@@ -138,7 +138,7 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/opencode/pwa-manifest-routes.js`: PWA manifest route registration with recent-session shortcut resolution and short-lived caching.
 - `packages/web/server/lib/opencode/project-icon-routes.js`: project icon upload/read/discovery route registration and icon storage orchestration.
 - `packages/web/server/lib/opencode/skill-routes.js`: route registration for skill config CRUD, supporting files, and skills catalog scan/install flows.
-- `packages/web/server/lib/opencode/settings-runtime.js`: Settings persistence runtime (disk IO, migrations, normalization, project validation, and persisted update serialization).
+- `packages/web/server/lib/opencode/settings-runtime.js`: Settings persistence runtime (disk IO, migrations, normalization, project validation, and persisted update serialization). `onOpenCodeSelectionChanged` notifies the host after a changed instance selection has been written successfully, before other settings side effects.
 - `packages/web/server/lib/opencode/settings-helpers.js`: Settings payload sanitization/format helpers runtime for response shaping and persisted merge prep.
 - `packages/web/server/lib/opencode/settings-normalization-runtime.js`: path/settings/tunnel normalization and sanitization helpers runtime used by settings/routes/config wiring.
 - `packages/web/server/lib/opencode/theme-runtime.js`: custom theme JSON validation and theme directory loading runtime for settings utility routes.

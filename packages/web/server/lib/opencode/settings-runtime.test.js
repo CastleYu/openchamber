@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import crypto from 'crypto';
 import fsPromises from 'fs/promises';
+import { readFileSync } from 'node:fs';
 import os from 'os';
 import path from 'path';
 import { createProjectIdFromPath, projectConfigFileStemOf } from '../projects/project-id.js';
 import { createSettingsRuntime } from './settings-runtime.js';
+import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
 
-const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes, onManagedPluginSettingsChanged } = {}) => {
+const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes, onManagedPluginSettingsChanged, onOpenCodeSelectionChanged } = {}) => {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'oc-settings-runtime-'));
   const settingsFilePath = path.join(tempRoot, 'settings.json');
   const runtime = createSettingsRuntime({
@@ -27,6 +29,7 @@ const createRuntime = async ({ mergePersistedSettings = (_current, changes) => c
     syncManagedRemoteTunnelConfigWithPresets: async () => {},
     upsertManagedRemoteTunnelToken: async () => {},
     onManagedPluginSettingsChanged,
+    onOpenCodeSelectionChanged,
   });
 
   return {
@@ -587,4 +590,62 @@ it('persists requested OpenCode selection in instance settings without generatin
       expect(saved).toEqual({ opencodeSelection });
     }
   } finally { await cleanup(); }
+});
+
+describe('persisted OpenCode selection adoption', () => {
+  it('notifies only after the selected mode is durable and ignores unrelated or repeated saves', async () => {
+    const saved = [];
+    let settingsFilePath;
+    const setup = await createRuntime({ mergePersistedSettings: (current, changes) => ({ ...current, ...changes }),
+      onOpenCodeSelectionChanged: selection => {
+        saved.push([selection, JSON.parse(readFileSync(settingsFilePath)).opencodeSelection]);
+      },
+    });
+    settingsFilePath = setup.settingsFilePath;
+    try {
+      await setup.runtime.persistSettings({ opencodeSelection: 'oc1' });
+      await setup.runtime.persistSettings({ theme: 'dark' });
+      await setup.runtime.persistSettings({ opencodeSelection: 'oc1' });
+      await setup.runtime.persistSettings({ opencodeSelection: 'oc2' });
+      expect(saved).toEqual([['oc1', 'oc1'], ['oc2', 'oc2']]);
+    } finally { await setup.cleanup(); }
+  });
+
+  it('does not retire the selected identity when persistence fails', async () => {
+    const changed = vi.fn();
+    const setup = await createRuntime({ onOpenCodeSelectionChanged: changed });
+    try {
+      await setup.runtime.persistSettings({ opencodeSelection: 'oc1' });
+      changed.mockClear();
+      const rename = vi.spyOn(fsPromises, 'rename').mockRejectedValueOnce(new Error('write denied'));
+      try {
+        await expect(setup.runtime.persistSettings({ opencodeSelection: 'oc2' })).rejects.toThrow('write denied');
+        expect(changed).not.toHaveBeenCalled();
+        expect(JSON.parse(await fsPromises.readFile(setup.settingsFilePath, 'utf8')).opencodeSelection).toBe('oc1');
+      } finally { rename.mockRestore(); }
+    } finally { await setup.cleanup(); }
+  });
+
+  it('retires an in-flight probe on a durable same-endpoint mode switch', async () => {
+    let selection = 'auto';
+    let finish;
+    const kernel = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}),
+      getRequestedSelection: () => selection,
+      detectProfile: ({ epoch, endpoint, selection: requested }) => new Promise(resolve => {
+        finish = () => resolve({ status: 'ready', selection: requested, provenance: 'server', exactVersion: false,
+          descriptor: { generation: 'oc1', profile: 'oc1', version: '1.18.32', endpoint, epoch } });
+      }),
+    });
+    const setup = await createRuntime({ onOpenCodeSelectionChanged: value => { selection = value; kernel.invalidate(); } });
+    try {
+      const pending = kernel.refresh();
+      await Promise.resolve();
+      const rejected = expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+      await setup.runtime.persistSettings({ opencodeSelection: 'oc2' });
+      finish();
+      await rejected;
+      expect(kernel.get().generation).toBe('unknown');
+      expect(kernel.getAdmission()).toBeNull();
+    } finally { await setup.cleanup(); }
+  });
 });

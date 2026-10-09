@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_MUTATIONS, AGENT_OPERATION,
+  AGENT_ATTEMPT, AGENT_ERROR, AGENT_EXTENSION, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_MUTATIONS, AGENT_OPERATION,
   AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_SERVER_METHOD, AGENT_SUPPORT, AGENT_TOOL_STATE,
 } from './constants.js';
 import { extensionActionIDSchema, extensionManifestSchema } from './extensions.js';
@@ -114,7 +114,7 @@ export const agentRegistrationSchema = agentAdapterSchema.extend({
   artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
   extensions: z.array(z.object({
     manifest: extensionManifestSchema, capability: agentCapabilitySchema, handler: z.function(),
-  }).strict()).max(64).refine((items) => new Set(items.map((item) => item.manifest.actionID)).size === items.length).optional(),
+  }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).refine((items) => new Set(items.map((item) => item.manifest.actionID)).size === items.length).optional(),
 }).strict();
 export const agentSelectionSchema = agentIdentitySchema.extend({
   adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
@@ -143,7 +143,7 @@ export const agentApprovalSchema = z.object({
     revision: id,
     manifestDigest: z.string().regex(/^[a-f0-9]{64}$/),
     evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
-  }).strict()).max(64).refine((items) => new Set(items.map((item) => item.actionID)).size === items.length).optional(),
+  }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).refine((items) => new Set(items.map((item) => item.actionID)).size === items.length).optional(),
 }).strict();
 export const agentRuntimeSchema = z.object({
   identity: agentIdentitySchema,
@@ -158,6 +158,25 @@ export const agentFeatureSnapshotSchema = z.object({
     z.object({ available: z.literal(true) }).strict(),
     z.object({ available: z.literal(false), reason: z.enum(Object.values(AGENT_ERROR)) }).strict(),
   ])),
+}).strict();
+
+// Browser-safe wire contracts. Manifest-specific values are parsed separately.
+export const agentExtensionInputSchema = z.object({
+  workspaceID: id.optional(), sessionID: id.optional(), requestID: id.optional(), values: json,
+}).strict();
+const agentExtensionReceiptSchema = z.object({ requestID: id,
+  state: z.enum([AGENT_ATTEMPT.ACCEPTED, AGENT_ATTEMPT.COMPLETE, AGENT_ATTEMPT.UNKNOWN]),
+}).strict();
+export const agentExtensionResponseSchema = z.object({ result: json, receipt: agentExtensionReceiptSchema.optional() }).strict();
+export const agentExtensionResultSchema = agentExtensionResponseSchema.extend({ identity: agentIdentitySchema }).strict();
+export const agentExtensionSnapshotSchema = z.object({ identity: agentIdentitySchema,
+  actions: z.array(z.object({ manifest: extensionManifestSchema,
+    availability: z.discriminatedUnion('available', [
+      z.object({ available: z.literal(true) }).strict(),
+      z.object({ available: z.literal(false), reason: z.enum(Object.values(AGENT_ERROR)) }).strict(),
+    ]),
+  }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS)
+    .refine((actions) => new Set(actions.map((action) => action.manifest.actionID)).size === actions.length),
 }).strict();
 
 export const AGENT_INPUT_SCHEMAS = Object.freeze({

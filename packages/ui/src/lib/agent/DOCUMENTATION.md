@@ -1,5 +1,33 @@
 # Shared Agent client
 
+## Finite extension client
+
+`extensions(scope)` parses the protected host's complete action snapshot. It accepts
+at most 64 unique actions with strict finite manifests and explicit availability.
+A malformed or failed snapshot remains an error. A foreign backend or principal
+retires the client, so its response cannot reach the current consumer.
+
+`dispatchExtension(scope, manifest, input)` parses declared context and finite
+values before transport. Reads carry no request ID or receipt. Mutations require
+one request ID and a matching receipt; observed outcomes require complete. An
+accepted-only receipt acknowledges acceptance, not completion. Missing, malformed,
+foreign or lost write responses remain unknown and are never replayed. The
+supplied manifest only defines parsing. The host independently checks its own
+current registration, approval and principal, even for direct client calls.
+
+The shared wire schemas live in `schemas.js`; `extensions.js` owns value parsing.
+The browser imports no host loader or extension runtime implementation. Web,
+Electron, hosted mobile and Capacitor use existing runtime HTTP/auth ports. VS Code
+retains the explicit owned-route unsupported refusal.
+
+This adds a client boundary, not a rendered action panel. Extension controls,
+results and durable action-specific recovery still need an owning UI controller.
+The conversation journal cannot identify extension actions and must not be reused
+as a prompt recovery journal. The client alone does not record unresolved IDs.
+Production extension support stays closed until assembly, UI and real acceptance
+pass. `extension-client.test.ts` uses synthetic transport and does not establish
+CAgent API compatibility.
+
 The [Chinese review copy](../../../../../docs/maintenance/zh-CN/CAGENT-UI-CLIENT.md)
 is synchronized during review and archived at final handoff.
 

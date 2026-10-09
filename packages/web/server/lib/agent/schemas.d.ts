@@ -8,6 +8,7 @@ import type { AgentAttempt, AgentAttemptState } from './attempts.js';
 import { AGENT_ERROR } from './constants.js';
 import type { AgentConnection } from './transport.js';
 import type { AgentAdapter } from './loader.js';
+import type { AgentExtensionInput, AgentExtensionReceipt, AgentExtensionSnapshot } from './extension-runtime.js';
 
 export const agentIdentitySchema: ZodType<AgentIdentity>;
 export const agentPrincipalSchema: ZodType<string>;
@@ -31,6 +32,10 @@ export const agentHostConnectionSchema: ZodType<AgentHostConnection>;
 export const agentApprovalSchema: ZodType<AgentApproval>;
 export const agentRuntimeSchema: ZodType<AgentRuntime>;
 export const agentFeatureSnapshotSchema: ZodType<AgentFeatureSnapshot>;
+export const agentExtensionInputSchema: ZodType<AgentExtensionInput>;
+export const agentExtensionResponseSchema: ZodType<{ result: JsonValue; receipt?: AgentExtensionReceipt }>;
+export const agentExtensionResultSchema: ZodType<{ identity: AgentIdentity; result: JsonValue; receipt?: AgentExtensionReceipt }>;
+export const agentExtensionSnapshotSchema: ZodType<AgentExtensionSnapshot>;
 
 export const AGENT_INPUT_SCHEMAS: Readonly<{
   [K in AgentOperation]: ZodType<AgentInputs[K]>;

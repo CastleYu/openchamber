@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: protected finite extension dispatch
+## Latest checkpoint: finite extension client boundary
+
+2026-10-09. `AgentClient` now enumerates strict finite action snapshots and dispatches extension inputs through existing runtime HTTP/auth ports. Host and browser share wire schemas. At most 64 unique action manifests are accepted. Context and values are parsed before transport; finite results and exact backend/principal identity are parsed before consumption. Read receipts are refused. Mutations require matching request IDs, and observed outcomes require complete receipts. Entered writes with lost, malformed or retired responses remain unknown without replay. The supplied manifest never grants host approval. Missing extension route/type declarations from the previous host step are now present.
+
+There are 64 passing shared client/conversation/journal checks, including ten new extension-client tests, plus 168 native host authority/schema/route/extension checks and three standalone offline-kit checks. Workspace type-check and lint pass with five existing lint warnings. Authored source passes anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, without a CAgent row. Both shared schemas and the actual client build for the browser. These checks use synthetic APIs and do not establish real CAgent compatibility or local-model performance.
+
+The ignored fresh bundle `artifacts/cagent-offline-extension-client-final-20261009` contains ten commands and 94 protected files. Its actual bundled Node verifier passes independent digest `01d129f3d581924b62cdac0ce870ee3e50fe1242a5bb1f60c445d2055f12a218`, matching a rebuild from the final source. Earlier bundles are retained. English and Chinese owner documentation is synchronized.
+
+Next implement action-specific durable recovery, bounded UI controls/results and additional-action adapter assembly. `loader.js` still parses the core-only `agentAdapterSchema`, and `finalize-adapter.mjs` registers core operation packets only. Extension registration is therefore not yet an offline artifact delivery path. The prompt journal stores no action identity and must not restore an extension as a prompt. The client alone stores no unresolved request IDs. CA-01, CA-02 and CA-03 remain incomplete; production extensions stay closed. Real environment acceptance, independent remote publication and temporary Release remain outstanding. Other INT work follows CA-03. Live weekly quota is 60% remaining.
+
+## Earlier checkpoint: protected finite extension dispatch
 
 2026-10-09. Protected registrations now carry detached frozen extension manifests and handlers. Independent approval binds each action's ID, revision and canonical manifest digest alongside existing server/connection/artifact identity. Old approvals grant no extension. Enumeration and dispatch use the verified principal gate; unknown actions, undeclared context and malformed finite values are refused. Mutations reserve durable intent, require matching receipts and retain unknown outcomes without replay. Revocation before handler entry records not-sent.
 

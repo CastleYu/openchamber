@@ -1,21 +1,13 @@
 import { z } from 'zod';
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_EXTENSION, AGENT_FAMILY, AGENT_HOST_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AgentDispatchError } from './dispatcher.js';
-import { agentIdentitySchema } from './schemas.js';
+import { agentIdentitySchema, agentExtensionInputSchema, agentExtensionResponseSchema } from './schemas.js';
 import { extensionActionIDSchema, parseExtensionInput, parseExtensionResult } from './extensions.js';
 
 export const agentExtensionRequestSchema = z.object({ actionID: extensionActionIDSchema,
   identity: agentIdentitySchema, input: z.json(),
 }).strict();
 
-const scopeSchema = z.object({
-  workspaceID: z.string().min(1).optional(), sessionID: z.string().min(1).optional(),
-  requestID: z.string().min(1).optional(), values: z.json(),
-}).strict();
-const receiptSchema = z.object({ requestID: z.string().min(1),
-  state: z.enum([AGENT_ATTEMPT.ACCEPTED, AGENT_ATTEMPT.COMPLETE, AGENT_ATTEMPT.UNKNOWN]),
-}).strict();
-const responseSchema = z.object({ result: z.json(), receipt: receiptSchema.optional() }).strict();
 const same = (left, right) => left.family === right.family && left.connectionID === right.connectionID
   && left.epoch === right.epoch && left.adapterRevision === right.adapterRevision
   && left.capabilityRevision === right.capabilityRevision && left.principalID === right.principalID;
@@ -60,7 +52,7 @@ export const createAgentExtensionRuntime = ({ getBinding, attempts }) => {
     const manifest = row.manifest;
     let request;
     try {
-      const parsed = scopeSchema.parse(input);
+      const parsed = agentExtensionInputSchema.parse(input);
       const mutation = manifest.effect === AGENT_EXTENSION.EFFECT.MUTATION;
       if (Boolean(parsed.workspaceID) !== manifest.context.workspace || Boolean(parsed.sessionID) !== manifest.context.session
         || Boolean(parsed.requestID) !== mutation) return refuse(AGENT_ERROR.INVALID_INPUT, actionID);
@@ -73,7 +65,7 @@ export const createAgentExtensionRuntime = ({ getBinding, attempts }) => {
     catch (error) { await attempt?.finish(AGENT_ATTEMPT.NOT_SENT); throw error; }
     let finalizing = false;
     try {
-      const response = responseSchema.parse(await row.handler(request, identity));
+      const response = agentExtensionResponseSchema.parse(await row.handler(request, identity));
       const current = select(actionID, identity);
       if (JSON.stringify(current.manifest) !== JSON.stringify(manifest)) return refuse(AGENT_ERROR.CHANGED, actionID);
       const result = parseExtensionResult(manifest, response.result);

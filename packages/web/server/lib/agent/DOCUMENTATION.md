@@ -1,5 +1,11 @@
 # Agent dispatch contracts
 
+Extension input, receipt, result-envelope and snapshot wire schemas now live in
+`schemas.js` for host and browser reuse. The host still parses manifest-specific
+values through `extensions.js`. The shared client checks exact identity, declared
+context, bounded results and receipt semantics without importing host I/O. Client
+parsing grants no authority and does not provide durable extension recovery.
+
 This module implements part of CA-01. The server reserves authenticated owned routes, but its binding remains inactive and CAgent is unavailable. Current OpenCode runtime behavior is unchanged. The remaining migration is tracked in [the execution checkpoint](../../../../../docs/maintenance/CAGENT-EXECUTION.md).
 
 `constants.js` owns backend-family, support, operation and refusal constants. `dispatcher.d.ts` defines runtime-neutral requests/results for the 22 effect/read operations consumed by the host inventory. Identity capture is the 23rd host operation and belongs to the dispatcher rather than the adapter. Workspace IDs are backend-owned identifiers, never implicit local directories. No SDK raw payload is required by these contracts. More detailed message/decision contracts and UI operations must be added from consumer semantics before their migration is accepted.

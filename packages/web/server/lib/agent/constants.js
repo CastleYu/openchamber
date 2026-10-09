@@ -4,7 +4,7 @@ export const AGENT_EXTENSION = Object.freeze({ VERSION: 1,
   EFFECT: Object.freeze({ READ: 'read', MUTATION: 'mutation' }),
   CANCELLATION: Object.freeze({ NONE: 'none', DOCUMENTED: 'documented' }),
   OUTCOME: Object.freeze({ OBSERVED: 'observed', ACCEPTED: 'accepted-only' }),
-  MAX_FIELDS: 32, MAX_ITEMS: 64, MAX_ROWS: 256, MAX_TEXT: 8192,
+  MAX_ACTIONS: 64, MAX_FIELDS: 32, MAX_ITEMS: 64, MAX_ROWS: 256, MAX_TEXT: 8192,
 });
 export const AGENT_ROLE = Object.freeze({ USER: 'user', ASSISTANT: 'assistant', SYSTEM: 'system', SYNTHETIC: 'synthetic' });
 export const AGENT_PART = Object.freeze({ TEXT: 'text', REASONING: 'reasoning', TOOL: 'tool', ATTACHMENT: 'attachment' });

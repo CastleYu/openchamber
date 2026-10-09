@@ -1,12 +1,16 @@
 import { z } from 'zod';
 import {
-  AGENT_ERROR, AGENT_HTTP, AGENT_MUTATIONS, AGENT_ROUTE, AGENT_SERVER_METHOD,
+  AGENT_ATTEMPT, AGENT_ERROR, AGENT_EXTENSION, AGENT_HTTP, AGENT_MUTATIONS, AGENT_ROUTE, AGENT_SERVER_METHOD,
 } from '../../../../web/server/lib/agent/constants.js';
 import {
   AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentBackendSelectionSchema, agentAttemptRequestSchema,
   agentAttemptResultSchema, agentFailureSchema, agentFeatureSnapshotSchema,
   agentIdentitySchema, agentOperationSchema, agentRuntimeSchema,
+  agentExtensionInputSchema, agentExtensionResultSchema, agentExtensionSnapshotSchema,
 } from '../../../../web/server/lib/agent/schemas.js';
+import { extensionManifestSchema, parseExtensionInput, parseExtensionResult,
+  type ExtensionManifest } from '../../../../web/server/lib/agent/extensions.js';
+import type { AgentExtensionInput, AgentExtensionResult, AgentExtensionSnapshot } from '../../../../web/server/lib/agent/extension-runtime.js';
 import type {
   AgentIdentity, AgentInputs, AgentOperation, AgentOutputs, AgentRuntime, JsonValue,
 } from '../../../../web/server/lib/agent/dispatcher.js';
@@ -185,6 +189,58 @@ export class AgentClient {
     const data = AGENT_OUTPUT_SCHEMAS[operation].safeParse(result.data.data);
     if (!data.success) throw new AgentClientError(mutation ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE);
     return data.data;
+  }
+
+  async extensions(scope: AgentClientScope, signal?: AbortSignal): Promise<AgentExtensionSnapshot> {
+    this.assertCurrent(scope);
+    const payload = await this.request(scope, AGENT_ROUTE.EXTENSIONS, { signal });
+    const parsed = agentExtensionSnapshotSchema.safeParse(payload);
+    if (!parsed.success) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
+    if (!same(parsed.data.identity, scope.identity)) {
+      this.retire();
+      throw new AgentClientError(AGENT_ERROR.CHANGED);
+    }
+    return parsed.data;
+  }
+
+  /** The supplied manifest shapes parsing; only the host grants action authority. */
+  async dispatchExtension(scope: AgentClientScope, manifest: ExtensionManifest, input: AgentExtensionInput,
+    signal?: AbortSignal): Promise<AgentExtensionResult> {
+    this.assertCurrent(scope);
+    const identity = agentIdentitySchema.safeParse(scope.identity);
+    const action = extensionManifestSchema.safeParse(manifest);
+    const request = agentExtensionInputSchema.safeParse(input);
+    if (!identity.success || !action.success || !request.success) throw new AgentClientError(AGENT_ERROR.INVALID_INPUT);
+    const mutation = action.data.effect === AGENT_EXTENSION.EFFECT.MUTATION;
+    if (Boolean(request.data.workspaceID) !== action.data.context.workspace
+      || Boolean(request.data.sessionID) !== action.data.context.session
+      || Boolean(request.data.requestID) !== mutation) throw new AgentClientError(AGENT_ERROR.INVALID_INPUT);
+    let values;
+    try { values = parseExtensionInput(action.data, request.data.values); }
+    catch { throw new AgentClientError(AGENT_ERROR.INVALID_INPUT); }
+    const payload = await this.request(scope, AGENT_ROUTE.EXTENSION_DISPATCH, {
+      method: AGENT_SERVER_METHOD.POST, signal,
+      headers: { [AGENT_HTTP.CONTENT_TYPE]: AGENT_HTTP.JSON },
+      body: JSON.stringify({ actionID: action.data.actionID, identity: identity.data, input: { ...request.data, values } }),
+    }, mutation);
+    const response = agentExtensionResultSchema.safeParse(payload);
+    const invalid = mutation ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.INVALID_RESPONSE;
+    if (!response.success) throw new AgentClientError(invalid);
+    if (!same(response.data.identity, identity.data)) {
+      this.retire();
+      throw new AgentClientError(mutation ? AGENT_ERROR.UNKNOWN_OUTCOME : AGENT_ERROR.CHANGED);
+    }
+    let result;
+    try { result = parseExtensionResult(action.data, response.data.result); }
+    catch { throw new AgentClientError(invalid); }
+    const receipt = response.data.receipt;
+    if (mutation) {
+      if (!receipt || receipt.requestID !== request.data.requestID || receipt.state === AGENT_ATTEMPT.UNKNOWN
+        || (action.data.outcome === AGENT_EXTENSION.OUTCOME.OBSERVED && receipt.state !== AGENT_ATTEMPT.COMPLETE)) {
+        throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
+      }
+    } else if (receipt) { throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE); }
+    return receipt ? { identity: response.data.identity, result, receipt } : { identity: response.data.identity, result };
   }
 
   async readAttempt(scope: AgentClientScope, requestID: string, signal?: AbortSignal) {

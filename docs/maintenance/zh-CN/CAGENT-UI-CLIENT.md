@@ -1,5 +1,15 @@
 # 共享 Agent 客户端
 
+## 有限扩展客户端
+
+`extensions(scope)` 解析受保护宿主的完整动作快照，最多接受 64 个动作 ID 唯一、清单严格且可用性明确的动作。畸形快照及读取失败保持为错误。其他后端或 principal 的响应会使客户端退役，不能进入当前消费方。
+
+`dispatchExtension(scope, manifest, input)` 在传输前解析声明的上下文及有限值。读取不携带请求 ID 或回执。变更要求一个请求 ID 及匹配回执，observed 结果要求 complete。accepted-only 回执仅确认接收，不能证明完成。缺失、畸形、其他身份或丢失的写响应保持未知，且不会重放。传入清单仅决定解析规则。宿主独立检查自己的当前注册、批准及 principal，直接调用客户端也不能绕过。
+
+共享线协议 schema 位于 `schemas.js`，`extensions.js` 管理有限值解析。浏览器不导入宿主加载器或扩展运行时实现。Web、Electron、托管移动端及 Capacitor 使用已有运行时 HTTP／认证入口；VS Code 保持自有路由的明确不支持响应。
+
+本次增加客户端边界，尚未提供动作面板。扩展控件、结果及持久化动作恢复仍需所属 UI 控制器。会话 journal 不能识别扩展动作，不能将其用于提示词恢复。客户端自身不记录未解决请求 ID。适配器装配、UI 及真实验收通过前，生产扩展保持关闭。`extension-client.test.ts` 使用合成传输，不能证明真实 CAgent API 兼容性。
+
 ## 受保护的后端家族启动入口
 
 `selection()` 在适配器绑定前读取 GET `/api/agent-backend/selection`，返回受保护的后端家族、宿主选择修订号及客户端端点作用域。权威信息缺失、损坏或读取失败返回固定错误；调用方不能因此推断 OpenCode。A/B/A 退役、调用方取消及释放复用既有请求生命周期。

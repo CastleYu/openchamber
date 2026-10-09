@@ -3,9 +3,13 @@ import type { AgentBinding, AgentIdentity, AgentAvailability, JsonValue } from '
 import type { AgentAttempts } from './attempts.js';
 import type { ExtensionManifest, ExtensionResult } from './extensions.js';
 export interface AgentExtensionRequest { actionID: string; identity: AgentIdentity; input: JsonValue }
+export interface AgentExtensionInput {
+  workspaceID?: string; sessionID?: string; requestID?: string; values: JsonValue;
+}
+export interface AgentExtensionReceipt { requestID: string; state: 'accepted' | 'complete' | 'unknown' }
 export interface AgentExtensionResult {
   identity: AgentIdentity; result: ExtensionResult;
-  receipt?: { requestID: string; state: 'accepted' | 'complete' | 'unknown' };
+  receipt?: AgentExtensionReceipt;
 }
 export interface AgentExtensionSnapshot {
   identity: AgentIdentity; actions: { manifest: ExtensionManifest; availability: AgentAvailability }[];

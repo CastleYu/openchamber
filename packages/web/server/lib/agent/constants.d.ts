@@ -5,7 +5,7 @@ export const AGENT_EXTENSION: Readonly<{
   EFFECT: Readonly<{ READ: 'read'; MUTATION: 'mutation' }>;
   CANCELLATION: Readonly<{ NONE: 'none'; DOCUMENTED: 'documented' }>;
   OUTCOME: Readonly<{ OBSERVED: 'observed'; ACCEPTED: 'accepted-only' }>;
-  MAX_FIELDS: 32; MAX_ITEMS: 64; MAX_ROWS: 256; MAX_TEXT: 8192;
+  MAX_ACTIONS: 64; MAX_FIELDS: 32; MAX_ITEMS: 64; MAX_ROWS: 256; MAX_TEXT: 8192;
 }>;
 export const AGENT_ROLE: Readonly<{ USER: 'user'; ASSISTANT: 'assistant'; SYSTEM: 'system'; SYNTHETIC: 'synthetic' }>;
 export const AGENT_PART: Readonly<{ TEXT: 'text'; REASONING: 'reasoning'; TOOL: 'tool'; ATTACHMENT: 'attachment' }>;
@@ -67,12 +67,15 @@ export const AGENT_HOST_OPERATION: Readonly<{
   CAPTURE_IDENTITY: 'captureIdentity'; READ_ATTEMPT: 'readAttempt'; GET_BINDING: 'getBinding';
   DESCRIBE_RUNTIME: 'describeRuntime';
   DESCRIBE_FEATURES: 'describeFeatures';
+  DESCRIBE_EXTENSIONS: 'describeExtensions';
 }>;
 export const AGENT_ROUTE: Readonly<{
   PREFIX: '/api/agent-backend'; RUNTIME: '/api/agent-backend/runtime'; DISPATCH: '/api/agent-backend/dispatch';
   ATTEMPT: '/api/agent-backend/attempt';
   FEATURES: '/api/agent-backend/features';
   SELECTION: '/api/agent-backend/selection';
+  EXTENSIONS: '/api/agent-backend/extensions';
+  EXTENSION_DISPATCH: '/api/agent-backend/extension-dispatch';
 }>;
 export const AGENT_OPERATION: Readonly<{
   GET_SESSION: 'getSession'; CREATE_SESSION: 'createSession'; LIST_SESSIONS: 'listSessions';

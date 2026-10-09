@@ -612,7 +612,7 @@ describe('session goal kernel operations', () => {
 
   const setup = (generation, generate, checker = 'small-model') => {
     const active = { ...session, metadata: { openchamber: { goal: { ...goal } } } };
-    let identity = { generation, endpoint: 'http://opencode.test', epoch: 1 };
+    let identity = { generation, profile: generation, endpoint: 'http://opencode.test', epoch: 1 };
     const item = { id: 'msg_answer', role: 'assistant', textParts: ['Progress', 'Next step'], agent: 'review', variant: 'high', created: 2, completed: 2, finish: 'stop', tokens: { input: 1, output: 1, cache: { read: 0 } }, model: generation === 'oc1' ? { providerID: 'provider', modelID: 'model' } : { providerID: 'provider', id: 'model', variant: 'high' } };
     const ops = {
       captureIdentity: () => identity,
@@ -638,7 +638,7 @@ describe('session goal kernel operations', () => {
       getSmallModelService: async () => ({ generateSmallModelText: generate }),
       classifierEndpoint, jev, getChecker: () => checker,
       emitGoalNotification: notify, isEnabled: () => true, idleQuietMs: 10 });
-    return { runtime, ops, notify, jev, classifierEndpoint, switchEpoch: () => { identity = { ...identity, epoch: 2 }; } };
+    return { runtime, ops, notify, jev, classifierEndpoint, switchProfile: () => { identity = { ...identity, profile: 'legacy-1.2.27' }; }, switchEpoch: () => { identity = { ...identity, epoch: 2 }; } };
   };
 
   it.each(['oc1', 'oc2'])('keeps the %s agent, model and variant for continuation', async (generation) => {
@@ -699,13 +699,14 @@ describe('session goal kernel operations', () => {
     runtime.stop();
   });
 
-  it('drops a deferred audit after an epoch switch without writing or notifying', async () => {
+  it.each(['epoch', 'profile'])('drops a deferred audit after a %s switch without writing or notifying', async (field) => {
     let release;
     const pending = new Promise((resolve) => { release = resolve; });
-    const { runtime, ops, notify, switchEpoch } = setup('oc2', () => pending);
+    const { runtime, ops, notify, switchEpoch, switchProfile } = setup('oc2', () => pending);
     runtime.processPayload({ type: 'session.status', properties: { sessionID: SESSION_ID, status: { type: 'idle' }, directory: DIRECTORY } });
     await vi.advanceTimersByTimeAsync(11);
-    switchEpoch();
+    if (field === 'epoch') switchEpoch();
+    else switchProfile();
     release({ text: '{"verdict":"complete","note":"Done"}', providerID: 'provider', modelID: 'model' });
     await vi.advanceTimersByTimeAsync(0);
     expect(ops.updateSession).not.toHaveBeenCalled();

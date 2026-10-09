@@ -6,7 +6,7 @@ const ACTIVE = new Set(['busy', 'retry']);
 export const readDescendantActivity = async (kernelOperations, sessionId, directory, statuses, identity = kernelOperations.captureIdentity()) => {
   if (identity.generation !== 'oc2') return false;
   const initial = kernelOperations.captureIdentity();
-  if (initial.generation !== identity.generation || initial.endpoint !== identity.endpoint || initial.epoch !== identity.epoch) return null;
+  if (initial.generation !== identity.generation || initial.profile !== identity.profile || initial.endpoint !== identity.endpoint || initial.epoch !== identity.epoch) return null;
   const pending = [{ id: sessionId, depth: 0 }];
   const seen = new Set([sessionId]);
   try {
@@ -14,7 +14,7 @@ export const readDescendantActivity = async (kernelOperations, sessionId, direct
       const { id, depth } = pending.pop();
       const children = (await kernelOperations.listChildren({ sessionID: id, directory })).data;
       const current = kernelOperations.captureIdentity();
-      if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return null;
+      if (current.generation !== identity.generation || current.profile !== identity.profile || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return null;
       if (!Array.isArray(children)) return null;
       for (const child of children) {
         if (!child.id || seen.has(child.id)) continue;

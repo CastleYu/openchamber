@@ -3,7 +3,7 @@
 With `kernelOperations` injected, goal ticks use generation-specific session,
 status, child and message operations. OC2 child sessions come from paged
 session lists. Goal metadata writes retain other metadata keys, and a
-continuation carries the epoch captured at the start of its tick.
+continuation carries the generation, profile, endpoint and epoch captured at the start of its tick. Goal preparation, metadata reconciliation and audit completion reject a changed profile even when the endpoint and epoch match.
 
 Message reads consume ordered `textParts`, model, agent, variant and accounting
 fields from the operation view. They do not inspect its raw OpenCode response.

@@ -63,7 +63,7 @@ export const createSessionGoal = async ({
   const checkCurrent = () => {
     if (!identity) return;
     const current = kernelOperations.captureIdentity();
-    if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+    if (current.generation !== identity.generation || current.profile !== identity.profile || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
       throw new Error('OpenCode runtime changed while preparing the goal');
     }
   };

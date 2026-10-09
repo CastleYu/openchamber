@@ -424,7 +424,7 @@ export const createSessionGoalRuntime = ({
   const writeGoal = async (sessionId, directory, expectedGoalId, mutate, identity) => {
     if (kernelOperations && identity) {
       const current = kernelOperations.captureIdentity();
-      if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return null;
+      if (current.generation !== identity.generation || current.profile !== identity.profile || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return null;
     }
     const session = await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory });
     const currentGoal = parseGoalMetadata(session);
@@ -470,7 +470,7 @@ export const createSessionGoalRuntime = ({
     console.log(`[session-goal] ${sessionId} settled as ${status}${statusReason ? ` (${statusReason})` : ''}`);
     if (identity && kernelOperations) {
       const current = kernelOperations.captureIdentity();
-      if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return;
+      if (current.generation !== identity.generation || current.profile !== identity.profile || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) return;
     }
     if (typeof emitGoalNotification === 'function') {
       try {
@@ -548,7 +548,7 @@ export const createSessionGoalRuntime = ({
     const input = { objective: goal.objective, answer: assistantText };
     const sameRuntime = () => {
       const current = kernelOperations.captureIdentity();
-      return current.generation === identity.generation && current.endpoint === identity.endpoint && current.epoch === identity.epoch;
+      return current.generation === identity.generation && current.profile === identity.profile && current.endpoint === identity.endpoint && current.epoch === identity.epoch;
     };
     if (getChecker() === 'classifier' && jev && sameRuntime()) {
       let endpoint;

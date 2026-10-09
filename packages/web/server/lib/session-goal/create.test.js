@@ -73,6 +73,17 @@ describe('session goal creation', () => {
     }
   });
 
+  it('refuses an old profile before writing the objective or goal metadata', async () => {
+    const identity = { generation: 'oc1', profile: 'oc1', endpoint: 'local', epoch: 1 };
+    const updateSession = vi.fn();
+    await expect(createSessionGoal({
+      kernelOperations: { captureIdentity: () => ({ ...identity, profile: 'legacy-1.2.27' }), updateSession },
+      expectedIdentity: identity, sessionID: 'ses_123', directory: '/repo/app', objective: 'Finish the migration',
+    })).rejects.toThrow('OpenCode runtime changed');
+    expect(writeObjectiveMock).not.toHaveBeenCalled();
+    expect(updateSession).not.toHaveBeenCalled();
+  });
+
   it('builds the same goal intro with an optional budget', () => {
     expect(buildGoalIntroText(null)).toContain('Goal mode is active for this session.');
     expect(buildGoalIntroText(200_000)).toContain('A token budget of 200000 tokens applies to this goal.');

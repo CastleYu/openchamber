@@ -163,3 +163,11 @@ test('finds OpenCode mode in General on every host surface', () => {
     expect(results.find(result => result.id === 'general.opencode-mode')?.page).toBe('general');
   }
 });
+
+test('connection editor has a stable General entry including the explicit unsupported host', () => {
+  for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isVSCode: true }, { ...runtimeCtx, isMobile: true }]) {
+    const results = buildSettingsSearchResults({ query: 'connection', runtimeCtx: context, t, getPageTitle: page => page });
+    expect(results.find(result => result.id === 'general.opencode-connection')?.page).toBe('general');
+    expect(results.some(result => result.id === 'sessions.opencode-binary')).toBe(false);
+  }
+});

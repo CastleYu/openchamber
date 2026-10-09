@@ -15,6 +15,7 @@ let failure: 'auth' | 'unreachable' | null = null;
 const schema = z.object({ [OPEN_CODE_SETTING.SELECTION]: z.enum(Object.values(OPEN_CODE_SELECTION)).optional() });
 const server = createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
+  if (req.url === '/api/config/opencode-connection') { res.statusCode = 501; res.end('{}'); return; }
   if (req.url === '/health') {
     res.end(JSON.stringify({ isOpenCodeReady: false, lastOpenCodeError: 'Synthetic startup failure', opencodeBinaryResolved: '/fixture/opencode' }));
     return;

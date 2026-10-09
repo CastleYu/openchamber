@@ -1,3 +1,4 @@
+import { OpenCodeConnectionSettings } from '@/components/sections/openchamber/OpenCodeConnectionSettings';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { OpenCodeModeSettings } from '@/components/sections/openchamber/OpenCodeModeSettings';
@@ -52,7 +53,7 @@ export const StartupInitializationRecovery: React.FC<{
             )}
           </dl>
         )}
-        <div className="w-full text-left"><OpenCodeModeSettings /></div>
+        <div className="w-full text-left"><OpenCodeModeSettings /><OpenCodeConnectionSettings /></div>
         <Button type="button" onClick={onRetry} disabled={isRetrying}>
           {isRetrying ? t('startup.initRecovery.retrying') : t('startup.initRecovery.retry')}
         </Button>

@@ -1,3 +1,4 @@
+import { OpenCodeConnectionSettings } from './OpenCodeConnectionSettings';
 import React from 'react';
 import { OpenChamberVisualSettings } from './OpenChamberVisualSettings';
 import { AboutSettings } from './AboutSettings';
@@ -57,6 +58,7 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
                 <DefaultsSettings key={runtimeEndpointEpoch} />
                 <SessionWorkSettings />
                 {showDesktopNetworkSettings && <DesktopNetworkSettings />}
+                <OpenCodeConnectionSettings key={"opencode-connection:" + runtimeEndpointEpoch} />
                 <OpenCodeModeSettings key={"opencode-mode:" + runtimeEndpointEpoch} />
                 {!isVSCode && <OpenCodeCliSettings />}
                 {!isVSCode && <OpenChamberToolsSettings />}
@@ -155,6 +157,7 @@ const GeneralSectionContent: React.FC = () => {
             {showDesktopNetworkSettings && <DesktopNetworkSettings />}
             {showPasskeySettings && <PasskeySettings />}
             <AppLinkSecuritySettings />
+            <OpenCodeConnectionSettings key={"opencode-connection:" + runtimeEndpointEpoch} />
             <OpenCodeModeSettings key={"opencode-mode:" + runtimeEndpointEpoch} />
             {!isVSCode && <OpenCodeCliSettings />}
             {!isVSCode && <OpenChamberToolsSettings />}

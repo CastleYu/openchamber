@@ -248,3 +248,11 @@ test('transports confirmed host connection records without turning candidates in
   expect(parseSettingsDocument({ opencodeConnection: null })?.opencodeConnection).toBeNull();
   expect(SETTINGS_REGISTRY.opencodeConnection.surfaces).not.toContain('vscode');
 });
+
+test('confirmed connection settings retain normalized intent and reject unconfirmed or credential-bearing records', () => {
+  const external = { version: 1, confirmed: true, mode: 'external', endpoint: 'https://connection.test/base/' };
+  expect(parseSettingsDocument({ opencodeConnection: external })?.opencodeConnection).toEqual({ ...external, endpoint: 'https://connection.test/base' });
+  expect(parseSettingsDocument({ opencodeConnection: { ...external, confirmed: false } })?.opencodeConnection).toBeUndefined();
+  expect(parseSettingsDocument({ opencodeConnection: { ...external, endpoint: 'https://name:secret@connection.test' } })?.opencodeConnection).toBeUndefined();
+  expect(parseSettingsDocument({ opencodeConnection: null })?.opencodeConnection).toBeNull();
+});

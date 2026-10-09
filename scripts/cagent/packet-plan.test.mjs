@@ -101,3 +101,20 @@ test('rejects stale or unknown mappings and refuses plans with no mapping-ready 
   unresolved.endpoints['session-read'] = { kind: 'out-of-scope', reason: 'not-used', citations: citation };
   assert.throws(() => buildPacketPlan(catalog, unresolved), (error) => error instanceof PacketPlanError && error.code === PACKET_PLAN.ERROR.NO_READY);
 });
+
+test('freezes owner fixtures only for the complete mapping-ready operation set', () => {
+  const definition = { version: 1, operation: 'getSession', cases: [{ id: 'read',
+    input: { workspaceID: 'space', sessionID: 'session' },
+    identity: { family: 'cagent', connectionID: 'fixture', epoch: 1, adapterRevision: 'a', capabilityRevision: 'c' },
+    exchanges: [], expected: { kind: 'result', result: { id: 'session', workspaceID: 'space' } },
+  }] };
+  const fixtures = { getSession: definition };
+  const plan = buildPacketPlan(catalog, mapping(), fixtures);
+  assert.equal(plan.packets[0].checkScope, 'semantic-fixtures');
+  const manifest = JSON.parse(plan.files.get('control/manifest.json'));
+  assert.ok(manifest.files.some(({ path }) => path === 'getSession/fixtures.json'));
+  assert.equal(JSON.parse(plan.files.get('protected/getSession/fixtures.json')).cases[0].id, 'read');
+  for (const value of [{}, { getSession: null }, { getSession: definition, listSessions: definition }]) {
+    assert.throws(() => buildPacketPlan(catalog, mapping(), value), PacketPlanError);
+  }
+});

@@ -15,7 +15,25 @@ node --test scripts/cagent/fixture-checks.test.mjs
 bun test scripts/cagent/adapter-assembly.test.mjs scripts/cagent/fixture-workspace.test.mjs
 ```
 
-The combination test uses actual temporary files, bundling, protected snapshot verification and native checkpoint persistence. It fails a candidate returning plausible data without a request, accepts the corrected projection, resumes from disk, preserves the three-failure ceiling and refuses protected fixture tampering. These synthetic tests do not prove the real CAgent API. The complete kit still needs isolated execution with time/process limits, fixture/document intake commands, frozen executable host composition, extension templates, calibration and live acceptance. A candidate can otherwise hang or access process globals; run it only in the intended isolated check environment.
+The combination test uses actual temporary files, bundling, protected snapshot verification and native checkpoint persistence. It fails a candidate returning plausible data without a request, accepts the corrected projection, resumes from disk, preserves the three-failure ceiling and refuses protected fixture tampering. These synthetic tests do not prove the real CAgent API. The complete kit still needs enforced environment permissions, document intake, frozen executable host composition, extension templates, calibration and live acceptance.
+
+## Bounded packet check command
+
+The owner supplies reviewed version-1 fixture definitions as an object keyed by operation ID. `--fixtures` requires exactly the mapping-ready operations, validates canonical inputs and expected outputs, and freezes each definition in the protected snapshot. Without this flag, preparation retains its syntax-only packet metadata.
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --fixtures /local/reviewed-fixtures.json --out /local/new-workspace --json
+bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation sessionList --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
+node --test scripts/cagent/fixture-process.test.mjs
+```
+
+Replace the operation with an ID from the generated packet. The explicit Node executable must support `--permission`; the tested executable is Node 24.9.0. Bun runs the host command and assembler. The host obtains the kit digest from preparation and stores it outside candidate write authority. A candidate's manifest or report does not supply approval.
+
+The command verifies the protected inventory, captures the one allowed handler, assembles it without executing its factory, and runs fixtures in a fresh child process. The child receives only `SystemRoot` and `WINDIR` on Windows and an empty environment elsewhere. Filesystem writes, child processes and worker threads are denied. Reads include this checkout and its resolved dependencies. The default deadline is 5 seconds, configurable with `--timeout` between 10 and 30000 milliseconds. Input is bounded to 1 MiB and combined output to 64 KiB. Timeout or excessive output triggers forced termination; the host waits for process closure before reporting.
+
+A startup handshake distinguishes missing permission support or setup failure from candidate failure. Setup failures do not consume a correction attempt. Candidate assembly failure, failed fixture, timeout, malformed output or abnormal exit after startup counts as failure. Native progress retains the three-failure ceiling across command restarts. JSON reports fixed check and case IDs without raw candidate exceptions or API documents. Passing grants no capability or activation.
+
+The permission model reduces accidental process access; it does not establish network isolation or a hostile-code sandbox. See the [Node permission model](https://nodejs.org/download/release/v24.21.0/docs/api/permissions.html). The target owner still must enforce read-only protected files, independent progress/approval authority and the required execution/network policy. Fixture expectations must be reviewed against local API documentation; schema validation cannot establish those semantics.
 
 ## Candidate packet preparation
 
@@ -30,7 +48,7 @@ The protected snapshot lives under `protected/`. Its exact file manifest is writ
 
 The command requires a fresh output directory under an existing canonical parent. Existing output is refused without modifying it. A failed write leaves a partial directory, reports `workspace-incomplete` and does not publish the final manifest; preserve it for inspection and use a fresh directory after correcting the cause. Inputs use the shared 1 MiB bounded reader. All modes are noninteractive; JSON output contains counts, digest and fixed errors without private paths or API documents. `--quiet` emits one concise result line.
 
-The emitted check command is syntax-only metadata. Preparation does not execute candidate code or protected semantic fixtures. It does not assemble the loader's final single-file adapter, grant capabilities or implement model calibration, extension packets, offline installation or live acceptance. Those remain CA-02/CA-03 work. The final adapter must bundle helpers rather than import the candidate workspace.
+The emitted check command is syntax-only metadata by default, or the bounded semantic command when reviewed fixtures are supplied. Preparation itself executes no candidate code. The check command assembles an ephemeral single-operation adapter for fixture execution; it does not publish the final multi-operation artifact, grant capabilities or implement model calibration, extension packets, offline installation or live acceptance. Those remain CA-02/CA-03 work. The final adapter must bundle helpers rather than import the candidate workspace.
 
 ## Mapping intake
 

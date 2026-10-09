@@ -4,13 +4,15 @@ import { agentArtifactDigest } from '../../packages/web/server/lib/agent/artifac
 import { MAPPING_CATALOG_SCHEMA, MAPPING_SCHEMA, compileMapping, MAPPING, MappingError } from './mapping-intake.mjs';
 import { buildContractPages, CONTRACT_REFERENCE } from './contract-pages.mjs';
 import { OPERATION_REFERENCE } from './operation-reference.mjs';
+import { z } from 'zod';
+import { createFixtureChecks, FIXTURE, FixtureError } from './fixture-checks.mjs';
 
 export const PACKET_PLAN = Object.freeze({
   VERSION: 1,
   ERROR: Object.freeze({ INVALID: 'invalid-packet-plan', NO_READY: 'no-ready-operations' }),
   DIRECTORY: Object.freeze({ PROTECTED: 'protected', CANDIDATE: 'candidate', CONTROL: 'control' }),
-  FILE: Object.freeze({ REGISTRATION: 'registration.json', MANIFEST: 'manifest.json', COVERAGE: 'coverage.json', PACKET: 'packet.json', MAPPING: 'mapping.json', SCHEMA: 'schema.json', REFERENCE_EN: 'reference.en.md', REFERENCE_ZH: 'reference.zh-CN.md', HANDLER: 'handler.mjs' }),
-  CHECK: Object.freeze({ SCOPE: 'syntax-only', STATUS: 'awaiting-implementation' }),
+  FILE: Object.freeze({ REGISTRATION: 'registration.json', MANIFEST: 'manifest.json', COVERAGE: 'coverage.json', PACKET: 'packet.json', MAPPING: 'mapping.json', SCHEMA: 'schema.json', REFERENCE_EN: 'reference.en.md', REFERENCE_ZH: 'reference.zh-CN.md', HANDLER: 'handler.mjs', FIXTURES: 'fixtures.json' }),
+  CHECK: Object.freeze({ SCOPE: 'syntax-only', SEMANTIC: 'semantic-fixtures', STATUS: 'awaiting-implementation' }),
 });
 
 export class PacketPlanError extends Error {
@@ -47,7 +49,7 @@ const operationFiles = (operation, contractFiles) => {
 };
 
 /** Builds review packets and an immutable protected snapshot description; it never writes or executes candidates. */
-export function buildPacketPlan(catalogInput, mappingInput) {
+export function buildPacketPlan(catalogInput, mappingInput, fixtureInput) {
   try {
     const coverage = compileMapping(catalogInput, mappingInput);
     const catalog = MAPPING_CATALOG_SCHEMA.parse(catalogInput);
@@ -56,6 +58,9 @@ export function buildPacketPlan(catalogInput, mappingInput) {
     const ready = Object.values(AGENT_OPERATION).filter((operation) =>
       mapping.operations[operation].kind === MAPPING.OPERATION_KIND.MAPPING && coverage.operations[operation] === MAPPING.STATE.READY);
     if (!ready.length) throw new PacketPlanError(PACKET_PLAN.ERROR.NO_READY);
+    const fixtures = fixtureInput === undefined ? null : z.partialRecord(z.enum(Object.values(AGENT_OPERATION)), z.json()).safeParse(fixtureInput);
+    if (fixtures && (!fixtures.success || Object.keys(fixtures.data).length !== ready.length
+      || ready.some((operation) => !Object.hasOwn(fixtures.data, operation)))) throw new PacketPlanError(FIXTURE.INVALID);
 
     const files = new Map();
     const candidateDirectory = (operation) => `${PACKET_PLAN.DIRECTORY.CANDIDATE}/${operation}`;
@@ -72,11 +77,15 @@ export function buildPacketPlan(catalogInput, mappingInput) {
       });
       if (documents.some((document) => !document)) throw new PacketPlanError(PACKET_PLAN.ERROR.INVALID);
       const candidate = candidateDirectory(operation);
+      const definition = fixtures?.data[operation];
+      if (fixtures && (definition?.operation !== operation || !createFixtureChecks(definition, async () => null).length)) throw new PacketPlanError(FIXTURE.INVALID);
       const packet = freeze({
         operation, goal: OPERATION_REFERENCE[operation].en.goal, citations, candidateDirectory: candidate,
         files: [PACKET_PLAN.FILE.HANDLER], dependsOn: [],
-        checkCommand: ['node', '--check', `${candidate}/${PACKET_PLAN.FILE.HANDLER}`],
-        checkScope: PACKET_PLAN.CHECK.SCOPE, status: PACKET_PLAN.CHECK.STATUS,
+        checkCommand: definition
+          ? ['bun', 'scripts/cagent/check-packet.mjs', '--workspace', '<workspace>', '--operation', operation, '--node', '<node>', '--kit-digest', '<protected-digest>', '--json']
+          : ['node', '--check', `${candidate}/${PACKET_PLAN.FILE.HANDLER}`],
+        checkScope: definition ? PACKET_PLAN.CHECK.SEMANTIC : PACKET_PLAN.CHECK.SCOPE, status: PACKET_PLAN.CHECK.STATUS,
         maxCorrections: AGENT_PACKET.MAX_CORRECTIONS,
         mappingDigest: coverage.digest, referenceDigest: contract.digest,
       });
@@ -86,6 +95,7 @@ export function buildPacketPlan(catalogInput, mappingInput) {
       files.set(`${base}/${PACKET_PLAN.FILE.PACKET}`, json(packet));
       files.set(`${base}/${PACKET_PLAN.FILE.MAPPING}`, json({ operation, row, endpoints, documents }));
       files.set(`${base}/${PACKET_PLAN.FILE.SCHEMA}`, local.schema);
+      if (definition) files.set(`${base}/${PACKET_PLAN.FILE.FIXTURES}`, json(definition));
       files.set(`${base}/${PACKET_PLAN.FILE.REFERENCE_EN}`, local.en);
       files.set(`${base}/${PACKET_PLAN.FILE.REFERENCE_ZH}`, local.zh);
       return packet;
@@ -101,6 +111,7 @@ export function buildPacketPlan(catalogInput, mappingInput) {
     files.set(`${PACKET_PLAN.DIRECTORY.CONTROL}/${PACKET_PLAN.FILE.MANIFEST}`, json({ version: AGENT_ARTIFACT.VERSION, files: protectedFiles, artifactDigest }));
     return freeze({ version: PACKET_PLAN.VERSION, digest: artifactDigest, coverage, packets, files });
   } catch (error) {
+    if (error instanceof FixtureError) throw new PacketPlanError(FIXTURE.INVALID);
     if (error instanceof PacketPlanError || error instanceof MappingError) throw error;
     throw new PacketPlanError(PACKET_PLAN.ERROR.INVALID);
   }

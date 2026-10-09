@@ -62,7 +62,7 @@ export async function runPrepareCommand(args, output) {
   let values;
   try {
     ({ values } = parseArgs({ args, options: {
-      catalog: { type: 'string' }, mapping: { type: 'string' }, out: { type: 'string' },
+      catalog: { type: 'string' }, mapping: { type: 'string' }, out: { type: 'string' }, fixtures: { type: 'string' },
       json: { type: 'boolean' }, quiet: { type: 'boolean' },
     }, allowPositionals: false }));
     if (!values.catalog || !values.mapping || !values.out) return fail(PREPARE_COMMAND.INVALID);
@@ -70,13 +70,14 @@ export async function runPrepareCommand(args, output) {
     return fail(PREPARE_COMMAND.INVALID);
   }
   let sources;
-  try { sources = await Promise.all([readLocalJSON(values.catalog), readLocalJSON(values.mapping)]); }
+  try { sources = await Promise.all([readLocalJSON(values.catalog), readLocalJSON(values.mapping),
+    values.fixtures ? readLocalJSON(values.fixtures) : undefined]); }
   catch { return fail(PREPARE_COMMAND.INPUT); }
   try {
     const plan = buildPacketPlan(...sources);
     await materialize(plan, values.out);
     const report = { ok: true, packets: plan.packets.length, files: plan.files.size, digest: plan.digest,
-      activation: PREPARE_COMMAND.ACTIVATION, checkScope: PREPARE_COMMAND.CHECK_SCOPE };
+      activation: PREPARE_COMMAND.ACTIVATION, checkScope: plan.packets[0].checkScope };
     output(jsonMode ? JSON.stringify(report) : `packets prepared count:${report.packets} digest:${report.digest} activation:${report.activation} checks:${report.checkScope}`);
     return 0;
   } catch (error) {

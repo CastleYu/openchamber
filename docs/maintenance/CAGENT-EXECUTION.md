@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: protected semantic checks and single-file assembly
+## Latest checkpoint: bounded fixture process and executable packet checks
+
+2026-10-09. CA-01 remains in progress. CA-02 now accepts reviewed fixture definitions during packet preparation and includes them in the protected inventory. The executable host command requires an independently supplied kit digest, captures the allowed candidate handler and assembles it before executing fixtures in a fresh Node process. Minimal inherited environment, denied writes/process creation, a 5-second default deadline, 1 MiB input and 64 KiB combined output limits bound accidental candidate failures. Forced termination waits for process closure.
+
+Fifteen focused tests pass: seven actual Node child-process checks, two native Bun CLI checks, four packet-plan checks and two preparation checks. They cover a blocked candidate, excessive output, abrupt exit, denied writes/process creation, withheld environment credentials, protected fixture tampering, native correction persistence and candidate file-boundary refusal. Primary review fixed two test handlers that had omitted required fixture requests. Changed JavaScript passes anti-slop and ESLint. These synthetic fixtures do not establish real CAgent API semantics, OS permission isolation or network denial.
+
+Setup failures preserve correction allowance; candidate failures use the existing durable three-failure ceiling. Passing still grants no feature support or activation. The permission model is not a hostile-code sandbox. Separate target write authority, frozen offline host composition, document intake, extension templates and model calibration remain CA-02 work; real target and host acceptance remain CA-03. Independent remote publication and temporary Release remain pending. Other INT work stays after CA-03. Live weekly allowance is 63%; no reset credit was used. See the [bounded check command](../../scripts/cagent/DOCUMENTATION.md#bounded-packet-check-command).
+
+Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no new CAgent row. This developer-tool checkpoint does not rerun unrelated application builds or live API checks.
+
+## Previous checkpoint: protected semantic checks and single-file assembly
 
 2026-10-09. CA-01 remains in progress. CA-02 now has a strict host-owned fixture engine and in-memory single-file adapter assembler. Fixture checks compare ordered requests, identity, abort control and exact neutral results or expected failures. Candidate sources are captured by the existing packet runner. Assembly uses actual Bun bundling, preserves fresh factory state and declares all 22 capabilities unverified. It grants no approval or activation.
 

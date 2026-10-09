@@ -15,7 +15,25 @@ node --test scripts/cagent/fixture-checks.test.mjs
 bun test scripts/cagent/adapter-assembly.test.mjs scripts/cagent/fixture-workspace.test.mjs
 ```
 
-组合测试使用真实临时文件、打包、保护快照校验及原生检查点持久化。它拒绝不发请求却返回合理数据的候选，接受修正后的投影，从磁盘恢复，保留三次失败上限，并拒绝保护夹具篡改。这些合成测试不能证明真实 CAgent API。完整工具包仍需带时间／进程限制的隔离执行、夹具／文档接收命令、冻结的可执行宿主组合、扩展模板、校准及真实验收。候选否则可卡住或访问进程全局对象，须在指定隔离检查环境内运行。
+组合测试使用真实临时文件、打包、保护快照校验及原生检查点持久化。它拒绝不发请求却返回合理数据的候选，接受修正后的投影，从磁盘恢复，保留三次失败上限，并拒绝保护夹具篡改。这些合成测试不能证明真实 CAgent API。完整工具包仍需落实环境权限、文档接收、冻结的可执行宿主组合、扩展模板、校准及真实验收。
+
+## 有界任务检查命令
+
+维护者以操作 ID 为键提供经过审阅的版本 1 夹具定义。`--fixtures` 要求准确覆盖 mapping-ready 操作，校验规范输入及预期输出，并将每项定义冻结在保护快照中。不提供此参数时，准备过程保留仅含语法检查的任务元数据。
+
+```sh
+node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --fixtures /local/reviewed-fixtures.json --out /local/new-workspace --json
+bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation sessionList --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
+node --test scripts/cagent/fixture-process.test.mjs
+```
+
+操作 ID 使用生成任务中的值。显式 Node 可执行文件须支持 `--permission`，当前实际测试版本为 Node 24.9.0。Bun 执行宿主命令及组装器。宿主从准备报告取得工具包摘要，并将其保存于候选写权限之外。候选清单或报告不能提供批准。
+
+命令校验保护清单，捕获唯一允许的处理器，在不执行其工厂的情况下组装，然后在新的子进程中运行夹具。Windows 子进程仅继承 `SystemRoot` 和 `WINDIR`，其他平台使用空环境。拒绝文件写入、子进程和工作线程；读取权限包括当前工作树及解析后的依赖目录。默认期限为 5 秒，`--timeout` 可设为 10 至 30000 毫秒。输入最多 1 MiB，合并输出最多 64 KiB。超时或输出超限触发强制终止，宿主等待进程关闭后才报告。
+
+启动握手将权限功能缺失或设置失败与候选失败区分。设置失败不消耗修正次数。候选组装失败、夹具失败、超时、损坏输出或启动后的异常退出计为失败。原生进度在命令重启后保留三次失败上限。JSON 报告仅含固定检查及案例 ID，不含原始候选异常或 API 文档。通过不能授予能力或启用许可。
+
+权限模型减少意外的进程访问，不能证明网络隔离或恶意代码沙箱。参见 [Node 权限模型](https://nodejs.org/download/release/v24.21.0/docs/api/permissions.html)。目标维护者仍须落实保护文件只读、进度／批准的独立权限，以及所需的执行／网络策略。夹具预期须依据本地 API 文档审阅；schema 校验不能证明这些语义。
 
 ## 候选任务包准备
 
@@ -30,7 +48,7 @@ node --test scripts/cagent/packet-plan.test.mjs scripts/cagent/prepare-packets.t
 
 命令要求输出为现有规范父目录下的新目录。已有输出会被拒绝，不作修改。写入失败保留部分目录，报告 `workspace-incomplete`，不发布最终清单；保留现场检查，修正原因后使用新目录。输入复用每份 1 MiB 的有界读取器。全部模式不交互；JSON 输出仅包含数量、摘要和固定错误，不包含私有路径或 API 文档。`--quiet` 输出一行简要结果。
 
-生成的检查命令只是语法检查元数据。准备过程不执行候选代码或受保护语义夹具，不组装加载器要求的最终单文件适配器、不授予能力，也不实现模型校准、扩展任务包、离线安装或真实验收。这些仍属 CA-02／CA-03。最终适配器须打包辅助代码，不能引用候选工作目录。
+生成的检查命令默认只是语法检查元数据；提供审阅过的夹具后，改为有界语义检查命令。准备过程本身不执行候选代码。检查命令组装临时单操作适配器以执行夹具，不发布最终多操作制品、不授予能力，也不实现模型校准、扩展任务包、离线安装或真实验收。这些仍属 CA-02／CA-03。最终适配器须打包辅助代码，不能引用候选工作目录。
 
 ## 映射接收
 

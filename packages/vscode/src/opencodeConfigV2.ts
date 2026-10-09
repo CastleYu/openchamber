@@ -1,3 +1,5 @@
+import { writeSkillSupportingFile, deleteSkillSupportingFile } from './skillFiles';
+export { readSkillSupportingFile, writeSkillSupportingFile, deleteSkillSupportingFile } from './skillFiles';
 import { OPENCODE_CONFIG_DIR_V2 as OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -2890,40 +2892,6 @@ export const getSkillSources = (
     claudeMd: { exists: claudeExists, path: claudePath },
     userMd: { exists: userExists, path: userPath }
   };
-};
-
-export const readSkillSupportingFile = (skillDir: string, relativePath: string): string | null => {
-  const fullPath = path.join(skillDir, relativePath);
-  if (!fs.existsSync(fullPath)) return null;
-  return fs.readFileSync(fullPath, 'utf8');
-};
-
-export const writeSkillSupportingFile = (skillDir: string, relativePath: string, content: string): void => {
-  const fullPath = path.join(skillDir, relativePath);
-  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-  fs.writeFileSync(fullPath, content, 'utf8');
-};
-
-export const deleteSkillSupportingFile = (skillDir: string, relativePath: string): void => {
-  const fullPath = path.join(skillDir, relativePath);
-  if (fs.existsSync(fullPath)) {
-    fs.unlinkSync(fullPath);
-    // Clean up empty parent directories
-    let parentDir = path.dirname(fullPath);
-    while (parentDir !== skillDir) {
-      try {
-        const entries = fs.readdirSync(parentDir);
-        if (entries.length === 0) {
-          fs.rmdirSync(parentDir);
-          parentDir = path.dirname(parentDir);
-        } else {
-          break;
-        }
-      } catch {
-        break;
-      }
-    }
-  }
 };
 
 const validateSkillName = (skillName: string): void => {

@@ -15,7 +15,7 @@ export type AgentRequestControl = Readonly<{ signal?: AbortSignal }>;
 export type AgentServerTransport = Readonly<{
   request(input: AgentServerRequest, identity: AgentIdentity, control?: AgentRequestControl): Promise<AgentServerResponse>;
 }>;
-export type AgentAdapter = Pick<AgentRegistration, 'capabilities' | 'handlers'>;
+export type AgentAdapter = Pick<AgentRegistration, 'capabilities' | 'handlers' | 'extensions'>;
 export type AgentAdapterFactory = (context: AgentServerTransport) => AgentAdapter | Promise<AgentAdapter>;
 export class AgentAdapterError extends Error {
   readonly code: string;

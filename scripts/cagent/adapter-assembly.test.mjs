@@ -5,13 +5,20 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { AGENT_ADAPTER, AGENT_ARTIFACT, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from '../../packages/web/server/lib/agent/constants.js';
+import { AGENT_ADAPTER, AGENT_ARTIFACT, AGENT_EXTENSION, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from '../../packages/web/server/lib/agent/constants.js';
 import { agentArtifactDigest } from '../../packages/web/server/lib/agent/artifacts.js';
 import { loadAgentAdapter } from '../../packages/web/server/lib/agent/loader.js';
 import { assembleAdapter, ASSEMBLY, AssemblyError } from './adapter-assembly.mjs';
 
 const source = (operation, body = 'return () => 1;') => ({
   operation, text: `export function createOperation() { ${body} }`,
+});
+const extension = (actionID, text = 'export function createExtension() { return () => 1; }') => ({
+  manifest: { version: AGENT_EXTENSION.VERSION, actionID, revision: 'r1',
+    label: { key: 'cagent.test.label', en: actionID, zhCN: actionID }, context: { workspace: true, session: false },
+    effect: AGENT_EXTENSION.EFFECT.READ, authorization: 'current-principal', cancellation: AGENT_EXTENSION.CANCELLATION.NONE,
+    outcome: AGENT_EXTENSION.OUTCOME.OBSERVED, input: [], output: { kind: AGENT_EXTENSION.KIND.TEXT, maxLength: 20 },
+    evidence: [{ document: 'docs', section: 'read' }] }, text,
 });
 const digest = (text) => createHash('sha256').update(text).digest('hex');
 
@@ -76,4 +83,64 @@ test('loader creates fresh operation state and keeps every capability unverified
   assert.equal(loadedB.handlers[AGENT_OPERATION.GET_SESSION](), 1);
   assert.equal(Object.keys(loadedA.capabilities).length, 22);
   assert.ok(Object.values(loadedA.capabilities).every(({ state, evidence }) => state === AGENT_SUPPORT.UNVERIFIED && evidence.length === 0));
+});
+
+test('assembles validated extensions in deterministic order and keeps their capabilities unverified', async () => {
+  const a = extension('cagent.test.a', 'export function createExtension(context) { return () => context; }');
+  const b = extension('cagent.test.b', 'export function createExtension(context) { return () => context; }');
+  const first = await assembleAdapter([], [b, a]);
+  const reordered = await assembleAdapter([], [a, b]);
+  assert.equal(first.source, reordered.source);
+  const adapter = await (await import(`data:text/javascript;base64,${Buffer.from(first.source).toString('base64')}`)).createAdapter({ marker: true });
+  assert.deepEqual(adapter.extensions.map(({ manifest }) => manifest.actionID), ['cagent.test.a', 'cagent.test.b']);
+  assert.equal(adapter.extensions[0].handler(), adapter.extensions[1].handler());
+  assert.ok(adapter.extensions.every(({ capability }) => capability.state === AGENT_SUPPORT.UNVERIFIED && capability.evidence.length === 0));
+  assert.deepEqual(Object.keys(adapter.handlers), []);
+  assert.equal(Object.keys(adapter.capabilities).length, 22);
+  const mixed = await assembleAdapter([source(AGENT_OPERATION.GET_SESSION)], [a]);
+  const combined = await (await import(`data:text/javascript;base64,${Buffer.from(mixed.source).toString('base64')}`)).createAdapter({});
+  assert.equal(combined.handlers[AGENT_OPERATION.GET_SESSION](), 1);
+  assert.equal(combined.extensions[0].manifest.actionID, a.manifest.actionID);
+});
+
+test('rejects invalid, duplicate, over-limit extensions and mixed aggregate bytes', async () => {
+  const valid = extension('cagent.test.valid');
+  await assert.rejects(assembleAdapter([], [{ ...valid, manifest: { ...valid.manifest, actionID: 'invalid' } }]), AssemblyError);
+  await assert.rejects(assembleAdapter([], [valid, valid]), AssemblyError);
+  for (const invalid of [{ ...valid, extra: true }, { ...valid, text: 1 }, { ...valid, text: '' }]) {
+    await assert.rejects(assembleAdapter([], [invalid]), AssemblyError);
+  }
+  for (const text of [
+    'export function createExtension() { return () => import("node:fs"); }',
+    'export function createExtension() { return () => require("node:fs"); }',
+    'export function createExtension() { return () => eval("1"); }',
+    'export function createExtension() {} export const surprise = 1;',
+  ]) {
+    await assert.rejects(assembleAdapter([], [{ ...valid, text }]), AssemblyError);
+  }
+  await assert.rejects(assembleAdapter([], Array.from({ length: AGENT_EXTENSION.MAX_ACTIONS + 1 }, (_, i) => extension(`cagent.test.${i}`))), AssemblyError);
+  const padded = (actionID) => {
+    const base = 'export function createExtension() { /* */ return () => 1; }';
+    const target = 15 * 1024 * 1024;
+    return extension(actionID, base.replace('/* */', `/*${'x'.repeat(target - Buffer.byteLength(base))}*/`));
+  };
+  await assert.rejects(assembleAdapter([source(AGENT_OPERATION.GET_SESSION)],
+    Array.from({ length: 9 }, (_, i) => padded(`cagent.test.total${i}`))), AssemblyError);
+  await assert.rejects(assembleAdapter([], [extension('cagent.test.invalid', 'export function createOperation() {}')]), AssemblyError);
+});
+
+test('loader returns extensions with isolated factory contexts', async (t) => {
+  const first = await assembleAdapter([], [extension('cagent.test.one', 'export function createExtension(context) { return () => context; }')]);
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'cagent-extension-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  await fs.writeFile(path.join(directory, AGENT_ADAPTER.ENTRY), first.source);
+  const files = [{ path: AGENT_ADAPTER.ENTRY, bytes: first.bytes, digest: first.digest }];
+  const manifest = { version: AGENT_ARTIFACT.VERSION, files, artifactDigest: agentArtifactDigest(files) };
+  const profile = { adapterID: 'test', family: AGENT_FAMILY.CAGENT, adapterRevision: 'r1', capabilityRevision: 'c1' };
+  const transport = { request: async () => ({ status: 200, body: null }) };
+  const loadedA = await loadAgentAdapter({ directory, manifest, profile, transport });
+  const loadedB = await loadAgentAdapter({ directory, manifest, profile, transport });
+  assert.equal(loadedA.extensions.length, 1);
+  assert.notEqual(loadedA.extensions[0].handler(), loadedB.extensions[0].handler());
+  assert.equal(loadedA.extensions[0].capability.state, AGENT_SUPPORT.UNVERIFIED);
 });

@@ -8,6 +8,11 @@ import {
 
 const namespaceSchema = z.object({ [AGENT_ADAPTER.FACTORY]: z.function() }).strict();
 const transportSchema = z.object({ request: z.function() }).strict();
+const freezeManifest = (value) => {
+  if (value === null || Object(value) !== value) return value;
+  for (const child of Object.values(value)) freezeManifest(child);
+  return Object.freeze(value);
+};
 
 export class AgentAdapterError extends Error {
   constructor(code) {
@@ -42,13 +47,19 @@ export const loadAgentAdapter = async ({ directory, manifest, profile, transport
     const adapter = agentAdapterSchema.safeParse(await loaded.data[AGENT_ADAPTER.FACTORY](context));
     if (!adapter.success) throw new AgentAdapterError(AGENT_ERROR.ADAPTER_FAILED);
     const value = adapter.data;
-    return Object.freeze({
+    const registration = {
       ...selected.data, artifactDigest: snapshot.artifactDigest,
       capabilities: Object.freeze(Object.fromEntries(Object.entries(value.capabilities).map(([id, support]) => [
         id, Object.freeze({ ...support, evidence: Object.freeze([...support.evidence]) }),
       ]))),
       handlers: Object.freeze({ ...value.handlers }),
-    });
+    };
+    if (value.extensions) registration.extensions = Object.freeze(value.extensions.map(({ manifest, capability, handler }) => Object.freeze({
+      manifest: freezeManifest(manifest),
+      capability: Object.freeze({ ...capability, evidence: Object.freeze([...capability.evidence]) }),
+      handler,
+    })));
+    return Object.freeze(registration);
   } catch (error) {
     if (error instanceof AgentArtifactError || error instanceof AgentAdapterError) throw error;
     throw new AgentAdapterError(AGENT_ERROR.ADAPTER_FAILED);

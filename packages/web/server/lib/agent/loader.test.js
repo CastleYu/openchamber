@@ -4,11 +4,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createAgentAuthority } from './authority.js';
+import { createAgentAuthority, agentExtensionDigest } from './authority.js';
 import { agentArtifactDigest } from './artifacts.js';
 import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT, AGENT_SERVER_METHOD } from './constants.js';
 import { createAgentDispatcher } from './dispatcher.js';
 import { AgentAdapterError, loadAgentAdapter } from './loader.js';
+const extensionManifest = {
+  version: 1, actionID: 'cagent.fixture.report', revision: 'r1', label: { key: 'cagent.fixture.report', en: 'Fixture', zhCN: '夹具' },
+  context: { workspace: false, session: false }, effect: 'read', authorization: 'current-principal',
+  cancellation: 'none', outcome: 'observed', input: [], output: { kind: 'text', maxLength: 32 },
+  evidence: [{ document: 'fixture', section: 'report' }],
+};
 
 const profile = Object.freeze({ adapterID: 'synthetic-api', family: AGENT_FAMILY.CAGENT,
   adapterRevision: 'adapter-v1', capabilityRevision: 'capability-v1' });
@@ -55,6 +61,60 @@ afterEach(async () => {
 });
 
 describe('loadAgentAdapter', () => {
+  it('retains detached deeply frozen extensions without changing core-only registration shape', async () => {
+    const marker = `__agent_extension_${randomUUID().replaceAll('-', '')}`;
+    globals.push(marker);
+    const source = `globalThis.${marker} = ${JSON.stringify(extensionManifest)};
+      export function createAdapter() { return { capabilities: {}, handlers: {}, extensions: [{
+        manifest: globalThis.${marker}, capability: { state: 'unverified', evidence: [] },
+        handler: async () => ({ result: { text: 'fixture' } }) }] }; }`;
+    const registration = await load(await makeArtifact(source));
+    const row = registration.extensions[0];
+    expect(row.manifest).toEqual(extensionManifest);
+    expect(Object.isFrozen(registration.extensions)).toBe(true);
+    expect(Object.isFrozen(row)).toBe(true);
+    expect(Object.isFrozen(row.manifest.label)).toBe(true);
+    expect(Object.isFrozen(row.manifest.evidence[0])).toBe(true);
+    expect(Object.isFrozen(row.capability.evidence)).toBe(true);
+    globalThis[marker].label.en = 'Changed';
+    expect(row.manifest.label.en).toBe('Fixture');
+  });
+
+  it('refuses malformed extension candidates and duplicate action identity', async () => {
+    for (const entries of [
+      `[{ manifest: ${JSON.stringify(extensionManifest)}, capability: { state: 'unverified', evidence: [] }, handler: 1 }]`,
+      `[0, 1].map(() => ({ manifest: ${JSON.stringify(extensionManifest)}, capability: { state: 'unverified', evidence: [] }, handler: () => null }))`,
+      `[{ manifest: { ...${JSON.stringify(extensionManifest)}, actionID: 'invalid' }, capability: { state: 'unverified', evidence: [] }, handler: () => null }]`,
+    ]) {
+      await expect(load(await makeArtifact(`export function createAdapter() { return { capabilities: {}, handlers: {}, extensions: ${entries} }; }`)))
+        .rejects.toMatchObject({ code: AGENT_ERROR.ADAPTER_FAILED });
+    }
+  });
+
+  it('loaded extension handlers reach transport only after independent manifest-bound approval', async () => {
+    const source = `export function createAdapter(context) { return { capabilities: {}, handlers: {}, extensions: [{
+      manifest: ${JSON.stringify(extensionManifest)}, capability: { state: 'supported', evidence: ['synthetic'] },
+      handler: async (input, identity) => (await context.request({ method: 'GET', path: '/fixture-report' }, identity)).body
+    }] }; }`;
+    const transport = { request: vi.fn(async () => ({ status: 200, body: { result: { text: 'fixture' } } })) };
+    const registration = await load(await makeArtifact(source), transport);
+    const selection = { ...identity, adapterID: profile.adapterID, serverRevision: 'server-v1', ready: true, authorized: true };
+    let approval = null;
+    const authority = createAgentAuthority({ registrations: [registration], getSelection: () => selection, getAcceptance: () => approval });
+    const dispatcher = createAgentDispatcher({ getBinding: authority.getBinding }).forPrincipal(`principal-${'a'.repeat(64)}`);
+    const scope = dispatcher.captureIdentity();
+    const run = () => dispatcher.dispatchExtension(extensionManifest.actionID, { values: {} }, scope);
+    await expect(run()).rejects.toMatchObject({ code: AGENT_ERROR.UNACCEPTED });
+    expect(transport.request).not.toHaveBeenCalled();
+    approval = { ...profile, connectionID: identity.connectionID, serverRevision: selection.serverRevision,
+      artifactDigest: registration.artifactDigest, operations: [], extensions: [{ actionID: extensionManifest.actionID,
+        revision: extensionManifest.revision, manifestDigest: agentExtensionDigest(extensionManifest), evidence: ['independent synthetic review'] }] };
+    expect((await run()).result).toEqual({ text: 'fixture' });
+    expect(transport.request).toHaveBeenCalledTimes(1);
+    approval.extensions[0].manifestDigest = '0'.repeat(64);
+    await expect(run()).rejects.toMatchObject({ code: AGENT_ERROR.UNACCEPTED });
+    expect(transport.request).toHaveBeenCalledTimes(1);
+  });
   it('loads verified source from a data URL and freezes a profile-owned registration', async () => {
     const artifact = await makeArtifact(adapterSource());
     const transport = { request: vi.fn(async () => ({ status: 200, body: session })) };

@@ -108,13 +108,13 @@ export const agentServerResponseSchema = z.object({
 export const agentAdapterSchema = z.object({
   capabilities: z.partialRecord(agentOperationSchema, agentCapabilitySchema),
   handlers: z.partialRecord(agentOperationSchema, z.function()),
+  extensions: z.array(z.object({
+    manifest: extensionManifestSchema, capability: agentCapabilitySchema, handler: z.function(),
+  }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).refine((items) => new Set(items.map((item) => item.manifest.actionID)).size === items.length).optional(),
 }).strict();
 export const agentRegistrationSchema = agentAdapterSchema.extend({
   adapterID: id, family: z.enum(Object.values(AGENT_FAMILY)), adapterRevision: id, capabilityRevision: id,
   artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
-  extensions: z.array(z.object({
-    manifest: extensionManifestSchema, capability: agentCapabilitySchema, handler: z.function(),
-  }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).refine((items) => new Set(items.map((item) => item.manifest.actionID)).size === items.length).optional(),
 }).strict();
 export const agentSelectionSchema = agentIdentitySchema.extend({
   adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),

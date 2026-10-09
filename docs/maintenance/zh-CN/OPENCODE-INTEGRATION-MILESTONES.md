@@ -271,10 +271,12 @@ VS Code 选择检查点：Web 与 VS Code 现共用严格的模式解析。扩�
 
 验证：227 项定向测试通过，原生恢复组件组合测试包含 57 项断言。工作区类型检查与 lint 通过，保留 5 项既有 UI 警告。Web 及 VS Code 扩展/网页视图构建通过。修改源码的 Anti-slop 保持 30 项既有诊断，提取后的恢复组件没有新增诊断。死代码仍为 2 个文件、319 个导出及 231 个类型。证据：artifacts/int02-recovery-*.log 和 int02-recovery-anti.json。这些检查不代表真实服务器或打包宿主验收。
 
-### INT-01 真实 OC1 主机验收
+### INT-01 真实 OC1 与 OC2 主机验收
 
 隔离运行的 OpenCode 1.18.33 通过实际 Web 主机的八项检查：自动识别模式、上游认证拒绝、主机准入、创建会话及重开空历史、持久化不匹配模式后的写入拒绝、重复切换与 Auto 恢复、删除会话，以及主机退出时保留外部进程。未声称通过模型对话、附件、打包主机或 IDE 验收。
 
 本次运行发现 body-parser 回调内同步抛出的准入错误会使不匹配模式的会话创建请求悬挂。现有路由中间件现已捕获该错误并返回路由响应；内核不支持的代际或操作错误携带 HTTP 501。定向 HTTP 回归确认被拒绝的创建与模型请求不会转发或修改路由状态，随后切回有效模式可正常恢复。没有新增依赖或抽象层。
 
-验证：85 项内核与路由测试、Web 类型检查和 lint 通过。修改的 JavaScript 没有 Anti-slop 诊断。死代码仍为两个文件、319 个导出及 231 个类型。证据：artifacts/int01-real-routing-*.log 和 artifacts/int01-real/oc1-LugiTa/evidence.json，基于 0fe084e34 加本次修复验证。已取得固定 OC2 2.0.20 包的元数据，但压缩包下载超时；部分文件未被接受。真实 OC2 和 INT-01/INT-02 其余主机门槛仍待完成。已发布的 CA-02 Release 保持冻结。
+验证：85 项内核与路由测试、Web 类型检查和 lint 通过。修改的 JavaScript 没有 Anti-slop 诊断。死代码仍为两个文件、319 个导出及 231 个类型。证据：artifacts/int01-real-routing-*.log 和 artifacts/int01-real/oc1-9QAyH3/evidence.json。真实 OC1 已在提交后的源码 d0ae8c9b9 上复验通过。INT-01/INT-02 其余主机门槛仍待完成。已发布的 CA-02 Release 保持冻结。
+
+官方固定 Windows x64 baseline OC2 2.0.20 包现已通过 npm SHA512 完整性校验及精确 CLI 版本确认。隔离真实服务在源码 d0ae8c9b9 上通过九项检查：自动身份识别、上游认证拒绝、不匹配模式冷启动后的认证配置入口可用、修正为 Auto 后主机准入、通过生产内核门面与 Web 代理创建会话及重开空历史、持久化不匹配模式后的写入拒绝、重复切换与 Auto 恢复、删除，以及主机退出时保留外部进程。在 OC2 上手动选择 Legacy 返回未验证，因为仅健康接口的探测没有取得 OC1 身份；写入返回 501，保留 Legacy 托管路径边界。首次沿用 OC1 原始路径的验收脚本已改为生产 OC2 SDK 门面。本阶段没有修改生产源码。证据：artifacts/int01-real/oc2-2.0.20/provenance.json、artifacts/int01-real/oc2-s6cGQF/evidence.json 和 artifacts/int01-real-oc2-accepted.log。模型对话、附件、打包主机、真实 IDE 及其余连接模式门槛仍未验收。

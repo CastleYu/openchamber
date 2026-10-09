@@ -113,3 +113,16 @@ describe('confirmed external interruption', () => {
     await expect(f.activity.stop({scope:{busy:'global',directories:[]}})).rejects.toThrow('status unavailable');expect(interrupted).toBe(false);
   });
 });
+
+it('reports unowned client queues as unknown without discarding upstream evidence', async () => {
+  const f = fixture();
+  const activity = createConnectionActivity({
+    kernelOperations: f.kernelOperations, queue: null,
+    getDirectories: async () => ['C:/one'],
+    getState: () => ({ ready: true, transitioning: false }),
+  });
+  const result = await activity.inspect();
+  expect(result.queue).toEqual({ state: 'unknown', observedCount: 0 });
+  expect(result.busy).toEqual({ state: 'known', count: 1 });
+  expect(result.scope.directories).toEqual(['C:/one']);
+});

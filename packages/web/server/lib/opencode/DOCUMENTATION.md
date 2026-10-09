@@ -805,8 +805,12 @@ remain available. Inactive/transitioning hosts leave upstream categories unknown
 Clients always remain unknown until client identity and coordination are owned;
 event subscriptions do not establish a count of other users or tabs.
 
-The queue count is the owning runtime's loaded in-memory projection, including
-its revision and entered sends, not proof of durable target ownership. Queue
+When a queue owner is supplied, the queue count is its loaded in-memory projection, including
+its revision and entered sends, not proof of durable target ownership. Passing
+queue: null explicitly means this host cannot observe client queues. The report
+then contains unknown/observedCount 0, with no count, sending or revision fields.
+An authoritative queue read failure still fails inspection; it never selects
+the unknown branch as a successful fallback. Queue
 loading retains its existing recovery behavior. A queue/settings read failure
 returns 503 activity_unavailable. Kernel retirement, transition/readiness changes
 or queue revision changes reject with 409 activity_changed. Unsupported profiles
@@ -814,7 +818,8 @@ or runtimes return 501 unsupported_runtime. Responses omit endpoints, credential
 queued text and input payloads. The read does not start, stop or replace a target.
 
 Web and Electron share the host route. Hosted and Capacitor mobile inspect their
-selected host. VS Code explicitly returns 501 before generic upstream forwarding.
+selected host. VS Code composes the same inspection owner in its dedicated
+connection bridge and passes no queue owner. Its client queues remain unknown.
 This snapshot is not an authorization token and is not an atomic upstream
 transaction. Generic active connection-record writes remain 409. The host confirmation owner below uses a fresh inspection after queue drain; the shared confirmation UI and peer coordination remain pending. Queue intent now retains its original configured target. See the [Chinese archive](../../../../../docs/maintenance/zh-CN/CONNECTION-ACTIVITY.md).
 

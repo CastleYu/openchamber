@@ -16,8 +16,7 @@ export const createVSCodeConnectionRuntime = deps => {
   });
   const kernelOperations = createKernelOperations({ getRuntime: deps.getRuntime, getHeaders: deps.getHeaders });
   // VS Code has no server-owned dispatch queue. Browser drafts/queues belong to their client.
-  const queue = { load: async () => {}, snapshot: () => ({ sessions: [], revision: 0 }) };
-  const activity = createConnectionActivity({ kernelOperations, queue, getDirectories: deps.getDirectories, getState: deps.getState });
+  const activity = createConnectionActivity({ kernelOperations, queue: null, getDirectories: deps.getDirectories, getState: deps.getState });
   const owner = createConnectionSwitch({ activity, lifecycle: { restartOpenCode: (_, transaction) => deps.replace(transaction) },
     prepareConnection, readConnection: () => deps.readSettings()[OPENCODE_CONNECTION.SETTING] ?? null,
     readPrevious: deps.readPrevious, saveConnection: deps.saveConnection,

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { CONNECTION_MODE, OPENCODE_CONNECTION } from '../../web/server/lib/opencode/connection.js';
 import { createConnectionSettings, serializeSettingsWrite, writeSettingsAtomic } from './connection-settings';
+import { createVSCodeConnectionRuntime } from './connection-runtime.js';
 
 const first = { version: 1 as const, confirmed: true as const, mode: CONNECTION_MODE.EXTERNAL, endpoint: 'https://first.example.test' };
 const second = { ...first, endpoint: 'https://second.example.test' };
@@ -79,4 +80,28 @@ test('ordinary writes and connection commits serialize and recover after a rejec
     assert.deepEqual(await store.previous(), second);
     assert.equal(store.read().theme, 'light');
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
+});
+
+test('extension-host activity cannot claim browser queues are empty', async () => {
+  const unused = () => { throw new Error('Inactive inspection must not resolve or mutate a connection'); };
+  const reject = async () => unused();
+  const runtime = createVSCodeConnectionRuntime({
+    resolveBinary: unused, resolveLaunchSpec: unused, stat: reject, getEnv: unused,
+    getRuntime: unused, getHeaders: unused, getOwner: unused,
+    readSettings: unused, readPrevious: reject, saveConnection: reject,
+    getConfigured: unused, replace: reject,
+    getDirectories: () => ['C:/Work'],
+    getState: () => ({ ready: false, transitioning: false, external: false }),
+  });
+  const result = await runtime.request({ method: 'GET', path: OPENCODE_CONNECTION.ACTIVITY_ROUTE });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, {
+    state: 'inactive',
+    scope: { coverage: 'configured-directories', busy: 'configured-directories', directories: ['C:/Work'] },
+    busy: { state: 'unknown', observedCount: 0 },
+    permissions: { state: 'unknown', observedCount: 0 },
+    questions: { state: 'unknown', observedCount: 0 },
+    queue: { state: 'unknown', observedCount: 0 },
+    clients: { state: 'unknown', observedCount: 0 },
+  });
 });

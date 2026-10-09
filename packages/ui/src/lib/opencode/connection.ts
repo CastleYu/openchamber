@@ -80,7 +80,10 @@ const reviewSchema = z.strictObject({ token: z.uuid(), connection: connectionSch
   activity: z.strictObject({ state: z.enum(['active', 'inactive', 'transitioning']),
     scope: z.strictObject({ coverage: z.literal(ACTIVITY_SCOPE.DIRECTORIES), busy: z.enum(Object.values(ACTIVITY_SCOPE)), directories: z.array(z.string()) }),
     busy: countSchema, permissions: countSchema, questions: countSchema,
-    queue: z.strictObject({ state: z.literal(ACTIVITY_STATE.KNOWN), count: z.number().int().nonnegative(), sending: z.number().int().nonnegative(), revision: z.number().int().nonnegative() }),
+    queue: z.discriminatedUnion('state', [
+      z.strictObject({ state: z.literal(ACTIVITY_STATE.KNOWN), count: z.number().int().nonnegative(), sending: z.number().int().nonnegative(), revision: z.number().int().nonnegative() }),
+      z.strictObject({ state: z.literal(ACTIVITY_STATE.UNKNOWN), observedCount: z.number().int().nonnegative() }),
+    ]),
     clients: z.strictObject({ state: z.literal(ACTIVITY_STATE.UNKNOWN), observedCount: z.number().int().nonnegative() }),
   }),
 });

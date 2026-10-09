@@ -165,7 +165,7 @@ export const OpenCodeConnectionSettings: React.FC = () => {
           {t(review.activity.scope.busy === ACTIVITY_SCOPE.GLOBAL ? 'settings.openchamber.connection.activityBusyGlobal' : 'settings.openchamber.connection.activityBusy', { count: review.activity.busy.state === ACTIVITY_STATE.KNOWN ? review.activity.busy.count : t('settings.openchamber.connection.unknown') })}<br />
           {t('settings.openchamber.connection.activityPermissions', { count: review.activity.permissions.state === ACTIVITY_STATE.KNOWN ? review.activity.permissions.count : t('settings.openchamber.connection.unknown') })}<br />
           {t('settings.openchamber.connection.activityQuestions', { count: review.activity.questions.state === ACTIVITY_STATE.KNOWN ? review.activity.questions.count : t('settings.openchamber.connection.unknown') })}<br />
-          {t('settings.openchamber.connection.activityQueue', { count: review.activity.queue.count })}
+          {t('settings.openchamber.connection.activityQueue', { count: review.activity.queue.state === ACTIVITY_STATE.KNOWN ? review.activity.queue.count : t('settings.openchamber.connection.unknown') })}
         </p>
         <p className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.openchamber.connection.coverage')}</p>
         {review.activity.scope.directories.map(directory => <p key={directory} className={SETTINGS_DESCRIPTION_CLASS}>{directory}</p>)}

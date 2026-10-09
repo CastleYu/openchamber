@@ -10,6 +10,7 @@ let saved: z.infer<typeof connectionSchema> | null = null;
 let previous: z.infer<typeof connectionSchema> | null = null;
 let pending: z.infer<typeof connectionSchema> | null = null;
 let busyCount = 0;
+let queueUnknown = false;
 const decisions: string[] = [];
 let preparations = 0;
 let failRead = false;
@@ -42,7 +43,7 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ token: '74e51929-8307-43d8-8496-3c3856352e98', connection: pending,
       activity: { state: saved ? 'active' : 'inactive', scope: { coverage: 'configured-directories', busy: 'global', directories: ['C:/Work'] },
         busy: {state:'known',count:busyCount}, permissions:{state:'known',count:0}, questions:{state:'unknown',observedCount:1},
-        queue:{state:'known',count:2,sending:0,revision:1}, clients:{state:'unknown',observedCount:0} } })); return;
+        queue:queueUnknown ? {state:'unknown',observedCount:0} : {state:'known',count:2,sending:0,revision:1}, clients:{state:'unknown',observedCount:0} } })); return;
   }
   if (req.url === CONNECTION.APPLY) {
     let body = ''; for await (const chunk of req) body += chunk.toString();
@@ -144,9 +145,14 @@ test('confirmation displays activity, preserves drafts and requires renewed ackn
   expect(document.body.textContent).toContain('Busy sessions across the server: 0');
   expect(document.body.textContent).toContain('Pending questions: Unknown');
   expect(document.body.textContent).toContain('Queued messages: 2');
+  queueUnknown = true;
+  await act(async () => button('Refresh activity').click());
+  await wait(() => document.body.textContent?.includes('Queued messages: Unknown') === true);
+  expect(document.body.textContent).not.toContain('Queued messages: 0');
   expect(button('Switch if idle').disabled).toBe(true);
   await act(async () => useI18nStore.getState().setLocale('zh-CN'));
   await wait(() => document.body.textContent?.includes('待处理问题：未知') === true);
+  expect(document.body.textContent).toContain('排队消息：未知');
   expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
   await act(async () => useI18nStore.getState().setLocale('en'));
   await wait(() => document.body.textContent?.includes('Review connection switch') === true);
@@ -159,6 +165,7 @@ test('confirmation displays activity, preserves drafts and requires renewed ackn
   expect(document.querySelector('input')?.value).toBe('http://candidate.test/base');
   expect(writes).toBe(0);
   await review(); await acknowledge();
+  queueUnknown = false;
   failWrite = true;
   await act(async () => button('Switch if idle').click());
   await wait(() => document.querySelector('[role="alert"]')?.textContent?.includes('changed') === true);

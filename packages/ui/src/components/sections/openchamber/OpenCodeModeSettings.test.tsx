@@ -1,0 +1,97 @@
+import { afterAll, expect, test } from 'bun:test';
+import { createServer } from 'node:http';
+import React, { act } from 'react';
+import { Window } from 'happy-dom';
+import { z } from 'zod';
+import { OPEN_CODE_SELECTION, OPEN_CODE_SETTING } from '@/lib/opencode/runtime';
+
+let selection: typeof OPEN_CODE_SELECTION[keyof typeof OPEN_CODE_SELECTION] = OPEN_CODE_SELECTION.OC1;
+let failRead = false;
+let failWrite = false;
+let writes = 0;
+const schema = z.object({ [OPEN_CODE_SETTING.SELECTION]: z.enum(Object.values(OPEN_CODE_SELECTION)) });
+const server = createServer(async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.method === 'PUT') {
+    writes++;
+    let body = '';
+    for await (const chunk of req) body += chunk.toString();
+    const value = schema.parse(JSON.parse(body));
+    if (failWrite) { res.statusCode = 500; res.end('{}'); return; }
+    selection = value[OPEN_CODE_SETTING.SELECTION];
+  } else if (failRead) { res.statusCode = 500; res.end('{}'); return; }
+  res.end(JSON.stringify({ [OPEN_CODE_SETTING.SELECTION]: selection }));
+});
+await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+const address = z.object({ port: z.number().int().positive() }).parse(server.address());
+const url = 'http://127.0.0.1:' + address.port;
+const browser = new Window({ url });
+const descriptors = new Map<string, PropertyDescriptor | undefined>();
+for (const [key, value] of Object.entries({ window: browser, document: browser.document, navigator: browser.navigator, localStorage: browser.localStorage, Element: browser.Element, HTMLElement: browser.HTMLElement, CustomEvent: browser.CustomEvent, IS_REACT_ACT_ENVIRONMENT: true })) {
+  descriptors.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+  Object.defineProperty(globalThis, key, { value, configurable: true });
+}
+const { createRoot } = await import('react-dom/client');
+const { configureRuntimeUrlResolver } = await import('@/lib/runtime-url');
+const { invalidateSettingsCache } = await import('@/lib/persistence');
+const { I18nProvider, useI18nStore } = await import('@/lib/i18n');
+const { OpenCodeModeSettings } = await import('./OpenCodeModeSettings');
+configureRuntimeUrlResolver({ apiBaseUrl: url });
+const container = document.createElement('div');
+document.body.append(container);
+const root = createRoot(container);
+const button = (label: string) => {
+  const value = Array.from(document.querySelectorAll('button')).find(item => item.textContent === label);
+  if (!value) throw new Error('Missing button ' + label);
+  return value;
+};
+const wait = async (condition: () => boolean) => {
+  const deadline = Date.now() + 2500;
+  while (!condition() && Date.now() < deadline) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+  expect(condition()).toBe(true);
+};
+afterAll(async () => {
+  await act(async () => root.unmount());
+  await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  await browser.happyDOM.close();
+  for (const [key, descriptor] of descriptors) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+    else Reflect.deleteProperty(globalThis, key);
+  }
+});
+
+test('mode control loads and saves explicit intent, retains choice on failure and reacts to locale', async () => {
+  await act(async () => root.render(<I18nProvider><OpenCodeModeSettings /></I18nProvider>));
+  await wait(() => button('OC1').getAttribute('aria-pressed') === 'true');
+  await act(async () => button('OC2').click());
+  await wait(() => button('OC2').getAttribute('aria-pressed') === 'true');
+  expect(selection).toBe(OPEN_CODE_SELECTION.OC2);
+  expect(writes).toBe(1);
+  await act(async () => button('OC2').click());
+  expect(writes).toBe(1);
+  failWrite = true;
+  await act(async () => button('OC1').click());
+  await wait(() => Boolean(document.querySelector('[role="alert"]')));
+  expect(button('OC2').getAttribute('aria-pressed')).toBe('true');
+  expect(selection).toBe(OPEN_CODE_SELECTION.OC2);
+  failWrite = false;
+  await act(async () => button('OC1').click());
+  await wait(() => button('OC1').getAttribute('aria-pressed') === 'true');
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+  await act(async () => useI18nStore.getState().setLocale('zh-CN'));
+  await wait(() => document.body.textContent?.includes('连接模式') === true);
+  expect(button('OC1').getAttribute('aria-pressed')).toBe('true');
+  await act(async () => button('Legacy 1.2.27').click());
+  await wait(() => button('Legacy 1.2.27').getAttribute('aria-pressed') === 'true');
+  expect(selection).toBe(OPEN_CODE_SELECTION.LEGACY);
+  await act(async () => button('自动检测').click());
+  await wait(() => button('自动检测').getAttribute('aria-pressed') === 'true');
+  expect(selection).toBe(OPEN_CODE_SELECTION.AUTO);
+  invalidateSettingsCache();
+  failRead = true;
+  await act(async () => root.render(<I18nProvider><OpenCodeModeSettings key="unreadable" /></I18nProvider>));
+  await wait(() => Boolean(document.querySelector('[role="alert"]')));
+  expect(button('OC1').disabled).toBe(true);
+  expect(button('OC2').disabled).toBe(true);
+  expect(document.querySelector('button[aria-pressed="true"]')).toBeNull();
+}, 10000);

@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "Сумісність OpenCode",
+  'settings.openchamber.opencodeMode.label': "Режим підключення",
+  'settings.openchamber.opencodeMode.info': "Автовизначення розпізнає версію сервера. Ручний вибір має відповідати підключеному серверу. Наступна перевірка підключення застосує збережений режим. Функції Legacy 1.2.27 залишаються обмеженими до успішної перевірки сумісності.",
+  'settings.openchamber.opencodeMode.auto': "Автовизначення",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "Не вдалося завантажити режим підключення.",
+  'settings.openchamber.opencodeMode.saveFailed': "Не вдалося зберегти режим підключення.",
   'settings.themeImport.selectAll': 'Вибрати всі',
   'settings.themeImport.deselectAll': 'Зняти вибір',
   'settings.themeImport.complete': 'Імпорт завершено',

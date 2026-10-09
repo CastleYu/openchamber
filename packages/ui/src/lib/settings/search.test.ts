@@ -156,3 +156,10 @@ describe('settings search', () => {
     expect(results.some((result) => result.id === 'integrations.guests')).toBe(false);
   });
 });
+
+test('finds OpenCode mode in General on every host surface', () => {
+  for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isVSCode: true }, { ...runtimeCtx, isMobile: true }]) {
+    const results = buildSettingsSearchResults({ query: '1.2.27', runtimeCtx: context, t, getPageTitle: page => page });
+    expect(results.find(result => result.id === 'general.opencode-mode')?.page).toBe('general');
+  }
+});

@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode 호환성",
+  'settings.openchamber.opencodeMode.label': "연결 모드",
+  'settings.openchamber.opencodeMode.info': "자동 감지는 서버 버전을 확인합니다. 수동 선택은 연결된 서버와 일치해야 합니다. 다음 연결 확인에서 저장된 모드를 적용합니다. Legacy 1.2.27 기능은 호환성 검증이 통과될 때까지 제한됩니다.",
+  'settings.openchamber.opencodeMode.auto': "자동 감지",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "연결 모드를 불러오지 못했습니다.",
+  'settings.openchamber.opencodeMode.saveFailed': "연결 모드를 저장하지 못했습니다.",
   'settings.themeImport.selectAll': '모두 선택',
   'settings.themeImport.deselectAll': '모두 선택 해제',
   'settings.themeImport.complete': '가져오기 완료',

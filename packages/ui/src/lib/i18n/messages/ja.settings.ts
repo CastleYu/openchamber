@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode の互換性",
+  'settings.openchamber.opencodeMode.label': "接続モード",
+  'settings.openchamber.opencodeMode.info': "自動検出でサーバーのバージョンを判定します。手動選択は接続先サーバーと一致する必要があります。次の接続確認で保存したモードを適用します。Legacy 1.2.27 の機能は互換性の検証が完了するまで制限されます。",
+  'settings.openchamber.opencodeMode.auto': "自動検出",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "接続モードを読み込めませんでした。",
+  'settings.openchamber.opencodeMode.saveFailed': "接続モードを保存できませんでした。",
   'settings.themeImport.selectAll': 'すべて選択',
   'settings.themeImport.deselectAll': 'すべて選択解除',
   'settings.themeImport.complete': 'インポート完了',

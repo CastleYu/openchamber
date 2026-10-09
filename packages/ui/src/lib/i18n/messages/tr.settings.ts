@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode uyumluluğu",
+  'settings.openchamber.opencodeMode.label': "Bağlantı modu",
+  'settings.openchamber.opencodeMode.info': "Otomatik algılama sunucu sürümünü belirler. Elle seçim bağlı sunucuyla eşleşmelidir. Sonraki bağlantı denetimi kaydedilen modu uygular. Legacy 1.2.27 özellikleri uyumluluk denetimleri geçene kadar sınırlı kalır.",
+  'settings.openchamber.opencodeMode.auto': "Otomatik algıla",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "Bağlantı modu yüklenemedi.",
+  'settings.openchamber.opencodeMode.saveFailed': "Bağlantı modu kaydedilemedi.",
   'settings.themeImport.selectAll': 'Tümünü seç',
   'settings.themeImport.deselectAll': 'Tümünün seçimini kaldır',
   'settings.themeImport.complete': 'İçe aktarma tamamlandı',

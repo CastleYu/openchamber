@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "Zgodność OpenCode",
+  'settings.openchamber.opencodeMode.label': "Tryb połączenia",
+  'settings.openchamber.opencodeMode.info': "Automatyczne wykrywanie rozpoznaje wersję serwera. Ręczny wybór musi odpowiadać połączonemu serwerowi. Następne sprawdzenie połączenia zastosuje zapisany tryb. Funkcje Legacy 1.2.27 pozostają ograniczone do czasu pomyślnej weryfikacji zgodności.",
+  'settings.openchamber.opencodeMode.auto': "Wykryj automatycznie",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "Nie udało się wczytać trybu połączenia.",
+  'settings.openchamber.opencodeMode.saveFailed': "Nie udało się zapisać trybu połączenia.",
   'settings.themeImport.selectAll': 'Zaznacz wszystkie',
   'settings.themeImport.deselectAll': 'Odznacz wszystkie',
   'settings.themeImport.complete': 'Import zakończony',

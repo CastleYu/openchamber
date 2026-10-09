@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode 相容性",
+  'settings.openchamber.opencodeMode.label': "連線模式",
+  'settings.openchamber.opencodeMode.info': "自動偵測會識別伺服器版本。手動選擇必須與連線的伺服器相符。下一次連線檢查會套用儲存的模式。Legacy 1.2.27 的功能在相容性驗證通過前仍受限制。",
+  'settings.openchamber.opencodeMode.auto': "自動偵測",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "無法載入連線模式。",
+  'settings.openchamber.opencodeMode.saveFailed': "無法儲存連線模式。",
   'settings.themeImport.selectAll': '全選',
   'settings.themeImport.deselectAll': '取消全選',
   'settings.themeImport.complete': '匯入完成',

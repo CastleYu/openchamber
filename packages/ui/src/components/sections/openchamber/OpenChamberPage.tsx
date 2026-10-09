@@ -10,6 +10,7 @@ import { NotificationSettings } from './NotificationSettings';
 import { VoiceSettings } from './VoiceSettings';
 import { TunnelSettings } from './TunnelSettings';
 import { OpenCodeCliSettings } from './OpenCodeCliSettings';
+import { OpenCodeModeSettings } from './OpenCodeModeSettings';
 import { OpenChamberToolsSettings } from './OpenChamberToolsSettings';
 import { OccupancySettings } from './OccupancySettings';
 import { SessionWorkSettings } from './SessionWorkSettings';
@@ -56,6 +57,7 @@ export const OpenChamberPage: React.FC<OpenChamberPageProps> = ({ section }) => 
                 <DefaultsSettings key={runtimeEndpointEpoch} />
                 <SessionWorkSettings />
                 {showDesktopNetworkSettings && <DesktopNetworkSettings />}
+                <OpenCodeModeSettings key={"opencode-mode:" + runtimeEndpointEpoch} />
                 {!isVSCode && <OpenCodeCliSettings />}
                 {!isVSCode && <OpenChamberToolsSettings />}
                 <SessionRetentionSettings />
@@ -153,6 +155,7 @@ const GeneralSectionContent: React.FC = () => {
             {showDesktopNetworkSettings && <DesktopNetworkSettings />}
             {showPasskeySettings && <PasskeySettings />}
             <AppLinkSecuritySettings />
+            <OpenCodeModeSettings key={"opencode-mode:" + runtimeEndpointEpoch} />
             {!isVSCode && <OpenCodeCliSettings />}
             {!isVSCode && <OpenChamberToolsSettings />}
             <OccupancySettings />

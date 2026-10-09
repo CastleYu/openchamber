@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode 兼容性",
+  'settings.openchamber.opencodeMode.label': "连接模式",
+  'settings.openchamber.opencodeMode.info': "自动检测会识别服务器版本。手动选择必须与连接的服务器匹配。下一次连接检查会应用保存的模式。Legacy 1.2.27 的功能在兼容性验证通过前仍受限制。",
+  'settings.openchamber.opencodeMode.auto': "自动检测",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "无法加载连接模式。",
+  'settings.openchamber.opencodeMode.saveFailed': "无法保存连接模式。",
   'settings.themeImport.selectAll': '全选',
   'settings.themeImport.deselectAll': '取消全选',
   'settings.themeImport.complete': '导入完成',

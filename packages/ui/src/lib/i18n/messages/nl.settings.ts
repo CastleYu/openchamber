@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "OpenCode-compatibiliteit",
+  'settings.openchamber.opencodeMode.label': "Verbindingsmodus",
+  'settings.openchamber.opencodeMode.info': "Automatische detectie herkent de serverversie. Een handmatige keuze moet overeenkomen met de verbonden server. De volgende verbindingscontrole past de opgeslagen modus toe. Functies van Legacy 1.2.27 blijven beperkt totdat de compatibiliteitscontroles slagen.",
+  'settings.openchamber.opencodeMode.auto': "Automatisch detecteren",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "De verbindingsmodus kon niet worden geladen.",
+  'settings.openchamber.opencodeMode.saveFailed': "De verbindingsmodus kon niet worden opgeslagen.",
   'settings.openchamber.tunnel.enterpriseMode': 'Externe tunnels zijn niet beschikbaar in enterprise-modus, omdat de tunneldienst het verkeer zou kunnen lezen. Koppel andere apparaten via uw netwerk of de relay van uw organisatie om deze server te bereiken.',
   'settings.voice.page.enterpriseMode': 'In enterprise-modus blijft voorlezen op deze computer. Gebruik een lokale stem of een aangepaste server die hier draait.',
   'settings.themeImport.selectAll': 'Alles selecteren',

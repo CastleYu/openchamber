@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.title': "Compatibilidad de OpenCode",
+  'settings.openchamber.opencodeMode.label': "Modo de conexión",
+  'settings.openchamber.opencodeMode.info': "La detección automática identifica la versión del servidor. La selección manual debe coincidir con el servidor conectado. La próxima comprobación de conexión aplica el modo guardado. Las funciones de Legacy 1.2.27 siguen limitadas hasta superar las pruebas de compatibilidad.",
+  'settings.openchamber.opencodeMode.auto': "Detectar automáticamente",
+  'settings.openchamber.opencodeMode.legacy': "Legacy 1.2.27",
+  'settings.openchamber.opencodeMode.loadFailed': "No se pudo cargar el modo de conexión.",
+  'settings.openchamber.opencodeMode.saveFailed': "No se pudo guardar el modo de conexión.",
   'settings.themeImport.selectAll': 'Seleccionar todo',
   'settings.themeImport.deselectAll': 'Deseleccionar todo',
   'settings.themeImport.complete': 'Importación completada',

@@ -618,6 +618,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     isAvailable: (ctx) => ctx.isDesktopLocalOrigin,
   },
   {
+    id: 'general.opencode-mode',
+    page: 'general',
+    titleKey: 'settings.openchamber.opencodeMode.label',
+    descriptionKey: 'settings.openchamber.opencodeMode.info',
+    keywords: ['opencode', 'OC1', 'OC2', 'Legacy', '1.2.27', 'compatibility', 'mode'],
+  },
+  {
     id: 'sessions.opencode-binary',
     page: 'general',
     titleKey: 'settings.openchamber.opencodeCli.field.binaryPath',

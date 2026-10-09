@@ -254,3 +254,93 @@ describe('confirmed record transition retirement', () => {
     expect(runtime.isConnectionTransitioning()).toBe(false);
   });
 });
+
+
+describe('confirmed target serialized replacement', () => {
+  const target = { mode: 'external', endpoint: 'https://replacement.test/base' };
+  const kernel = () => ({ invalidate: vi.fn(), refresh: vi.fn(async () => ({ generation: 'oc2' })) });
+  it('validates first, joins duplicate restart, retires the old endpoint and waits for owned exit', async () => {
+    let release;
+    const closed = new Promise(resolve => { release = resolve; });
+    const getConnection = vi.fn(async () => target);
+    const kernelRuntime = kernel();
+    const onOpenCodeRestarted = vi.fn();
+    const { runtime, state, deps } = createRuntime({ getConnection, kernelRuntime, onOpenCodeRestarted });
+    state.isOpenCodeReady = true;
+    const old = { close: vi.fn(async () => closed) };
+    state.openCodeProcess = old;
+    const first = runtime.restartOpenCode('fixture');
+    await vi.waitFor(() => expect(old.close).toHaveBeenCalledOnce());
+    const duplicate = runtime.restartOpenCode('fixture');
+    expect(getConnection).toHaveBeenCalledOnce();
+    expect(state.openCodePort).toBeNull(); expect(state.isOpenCodeReady).toBe(false);
+    expect(state.openCodeProcess).toBe(old);
+    expect(kernelRuntime.refresh).not.toHaveBeenCalled();
+    await expect(runtime.startOpenCode()).rejects.toMatchObject({ status: 409 });
+    await expect(runtime.bootstrapOpenCodeAtStartup()).rejects.toMatchObject({ status: 409 });
+    release(); await Promise.all([first, duplicate]);
+    expect(state.openCodeProcess).toBeNull(); expect(state.openCodeBaseUrl).toBe(target.endpoint);
+    expect(state.isExternalOpenCode).toBe(true); expect(state.isOpenCodeReady).toBe(true);
+    expect(state.openCodePort).toBe(443); expect(onOpenCodeRestarted).toHaveBeenCalledOnce();
+    expect(deps.ensureOpencodeCliEnv).not.toHaveBeenCalled(); expect(runtime.isConnectionTransitioning()).toBe(false);
+  });
+  it('leaves a live connection intact after validation failure', async () => {
+    const kernelRuntime = kernel();
+    const { runtime, state } = createRuntime({ getConnection: async () => { throw new Error('Target unavailable'); }, kernelRuntime });
+    const old = { close: vi.fn() }; state.openCodeProcess = old; state.isOpenCodeReady = true;
+    await expect(runtime.restartOpenCode()).rejects.toThrow('Target unavailable');
+    expect(old.close).not.toHaveBeenCalled(); expect(kernelRuntime.invalidate).not.toHaveBeenCalled();
+    expect(state.openCodePort).toBe(45678); expect(state.isOpenCodeReady).toBe(true);
+    expect(state.lastOpenCodeError).toBeNull(); expect(state.currentRestartPromise).toBeNull();
+  });
+  it('blocks replacement when owned cleanup fails and permits explicit retry only after successful cleanup', async () => {
+    const kernelRuntime = kernel();
+    let fail = true;
+    const old = { close: vi.fn(async () => { if (fail) throw new Error('Still owned'); }) };
+    const { runtime, state } = createRuntime({ getConnection: async () => target, kernelRuntime });
+    state.openCodeProcess = old; state.isOpenCodeReady = true;
+    await expect(runtime.restartOpenCode()).rejects.toThrow('Still owned');
+    expect(state.openCodeProcess).toBe(old); expect(state.isOpenCodeReady).toBe(false);
+    expect(state.openCodePort).toBeNull(); expect(kernelRuntime.refresh).not.toHaveBeenCalled();
+    fail = false; await runtime.restartOpenCode();
+    expect(old.close).toHaveBeenCalledTimes(2); expect(state.isOpenCodeReady).toBe(true);
+    expect(state.openCodeProcess).toBeNull();
+  });
+  it('retires a changed connection revision before touching the old owner', async () => {
+    let release; let revision = 1;
+    const pending = new Promise(resolve => { release = resolve; });
+    const kernelRuntime = kernel();
+    const { runtime, state } = createRuntime({ getConnection: async () => pending, kernelRuntime,
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision: 1, connectionRevision: revision }) });
+    const old = { close: vi.fn() }; state.openCodeProcess = old; state.isOpenCodeReady = true;
+    const switching = runtime.restartOpenCode(); revision += 1; release(target);
+    await expect(switching).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    expect(old.close).not.toHaveBeenCalled(); expect(state.isOpenCodeReady).toBe(true);
+    expect(kernelRuntime.invalidate).not.toHaveBeenCalled();
+  });
+  it('stops after old exit when shutdown or family retirement occurs during cleanup', async () => {
+    for (const shutdown of [true, false]) {
+      let release;
+      const pending = new Promise(resolve => { release = resolve; });
+      const kernelRuntime = kernel();
+      const { runtime, state, select } = createRuntime({ getConnection: async () => target, kernelRuntime });
+      const old = { close: vi.fn(async () => pending) }; state.openCodeProcess = old;
+      const switching = runtime.restartOpenCode();
+      await vi.waitFor(() => expect(old.close).toHaveBeenCalledOnce());
+      if (shutdown) state.isShuttingDown = true; else select(AGENT_FAMILY.CAGENT, 2);
+      release(); await expect(switching).rejects.toThrow();
+      expect(kernelRuntime.refresh).not.toHaveBeenCalled(); expect(state.openCodeProcess).toBeNull();
+      expect(state.isOpenCodeReady).toBe(false); expect(runtime.isConnectionTransitioning()).toBe(false);
+    }
+  });
+  it('uses saved external identity rather than stale port or environment and never closes an external process', async () => {
+    const kernelRuntime = kernel(); const getConnection = vi.fn(async () => target);
+    const { runtime, state, deps } = createRuntime({ getConnection, kernelRuntime });
+    state.isExternalOpenCode = true; state.isOpenCodeReady = true;
+    state.openCodeBaseUrl = 'http://stale.test';
+    await runtime.restartOpenCode();
+    expect(state.openCodeBaseUrl).toBe(target.endpoint); expect(state.openCodePort).toBe(443);
+    expect(deps.waitForReady).not.toHaveBeenCalled(); expect(deps.ensureLocalOpenCodeServerPassword).not.toHaveBeenCalled();
+    expect(getConnection).toHaveBeenCalledOnce();
+  });
+});

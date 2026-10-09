@@ -535,7 +535,10 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       get signalCode() { return observedSignalCode ?? child.signalCode; },
       get stderrTail() { return getManagedProcessSnapshot().stderrTail; },
       close() {
-        if (!closePromise) closePromise = registration.then(() => closeManagedOpenCodeChild(child, dropRegistration));
+        if (!closePromise) closePromise = registration.then(() => closeManagedOpenCodeChild(child, dropRegistration)).catch(error => {
+          closePromise = null;
+          throw error;
+        });
         return closePromise;
       },
     };
@@ -937,6 +940,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     const selection = requireSelection();
     connectionTransitions += 1;
     try {
+      if (getConnection && !confirmedConnection && (connectionTransitions > 1 || state.currentRestartPromise)) throw new OpenCodeConnectionError('OpenCode transition is already in progress', 409);
       if (getConnection && state.openCodeProcess) throw new OpenCodeConnectionError('The owned OpenCode process must stop before another launch', 409);
       const connection = confirmedConnection ?? (getConnection ? await getConnection() : null);
       requireSelection(selection);
@@ -985,14 +989,55 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     if (state.isShuttingDown) return;
     if (state.currentRestartPromise) {
       await state.currentRestartPromise;
+      requireSelection(selection);
       return;
     }
 
+    let retired = false;
+    let previous = null;
     state.currentRestartPromise = (async () => {
-      if (getConnection && !state.openCodeProcess && !state.isOpenCodeReady) {
-        await bootstrapOpenCodeAtStartup();
+      if (getConnection) {
+        if (connectionTransitions > 0) throw new OpenCodeConnectionError('OpenCode startup is already in progress', 409);
+        // Resolve the entire saved target before touching the live owner. The
+        // settings service still refuses active-record changes until its busy
+        // work and peer-client confirmation contract is implemented.
+        const connection = await getConnection();
+        requireSelection(selection);
+        if (state.isShuttingDown) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
+        previous = state.openCodeProcess;
+        captureRestartDiagnostics(reason);
+        state.isRestartingOpenCode = true;
+        state.isOpenCodeReady = false;
+        state.openCodeNotReadySince = Date.now();
+        retired = true;
+        kernelRuntime?.invalidate();
+        // No endpoint is discoverable while the old owned child is closing.
+        setOpenCodePort(null);
+        state.openCodeBaseUrl = null;
+        syncToHmrState();
+        if (state.openCodeProcess) {
+          await state.openCodeProcess.close();
+          state.openCodeProcess = null;
+          syncToHmrState();
+        }
+        requireSelection(selection);
+        kernelRuntime?.invalidate();
+        state.openCodeApiPrefixDetected = true;
+        state.openCodeApiPrefix = '';
+        if (state.openCodeApiDetectionTimer) {
+          clearTimeout(state.openCodeApiDetectionTimer);
+          state.openCodeApiDetectionTimer = null;
+        }
+        if (state.isShuttingDown) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
+        await bootstrapOpenCodeAtStartup(connection);
         requireSelection(selection);
         if (!state.isOpenCodeReady) throw new OpenCodeConnectionError(state.lastOpenCodeError || 'OpenCode is not ready');
+        if (state.expressApp) {
+          setupProxy(state.expressApp);
+          ensureOpenCodeApiPrefix();
+        }
+        try { onOpenCodeRestarted?.(); }
+        catch (error) { console.warn('Failed to rebind event stream after OpenCode restart:', error?.message ?? error); }
         return;
       }
       kernelRuntime?.invalidate();
@@ -1103,7 +1148,18 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     try {
       await state.currentRestartPromise;
     } catch (error) {
-      if (error?.code === AGENT_ERROR.CHANGED) throw error;
+      if (getConnection && retired && error?.code === AGENT_ERROR.CHANGED) {
+        state.isOpenCodeReady = false;
+        const child = state.openCodeProcess;
+        if (child && child !== previous) {
+          await child.close();
+          if (state.openCodeProcess === child) state.openCodeProcess = null;
+        }
+        setOpenCodePort(null);
+        state.openCodeBaseUrl = null;
+        syncToHmrState();
+      }
+      if (error?.code === AGENT_ERROR.CHANGED || (getConnection && !retired)) throw error;
       console.error(`Failed to restart OpenCode: ${error.message}`);
       state.lastOpenCodeError = error.message;
       if (!env.ENV_EFFECTIVE_PORT) {
@@ -1272,8 +1328,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     return { reloaded: !external, external };
   };
 
-  const bootstrapOpenCodeAtStartup = async () => {
+  const bootstrapOpenCodeAtStartup = async (confirmedConnection = null) => {
     if (!isOpenCode()) return;
+    if (getConnection && !confirmedConnection && (connectionTransitions > 0 || state.currentRestartPromise)) throw new OpenCodeConnectionError('OpenCode transition is already in progress', 409);
     const selection = requireSelection();
     const bootstrapStartedAt = performance.now();
     let bootstrapError = null;
@@ -1301,7 +1358,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         state.openCodePort = null;
         state.openCodeBaseUrl = null;
         state.isOpenCodeReady = false;
-        const connection = await getConnection();
+        const connection = confirmedConnection ?? await getConnection();
         requireSelection(selection);
         state.lastOpenCodeError = null;
         state.openCodeNotReadySince = Date.now();

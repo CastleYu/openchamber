@@ -1,3 +1,4 @@
+import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -123,4 +124,65 @@ describe('complete server command with a real owned child', () => {
       await fs.rm(root, { recursive: true, force: true });
     }
   }, 10_000);
+});
+
+
+describe('confirmed restart with real owned children', () => {
+  it('replaces a complete command only after exit and preserves external ownership across retries', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-replace-'));
+    const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = path.join(root, 'registry');
+    const script = path.join(root, 'server.cjs'); const marker = path.join(root, 'pids');
+    await fs.writeFile(script, "require('node:fs').appendFileSync(" + JSON.stringify(marker) + ", process.pid + '\\n'); process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setInterval(()=>{},1000);");
+    const state = { openCodeWorkingDirectory: root, useWslForOpencode: false, openCodePort: null, currentRestartPromise: null };
+    const command = { mode: 'command', binary: process.execPath, launchSpec: { binary: process.execPath, args: [] }, args: [script], cwd: root, commandEnv: {} };
+    let record = command; let resolutions = 0; let revision = 1; let retire = false;
+    const runtime = createOpenCodeLifecycleRuntime({
+      state, env: { ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
+      getConnection: async () => { resolutions += 1; return record; },
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
+      syncToHmrState() {}, ensureLocalOpenCodeServerPassword: async () => 'fixture-only',
+      getManagedOpenCodeEnv: () => { throw new Error('Command owns config'); },
+      waitForReady: async () => true, normalizeApiPrefix: value => value,
+      setOpenCodePort: port => { state.openCodePort = port; }, setDetectedOpenCodeApiPrefix() {},
+      reapManagedOrphanedProcesses: async () => ({ reaped: 0 }),
+      kernelRuntime: { invalidate() {}, refresh: async () => { if (retire) revision += 1; return { generation: 'oc2' }; } },
+      managedStartupTimeoutMs: 1500,
+    });
+    const pids = [];
+    try {
+      await runtime.bootstrapOpenCodeAtStartup(); const first = state.openCodeProcess.pid; pids.push(first);
+      expect(alive(first)).toBe(true); expect(state.isOpenCodeReady).toBe(true);
+      await Promise.all([runtime.restartOpenCode(), runtime.restartOpenCode()]);
+      const second = state.openCodeProcess.pid; pids.push(second);
+      expect(second).not.toBe(first); expect(alive(first)).toBe(false); expect(alive(second)).toBe(true);
+      expect(resolutions).toBe(2); expect(await fs.readdir(path.join(root, 'registry'))).toHaveLength(1);
+      record = { mode: 'external', endpoint: 'https://external.test/base' };
+      await runtime.restartOpenCode(); expect(alive(second)).toBe(false);
+      expect(state.openCodeProcess).toBeNull(); expect(state.openCodeBaseUrl).toBe(record.endpoint);
+      expect(state.isExternalOpenCode).toBe(true); expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
+      record = command; await runtime.restartOpenCode(); const third = state.openCodeProcess.pid; pids.push(third);
+      expect(alive(third)).toBe(true); expect(state.isExternalOpenCode).toBe(false);
+      expect((await fs.readFile(marker, 'utf8')).trim().split('\n').map(Number)).toEqual(pids);
+      const invalid = path.join(root, 'invalid.cjs'); await fs.writeFile(invalid, 'process.exit(1);');
+      record = { ...command, args: [invalid] };
+      await expect(runtime.restartOpenCode()).rejects.toThrow();
+      expect(alive(third)).toBe(false); expect(state.openCodeProcess).toBeNull();
+      expect(state.isOpenCodeReady).toBe(false); expect(state.lastOpenCodeError).toBeTruthy();
+      expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
+      record = command; await runtime.restartOpenCode(); pids.push(state.openCodeProcess.pid);
+      expect(state.isOpenCodeReady).toBe(true);
+      retire = true;
+      await expect(runtime.restartOpenCode()).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+      pids.push(Number((await fs.readFile(marker, 'utf8')).trim().split('\n').at(-1)));
+      expect(state.openCodeProcess).toBeNull(); expect(state.openCodePort).toBeNull();
+      expect(state.isOpenCodeReady).toBe(false); expect(pids.every(pid => !alive(pid))).toBe(true);
+      expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
+    } finally {
+      await state.openCodeProcess?.close();
+      for (const pid of pids) if (alive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* already exited */ } }
+      if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY; else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  }, 35_000);
 });

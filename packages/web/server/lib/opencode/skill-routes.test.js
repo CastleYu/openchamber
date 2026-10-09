@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
+import request from 'supertest';
+import { AGENT_FAMILY } from '../agent/constants.js';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -146,6 +148,20 @@ describe('skill-routes directory soft fallback', () => {
     const skill = payload.skills.find((entry) => entry.name === 'repo-local-skill');
     expect(skill.scope).toBe('project');
     expect(skill.source).toBe('agents');
+  });
+
+  it('renames a local skill and returns the existing reload response', async () => {
+    projectRoot = createTempProject();
+    createSkill('before', { description: 'Rename fixture', instructions: 'Keep these instructions.', source: 'agents' }, projectRoot, SKILL_SCOPE.PROJECT);
+    appHandle = startSkillsApp({ projectRoot });
+    const response = await fetch(appHandle.baseUrl + '/api/config/skills/before', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ renameTo: 'after' }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true, name: 'after', requiresReload: true, reloadDelayMs: 0 });
+    expect(fs.existsSync(path.join(projectRoot, '.agents', 'skills', 'before'))).toBe(false);
+    expect(fs.readFileSync(path.join(projectRoot, '.agents', 'skills', 'after', 'SKILL.md'), 'utf8')).toContain('Keep these instructions.');
   });
 
   it('lists manually created repository-local .agents skills via active-project fallback', async () => {
@@ -328,5 +344,96 @@ describe('skill-routes directory soft fallback', () => {
     release();
     const response = await pending;
     expect(response.status).toBe(500);
+  });
+});
+
+describe('skill configuration identity across directory resolution', () => {
+  const mutations = [
+    ['post', '/api/config/skills/test', { scope: SKILL_SCOPE.PROJECT }, 'createSkill'],
+    ['patch', '/api/config/skills/test', { description: 'updated' }, 'updateSkill'],
+    ['patch', '/api/config/skills/test', { renameTo: 'renamed' }, 'renameSkill'],
+    ['delete', '/api/config/skills/test', {}, 'deleteSkill'],
+    ['put', '/api/config/skills/test/files/note.md', { content: 'updated' }, 'writeSkillSupportingFile'],
+    ['delete', '/api/config/skills/test/files/note.md', {}, 'deleteSkillSupportingFile'],
+    ['post', '/api/config/skills/install', { scope: 'project' }, 'installSkillsFromRepository'],
+  ];
+  it.each(mutations.flatMap(([method, route, body, operation]) =>
+    ['profile', 'epoch', 'family'].map((change) => [method, route, body, operation, change])))(
+    '%s %s refuses changed ownership before %s (%s)', async (method, route, body, operation, change) => {
+      let runtime = { generation: 'oc1', profile: OPENCODE_PROFILE.OC1, endpoint: 'http://127.0.0.1:9', epoch: 1 };
+      let backend = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+      const write = vi.fn();
+      const sources = vi.fn();
+      const resolve = async () => {
+        if (change === 'family') backend = { ...backend, family: AGENT_FAMILY.CAGENT };
+        else runtime = { ...runtime, [change]: change === 'epoch' ? 2 : OPENCODE_PROFILE.LEGACY };
+        return { directory: '/repo', error: null };
+      };
+      const app = express();
+      app.use(express.json());
+      registerSkillRoutes(app, {
+        kernelRuntime: { get: () => runtime },
+        getBackendSelection: () => backend,
+        resolveProjectDirectory: resolve,
+        resolveOptionalProjectDirectory: resolve,
+        SKILL_SCOPE,
+        isUnsafeSkillRelativePath: () => false,
+        getSkillSources: sources,
+        [operation]: write,
+      });
+      await request(app)[method](route).send(body).expect(409);
+      expect(write).not.toHaveBeenCalled();
+      expect(sources).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('skill fallback ownership', () => {
+  it('does not swallow a mode change in the optional-project fallback', async () => {
+    let runtime = { generation: 'oc1', profile: OPENCODE_PROFILE.OC1, epoch: 1 };
+    const write = vi.fn();
+    const app = express();
+    app.use(express.json());
+    registerSkillRoutes(app, {
+      kernelRuntime: { get: () => runtime },
+      resolveOptionalProjectDirectory: async () => ({ directory: null }),
+      resolveProjectDirectory: async () => {
+        runtime = { ...runtime, profile: OPENCODE_PROFILE.LEGACY };
+        return { directory: '/repo' };
+      },
+      updateSkill: write,
+    });
+    await request(app).patch('/api/config/skills/test').send({ description: 'test' }).expect(409);
+    expect(write).not.toHaveBeenCalled();
+  });
+});
+
+describe('skill supporting file ownership after discovery', () => {
+  it.each(['put', 'delete'])('%s refuses writes after the backend family changes during SDK discovery', async (method) => {
+    let backend = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+    const write = vi.fn();
+    const kernel = await startKernel((_req, res) => {
+      backend = { family: AGENT_FAMILY.CAGENT, revision: 2 };
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ data: [] }));
+    });
+    try {
+      const app = express();
+      app.use(express.json());
+      registerSkillRoutes(app, {
+        kernelRuntime: { get: () => ({ generation: 'oc2', profile: OPENCODE_PROFILE.OC2, endpoint: kernel.endpoint, epoch: 1 }) },
+        getBackendSelection: () => backend,
+        resolveOptionalProjectDirectory: async () => ({ directory: '/repo' }),
+        getOpenCodeAuthHeaders: () => ({}),
+        isUnsafeSkillRelativePath: () => false,
+        getSkillSources: () => ({ md: { exists: true, dir: '/repo/.opencode/skills/test' } }),
+        writeSkillSupportingFile: write,
+        deleteSkillSupportingFile: write,
+      });
+      await request(app)[method]('/api/config/skills/test/files/note.md').send({ content: 'test' }).expect(409);
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      await kernel.close();
+    }
   });
 });

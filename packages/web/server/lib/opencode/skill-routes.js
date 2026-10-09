@@ -31,6 +31,8 @@ export const registerSkillRoutes = (app, dependencies) => {
     getOpenCodePort,
     kernelRuntime,
     getBackendSelection,
+    refreshOpenCodeAfterConfigChange,
+    clientReloadDelayMs,
     getSkillSources,
     discoverSkills,
     mergeDiscoveredSkills,
@@ -55,7 +57,34 @@ export const registerSkillRoutes = (app, dependencies) => {
     getProfile,
   } = dependencies;
 
-  app.use('/api/config/skills', createOpenCodeFamilyGuard(getBackendSelection, () => kernelRuntime?.get()));
+  const requests = new WeakMap();
+  app.use('/api/config/skills', createOpenCodeFamilyGuard(getBackendSelection, () => kernelRuntime?.get()), (req, _res, next) => {
+    requests.set(req, {
+      runtime: { ...kernelRuntime?.get() },
+      backend: { ...getBackendSelection?.() },
+    });
+    next();
+  });
+
+  const assertCurrent = (req) => {
+    const selected = requests.get(req);
+    const runtime = kernelRuntime?.get();
+    const backend = getBackendSelection?.();
+    if (selected.runtime.generation !== runtime?.generation
+      || selected.runtime.profile !== runtime?.profile
+      || selected.runtime.endpoint !== runtime?.endpoint
+      || selected.runtime.epoch !== runtime?.epoch
+      || selected.backend.family !== backend?.family
+      || selected.backend.revision !== backend?.revision) {
+      throw Object.assign(new Error('OpenCode changed during skill configuration'), { statusCode: 409 });
+    }
+  };
+
+  const resolve = async (req, resolver) => {
+    const result = await resolver(req);
+    assertCurrent(req);
+    return result;
+  };
 
   const findWorktreeRootForSkills = (workingDirectory) => {
     if (!workingDirectory) return null;
@@ -253,7 +282,7 @@ export const registerSkillRoutes = (app, dependencies) => {
   // project / lastDirectory so repository-local skills stay visible when the
   // client omits `directory` (create already used resolveProjectDirectory).
   const resolveSkillsDirectory = async (req) => {
-    const optional = await resolveOptionalProjectDirectory(req);
+    const optional = await resolve(req, resolveOptionalProjectDirectory);
     if (optional.error) {
       return optional;
     }
@@ -262,11 +291,12 @@ export const registerSkillRoutes = (app, dependencies) => {
     }
 
     try {
-      const fallback = await resolveProjectDirectory(req);
+      const fallback = await resolve(req, resolveProjectDirectory);
       if (fallback.directory) {
         return { directory: fallback.directory, error: null };
       }
-    } catch {
+    } catch (error) {
+      if (error.statusCode === 409) throw error;
       // ignore — listing user-scoped skills without a project is valid
     }
 
@@ -335,13 +365,13 @@ export const registerSkillRoutes = (app, dependencies) => {
       res.json(result);
     } catch (error) {
       console.error('Failed to list skills:', error);
-      res.status(500).json({ error: 'Failed to list skills' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to list skills' });
     }
   });
 
   app.get('/api/config/skills/catalog', async (req, res) => {
     try {
-      const { error } = await resolveOptionalProjectDirectory(req);
+      const { error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -382,7 +412,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       res.json({ ok: true, sources: sourcesForUi, itemsBySource: {} });
     } catch (error) {
       console.error('Failed to load skills catalog:', error);
-      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to load catalog' } });
+      res.status(error.statusCode || 500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to load catalog' } });
     }
   });
 
@@ -450,7 +480,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       );
 
       if (!scanResult.ok) {
-        return res.status(500).json({ ok: false, error: scanResult.error });
+        return res.status(error.statusCode || 500).json({ ok: false, error: scanResult.error });
       }
 
       const items = (scanResult.items || []).map((item) => {
@@ -468,7 +498,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       return res.json({ ok: true, items });
     } catch (error) {
       console.error('Failed to load catalog source:', error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         ok: false,
         error: { kind: 'unknown', message: error.message || 'Failed to load catalog source' },
       });
@@ -503,7 +533,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       res.json({ ok: true, items: result.items });
     } catch (error) {
       console.error('Failed to scan skills repository:', error);
-      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to scan repository' } });
+      res.status(error.statusCode || 500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to scan repository' } });
     }
   });
 
@@ -522,7 +552,7 @@ export const registerSkillRoutes = (app, dependencies) => {
 
       let workingDirectory = null;
       if (scope === 'project') {
-        const resolved = await resolveProjectDirectory(req);
+        const resolved = await resolve(req, resolveProjectDirectory);
         if (!resolved.directory) {
           return res.status(400).json({
             ok: false,
@@ -534,6 +564,7 @@ export const registerSkillRoutes = (app, dependencies) => {
 
       const identity = resolveGitIdentity(gitIdentityId);
 
+      assertCurrent(req);
       const result = await installSkillsFromRepository({
         source,
         subpath,
@@ -582,7 +613,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('Failed to install skills:', error);
-      res.status(500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to install skills' } });
+      res.status(error.statusCode || 500).json({ ok: false, error: { kind: 'unknown', message: error.message || 'Failed to install skills' } });
     }
   });
 
@@ -606,7 +637,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('Failed to get skill sources:', error);
-      res.status(500).json({ error: 'Failed to get skill configuration metadata' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to get skill configuration metadata' });
     }
   });
 
@@ -640,7 +671,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         return res.status(403).json({ error: 'Access to file denied' });
       }
       console.error('Failed to read skill file:', error);
-      res.status(500).json({ error: 'Failed to read skill file' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to read skill file' });
     }
   });
 
@@ -649,7 +680,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       const skillName = req.params.name;
       const { scope, source: skillSource, ...config } = req.body;
       const { directory, error } = scope === SKILL_SCOPE.PROJECT
-        ? await resolveProjectDirectory(req)
+        ? await resolve(req, resolveProjectDirectory)
         : await resolveSkillsDirectory(req);
       if (error || (scope === SKILL_SCOPE.PROJECT && !directory)) {
         return res.status(400).json({ error: error || 'Project skill creation requires a directory' });
@@ -664,7 +695,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to create skill:', error);
-      res.status(500).json({ error: error.message || 'Failed to create skill' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create skill' });
     }
   });
 
@@ -702,7 +733,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('[Server] Failed to update skill:', error);
-      res.status(500).json({ error: error.message || 'Failed to update skill' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update skill' });
     }
   });
 
@@ -726,6 +757,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         return res.status(404).json({ error: 'Skill not found' });
       }
 
+      assertCurrent(req);
       writeSkillSupportingFile(sources.md.dir, filePath, content || '');
 
       res.json({
@@ -737,7 +769,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         return res.status(403).json({ error: 'Access to file denied' });
       }
       console.error('Failed to write skill file:', error);
-      res.status(500).json({ error: error.message || 'Failed to write skill file' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to write skill file' });
     }
   });
 
@@ -760,6 +792,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         return res.status(404).json({ error: 'Skill not found' });
       }
 
+      assertCurrent(req);
       deleteSkillSupportingFile(sources.md.dir, filePath);
 
       res.json({
@@ -771,7 +804,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         return res.status(403).json({ error: 'Access to file denied' });
       }
       console.error('Failed to delete skill file:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete skill file' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to delete skill file' });
     }
   });
 
@@ -789,7 +822,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to delete skill:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete skill' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to delete skill' });
     }
   });
 };

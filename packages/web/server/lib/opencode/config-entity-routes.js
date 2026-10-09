@@ -33,17 +33,41 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     expandSnippets,
   } = dependencies;
 
+  const requests = new WeakMap();
+
   app.use(
     ['/api/config/agents', '/api/config/commands', '/api/config/mcp'],
     createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime),
-    (_req, res, next) => {
+    (req, res, next) => {
       const generation = getGeneration();
       if (generation !== OPENCODE_GENERATION.OC1 && generation !== OPENCODE_GENERATION.OC2) {
         return res.status(503).json({ error: 'OpenCode generation is not ready' });
       }
+      requests.set(req, {
+        generation,
+        runtime: { ...getKernelRuntime?.() },
+        backend: { ...getBackendSelection?.() },
+      });
       return next();
     },
   );
+
+  const resolve = async (req, resolver) => {
+    const selected = requests.get(req);
+    const result = await resolver(req);
+    const runtime = getKernelRuntime?.();
+    const backend = getBackendSelection?.();
+    if (selected.generation !== getGeneration()
+      || selected.runtime.generation !== runtime?.generation
+      || selected.runtime.profile !== runtime?.profile
+      || selected.runtime.endpoint !== runtime?.endpoint
+      || selected.runtime.epoch !== runtime?.epoch
+      || selected.backend.family !== backend?.family
+      || selected.backend.revision !== backend?.revision) {
+      throw Object.assign(new Error('OpenCode changed during configuration request'), { statusCode: 409 });
+    }
+    return result;
+  };
 
   const complete = (message, details) => getGeneration() === 'oc2'
     ? buildAppliedResponse(message.replace(/\. Restart OpenCode to apply\.?$/, '.'), details)
@@ -63,7 +87,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
   app.get('/api/config/agents/:name', async (req, res) => {
     try {
       const agentName = req.params.name;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -81,14 +105,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('Failed to get agent sources:', error);
-      res.status(500).json({ error: 'Failed to get agent configuration metadata' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to get agent configuration metadata' });
     }
   });
 
   app.get('/api/config/agents/:name/config', async (req, res) => {
     try {
       const agentName = req.params.name;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -97,18 +121,18 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       res.json(configInfo);
     } catch (error) {
       console.error('Failed to get agent config:', error);
-      res.status(500).json({ error: 'Failed to get agent configuration' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to get agent configuration' });
     }
   });
 
   app.get('/api/config/agents/:name/permissions', async (req, res) => {
     if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
     try {
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) return res.status(400).json({ error });
       return res.json(getAgentPermissions(req.params.name, directory));
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'Failed to get agent permissions' });
+      return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to get agent permissions' });
     }
   });
 
@@ -116,7 +140,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const agentName = req.params.name;
       const { scope, ...config } = req.body;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -132,7 +156,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to create agent:', error);
-      res.status(500).json({ error: error.message || 'Failed to create agent' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create agent' });
     }
   });
 
@@ -140,7 +164,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const agentName = req.params.name;
       const updates = req.body;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -160,14 +184,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     } catch (error) {
       console.error('[Server] Failed to update agent:', error);
       console.error('[Server] Error stack:', error.stack);
-      res.status(500).json({ error: error.message || 'Failed to update agent' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update agent' });
     }
   });
 
   app.delete('/api/config/agents/:name', async (req, res) => {
     try {
       const agentName = req.params.name;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -179,13 +203,13 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to delete agent:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete agent' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to delete agent' });
     }
   });
 
   app.get('/api/config/mcp', async (req, res) => {
     try {
-      const { directory, error } = await resolveOptionalProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -193,14 +217,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       res.json(configs);
     } catch (error) {
       console.error('[API:GET /api/config/mcp] Failed:', error);
-      res.status(500).json({ error: error.message || 'Failed to list MCP configs' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to list MCP configs' });
     }
   });
 
   app.get('/api/config/mcp/:name', async (req, res) => {
     try {
       const name = req.params.name;
-      const { directory, error } = await resolveOptionalProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -211,7 +235,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       res.json(config);
     } catch (error) {
       console.error('[API:GET /api/config/mcp/:name] Failed:', error);
-      res.status(500).json({ error: error.message || 'Failed to get MCP config' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to get MCP config' });
     }
   });
 
@@ -219,7 +243,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const name = req.params.name;
       const { scope, ...config } = req.body || {};
-      const { directory, error } = await resolveOptionalProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -230,7 +254,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('[API:POST /api/config/mcp/:name] Failed:', error);
-      res.status(500).json({ error: error.message || 'Failed to create MCP server' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create MCP server' });
     }
   });
 
@@ -238,7 +262,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const name = req.params.name;
       const updates = req.body;
-      const { directory, error } = await resolveOptionalProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -252,14 +276,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       if (error?.message === `MCP server "${req.params.name}" not found`) {
         return res.status(404).json({ error: error.message });
       }
-      res.status(500).json({ error: error.message || 'Failed to update MCP server' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update MCP server' });
     }
   });
 
   app.delete('/api/config/mcp/:name', async (req, res) => {
     try {
       const name = req.params.name;
-      const { directory, error } = await resolveOptionalProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveOptionalProjectDirectory);
       if (error) {
         return res.status(400).json({ error });
       }
@@ -270,14 +294,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('[API:DELETE /api/config/mcp/:name] Failed:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete MCP server' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to delete MCP server' });
     }
   });
 
   app.get('/api/config/commands/:name', async (req, res) => {
     try {
       const commandName = req.params.name;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -295,18 +319,18 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       });
     } catch (error) {
       console.error('Failed to get command sources:', error);
-      res.status(500).json({ error: 'Failed to get command configuration metadata' });
+      res.status(error.statusCode || 500).json({ error: 'Failed to get command configuration metadata' });
     }
   });
 
   app.get('/api/config/commands/:name/config', async (req, res) => {
     if (getGeneration() !== 'oc2') return res.status(404).json({ error: 'Not available on OpenCode 1' });
     try {
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) return res.status(400).json({ error });
       return res.json(getCommandConfig(req.params.name, directory));
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'Failed to get command configuration' });
+      return res.status(error.statusCode || 500).json({ error: error.message || 'Failed to get command configuration' });
     }
   });
 
@@ -314,7 +338,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const commandName = req.params.name;
       const { scope, ...config } = req.body;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -330,7 +354,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to create command:', error);
-      res.status(500).json({ error: error.message || 'Failed to create command' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to create command' });
     }
   });
 
@@ -338,7 +362,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     try {
       const commandName = req.params.name;
       const updates = req.body;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -358,14 +382,14 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     } catch (error) {
       console.error('[Server] Failed to update command:', error);
       console.error('[Server] Error stack:', error.stack);
-      res.status(500).json({ error: error.message || 'Failed to update command' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to update command' });
     }
   });
 
   app.delete('/api/config/commands/:name', async (req, res) => {
     try {
       const commandName = req.params.name;
-      const { directory, error } = await resolveProjectDirectory(req);
+      const { directory, error } = await resolve(req, resolveProjectDirectory);
       if (!directory) {
         return res.status(400).json({ error });
       }
@@ -376,7 +400,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       ));
     } catch (error) {
       console.error('Failed to delete command:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete command' });
+      res.status(error.statusCode || 500).json({ error: error.message || 'Failed to delete command' });
     }
   });
 

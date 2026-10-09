@@ -214,4 +214,8 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 
 2026-10-09 验证：9 个配置、family、目录、运行时、升级、插件、Skill 与 WebSearch 测试文件中的 128 项测试通过。覆盖拒绝时不执行路由依赖、动态 profile 变化、插件/Provider 模式变化后零写入、Skill 迟到结果及 Legacy 诊断。工作区类型检查/lint、JavaScript 语法与差异检查通过，保留 5 条既有 lint 警告。Anti-slop 保留 33 条既有诊断，HEAD 规则计数一致。Dead-code 保留 2 个未使用文件、319 项导出及 231 个类型。未新增依赖。
 
-启用生产 profile 前，补齐配置实体与 Skill 磁盘写入在异步目录解析期间的身份检查。完成 VS Code 本地配置检查，并结合生产依赖注入检查 auth.js 凭据读取、routing/runtime.js 的历史读取回退及 openchamber-control/service.js 的直连客户端路径。多数后台调用使用核心操作层，但此观察不等于完整直连审计。选择控件、诊断及当前 OC1/OC2 真实探测仍待完成。INT-01 继续进行中，本检查点不修改已发布的 CA-02 预览。
+启用生产 profile 前，补齐 Skill 仓库安装在克隆/检出之后及异步文件复制期间的身份处理。目录解析检查不覆盖此安装阶段。完成 VS Code 本地配置检查，并结合生产依赖注入检查 auth.js 凭据读取、routing/runtime.js 的历史读取回退及 openchamber-control/service.js 的直连客户端路径。多数后台调用使用核心操作层，但此观察不等于完整直连审计。选择控件、诊断及当前 OC1/OC2 真实探测仍待完成。INT-01 继续进行中，本检查点不修改已发布的 CA-02 预览。
+
+基于 4cdfea9da 的目录等待保护在配置实体与 Skill 路由开始前保存 generation、profile、endpoint、epoch 及后端 family/revision。目录解析结束后、磁盘访问前核对身份，变化时返回 409 且不调用写入函数。Skill 项目目录回退保留此拒绝，支持文件写入在 SDK 发现结束后再次核对。片段写入保持独立。Skill 重命名现在取出已传入的刷新与重载延迟依赖，修复磁盘重命名成功后响应失败的问题。Web/Electron 共用路由，移动端继承宿主；VS Code 本地写入仍待处理。
+
+2026-10-09 验证：三个文件中的 113 项聚焦测试通过，覆盖九个 Agent/Command/MCP 写入路由、Skill 写入与项目安装入口、目录回退时模式变化、SDK 回环发现期间 family 变化后支持文件零写入，以及临时文件的真实重命名。Web 包类型检查/lint、JavaScript 语法及差异检查通过。Oxlint 与 HEAD 同为 14 条既有 no-runtime-typeof 诊断；dead-code 仍为 2 个文件、319 项导出及 231 个类型。未新增依赖、导出 API 或启用生产 profile。INT-01 继续进行中。

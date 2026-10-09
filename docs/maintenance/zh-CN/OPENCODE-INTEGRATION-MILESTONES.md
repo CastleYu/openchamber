@@ -478,3 +478,9 @@ VS Code webview 收到宿主 connecting、disconnected 或 error 状态时，现
 隔离的已安装 VS Code 加载当前生产 webview，通过真实扩展管理器／面板与 OC2 2.0.20 执行 30 项检查，覆盖冷启动候选选择、显式确认、准入描述符、编辑器会话切换、原生编辑器选区附件、会话创建／读取／删除、不可达目标拒绝，以及在界面重新确认后恢复先前连接。这是原生 webview／桥接／编辑器证据；未执行模型请求、真实 CAgent 或精确 Legacy 对话。UI 及 VS Code 宿主／webview 类型检查、两个文件的 ESLint、VS Code 构建、既有 5 项组件测试（139 个断言）与 11 项面板／路由／HTML 测试通过。原生退出未报告向已销毁 webview 回包。Anti-slop 保留 14 项原有诊断，新增行无诊断；已检查非阻断 dead-code 清单。
 
 证据：artifacts/int02-editor-webview-evidence.json。确认夹具进程退出后，清理记录写入 artifacts/int02-editor-webview-cleanup.json。可复用原生驱动、精简证据及当前生产构建保留至 R1 收尾。R1 仍待其余跨端／同伴检查及 Windows 控制台闪现观察。已核对进程、归属及重解析点，并删除 9 个失效原生测试目录，释放 297896710 字节。批次开始时实时周额度剩余 36%，收尾时剩余 35%；未修改远端分支或冻结 Release。
+
+## R1 Windows 控制台窗口检查点，2026-10-10
+
+当前源码 eec8fe09a 通过真实 OC2 2.0.20 的 30 项原生编辑器流程及 46 项原生扩展管理器检查，覆盖反复替换受管进程、停止失败及重试、先前配置恢复、外部认证和 PID 保留，以及 cmd/bat 转发启动与关闭。Windows 进程外事件钩子在两次运行全程监听窗口创建、销毁和显示事件。屏幕外窗口显示的正向对照通过；当前桌面未观察到 ConsoleWindowClass 或 CASCADIA_HOSTING_WINDOW_CLASS 事件。这是动态窗口事件证据，未执行屏幕录像或视觉观察。结论限于所执行启动路径，未覆盖所有工具子进程或其他桌面会话。
+
+精简证据与源码指纹：artifacts/int02-console-evidence.json。核对进程、注册记录及重解析点后，已删除两个本任务测试目录，释放 73470714 字节。可复用驱动和当前程序仍用于 R1 收尾。R1 保持未完成，继续进行剩余跨端／同伴验收及所需视觉观察。未执行模型调用、CAgent API 或精确 Legacy 对话，未修改远端分支或冻结 Release。

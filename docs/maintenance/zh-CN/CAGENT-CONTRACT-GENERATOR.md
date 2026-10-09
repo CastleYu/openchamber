@@ -8,9 +8,9 @@ node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit
 bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
 ```
 
-命令包包含七个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
+命令包包含八个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包提供可执行命令流程，仍未完成全部 CA-02 交付：文档提取、声明式代码生成、扩展模板、模型校准及目标权限尚待落实。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包提供可执行命令流程，仍未完成全部 CA-02 交付：文档提取、声明式代码生成、扩展模板、真实本地模型校准及目标权限尚待落实。
 
 最终组装读取保护注册表，以原生持久化修正上限重新检查每项注册任务，并将捕获且通过检查的字节一起打包。随后在新的有界子进程中，对组合适配器执行每项操作的保护夹具。多个工厂组合后的行为不一致会阻止发布。命令不将候选进度报告当作验收证据。
 
@@ -21,6 +21,27 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 ```
 
 Windows 应先设置进程环境变量 `CAGENT_TEST_NODE` 再运行 Bun。
+
+## 适配模型校准
+
+```sh
+bun scripts/cagent/calibrate.mjs --prepare --model-record /local/model.json --out /local/new-calibration --json
+bun scripts/cagent/calibrate.mjs --check --workspace /local/new-calibration --kit-digest <prepare-digest> --node /absolute/path/to/node --trial-record /local/trial.json --json
+```
+
+维护者提供以下记录；试验记录必须位于整个校准工作区之外。将合成身份及计量值替换为实际模型／构建、选定提示语言、计量方法、实测输入量、编写耗时及介入次数。工具不提供 tokenizer，也不调用模型。字节量不能当作 token 数。token 预算不超过 8000；工具验证声明的计量值，不独立证明计量准确性。
+
+```json
+{"version":1,"id":"synthetic","build":"r1","language":"en","execution":"scripted","inputBudget":{"unit":"bytes","limit":8000,"method":"utf8"}}
+```
+
+```json
+{"version":1,"modelID":"synthetic","modelBuild":"r1","language":"en","input":{"mapping":400,"codec":600,"gap":400},"elapsedMs":0,"interventions":0}
+```
+
+准备步骤冻结双语合成任务、模型记录及五项 codec 夹具。候选填写映射／缺口的 `answer.json` 和一个 codec `handler.mjs`。维护者检查要求准确的结构映射、四种状态转换、保留传输失败及结构化证据缺口。问题内容仍需维护者审阅，工具未实现语言质量评判。保护输入变化使摘要失效。原生进度跨命令调用保留初次提交加两次修正的上限。
+
+全部通过分配 `bounded-codec`；映射／缺口通过而 codec 失败，分配 `declarative-only`；映射／缺口失败或文件边界违规，分配 `maintainer-assisted`。受限结果返回非零；准备／环境失败不授予任务范围，也不消耗候选修正次数。所有报告保持 activation unavailable，将维护者提供的计量与检查器耗时分开。模型／构建／语言或执行设置变化后，在新目录重新准备。合成适配检查不能证明真实模型性能、实际 API 支持或[运行时工作流质量](CAGENT-WORKFLOW-ACCEPTANCE.md)。
 
 ## 受保护夹具检查及适配器组装
 

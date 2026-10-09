@@ -8,9 +8,9 @@ node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit
 bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
 ```
 
-The bundle includes seven standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
+The bundle includes eight standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run calibration, mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
 
-Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle contains the executable command workflow, not the complete CA-02 deliverable: document extraction, declarative code generation, extension templates, model calibration and target permissions still remain.
+Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle contains the executable command workflow, not the complete CA-02 deliverable: document extraction, declarative code generation, extension templates, actual local-model calibration and target permissions still remain.
 
 Finalization reads the protected registration, rechecks every registered packet using native persistent correction limits, and bundles captured passing bytes together. It then executes each operation's protected fixtures against that combined adapter in fresh bounded child processes. A combined-factory mismatch stops publication. The command never treats a candidate's progress report as acceptance evidence.
 
@@ -21,6 +21,27 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 ```
 
 On Windows set `CAGENT_TEST_NODE` as a process environment variable before running Bun.
+
+## Authoring-model calibration
+
+```sh
+bun scripts/cagent/calibrate.mjs --prepare --model-record /local/model.json --out /local/new-calibration --json
+bun scripts/cagent/calibrate.mjs --check --workspace /local/new-calibration --kit-digest <prepare-digest> --node /absolute/path/to/node --trial-record /local/trial.json --json
+```
+
+The maintainer supplies these records; keep the trial outside the entire calibration workspace. Replace the synthetic identity and measurements with the actual model/build, chosen prompt language, counting method, measured input counts, authoring time and interventions. No tokenizer or model invocation is provided. Byte counts are not token counts. Token budgets may not exceed 8000; the tool validates the declared counts, not their independent accuracy.
+
+```json
+{"version":1,"id":"synthetic","build":"r1","language":"en","execution":"scripted","inputBudget":{"unit":"bytes","limit":8000,"method":"utf8"}}
+```
+
+```json
+{"version":1,"modelID":"synthetic","modelBuild":"r1","language":"en","input":{"mapping":400,"codec":600,"gap":400},"elapsedMs":0,"interventions":0}
+```
+
+Preparation freezes bilingual synthetic tasks, the model record and five codec fixtures. The candidate fills mapping/gap `answer.json` files and one codec `handler.mjs`. Owner checks require the exact structural mapping, four status conversions, preservation of transport failure and a structured evidence-gap answer. The question's meaning still needs maintainer review; no language-quality judge is implemented. Protected input changes invalidate the digest. Native progress retains the initial submission plus two corrections across command invocations.
+
+All checks passing assigns `bounded-codec`. Passing mapping/gap with a failed codec assigns `declarative-only`. A failed mapping/gap or file-boundary violation assigns `maintainer-assisted`. Limited outcomes return nonzero; setup failures do not grant an assignment or consume a candidate correction. Every report retains activation unavailable and identifies maintainer-provided measurements separately from checker elapsed time. Reprepare in a fresh workspace after changing model/build/language or execution setup. These synthetic authoring checks do not establish actual model performance, live API support or [runtime workflow quality](../../docs/maintenance/CAGENT-WORKFLOW-ACCEPTANCE.md).
 
 ## Protected fixture checks and adapter assembly
 

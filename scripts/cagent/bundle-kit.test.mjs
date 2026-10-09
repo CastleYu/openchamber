@@ -23,7 +23,7 @@ test('existing output and invalid flags fail without overwriting files', async (
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
-test('standalone bundle runs outside checkout without installed dependencies and refuses tampering', async () => {
+test('standalone bundle runs outside checkout without installed dependencies and refuses tampering', { timeout: 120000 }, async () => {
   const node = process.env.CAGENT_TEST_NODE;
   assert.ok(node, 'CAGENT_TEST_NODE selects the tested Node executable');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cagent-offline-'));
@@ -63,6 +63,28 @@ test('standalone bundle runs outside checkout without installed dependencies and
     assert.equal(run(process.execPath, 'check-packet', ['--workspace', workspace, '--operation', 'getSession', '--node', node, '--kit-digest', prepared.digest]).ok, true);
     const artifact = run(process.execPath, 'finalize-adapter', ['--workspace', workspace, '--node', node, '--kit-digest', prepared.digest, '--out', path.join(root, 'artifact')]);
     assert.equal(artifact.ok, true);
+    const calibration = path.join(root, 'calibration');
+    const modelRecord = path.join(root, 'model.json');
+    const trialRecord = path.join(root, 'trial.json');
+    await fs.writeFile(modelRecord, JSON.stringify({ version: 1, id: 'scripted', build: 'r1', language: 'en', execution: 'scripted',
+      inputBudget: { unit: 'bytes', limit: 8000, method: 'utf8' } }));
+    await fs.writeFile(trialRecord, JSON.stringify({ version: 1, modelID: 'scripted', modelBuild: 'r1', language: 'en',
+      input: { mapping: 400, codec: 600, gap: 400 }, elapsedMs: 0, interventions: 0 }));
+    const calibrated = run(process.execPath, 'calibrate', ['--prepare', '--model-record', modelRecord, '--out', calibration]);
+    await fs.writeFile(path.join(calibration, 'candidate/getSession/answer.json'), JSON.stringify({ method: 'GET', path: '/training/records',
+      query: { space: 'workspaceID', record: 'sessionID' }, result: { id: 'record', workspaceID: 'space' } }));
+    await fs.writeFile(path.join(calibration, 'candidate/interruptSession/answer.json'), JSON.stringify({ operation: 'interruptSession',
+      missing: 'confirmed-cancellation', section: 'training.cancel-gap', question: 'Please supply cancellation documentation.' }));
+    await fs.writeFile(path.join(calibration, 'candidate/getSessionStatus/handler.mjs'),
+      `export function createOperation(context) { return async (input,identity,control) => {
+        const response = await context.request({method:'GET',path:'/training/status',query:{space:input.workspaceID,record:input.sessionID}},identity,control);
+        const states = {0:'idle',1:'busy',2:'waiting'};
+        return {sessionID:response.body.record,state:states[response.body.phase] ?? 'unknown'};
+      }; }`);
+    const calibratedResult = run(process.execPath, 'calibrate', ['--check', '--workspace', calibration,
+      '--kit-digest', calibrated.digest, '--node', node, '--trial-record', trialRecord]);
+    assert.equal(calibratedResult.assignment, 'bounded-codec');
+    assert.equal(calibratedResult.activation, 'unavailable');
     assert.equal(await fs.stat(path.join(root, 'node_modules')).then(() => true, () => false), false);
     await fs.appendFile(path.join(protectedRoot, 'START-HERE.md'), 'tampered');
     const results = [];

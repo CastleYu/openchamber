@@ -10,7 +10,7 @@ import { buildContractPages } from './contract-pages.mjs';
 
 export const KIT = Object.freeze({
   ROOT: fileURLToPath(new URL('../../', import.meta.url)),
-  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit']),
+  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit', 'calibrate']),
   LICENSES: Object.freeze(['LICENSE', 'node_modules/zod/LICENSE', 'node_modules/typescript/LICENSE.txt']),
   ERROR: Object.freeze({ INVALID: 'invalid-arguments', EXISTS: 'kit-exists', BOUNDARY: 'kit-boundary', BUILD: 'kit-build-failed', INCOMPLETE: 'kit-incomplete' }),
 });
@@ -20,14 +20,14 @@ const starts = (zh) => zh ? `# CAgent 离线命令包
 
 此包包含已打包依赖的宿主命令及双语操作参考，无需安装项目依赖。维护者另行准备经过验证的 Node 24.9.0 和 Bun 1.3.14。其他版本须先验证。
 宿主将整个 protected 目录设为候选只读，并将 control、进度及批准目录置于候选写权限之外。摘要须从独立可信渠道取得。权限模型不能证明网络隔离或恶意代码沙箱。
-此包未包含真实 CAgent API、模型校准、扩展模板或真实验收。通过合成夹具不能启用功能。
+此包包含合成适配模型校准，不包含真实 CAgent API、扩展模板或真实验收。通过合成夹具不能启用功能。模型及计量记录由维护者提供，校准不证明运行时模型任务质量。
 
 在 protected 目录执行以下命令。填写维护者审阅的本地文档目录、映射、夹具及独立摘要。工作区和制品输出须位于此包之外。
 ` : `# CAgent offline command bundle
 
 This bundle contains host commands with their dependencies and bilingual operation references. No project package installation is needed. The owner separately supplies validated Node 24.9.0 and Bun 1.3.14 executables. Validate other versions before use.
 The host makes the entire protected directory read-only to the candidate and keeps control, progress and approvals outside candidate write authority. Obtain the digest through an independent trusted channel. The permission model does not establish network isolation or a hostile-code sandbox.
-This bundle contains no real CAgent API, model calibration, extension templates or live acceptance. Passing synthetic fixtures grants no feature activation.
+This bundle includes synthetic authoring-model calibration, but no real CAgent API, extension templates or live acceptance. Passing synthetic fixtures grants no feature activation. The maintainer supplies model and measurement records; calibration does not prove runtime model task quality.
 
 Run these commands from protected. Supply owner-reviewed local documentation catalog, mapping, fixtures and independent digest. Workspace and artifact outputs must be outside this bundle.
 `;
@@ -35,6 +35,8 @@ const commands = `
 \`\`\`sh
 node scripts/cagent/verify-kit.mjs --kit <bundle-root> --digest <owner-digest> --json
 node scripts/cagent/build-contracts.mjs --check --json
+bun scripts/cagent/calibrate.mjs --prepare --model-record <owner-model-record> --out <new-calibration-workspace> --json
+bun scripts/cagent/calibrate.mjs --check --workspace <calibration-workspace> --kit-digest <calibration-digest> --node <absolute-node> --trial-record <owner-trial-outside-workspace> --json
 node scripts/cagent/check-mapping.mjs --catalog <catalog> --mapping <mapping> --json
 node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --out <new-workspace> --json
 bun scripts/cagent/check-packet.mjs --workspace <workspace> --operation <operation> --node <absolute-node> --kit-digest <workspace-digest> --json

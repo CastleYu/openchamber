@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: standalone offline commands and final candidate artifact
+## Latest checkpoint: executable authoring calibration
+
+2026-10-09. Calibration now prepares frozen bilingual synthetic tasks and checks mapping, bounded codec and evidence-gap submissions through native persistent packet progress. Controlled submissions demonstrate bounded-codec, declarative-only and maintainer-assisted assignment. Five codec fixtures include transport failure; swallowed failures and out-of-scope files cannot earn codec admission. Trial identity mismatch and protected edits stop before candidate attempts. Reopening preserves the initial submission plus two corrections. No operation activation or runtime model-quality approval follows from calibration.
+
+Eight focused calibration tests and three offline bundle tests pass. The actual standalone bundle additionally runs preparation and calibration checks outside the checkout without node_modules. Anti-slop and ESLint pass for the five changed JavaScript files. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. The full offline journey now has an explicit 120-second test ceiling; its earlier default five-second timeout was an infrastructure limit, not an accepted candidate result.
+
+The new ignored output `artifacts/cagent-offline-calibration-20261009` contains eight commands and 82 protected files. Its actual bundled Node verifier passes the independent digest `af3bb719253304f0a77ce198f32c8f04965c46ac6a5b0f9b6c5f159a6032f5dd`. Prior output is retained. Model identity, input counting, authoring time and intervention records come from the maintainer; no actual local model or CAgent API was used. The separate [workflow quality contract](CAGENT-WORKFLOW-ACCEPTANCE.md) now requires host enforcement and real evidence before unattended admission.
+
+CA-01 remains in progress; CA-02 still needs complete documentation intake/declarative generation, extensions and target permissions. CA-03 needs real environment acceptance. Independent remote publication and temporary Release remain outstanding. Production capabilities remain closed. Live weekly quota is 63% remaining; lower-priority INT implementation stays after CA-03. Continue with the missing kit generation path and actual consumer/host acceptance, preserving the independent branch.
+
+## Earlier checkpoint: standalone offline commands and final candidate artifact
 
 2026-10-09. CA-01 remains in progress. CA-02 now bundles seven standalone commands and their dependencies with 69 references, paired START-HERE files and license texts. An independently supplied digest verifies the exact protected tree. Real commands complete reference checking, mapping intake, preparation, bounded fixture execution and finalization in a fresh directory outside the checkout without node_modules or package installation. The owner supplies validated Node/Bun executables separately.
 

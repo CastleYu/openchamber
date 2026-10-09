@@ -7,6 +7,7 @@
 | 内容 | 中文审阅副本 | 英文交接源 |
 | --- | --- | --- |
 | 紧急 CAgent 架构 | [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) | [英文](../CAGENT-INTEGRATION-SPEC.md) |
+| 运行时任务质量准入 | [工作流验收](CAGENT-WORKFLOW-ACCEPTANCE.md) | [英文](../CAGENT-WORKFLOW-ACCEPTANCE.md) |
 | 聊天／同步消费契约 | [消费契约](CAGENT-CONSUMER-CONTRACT.md) | [英文](../CAGENT-CONSUMER-CONTRACT.md) |
 | 调用方与责任边界 | [调用边界](CAGENT-BOUNDARIES.md) | [英文](../CAGENT-BOUNDARIES.md) |
 | 宿主调度契约 | [调度契约](CAGENT-DISPATCH-CONTRACTS.md) | [英文](../../../packages/web/server/lib/agent/DOCUMENTATION.md) |

@@ -81,6 +81,8 @@ CA-02 additionally delivers the [model calibration samples](CAGENT-ADAPTER-WORKB
 
 ### CA-03: local CAgent adaptation and live acceptance
 
+CA-01 through CA-03 also satisfy the [workflow acceptance contract](CAGENT-WORKFLOW-ACCEPTANCE.md#milestone-evidence). Record runtime model-quality dispositions independently of authoring-model calibration and API support. Unattended workflows may remain disabled after minimum interactive acceptance; they cannot bypass their own admission checks.
+
 First prove the same minimum path against documented real CAgent operations. If it cannot preserve required chat semantics, record the gap and keep chat disabled. Accepting read-only operations alone does not complete this checkpoint. After the path works, account for the full feature inventory and extensions before acceptance.
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.

@@ -147,6 +147,8 @@ For CA-02 rehearsals and the CA-03 local-model trial, record packets attempted, 
 
 ## Feature disposition and extensions
 
+For backend-dependent autonomous features, also link the [workflow admission record](CAGENT-WORKFLOW-ACCEPTANCE.md). Protocol support and runtime task quality have separate evidence and disabled reasons. The local agent may propose mappings but cannot grant unattended admission.
+
 The protected runner generates existing feature rows from the frozen consumer registry and additional CAgent capability rows from the documented endpoint inventory. The local agent fills evidence and candidate mappings; the runner computes dependencies and availability. Missing rows fail report validation.
 
 | Required column | Fill rule |

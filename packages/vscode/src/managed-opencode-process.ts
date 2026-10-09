@@ -23,10 +23,10 @@ export function spawnManagedOpenCodeProcess(
   let url: string | null = null;
   const ready = new Promise<void>((resolve, reject) => {
     let stdout = '';
-    let output = '';
+    let outputBytes = 0;
     let settled = false;
-    const capture = (chunk: Buffer) => { output = (output + chunk.toString()).slice(-32 * 1024); };
-    const startupError = (message: string) => new Error(`${message} Binary used: ${options.sourceBinary}.${options.appBundleHint} Output: ${output.trim() || '(none)'}`);
+    const capture = (chunk: Buffer) => { outputBytes += chunk.length; };
+    const startupError = (message: string) => new Error(`${message} Binary used: ${options.sourceBinary}.${options.appBundleHint} Startup output bytes received: ${outputBytes}.`);
     const finish = (error?: Error) => {
       if (settled) return;
       settled = true;

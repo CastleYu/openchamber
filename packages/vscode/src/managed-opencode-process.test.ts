@@ -69,3 +69,69 @@ for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
     }
   });
 }
+
+
+test('managed command preserves literal argv, cwd and child environment', async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-command-'));
+  const marker = path.join(cwd, 'result.json');
+  const registry = path.join(cwd, 'registry');
+  const key = 'OC_COMMAND_FIXTURE';
+  const value = 'fixture-child-value';
+  const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+  const parentValue = process.env[key];
+  const parentCwd = process.cwd();
+  const args = ['', 'two words', '中文', '&echo unexpected', '$HOME', 'a"b', 'tail\\'];
+  process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+  const script = `require('node:fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ pid: process.pid, args: process.argv.slice(1), cwd: process.cwd(), value: process.env[${JSON.stringify(key)}] })); process.stdout.write('opencode server listening on http://127.0.0.1:45678\\n'); setInterval(() => {}, 1000);`;
+  const server = spawnManagedOpenCodeProcess(process.execPath, ['-e', script, ...args], {
+    cwd, env: { ...process.env, [key]: value }, port: 45678, timeoutMs: 3000,
+    signal: new AbortController().signal, sourceBinary: process.execPath, appBundleHint: '',
+  });
+  try {
+    await server.ready;
+    const result = JSON.parse(await fs.readFile(marker, 'utf8'));
+    assert.deepEqual(result.args, args);
+    assert.equal(path.resolve(result.cwd), path.resolve(cwd));
+    assert.equal(result.value, value);
+    assert.equal(process.env[key], parentValue);
+    assert.equal(process.cwd(), parentCwd);
+    assert.equal(server.url, 'http://127.0.0.1:45678');
+    assert.ok(await fs.stat(path.join(registry, result.pid + '.json')));
+    await Promise.all([server.close(), server.close()]);
+    assert.equal(alive(result.pid), false);
+    assert.deepEqual(await fs.readdir(registry), []);
+  } finally {
+    await server.close();
+    if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+    await fs.rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('failed startup excludes child stdout and stderr from diagnostics', async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-diagnostics-'));
+  const registry = path.join(cwd, 'registry');
+  const secret = 'fixture-private-output';
+  const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+  process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+  const script = `process.stderr.write(process.env.OC_DIAGNOSTIC_FIXTURE); process.stdout.write(process.env.OC_DIAGNOSTIC_FIXTURE + '\\nopencode server listening without URL\\n'); setInterval(() => {}, 1000);`;
+  const server = spawnManagedOpenCodeProcess(process.execPath, ['-e', script], {
+    cwd, env: { ...process.env, OC_DIAGNOSTIC_FIXTURE: secret }, port: 45678, timeoutMs: 3000,
+    signal: new AbortController().signal, sourceBinary: process.execPath, appBundleHint: '',
+  });
+  try {
+    await assert.rejects(server.ready, (error: Error) => {
+      assert.match(error.message, /Failed to parse server URL/);
+      assert.equal(error.message.includes(secret), false);
+      assert.match(error.message, /output bytes received/);
+      return true;
+    });
+    assert.equal(server.url, null);
+    assert.deepEqual(await fs.readdir(registry), []);
+  } finally {
+    await server.close();
+    if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+    await fs.rm(cwd, { recursive: true, force: true });
+  }
+});

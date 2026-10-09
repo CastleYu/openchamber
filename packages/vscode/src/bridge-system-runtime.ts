@@ -21,20 +21,28 @@ import { resolveKernelRequest } from './kernelRequest';
 import type { BridgeContext, BridgeResponse } from './bridge';
 import { ENTERPRISE_MODE_ERROR, isEnterpriseMode, publicEnterprisePolicy } from '../../web/server/lib/enterprise-mode.js';
 
-const legacyClient = (ctx: BridgeContext | undefined) => {
+const sessionRuntime = (ctx: BridgeContext | undefined) => {
   const manager = ctx?.manager;
-  const apiUrl = manager?.getApiUrl();
-  if (!manager || !apiUrl) throw new Error('OpenCode is not available');
+  if (!manager) throw new Error('OpenCode kernel is not ready');
   const identity = manager.getKernelRuntime();
-  if (identity.generation !== 'oc1') throw new Error('OpenCode 1 is not active');
-  const client = createOpencodeClient({ baseUrl: apiUrl.replace(/\/+$/, ''), headers: manager.getOpenCodeAuthHeaders(), throwOnError: true });
+  if (identity.profile === OPENCODE_PROFILE.LEGACY) throw new Error('Legacy OpenCode session operations are not yet verified in VS Code');
+  if (identity.generation !== OPENCODE_GENERATION.OC1 && identity.generation !== OPENCODE_GENERATION.OC2) {
+    throw new Error('OpenCode kernel is not ready');
+  }
   const check = () => {
     const current = manager.getKernelRuntime();
-    if (current.generation !== identity.generation || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
+    if (current.generation !== identity.generation || current.profile !== identity.profile
+      || current.endpoint !== identity.endpoint || current.epoch !== identity.epoch) {
       throw new Error('OpenCode connection changed during session state operation');
     }
   };
-  return { client, check };
+  return { generation: identity.generation, check };
+};
+const oc1Client = (ctx: BridgeContext | undefined) => {
+  const manager = ctx?.manager;
+  const apiUrl = manager?.getApiUrl();
+  if (!manager || !apiUrl) throw new Error('OpenCode is not available');
+  return createOpencodeClient({ baseUrl: apiUrl.replace(/\/+$/, ''), headers: manager.getOpenCodeAuthHeaders(), throwOnError: true });
 };
 const providerRuntime = async (ctx: BridgeContext | undefined): Promise<{ generation: 'oc1' | 'oc2'; check: () => void }> => {
   const manager = ctx?.manager;
@@ -394,16 +402,17 @@ export async function handleSystemBridgeMessage(
       const ids = asSessionIdList(body.ids);
       if (ids.length === 0) return { id, type, success: false, error: 'ids must be a non-empty array of session ids' };
       try {
-        const generation = ctx?.manager?.getKernelRuntime().generation;
+        const { generation, check } = sessionRuntime(ctx);
         if (generation === 'oc2') {
           if (!deps.sessionState) throw new Error('Session state store is unavailable');
           const data = type === 'api:sessions/archive'
             ? await deps.sessionState.archive(ids, asTimestamp(body.archivedAt))
             : await deps.sessionState.unarchive(ids);
+          check();
           return { id, type, success: true, data };
         }
         if (generation !== 'oc1') throw new Error('OpenCode kernel is not ready');
-        const { client, check } = legacyClient(ctx);
+        const client = oc1Client(ctx);
         const manager = ctx?.manager;
         if (!manager) throw new Error('OpenCode is not available');
         const directory = body.directory || manager.getWorkingDirectory();
@@ -423,10 +432,12 @@ export async function handleSystemBridgeMessage(
               // The OC1 SDK type omits the nullable archive reset accepted by
               // the session PATCH route, so keep this one wire call explicit.
               const selected = await resolveKernelRequest(manager, `/api/session/${encodeURIComponent(sessionID)}?directory=${encodeURIComponent(directory ?? '')}`);
+              check();
               const response = await fetch(selected.url, { method: 'PATCH',
                 headers: { ...manager.getOpenCodeAuthHeaders(), 'content-type': 'application/json' },
                 body: JSON.stringify({ time: { archived: null } }) });
               selected.assertCurrent();
+              check();
               if (!response.ok) throw new Error(`OpenCode unarchive failed (${response.status})`);
               restored.push({ id: sessionID, archivedAt: null });
             }
@@ -450,17 +461,18 @@ export async function handleSystemBridgeMessage(
       const patch = type === 'api:sessions/metadata:set' ? asSessionMetadata(body.patch) : null;
       if (type === 'api:sessions/metadata:set' && !patch) return { id, type, success: false, error: 'patch must be an object' };
       try {
-        const generation = ctx?.manager?.getKernelRuntime().generation;
+        const { generation, check } = sessionRuntime(ctx);
         const directory = body.directory || ctx?.manager?.getWorkingDirectory() || '';
         if (generation === 'oc2') {
           if (!deps.sessionState) throw new Error('Session state store is unavailable');
           const metadata = patch
             ? await deps.sessionState.setMetadata(sessionId, patch, directory)
             : await deps.sessionState.getMetadata(sessionId, directory);
+          check();
           return { id, type, success: true, data: { metadata } };
         }
         if (generation !== 'oc1') throw new Error('OpenCode kernel is not ready');
-        const { client, check } = legacyClient(ctx);
+        const client = oc1Client(ctx);
         const response = await client.session.get({ sessionID: sessionId, directory });
         check();
         if (!response.data) throw new Error(`session ${sessionId} was not found`);

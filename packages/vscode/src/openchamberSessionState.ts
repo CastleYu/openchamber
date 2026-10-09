@@ -1,3 +1,4 @@
+import { OPENCODE_PROFILE, type OpenCodeProfile } from '../../web/server/lib/opencode/compatibility.js';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { z } from 'zod';
@@ -9,7 +10,7 @@ import type { OpenCodeManager } from './opencode';
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type SessionMetadata = { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
-type Identity = { generation: 'oc2'; endpoint: string; epoch: string | number };
+type Identity = { profile?: OpenCodeProfile; generation: 'oc2'; endpoint: string; epoch: string | number };
 
 export const parseJson = (text: string): JsonValue | null => {
   try {
@@ -77,12 +78,12 @@ export const createSessionStateStore = ({ dataDir, manager }: { dataDir: string;
 
   const capture = (): Identity => {
     const selected = manager.getKernelRuntime();
-    if (selected.generation !== 'oc2' || !selected.endpoint) throw new Error('OC2 session state is unavailable');
-    return { generation: 'oc2', endpoint: selected.endpoint, epoch: selected.epoch };
+    if (selected.generation !== 'oc2' || selected.profile === OPENCODE_PROFILE.LEGACY || !selected.endpoint) throw new Error('OC2 session state is unavailable');
+    return { profile: selected.profile, generation: 'oc2', endpoint: selected.endpoint, epoch: selected.epoch };
   };
   const check = (expected: Identity): void => {
     const current = manager.getKernelRuntime();
-    if (current.generation !== expected.generation || current.endpoint !== expected.endpoint || current.epoch !== expected.epoch) {
+    if (current.generation !== expected.generation || current.profile !== expected.profile || current.endpoint !== expected.endpoint || current.epoch !== expected.epoch) {
       throw changed();
     }
   };

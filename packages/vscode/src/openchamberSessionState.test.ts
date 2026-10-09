@@ -1,3 +1,4 @@
+import { OPENCODE_PROFILE, type OpenCodeProfile } from '../../web/server/lib/opencode/compatibility.js';
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
@@ -12,7 +13,7 @@ after(async () => {
   await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
   await Promise.all(dirs.map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
-const fixture = async () => {
+const fixture = async (onGet?: () => void) => {
   let metadata: Record<string, unknown> = { openchamber: { keep: 'yes' } };
   const requests: Array<{ path: string; method: string; body: Record<string, unknown> | null }> = [];
   const server = createServer(async (req, res) => {
@@ -21,6 +22,7 @@ const fixture = async () => {
     const body = raw.length ? JSON.parse(Buffer.concat(raw).toString('utf8')) as Record<string, unknown> : null;
     requests.push({ path: req.url ?? '', method: req.method ?? '', body });
     if (req.url === '/api/session/ses_1' && req.method === 'GET') {
+      onGet?.();
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ data: { id: 'ses_1', metadata, location: { directory: '/repo' } } }));
       return;
@@ -40,16 +42,17 @@ const fixture = async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-state-'));
   dirs.push(dataDir);
   let generation: 'oc1' | 'oc2' = 'oc2';
+  let profile: OpenCodeProfile = OPENCODE_PROFILE.OC2;
   let epoch = 1;
   let mode: 'managed' | 'external' = 'managed';
   let currentEndpoint = endpoint;
   const manager = {
-    getKernelRuntime: () => ({ generation, endpoint: currentEndpoint, epoch, version: generation === 'oc2' ? '2.0.16' : '1.18.32' }),
+    getKernelRuntime: () => ({ generation, profile, endpoint: currentEndpoint, epoch, version: generation === 'oc2' ? '2.0.16' : '1.18.32' }),
     getOpenCodeAuthHeaders: () => ({}),
     getDebugInfo: () => ({ mode }),
   };
   const store = createSessionStateStore({ dataDir, manager });
-  return { store, dataDir, requests, metadata: () => metadata, setGeneration: (value: 'oc1' | 'oc2') => { generation = value; },
+  return { store, dataDir, requests, setProfile: (value: OpenCodeProfile) => { profile = value; }, metadata: () => metadata, setGeneration: (value: 'oc1' | 'oc2') => { generation = value; },
     setEpoch: (value: number) => { epoch = value; }, setMode: (value: 'managed' | 'external') => { mode = value; },
     setEndpoint: (value: string) => { currentEndpoint = value; } };
 };
@@ -94,5 +97,34 @@ describe('VS Code dual-kernel session state', () => {
     const body = { data: [{ id: 'ses_1', time: { archived: 2 }, metadata: { keep: true } }] };
     assert.deepEqual(overlaySessionResponseBody(body, { ses_1: null }, { ses_1: { other: 'x' } }),
       { data: [{ id: 'ses_1', time: {}, metadata: { keep: true, other: 'x' } }] });
+  });
+});
+
+describe('VS Code scoped session state profile ownership', () => {
+  it('refuses Legacy capture before opening storage or upstream', async () => {
+    const { store, dataDir, requests, setProfile } = await fixture();
+    setProfile(OPENCODE_PROFILE.LEGACY);
+    await assert.rejects(store.archive(['ses_1'], 10), /unavailable/);
+    await assert.rejects(store.getMetadata('ses_1'), /unavailable/);
+    await assert.rejects(store.setMetadata('ses_1', { added: true }), /unavailable/);
+    assert.deepEqual(await fs.readdir(dataDir), []);
+    assert.equal(requests.length, 0);
+  });
+  it('preserves archive data when only the profile changes during a write', async () => {
+    const { store, dataDir, setProfile } = await fixture();
+    await store.archive(['ses_1'], 10);
+    const file = path.join(dataDir, 'sessions-archive.json');
+    const original = await fs.readFile(file, 'utf8');
+    const pending = store.archive(['ses_1'], 20);
+    setProfile(OPENCODE_PROFILE.LEGACY);
+    await assert.rejects(pending, /connection changed/);
+    assert.equal(await fs.readFile(file, 'utf8'), original);
+  });
+  it('rejects delayed metadata and prevents its following PATCH', async () => {
+    let retire = () => {};
+    const { store, requests, setProfile } = await fixture(() => retire());
+    retire = () => setProfile(OPENCODE_PROFILE.LEGACY);
+    await assert.rejects(store.setMetadata('ses_1', { added: true }), /connection changed/);
+    assert.equal(requests.filter(item => item.method === 'PATCH').length, 0);
   });
 });

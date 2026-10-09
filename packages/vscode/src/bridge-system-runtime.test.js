@@ -456,3 +456,60 @@ describe('VS Code provider owner admission', () => {
     expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider operation' });
   });
 });
+
+describe('VS Code session operation ownership', () => {
+  const messages = [
+    { type: 'api:sessions/archive', payload: { ids: ['ses_1'], archivedAt: 42 } },
+    { type: 'api:sessions/unarchive', payload: { ids: ['ses_1'] } },
+    { type: 'api:sessions/metadata:get', payload: { sessionId: 'ses_1' } },
+    { type: 'api:sessions/metadata:set', payload: { sessionId: 'ses_1', patch: { keep: true } } },
+  ];
+  for (const message of messages) {
+    test('refuses Legacy ' + message.type + ' before requests or stores', async () => {
+      const manager = { ...managerFor('oc1'), getKernelRuntime: () => ({ generation: 'oc1', profile: 'legacy-1.2.27', endpoint: 'http://unused.test', epoch: 1 }), getApiUrl: mock() };
+      const operation = mock();
+      const result = await handleSystemBridgeMessage({ id: 'legacy', ...message }, { manager },
+        { ...deps, sessionState: { archive: operation, unarchive: operation, getMetadata: operation, setMetadata: operation } });
+      expect(result).toMatchObject({ success: false, error: 'Legacy OpenCode session operations are not yet verified in VS Code' });
+      expect(operation).not.toHaveBeenCalled();
+      expect(manager.getApiUrl).not.toHaveBeenCalled();
+    });
+    test('rejects retired OC2 ' + message.type + ' results', async () => {
+      let profile = 'oc2';
+      const manager = { ...managerFor('oc2'), getKernelRuntime: () => ({ generation: 'oc2', profile, endpoint: 'http://oc.test', epoch: 1 }) };
+      const operation = mock(async () => { profile = 'legacy-1.2.27'; return {}; });
+      const result = await handleSystemBridgeMessage({ id: 'retired', ...message }, { manager },
+        { ...deps, sessionState: { archive: operation, unarchive: operation, getMetadata: operation, setMetadata: operation } });
+      expect(result).toMatchObject({ success: false, error: 'OpenCode connection changed during session state operation' });
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  for (const type of ['api:sessions/archive', 'api:sessions/unarchive', 'api:sessions/metadata:get', 'api:sessions/metadata:set']) {
+    test('rejects delayed OC1 ' + type + ' and prevents follow-up requests', async () => {
+      let profile = 'oc1';
+      const requests = [];
+      const server = createServer(async (req, res) => {
+        for await (const chunk of req) void chunk;
+        requests.push({ method: req.method, path: req.url });
+        profile = 'legacy-1.2.27';
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ id: 'ses_1', metadata: { keep: true } }));
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      const endpoint = 'http://127.0.0.1:' + server.address().port;
+      const manager = {
+        getKernelRuntime: () => ({ generation: 'oc1', profile, endpoint, epoch: 1 }),
+        getApiUrl: () => endpoint, getStatus: () => 'connected', onStatusChange: () => ({ dispose() {} }),
+        getWorkingDirectory: () => '/repo', getOpenCodeAuthHeaders: () => ({}),
+      };
+      try {
+        const result = await handleSystemBridgeMessage({ id: 'retired', type,
+          payload: { ids: ['ses_1', 'ses_2'], sessionId: 'ses_1', patch: { added: true } } }, { manager }, deps);
+        expect(result).toMatchObject({ success: false, error: 'OpenCode connection changed during session state operation' });
+        expect(requests).toHaveLength(1);
+        if (type.includes('metadata')) expect(requests[0].method).toBe('GET');
+      } finally { await new Promise(resolve => server.close(resolve)); }
+    });
+  }
+});

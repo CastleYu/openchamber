@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: OpenAPI structural inventory
+## Latest checkpoint: finite extension contracts and templates
+
+2026-10-09. The host-owned extension schema and parsers now constrain inputs to text, numbers, booleans, choices and bounded scalar lists, and results to text, fields or bounded tables. Strict manifests require namespaced IDs, bilingual labels, context, effect, current-principal authorization, cancellation/outcome semantics and document references. Unknown versions, extra keys, unsafe keys and executable UI are refused. The offline kit includes a synthetic manifest, values, constants and a handler that refuses before transport, plus a structural-only check command. This is template delivery; host registration, authorization enforcement and rendering remain outstanding.
+
+Eight focused tests pass, including malformed-input refusals without source/path leakage and the actual standalone bundle outside the checkout without node_modules. Changed extension/bundle JavaScript and declarations pass anti-slop, JavaScript passes ESLint, and Web type-check passes. Dead-code retains 2 unused files, 319 exports and 1 duplicate, with no agent module or CAgent script row. No real CAgent API, local model or production extension was exercised.
+
+The ignored output `artifacts/cagent-offline-extensions-20261009` contains ten commands and 94 protected files. Its actual bundled Node verifier passes the independent digest `fbe4dd49d8bd4b9e99e9efd3ef35b1d559491102014d00753be5818cd2732e9d`. English and Chinese instructions are synchronized. CA-01 remains in progress; CA-02 and CA-03 remain incomplete. Production capabilities stay closed, and remaining INT implementation still waits for CA-03. Host completion, local model trials, enforced target permissions, real acceptance, independent remote publication and temporary Release remain outstanding.
+
+## Earlier checkpoint: OpenAPI structural inventory
 
 2026-10-09. The offline kit imports OpenAPI 3.0/3.1 path operations into a catalog and source-selection record. Methods/routes come from source, while effects and request/result contract references require one explicit owner review per operation ID. Missing/duplicate IDs, incomplete reviews, unsupported methods, path references, callbacks and webhooks are refused. These cases retain the manually reviewed catalog path; no API semantics or support is inferred. Source remains local, and new output preserves existing evidence.
 

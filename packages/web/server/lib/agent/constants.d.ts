@@ -1,4 +1,12 @@
 export const AGENT_FAMILY: Readonly<{ OPENCODE: 'opencode'; CAGENT: 'cagent' }>;
+export const AGENT_EXTENSION: Readonly<{
+  VERSION: 1;
+  KIND: Readonly<{ TEXT: 'text'; NUMBER: 'number'; BOOLEAN: 'boolean'; CHOICE: 'choice'; LIST: 'list'; FIELDS: 'fields'; TABLE: 'table' }>;
+  EFFECT: Readonly<{ READ: 'read'; MUTATION: 'mutation' }>;
+  CANCELLATION: Readonly<{ NONE: 'none'; DOCUMENTED: 'documented' }>;
+  OUTCOME: Readonly<{ OBSERVED: 'observed'; ACCEPTED: 'accepted-only' }>;
+  MAX_FIELDS: 32; MAX_ITEMS: 64; MAX_ROWS: 256; MAX_TEXT: 8192;
+}>;
 export const AGENT_ROLE: Readonly<{ USER: 'user'; ASSISTANT: 'assistant'; SYSTEM: 'system'; SYNTHETIC: 'synthetic' }>;
 export const AGENT_PART: Readonly<{ TEXT: 'text'; REASONING: 'reasoning'; TOOL: 'tool'; ATTACHMENT: 'attachment' }>;
 export const AGENT_MESSAGE_STATE: Readonly<{

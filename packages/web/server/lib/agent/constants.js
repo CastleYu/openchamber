@@ -1,4 +1,11 @@
 export const AGENT_FAMILY = Object.freeze({ OPENCODE: 'opencode', CAGENT: 'cagent' });
+export const AGENT_EXTENSION = Object.freeze({ VERSION: 1,
+  KIND: Object.freeze({ TEXT: 'text', NUMBER: 'number', BOOLEAN: 'boolean', CHOICE: 'choice', LIST: 'list', FIELDS: 'fields', TABLE: 'table' }),
+  EFFECT: Object.freeze({ READ: 'read', MUTATION: 'mutation' }),
+  CANCELLATION: Object.freeze({ NONE: 'none', DOCUMENTED: 'documented' }),
+  OUTCOME: Object.freeze({ OBSERVED: 'observed', ACCEPTED: 'accepted-only' }),
+  MAX_FIELDS: 32, MAX_ITEMS: 64, MAX_ROWS: 256, MAX_TEXT: 8192,
+});
 export const AGENT_ROLE = Object.freeze({ USER: 'user', ASSISTANT: 'assistant', SYSTEM: 'system', SYNTHETIC: 'synthetic' });
 export const AGENT_PART = Object.freeze({ TEXT: 'text', REASONING: 'reasoning', TOOL: 'tool', ATTACHMENT: 'attachment' });
 export const AGENT_MESSAGE_STATE = Object.freeze({

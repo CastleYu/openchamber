@@ -8,9 +8,15 @@ node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit
 bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
 ```
 
-命令包包含八个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
+命令包包含十个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行 OpenAPI 导入、扩展结构检查、校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成和可执行适配模型校准。扩展模板、真实本地模型试验及目标权限仍属 CA-02 待办。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成、有限扩展模板和可执行适配模型校准。扩展宿主接入、真实本地模型试验及目标权限仍属 CA-02 待办。
+
+### 有限扩展模板
+
+`templates/extension/` 包含合成清单、输入、结果、常量及拒绝执行的处理器。`schemas/extension-manifest.json` 定义有限词汇。在保护包内执行 `node scripts/cagent/check-extension.mjs --manifest templates/extension/manifest.json --input templates/extension/input.json --result templates/extension/result.json --json` 检查结构。运行时解析器额外落实值的上限及跨字段规则。结果始终标记 `structural-only`，启用状态为 `unavailable`。
+
+输入支持文本、数字、布尔、选项及有界标量列表，结果支持文本、字段和表格。清单声明上下文、副作用、当前身份授权、取消、结果语义和文档引用，不携带启用权限或可执行 UI。样例处理器在传输前拒绝执行。扩展在 Web、Electron、VS Code 或两类移动运行时可用前，必须完成宿主注册、副作用与权限检查、渲染、切换及真实验收。
 
 最终组装读取保护注册表，以原生持久化修正上限重新检查每项注册任务，并将捕获且通过检查的字节一起打包。随后在新的有界子进程中，对组合适配器执行每项操作的保护夹具。多个工厂组合后的行为不一致会阻止发布。命令不将候选进度报告当作验收证据。
 

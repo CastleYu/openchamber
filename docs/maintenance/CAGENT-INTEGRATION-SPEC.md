@@ -6,6 +6,10 @@ This urgent requirement precedes the other implementation work in the [integrati
 
 ## Delivery split and ownership
 
+The implementation path is shared consumers, neutral operation contracts, the guarded host dispatcher, then one selected backend adapter. OpenCode retains its OC1/OC2 and exact Legacy 1.2.27 profiles; CAgent is a separate backend family. The environment-local author supplies documented mappings and bounded codecs at the last boundary. It cannot change the contracts or the dispatcher to accommodate a missing server operation.
+
+Delivery starts with the minimum conversation path, then the offline authoring kit, then environment-local acceptance. Optional CAgent capabilities follow that path. Remaining OpenCode and Legacy implementation waits for CA-03 acceptance, as recorded in the milestone queue.
+
 The [workflow acceptance contract](CAGENT-WORKFLOW-ACCEPTANCE.md) owns runtime model-quality admission separately from adapter support and authoring-model calibration. Its gates apply to autonomous callers and CAgent-only extensions used by them. CA-03 may accept a usable interactive path while explicitly keeping unattended workflows disabled.
 
 Two agents have different roles. CAgent is the runtime backend whose Server API the application calls. The environment-local adaptation agent is a development tool that reads documentation and produces a candidate adapter. They may use the same model, but neither role grants the other authority. The adaptation agent does not approve its output, and runtime CAgent does not modify the application's capability registry.

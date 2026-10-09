@@ -42,6 +42,10 @@ test('standalone bundle runs outside checkout without installed dependencies and
     };
     assert.equal(run(node, 'verify-kit', ['--kit', kit, '--digest', built.digest]).ok, true);
     assert.equal(run(node, 'build-contracts', ['--check']).ok, true);
+    const extension = run(node, 'check-extension', ['--manifest', 'templates/extension/manifest.json',
+      '--input', 'templates/extension/input.json', '--result', 'templates/extension/result.json']);
+    assert.equal(extension.activation, 'unavailable');
+    assert.equal(extension.checkScope, 'structural-only');
     assert.ok(JSON.parse(await fs.readFile(path.join(protectedRoot, 'schemas/declarative-bindings.json'), 'utf8')).properties.operations);
     const citations = [{ document: 'guide', section: 'read' }];
     const text = JSON.stringify({ openapi: '3.1.0', paths: { '/fixture/session': { get: { operationId: 'read', responses: { 200: { description: 'Synthetic session' } } } } } });

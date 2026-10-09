@@ -30,6 +30,20 @@ const health = (version, healthy = true) => ({ body: { healthy, version } });
 const info = (version) => ({ body: { version } });
 
 describe('OpenCode generation detection', () => {
+  it.each(['1.2.27', 'v1.2.27', '1.2.27+build.1'])('does not forward credentials to the undeclared info route on %s', async (version) => {
+    const requests = [];
+    const endpoint = await serve({ '/global/health': health(version) }, requests);
+    const result = await detectOpenCodeGeneration({ endpoint, epoch: 9, headers: { Authorization: 'Basic isolated-fixture' } });
+    expect(result).toEqual({ generation: OPENCODE_GENERATION.OC1, endpoint, epoch: 9, version: version.replace(/^v/, '') });
+    expect(requests).toEqual([{ path: '/global/health', method: 'GET', accept: 'application/json', auth: 'Basic isolated-fixture' }]);
+  });
+
+  it('keeps an unverified 1.2.27 prerelease on the ordinary comparison path', async () => {
+    const requests = [];
+    const endpoint = await serve({ '/global/health': health('1.2.27-rc.1'), '/api/info': info('2.0.20') }, requests);
+    expect((await detectOpenCodeGeneration({ endpoint, epoch: 9 })).generation).toBe(OPENCODE_GENERATION.UNKNOWN);
+    expect(requests.map(request => request.path)).toEqual(['/global/health', '/api/info']);
+  });
   it('uses each generation credential and accepts only its authenticated protocol response', async () => {
     for (const generation of ['oc1', 'oc2']) {
       const calls = [];

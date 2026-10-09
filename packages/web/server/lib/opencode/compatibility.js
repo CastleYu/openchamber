@@ -10,6 +10,7 @@ export const OPENCODE_GENERATION = Object.freeze({
 
 export const MINIMUM_OPENCODE_V2_VERSION = '2.0.15';
 const CREDENTIAL_API_VERSION = '2.0.20';
+const LEGACY_HEALTH_ONLY_VERSION = '1.2.27';
 
 const PROBE_PATH = Object.freeze({
   HEALTH: '/global/health',
@@ -108,11 +109,15 @@ export const detectOpenCodeGeneration = async ({ endpoint, epoch, headers = {}, 
     return { generation: OPENCODE_GENERATION.UNKNOWN, endpoint: null, epoch, version: null };
   }
 
-  const [health, info] = await Promise.all([
-    probe(normalized, PROBE_PATH.HEALTH, headersForGeneration?.(OPENCODE_GENERATION.OC1) ?? headers, fetchImpl, signal),
-    probe(normalized, PROBE_PATH.INFO, headersForGeneration?.(OPENCODE_GENERATION.OC2) ?? headers, fetchImpl, signal),
-  ]);
   const result = (generation, version = null) => ({ generation, endpoint: normalized, epoch, version });
+  const health = await probe(normalized, PROBE_PATH.HEALTH, headersForGeneration?.(OPENCODE_GENERATION.OC1) ?? headers, fetchImpl, signal);
+  // 1.2.27 forwards unknown paths and their headers to its hosted web app.
+  // Its authenticated health identity is sufficient; /api/info is not its API.
+  const healthVersion = health.version?.version;
+  if (healthVersion?.split('+')[0] === LEGACY_HEALTH_ONLY_VERSION) {
+    return result(OPENCODE_GENERATION.OC1, healthVersion);
+  }
+  const info = await probe(normalized, PROBE_PATH.INFO, headersForGeneration?.(OPENCODE_GENERATION.OC2) ?? headers, fetchImpl, signal);
 
   if ((health.kind === 'auth' || info.kind === 'auth') && !headersForGeneration) return result(OPENCODE_GENERATION.UNKNOWN);
   if (health.kind === 'error' && info.kind === 'error') return result(OPENCODE_GENERATION.UNREACHABLE);

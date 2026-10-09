@@ -1,4 +1,8 @@
+import type { JsonValue } from './openchamberSessionState';
 import * as vscode from 'vscode';
+import { CONNECTION_MODE, OPENCODE_CONNECTION, OpenCodeConnectionError, type ConnectionRecord, type PreparedConnection } from '../../web/server/lib/opencode/connection.js';
+import { connectionSettings } from './connection-settings';
+import { createVSCodeConnectionRuntime, type ConnectionTransaction } from './connection-runtime.js';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -72,6 +76,7 @@ export interface OpenCodeManager {
   restart(): Promise<void>;
   upgradeCli(): Promise<void>;
   setWorkingDirectory(path: string): Promise<SetWorkingDirectoryResult>;
+  connectionRequest(raw: JsonValue): Promise<{ status: number; body: unknown }>;
   getStatus(): ConnectionStatus;
   getApiUrl(): string | null;
   getKernelRuntime(): Readonly<OpenCodeGenerationDescriptor>;
@@ -99,9 +104,9 @@ function buildOpenCodeAuthHeader(password: string, generation: OpenCodeGeneratio
   return `Basic ${Buffer.from(`${username}:${password}`, 'utf8').toString('base64')}`;
 }
 
-function readEnvOpenCodePassword(generation: OpenCodeGenerationDescriptor['generation'] = 'unknown'): string {
-  const preferred = generation === 'oc2' ? process.env.OPENCODE_PASSWORD : process.env.OPENCODE_SERVER_PASSWORD;
-  const fallback = generation === 'oc2' ? process.env.OPENCODE_SERVER_PASSWORD : process.env.OPENCODE_PASSWORD;
+function readEnvOpenCodePassword(generation: OpenCodeGenerationDescriptor['generation'] = 'unknown', env: NodeJS.ProcessEnv = process.env): string {
+  const preferred = generation === 'oc2' ? env.OPENCODE_PASSWORD : env.OPENCODE_SERVER_PASSWORD;
+  const fallback = generation === 'oc2' ? env.OPENCODE_SERVER_PASSWORD : env.OPENCODE_PASSWORD;
   return (preferred || '').trim() || (fallback || '').trim();
 }
 
@@ -198,15 +203,6 @@ function stripWrappingQuotes(value: string): string {
   return trimmed;
 }
 
-function appendToPath(dir: string) {
-  const trimmed = (dir || '').trim();
-  if (!trimmed) return;
-  const current = process.env.PATH || '';
-  const parts = current.split(path.delimiter).filter(Boolean);
-  if (parts.includes(trimmed)) return;
-  process.env.PATH = [trimmed, ...parts].join(path.delimiter);
-}
-
 function findExecutableInPath(binaryName: string): string | null {
   const trimmed = (binaryName || '').trim();
   if (!trimmed) {
@@ -278,72 +274,6 @@ function isWindowsOpenCodeDesktopAppPath(candidate: string): boolean {
 
 function isKnownOpenCodeDesktopAppPath(candidate: string): boolean {
   return isMacOpenCodeAppBundlePath(candidate) || isWindowsOpenCodeDesktopAppPath(candidate);
-}
-
-function createConfiguredOpencodeBinaryError(raw: string, normalized: string): Error {
-  const messageSuffix = 'OpenChamber needs the standalone opencode CLI. Install it and set openchamber.opencodeBinary to the CLI path, for example ~/.opencode/bin/opencode, or leave the setting empty to use PATH lookup.';
-  if (isKnownOpenCodeDesktopAppPath(raw) || isKnownOpenCodeDesktopAppPath(normalized)) {
-    const platformName = process.platform === 'win32' ? 'Windows desktop app install' : 'macOS desktop app bundle';
-    return new Error(`Configured OpenCode binary points at the ${platformName}, not the CLI: ${normalized}. ${messageSuffix}`);
-  }
-
-  try {
-    const rawStat = fs.statSync(raw);
-    if (rawStat.isDirectory()) {
-      return new Error(`Configured OpenCode binary directory does not contain an executable ${process.platform === 'win32' ? 'opencode.exe' : 'opencode'}: ${raw}. ${messageSuffix}`);
-    }
-  } catch {
-    // The normalized path check below produces the missing-path error.
-  }
-
-  try {
-    const stat = fs.statSync(normalized);
-    if (!stat.isFile()) {
-      return new Error(`Configured OpenCode binary is not a file: ${normalized}. ${messageSuffix}`);
-    }
-    return new Error(`Configured OpenCode binary is not executable: ${normalized}. ${messageSuffix}`);
-  } catch {
-    return new Error(`Configured OpenCode binary not found: ${normalized}. ${messageSuffix}`);
-  }
-}
-
-function validateConfiguredOpencodeBinaryForManagedStart(): string | null {
-  const candidates: string[] = [];
-  try {
-    const config = vscode.workspace.getConfiguration('openchamber');
-    const raw = config.get<string>('opencodeBinary') || '';
-    if (raw.trim()) {
-      candidates.push(raw.trim());
-    }
-  } catch {
-    // ignore
-  }
-
-  try {
-    const settings = readOpenChamberSettings();
-    const raw = typeof settings.opencodeBinary === 'string' ? settings.opencodeBinary.trim() : '';
-    if (raw) {
-      candidates.push(raw);
-    }
-  } catch {
-    // ignore
-  }
-
-  const raw = candidates[0];
-  if (!raw) {
-    return null;
-  }
-
-  const normalized = normalizeConfiguredOpencodeBinary(raw);
-  if (!normalized) {
-    return null;
-  }
-
-  if (isExecutable(normalized) && !isKnownOpenCodeDesktopAppPath(normalized)) {
-    return normalized;
-  }
-
-  throw createConfiguredOpencodeBinaryError(raw, normalized);
 }
 
 function resolveOpencodeCliPath(): string | null {
@@ -723,9 +653,11 @@ function spawnManagedOpenCodeServer(
   timeoutMs: number,
   signal: AbortSignal,
   env: NodeJS.ProcessEnv,
+  prepared: Exclude<PreparedConnection, { mode: 'external' }>,
 ) {
-  const binary = stripWrappingQuotes(process.env.OPENCODE_BINARY || 'opencode') || 'opencode';
-  const launch = resolveWindowsLaunchSpec(binary, ['serve', '--hostname', '127.0.0.1', '--port', String(port)]);
+  const binary = prepared.binary;
+  const args = prepared.mode === CONNECTION_MODE.COMMAND ? prepared.args : ['serve', '--hostname', '127.0.0.1', '--port', String(port)];
+  const launch = { binary: prepared.launchSpec.binary, args: [...prepared.launchSpec.args, ...args] };
   return spawnManagedOpenCodeProcess(launch.binary, launch.args, {
     cwd: workingDirectory,
     env,
@@ -799,10 +731,12 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
 
   const config = vscode.workspace.getConfiguration('openchamber');
   const configuredApiUrl = config.get<string>('apiUrl') || '';
-  const useConfiguredUrl = configuredApiUrl && configuredApiUrl.trim().length > 0;
+  let selectedConnection: PreparedConnection | null = null;
+  let transitionActive = false;
+  const externalAuthEnv = { OPENCODE_PASSWORD: process.env.OPENCODE_PASSWORD, OPENCODE_SERVER_PASSWORD: process.env.OPENCODE_SERVER_PASSWORD };
 
   let configuredPort: number | null = null;
-  if (useConfiguredUrl) {
+  if (configuredApiUrl.trim()) {
     try {
       const parsed = new URL(configuredApiUrl);
       if (parsed.port) {
@@ -825,9 +759,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
   };
 
   const getApiUrl = (): string | null => {
-    if (useConfiguredUrl && configuredApiUrl) {
-      return configuredApiUrl.replace(/\/+$/, '');
-    }
+    if (selectedConnection?.mode === CONNECTION_MODE.EXTERNAL) return selectedConnection.endpoint;
     if (managedApiUrlOverride) {
       return managedApiUrlOverride.replace(/\/+$/, '');
     }
@@ -842,7 +774,9 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
 
   const getOpenCodeAuthHeaders = (selectedGeneration?: OpenCodeGenerationDescriptor['generation']): Record<string, string> => {
     const generation = selectedGeneration ?? kernelRuntime.get().generation;
-    const password = (managedPassword || readEnvOpenCodePassword(generation) || servicePassword || '').trim();
+    const password = (selectedConnection?.mode === CONNECTION_MODE.EXTERNAL
+      ? readEnvOpenCodePassword(generation, externalAuthEnv) || servicePassword || ''
+      : managedPassword || readEnvOpenCodePassword(generation) || '').trim();
     if (!password) {
       return {};
     }
@@ -855,6 +789,44 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     getEndpoint: () => status === 'disconnected' || status === 'error' ? null : getApiUrl(),
     getHeaders: () => getOpenCodeAuthHeaders(),
     headersForGeneration: getOpenCodeAuthHeaders,
+  });
+
+  const resolveConnectionBinary = (record: Exclude<ConnectionRecord, { mode: 'external' }>): string => {
+    const binary = record.mode === CONNECTION_MODE.PATH ? findExecutableInPath('opencode')
+      : record.mode === CONNECTION_MODE.COMMAND || record.mode === CONNECTION_MODE.CONFIGURED ? record.exe : null;
+    if (!binary || !isExecutable(binary) || isKnownOpenCodeDesktopAppPath(binary)) throw new OpenCodeConnectionError('The selected executable is unavailable');
+    // A shell shim cannot preserve the confirmed argv contract. Native executables remain direct launches.
+    if (process.platform === 'win32' && ['.cmd', '.bat'].includes(path.extname(binary).toLowerCase())) throw new OpenCodeConnectionError('A native executable is required for this connection', 501);
+    return binary;
+  };
+  const connections = createVSCodeConnectionRuntime({
+    resolveBinary: resolveConnectionBinary, resolveLaunchSpec: binary => ({ binary, args: [] }), stat: fs.promises.stat,
+    getEnv: () => process.env, getRuntime: kernelRuntime.get, getHeaders: getOpenCodeAuthHeaders,
+    getDirectories: () => [workingDirectory, ...(vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri.fsPath)],
+    getState: () => ({ ready: status === 'connected', transitioning: transitionActive || status === 'connecting', external: selectedConnection?.mode === CONNECTION_MODE.EXTERNAL }),
+    getOwner: () => ({ ...kernelRuntime.get(), revision: lifecycleRevision }),
+    readSettings: connectionSettings.read, readPrevious: connectionSettings.previous, saveConnection: connectionSettings.save,
+    getConfigured: () => [
+      { source: 'settings', key: 'openchamber.apiUrl', value: config.get<string>('apiUrl') || '', mode: CONNECTION_MODE.EXTERNAL },
+      { source: 'settings', key: 'openchamber.opencodeBinary', value: config.get<string>('opencodeBinary') || '', mode: CONNECTION_MODE.CONFIGURED },
+    ],
+    replace: (transaction: ConnectionTransaction) => {
+      const revision = lifecycleRevision;
+      return enqueueOperation(async () => {
+        if (revision !== lifecycleRevision) throw new OpenCodeConnectionError('Connection changed', 409);
+        transitionActive = true;
+        try {
+          const prepared = await transaction.resolve();
+          await transaction.beforeRetire();
+          await stopInternal();
+          if (revision !== lifecycleRevision) throw new OpenCodeConnectionError('Connection changed', 409);
+          await transaction.commit();
+          if (revision !== lifecycleRevision) throw new OpenCodeConnectionError('Connection changed', 409);
+          await startInternal(workingDirectory, { rotateManaged: true, prepared });
+          if (status !== 'connected') throw new OpenCodeConnectionError('Replacement is not ready', 503);
+        } finally { transitionActive = false; }
+      });
+    },
   });
 
   const setManagedPasswordState = (
@@ -891,8 +863,12 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
 
   async function startInternal(
     workdir?: string,
-    options: { rotateManaged?: boolean } = {}
+    options: { rotateManaged?: boolean; prepared?: PreparedConnection } = {}
   ): Promise<void> {
+    if (server) {
+      if (status === 'connected') return;
+      throw new OpenCodeConnectionError('Owned process cleanup is unresolved', 409);
+    }
     startCount += 1;
     setStatus('connecting');
     lastStartAt = Date.now();
@@ -902,24 +878,6 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
       workingDirectory = normalizeWindowsDriveLetter(workdir.trim());
     } else {
       workingDirectory = workspaceDirectory();
-    }
-
-    if (useConfiguredUrl && configuredApiUrl) {
-      setStatus('connecting');
-      if (!readEnvOpenCodePassword()) {
-        applyLoginShellEnvSnapshot();
-        servicePassword = readOpenCodeServicePassword(configuredApiUrl);
-      }
-      setStatus('connected');
-      return;
-    }
-
-    // If server already running, don't spawn another
-    if (server) {
-      if (status !== 'connected') {
-        setStatus('connected');
-      }
-      return;
     }
 
     const startup = new AbortController();
@@ -949,20 +907,24 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     try {
       applyLoginShellEnvSnapshot();
 
-      const configuredCli = validateConfiguredOpencodeBinaryForManagedStart();
-      if (configuredCli) {
-        cliPath = configuredCli;
-        appendToPath(path.dirname(configuredCli));
-        process.env.OPENCODE_BINARY = configuredCli;
+      const prepared = options.prepared ?? await connections.prepareConnection(connectionSettings.read()[OPENCODE_CONNECTION.SETTING] ?? null);
+      startup.signal.throwIfAborted();
+      selectedConnection = prepared;
+      if (prepared.mode === CONNECTION_MODE.EXTERNAL) {
+        managedPassword = null;
+        servicePassword = null;
+        if (!readEnvOpenCodePassword('unknown', externalAuthEnv)) servicePassword = readOpenCodeServicePassword(prepared.endpoint);
+        const ready = await waitForReady(prepared.endpoint, READY_CHECK_TIMEOUT_MS, getOpenCodeAuthHeaders(), startup.signal, getOpenCodeAuthHeaders);
+        startup.signal.throwIfAborted();
+        if (!ready.ok) throw new Error('External OpenCode is not ready');
+        version = ready.version;
+        lastReadyElapsedMs = ready.elapsedMs;
+        lastReadyAttempts = ready.attempts;
+        setStatus('connected');
+        await kernelRuntime.refresh();
+        return;
       }
-
-      // Best-effort: locate CLI even when VS Code PATH is stale.
-      const resolvedCli = configuredCli || resolveOpencodeCliPath();
-      if (resolvedCli) {
-        cliPath = resolvedCli;
-        appendToPath(path.dirname(resolvedCli));
-        process.env.OPENCODE_BINARY = resolvedCli;
-      }
+      cliPath = prepared.binary;
 
       await ensureManagedOpenCodeServerPassword({
         rotateManaged: options.rotateManaged === true,
@@ -970,13 +932,15 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
 
       // Match the web runtime: keep the server process in a neutral cwd and pass
       // the selected workspace through explicit `directory` API parameters.
-      const serverCwd = serverWorkingDirectory();
+      const serverCwd = prepared.mode === CONNECTION_MODE.COMMAND ? prepared.cwd : serverWorkingDirectory();
       startup.signal.throwIfAborted();
       fs.mkdirSync(serverCwd, { recursive: true });
       const port = await allocateManagedOpenCodePort();
       startup.signal.throwIfAborted();
-      serverEnv = applyProviderEnvAliases({ ...process.env });
-      server = spawnManagedOpenCodeServer(serverCwd, port, READY_CHECK_TIMEOUT_MS, startup.signal, serverEnv);
+      const launchEnv = { ...process.env };
+      if (prepared.mode === CONNECTION_MODE.COMMAND) Object.assign(launchEnv, prepared.commandEnv);
+      serverEnv = applyProviderEnvAliases(launchEnv);
+      server = spawnManagedOpenCodeServer(serverCwd, port, READY_CHECK_TIMEOUT_MS, startup.signal, serverEnv, prepared);
       await server.ready;
 
       if (server && server.url) {
@@ -990,6 +954,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
           detectedPort = resolvePortFromUrl(ready.baseUrl);
           version = ready.version;
           setStatus('connected');
+          await kernelRuntime.refresh();
         } else {
           throw new Error('Server started but health check failed');
         }
@@ -1116,7 +1081,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     stop,
     restart,
     upgradeCli: () => enqueueOperation(async () => {
-      if (useConfiguredUrl) throw new Error('External OpenCode cannot be upgraded by OpenChamber.');
+      if (selectedConnection?.mode === CONNECTION_MODE.EXTERNAL) throw new Error('External OpenCode cannot be upgraded by OpenChamber.');
       const binary = cliPath || resolveOpencodeCliPath();
       if (!binary) throw new Error('OpenCode CLI could not be found.');
       await runOpenCodeCliUpgrade(resolveWindowsLaunchSpec(binary, []), {
@@ -1125,6 +1090,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
       });
     }),
     setWorkingDirectory,
+    connectionRequest: connections.request,
     getStatus: () => status,
     getApiUrl,
     getKernelRuntime: kernelRuntime.get,
@@ -1142,13 +1108,13 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
       const secureConnection = Boolean(getOpenCodeAuthHeaders().Authorization);
       const detectedCliPath = cliPath || resolveOpencodeCliPath();
       return {
-        mode: useConfiguredUrl && configuredApiUrl ? 'external' : 'managed',
+        mode: selectedConnection?.mode === CONNECTION_MODE.EXTERNAL ? 'external' : 'managed',
         status,
         lastError,
         workingDirectory,
         cliAvailable: !cliMissing || Boolean(detectedCliPath),
         cliPath: detectedCliPath,
-        configuredApiUrl: useConfiguredUrl && configuredApiUrl ? configuredApiUrl.replace(/\/+$/, '') : null,
+        configuredApiUrl: selectedConnection?.mode === CONNECTION_MODE.EXTERNAL ? selectedConnection.endpoint : null,
         configuredPort,
         detectedPort,
         apiPrefix: '',

@@ -1,4 +1,6 @@
+import { z } from 'zod';
 import * as vscode from 'vscode';
+import { CONNECTION_BRIDGE } from './connection-runtime.js';
 import { type OpenCodeManager } from './opencode';
 import { handleStandardGitBridgeMessage } from './bridge-git-runtime';
 import { handleSpecialGitBridgeMessage } from './bridge-git-special-runtime';
@@ -77,6 +79,12 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
   const { id, type, payload } = message;
 
   try {
+    if (type === CONNECTION_BRIDGE) {
+      const parsed = z.json().safeParse(payload);
+      const data = !parsed.success ? { status: 400, body: { error: 'invalid_connection_request' } }
+        : ctx?.manager ? await ctx.manager.connectionRequest(parsed.data) : { status: 501, body: { error: 'unsupported_runtime' } };
+      return { id, type, success: true, data };
+    }
     const permissionAutoAcceptResponse = await handlePermissionAutoAcceptBridgeMessage(
       { id, type, payload },
       ctx?.context,

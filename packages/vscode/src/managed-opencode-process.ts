@@ -1,6 +1,9 @@
 import { spawnOwnedProcess } from './owned-process';
 import { registerManagedProcess, unregisterManagedProcess } from './opencodeProcessRegistry';
 
+// OC1 and OC2 emit different exact readiness prefixes.
+const READY_PREFIXES = Object.freeze(['opencode server listening', 'server listening']);
+
 export function spawnManagedOpenCodeProcess(
   binary: string,
   args: string[],
@@ -47,7 +50,7 @@ export function spawnManagedOpenCodeProcess(
       const lines = stdout.split('\n');
       stdout = (lines.pop() ?? '').slice(-32 * 1024);
       for (const line of lines) {
-        if (!line.startsWith('opencode server listening')) continue;
+        if (!READY_PREFIXES.some(prefix => line.startsWith(prefix))) continue;
         const match = line.match(/on\s+(https?:\/\/[^\s]+)/);
         if (!match) { finish(startupError('Failed to parse server URL.')); return; }
         url = match[1];

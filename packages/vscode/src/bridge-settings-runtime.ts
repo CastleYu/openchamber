@@ -1,4 +1,6 @@
 import { isOpenCodeSelection, OPENCODE_SETTING } from '../../web/server/lib/opencode/compatibility.js';
+import { OPENCODE_CONNECTION } from '../../web/server/lib/opencode/connection.js';
+import { connectionSettings, serializeSettingsWrite, writeSettingsAtomic } from './connection-settings';
 import { OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -235,21 +237,6 @@ const readPreferencesFromDisk = (): PreferencesReadResult => {
   return result;
 };
 
-// Atomic write: tmp file + rename, so readers never see a partial JSON. Throws
-// on failure (after removing the tmp file) so a failed save is reported, not
-// mistaken for success.
-const writeJsonAtomic = async (filePath: string, text: string): Promise<void> => {
-  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-  const tmp = `${filePath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  try {
-    await fs.promises.writeFile(tmp, text, 'utf8');
-    await fs.promises.rename(tmp, filePath);
-  } catch (error) {
-    await fs.promises.rm(tmp, { force: true }).catch(() => {});
-    throw error;
-  }
-};
-
 const writeJsonAtomicSync = (filePath: string, text: string): void => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const tmp = `${filePath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -290,7 +277,7 @@ const readSharedSettingsFromDisk = (): Record<string, unknown> => {
 // Write a complete merged document: profile keys go to preferences.json (keeping
 // the stamps of unchanged values), everything else to settings.json. A key the
 // document no longer carries leaves whichever file owned it.
-const writeSharedSettingsToDisk = async (
+const writeSharedSettingsToDiskInner = async (
   document: Record<string, unknown>,
   changedKeys: Iterable<string> | null = null,
 ): Promise<void> => {
@@ -299,7 +286,7 @@ const writeSharedSettingsToDisk = async (
     console.warn('[OpenChamber] preferences.json is unreadable; profile settings were not saved.');
     // settings.json keeps whatever legacy profile copy it already holds.
     const onDisk = readSettingsJsonFromDisk();
-    await writeJsonAtomic(OPENCHAMBER_SHARED_SETTINGS_PATH, JSON.stringify({
+    await writeSettingsAtomic(OPENCHAMBER_SHARED_SETTINGS_PATH, JSON.stringify({
       ...instancePartOf(document),
       ...profilePartOf(onDisk),
     }, null, 2));
@@ -312,10 +299,15 @@ const writeSharedSettingsToDisk = async (
     surface: VSCODE_SETTINGS_SURFACE,
     changedKeys,
   });
-  await writeJsonAtomic(OPENCHAMBER_PREFERENCES_PATH, serializePreferencesDocument(nextFields));
+  await writeSettingsAtomic(OPENCHAMBER_PREFERENCES_PATH, serializePreferencesDocument(nextFields));
   // The legacy copy of the profile's base values rides along for older builds.
-  await writeJsonAtomic(OPENCHAMBER_SHARED_SETTINGS_PATH, JSON.stringify(legacySettingsDocumentOf(document, nextFields), null, 2));
+  await writeSettingsAtomic(OPENCHAMBER_SHARED_SETTINGS_PATH, JSON.stringify(legacySettingsDocumentOf(document, nextFields), null, 2));
 };
+
+const writeSharedSettingsToDisk = (document: Parameters<typeof writeSharedSettingsToDiskInner>[0], changedKeys: Iterable<string> | null = null): Promise<void> => serializeSettingsWrite(async () => {
+  const current = connectionSettings.read();
+  await writeSharedSettingsToDiskInner({ ...document, [OPENCODE_CONNECTION.SETTING]: current[OPENCODE_CONNECTION.SETTING] ?? null }, changedKeys);
+});
 
 // Fields derived from runtime context — never persisted, always recomputed.
 const DERIVED_FIELDS = new Set(['themeVariant', 'lastDirectory']);

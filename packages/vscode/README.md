@@ -50,8 +50,8 @@ Select code in the editor, right-click, and find the **OpenChamber** submenu:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `openchamber.apiUrl` | _(empty)_ | URL of an external OpenCode API server. Leave empty to auto-start a local instance. |
-| `openchamber.opencodeBinary` | _(empty)_ | Absolute path to the `opencode` CLI binary. Useful when PATH lookup fails. Requires window reload to apply. |
+| `openchamber.apiUrl` | _(empty)_ | External OpenCode URL offered as an unconfirmed connection candidate. Confirm it in OpenChamber before use. |
+| `openchamber.opencodeBinary` | _(empty)_ | Absolute CLI path offered as an unconfirmed connection candidate. Connection changes use the explicit review and apply flow. |
 
 ## Requirements
 

@@ -11,7 +11,7 @@ const alive = (pid: number) => {
 const readPids = async (marker: string) => (await fs.readFile(marker, 'utf8').catch(() => ''))
   .trim().split('\n').filter(Boolean).map(Number);
 
-for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
+for (const mode of ['timeout', 'malformed', 'abort', 'ready', 'oc2-ready']) {
   test(`managed ${mode} reaps parent and SIGTERM-resistant descendant`, async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-managed-'));
     const marker = path.join(cwd, 'pids');
@@ -22,6 +22,7 @@ for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
     let message = '';
     if (mode === 'malformed') message = 'opencode server listening without URL\n';
     if (mode === 'ready') message = 'opencode server listening on http://127.0.0.1:45678\n';
+    if (mode === 'oc2-ready') message = 'server listening on http://127.0.0.1:45678\n';
     const script = `
       require('node:fs').appendFileSync(${JSON.stringify(marker)}, process.pid + '\\n');
       const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(descendant)}], { stdio: ['ignore', 'pipe', 'ignore'] });
@@ -48,7 +49,7 @@ for (const mode of ['timeout', 'malformed', 'abort', 'ready']) {
       }
       if (mode === 'abort') controller.abort();
       const error = await result;
-      if (mode === 'ready') {
+      if (mode === 'ready' || mode === 'oc2-ready') {
         assert.equal(error, null);
         assert.equal(server.url, 'http://127.0.0.1:45678');
         await Promise.all([server.close(), server.close()]);

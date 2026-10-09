@@ -25,6 +25,8 @@ known endpoint or a retired returned descriptor. Its normal epoch advancement
 when resolving an unknown generation remains valid. Repository Skill installation
 checks the captured owner before replacing files, as described below.
 
+Confirmed connection ownership is defined in the [integration specification](../../../docs/maintenance/OPENCODE-INTEGRATION-SPEC.md#vs-code-confirmed-connection-ownership), with a synchronized [Chinese review copy](../../../docs/maintenance/zh-CN/OPENCODE-INTEGRATION-SPEC.md). The manager adopts that contract through connection-runtime.js and connection-settings.ts. The managed process accepts the established OC1 and OC2 readiness prefixes.
+
 ## Runtime modules
 
 - `bridge.ts`

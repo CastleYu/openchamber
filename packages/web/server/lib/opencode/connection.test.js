@@ -93,6 +93,23 @@ describe('connection migration discovery', () => {
     expect(snapshot.candidates[0].record.confirmed).toBe(false);
     expect(JSON.stringify(snapshot)).not.toContain('fixture detail');
   });
+  it('keeps native extension settings provenance and never confirms discovered values', () => {
+    const configured = [
+      { source: 'settings', key: 'openchamber.apiUrl', value: 'https://example.test', mode: CONNECTION_MODE.EXTERNAL },
+      { source: 'settings', key: 'openchamber.opencodeBinary', value: exe, mode: CONNECTION_MODE.CONFIGURED },
+    ];
+    const before = JSON.stringify(configured);
+    const snapshot = describeOpenCodeConnections({ settings: {}, env: {}, configured, resolveBinary });
+    expect(snapshot.error).toBe('conflict');
+    expect(snapshot.candidates.map(item => [item.source, item.key])).toEqual(configured.map(item => [item.source, item.key]));
+    expect(snapshot.candidates.every(item => item.record.confirmed === false)).toBe(true);
+    expect(JSON.stringify(configured)).toBe(before);
+    const saved = records[2];
+    const confirmed = describeOpenCodeConnections({ settings: { opencodeConnection: saved }, env: {}, configured, resolveBinary });
+    expect(confirmed.saved).toEqual(saved);
+    expect(confirmed.candidates).toEqual([]);
+    expect(confirmed.error).toBeNull();
+  });
   it('keeps invalid saved state visible while allowing valid imported candidates to be edited', () => {
     const snapshot = describeOpenCodeConnections({ settings: { opencodeConnection: { mode: 'guessed' }, opencodeBinary: exe }, env: {}, resolveBinary });
     expect(snapshot.error).toBe('invalid'); expect(snapshot.saved).toBeNull();

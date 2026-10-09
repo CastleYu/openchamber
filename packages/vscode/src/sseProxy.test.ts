@@ -4,6 +4,7 @@ import type { OpenCodeManager } from './opencode';
 import { openSseProxy } from './sseProxy';
 
 const createManager = (): OpenCodeManager => ({
+  connectionRequest: async () => ({ status: 501, body: { error: 'unsupported_runtime' } }),
   start: async () => {},
   stop: async () => {},
   restart: async () => {},

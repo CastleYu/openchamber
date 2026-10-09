@@ -65,7 +65,7 @@ const valueSchema = z.string().trim().min(1);
 const candidateValue = value => valueSchema.safeParse(value);
 
 /** Filesystem discovery only: no probe, launch, write or legacy resolver mutation. */
-export const describeOpenCodeConnections = ({ settings, env, resolveBinary }) => {
+export const describeOpenCodeConnections = ({ settings, env, resolveBinary, configured = [] }) => {
   const candidates = [];
   const modes = Object.values(CONNECTION_MODE).map(mode => {
     if (mode !== CONNECTION_MODE.PATH && mode !== CONNECTION_MODE.BUNDLED) return { mode, available: true };
@@ -91,6 +91,7 @@ export const describeOpenCodeConnections = ({ settings, env, resolveBinary }) =>
       candidates.push({ source, key, record: { ...record, confirmed: false }, resolved, error: null });
     } catch { candidates.push({ source, key, record: { ...record, confirmed: false }, error: ISSUE.UNAVAILABLE }); }
   };
+  for (const item of configured) add(item.source, item.key, item.value, item.mode);
   add(SOURCE.ENV, INPUT.HOST, env[INPUT.HOST], CONNECTION_MODE.EXTERNAL);
   for (const key of INPUT.SKIP) if (env[key] === 'true' && !candidateValue(env[INPUT.HOST]).success) candidates.push({ source: SOURCE.ENV, key, record: null, error: ISSUE.INVALID });
   for (const key of OPENCODE_CONNECTION.BINARY_ENV_KEYS) add(SOURCE.ENV, key, env[key], CONNECTION_MODE.CONFIGURED);

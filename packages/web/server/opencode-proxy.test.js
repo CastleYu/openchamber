@@ -5,7 +5,7 @@ import path from 'path';
 
 import { createSseBoundaryTracker, registerOpenCodeProxy, writeSseChunkWithBackpressure } from './lib/opencode/proxy.js';
 import { AGENT_ERROR } from './lib/agent/constants.js';
-import { OPENCODE_GENERATION } from './lib/opencode/compatibility.js';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './lib/opencode/compatibility.js';
 
 const listen = (app, host = '127.0.0.1') => new Promise((resolve, reject) => {
   const server = app.listen(0, host, () => resolve(server));
@@ -35,6 +35,58 @@ describe('OpenCode proxy SSE forwarding', () => {
     await closeServer(upstreamServer);
     proxyServer = undefined;
     upstreamServer = undefined;
+  });
+
+  it('refuses unaccepted Legacy forwarding before prefix, readiness, credentials or transport', async () => {
+    let reads = 0;
+    let requests = 0;
+    let prefixes = 0;
+    const app = express();
+    app.get('/api/health', (_req, res) => res.json({ owned: true }));
+    app.get('/api/config/settings', (_req, res) => res.json({ owned: true }));
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 6000,
+      getRuntime: () => { reads += 1; return { openCodePort: null, isOpenCodeReady: false }; },
+      getKernelRuntime: () => ({ generation: OPENCODE_GENERATION.OC1, profile: OPENCODE_PROFILE.LEGACY, endpoint: null, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => { throw new Error('must not read credentials'); },
+      buildOpenCodeUrl: () => { requests += 1; throw new Error('must not forward'); },
+      ensureOpenCodeApiPrefix: () => { prefixes += 1; },
+    });
+    reads = 0;
+    proxyServer = await listen(app);
+    const origin = 'http://127.0.0.1:' + proxyServer.address().port;
+    for (const [route, method] of [['config', 'GET'], ['config/agents', 'POST'], ['session/s/message', 'POST'], ['event', 'GET'], ['global/event', 'GET'], ['provider/p/oauth/callback', 'POST'], ['mcp/m/auth/authenticate', 'POST']]) {
+      const response = await fetch(origin + '/api/' + route, { method });
+      expect(response.status).toBe(501);
+      expect(await response.json()).toEqual({ error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY });
+    }
+    for (const route of ['health', 'config/settings']) {
+      expect(await (await fetch(origin + '/api/' + route)).json()).toEqual({ owned: true });
+    }
+    expect(reads).toBe(0);
+    expect(requests).toBe(0);
+    expect(prefixes).toBe(0);
+  });
+
+  it('refuses a held readiness request when its profile becomes Legacy', async () => {
+    let profile = OPENCODE_PROFILE.OC1;
+    let enter;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    const app = express();
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 6000,
+      getRuntime: () => { if (proxyServer) enter(); return { openCodePort: null, isOpenCodeReady: false }; },
+      getKernelRuntime: () => ({ generation: OPENCODE_GENERATION.OC1, profile, endpoint: null, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => { throw new Error('must not read credentials'); },
+      buildOpenCodeUrl: () => { throw new Error('must not forward'); }, ensureOpenCodeApiPrefix: () => {},
+    });
+    proxyServer = await listen(app);
+    const response = fetch('http://127.0.0.1:' + proxyServer.address().port + '/api/config');
+    await entered;
+    profile = OPENCODE_PROFILE.LEGACY;
+    const refused = await response;
+    expect(refused.status).toBe(501);
+    expect(await refused.json()).toEqual({ error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY });
   });
 
   it('refuses unsupported HTTP, mutation and SSE paths before readiness or upstream work', async () => {
@@ -82,6 +134,35 @@ describe('OpenCode proxy SSE forwarding', () => {
     const refused = await response;
     expect(refused.status).toBe(501);
     expect(await refused.json()).toEqual({ error: AGENT_ERROR.UNSUPPORTED });
+  });
+
+  it('discards an upstream SSE result after a profile-only change', async () => {
+    let profile = OPENCODE_PROFILE.OC1;
+    let enter;
+    let finish;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    const upstream = express();
+    upstream.get('/global/event', (_req, res) => {
+      finish = () => { res.setHeader('Content-Type', 'text/event-stream'); res.end('data: stale\n\n'); };
+      enter();
+    });
+    upstreamServer = await listen(upstream);
+    const upstreamPort = upstreamServer.address().port;
+    const app = express();
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 0,
+      getRuntime: () => ({ openCodePort: upstreamPort, isOpenCodeReady: true }),
+      getKernelRuntime: () => ({ generation: OPENCODE_GENERATION.OC1, profile, endpoint: 'http://127.0.0.1:' + upstreamPort, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => ({}),
+      buildOpenCodeUrl: (requestPath) => 'http://127.0.0.1:' + upstreamPort + requestPath,
+      ensureOpenCodeApiPrefix: () => {},
+    });
+    proxyServer = await listen(app);
+    const pending = fetch('http://127.0.0.1:' + proxyServer.address().port + '/api/global/event');
+    await entered;
+    profile = OPENCODE_PROFILE.LEGACY;
+    finish();
+    expect(await (await pending).text()).toBe('');
   });
 
   it('forwards event streams with nginx-safe headers', async () => {

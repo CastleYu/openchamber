@@ -14,7 +14,7 @@ import { DEFAULT_UPSTREAM_STALL_TIMEOUT_MS } from '../event-stream/upstream-read
 import { recordStartupPerformance } from './startup-performance.js';
 import { getWorktreeBootstrapStatus } from '../git/service.js';
 import { AGENT_ERROR } from '../agent/constants.js';
-import { OPENCODE_GENERATION } from './compatibility.js';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './compatibility.js';
 
 const DEFAULT_SSE_HEARTBEAT_INTERVAL_MS = 20_000;
 const directSseRetireCallbacks = new Set();
@@ -325,6 +325,11 @@ export const registerOpenCodeProxy = (app, deps) => {
 
   const isAbortError = (error) => error?.name === 'AbortError';
   const kernel = () => getKernelRuntime?.() ?? { generation: 'oc1' };
+  const refuseLegacy = (res) => {
+    if (kernel().profile !== OPENCODE_PROFILE.LEGACY) return false;
+    res.status(501).json({ error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY });
+    return true;
+  };
   const isOc2 = () => kernel().generation === 'oc2';
   const upstreamPath = (requestPath, generation = kernel().generation) =>
     generation === 'oc2' ? requestPath : requestPath.replace(/^\/api(?=\/|\?|$)/, '') || '/';
@@ -520,6 +525,7 @@ export const registerOpenCodeProxy = (app, deps) => {
   };
 
   const forwardSseRequest = async (req, res) => {
+    if (refuseLegacy(res)) return;
     const selected = kernel();
     const generation = selected.generation;
     if (generation !== 'oc1' && generation !== 'oc2') return res.status(503).json({ error: 'OpenCode generation unavailable' });
@@ -527,7 +533,7 @@ export const registerOpenCodeProxy = (app, deps) => {
     const closeUpstream = () => abortController.abort();
     const isCurrent = () => {
       const current = kernel();
-      return current.generation === selected.generation && current.endpoint === selected.endpoint && current.epoch === selected.epoch;
+      return current.generation === selected.generation && current.profile === selected.profile && current.endpoint === selected.endpoint && current.epoch === selected.epoch;
     };
     let upstream = null;
     let reader = null;
@@ -818,7 +824,8 @@ export const registerOpenCodeProxy = (app, deps) => {
   };
 
   // Ensure API prefix is detected before proxying
-  app.use('/api', (_req, _res, next) => {
+  app.use('/api', (_req, res, next) => {
+    if (refuseLegacy(res)) return;
     ensureOpenCodeApiPrefix();
     next();
   });
@@ -884,6 +891,7 @@ export const registerOpenCodeProxy = (app, deps) => {
         return;
       }
       await sleep(READINESS_HOLD_POLL_MS);
+      if (refuseLegacy(res)) return;
       if (kernel().generation === OPENCODE_GENERATION.UNSUPPORTED) {
         return res.status(501).json({ error: AGENT_ERROR.UNSUPPORTED });
       }
@@ -1139,6 +1147,9 @@ export const registerOpenCodeProxy = (app, deps) => {
     next();
   });
 
+  app.use('/api', (_req, res, next) => {
+    if (!refuseLegacy(res)) next();
+  });
   app.use('/api', applyProxyResponseDeadline);
   app.post('/api/provider/:providerID/oauth/callback', interactiveOAuthProxy);
   // OpenCode's native MCP OAuth flow: the request blocks until the user

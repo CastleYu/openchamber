@@ -305,3 +305,5 @@ produces no OpenCode probes and reports its unknown generation.
 ## Requested OpenCode selection
 
 The generated instance-settings gate accepts opencodeSelection only when the shared compatibility parser accepts Auto, OC1, OC2 or Legacy 1.2.27. Invalid values are omitted from changes, and inferred profile fields remain outside persistence. This does not enable profile selection in the manager or add a Settings control. The [paired INT-01 checkpoint](../../../docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-01-implementation-checkpoint) owns activation and runtime acceptance scope.
+
+The common kernel request resolver also captures profile and rejects completion when only profile changes. An explicit Legacy profile currently refuses forwarding before URL construction. This applies to generic API, dedicated message/SSE, activity and Git helper callers that use the resolver. The manager still uses generation detection; these guards do not activate Legacy selection or establish operation acceptance.

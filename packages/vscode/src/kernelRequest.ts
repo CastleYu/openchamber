@@ -1,5 +1,6 @@
 import type { OpenCodeManager } from './opencode';
 import { waitForApiUrl } from './opencode-ready';
+import { OPENCODE_PROFILE } from '../../web/server/lib/opencode/compatibility.js';
 
 /** One forwarded request belongs to the connection selected before dispatch. */
 export async function resolveKernelRequest(
@@ -15,6 +16,9 @@ export async function resolveKernelRequest(
   if (selected.generation !== 'oc1' && selected.generation !== 'oc2') {
     throw new Error('OpenCode kernel is not ready');
   }
+  if (selected.profile === OPENCODE_PROFILE.LEGACY) {
+    throw new Error('OpenCode ' + OPENCODE_PROFILE.LEGACY + ' operations are not yet accepted');
+  }
   const relative = new URL(requestPath, 'https://openchamber.invalid');
   let pathname = relative.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
   if (selected.generation === 'oc2') {
@@ -27,7 +31,7 @@ export async function resolveKernelRequest(
   target.search = relative.search;
   const assertCurrent = () => {
     const current = manager.getKernelRuntime();
-    if (current.generation !== selected.generation || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+    if (current.generation !== selected.generation || current.profile !== selected.profile || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
       throw new Error('OpenCode connection changed during request');
     }
   };

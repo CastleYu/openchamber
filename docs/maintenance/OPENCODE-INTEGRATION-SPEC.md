@@ -7,7 +7,7 @@ Source baseline: `codex/personal` commit `a62bbe7136b740ff08d39b902b98fc4b0ebfe2
 
 This milestone implements DEV-PLAN requirements 3.1 through 3.7 on the existing OC1/OC2 architecture and adds dedicated OpenCode 1.2.27 compatibility. The maintainer's 2026-10-08 request replaces the earlier decision to treat all OC1 versions as one compatibility target for this milestone.
 
-Urgent addition, 2026-10-08: prepare an independent CAgent Server API integration for local adaptation inside an inaccessible environment. The [CAgent architecture](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md) own its bounded adapter kit, capability exclusions and native extensions. Complete CA-00 through CA-03 before the other INT implementation, following the milestone queue. No CAgent API or compatibility is currently verified.
+Urgent addition, 2026-10-08: prepare an independent CAgent Server API integration for local adaptation inside an inaccessible environment. The [CAgent architecture](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md) own its bounded adapter kit, capability exclusions and native extensions. Deliver CA-00 through CA-02 architecture and documentation, pass existing-feature regressions, build and publish the temporary Release, then begin other INT work; CA-03 remains environment-local real adaptation and acceptance. No CAgent API or compatibility is currently verified.
 
 Read this document for shared architecture, connection behavior, reload behavior and integration UI. Read the following documents when working on their scope:
 

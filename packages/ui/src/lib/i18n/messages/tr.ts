@@ -16,7 +16,7 @@ import { cagentChatI18n } from './cagent-chat.i18n';
 export const dict = {
   'agent.bootstrap.failed': 'Seçilen arka uç tanımlanamadı. Bağlantıyı kontrol edip tekrar deneyin.',
   'agent.bootstrap.retry': 'Tekrar dene',
-  'agent.bootstrap.cagent': 'CAgent entegrasyonu henüz onaylanmadı.',
+  'agent.bootstrap.cagent': 'CAgent',
   'agent.bootstrap.closed': 'Bu ortam entegrasyon kontrollerini geçene kadar görüşmeler ve arka uç işlemleri kullanılamaz.',
   "opencodeCompatibility.bundled": "OpenCode, OpenChamber ile birlikte gelir. OpenCode v2 için OpenChamber’ı güncelleyin.",
   "opencodeCompatibility.title": "OpenCode v2 gerekli",

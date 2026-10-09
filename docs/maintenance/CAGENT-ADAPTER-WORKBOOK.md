@@ -1,10 +1,10 @@
 # CAgent local adaptation workbook
 
-Status: planning template, 2026-10-08. Use after CA-02 delivers the executable kit described by the [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md). This document contains no guessed CAgent API paths. Every placeholder below remains unresolved until populated from local documentation and evidence.
+Status: environment-local handoff, 2026-10-09. Use the delivered offline kit described by the [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md). This document contains no guessed CAgent API paths. Every placeholder below remains unresolved until populated from local documentation and evidence.
 
 ## Packet delivered into the environment
 
-The [operation references](cagent-contracts/README.md) and [offline command bundle](../../scripts/cagent/DOCUMENTATION.md#offline-command-bundle-and-final-candidate-artifact) are available now. The tested bundle runs without installed project dependencies and includes OpenAPI structural inventory, protected packet preparation, reviewed source-section extraction, constrained declarative generation, finite extension templates and structural checks, authoring calibration, bounded fixture checks and final candidate assembly. Extension host integration, real authoring-model trials, enforced target permissions and live acceptance commands still need delivery.
+The [operation references](cagent-contracts/README.md) and [offline command bundle](../../scripts/cagent/DOCUMENTATION.md#offline-command-bundle-and-final-candidate-artifact) are available now. The tested bundle runs without installed project dependencies and includes OpenAPI structural inventory, protected packet preparation, reviewed source-section extraction, constrained declarative generation, finite extension templates and structural checks, authoring calibration, bounded fixture checks and final candidate assembly. Finite extension host dispatch and rendering are implemented. Real authoring-model trials, target permission setup and API acceptance remain environment-local work.
 
 The read-only [mapping intake command](../../scripts/cagent/DOCUMENTATION.md#mapping-intake) checks a maintainer-reviewed endpoint catalog against all operation and endpoint dispositions. It binds exact catalog content, reports missing feature dependencies and keeps all runtime availability false. Preparation then generates implementation packets from reviewed mappings and fixtures. The local owner still reviews documentation, constructs the protected catalog and supplies real acceptance evidence. Neither intake nor successful fixture execution grants activation.
 
@@ -22,6 +22,12 @@ The architecture owner must provide these artifacts together at a frozen applica
 
 The kit commands must return nonzero for failed required checks and produce a concise machine-readable result with operation ID, expected/actual outcome, evidence reference and next action. Keep raw secrets and user payloads out of output. The local agent receives the relevant packet and contract page, not all repository instructions as one large prompt.
 
+## Minimum first delivery
+
+Start with `getSession`, `listMessages`, `getSessionStatus` and `sendPrompt` for an existing session. The maintainer prepares reviewed excerpts, mappings and fixtures for these four operations and records all other operation rows as unverified or documented unsupported. Complete endpoint inventory incrementally; it is not work assigned to the weak agent before its first chat packet.
+
+Give the agent one prepared packet, one handler file and its fixed check command. Use declarative generation for field/path changes; request a custom codec only for a documented semantic difference. Accept each operation independently. Other features stay unavailable; add one documented CAgent-only finite action after minimum chat succeeds. Actions beyond the fixed form/result vocabulary remain disabled pending host development.
+
 ## API evidence intake
 
 ### Environment entry gate
@@ -30,7 +36,7 @@ Before handler authoring, the local maintainer freezes the documentation revisio
 
 Review the complete operation/endpoint disposition report before generating writable packets. Each unresolved question names its source section, missing semantics, affected feature IDs and owner. Give the local agent only the selected operation's reviewed excerpts, generated stub, fixed examples and check command. Documentation changes invalidate affected packets and dependent evidence before regeneration; preserve unrelated accepted packets.
 
-Completion: the untouched kit runs, calibration selects a recorded authoring path, every consumed operation and documented endpoint has a disposition, and every unresolved question has an owner. Missing API documentation blocks real adaptation. Deliver the kit and unresolved report while keeping dependent features disabled and remaining INT work behind CA-03.
+Completion for the selected batch: the untouched kit runs, calibration selects a recorded authoring path, the selected mappings have reviewed evidence and every unresolved question has an owner. Unselected operations keep explicit unverified or documented unsupported dispositions. Missing local API documentation blocks real adaptation, not the external architecture/toolchain Release. Remaining INT work starts after that Release, following the milestone queue.
 
 The local maintainer supplies endpoint/auth references and the API documentation within the environment. The agent records the document revision, server build when known, and exact section for each mapping. Keep source documents and samples local; no external upload is required. An external handoff may contain only an approved sanitized coverage summary.
 

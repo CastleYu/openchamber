@@ -7,13 +7,13 @@ Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC]
 
 Plan this capability family as DIJIANG 5.x, following the current 4.0 baseline. The proposed subversions below are delivery checkpoints within the one agent integration milestone, consistent with the maintainer-defined feature scope in [BUILD.md](BUILD.md). They do not change `featureVersion`, package versions, tags or release policy during planning. The upstream package version remains independent.
 
-Internal milestone acceptance and public release are separate decisions. An early subversion may expose only its completed scope. Legacy stays experimental with unverified operations disabled until its later gates pass. Do not publish an early checkpoint as full 1.2.27 compatibility. The proposed 5.0–5.13 release labels do not impose implementation order: only the declared dependencies do. INT-00 is the first ready baseline. CA-00 through CA-03 are the urgent CAgent path. Every remaining INT implementation waits for CA-03 acceptance; only common baseline INT-00 precedes the urgent sequence. If the local CAgent environment or API documentation is unavailable, that gate remains blocked until the maintainer explicitly changes priority. Reconcile release labels before public release if delivery order or another task changes their allocation; stable task IDs retain traceability.
+An early Release exposes only completed scope and does not claim full Legacy 1.2.27 or real CAgent compatibility. On 2026-10-09 the maintainer set the order: finish CA-01/CA-02 architecture and documentation, verify existing features, build and publish the temporary Release, then begin remaining INT work. CA-03 stays environment-local and does not block this toolchain release. The 5.0–5.13 labels are planned labels to reconcile before release; stable task IDs retain traceability.
 
 This document owns status and acceptance for this integration milestone. PLAN.md routes RUN-01/RUN-02 here rather than maintaining duplicate status tables. The older upstream-intake and dual-kernel ledgers keep their historical evidence.
 
 ## Delivery queue
 
-The lead owns INT-00 and CA-00; later owners remain unassigned. `ready` means work can begin, not that its acceptance evidence exists. Each source-changing checkpoint needs its declared dependencies. All INT implementation except common baseline INT-00 waits for CA-03 acceptance. After that gate, independent UI work may proceed according to its own dependencies.
+`ready` means work can begin, rather than evidence already exists. The shared prerequisite for remaining INT work is the CA-02 toolchain temporary Release; each task retains its own dependencies. INT-10 still requires CA-03 evidence if claiming real CAgent compatibility.
 
 | ID | Planned subversion | Scope | Depends on | Status |
 | --- | --- | --- | --- | --- |
@@ -22,16 +22,16 @@ The lead owns INT-00 and CA-00; later owners remain unassigned. `ready` means wo
 | CA-01 | 5.0 | Typed host contracts, capability guards and OC1/OC2 regressions | CA-00 | in progress |
 | CA-02 | 5.1 | Complete offline adapter kit with protected tests, generator, sparse and synthetic-extension samples, allowlist validation and runnable toolchain | CA-01 | planned |
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
-| INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-03 | planned |
-| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-03 | planned |
-| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-03 | planned |
-| INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-03 | planned |
-| INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-03 | planned |
-| INT-05 | 5.7 | Legacy settings, credentials, plugins/MCP and unattended operations | INT-04, CA-03 | planned |
-| INT-06 | 5.8 | Current OC1/OC2 disposal, config apply and external/managed-server reload | INT-02, CA-03 | planned |
-| INT-07 | 5.9 | Native menu localization | INT-00, CA-03 | planned |
-| INT-08 | 5.10 | Persistent branch context and explicit draft refresh | INT-00, CA-03 | planned |
-| INT-09 | 5.11 | Shared effective-shortcut hints and action coverage | INT-00, CA-03 | planned |
+| INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | planned |
+| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | planned |
+| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | planned |
+| INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |
+| INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-02 Release | planned |
+| INT-05 | 5.7 | Legacy settings, credentials, plugins/MCP and unattended operations | INT-04, CA-02 Release | planned |
+| INT-06 | 5.8 | Current OC1/OC2 disposal, config apply and external/managed-server reload | INT-02, CA-02 Release | planned |
+| INT-07 | 5.9 | Native menu localization | INT-00, CA-02 Release | planned |
+| INT-08 | 5.10 | Persistent branch context and explicit draft refresh | INT-00, CA-02 Release | planned |
+| INT-09 | 5.11 | Shared effective-shortcut hints and action coverage | INT-00, CA-02 Release | planned |
 | INT-06L | 5.12 | Exact Legacy disposal and config-apply integration | INT-06, INT-03, INT-05 | planned |
 | INT-10 | 5.13 | Cross-host integration, CAgent contract regression/backend switching, exact 1.2.27 acceptance and release candidate | CA-03, INT-01, INT-02, INT-03, INT-04, INT-05, INT-06, INT-07, INT-08, INT-09, INT-06L | planned |
 
@@ -87,7 +87,7 @@ First prove the same minimum path against documented real CAgent operations. If 
 
 Run the kit inside the target environment against its actual API documentation and isolated CAgent server. Implement the minimum usable chat path and produce a disposition for every existing consumed feature and every additional feature discovered in the API documentation. Keep unverified or unsupported features disabled with reasons; record `requires-host-development` where the fixed extension model cannot preserve semantics. The maintainer explicitly activates only the accepted adapter revision.
 
-Exit: a real local server completes minimum chat with observable outcome and history/reopen where supported; live host journeys cover each host claimed available. The evidence report accounts for all existing and discovered features, including unsupported and unverified rows, and includes direct-call refusal for a disabled feature. The local maintainer reviews evidence and explicitly activates the revision. If environment access or documentation is unavailable, CA-03 stays blocked and lower-priority INT implementation does not start unless the maintainer explicitly reprioritizes. Simulation alone never passes this gate.
+Exit: a real local server completes minimum chat with observable outcome and history/reopen where supported; live host journeys cover each host claimed available. The evidence report accounts for all existing and discovered features, including unsupported and unverified rows, and includes direct-call refusal for a disabled feature. The local maintainer reviews evidence and explicitly activates the revision. If environment access or documentation is unavailable, real CA-03 acceptance stays unverified; the maintainer-authorized toolchain Release still precedes other INT work. Simulation alone never passes this gate.
 
 Record an adaptation trial with the environment's actual local agent using the workbook packets. Keep failed packets disabled, report their evidence gaps, and preserve the same acceptance checks when a maintainer completes them.
 
@@ -97,7 +97,7 @@ The local-model trial records workload size, protected check results, correction
 
 Acquire exact 1.2.27 source/schema and an isolated executable/endpoint; record provenance and sanitized samples. Settle the identity probe, consumed wire contracts and dispose scope. Investigate idempotency-key support, retention and request-ID outcome lookup without assuming any exists. Separate missing evidence from confirmed unsupported behavior.
 
-Exit: evidence is sufficient to implement the first Legacy conversation and identifies the remaining operation-specific gates. Any unresolved contract remains disabled until its evidence exists. If exact 1.2.27 execution is unavailable, Legacy live gates remain blocked. After CA-03 acceptance, INT-01/INT-02 current-runtime work, INT-06 and independent UI work need not wait for Legacy live evidence.
+Exit: evidence is sufficient to implement the first Legacy conversation and identifies the remaining operation-specific gates. Any unresolved contract remains disabled until its evidence exists. If exact 1.2.27 execution is unavailable, Legacy live gates remain blocked. After the CA-02 temporary Release, INT-01/INT-02 current-runtime work, INT-06 and independent UI work need not wait for Legacy live evidence.
 
 ### INT-01: identity and adapter boundary
 

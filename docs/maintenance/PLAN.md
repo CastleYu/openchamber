@@ -2,7 +2,7 @@
 
 ## OpenCode integration milestone, 2026-10-08
 
-Urgent CAgent work takes priority after common baseline INT-00. Follow CA-00 through CA-03 in the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md), using the [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md). The remaining INT implementation waits for actual local CAgent acceptance or an explicit maintainer reprioritization. API evidence is unavailable here; no CAgent implementation is claimed.
+Urgent CAgent work takes priority after common baseline INT-00. Follow CA-00 through CA-03 in the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md), using the [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [local adapter workbook](CAGENT-ADAPTER-WORKBOOK.md). On 2026-10-09 the maintainer set the order: finish architecture and documentation, verify existing features, build and publish the temporary Release, then continue other INT development. CA-03 runs inside the target environment; no real CAgent API adaptation is claimed here.
 
 The [integration SPEC](OPENCODE-INTEGRATION-SPEC.md) and [Legacy 1.2.27 SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md) replace the old DEV-PLAN section 3 details. The [INT milestone queue](OPENCODE-INTEGRATION-MILESTONES.md) owns their execution status, dependencies and acceptance. RUN-01/RUN-02 are migrated planning entries, not completed implementation. See the [source audit](OPENCODE-INTEGRATION-AUDIT.md) for current coverage.
 

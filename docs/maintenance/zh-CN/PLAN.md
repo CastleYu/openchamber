@@ -6,7 +6,7 @@
 
 ## OpenCode 集成里程碑，2026-10-08
 
-通用基线 INT-00 之后优先进行紧急 CAgent 工作。遵循[里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)中的 CA-00 至 CA-03，使用 [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md)和[本地适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。其余 INT 实施等待 CAgent 在环境内真实验收，或维护者明确调整优先级。此处无法获取 API 证据，不声称已实现 CAgent。
+通用基线 INT-00 之后优先进行紧急 CAgent 工作。遵循[里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)中的 CA-00 至 CA-03，使用 [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md)和[本地适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。2026-10-09 维护者明确调整为：完成架构与文档，验证原功能，构建并发布临时 Release，再进行其余 INT 开发。CA-03 留在环境内执行；此处不声称已适配真实 CAgent API。
 
 [集成规范](OPENCODE-INTEGRATION-SPEC.md)和 [Legacy 1.2.27 规范](OPENCODE-LEGACY-1.2.27-SPEC.md)取代 DEV-PLAN 第 3 节的旧细节。[INT 里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)负责其执行状态、依赖和验收。RUN-01/RUN-02 是迁移后的计划条目，不代表实现已完成。当前覆盖情况见[源码审计](OPENCODE-INTEGRATION-AUDIT.md)。
 

@@ -11,7 +11,7 @@
 
 本里程碑在现有 OC1/OC2 架构上实现 DEV-PLAN 第 3.1 至 3.7 项要求，并增加专门的 OpenCode 1.2.27 兼容支持。维护者于 2026-10-08 提出的要求取代了此前将所有 OC1 版本视为本里程碑同一兼容目标的决定。
 
-2026-10-08 紧急追加：为独立 CAgent Server API 准备接入架构，在当前无法访问的环境内部完成适配。[CAgent 架构](CAGENT-INTEGRATION-SPEC.md)及[本地适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)负责受限适配工具包、能力禁用和专有扩展。按里程碑队列先完成 CA-00 至 CA-03，再实施其他 INT 工作。当前尚未验证任何 CAgent API 或兼容性。
+2026-10-08 紧急追加：为独立 CAgent Server API 准备接入架构，在当前无法访问的环境内部完成适配。[CAgent 架构](CAGENT-INTEGRATION-SPEC.md)及[本地适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)负责受限适配工具包、能力禁用和专有扩展。按里程碑队列先交付 CA-00 至 CA-02 架构与文档，完成原功能回归、构建并发布临时 Release，再实施其他 INT 工作；CA-03 留作环境内真实适配验收。当前尚未验证任何 CAgent API 或兼容性。
 
 共享架构、连接行为、重载行为和集成 UI 请读本文。处理以下范围时请阅读对应文档：
 

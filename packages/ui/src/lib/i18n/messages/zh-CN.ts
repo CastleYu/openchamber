@@ -17,7 +17,7 @@ import { cagentChatI18n } from './cagent-chat.i18n';
 export const dict: Record<I18nKey, string> = {
   'agent.bootstrap.failed': '无法识别所选后端。请检查连接后重试。',
   'agent.bootstrap.retry': '重试',
-  'agent.bootstrap.cagent': 'CAgent 集成尚未获批。',
+  'agent.bootstrap.cagent': 'CAgent',
   'agent.bootstrap.closed': '此环境通过集成检查前，对话和后端操作都不可用。',
   "opencodeCompatibility.bundled": "OpenCode 随 OpenChamber 一起提供。请更新 OpenChamber 以获取 OpenCode v2。",
   "opencodeCompatibility.title": "需要 OpenCode v2",

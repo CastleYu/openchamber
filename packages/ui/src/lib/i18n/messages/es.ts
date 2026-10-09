@@ -17,7 +17,7 @@ import { cagentChatI18n } from './cagent-chat.i18n';
 export const dict: Record<I18nKey, string> = {
   'agent.bootstrap.failed': 'No se pudo identificar el backend seleccionado. Comprueba la conexión e inténtalo de nuevo.',
   'agent.bootstrap.retry': 'Reintentar',
-  'agent.bootstrap.cagent': 'La integración con CAgent aún no está aprobada.',
+  'agent.bootstrap.cagent': 'CAgent',
   'agent.bootstrap.closed': 'Las conversaciones y las acciones del backend seguirán sin estar disponibles hasta que este entorno supere las comprobaciones de integración.',
   "opencodeCompatibility.bundled": "OpenCode viene incluido en OpenChamber. Actualiza OpenChamber para obtener OpenCode v2.",
   "opencodeCompatibility.title": "Se requiere OpenCode v2",

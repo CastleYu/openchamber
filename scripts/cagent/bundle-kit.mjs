@@ -24,6 +24,8 @@ const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const starts = (zh) => zh ? `# CAgent 离线命令包
 
 此包包含已打包依赖的宿主命令及双语操作参考，无需安装项目依赖。维护者另行准备经过验证的 Node 24.9.0 和 Bun 1.3.14。其他版本须先验证。
+首次只适配已有会话的 getSession、listMessages、getSessionStatus、sendPrompt 四项。维护者准备这四项的核准摘录、映射与夹具；其余操作明确记录为 unverified 或有文档依据的 unsupported。弱 Agent 每次只接收一个准备好的任务包、一个 handler.mjs 及 check-packet 检查命令。优先用 --bindings 生成字段／路径转换；只有有依据的语义差异才编写 codec。四项通过真实验收后独立批准，其他功能继续禁用。之后再增加一个有限新增动作；超出固定界面语义的动作记录 requires-host-development 并保持禁用。
+
 宿主将整个 protected 目录设为候选只读，并将 control、进度及批准目录置于候选写权限之外。摘要须从独立可信渠道取得。权限模型不能证明网络隔离或恶意代码沙箱。
 此包包含合成适配模型校准、声明式生成及有限扩展模板，不包含真实 CAgent API 或真实验收。有限动作支持单包夹具检查及最终装配；宿主已提供独立批准、调度和有限界面，但真实启用仍需维护者验收。通过合成夹具不能启用功能。模型及计量记录由维护者提供，校准不证明运行时模型任务质量。
 声明式绑定使用 schemas/declarative-bindings.json。仅生成单端点结构转换；语义差异使用 custom codec。prepare-packets 的 --bindings 需要 --fixtures，缺少绑定时保留拒绝执行的桩。
@@ -35,6 +37,8 @@ maintain-approval 仅供独立维护者在真实验收之后使用。批准前�
 ` : `# CAgent offline command bundle
 
 This bundle contains host commands with their dependencies and bilingual operation references. No project package installation is needed. The owner separately supplies validated Node 24.9.0 and Bun 1.3.14 executables. Validate other versions before use.
+Start with four existing-session operations: getSession, listMessages, getSessionStatus and sendPrompt. The maintainer prepares their reviewed excerpts, mappings and fixtures; every other operation stays explicitly unverified or documented unsupported. Give the weak agent one prepared packet, one handler.mjs and its check-packet command at a time. Prefer --bindings for generated field/path conversions; write a codec only for a documented semantic difference. Independently approve the four operations after real acceptance; other features stay disabled. Then add one finite new action. Actions beyond the fixed UI semantics remain disabled as requires-host-development.
+
 The host makes the entire protected directory read-only to the candidate and keeps control, progress and approvals outside candidate write authority. Obtain the digest through an independent trusted channel. The permission model does not establish network isolation or a hostile-code sandbox.
 This bundle includes synthetic authoring-model calibration, declarative generation and finite extension templates, but no real CAgent API or live acceptance. Finite actions support packet fixtures and final assembly. The host provides independent approval, dispatch and finite UI; actual activation still requires maintainer acceptance. Passing synthetic fixtures grants no feature activation. The maintainer supplies model and measurement records; calibration does not prove runtime model task quality.
 Declarative bindings use schemas/declarative-bindings.json. Generate single-endpoint structural conversions only; semantic differences use custom codecs. The prepare-packets --bindings option requires --fixtures; omitted bindings retain refusal stubs.

@@ -2272,6 +2272,8 @@ export const dict: Record<I18nKey, string> = {
   'chat.fileMentionAutocomplete.empty': '找不到符合項目',
   'chat.queuedMessage.attachments': '+{count} 個檔案',
   'chat.queuedMessage.empty': '（空）',
+  'chat.queuedMessage.targetChanged': "已暫停：屬於其他連線。可編輯後確認或刪除。",
+  'chat.queuedMessage.targetUnknown': "原連線未知。可編輯後確認或刪除。",
   'chat.queuedMessage.title': 'Queued messages',
   'chat.queuedMessage.edit': 'edit',
   'chat.queuedMessage.send': 'send',

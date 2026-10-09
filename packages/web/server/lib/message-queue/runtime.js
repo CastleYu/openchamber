@@ -17,6 +17,14 @@ import { readDescendantActivity } from '../opencode/descendant-activity.js';
 
 const QUEUE_FILE_NAME = 'message-queue.json';
 const QUEUE_FILE_VERSION = 1;
+const TARGET_PATTERN = /^[a-f0-9]{64}$/;
+const TAKE = Object.freeze({ SEND: 'send', EDIT: 'edit' });
+const takePurpose = value => {
+  const purpose = value ?? TAKE.SEND;
+  if (purpose !== TAKE.SEND && purpose !== TAKE.EDIT) throw new TypeError('Invalid queue take purpose');
+  return purpose;
+};
+const DELIVERY = Object.freeze({ READY: 'ready', CHANGED: 'target-changed', UNKNOWN: 'target-unknown' });
 
 const MAX_SESSIONS = 50;
 const MAX_ITEMS_PER_SESSION = 20;
@@ -145,7 +153,8 @@ const parseStoredItem = (value) => {
   const id = raw ? asNonEmptyString(raw.id) : '';
   if (!id) return null;
   try {
-    return { id, createdAt: asCount(raw.createdAt) ?? Date.now(), ...parseQueuedItemInput(raw) };
+    return { id, createdAt: asCount(raw.createdAt) ?? Date.now(), ...parseQueuedItemInput(raw),
+      target: TARGET_PATTERN.test(asText(raw.target)) ? raw.target : null };
   } catch {
     return null;
   }
@@ -223,6 +232,7 @@ const extractDeletedSessionId = (payload) => {
 export function createMessageQueueRuntime({
   globalEventHub,
   kernelOperations = null,
+  getQueueTarget,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,
   sessionKnowledgeRuntime = null,
@@ -248,6 +258,8 @@ export function createMessageQueueRuntime({
   let stopped = false;
   let paused = false;
   let writeError = null;
+  let currentTarget = null;
+  let targetRead = 0;
   const dispatches = new Set();
 
   // An unfinished assistant message older than this marker is a run that died
@@ -310,7 +322,7 @@ export function createMessageQueueRuntime({
     return { sessions, revision: asCount(stored.revision) ?? 0 };
   };
 
-  const load = () => {
+  const hydrate = () => {
     if (!loadPromise) {
       loadPromise = readFile()
         .then((stored) => {
@@ -345,6 +357,34 @@ export function createMessageQueueRuntime({
     return writePromise;
   };
 
+  const refreshTarget = async () => {
+    const read = ++targetRead;
+    let target = null;
+    try {
+      const identity = kernelOperations?.captureIdentity();
+      const result = await getQueueTarget();
+      if (TARGET_PATTERN.test(asText(result)) && isCurrent(identity)) target = result;
+    } catch { /* Unknown target keeps intent held, never grants dispatch. */ }
+    if (read !== targetRead) return currentTarget;
+    if (target !== currentTarget) {
+      currentTarget = target;
+      if (queues.size) {
+        revision += 1;
+        void persist();
+        for (const sessionId of queues.keys()) broadcast(sessionId);
+      }
+    }
+    return target;
+  };
+
+  const load = async () => {
+    await hydrate();
+    await refreshTarget();
+  };
+
+  const delivery = item => !item.target || !currentTarget ? DELIVERY.UNKNOWN
+    : item.target === currentTarget ? DELIVERY.READY : DELIVERY.CHANGED;
+
   // --- snapshots -----------------------------------------------------------
 
   const sessionSnapshot = (sessionId) => {
@@ -352,7 +392,7 @@ export function createMessageQueueRuntime({
     return {
       sessionId,
       directory: queue?.directory ?? directories.get(sessionId) ?? '',
-      items: (queue?.items ?? []).map(toPublicItem),
+      items: (queue?.items ?? []).map(item => ({ ...toPublicItem(item), delivery: delivery(item) })),
       sendingId: sending.get(sessionId) ?? null,
     };
   };
@@ -685,6 +725,12 @@ export function createMessageQueueRuntime({
       return;
     }
 
+    await refreshTarget();
+    if (stopped || paused) return;
+    if (delivery(head) !== DELIVERY.READY) {
+      if (!currentTarget) armDispatch(sessionId, retryDelayMs(1));
+      return;
+    }
     const identity = kernelOperations?.captureIdentity();
     const idle = await isSessionIdle(sessionId, queue.directory, identity);
     if (stopped || paused) return;
@@ -702,7 +748,7 @@ export function createMessageQueueRuntime({
     // Re-read after the awaits — the user may have edited the queue meanwhile.
     const current = queues.get(sessionId);
     const item = current?.items[0];
-    if (!item || item.id !== head.id || sending.has(sessionId)) return;
+    if (!item || item.id !== head.id || sending.has(sessionId) || delivery(item) !== DELIVERY.READY) return;
 
     sending.set(sessionId, item.id);
     broadcast(sessionId);
@@ -785,27 +831,20 @@ export function createMessageQueueRuntime({
     const parsed = parseQueuedItemInput(itemInput);
     await load();
     if (paused) throw httpError('OpenCode connection transition is in progress', 409);
+    if (!currentTarget) throw httpError('Original OpenCode connection could not be verified', 503);
     const item = {
       id: `queued-${now()}-${Math.random().toString(36).slice(2, 9)}`,
       createdAt: now(),
       ...parsed,
+      target: asRecord(itemInput)?.restored === true ? null : currentTarget,
     };
     const existing = queues.get(sessionId);
-    const items = [...(existing?.items ?? []), item].slice(-MAX_ITEMS_PER_SESSION);
+    if (existing && existing.directory !== directory) throw httpError('Queued session belongs to another directory', 409);
+    if (existing && existing.items.length >= MAX_ITEMS_PER_SESSION) throw httpError('Message queue is full', 409);
+    if (!existing && queues.size >= MAX_SESSIONS) throw httpError('Message queue target limit reached', 409);
+    const items = [...(existing?.items ?? []), item];
     queues.set(sessionId, { directory, items });
     directories.set(sessionId, directory);
-    if (queues.size > MAX_SESSIONS) {
-      const oldest = Array.from(queues.entries())
-        .filter(([id]) => id !== sessionId && !sending.has(id))
-        .sort((left, right) => (left[1].items[0]?.createdAt ?? 0) - (right[1].items[0]?.createdAt ?? 0))
-        .slice(0, queues.size - MAX_SESSIONS);
-      for (const [staleId] of oldest) {
-        queues.delete(staleId);
-        clearTimer(staleId);
-        broadcast(staleId);
-        directories.delete(staleId);
-      }
-    }
     const result = commit(sessionId);
     // The session may already be idle (queued from a busy-looking composer
     // right as the turn ended); the tick verifies before sending.
@@ -826,26 +865,34 @@ export function createMessageQueueRuntime({
   };
 
   /** Removes the item and hands its full payload (attachments included) back. */
-  const take = async (sessionIdInput, itemId) => {
+  const take = async (sessionIdInput, itemId, purposeInput) => {
+    const purpose = takePurpose(purposeInput);
+    if (paused && purpose === TAKE.SEND) throw httpError('OpenCode connection transition is in progress', 409);
     const sessionId = requireSessionId(sessionIdInput);
     await load();
+    if (paused && purpose === TAKE.SEND) throw httpError('OpenCode connection transition is in progress', 409);
     if (sending.get(sessionId) === itemId) throw httpError('message is being sent', 409);
     const queue = queues.get(sessionId);
     const item = queue?.items.find((entry) => entry.id === itemId);
     if (!queue || !item) throw httpError('queued message not found', 404);
+    if (purpose === TAKE.SEND && delivery(item) !== DELIVERY.READY) throw httpError('Queued message belongs to an unavailable connection', 409);
     setQueueItems(sessionId, queue.directory, queue.items.filter((entry) => entry.id !== itemId));
-    return { ...commit(sessionId), item };
+    return { ...commit(sessionId), item: { ...item, delivery: delivery(item) } };
   };
 
   /** Removes every item not currently being sent and hands them back in order. */
-  const takeAll = async (sessionIdInput) => {
+  const takeAll = async (sessionIdInput, purposeInput) => {
+    const purpose = takePurpose(purposeInput);
+    if (paused && purpose === TAKE.SEND) throw httpError('OpenCode connection transition is in progress', 409);
     const sessionId = requireSessionId(sessionIdInput);
     await load();
+    if (paused && purpose === TAKE.SEND) throw httpError('OpenCode connection transition is in progress', 409);
     const queue = queues.get(sessionId);
     if (!queue) return { revision, session: sessionSnapshot(sessionId), items: [] };
     const sendingId = sending.get(sessionId) ?? null;
     const items = queue.items.filter((item) => item.id !== sendingId);
     if (items.length === 0) return { revision, session: sessionSnapshot(sessionId), items: [] };
+    if (purpose === TAKE.SEND && items.some(item => delivery(item) !== DELIVERY.READY)) throw httpError('Queue contains intent for an unavailable connection', 409);
     setQueueItems(sessionId, queue.directory, queue.items.filter((item) => item.id === sendingId));
     return { ...commit(sessionId), items };
   };
@@ -902,11 +949,21 @@ export function createMessageQueueRuntime({
     const deletedSessionId = extractDeletedSessionId(payload);
     if (deletedSessionId) {
       if (!queues.has(deletedSessionId)) return;
-      queues.delete(deletedSessionId);
-      clearTimer(deletedSessionId);
-      failures.delete(deletedSessionId);
-      commit(deletedSessionId);
-      directories.delete(deletedSessionId);
+      const candidates = new Set(queues.get(deletedSessionId).items.map(item => item.id));
+      let identity;
+      try { identity = kernelOperations?.captureIdentity(); } catch { return; }
+      void load().then(() => {
+        if (stopped || paused || !isCurrent(identity) || !currentTarget) return;
+        const queue = queues.get(deletedSessionId);
+        if (!queue) return;
+        const kept = queue.items.filter(item => !candidates.has(item.id) || delivery(item) !== DELIVERY.READY);
+        if (kept.length === queue.items.length) return;
+        setQueueItems(deletedSessionId, queue.directory, kept);
+        clearTimer(deletedSessionId);
+        failures.delete(deletedSessionId);
+        commit(deletedSessionId);
+        if (!kept.length) directories.delete(deletedSessionId);
+      }).catch(() => undefined);
       return;
     }
 
@@ -1008,7 +1065,7 @@ export function registerMessageQueueRoutes(app, runtime) {
 
   app.post('/api/message-queue/sessions/:sessionId/take', async (req, res) => {
     try {
-      res.json(await runtime.takeAll(req.params.sessionId));
+      res.json(await runtime.takeAll(req.params.sessionId, req.body?.purpose));
     } catch (error) {
       respondError(res, error, 'Failed to take queued messages');
     }
@@ -1041,7 +1098,7 @@ export function registerMessageQueueRoutes(app, runtime) {
 
   app.post('/api/message-queue/sessions/:sessionId/items/:itemId/take', async (req, res) => {
     try {
-      res.json(await runtime.take(req.params.sessionId, req.params.itemId));
+      res.json(await runtime.take(req.params.sessionId, req.params.itemId, req.body?.purpose));
     } catch (error) {
       respondError(res, error, 'Failed to take queued message');
     }

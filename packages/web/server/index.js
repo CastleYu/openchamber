@@ -115,6 +115,7 @@ import { createApnsRuntime } from './lib/notifications/apns-runtime.js';
 import { createNotificationTemplateRuntime } from './lib/notifications/template-runtime.js';
 import { createPermissionAutoAcceptRuntime } from './lib/permission-auto-accept/runtime.js';
 import { createMessageQueueRuntime } from './lib/message-queue/runtime.js';
+import { describeQueueTarget } from './lib/opencode/queue-target.js';
 import { createRoutingRuntime } from './lib/routing/runtime.js';
 import { createJevClient } from './lib/routing/jev.js';
 import { readPinnedCustomEndpoint } from './lib/routing/classifier.js';
@@ -1122,6 +1123,12 @@ notificationTriggerRuntime.setGetIsSessionAutoAccepting(
 // dropped connection no longer strands them (VS Code keeps its UI-side queue).
 const messageQueueRuntime = createMessageQueueRuntime({
   kernelOperations,
+  getQueueTarget: async () => describeQueueTarget({
+    connection: (await readSettingsFromDiskStrict())[OPENCODE_CONNECTION.SETTING] ?? null,
+    identity: kernelOperations.captureIdentity(),
+    binary: lastOpenCodeLaunchDiagnostics?.sourceBinary || resolvedOpencodeBinary,
+    directory: openCodeWorkingDirectory,
+  }),
   globalEventHub: globalMessageStreamHub,
   buildOpenCodeUrl,
   getOpenCodeAuthHeaders,

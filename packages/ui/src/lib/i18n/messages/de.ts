@@ -2105,6 +2105,8 @@ export const dict = {
   'chat.fileMentionAutocomplete.empty': 'Keine Übereinstimmungen gefunden',
   'chat.queuedMessage.attachments': '+{count} Datei(en)',
   'chat.queuedMessage.empty': '(leer)',
+  'chat.queuedMessage.targetChanged': "Für eine andere Verbindung pausiert. Zum Prüfen bearbeiten oder entfernen.",
+  'chat.queuedMessage.targetUnknown': "Ursprüngliche Verbindung unbekannt. Zum Prüfen bearbeiten oder entfernen.",
   'chat.queuedMessage.title': 'Nachrichten in der Warteschlange',
   'chat.queuedMessage.edit': 'bearbeiten',
   'chat.queuedMessage.send': 'senden',

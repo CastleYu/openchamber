@@ -2304,6 +2304,8 @@ export const dict: Record<I18nKey, string> = {
   'chat.fileMentionAutocomplete.empty': '일치하는 항목 없음',
   'chat.queuedMessage.attachments': '+{count} 파일(s)',
   'chat.queuedMessage.empty': '(비어 있음)',
+  'chat.queuedMessage.targetChanged': "다른 연결에 속해 일시 중지되었습니다. 편집하여 확인하거나 삭제하세요.",
+  'chat.queuedMessage.targetUnknown': "원래 연결을 알 수 없습니다. 편집하여 확인하거나 삭제하세요.",
   'chat.queuedMessage.title': 'Queued messages',
   'chat.queuedMessage.edit': 'edit',
   'chat.queuedMessage.send': 'send',

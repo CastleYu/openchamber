@@ -118,7 +118,7 @@ describe("server-owned message queue", () => {
     expect(calls[0]).toEqual({
       method: "POST",
       path: "/api/message-queue/sessions/session-1/items",
-      body: { directory: "/repo", item: { content: "from before", text: "from before", attachments: [], context: [], sendConfig: { providerID: "p", modelID: "m" } } },
+      body: { directory: "/repo", item: { content: "from before", text: "from before", attachments: [], context: [], sendConfig: { providerID: "p", modelID: "m" }, restored: true } },
     })
     expect(calls[1]?.path).toBe("/api/message-queue")
     expect(useMessageQueueStore.getState().queuedMessages[key]?.map((m) => m.id)).toEqual(["q1"])
@@ -474,3 +474,16 @@ describe("server-owned message queue", () => {
     expect(calls[0]).toEqual({ method: "PUT", path: "/api/message-queue/sessions/session-1/order", body: { itemIds: ["q2", "q1"] } })
   })
 })
+
+test("retains held delivery status through hydration and payload take for editing", async () => {
+  const held = serverItem("held", "review me", { delivery: "target-changed" });
+  respond = () => json({ revision: 9990, sessions: [session([held])] });
+  await useMessageQueueStore.getState().hydrate();
+  expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.delivery).toBe("target-changed");
+  respond = () => json({ revision: 9991, session: session([]), item: { ...held, context: [{ kind: "synthetic", text: "keep this context" }] } });
+  const taken = await useMessageQueueStore.getState().popToInput(target, held.id);
+  expect(taken?.context).toEqual([{ kind: "synthetic", text: "keep this context" }]);
+  expect(taken?.delivery).toBe("target-changed");
+  expect(calls.at(-1)?.body).toEqual({ purpose: "edit" });
+  expect(useMessageQueueStore.getState().queuedMessages[key]).toBeUndefined();
+});

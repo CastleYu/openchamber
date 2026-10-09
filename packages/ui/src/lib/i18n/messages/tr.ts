@@ -2259,6 +2259,8 @@ export const dict = {
   'chat.fileMentionAutocomplete.empty': 'Eşleşme bulunamadı',
   'chat.queuedMessage.attachments': '+{count} dosya',
   'chat.queuedMessage.empty': '(boş)',
+  'chat.queuedMessage.targetChanged': "Başka bir bağlantı için duraklatıldı. İncelemek için düzenleyin veya kaldırın.",
+  'chat.queuedMessage.targetUnknown': "Özgün bağlantı bilinmiyor. İncelemek için düzenleyin veya kaldırın.",
   'chat.queuedMessage.title': 'Kuyruktaki mesajlar',
   'chat.queuedMessage.edit': 'düzenle',
   'chat.queuedMessage.send': 'gönder',

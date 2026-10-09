@@ -659,3 +659,11 @@ After meaningful Git/PR store changes, verify manually:
 4. Worktree sessions still show branch labels in header.
 5. Expanded sidebar projects/worktrees can show PR state without requiring prior selection.
 6. Hidden surfaces do not reintroduce live background work.
+
+### Configured queue target
+
+Server projections retain the delivery state from the host. Held rows disable
+manual send; popToInput requests purpose edit and preserves the captured payload.
+Legacy browser uploads use restored true, leaving ownership unknown rather than
+assigning old intent to today's connection. See the canonical
+[host queue contract](../../../web/server/lib/message-queue/DOCUMENTATION.md#original-configured-target).

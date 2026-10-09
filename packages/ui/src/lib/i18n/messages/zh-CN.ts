@@ -2268,6 +2268,8 @@ export const dict: Record<I18nKey, string> = {
   'chat.fileMentionAutocomplete.empty': '未找到匹配项',
   'chat.queuedMessage.attachments': '+{count} 个文件',
   'chat.queuedMessage.empty': '（空）',
+  'chat.queuedMessage.targetChanged': "已暂停：属于其他连接。可编辑后确认或删除。",
+  'chat.queuedMessage.targetUnknown': "原连接未知。可编辑后确认或删除。",
   'chat.queuedMessage.title': 'Queued messages',
   'chat.queuedMessage.edit': 'edit',
   'chat.queuedMessage.send': 'send',

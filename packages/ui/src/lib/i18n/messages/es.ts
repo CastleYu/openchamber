@@ -2280,6 +2280,8 @@ export const dict: Record<I18nKey, string> = {
   "chat.fileMentionAutocomplete.empty": "No se encontraron coincidencias",
   "chat.queuedMessage.attachments": "+{count} archivo(s)",
   "chat.queuedMessage.empty": "(vacío)",
+  'chat.queuedMessage.targetChanged': "En pausa para otra conexión. Edita para revisar o elimina.",
+  'chat.queuedMessage.targetUnknown': "Se desconoce la conexión original. Edita para revisar o elimina.",
   "chat.queuedMessage.title": "Queued messages",
   "chat.queuedMessage.edit": "edit",
   "chat.queuedMessage.send": "send",

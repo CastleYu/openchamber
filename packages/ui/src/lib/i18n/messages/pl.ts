@@ -911,6 +911,8 @@ export const dict: Record<I18nKey, string> = {
   'chat.fileMentionAutocomplete.empty': 'Nie znaleziono pasujących',
   'chat.queuedMessage.attachments': '+{count} plik(i)',
   'chat.queuedMessage.empty': '(puste)',
+  'chat.queuedMessage.targetChanged': "Wstrzymano dla innego połączenia. Edytuj, aby sprawdzić, lub usuń.",
+  'chat.queuedMessage.targetUnknown': "Pierwotne połączenie jest nieznane. Edytuj, aby sprawdzić, lub usuń.",
   'chat.queuedMessage.title': 'Queued messages',
   'chat.queuedMessage.edit': 'edit',
   'chat.queuedMessage.send': 'send',

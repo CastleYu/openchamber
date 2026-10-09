@@ -2280,6 +2280,8 @@ export const dict: Record<I18nKey, string> = {
   "chat.fileMentionAutocomplete.empty": "Збігів не знайдено",
   "chat.queuedMessage.attachments": "+{count} файл(и)",
   "chat.queuedMessage.empty": "(порожній)",
+  'chat.queuedMessage.targetChanged': "Призупинено для іншого з’єднання. Відредагуйте для перевірки або видаліть.",
+  'chat.queuedMessage.targetUnknown': "Початкове з’єднання невідоме. Відредагуйте для перевірки або видаліть.",
   "chat.queuedMessage.title": "Повідомлення в черзі",
   "chat.queuedMessage.edit": "edit",
   "chat.queuedMessage.send": "send",

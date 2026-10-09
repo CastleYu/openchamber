@@ -2302,6 +2302,8 @@ export const dict = {
   'chat.fileMentionAutocomplete.empty': 'No matches found',
   'chat.queuedMessage.attachments': '+{count} file(s)',
   'chat.queuedMessage.empty': '(empty)',
+  'chat.queuedMessage.targetChanged': "Paused for another connection. Edit to review or remove.",
+  'chat.queuedMessage.targetUnknown': "Original connection is unknown. Edit to review or remove.",
   'chat.queuedMessage.title': 'Queued messages',
   'chat.queuedMessage.edit': 'edit',
   'chat.queuedMessage.send': 'send',

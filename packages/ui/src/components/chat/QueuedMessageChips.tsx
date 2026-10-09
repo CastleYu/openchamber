@@ -14,7 +14,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getMessageQueueKey, useMessageQueueStore, type MessageQueueTarget, type QueuedMessage } from '@/stores/messageQueueStore';
+import { QUEUE_DELIVERY, getMessageQueueKey, useMessageQueueStore, type MessageQueueTarget, type QueuedMessage } from '@/stores/messageQueueStore';
 import { useInputStore } from '@/sync/input-store';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
@@ -39,6 +39,7 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: message.id });
 
     const firstLine = getQueuedMessagePreview(message);
+    const held = message.delivery !== undefined && message.delivery !== QUEUE_DELIVERY.READY;
 
     const attachmentCount = message.attachments?.length ?? 0;
 
@@ -58,11 +59,15 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
             >
                 <Icon name="draggable" className="h-4 w-4" aria-hidden="true" />
             </button>
-            <span className="min-w-0 flex-1 truncate typography-ui-label text-foreground">
+            <span className="min-w-0 flex-1 typography-ui-label text-foreground">
+                <span className="block truncate">
                 {firstLine || t('chat.queuedMessage.empty')}
                 {attachmentCount > 0 && (
                     <span className="ml-1 text-muted-foreground">{t('chat.queuedMessage.attachments', { count: attachmentCount })}</span>
                 )}
+                </span>
+                {held && <span className="block text-muted-foreground">{t(message.delivery === QUEUE_DELIVERY.CHANGED
+                    ? 'chat.queuedMessage.targetChanged' : 'chat.queuedMessage.targetUnknown')}</span>}
             </span>
             <Button
                 type="button"
@@ -77,6 +82,7 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
                 type="button"
                 variant="secondary"
                 size="xs"
+                disabled={held}
                 onClick={() => onSend(message)}
             >
                 <Icon name="send-plane" className="h-3 w-3" aria-hidden="true" />
@@ -160,6 +166,7 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
     }, [target, popToInput, onEditMessage, t]);
 
     const handleSend = React.useCallback((message: QueuedMessage) => {
+        if (message.delivery !== undefined && message.delivery !== QUEUE_DELIVERY.READY) return;
         onSendMessage(message.id);
     }, [onSendMessage]);
 

@@ -184,8 +184,7 @@ keys its projection by directory, and a broadcast without one left the
 delivered message on screen (a session's directory is remembered until the
 session is deleted or evicted).
 
-Limits: 20 items per session, 50 sessions (oldest evicted, never one with an
-item in flight), 200k characters of content; attachment payloads are bounded
+Limits: 20 items per session, 50 sessions (new entries reject with 409 at capacity; existing intent is retained), 200k characters of content; attachment payloads are bounded
 by the route family's 50 MB JSON limit.
 
 ## UI ownership
@@ -202,4 +201,30 @@ The host calls pauseDispatch after validating the saved connection and before re
 
 Drain has a 15-second deadline. Timeout restores dispatch and rejects restart before changing the live owner. A queue write failure also refuses retirement; a later successful write clears that failure. Cleanup/startup failure releases the pause, while existing readiness and identity guards keep an unavailable backend from dispatching. This is restart of the confirmed saved target, not permission to reassign queued intent to another target. Public active-record changes remain rejected until busy-session, queued-intent, pending-approval and peer-client confirmation are implemented.
 
-Web owns the boundary; Electron reuses it in process. Hosted and Capacitor mobile observe their connected host. VS Code keeps its separate foreground queue and has no saved-record switching support yet. No queue wire shape or persisted format changes. This adds one in-flight promise per dispatch and one bounded drain at a requested restart, without new upstream requests or polling. Chinese archive: [queue and lifecycle drain](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md).
+Web owns the boundary; Electron reuses it in process. Hosted and Capacitor mobile observe their connected host. VS Code keeps its separate foreground queue and has no saved-record switching support yet. The drain itself keeps the queue format unchanged; configured-target ownership below extends it. This adds one in-flight promise per dispatch and one bounded drain at a requested restart, without new upstream requests or polling. Chinese archive: [queue and lifecycle drain](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md).
+
+## Original configured target
+
+The host derives an opaque SHA-256 target from the confirmed connection record,
+generation and profile. Managed targets also include the resolved binary and
+working directory. Port and runtime epoch are excluded so a restart of the same
+configured target preserves intent. This identifies configured intent; it cannot
+prove that an external server at the same URL is the same remote instance.
+
+The host stamps new items; client-supplied stamps are ignored. Persisted stamps
+are private. Snapshots expose delivery as ready, target-changed or target-unknown.
+Old disk records and migrated browser items remain unknown. Changed or unknown
+items stay stored and cannot auto-dispatch or be taken for sending. Explicit
+editing and removal remain available; editing returns the full captured payload.
+Take routes accept purpose send (default) or edit. Send checks ownership and the
+transition pause after asynchronous target lookup. Directory collisions reject
+append instead of rerouting old items. Capacity rejects rather than evicting.
+
+Session-deleted events remove only matching-owner items observed before that
+event's asynchronous read. Target lookup failure holds intent and rejects new
+enqueue with 503. Reconnect and the existing dispatch scheduler refresh target
+state; no new poller is added. UI rows explain the hold, disable send and retain
+edit/remove. All 13 locales are translated. VS Code's foreground queue is still
+separate and needs its own owner adoption in R1.
+
+Chinese archive: [configured queue target](../../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).

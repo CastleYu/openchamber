@@ -2,7 +2,10 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createMessageQueueRuntime, parseQueuedItemInput } from './runtime.js';
+import express from 'express';
+import { createServer } from 'node:http';
+import { z } from 'zod';
+import { registerMessageQueueRoutes, createMessageQueueRuntime, parseQueuedItemInput } from './runtime.js';
 
 const SESSION = 'ses_queue_test_1';
 const DIRECTORY = '/repo';
@@ -62,7 +65,7 @@ const createOpenCode = () => {
   return { state, fetchImpl };
 };
 
-const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), knowledge = null, kernelOperations = null, retryDelayMs, resolvePromptBody, now } = {}) => {
+const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), knowledge = null, kernelOperations = null, getQueueTarget = async () => 'a'.repeat(64), retryDelayMs, resolvePromptBody, now } = {}) => {
   let eventHandler = () => {};
   let statusHandler = () => {};
   const broadcasts = [];
@@ -73,6 +76,7 @@ const createRuntime = ({ dataDir = makeDataDir(), openCode = createOpenCode(), k
       subscribeStatus(handler) { statusHandler = handler; return () => {}; },
     },
     kernelOperations,
+    getQueueTarget,
     buildOpenCodeUrl: (fetchPath) => `http://opencode.test${fetchPath}`,
     getOpenCodeAuthHeaders: () => ({}),
     sessionKnowledgeRuntime: knowledge,
@@ -507,6 +511,7 @@ describe('message queue runtime', () => {
     runtime.start();
     await runtime.enqueue(SESSION, DIRECTORY, item());
     emit({ type: 'session.deleted', properties: { info: { id: SESSION } } });
+    await settle();
     expect(runtime.snapshot().sessions).toEqual([]);
     expect(broadcasts.at(-1).properties.session).toMatchObject({ sessionId: SESSION, items: [] });
   });
@@ -809,4 +814,128 @@ describe('connection transition dispatch drain', () => {
     await runtime.enqueue(SESSION, DIRECTORY, item());
     expect(openCode.fetchImpl).not.toHaveBeenCalled();
   });
+});
+
+describe('original configured queue target', () => {
+  it('holds a restored item after target replacement and resumes only on its original target', async () => {
+    const first = createRuntime();
+    first.openCode.state.statuses = { [SESSION]: { type: 'busy' } };
+    first.runtime.start();
+    const queued = await first.runtime.enqueue(SESSION, DIRECTORY, item());
+    await first.runtime.flush(); first.runtime.stop();
+    let target = 'b'.repeat(64);
+    const next = createRuntime({ dataDir: first.dataDir, getQueueTarget: async () => target });
+    next.runtime.start(); await next.runtime.load(); next.connect(); await settle();
+    expect(next.runtime.sessionSnapshot(SESSION).items[0]).toMatchObject({ id: queued.itemId, delivery: 'target-changed' });
+    expect(next.openCode.state.sent).toEqual([]);
+    expect(next.openCode.fetchImpl).not.toHaveBeenCalled();
+    target = 'a'.repeat(64); next.connect(); await settle();
+    expect(next.openCode.state.sent).toHaveLength(1);
+    expect(next.runtime.sessionSnapshot(SESSION).items).toEqual([]);
+  });
+
+  it('preserves old unstamped payloads, including attachments, for explicit editing', async () => {
+    const dataDir = makeDataDir();
+    const original = { id: 'old-item', createdAt: 1, ...item({ attachments: [{ id: 'file', filename: 'a.txt', mimeType: 'text/plain', dataUrl: 'data:text/plain;base64,YQ==', size: 1, source: 'local' }] }) };
+    fs.writeFileSync(path.join(dataDir, 'message-queue.json'), JSON.stringify({ version: 1, revision: 3, sessions: { [SESSION]: { directory: DIRECTORY, items: [original] } } }));
+    const current = createRuntime({ dataDir }); current.runtime.start(); await current.runtime.load(); await settle();
+    expect(current.openCode.state.sent).toEqual([]);
+    expect(current.runtime.sessionSnapshot(SESSION).items[0].delivery).toBe('target-unknown');
+    await expect(current.runtime.take(SESSION, original.id)).rejects.toMatchObject({ status: 409 });
+    await expect(current.runtime.takeAll(SESSION)).rejects.toMatchObject({ status: 409 });
+    expect(current.runtime.sessionSnapshot(SESSION).items).toHaveLength(1);
+    const taken = await current.runtime.take(SESSION, original.id, 'edit');
+    expect(taken.item.attachments[0].dataUrl).toBe(original.attachments[0].dataUrl);
+    expect(current.runtime.sessionSnapshot(SESSION).items).toEqual([]);
+  });
+
+  it('ignores forged client ownership and keeps restored browser intent unknown', async () => {
+    const { runtime } = createRuntime();
+    const first = await runtime.enqueue(SESSION, DIRECTORY, item({ target: 'b'.repeat(64), delivery: 'ready' }));
+    expect(first.session.items[0].delivery).toBe('ready');
+    const second = await runtime.enqueue(SESSION, DIRECTORY, item({ restored: true, target: 'a'.repeat(64) }));
+    expect(second.session.items[1].delivery).toBe('target-unknown');
+  });
+
+  it('rejects enqueue when original target lookup fails without destroying existing intent', async () => {
+    let unavailable = false;
+    const { runtime } = createRuntime({ getQueueTarget: async () => { if (unavailable) throw new Error('unavailable'); return 'a'.repeat(64); } });
+    const first = await runtime.enqueue(SESSION, DIRECTORY, item());
+    unavailable = true;
+    await expect(runtime.enqueue(SESSION, DIRECTORY, item())).rejects.toMatchObject({ status: 503 });
+    expect(runtime.sessionSnapshot(SESSION).items).toMatchObject([{ id: first.itemId, delivery: 'target-unknown' }]);
+  });
+
+  it('keeps other-target items when replacement server deletes a colliding session ID', async () => {
+    let target = 'a'.repeat(64);
+    const current = createRuntime({ getQueueTarget: async () => target });
+    current.runtime.start(); current.runtime.setHold(SESSION, true);
+    const old = await current.runtime.enqueue(SESSION, DIRECTORY, item());
+    target = 'b'.repeat(64);
+    await current.runtime.enqueue(SESSION, DIRECTORY, item());
+    current.emit({ type: 'session.deleted', properties: { info: { id: SESSION } } }); await settle();
+    expect(current.runtime.sessionSnapshot(SESSION).items).toMatchObject([{ id: old.itemId, delivery: 'target-changed' }]);
+  });
+
+  it('rejects a full queue rather than discarding its oldest intent', async () => {
+    const { runtime } = createRuntime(); runtime.setHold(SESSION, true);
+    const first = await runtime.enqueue(SESSION, DIRECTORY, item());
+    for (let index = 1; index < 20; index++) await runtime.enqueue(SESSION, DIRECTORY, item());
+    await expect(runtime.enqueue(SESSION, DIRECTORY, item())).rejects.toMatchObject({ status: 409 });
+    expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(20);
+    expect(runtime.sessionSnapshot(SESSION).items[0].id).toBe(first.itemId);
+  });
+});
+
+describe('queue owner HTTP boundary', () => {
+  it('rejects manual send to a replaced target without consuming intent, while edit remains available', async () => {
+    let target = 'a'.repeat(64);
+    const { runtime } = createRuntime({ getQueueTarget: async () => target });
+    runtime.setHold(SESSION, true);
+    const queued = await runtime.enqueue(SESSION, DIRECTORY, item());
+    target = 'b'.repeat(64);
+    const app = express(); app.use(express.json()); registerMessageQueueRoutes(app, runtime);
+    const server = createServer(app);
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const address = z.object({ port: z.number() }).parse(server.address());
+    const url = 'http://127.0.0.1:' + address.port + '/api/message-queue/sessions/' + SESSION + '/items/' + queued.itemId + '/take';
+    try {
+      const send = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ purpose: 'send' }) });
+      expect(send.status).toBe(409);
+      expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(1);
+      const edit = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ purpose: 'edit' }) });
+      expect(edit.status).toBe(200);
+      expect(await edit.json()).toMatchObject({ item: { id: queued.itemId, content: 'follow up', delivery: 'target-changed' } });
+      expect(runtime.sessionSnapshot(SESSION).items).toEqual([]);
+    } finally {
+      server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
+    }
+  });
+});
+
+describe('queue mutation review boundaries', () => {
+  it('retains the original directory when a colliding session tries to append elsewhere', async () => {
+    const { runtime } = createRuntime(); runtime.setHold(SESSION, true);
+    const queued = await runtime.enqueue(SESSION, DIRECTORY, item());
+    await expect(runtime.enqueue(SESSION, DIRECTORY + '/other', item())).rejects.toMatchObject({ status: 409 });
+    expect(runtime.sessionSnapshot(SESSION)).toMatchObject({ directory: DIRECTORY, items: [{ id: queued.itemId }] });
+  });
+  for (const batch of [false, true]) {
+    it('retains manual-send intent when pause begins during target lookup ' + batch, async () => {
+      let block = false; let release;
+      const { runtime } = createRuntime({ getQueueTarget: async () => {
+        if (block) await new Promise(resolve => { release = resolve; });
+        return 'a'.repeat(64);
+      } });
+      runtime.setHold(SESSION, true);
+      const queued = await runtime.enqueue(SESSION, DIRECTORY, item());
+      block = true;
+      const pending = batch ? runtime.takeAll(SESSION) : runtime.take(SESSION, queued.itemId);
+      await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+      const resume = await runtime.pauseDispatch(); release();
+      await expect(pending).rejects.toMatchObject({ status: 409 });
+      expect(runtime.sessionSnapshot(SESSION).items).toHaveLength(1);
+      block = false; resume();
+    });
+  }
 });

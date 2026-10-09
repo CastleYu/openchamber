@@ -35,6 +35,24 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | INT-06L | 5.12 | Exact Legacy disposal and config-apply integration | INT-06, INT-03, INT-05 | planned |
 | INT-10 | 5.13 | Cross-host integration, CAgent contract regression/backend switching, exact 1.2.27 acceptance and release candidate | CA-03, INT-01, INT-02, INT-03, INT-04, INT-05, INT-06, INT-07, INT-08, INT-09, INT-06L | planned |
 
+## Goal round scope
+
+Updated 2026-10-10 at the maintainer's request. A goal round delivers a usable workflow across its owning modules. Keep the existing task IDs, dependencies and acceptance gates; this grouping changes execution granularity, not feature scope or release versions.
+
+Each implementation round includes the related implementation, focused failure and regression checks, applicable runtime/build verification, review of the actual diff, synchronized English handoff and Chinese archive, and a local commit with an evidence checkpoint. Read live weekly quota before committing to the batch and at each milestone boundary. Stop below 10 percent remaining or when the projected batch exceeds available quota. Record verified, failed and unavailable checks separately.
+
+| Round | Related tasks | Complete workflow for the round |
+| --- | --- | --- |
+| R1 | Remaining INT-01 / INT-02 | Complete connection switching: preserve queue intent under its original configured target, hold unknown or mismatched items, retain edit/take/cancel, show activity and pending decisions, implement explicit switch confirmation and previous-configuration recovery, retire stale requests, and complete shared-host and VS Code ownership/parity checks. Verify persistence, repeated switch, failed readiness, same-target restart and external-process preservation together. |
+| R2 | INT-03 | Deliver the first exact 1.2.27 conversation with Auto/manual selection, session/history, text and attachments, streamed tools, permissions/questions, stop and reopened history. Exercise the actual UI and host together and run current OC1/OC2 core regressions. |
+| R3 | INT-04 / INT-05 | Complete advanced Legacy operations, reconnect and pending-state recovery, configuration/credentials, plugins/MCP and browser-closed callers. Verify directory isolation and uncertain dispatch outcomes together. Reload-dependent configuration acceptance stays with R4. |
+| R4 | INT-06 / INT-06L | Complete configuration apply and reload for current profiles and exact Legacy, with verified directory/global scope, stream rebinding, busy-work decisions, failure recovery and external-PID preservation. Test active directory B while reloading A. |
+| R5 | INT-07 / INT-08 / INT-09 | Complete native menu localization, persistent branch context with explicit draft refresh, and effective-shortcut hints/action coverage. Include localization, persistence and applicable native/shared UI journeys for all three existing requirements. |
+| R6 | Remaining CA-01 / CA-02 and INT-10 contract work | Close remaining consumer migration and cross-host backend-switching gaps using protected sparse/extension samples. Verify feature refusal, host guards, stale-result retirement and offline kit reproducibility. Keep real CAgent mappings and model calibration at the CA-03 environment-local gate. |
+| R7 | INT-10 release acceptance | Run the integrated regression and available real-host journeys against the frozen candidate, build distributable artifacts, verify their startup/core journeys and publish only the evidence-backed scope on the independent branch. Claims requiring unavailable CA-03 evidence remain excluded or keep the full release gate incomplete. |
+
+R1 is the next implementation batch. Do not end a round merely because one API, component, test file or documentation edit is complete. Split only at a real dependency, unavailable runtime/environment, quota limit, or an implementation-to-integration/release phase boundary required by repository guidance. Write the completed evidence and exact continuation scope before such a split; retain the enclosing round until its acceptance gate passes. A quota check or context handoff does not itself advance milestone status.
+
 ## Completion contracts
 
 ### INT-00: evidence and scope
@@ -354,3 +372,11 @@ coordination and confirmation/recovery together before removing active-write 409
 INT-02 remains in progress; the existing CA-02 Release is unchanged.
 
 Validation: 80 focused tests pass, including SDK request fidelity, empty/failed reads, missing coverage, partial results and retirement. An isolated production host with real OC2 2.0.20 passed 16 checks, including route authentication, actual empty status/permission/form reads, React confirmation, restart, session CRUD and owned cleanup. Workspace type-check/lint and the VS Code consumer build pass. Lint retains five warnings; the anti-slop scan has 175 findings outside authored lines and none in the new activity module/tests. Dead-code remains two files, 319 exports and 231 types. No model conversation, real CAgent, Legacy, managed OC1 plugin, IDE or packaged desktop/mobile acceptance is claimed. Final evidence: artifacts/int02-activity-final-evidence.json. Live weekly quota has 43 percent remaining.
+
+### R1 configured queue ownership checkpoint
+
+Host queues now preserve their original configured target across persistence and same-target restart. Old or mismatched intent is held with explicit edit/remove recovery. Manual send and session-deletion paths enforce ownership; directory collisions and capacity reject without discarding intent. Shared UI and 13 locales expose held status. Contract: [host queue](../../packages/web/server/lib/message-queue/DOCUMENTATION.md#original-configured-target); synchronized [Chinese archive](zh-CN/QUEUE-TARGET.md).
+
+58 host regressions, 29 shared store tests and one real React component test pass. Workspace type-check/lint and Web/VS Code builds pass; lint retains five existing warnings. Production OC2 checks verify durable ownership through same-config restart without invoking a model. Evidence is recorded in artifacts/int02-queue-target-final-evidence.json. Configured identity does not prove an external remote instance. Real IDE/native/mobile, managed OC1 plugins, Legacy and CAgent remain unverified.
+
+R1 remains in progress: active-write 409 stays until activity/approval/client confirmation, recovery and VS Code adoption are complete. Seven expanded goal rounds preserve milestone dependencies and include implementation, verification, bilingual handoff, actual review and local evidence commits. Live weekly quota is 42 percent remaining. Frozen CA-02 Release is unchanged.

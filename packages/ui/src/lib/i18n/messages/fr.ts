@@ -2016,6 +2016,8 @@ export const dict = {
   'chat.fileMentionAutocomplete.empty': 'Aucune correspondance trouvée',
   'chat.queuedMessage.attachments': '+Fichier(s) {count}',
   'chat.queuedMessage.empty': '(vide)',
+  'chat.queuedMessage.targetChanged': "En pause pour une autre connexion. Modifiez pour vérifier ou supprimez.",
+  'chat.queuedMessage.targetUnknown': "Connexion d’origine inconnue. Modifiez pour vérifier ou supprimez.",
   'chat.queuedMessage.title': 'Messages en file d\'attente',
   'chat.queuedMessage.edit': 'modifier',
   'chat.queuedMessage.send': 'envoyer',

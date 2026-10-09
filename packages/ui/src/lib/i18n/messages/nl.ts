@@ -2302,6 +2302,8 @@ export const dict = {
   'chat.fileMentionAutocomplete.empty': 'Geen treffers gevonden',
   'chat.queuedMessage.attachments': '+{count} bestand(en)',
   'chat.queuedMessage.empty': '(leeg)',
+  'chat.queuedMessage.targetChanged': "Gepauzeerd voor een andere verbinding. Bewerk om te controleren of verwijder.",
+  'chat.queuedMessage.targetUnknown': "Oorspronkelijke verbinding onbekend. Bewerk om te controleren of verwijder.",
   'chat.queuedMessage.title': 'Berichten in de wachtrij',
   'chat.queuedMessage.edit': 'bewerken',
   'chat.queuedMessage.send': 'verzenden',

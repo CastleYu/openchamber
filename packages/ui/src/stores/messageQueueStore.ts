@@ -88,7 +88,13 @@ export type QueuedContextPart =
         text: string;
     };
 
+export const QUEUE_DELIVERY = { READY: 'ready', CHANGED: 'target-changed', UNKNOWN: 'target-unknown' } as const;
+
+const QUEUE_TAKE = { SEND: 'send', EDIT: 'edit' } as const;
+type QueueTakePurpose = typeof QUEUE_TAKE[keyof typeof QUEUE_TAKE];
+
 export interface QueuedMessage {
+    delivery?: typeof QUEUE_DELIVERY[keyof typeof QUEUE_DELIVERY];
     id: string;
     /** What the user typed, for display and editing. */
     content: string;
@@ -177,6 +183,7 @@ const serverContextPartSchema = z.discriminatedUnion('kind', [
 ]);
 
 const serverItemSchema = z.object({
+    delivery: z.enum([QUEUE_DELIVERY.READY, QUEUE_DELIVERY.CHANGED, QUEUE_DELIVERY.UNKNOWN]).optional(),
     id: z.string().min(1),
     createdAt: z.number(),
     content: z.string(),
@@ -260,6 +267,7 @@ const toQueuedMessage = (item: ServerQueueItem): QueuedMessage => {
         createdAt: item.createdAt,
         sendConfig: { ...item.sendConfig },
     };
+    if (item.delivery) message.delivery = item.delivery;
     if (item.agentMention) message.agentMention = item.agentMention;
     if (item.attachments.length > 0) message.attachments = item.attachments.map(toAttachedFile);
     if (item.context) message.context = item.context;
@@ -270,6 +278,7 @@ const toQueuedMessage = (item: ServerQueueItem): QueuedMessage => {
 type ServerQueueAttachmentInput = Omit<ServerQueueAttachment, 'dataUrl'> & { dataUrl: string };
 
 type ServerQueueItemInput = {
+    restored?: true;
     content: string;
     text: string;
     agentMention?: string;
@@ -282,7 +291,8 @@ type ServerQueueItemInput = {
 type ServerQueueRequestBody =
     | { directory: string; item: ServerQueueItemInput }
     | { itemIds: string[] }
-    | { held: boolean };
+    | { held: boolean }
+    | { purpose: QueueTakePurpose };
 
 const toServerAttachment = (attachment: AttachedFile): ServerQueueAttachmentInput => {
     const input: ServerQueueAttachmentInput = {
@@ -378,7 +388,7 @@ interface MessageQueueActions {
      * Removes what the composer is about to send itself — one message or every
      * message not already being delivered — and returns it in full.
      */
-    takeForSend: (target: MessageQueueTarget, messageId?: string) => Promise<QueuedMessage[]>;
+    takeForSend: (target: MessageQueueTarget, messageId?: string, purpose?: QueueTakePurpose) => Promise<QueuedMessage[]>;
     clearQueue: (target: MessageQueueTarget) => void;
     /** Drops the local projection only (the session is gone); never a server call. */
     forgetQueue: (target: MessageQueueTarget) => void;
@@ -622,11 +632,11 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                     },
 
                     popToInput: async (target, messageId) => {
-                        const [message] = await get().takeForSend(target, messageId);
+                        const [message] = await get().takeForSend(target, messageId, QUEUE_TAKE.EDIT);
                         return message ?? null;
                     },
 
-                    takeForSend: async (target, messageId) => {
+                    takeForSend: async (target, messageId, purpose = QUEUE_TAKE.SEND) => {
                         const key = getMessageQueueKey(target);
                         if (isServerOwnedMessageQueue()) {
                             try {
@@ -634,12 +644,12 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                                     const result = await requestJson(
                                         serverTakeResponseSchema,
                                         `${sessionPath(target.sessionId)}/items/${encodeURIComponent(messageId)}/take`,
-                                        jsonInit('POST'),
+                                        jsonInit('POST', { purpose }),
                                     );
                                     applyServerSession(result.session, result.revision, target.runtimeKey);
                                     return [toQueuedMessage(result.item)];
                                 }
-                                const result = await requestJson(serverTakeAllResponseSchema, `${sessionPath(target.sessionId)}/take`, jsonInit('POST'));
+                                const result = await requestJson(serverTakeAllResponseSchema, `${sessionPath(target.sessionId)}/take`, jsonInit('POST', { purpose }));
                                 applyServerSession(result.session, result.revision, target.runtimeKey);
                                 return result.items.map(toQueuedMessage);
                             } catch (error) {
@@ -762,7 +772,7 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                                 const { target, message } = next;
                                 const upload = requestJson(serverSessionResponseSchema, `${sessionPath(target.sessionId)}/items`, jsonInit('POST', {
                                     directory: target.directory,
-                                    item: toServerItemInput(message, next.message.sendConfig),
+                                    item: { ...toServerItemInput(message, next.message.sendConfig), restored: true },
                                 })).then(() => undefined).catch((error) => {
                                     console.warn('[queue] failed to migrate a locally queued message to the server:', error);
                                 });

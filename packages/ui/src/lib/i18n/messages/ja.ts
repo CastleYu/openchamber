@@ -2298,6 +2298,8 @@ export const dict: Record<I18nKey, string> = {
   'chat.fileMentionAutocomplete.empty': '一致が見つかりません',
   'chat.queuedMessage.attachments': '+{count}ファイル',
   'chat.queuedMessage.empty': '（空）',
+  'chat.queuedMessage.targetChanged': "別の接続に属するため一時停止中。編集して確認するか削除してください。",
+  'chat.queuedMessage.targetUnknown': "元の接続が不明です。編集して確認するか削除してください。",
   'chat.queuedMessage.title': 'キューされたメッセージ',
   'chat.queuedMessage.edit': '編集',
   'chat.queuedMessage.send': '送信',

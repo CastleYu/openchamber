@@ -1,5 +1,27 @@
 # CAgent contract reference generator
 
+## Offline command bundle and final candidate artifact
+
+```sh
+bun scripts/cagent/bundle-kit.mjs --out /local/new-kit --json
+node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit --digest <owner-digest> --json
+bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
+```
+
+The bundle includes seven standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
+
+Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle contains the executable command workflow, not the complete CA-02 deliverable: document extraction, declarative code generation, extension templates, model calibration and target permissions still remain.
+
+Finalization reads the protected registration, rechecks every registered packet using native persistent correction limits, and bundles captured passing bytes together. It then executes each operation's protected fixtures against that combined adapter in fresh bounded child processes. A combined-factory mismatch stops publication. The command never treats a candidate's progress report as acceptance evidence.
+
+Fresh output contains `artifact/adapter.mjs`, `control/manifest.json` and `report.json`. The manifest covers exactly the loader's artifact tree and is published last by atomic rename. The report records kit/candidate/artifact digests and fixed fixture results. All 22 capabilities stay unverified and activation stays unavailable. Review and protect acceptance evidence independently before using the host approval writer. A write failure retains an incomplete output for inspection; choose a new directory after resolving it. Setup failures remain separate from candidate failure. No live operation is called by these commands.
+
+```sh
+CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.mjs scripts/cagent/finalize-adapter.test.mjs
+```
+
+On Windows set `CAGENT_TEST_NODE` as a process environment variable before running Bun.
+
 ## Protected fixture checks and adapter assembly
 
 `fixture-checks.mjs` validates a host-owned version-1 fixture definition with an operation ID and unique cases. Each case supplies canonical input, identity, ordered request/response or transport-failure exchanges, and an expected neutral result or fixed failure. It checks input/output with the application's runtime parsers before execution. The host supplies the factory-loading port; this port receives captured candidate sources from the packet runner.
@@ -23,7 +45,7 @@ The owner supplies reviewed version-1 fixture definitions as an object keyed by 
 
 ```sh
 node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --fixtures /local/reviewed-fixtures.json --out /local/new-workspace --json
-bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation sessionList --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
+bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation getSession --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
 node --test scripts/cagent/fixture-process.test.mjs
 ```
 

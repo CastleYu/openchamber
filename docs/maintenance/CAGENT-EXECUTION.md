@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: bounded fixture process and executable packet checks
+## Latest checkpoint: standalone offline commands and final candidate artifact
+
+2026-10-09. CA-01 remains in progress. CA-02 now bundles seven standalone commands and their dependencies with 69 references, paired START-HERE files and license texts. An independently supplied digest verifies the exact protected tree. Real commands complete reference checking, mapping intake, preparation, bounded fixture execution and finalization in a fresh directory outside the checkout without node_modules or package installation. The owner supplies validated Node/Bun executables separately.
+
+Finalization reruns all registered packets using captured bytes and native persistent correction limits, then checks every fixture against the combined single-file adapter. It refuses cross-operation factory interference before publishing. All 22 capabilities remain unverified. Fresh output publishes the exact artifact manifest last; setup, candidate and incomplete-write failures remain distinct. Primary review corrected partial registration cardinality, concise counts, canonical failure constants and output-parent rechecking. The native success test uses the actual artifact loader rather than importing raw source directly.
+
+Eight focused tests pass across offline bundling and finalization. Changed JavaScript passes anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 exported types and 1 duplicate, with no CAgent row. The bundle was tested with Windows Node 24.9.0 and Bun 1.3.14; other OS/toolchains, environment-local models, target permissions and real API behavior remain unverified. An in-process Bun test build failed while the actual standalone build succeeded; the end-to-end test now invokes the real bundle CLI.
+
+Document extraction, declarative handler generation, extension templates, model calibration and enforced target permissions remain CA-02 work. Remaining runtime consumers/identity boundaries and real CA-03 acceptance still precede activation. Independent remote publication and temporary Release remain pending. Other INT work stays after CA-03. Live weekly allowance remains 63%; no reset credit was used. See the [offline workflow](../../scripts/cagent/DOCUMENTATION.md#offline-command-bundle-and-final-candidate-artifact). No unrelated application build or live API journey was claimed.
+
+## Previous checkpoint: bounded fixture process and executable packet checks
 
 2026-10-09. CA-01 remains in progress. CA-02 now accepts reviewed fixture definitions during packet preparation and includes them in the protected inventory. The executable host command requires an independently supplied kit digest, captures the allowed candidate handler and assembles it before executing fixtures in a fresh Node process. Minimal inherited environment, denied writes/process creation, a 5-second default deadline, 1 MiB input and 64 KiB combined output limits bound accidental candidate failures. Forced termination waits for process closure.
 

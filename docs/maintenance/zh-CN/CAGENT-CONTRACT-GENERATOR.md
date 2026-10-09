@@ -1,5 +1,27 @@
 # CAgent 契约参考生成器
 
+## 离线命令包及最终候选制品
+
+```sh
+bun scripts/cagent/bundle-kit.mjs --out /local/new-kit --json
+node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit --digest <owner-digest> --json
+bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
+```
+
+命令包包含七个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
+
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包提供可执行命令流程，仍未完成全部 CA-02 交付：文档提取、声明式代码生成、扩展模板、模型校准及目标权限尚待落实。
+
+最终组装读取保护注册表，以原生持久化修正上限重新检查每项注册任务，并将捕获且通过检查的字节一起打包。随后在新的有界子进程中，对组合适配器执行每项操作的保护夹具。多个工厂组合后的行为不一致会阻止发布。命令不将候选进度报告当作验收证据。
+
+新输出包含 `artifact/adapter.mjs`、`control/manifest.json` 及 `report.json`。清单准确覆盖加载器制品目录，最后以原子重命名发布。报告记录工具包／候选／制品摘要及固定夹具结果。全部 22 项能力保持未验证，启用保持不可用。使用宿主批准写入器前须独立审阅并保护验收证据。写入失败保留不完整输出供检查；解决原因后选择新目录。设置失败与候选失败保持区分。这些命令不调用真实操作。
+
+```sh
+CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.mjs scripts/cagent/finalize-adapter.test.mjs
+```
+
+Windows 应先设置进程环境变量 `CAGENT_TEST_NODE` 再运行 Bun。
+
 ## 受保护夹具检查及适配器组装
 
 `fixture-checks.mjs` 校验宿主自有的版本 1 夹具定义，包含操作 ID 及唯一案例。每个案例提供规范输入、身份、有序请求／响应或传输失败交换，以及预期中立结果或固定失败。执行前使用应用运行时解析器检查输入／输出。宿主提供工厂加载入口，该入口接收任务运行器捕获的候选源码。
@@ -23,7 +45,7 @@ bun test scripts/cagent/adapter-assembly.test.mjs scripts/cagent/fixture-workspa
 
 ```sh
 node scripts/cagent/prepare-packets.mjs --catalog /local/reviewed-catalog.json --mapping /local/candidate-mapping.json --fixtures /local/reviewed-fixtures.json --out /local/new-workspace --json
-bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation sessionList --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
+bun scripts/cagent/check-packet.mjs --workspace /local/new-workspace --operation getSession --node /absolute/path/to/node --kit-digest <owner-recorded-digest> --json
 node --test scripts/cagent/fixture-process.test.mjs
 ```
 

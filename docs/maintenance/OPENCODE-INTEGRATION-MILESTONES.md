@@ -1,6 +1,6 @@
 # Agent integration milestones
 
-Status: executing, 2026-10-09. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; INT-01 is next. Current evidence and handoff: [execution checkpoint](CAGENT-EXECUTION.md).
+Status: executing, 2026-10-09. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; INT-01 is in progress. Current evidence and handoff: [execution checkpoint](CAGENT-EXECUTION.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
 
 ## Version boundary
@@ -23,7 +23,7 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | CA-02 | 5.1 | Complete offline adapter kit with protected tests, generator, sparse and synthetic-extension samples, allowlist validation and runnable toolchain | CA-01 | planned |
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
 | INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | done; [source and executable evidence](OPENCODE-LEGACY-EVIDENCE.md) |
-| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | ready |
+| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | in progress |
 | INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | planned |
 | INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-02 Release | planned |
@@ -184,3 +184,10 @@ Use short implementation sessions with non-overlapping file ownership. The lead 
 | 3.7 Shortcut hints | INT-09, INT-10 |
 | New Legacy 1.2.27 profile, all consumed operations | INT-00L, INT-01 through INT-05, INT-06L, INT-10 |
 | CAgent independent-server architecture and accepted adapter | CA-00 through CA-03, INT-10 |
+
+### INT-01 implementation checkpoint
+
+In progress at base `9e4b76b83`. First extend the existing descriptor/binding identity with an optional resolved profile, preserving descriptors from existing hosts. Web kernel refresh increments epoch for a profile change; Electron reuses that backend. VS Code consumes the same descriptor contract. Shared UI on web, desktop, VS Code, hosted mobile and Capacitor rejects old results when the profile changes even at the same URL/epoch. No selection control or Legacy operation is enabled by this first step. Remaining work is authoritative Auto/manual resolution, requested-selection persistence, read-only Legacy declaration checks, capability dispatch and host adoption/validation.
+
+
+Verified on 2026-10-09: 7 shared UI binding tests and 39 server compatibility/runtime tests pass. Workspace type-check and lint pass, with five existing lint warnings. Authored runtime files pass oxlint. UI package build passes its configured TypeScript check. Dead-code reports the existing 2 unused files and 319 unused exports, with no profile finding. These checks cover profile identity only; selection, capability dispatch and real-host Legacy acceptance remain pending.

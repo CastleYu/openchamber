@@ -39,7 +39,7 @@ This module provides OpenCode server integration utilities for the web server ru
   empty source; OC1 cannot read or write this OC2 setting. The VS Code bridge
   forwards the same GET/PUT contract through `api:config/websearch`.
 - `compatibility.js` resolves OC1/OC2 from authoritative HTTP health/info responses. It reads health first and stops for stable 1.2.27, including normalized v/build metadata. That version has no `/api/info` API and forwards unknown paths with request headers to its hosted web app. Other versions retain health/info comparison; this exception does not enable the dedicated Legacy profile.
-- `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Unknown
+- `kernel-runtime.js` owns one backend endpoint/version/epoch descriptor. Its optional resolved profile participates in identity changes; a changed profile advances epoch even at the same endpoint/version. Profile selection and Legacy activation remain separate adoption work. Unknown
   startup endpoints are not probed. Credential changes and managed restarts retire
   old request identities, including discovery performed while the old process is
   closing. A health `reprobe` keeps a resolved OC1 or OC2 descriptor when detection

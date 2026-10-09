@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-09。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过，接下来执行 INT-01。当前证据与交接见[执行检查点](CAGENT-EXECUTION.md)。
+状态：执行中，2026-10-09。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；INT-01 正在进行。当前证据与交接见[执行检查点](CAGENT-EXECUTION.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
 ## 版本边界
@@ -25,7 +25,7 @@
 | CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | planned |
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | done；[源码及程序证据](OPENCODE-LEGACY-EVIDENCE.md) |
-| INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | ready |
+| INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | in progress |
 | INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | planned |
 | INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Legacy 高级操作与重连恢复 | INT-03, CA-02 Release | planned |
@@ -186,3 +186,10 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 | 3.7 快捷键提示 | INT-09, INT-10 |
 | 新增 Legacy 1.2.27 兼容配置，覆盖所有已使用操作 | INT-00L, INT-01 至 INT-05, INT-06L, INT-10 |
 | CAgent 独立服务器架构与验收后的适配器 | CA-00 至 CA-03, INT-10 |
+
+### INT-01 实施检查点
+
+基线为 `9e4b76b83`，正在实施。先为既有描述符／绑定身份添加可选的已解析兼容配置，兼容现有宿主描述符。Web 内核刷新在配置改变时提升 epoch；Electron 复用此后端。VS Code 使用相同描述符契约。Web、桌面、VS Code、托管移动端和 Capacitor 的共享 UI 在同 URL／epoch 下配置改变时也拒绝旧结果。这一步不开放选择控件或 Legacy 操作。剩余工作包括权威 Auto／手动解析、请求选择持久化、Legacy 手动声明只读检查、能力分派及宿主接入／验收。
+
+
+2026-10-09 验证：共享 UI 绑定 7 项测试、服务端兼容性／运行时 39 项测试通过。工作区类型检查和 lint 通过，保留 5 项既有 lint 警告。本轮运行时代码 oxlint 通过。UI 包构建通过其配置的 TypeScript 检查。Dead-code 报告既有 2 个未使用文件和 319 个未使用导出，未报告新增 profile 问题。这些检查仅覆盖配置身份；选择、能力分派和真实宿主 Legacy 验收仍待完成。

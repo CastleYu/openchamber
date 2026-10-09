@@ -8,7 +8,16 @@ export const OPEN_CODE_GENERATION = {
 
 export type OpenCodeGeneration = typeof OPEN_CODE_GENERATION[keyof typeof OPEN_CODE_GENERATION];
 
+export const OPEN_CODE_PROFILE = {
+  OC1: OPEN_CODE_GENERATION.OC1,
+  OC2: OPEN_CODE_GENERATION.OC2,
+  LEGACY: 'legacy-1.2.27',
+} as const;
+
+export type OpenCodeProfile = typeof OPEN_CODE_PROFILE[keyof typeof OPEN_CODE_PROFILE];
+
 export type OpenCodeRuntime = Readonly<{
+  profile?: OpenCodeProfile;
   generation: OpenCodeGeneration;
   endpoint: string | null;
   epoch: string | number;
@@ -43,7 +52,8 @@ export class OpenCodeRuntimeBinding {
     if (this.current?.endpoint === runtime.endpoint
       && this.current.epoch === runtime.epoch
       && this.current.generation === runtime.generation
-      && this.current.version === runtime.version) return;
+      && this.current.version === runtime.version
+      && this.current.profile === runtime.profile) return;
     this.current = Object.freeze({ ...runtime });
     this.revision += 1;
   }

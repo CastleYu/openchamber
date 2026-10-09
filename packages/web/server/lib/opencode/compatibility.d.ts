@@ -10,7 +10,10 @@ export const MINIMUM_OPENCODE_V2_VERSION: '2.0.15';
 
 export type OpenCodeGeneration = typeof OPENCODE_GENERATION[keyof typeof OPENCODE_GENERATION];
 
+export type OpenCodeProfile = 'oc1' | 'oc2' | 'legacy-1.2.27';
+
 export interface OpenCodeGenerationDescriptor {
+  profile?: OpenCodeProfile;
   generation: OpenCodeGeneration;
   endpoint: string | null;
   epoch: string | number;

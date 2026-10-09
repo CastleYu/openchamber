@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError } from './runtime';
+import { OPEN_CODE_PROFILE, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError } from './runtime';
 
 describe('OpenCode runtime binding', () => {
   test('does not guess OC1 before the first descriptor is bound', () => {
@@ -39,5 +39,28 @@ describe('OpenCode runtime binding', () => {
     binding.set({ generation: 'oc1', endpoint: 'http://localhost:4099', epoch: 1, version: '1.2.27' });
     binding.clear();
     expect(() => binding.assert('oc1', 'session.list')).toThrow(OpenCodeRuntimeError);
+  });
+});
+
+describe('OpenCode profile identity', () => {
+  test('rejects a stale result when only the resolved profile changes', async () => {
+    const binding = new OpenCodeRuntimeBinding();
+    const descriptor = { generation: 'oc1' as const, endpoint: 'http://localhost:4099', epoch: 1, version: '1.2.27' };
+    binding.set({ ...descriptor, profile: OPEN_CODE_PROFILE.OC1 });
+    let finish!: (value: string) => void;
+    const pending = binding.run('oc1', 'session.list', () => new Promise<string>(resolve => { finish = resolve; }));
+    binding.set({ ...descriptor, profile: OPEN_CODE_PROFILE.LEGACY });
+    finish('stale');
+    await expect(pending).rejects.toThrow(OpenCodeRuntimeChangedError);
+  });
+  test('keeps a current request when the resolved profile is unchanged', async () => {
+    const binding = new OpenCodeRuntimeBinding();
+    const descriptor = { generation: 'oc1' as const, endpoint: 'http://localhost:4099', epoch: 1, version: '1.2.27', profile: OPEN_CODE_PROFILE.LEGACY };
+    binding.set(descriptor);
+    let finish!: (value: string) => void;
+    const pending = binding.run('oc1', 'session.list', () => new Promise<string>(resolve => { finish = resolve; }));
+    binding.set({ ...descriptor });
+    finish('current');
+    expect(await pending).toBe('current');
   });
 });

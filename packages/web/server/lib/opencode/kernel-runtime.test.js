@@ -337,3 +337,23 @@ describe('CAgent kernel-operation boundary', () => {
     await expect(pending).rejects.toMatchObject({ code: 'runtime-changed' });
   });
 });
+
+describe('resolved profile identity', () => {
+  it('increments the epoch and notifies once when only the profile changes', async () => {
+    let profile = 'oc1';
+    const changes = [];
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => ({ ...ready(endpoint, epoch, '1.2.27'), profile }),
+      onChange: descriptor => changes.push(descriptor),
+    });
+    const before = await runtime.refresh();
+    profile = 'legacy-1.2.27';
+    const after = await runtime.refresh();
+    expect(after.epoch).toBeGreaterThan(before.epoch);
+    expect(after.profile).toBe(profile);
+    expect(changes).toHaveLength(2);
+    await runtime.refresh();
+    expect(changes).toHaveLength(2);
+  });
+});

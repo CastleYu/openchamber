@@ -64,7 +64,8 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     const result = probe.result;
     const changed = current.generation !== result.generation
       || current.endpoint !== result.endpoint
-      || current.version !== result.version;
+      || current.version !== result.version
+      || current.profile !== result.profile;
     if (changed) epoch += 1;
     current = Object.freeze({ ...result, epoch });
     if (changed) onChange(current);

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { opencodeClient } from './client';
+import { QUEUE_TARGET } from './connection';
 import { OpenCodeRuntimeChangedError, OpenCodeRuntimeError } from './runtime';
 import { configureRuntimeUrlResolver, getRuntimeUrlResolver, setRuntimeUrlResolver } from '../runtime-url';
 
@@ -235,4 +236,34 @@ describe('runtime diagnostic ownership', () => {
       expect(opencodeClient.getRuntimeDescriptor()).toBeNull();
     } finally { fetch.mockRestore(); }
   });
+});
+
+describe('queued request identity through real SDK clients', () => {
+  for (const generation of ['oc1', 'oc2'] as const) {
+    test(generation + ' preserves the private guard on every prompt, command and shell mutation', async () => {
+      opencodeClient.bindRuntime({ generation, endpoint: 'http://kernel.test', epoch: 1, version: generation === 'oc1' ? '1.18.32' : '2.0.16' });
+      const requests: Request[] = [];
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async (input, init) => {
+        const request = new Request(input, init);
+        requests.push(request);
+        const pathname = new URL(request.url).pathname;
+        if (generation === 'oc1' && pathname.endsWith('/shell')) return Response.json({ info: { id: 'msg_guard', sessionID: 'ses_guard', role: 'user', time: { created: 1 }, agent: 'build', model: { providerID: 'p', modelID: 'm' } }, parts: [] });
+        if (generation === 'oc2' && (pathname.endsWith('/synthetic') || pathname.endsWith('/prompt'))) return Response.json({ data: { id: 'in_guard' } });
+        return new Response(null, { status: 204 });
+      };
+      try {
+        const queueTarget = 'a'.repeat(64);
+        const config = { id: 'ses_guard', providerID: 'p', modelID: 'm', agent: 'build', directory: '/repo', queueTarget };
+        await opencodeClient.sendMessage({ ...config, text: 'prompt', prefaceText: 'preface', additionalParts: [{ text: 'context', synthetic: true }] });
+        await opencodeClient.sendCommand({ ...config, command: 'test', arguments: 'args' });
+        await opencodeClient.shellSession({ sessionId: config.id, command: 'echo fixture', model: { providerID: config.providerID, modelID: config.modelID }, agent: config.agent, directory: config.directory, queueTarget });
+        expect(requests.length).toBe(generation === 'oc1' ? 3 : 11);
+        for (const request of requests) expect(request.headers.get(QUEUE_TARGET.HEADER)).toBe(queueTarget);
+        requests.length = 0;
+        await opencodeClient.sendMessage({ ...config, queueTarget: undefined, text: 'ordinary' });
+        for (const request of requests) expect(request.headers.has(QUEUE_TARGET.HEADER)).toBe(false);
+      } finally { globalThis.fetch = originalFetch; }
+    });
+  }
 });

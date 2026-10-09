@@ -9,6 +9,9 @@ import {
   isProviderConnectRequest,
 } from '../../web/server/lib/enterprise-mode.js';
 import { resolveKernelRequest } from './kernelRequest';
+import { QUEUE_TARGET } from '../../web/server/lib/opencode/queue-target.js';
+import { z } from 'zod';
+import type { OpenCodeManager } from './opencode';
 import { isSessionRecordPath, overlaySessionResponseBody, parseJson, type SessionStateStore } from './openchamberSessionState';
 
 type BridgeMessageInput = {
@@ -39,6 +42,23 @@ type ApiProxyResponsePayload = {
   headers: Record<string, string>;
   bodyBase64?: string;
   bodyText?: string;
+};
+
+const queueTargetSchema = z.strictObject({ target: z.string().regex(/^[a-f0-9]{64}$/) });
+
+// Private queued-intent headers belong to the host, never the upstream server.
+const checkQueueTarget = async (manager: OpenCodeManager, headers: Headers): Promise<ApiProxyResponsePayload | null> => {
+  const expected = headers.get(QUEUE_TARGET.HEADER);
+  headers.delete(QUEUE_TARGET.HEADER);
+  if (expected === null) return null;
+  let status = 409;
+  if (/^[a-f0-9]{64}$/.test(expected)) {
+    const current = await manager.connectionRequest({ method: 'GET', path: QUEUE_TARGET.ROUTE });
+    const parsed = queueTargetSchema.safeParse(current.body);
+    if (current.status === 200 && parsed.success && parsed.data.target === expected) return null;
+    if (current.status !== 200 || !parsed.success) status = 503;
+  }
+  return { status, headers: { 'content-type': 'application/json' }, bodyText: JSON.stringify({ error: QUEUE_TARGET.CHANGED }) };
 };
 
 const shouldReturnTextBody = (headers: Headers): boolean => {
@@ -240,9 +260,13 @@ export async function handleProxyBridgeMessage(
       if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
       const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
       const targetUrl = selected.url;
+      const forwardedHeaders = new Headers(deps.sanitizeForwardHeaders(headers));
+      const queueFailure = await checkQueueTarget(ctx.manager, forwardedHeaders);
+      selected.assertCurrent();
+      if (queueFailure) return { id, type, success: true, data: queueFailure };
       const requestHeaders: Record<string, string> = {
-        ...deps.sanitizeForwardHeaders(headers),
-        ...ctx?.manager?.getOpenCodeAuthHeaders(),
+        ...Object.fromEntries(forwardedHeaders),
+        ...ctx.manager.getOpenCodeAuthHeaders(),
       };
 
       const requestBody =
@@ -332,9 +356,13 @@ export async function handleProxyBridgeMessage(
         return { id, type, success: false, error: 'Legacy message forwarding requires OpenCode 1' };
       }
       const targetUrl = selected.url;
+      const forwardedHeaders = new Headers(deps.sanitizeForwardHeaders(headers));
+      const queueFailure = await checkQueueTarget(ctx.manager, forwardedHeaders);
+      selected.assertCurrent();
+      if (queueFailure) return { id, type, success: true, data: queueFailure };
       const requestHeaders: Record<string, string> = {
-        ...deps.sanitizeForwardHeaders(headers),
-        ...ctx?.manager?.getOpenCodeAuthHeaders(),
+        ...Object.fromEntries(forwardedHeaders),
+        ...ctx.manager.getOpenCodeAuthHeaders(),
       };
       const timeoutSignal = AbortSignal.timeout(45000);
       const abortController = new AbortController();

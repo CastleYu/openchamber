@@ -87,7 +87,7 @@ test('extension-host activity cannot claim browser queues are empty', async () =
   const reject = async () => unused();
   const runtime = createVSCodeConnectionRuntime({
     resolveBinary: unused, resolveLaunchSpec: unused, stat: reject, getEnv: unused,
-    getRuntime: unused, getHeaders: unused, getOwner: unused,
+    getRuntime: unused, getHeaders: unused, getOwner: unused, getQueueTarget: unused,
     readSettings: unused, readPrevious: reject, saveConnection: reject,
     getConfigured: unused, replace: reject,
     getDirectories: () => ['C:/Work'],

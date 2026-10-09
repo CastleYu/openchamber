@@ -11,6 +11,7 @@ export function createVSCodeConnectionRuntime(deps: {
   getEnv(): NodeJS.ProcessEnv;
   getRuntime(): OpenCodeGenerationDescriptor;
   getHeaders(): HeadersInit;
+  getQueueTarget(): string;
   getDirectories(): string[];
   getState(): { ready: boolean; transitioning: boolean; external: boolean };
   getOwner(): OpenCodeGenerationDescriptor & { revision: number };

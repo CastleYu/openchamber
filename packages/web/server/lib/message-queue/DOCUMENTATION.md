@@ -201,7 +201,7 @@ The host calls pauseDispatch after validating the saved connection and before re
 
 Drain has a 15-second deadline. Timeout restores dispatch and rejects restart before changing the live owner. A queue write failure also refuses retirement; a later successful write clears that failure. Cleanup/startup failure releases the pause, while existing readiness and identity guards keep an unavailable backend from dispatching. This is restart of the confirmed saved target, not permission to reassign queued intent to another target. Public active-record changes remain rejected until busy-session, queued-intent, pending-approval and peer-client confirmation are implemented.
 
-Web owns the boundary; Electron reuses it in process. Hosted and Capacitor mobile observe their connected host. VS Code keeps its separate foreground queue and has no saved-record switching support yet. The drain itself keeps the queue format unchanged; configured-target ownership below extends it. This adds one in-flight promise per dispatch and one bounded drain at a requested restart, without new upstream requests or polling. Chinese archive: [queue and lifecycle drain](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md).
+Web owns the boundary; Electron reuses it in process. Hosted and Capacitor mobile observe their connected host. VS Code keeps its separate foreground queue and adopts confirmed switching through its extension manager. The drain itself keeps the queue format unchanged; configured-target ownership below extends it. This adds one in-flight promise per dispatch and one bounded drain at a requested restart, without new upstream requests or polling. Chinese archive: [queue and lifecycle drain](../../../../../docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md).
 
 ## Original configured target
 
@@ -224,7 +224,9 @@ Session-deleted events remove only matching-owner items observed before that
 event's asynchronous read. Target lookup failure holds intent and rejects new
 enqueue with 503. Reconnect and the existing dispatch scheduler refresh target
 state; no new poller is added. UI rows explain the hold, disable send and retain
-edit/remove. All 13 locales are translated. VS Code's foreground queue is still
-separate and needs its own owner adoption in R1.
+edit/remove. All 13 locales are translated. VS Code's separate foreground queue captures
+the same configured identity and checks it at the host forwarding boundary;
+see its [store contract](../../../../ui/src/stores/DOCUMENTATION.md#configured-queue-target).
+Peer coordination and full webview acceptance remain R1 gates.
 
 Chinese archive: [configured queue target](../../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).

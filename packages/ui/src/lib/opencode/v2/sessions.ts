@@ -45,7 +45,7 @@ const cursor = (value: { previous?: string | null; next?: string | null }) => co
 /** OC2 wire calls and projection; projected values await the shared-model migration. */
 export class V2SessionOperations {
   constructor(
-    private readonly clientFor: (directory?: string | null) => OpenCodeClient,
+    private readonly clientFor: (directory?: string | null, queueTarget?: string) => OpenCodeClient,
     private readonly binding: OpenCodeRuntimeBinding,
   ) {}
 
@@ -114,11 +114,11 @@ export class V2SessionOperations {
   }
 
   prompt(input: SessionPromptInput, scope: OperationScope = {}) {
-    return this.binding.run('oc2', 'session.prompt', () => this.clientFor(scope.directory).session.prompt(input, { signal: scope.signal }));
+    return this.binding.run('oc2', 'session.prompt', () => this.clientFor(scope.directory, scope.queueTarget).session.prompt(input, { signal: scope.signal }));
   }
 
   command(input: SessionCommandInput, scope: OperationScope = {}): Promise<void> {
-    return this.binding.run('oc2', 'session.command', () => this.clientFor(scope.directory).session.command(input, { signal: scope.signal }));
+    return this.binding.run('oc2', 'session.command', () => this.clientFor(scope.directory, scope.queueTarget).session.command(input, { signal: scope.signal }));
   }
 
   interrupt(id: string, scope: OperationScope = {}) {

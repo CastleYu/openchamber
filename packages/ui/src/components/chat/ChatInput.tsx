@@ -1752,6 +1752,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
             draftSnapshot?: NonNullable<typeof capturedDraftSnapshot>;
             historySubmissions?: InputHistorySubmission[];
             delivery?: 'steer';
+            queueTarget?: string;
         } | undefined;
         if (isBtwActive && btwSessionId && btwDirectory) {
             sendMessageOptions = {
@@ -1797,6 +1798,10 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                 return;
             }
             if (queuedOnly && queuedMessagesToSend.length === 0) return;
+        }
+
+        if (!isServerOwnedMessageQueue() && queuedMessagesToSend.length > 0) {
+            sendMessageOptions = { ...sendMessageOptions, queueTarget: queuedMessagesToSend[0].queueTarget };
         }
 
         const historySubmissions = buildChatInputHistorySubmissions({
@@ -1988,8 +1993,8 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
 
         // Collect all attachments for error recovery
         const allAttachments = [
-            ...primaryAttachments,
-            ...additionalParts.flatMap(p => p.attachments ?? []),
+            ...(queuedMessagesToSend.length > 0 && !isServerOwnedMessageQueue() ? attachedFiles : primaryAttachments),
+            ...(queuedMessagesToSend.length > 0 && !isServerOwnedMessageQueue() ? [] : additionalParts.flatMap(p => p.attachments ?? [])),
         ];
 
         // Arm the timeline anchor BEFORE the optimistic user row can commit;
@@ -2114,6 +2119,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                         : String(error ?? '');
             const normalized = rawMessage.toLowerCase();
 
+            if (capturedTarget) useMessageQueueStore.getState().restoreTaken(capturedTarget, queuedMessagesToSend);
             console.error('Message send failed:', rawMessage || error);
             restoreConsumedDrafts();
             restoreComposerText();

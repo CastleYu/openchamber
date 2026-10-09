@@ -133,6 +133,7 @@ export function expandSlashCommandGoalObjective(content: string, commands: GoalC
 // ---------------------------------------------------------------------------
 
 export async function routeMessage(params: {
+  queueTarget?: string
   runtimeKey?: string
   sessionId: string
   directory?: string | null
@@ -153,6 +154,7 @@ export async function routeMessage(params: {
   let promptAdditionalParts = params.additionalParts
   if (params.inputMode === "shell") {
     await opencodeClient.shellSession({
+      queueTarget: params.queueTarget,
       runtimeKey: params.runtimeKey,
       sessionId: params.sessionId,
       directory: requestDirectory,
@@ -210,6 +212,7 @@ export async function routeMessage(params: {
           files: params.files,
           appendSubmissions: params.appendSubmissions,
           send: (messageID) => opencodeClient.sendCommand({
+            queueTarget: params.queueTarget,
             runtimeKey: params.runtimeKey,
             id: params.sessionId,
             providerID: params.providerID,
@@ -262,6 +265,7 @@ export async function routeMessage(params: {
     send: (messageID, context) => {
       let contextIndex = 0
       return opencodeClient.sendMessage({
+      queueTarget: params.queueTarget,
       runtimeKey: params.runtimeKey,
       id: params.sessionId,
       providerID: params.providerID,
@@ -294,6 +298,7 @@ type CapturedSendTarget = {
 }
 
 type SendMessageOptions = {
+  queueTarget?: string
   target?: CapturedSendTarget
   sessionId?: string
   directory?: string
@@ -1956,6 +1961,7 @@ export const useSessionUIStore = create<SessionUIState>()((set, get) => ({
       files,
       appendSubmissions,
       delivery: options?.delivery,
+      queueTarget: options?.queueTarget,
       additionalParts: partsWithPinnedContext?.map((p) => ({
         text: p.text,
         synthetic: p.synthetic,

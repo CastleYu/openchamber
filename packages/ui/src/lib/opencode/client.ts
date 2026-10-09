@@ -193,6 +193,7 @@ const resolveRuntimeBaseUrl = (): string | null => {
 };
 
 type RuntimeOpencodeClientConfig = {
+  queueTarget?: string;
   baseUrl: string;
   directory?: string;
   assertProtocol?: () => void;
@@ -201,10 +202,10 @@ type RuntimeOpencodeClientConfig = {
 };
 
 export const createRuntimeOpencodeClient = (config: RuntimeOpencodeClientConfig): OpencodeClient => {
-  const { assertProtocol, requestTimeoutMs, ...sdkConfig } = config;
+  const { assertProtocol, requestTimeoutMs, queueTarget, ...sdkConfig } = config;
   return createOpencodeClient({
     ...sdkConfig,
-    fetch: createOpenCodeFetch({ assertProtocol, requestTimeoutMs }),
+    fetch: createOpenCodeFetch({ assertProtocol, requestTimeoutMs, queueTarget }),
   });
 };
 
@@ -324,7 +325,7 @@ class OpencodeService {
     this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc1', 'SDK request') });
     this.sessions = new V1SessionOperations(this.client);
     this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc2', 'SDK request') });
-    this.v2Sessions = new V2SessionOperations((directory) => this.v2ClientFor(directory), this.runtimeBinding);
+    this.v2Sessions = new V2SessionOperations((directory, queueTarget) => this.v2ClientFor(directory, queueTarget), this.runtimeBinding);
     this.v2Catalog = new V2CatalogOperations((directory) => this.v2ClientFor(directory), this.runtimeBinding);
   }
 
@@ -411,12 +412,17 @@ class OpencodeService {
     return request;
   }
 
+  private queuedV1Client(queueTarget?: string): OpencodeClient {
+    return queueTarget ? createRuntimeOpencodeClient({ baseUrl: this.baseUrl, queueTarget,
+      assertProtocol: () => this.runtimeBinding.assert('oc1', 'queued SDK request') }) : this.client;
+  }
+
   private isV2(): boolean {
     return this.runtimeBinding.get()?.generation === 'oc2';
   }
 
-  private scope(directory?: string | null, signal?: AbortSignal) {
-    return { directory: directory === null ? null : this.normalizeCandidatePath(directory) ?? this.currentDirectory, signal };
+  private scope(directory?: string | null, signal?: AbortSignal, queueTarget?: string) {
+    return { directory: directory === null ? null : this.normalizeCandidatePath(directory) ?? this.currentDirectory, signal, queueTarget };
   }
 
   /** Stable for one selected connection; bootstrap must bind before requesting it. */
@@ -505,8 +511,10 @@ class OpencodeService {
     return this.v2Sessions;
   }
 
-  private v2ClientFor(directory?: string | null): OpenCodeClient {
+  private v2ClientFor(directory?: string | null, queueTarget?: string): OpenCodeClient {
     const normalized = this.normalizeCandidatePath(directory);
+    if (queueTarget) return createV2RuntimeClient({ baseUrl: this.baseUrl, directory: normalized ?? undefined, queueTarget,
+      assertProtocol: () => this.runtimeBinding.assert('oc2', 'queued SDK request') });
     if (!normalized) return this.v2Client;
     const existing = this.v2ScopedClients.get(normalized);
     if (existing) return existing;
@@ -1239,23 +1247,24 @@ class OpencodeService {
     }));
   }
 
-  private async v2Selection(sessionID: string, providerID: string, modelID: string, variant?: string, agent?: string, directory?: string | null) {
-    const client = this.v2ClientFor(directory);
+  private async v2Selection(sessionID: string, providerID: string, modelID: string, variant?: string, agent?: string, directory?: string | null, queueTarget?: string) {
+    const client = this.v2ClientFor(directory, queueTarget);
     await this.runtimeBinding.run('oc2', 'session.switchModel', () => client.session.switchModel({
       sessionID, model: { providerID, id: modelID, variant },
     }));
     if (agent) await this.runtimeBinding.run('oc2', 'session.switchAgent', () => client.session.switchAgent({ sessionID, agent }));
   }
 
-  private async v2Synthetic(sessionID: string, text: string, directory?: string | null, metadata?: ContextPartMetadata, delivery?: 'steer', id?: string, description?: string) {
+  private async v2Synthetic(sessionID: string, text: string, directory?: string | null, metadata?: ContextPartMetadata, delivery?: 'steer', id?: string, description?: string, queueTarget?: string) {
     if (!text.trim()) return;
-    await this.runtimeBinding.run('oc2', 'session.synthetic', () => this.v2ClientFor(directory).session.synthetic({
+    await this.runtimeBinding.run('oc2', 'session.synthetic', () => this.v2ClientFor(directory, queueTarget).session.synthetic({
       sessionID, id, text, description, metadata: metadata ? z.record(z.string(), z.json()).parse(metadata) : undefined,
       delivery, resume: false,
     }));
   }
 
   async sendMessage(params: {
+    queueTarget?: string;
     runtimeKey?: string;
     id: string;
     providerID: string;
@@ -1304,10 +1313,10 @@ class OpencodeService {
       assertProviderCircuitClosed(params.providerID);
       try {
         this.assertRuntimeUnchanged(params.runtimeKey);
-        await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory);
-        if (params.prefaceTextSynthetic !== false) await this.v2Synthetic(params.id, params.prefaceText ?? '', directory, undefined, params.delivery);
+        await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory, params.queueTarget);
+        if (params.prefaceTextSynthetic !== false) await this.v2Synthetic(params.id, params.prefaceText ?? '', directory, undefined, params.delivery, undefined, undefined, params.queueTarget);
         for (const item of params.additionalParts ?? []) {
-          if (item.synthetic) await this.v2Synthetic(params.id, item.text, directory, item.metadata, params.delivery, item.id, item.description);
+          if (item.synthetic) await this.v2Synthetic(params.id, item.text, directory, item.metadata, params.delivery, item.id, item.description, params.queueTarget);
         }
         this.assertRuntimeUnchanged(params.runtimeKey);
         await this.v2Sessions.prompt({
@@ -1317,7 +1326,7 @@ class OpencodeService {
             mention: item.source ? { start: item.source.start, end: item.source.end, text: item.source.value } : undefined,
           })),
           delivery: params.delivery,
-        }, this.scope(directory));
+        }, this.scope(directory, undefined, params.queueTarget));
         recordProviderSuccess(params.providerID);
         return messageId;
       } catch (error) {
@@ -1413,7 +1422,7 @@ class OpencodeService {
     let response: Response;
 
     try {
-      const result = await this.client.session.promptAsync({
+      const result = await this.queuedV1Client(params.queueTarget).session.promptAsync({
         sessionID: params.id,
         ...(requestDirectory ? { directory: requestDirectory } : {}),
         model: {
@@ -1475,6 +1484,7 @@ class OpencodeService {
   }
 
   async sendCommand(params: {
+    queueTarget?: string;
     runtimeKey?: string;
     id: string;
     providerID: string;
@@ -1492,9 +1502,9 @@ class OpencodeService {
     if (this.isV2()) {
       const directory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
       const files = await this.v2Files(params.files);
-      await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory);
+      await this.v2Selection(params.id, params.providerID, params.modelID, params.variant, params.agent, directory, params.queueTarget);
       this.assertRuntimeUnchanged(params.runtimeKey);
-      await this.v2Sessions.command({ sessionID: params.id, name: params.command, text: params.arguments ?? '', files: files.length ? files : undefined }, this.scope(directory));
+      await this.v2Sessions.command({ sessionID: params.id, name: params.command, text: params.arguments ?? '', files: files.length ? files : undefined }, this.scope(directory, undefined, params.queueTarget));
       return undefined;
     }
 
@@ -1510,7 +1520,7 @@ class OpencodeService {
     const requestDirectory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
     this.assertRuntimeUnchanged(params.runtimeKey);
 
-    const response = await this.client.session.command({
+    const response = await this.queuedV1Client(params.queueTarget).session.command({
       sessionID: params.id,
       ...(requestDirectory ? { directory: requestDirectory } : {}),
       command: params.command,
@@ -1613,6 +1623,7 @@ class OpencodeService {
   }
 
   async shellSession(params: {
+    queueTarget?: string;
     runtimeKey?: string;
     sessionId: string;
     command: string;
@@ -1624,15 +1635,15 @@ class OpencodeService {
     this.assertRuntimeUnchanged(params.runtimeKey);
     if (this.isV2()) {
       const directory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
-      await this.v2Selection(params.sessionId, params.model.providerID, params.model.modelID, undefined, params.agent, directory);
+      await this.v2Selection(params.sessionId, params.model.providerID, params.model.modelID, undefined, params.agent, directory, params.queueTarget);
       this.assertRuntimeUnchanged(params.runtimeKey);
-      await this.runtimeBinding.run('oc2', 'session.shell', () => this.v2ClientFor(directory).session.shell({
+      await this.runtimeBinding.run('oc2', 'session.shell', () => this.v2ClientFor(directory, params.queueTarget).session.shell({
         sessionID: params.sessionId, id: params.messageId, command: params.command,
       }));
       return undefined;
     }
     const requestDirectory = this.normalizeCandidatePath(params.directory ?? null) ?? this.currentDirectory;
-    const response = await this.client.session.shell({
+    const response = await this.queuedV1Client(params.queueTarget).session.shell({
       sessionID: params.sessionId,
       ...(requestDirectory ? { directory: requestDirectory } : {}),
       messageID: params.messageId,

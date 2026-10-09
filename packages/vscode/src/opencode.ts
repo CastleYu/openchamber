@@ -2,6 +2,7 @@ import type { JsonValue } from './openchamberSessionState';
 import * as vscode from 'vscode';
 import { CONNECTION_MODE, OPENCODE_CONNECTION, OpenCodeConnectionError, type ConnectionRecord, type PreparedConnection } from '../../web/server/lib/opencode/connection.js';
 import { connectionSettings } from './connection-settings';
+import { describeQueueTarget } from '../../web/server/lib/opencode/queue-target.js';
 import { createVSCodeConnectionRuntime, type ConnectionTransaction } from './connection-runtime.js';
 import * as os from 'os';
 import * as path from 'path';
@@ -805,6 +806,20 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     getDirectories: () => [workingDirectory, ...(vscode.workspace.workspaceFolders ?? []).map(folder => folder.uri.fsPath)],
     getState: () => ({ ready: status === 'connected', transitioning: transitionActive || status === 'connecting', external: selectedConnection?.mode === CONNECTION_MODE.EXTERNAL }),
     getOwner: () => ({ ...kernelRuntime.get(), revision: lifecycleRevision }),
+    getQueueTarget: () => {
+      const identity = kernelRuntime.get();
+      if (status !== 'connected' || transitionActive || !selectedConnection || (identity.generation !== 'oc1' && identity.generation !== 'oc2')) {
+        throw new OpenCodeConnectionError('Queue target is unavailable', 503);
+      }
+      if (selectedConnection.mode === CONNECTION_MODE.EXTERNAL) return describeQueueTarget({ connection: selectedConnection, identity });
+      const selected = selectedConnection;
+      const connection: ConnectionRecord = selected.mode === CONNECTION_MODE.COMMAND
+        ? { version: selected.version, confirmed: selected.confirmed, mode: selected.mode, exe: selected.exe, args: selected.args, cwd: selected.cwd, env: selected.env }
+        : selected.mode === CONNECTION_MODE.CONFIGURED
+          ? { version: selected.version, confirmed: selected.confirmed, mode: selected.mode, exe: selected.exe }
+          : { version: selected.version, confirmed: selected.confirmed, mode: selected.mode };
+      return describeQueueTarget({ connection, identity, binary: selected.binary, directory: workingDirectory });
+    },
     readSettings: connectionSettings.read, readPrevious: connectionSettings.previous, saveConnection: connectionSettings.save,
     getConfigured: () => [
       { source: 'settings', key: 'openchamber.apiUrl', value: config.get<string>('apiUrl') || '', mode: CONNECTION_MODE.EXTERNAL },

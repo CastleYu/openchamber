@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 
+export const QUEUE_TARGET = { ROUTE: '/api/config/opencode-connection/queue-target', HEADER: 'x-openchamber-queue-target' } as const;
+
 export const CONNECTION = { SETTING: 'opencodeConnection', ROUTE: '/api/config/opencode-connection', PREPARE: '/api/config/opencode-connection/prepare', APPLY: '/api/config/opencode-connection/apply', RELOAD: '/api/config/reload', ITEM: 'general.opencode-connection' } as const;
 export const CONNECTION_MODE = { EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' } as const;
 export const CONNECTION_ISSUE = { INVALID: 'invalid', UNAVAILABLE: 'unavailable', CONFLICT: 'conflict' } as const;

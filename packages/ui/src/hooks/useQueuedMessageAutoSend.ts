@@ -88,6 +88,7 @@ export const buildQueuedAutoSendPayload = (queue: QueuedMessage[]) => {
   // file mentions resolved, and the context it was queued with following it.
   return {
     queuedMessageId: queued.id,
+    queueTarget: queued.queueTarget,
     historySubmissions: [createInputHistorySubmission(queued.content, queued.attachments ?? [])],
     primaryText: queued.text,
     primaryAttachments: queued.attachments ?? [],
@@ -120,7 +121,7 @@ export const sendQueuedAutoSendPayload = (
     payload.additionalParts.length > 0 ? payload.additionalParts : undefined,
     resolved.variant,
     'normal',
-    { target, historySubmissions: payload.historySubmissions },
+    { target, historySubmissions: payload.historySubmissions, queueTarget: payload.queueTarget },
   );
 };
 
@@ -329,6 +330,7 @@ export function useQueuedMessageAutoSend(enabledOrOptions?: boolean | { enabled?
         useMessageQueueStore.getState().removeFromQueue(target, payload.queuedMessageId);
         sendFailuresRef.current.delete(targetKey);
       } catch (error) {
+        void useMessageQueueStore.getState().resync().catch(() => {});
         console.warn('[queue] queued auto-send failed:', error);
         const priorFailures = failure?.messageId === payload.queuedMessageId ? failure.failures : 0;
         const failures = priorFailures + 1;

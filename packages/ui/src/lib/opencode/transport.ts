@@ -1,4 +1,5 @@
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { QUEUE_TARGET } from './connection';
 
 const READ_TIMEOUT_MS = 30_000;
 
@@ -13,10 +14,15 @@ export const createTimeoutSignal = (milliseconds: number): TimeoutLease => {
 };
 
 /** Both SDK generations use this one runtime-aware fetch implementation. */
-export const createOpenCodeFetch = (options: { requestTimeoutMs?: number; assertProtocol?: () => void } = {}): typeof fetch => {
+export const createOpenCodeFetch = (options: { requestTimeoutMs?: number; assertProtocol?: () => void; queueTarget?: string } = {}): typeof fetch => {
   const requestTimeoutMs = options.requestTimeoutMs ?? READ_TIMEOUT_MS;
   return async (input: string | URL | Request, init?: RequestInit) => {
     options.assertProtocol?.();
+    if (options.queueTarget) {
+      const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+      headers.set(QUEUE_TARGET.HEADER, options.queueTarget);
+      init = { ...init, headers };
+    }
     const url = input instanceof Request ? input.url : String(input);
     const method = String(init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
     if (url.includes('/event') || method === 'POST') return runtimeFetch(input, init);

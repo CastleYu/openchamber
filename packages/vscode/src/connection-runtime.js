@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { QUEUE_TARGET } from '../../web/server/lib/opencode/queue-target.js';
 import { AGENT_FAMILY } from '../../web/server/lib/agent/constants.js';
 import { createConnectionActivity } from '../../web/server/lib/opencode/connection-activity.js';
 import { createConnectionSwitch } from '../../web/server/lib/opencode/connection-switch.js';
@@ -29,6 +30,7 @@ export const createVSCodeConnectionRuntime = deps => {
     if (!parsed.success) return { status: 400, body: { error: 'invalid_connection_request' } };
     const { method, path, body } = parsed.data;
     try {
+      if (method === 'GET' && path === QUEUE_TARGET.ROUTE) return { status: 200, body: { target: deps.getQueueTarget() } };
       if (method === 'GET' && path === OPENCODE_CONNECTION.ROUTE) return { status: 200, body: discover() };
       if (method === 'GET' && path === OPENCODE_CONNECTION.ACTIVITY_ROUTE) return { status: 200, body: await activity.inspect() };
       if (method === 'GET' && path === CONNECTION_SWITCH.PREVIOUS_ROUTE) return { status: 200, body: { connection: await owner.previous() } };

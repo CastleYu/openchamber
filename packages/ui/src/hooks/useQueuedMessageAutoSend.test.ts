@@ -283,6 +283,7 @@ describe('buildQueuedAutoSendPayload', () => {
     const payload = buildQueuedAutoSendPayload([
       {
         id: 'queued-raw',
+        queueTarget: 'a'.repeat(64),
         text: '/plan feature from raw queue',
         content: '/plan feature from raw queue',
         createdAt: 1,
@@ -315,6 +316,7 @@ describe('buildQueuedAutoSendPayload', () => {
 
     expect(sendMessageCalls[0]?.[0]).toBe('sanitized transport text');
     expect(sendMessageCalls[0]?.[9]).toEqual({
+      queueTarget: 'a'.repeat(64),
       target: {
         runtimeKey: 'runtime-original',
         sessionId: 'session-original',

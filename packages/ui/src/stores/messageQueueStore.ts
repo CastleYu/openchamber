@@ -10,6 +10,7 @@ import { updateDesktopSettings } from '@/lib/persistence';
 import { getRuntimeKey } from '@/lib/runtime-switch';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { QUEUE_TARGET } from '@/lib/opencode/connection';
 import { normalizePath } from '@/lib/pathNormalization';
 import { getQueuedMessagePreview } from '@/lib/messages/queuedMessagePreview';
 
@@ -90,10 +91,15 @@ export type QueuedContextPart =
 
 export const QUEUE_DELIVERY = { READY: 'ready', CHANGED: 'target-changed', UNKNOWN: 'target-unknown' } as const;
 
+const localQueueReady = (message: QueuedMessage) => message.delivery === QUEUE_DELIVERY.READY
+    && !!message.queueTarget && /^[a-f0-9]{64}$/.test(message.queueTarget);
+
 const QUEUE_TAKE = { SEND: 'send', EDIT: 'edit' } as const;
 type QueueTakePurpose = typeof QUEUE_TAKE[keyof typeof QUEUE_TAKE];
 
 export interface QueuedMessage {
+    /** Opaque configured OpenCode target captured by the VS Code host at enqueue. */
+    queueTarget?: string;
     delivery?: typeof QUEUE_DELIVERY[keyof typeof QUEUE_DELIVERY];
     id: string;
     /** What the user typed, for display and editing. */
@@ -381,6 +387,7 @@ interface MessageQueueState {
 interface MessageQueueActions {
     addToQueue: (target: MessageQueueTarget, message: QueuedMessageInput) => Promise<void>;
     removeFromQueue: (target: MessageQueueTarget, messageId: string) => void;
+    restoreTaken: (target: MessageQueueTarget, messages: QueuedMessage[]) => void;
     reorderQueue: (target: MessageQueueTarget, fromId: string, toId: string) => void;
     /** Removes the message and returns it in full, attachments included. */
     popToInput: (target: MessageQueueTarget, messageId: string) => Promise<QueuedMessage | null>;
@@ -483,6 +490,41 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
             (set, get) => {
                 let hydration: { runtimeKey: string; promise: Promise<void> } | null = null;
                 let resyncRequested = false;
+                let localTargetRead: { runtimeKey: string; promise: Promise<string> } | null = null;
+                const refreshLocalTarget = async (runtimeKey = getRuntimeKey()) => {
+                    const capturedRuntime = getRuntimeKey();
+                    if (!localTargetRead || localTargetRead.runtimeKey !== capturedRuntime) {
+                        const promise = requestJson(z.strictObject({ target: z.string().regex(/^[a-f0-9]{64}$/) }), QUEUE_TARGET.ROUTE)
+                            .then((result) => result.target);
+                        const read = { runtimeKey: capturedRuntime, promise };
+                        localTargetRead = read;
+                        void promise.finally(() => { if (localTargetRead === read) localTargetRead = null; }).catch(() => {});
+                    }
+                    let target: string | null = null;
+                    try {
+                        target = await localTargetRead.promise;
+                        if (capturedRuntime !== getRuntimeKey()) throw new Error('Runtime changed while reading queue target');
+                        return target;
+                    } finally {
+                        if (capturedRuntime === getRuntimeKey()) set((state) => {
+                            let changed = false;
+                            const queuedMessages = { ...state.queuedMessages };
+                            for (const [key, queue] of Object.entries(queuedMessages)) {
+                                if (parseMessageQueueKey(key)?.runtimeKey !== runtimeKey) continue;
+                                queuedMessages[key] = queue.map((message) => {
+                                    const valid = message.queueTarget && /^[a-f0-9]{64}$/.test(message.queueTarget);
+                                    const delivery = !valid || !target ? QUEUE_DELIVERY.UNKNOWN
+                                        : message.queueTarget === target ? QUEUE_DELIVERY.READY : QUEUE_DELIVERY.CHANGED;
+                                    if (message.delivery === delivery) return message;
+                                    changed = true;
+                                    return { ...message, delivery };
+                                });
+                            }
+                            return changed ? { queuedMessages } : state;
+                        });
+                    }
+                };
+
                 const applyServerSession = (session: ServerQueueSession, revision: number, expectedRuntimeKey: string) => {
                     if (expectedRuntimeKey !== getRuntimeKey()) return;
                     if ((snapshotRevisions.get(expectedRuntimeKey) ?? -1) > revision) return;
@@ -545,6 +587,7 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                     addToQueue: async (target, message) => {
                         const key = getMessageQueueKey(target);
                         const id = `queued-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                        const queueTarget = isServerOwnedMessageQueue() ? undefined : await refreshLocalTarget(target.runtimeKey);
                         const queuedMessage: QueuedMessage = {
                             id,
                             content: message.content,
@@ -556,19 +599,21 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                         if (message.attachments && message.attachments.length > 0) queuedMessage.attachments = message.attachments;
                         if (message.context && message.context.length > 0) queuedMessage.context = message.context;
 
+                        if (queueTarget) {
+                            queuedMessage.queueTarget = queueTarget;
+                            queuedMessage.delivery = QUEUE_DELIVERY.READY;
+                        }
+
                         set((state) => {
                             const currentQueue = state.queuedMessages[key] ?? [];
+                            if (!isServerOwnedMessageQueue() && (currentQueue.length >= MAX_MESSAGES_PER_QUEUE
+                                || (!state.queuedMessages[key] && Object.keys(state.queuedMessages).length >= MAX_QUEUE_TARGETS))) {
+                                throw new Error('Message queue is full. Edit or remove an existing item before queueing another.');
+                            }
                             const queuedMessages = {
                                 ...state.queuedMessages,
                                 [key]: [...currentQueue, queuedMessage].slice(-MAX_MESSAGES_PER_QUEUE),
                             };
-                            const keys = Object.keys(queuedMessages);
-                            if (keys.length > MAX_QUEUE_TARGETS) {
-                                keys.sort((left, right) => (
-                                    (queuedMessages[left]?.[0]?.createdAt ?? 0) - (queuedMessages[right]?.[0]?.createdAt ?? 0)
-                                ));
-                                for (const staleKey of keys.slice(0, keys.length - MAX_QUEUE_TARGETS)) delete queuedMessages[staleKey];
-                            }
                             return {
                                 queuedMessages,
                             };
@@ -596,6 +641,18 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                             set((state) => removeMessageLocally(state, key, id));
                             throw error;
                         }
+                    },
+
+                    restoreTaken: (target, messages) => {
+                        if (isServerOwnedMessageQueue() || messages.length === 0) return;
+                        const key = getMessageQueueKey(target);
+                        set((state) => {
+                            const queue = state.queuedMessages[key] ?? [];
+                            const existing = new Set(queue.map((message) => message.id));
+                            return { queuedMessages: { ...state.queuedMessages,
+                                [key]: [...messages.filter((message) => !existing.has(message.id)), ...queue] } };
+                        });
+                        void refreshLocalTarget(target.runtimeKey).catch(() => {});
                     },
 
                     removeFromQueue: (target, messageId) => {
@@ -658,10 +715,12 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                             }
                         }
 
+                        if (purpose === QUEUE_TAKE.SEND) await refreshLocalTarget(target.runtimeKey);
                         const state = get();
                         const sending = state.sendingIds[key] ?? [];
                         const taken = (state.queuedMessages[key] ?? []).filter((message) => (
                             (messageId ? message.id === messageId : true) && !sending.includes(message.id)
+                            && (purpose === QUEUE_TAKE.EDIT || localQueueReady(message))
                         ));
                         if (taken.length === 0) return [];
                         const takenIds = new Set(taken.map((message) => message.id));
@@ -729,8 +788,8 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                         const state = get();
                         const queue = state.queuedMessages[key] ?? [];
                         const sending = state.sendingIds[key];
-                        if (!sending || sending.length === 0) return queue;
-                        return queue.filter((message) => !sending.includes(message.id));
+                        return queue.filter((message) => (isServerOwnedMessageQueue() || localQueueReady(message))
+                            && !sending?.includes(message.id));
                     },
 
                     setFollowUpBehavior: (behavior) => {
@@ -743,7 +802,7 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                     },
 
                     hydrate: () => {
-                        if (!isServerOwnedMessageQueue()) return Promise.resolve();
+                        if (!isServerOwnedMessageQueue()) return refreshLocalTarget().then(() => {});
                         const runtimeKey = getRuntimeKey();
                         if (hydration?.runtimeKey === runtimeKey) return hydration.promise;
                         const generation = ++hydrationGeneration;

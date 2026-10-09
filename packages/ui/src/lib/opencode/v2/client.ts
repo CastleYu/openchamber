@@ -6,6 +6,7 @@ const EVENT_CURSOR_HEADER = 'Last-Event-ID';
 
 export type V2RuntimeClientConfig = {
   baseUrl: string;
+  queueTarget?: string;
   directory?: string;
   requestTimeoutMs?: number;
   assertProtocol?: () => void;

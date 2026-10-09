@@ -667,3 +667,18 @@ manual send; popToInput requests purpose edit and preserves the captured payload
 Legacy browser uploads use restored true, leaving ownership unknown rather than
 assigning old intent to today's connection. See the canonical
 [host queue contract](../../../web/server/lib/message-queue/DOCUMENTATION.md#original-configured-target).
+
+VS Code retains its foreground queue. Enqueue reads the extension manager's
+opaque configured target through the queue-target connection route and persists
+it with the full captured item. Concurrent reads coalesce; bootstrap/reconnect
+resync and manual take refresh delivery. No new poller or server queue is added.
+Missing stamps, failed reads and target changes hold items for edit/remove.
+Capacity rejects new intent rather than evicting old items. Failed manual sends
+restore the original items and stamps; auto-send retains its in-flight item.
+
+Every queued prompt, command and shell request carries the private target header,
+including OC2 model/agent selection and synthetic context mutations. The extension
+checks it against the current manager before forwarding, strips it, and rejects
+changed or unavailable targets. Ordinary sends keep their existing path. This
+identifies configured intent, not a remote instance behind an unchanged URL.
+See the [Chinese archive](../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).

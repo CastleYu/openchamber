@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+
+export const QUEUE_TARGET = Object.freeze({ ROUTE: '/api/config/opencode-connection/queue-target', HEADER: 'x-openchamber-queue-target', CHANGED: 'queue_target_changed' });
 import { parseOpenCodeConnection, CONNECTION_MODE } from './connection.js';
 
 // Configured target identity survives a managed port/password/epoch change.

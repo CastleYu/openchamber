@@ -17,6 +17,7 @@ export type SessionPatch = {
 export type SessionCreate = { parentID?: string; title?: string; metadata?: Metadata };
 
 export type OperationScope = {
+  queueTarget?: string;
   directory?: string | null;
   signal?: AbortSignal;
 };

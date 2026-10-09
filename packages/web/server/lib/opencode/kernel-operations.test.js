@@ -605,3 +605,38 @@ describe('Legacy operation acceptance boundary', () => {
     await expect(ops.listSessions()).rejects.toMatchObject({ code: 'runtime-changed' });
   });
 });
+
+describe('kernel profile identity contract', () => {
+  it('retains profile in captured and returned identities', async () => {
+    const endpoint = await serve(() => ({ body: [oc1Session] }));
+    const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc1', endpoint), profile: 'oc1' }), getHeaders: () => ({}) });
+    expect(ops.captureIdentity()).toMatchObject({ profile: 'oc1' });
+    await expect(ops.listSessions()).resolves.toMatchObject({ profile: 'oc1' });
+  });
+  it('rejects a request built before the current profile without transport', async () => {
+    const fetchImpl = vi.fn();
+    const selected = { ...runtime('oc1', 'http://127.0.0.1:9'), profile: 'oc1' };
+    const ops = createKernelOperations({ getRuntime: () => selected, getHeaders: () => ({}), fetchImpl });
+    const { profile, ...oldIdentity } = selected;
+    await expect(ops.createSession({ directory: '/repo', expectedIdentity: oldIdentity })).rejects.toMatchObject({ code: 'runtime-changed' });
+    expect(profile).toBe('oc1');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('profile preparation and accepted writes', () => {
+  it('carries the OC2 profile into session preparation', async () => {
+    const endpoint = await serve(() => ({ body: { data: oc2Session } }));
+    const prepareSession = vi.fn(async () => {});
+    const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc2', endpoint), profile: 'oc2' }),
+      getHeaders: () => ({}), prepareSession });
+    await expect(ops.getSession({ sessionID: 'ses_2' })).resolves.toMatchObject({ profile: 'oc2' });
+    expect(prepareSession).toHaveBeenCalledWith(expect.objectContaining({ identity: expect.objectContaining({ profile: 'oc2' }) }));
+  });
+  it('accepts a write carrying the current profile', async () => {
+    const endpoint = await serve(() => ({ body: oc1Session }));
+    const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc1', endpoint), profile: 'oc1' }), getHeaders: () => ({}) });
+    await expect(ops.createSession({ directory: '/repo', expectedIdentity: ops.captureIdentity() }))
+      .resolves.toMatchObject({ profile: 'oc1', data: { id: 'ses_1' } });
+  });
+});

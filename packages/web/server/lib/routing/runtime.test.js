@@ -289,3 +289,39 @@ describe('describe', () => {
     expect(await makeRuntime({ flag: '', answers: {} }).runtime.describe()).toEqual({ available: false, autoReady: false, tokenPresent: false, config: null, builtins: [] });
   });
 });
+
+describe('routing profile ownership', () => {
+  const setup = () => {
+    let identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
+    const store = { readConfig: async () => readyConfig(), readToken: async () => 'key',
+      readClassifierSource: async () => 'typesafe', readCustomEndpoint: async () => null };
+    const jev = { ask: vi.fn(async () => ({ answers: {}, ms: 1 })) };
+    const events = [];
+    const runtime = createRoutingRuntime({ kernelOperations: { captureIdentity: () => identity }, store, jev,
+      broadcastGlobalUiEvent: event => events.push(event) });
+    return { runtime, jev, events, switchProfile: () => { identity = { ...identity, profile: 'oc2' }; } };
+  };
+  it('retires cached permission decisions after a profile-only change', async () => {
+    const { runtime, jev, switchProfile } = setup();
+    const permission = { id: 'p1', sessionID: 's1' };
+    await runtime.evaluatePermission(permission, '/repo');
+    await runtime.evaluatePermission(permission, '/repo');
+    expect(jev.ask).toHaveBeenCalledTimes(1);
+    switchProfile();
+    await runtime.evaluatePermission(permission, '/repo');
+    expect(jev.ask).toHaveBeenCalledTimes(2);
+  });
+  it.each(['success', 'failure'])('rejects a late classifier %s without broadcasting or caching', async outcome => {
+    const { runtime, jev, events, switchProfile } = setup();
+    jev.ask.mockImplementationOnce(async () => {
+      switchProfile();
+      if (outcome === 'failure') throw new Error('classifier failed');
+      return { answers: {}, ms: 1 };
+    });
+    const permission = { id: 'p1', sessionID: 's1' };
+    await expect(runtime.evaluatePermission(permission, '/repo')).rejects.toThrow('runtime changed');
+    expect(events).toEqual([]);
+    await runtime.evaluatePermission(permission, '/repo');
+    expect(jev.ask).toHaveBeenCalledTimes(2);
+  });
+});

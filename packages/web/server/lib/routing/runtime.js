@@ -80,7 +80,7 @@ export function createRoutingRuntime({
 }) {
   const permissionDecisions = new Map();
   const autoSessions = new Map();
-  const identityKey = (identity) => `${identity.generation}\0${identity.endpoint}\0${identity.epoch}`;
+  const identityKey = (identity) => `${identity.generation}\0${identity.profile ?? ''}\0${identity.endpoint}\0${identity.epoch}`;
   let lastIdentityKey = '';
   const currentIdentity = () => {
     const identity = kernelOperations?.captureIdentity() ?? null;
@@ -344,18 +344,23 @@ export function createRoutingRuntime({
    */
   const evaluatePermission = async (permission, directory) => {
     if (!permission?.id) return { action: 'accept' };
+    const identity = currentIdentity();
     const cached = permissionDecisions.get(permission.id);
     if (cached && now() - cached.at < PERMISSION_DECISION_TTL_MS) return cached.result;
     const state = await describe();
+    assertIdentity(identity);
     const oc2 = generation() === 'oc2';
     if (!oc2 && (!state.available || !state.config?.enabled || !state.config.safetyNet.enabled || !state.tokenPresent)) return { action: 'accept' };
     if (oc2 && !state.jevAvailable) return { action: 'hold', unavailable: true };
     let result;
     try {
       const access = oc2 ? await resolveAccess() : null;
+      assertIdentity(identity);
       if (oc2 && !access.endpoint) return { action: 'hold', unavailable: true };
       const token = oc2 ? access.endpoint : await store.readToken();
+      assertIdentity(identity);
       const { answers } = await jev.ask(buildPermissionRequest(permission), token);
+      assertIdentity(identity);
       const verdict = decidePermission(answers, { threshold: state.config.safetyNet.threshold });
       result = verdict.hold
         ? { action: 'hold', score: verdict.score, kind: verdict.kind }
@@ -366,6 +371,7 @@ export function createRoutingRuntime({
         });
       }
     } catch (error) {
+      assertIdentity(identity);
       result = { action: oc2 ? 'hold' : 'accept', skipped: errorMessage(error) };
       broadcast('openchamber:routing.safety-skipped', {
         permissionId: permission.id, sessionId: permission.sessionID, directory: directory ?? null, error: result.skipped,

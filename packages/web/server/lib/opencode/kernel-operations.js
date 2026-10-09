@@ -147,20 +147,18 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     }
   };
 
-  const stamped = (context, data) => ({
-    generation: context.generation, endpoint: context.endpoint, epoch: context.epoch, data,
-  });
-  const captureIdentity = () => {
-    const { generation, endpoint, epoch } = capture();
-    return { generation, endpoint, epoch };
+  const identityOf = (context) => {
+    const identity = { generation: context.generation, endpoint: context.endpoint, epoch: context.epoch };
+    if (context.profile) identity.profile = context.profile;
+    return identity;
   };
+  const stamped = (context, data) => ({ ...identityOf(context), data });
+  const captureIdentity = () => identityOf(capture());
   const requestOptions = (signal) => signal ? { signal } : undefined;
   const prepare = async (context, sessionID) => {
     if (context.generation !== GENERATION.OC2 || !prepareSession) return;
     check(context);
-    await prepareSession({ sessionID, directory: context.directory, identity: {
-      generation: context.generation, endpoint: context.endpoint, epoch: context.epoch,
-    } });
+    await prepareSession({ sessionID, directory: context.directory, identity: identityOf(context) });
     check(context);
   };
 
@@ -471,7 +469,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
       return decideMetadata ? { ...result, data: decidedSession, metadataChanged: true } : result;
     };
     if (context.generation !== GENERATION.OC2 || (!metadata && !decideMetadata)) return write();
-    const key = `${context.endpoint}\0${context.epoch}\0${sessionID}`;
+    const key = `${context.generation}\0${context.profile ?? ''}\0${context.endpoint}\0${context.epoch}\0${sessionID}`;
     const previous = metadataWrites.get(key) ?? Promise.resolve();
     const current = previous.catch(() => undefined).then(write);
     metadataWrites.set(key, current);
@@ -481,7 +479,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const assertRequest = (context, request) => {
-    if (request.generation !== context.generation || request.endpoint !== context.endpoint || request.epoch !== context.epoch) {
+    if (request.generation !== context.generation || request.profile !== context.profile || request.endpoint !== context.endpoint || request.epoch !== context.epoch) {
       throw kernelError(ERROR_CODE.RUNTIME_CHANGED, 'Send request was built for another OpenCode runtime', context.generation);
     }
   };

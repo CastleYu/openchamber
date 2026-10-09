@@ -96,3 +96,5 @@ file, token file mode), `runtime.test.js` (request text, excerpts, decisions,
 rewrite and fallback paths, safety net hold/skip/off), `routes.http.test.js`
 (rewrite ahead of a stand-in proxy, routes, flag off). The queue and
 auto-accept tests cover their hooks.
+
+Routing cache identity includes profile alongside generation, endpoint and epoch. Permission evaluation captures identity before cache lookup, so a changed profile clears prior decisions and Auto-session entries. It checks identity after configuration, credential and classifier waits. A late classifier success or failure rejects before publishing/caching a decision; ordinary classifier failure retains the existing OC1 fallback or OC2 hold policy.

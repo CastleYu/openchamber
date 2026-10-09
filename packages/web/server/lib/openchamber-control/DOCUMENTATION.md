@@ -88,3 +88,5 @@ other.
   used as a path. The result also states how to present the image, because chat
   renders the image paths written in a finished answer below that message —
   saving the file is not what shows it to anyone.
+
+Production server composition injects kernelOperations into this service. With that dependency, session reads use kernel operations and getClient returns no direct SDK client after readiness. The SDK fallback remains for callers that omit the dependency. This wiring audit does not prove all action-level waits or local host paths are profile-safe.

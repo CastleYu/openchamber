@@ -6,10 +6,10 @@ import type {
   CommandInfo, SessionCommandInput, SessionInfo, SessionInterruptResponse,
   SessionMessageInfo, SessionPromptInput, SessionSyntheticInput, SessionSwitchModelInput,
 } from '@opencode/client';
-import type { OpenCodeGenerationDescriptor } from './compatibility.js';
+import type { OpenCodeGenerationDescriptor, OpenCodeProfile } from './compatibility.js';
 
 export type KernelGeneration = 'oc1' | 'oc2';
-export type KernelIdentity = { generation: KernelGeneration; endpoint: string; epoch: string | number };
+export type KernelIdentity = { generation: KernelGeneration; profile?: OpenCodeProfile; endpoint: string; epoch: string | number };
 export type KernelResult<T> = KernelIdentity & { data: T };
 export type LegacyMessageRecord = { info: LegacyMessage; parts: LegacyPart[] };
 

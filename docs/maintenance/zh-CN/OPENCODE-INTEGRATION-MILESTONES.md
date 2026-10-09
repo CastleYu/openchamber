@@ -229,3 +229,5 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 基于 ed3fa2b21 的凭据检查点：尚未验收的 Legacy 凭据读取、原始认证文件写入及 generation 查询，在文件系统/API 访问前拒绝。OC2 迟到读取的身份比较加入 profile，并发请求合并也按 profile 区分。原 OC1 文件读取及两种 OC2 凭据来源保留既有行为。共享读取覆盖 Web/Electron 和 VS Code；VS Code 独立文件写入、后台直接客户端入口及生产模式选择启用仍待处理。INT-01 继续进行中，CA-02 Release 未改变。2026-10-09 验证：三个凭据文件共 24 项测试通过。工作区类型检查/lint 通过，保留五条既有 lint 警告。Anti-slop 保留一条既有 no-runtime-typeof 诊断，没有新增。
 
 VS Code 扩展与 webview 构建通过；保留既有 credential-db CJS import.meta、CSS highlight、浏览器 url 外置及包体积警告。不宣称扩展宿主运行验收通过。Dead-code 仍为 2 个文件、319 项导出和 231 个类型。
+
+基于 df90f5ef9 的 kernel 身份检查点：此前操作内部已比较 profile，但 captureIdentity 会丢失它。现已在 KernelIdentity、结果封装、会话准备及请求身份校验中保留/比较 profile。旧身份请求在发送前拒绝，当前 profile 的正常写入仍可执行。元数据写入队列及 Routing 缓存键加入 profile。权限缓存查询前先捕获身份，迟到的分类器成功/失败均不能发布或缓存旧决定。已检查生产路由/控制服务的依赖注入：控制服务会话读取使用 kernel 操作，OC1 路由历史仍保留直接 SDK 分支。2026-10-09 验证：七个消费者文件共 189 项测试通过，覆盖队列、定时任务、目标运行器、会话路由及控制服务。工作区类型检查/lint 通过，保留五条既有警告；最终 kernel/routing anti-slop 无诊断。Dead-code 仍为 2 个文件、319 项导出和 231 个类型。VS Code 扩展宿主构建通过，保留既有 credential-db CJS import.meta 警告。不宣称扩展运行验收通过。其他后台身份比较、OC1 提示路由等待、控制动作等待及 VS Code 独立写入仍需在生产 profile 启用前审查。INT-01 继续进行中，CA-02 Release 未改变。

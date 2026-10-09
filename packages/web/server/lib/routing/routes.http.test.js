@@ -3,6 +3,8 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { registerRoutingPromptRewrite, registerRoutingRoutes } from './routes.js';
+import { createRoutingRuntime } from './runtime.js';
+import { resolveEffectiveConfig } from './store.js';
 
 /**
  * The prompt rewrite sits in front of the generic OpenCode proxy, which
@@ -130,5 +132,32 @@ describe('routing routes', () => {
     expect(oc2.runtime.setCustomEndpoint).toHaveBeenCalledWith({ url: 'https://example.test', model: 'jev' });
     await request(oc2.app).delete('/api/routing/classifier/custom').expect(200);
     expect(oc2.runtime.clearCustomEndpoint).toHaveBeenCalled();
+  });
+});
+
+describe('changed-profile prompt HTTP refusal', () => {
+  it.each(['prompt_async', 'prompt', 'command'])('returns 409 before forwarding %s', async (action) => {
+    let profile;
+    const jev = { ask: vi.fn() };
+    const owner = createRoutingRuntime({
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc1', profile, endpoint: 'http://test', epoch: 1 }) },
+      store: {
+        readConfig: async () => {
+          profile = 'oc1';
+          const config = resolveEffectiveConfig(null);
+          config.fallback = { model: { providerID: 'provider', modelID: 'model' } };
+          return config;
+        },
+        readToken: async () => 'key',
+      },
+      jev,
+    });
+    const { app, forwarded } = createApp({ resolvePromptBody: owner.resolvePromptBody });
+    const response = await request(app).post('/api/session/s1/' + action)
+      .send({ model: { providerID: 'openchamber', modelID: 'auto' }, parts: [{ type: 'text', text: 'private text' }] })
+      .expect(409);
+    expect(response.body).toEqual({ error: 'OpenCode runtime changed during routing' });
+    expect(forwarded).toEqual([]);
+    expect(jev.ask).not.toHaveBeenCalled();
   });
 });

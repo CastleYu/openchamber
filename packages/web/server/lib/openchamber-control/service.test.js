@@ -399,3 +399,37 @@ describe('browser tab targeting', () => {
     expect(request).toHaveBeenCalledWith('browser.snapshot', {}, expect.anything());
   });
 });
+
+describe('control readiness ownership', () => {
+  it.each(['generation', 'profile', 'endpoint', 'epoch'])('rejects changed %s before session dispatch', async (field) => {
+    let identity = { generation: 'oc1', endpoint: 'http://test', epoch: 1 };
+    const kernelOperations = { captureIdentity: () => identity, listSessions: vi.fn() };
+    const { service } = createService({ kernelOperations, waitForOpenCodeReady: async () => {
+      const next = { generation: 'oc2', profile: 'oc1', endpoint: 'http://other', epoch: 2 };
+      identity = { ...identity, [field]: next[field] };
+    } });
+    await expect(service.execute('session.list', { directory: '/repo' }))
+      .rejects.toMatchObject({ statusCode: 409, message: 'OpenCode runtime changed during readiness' });
+    expect(kernelOperations.listSessions).not.toHaveBeenCalled();
+  });
+
+  it.each(['oc1', 'oc2'])('retains current %s session reads without constructing a direct SDK client', async (generation) => {
+    const identity = { generation, profile: generation, endpoint: 'http://test', epoch: 1 };
+    const kernelOperations = { captureIdentity: () => identity, listSessions: vi.fn(async () => ({ data: { items: [] } })) };
+    const createClient = vi.fn();
+    const { service } = createService({ kernelOperations, createClient });
+    await expect(service.execute('session.list', { directory: '/repo' })).resolves.toMatchObject({ sessions: [] });
+    expect(kernelOperations.listSessions).toHaveBeenCalledTimes(1);
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it('refuses an unaccepted identity before waiting and keeps project projections independent', async () => {
+    const kernelOperations = { captureIdentity: () => { throw new Error('Unaccepted Legacy operation'); }, listSessions: vi.fn() };
+    const waitForOpenCodeReady = vi.fn();
+    const { service } = createService({ kernelOperations, waitForOpenCodeReady });
+    await expect(service.execute('session.list', { directory: '/repo' })).rejects.toThrow('Unaccepted Legacy operation');
+    expect(waitForOpenCodeReady).not.toHaveBeenCalled();
+    expect(kernelOperations.listSessions).not.toHaveBeenCalled();
+    await expect(service.execute('projects.list')).resolves.toMatchObject({ projects: [{ id: 'project-1' }] });
+  });
+});

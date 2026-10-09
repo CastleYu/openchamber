@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createServer } from 'node:http';
 import { createRoutingRuntime, requestTextOf } from './runtime.js';
 import { resolveEffectiveConfig } from './store.js';
 import { excerptHead, excerptHeadTail, turnsToHistory } from './history.js';
@@ -323,5 +324,103 @@ describe('routing profile ownership', () => {
     expect(events).toEqual([]);
     await runtime.evaluatePermission(permission, '/repo');
     expect(jev.ask).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('OC1 prompt ownership across waits', () => {
+  it.each(['config', 'not-ready', 'history', 'history-error', 'token', 'classifier', 'classifier-error'])
+    ('rejects a profile change during %s without rewriting or publishing', async (stage) => {
+      process.env.OPENCHAMBER_ROUTING_ENABLE = '1';
+      let profile;
+      let tokenReads = 0;
+      const events = [];
+      const server = createServer((_request, response) => {
+        if (stage === 'history' || stage === 'history-error') profile = 'oc1';
+        response.writeHead(stage === 'history-error' ? 500 : 200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify([]));
+      });
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      try {
+        const address = server.address();
+        const endpoint = 'http://127.0.0.1:' + address.port;
+        const store = {
+          readConfig: async () => {
+            const config = readyConfig();
+            if (stage === 'config' || stage === 'not-ready') profile = 'oc1';
+            if (stage === 'not-ready') config.enabled = false;
+            return config;
+          },
+          readToken: async () => {
+            tokenReads += 1;
+            if (stage === 'token' && tokenReads === 2) profile = 'oc1';
+            return 'key';
+          },
+        };
+        const jev = { ask: vi.fn(async () => {
+          profile = 'oc1';
+          if (stage === 'classifier-error') throw new Error('classifier failed');
+          return { answers: { category: { choice: 'hard', confidence: 0.97 } }, ms: 1 };
+        }) };
+        const runtime = createRoutingRuntime({
+          store, jev,
+          kernelOperations: { captureIdentity: () => ({ generation: 'oc1', profile, endpoint, epoch: 1 }) },
+          buildOpenCodeUrl: () => endpoint + '/', getOpenCodeAuthHeaders: () => ({}),
+          broadcastGlobalUiEvent: (event) => events.push(event),
+        });
+        const body = { model: { ...AUTO }, parts: [{ type: 'text', text: 'private request' }] };
+        const before = structuredClone(body);
+        await expect(runtime.resolvePromptBody(body, { sessionId: 'ses_1', directory: '/repo' }))
+          .rejects.toThrow('OpenCode runtime changed during routing');
+        expect(body).toEqual(before);
+        expect(events).toEqual([]);
+        expect(jev.ask).toHaveBeenCalledTimes(stage.startsWith('classifier') ? 1 : 0);
+      } finally {
+        await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      }
+    });
+});
+
+describe('OC2 routing catalog ownership', () => {
+  it('rejects changed-profile credentials before invoking the classifier', async () => {
+    let profile;
+    let reads = 0;
+    const jev = { ask: vi.fn() };
+    const runtime = createRoutingRuntime({
+      kernelOperations: {
+        captureIdentity: () => ({ generation: 'oc2', profile, endpoint: 'http://oc2', epoch: 1 }),
+        listMessages: async () => ({ data: { items: [] } }),
+      },
+      store: { readConfig: async () => readyConfig(), readToken: async () => {
+        reads += 1;
+        if (reads === 2) profile = 'oc2';
+        return 'key';
+      }, readClassifierSource: async () => 'typesafe', readCustomEndpoint: async () => null },
+      readProviderKeys: async () => ({}), jev,
+    });
+    await expect(runtime.resolveAutoSelection({ sessionId: 'ses_2', directory: '/repo', model: AUTO, requestText: 'private text' }))
+      .rejects.toThrow('OpenCode runtime changed during routing');
+    expect(jev.ask).not.toHaveBeenCalled();
+  });
+  it('rejects a late catalog result without publishing the old decision', async () => {
+    let profile;
+    const events = [];
+    const kernelOperations = {
+      captureIdentity: () => ({ generation: 'oc2', profile, endpoint: 'http://oc2', epoch: 1 }),
+      listMessages: async () => ({ data: { items: [] } }),
+      getSelectionCatalog: async () => {
+        profile = 'oc2';
+        return { data: { models: [] } };
+      },
+    };
+    const runtime = createRoutingRuntime({
+      kernelOperations,
+      store: { readConfig: async () => readyConfig(), readToken: async () => 'key',
+        readClassifierSource: async () => 'typesafe', readCustomEndpoint: async () => null },
+      jev: { ask: async () => ({ answers: { category: { choice: 'hard', confidence: 0.97 } }, ms: 1 }) },
+      broadcastGlobalUiEvent: (event) => events.push(event),
+    });
+    await expect(runtime.resolveAutoSelection({ sessionId: 'ses_2', directory: '/repo', model: AUTO, requestText: 'hello' }))
+      .rejects.toThrow('OpenCode runtime changed during routing');
+    expect(events).toEqual([]);
   });
 });

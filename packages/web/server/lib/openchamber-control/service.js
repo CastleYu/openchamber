@@ -173,8 +173,16 @@ export const createOpenChamberControlService = (dependencies) => {
   };
 
   const getClient = async () => {
+    const identity = kernelOperations?.captureIdentity();
     if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
-    if (kernelOperations) return null;
+    if (kernelOperations) {
+      const current = kernelOperations.captureIdentity();
+      if (identity.generation !== current.generation || identity.profile !== current.profile
+        || identity.endpoint !== current.endpoint || identity.epoch !== current.epoch) {
+        throw new OpenChamberControlError('OpenCode runtime changed during readiness', 409);
+      }
+      return null;
+    }
     return createClient({
       baseUrl: buildOpenCodeUrl('/', '').replace(/\/$/, ''),
       headers: getOpenCodeAuthHeaders(),

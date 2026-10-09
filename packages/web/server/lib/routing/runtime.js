@@ -96,7 +96,7 @@ export function createRoutingRuntime({
   const assertIdentity = (expected) => {
     if (!expected) return;
     const current = currentIdentity();
-    if (identityKey(current) !== identityKey(expected)) throw new Error('OpenCode runtime changed during routing');
+    if (identityKey(current) !== identityKey(expected)) throw Object.assign(new Error('OpenCode runtime changed during routing'), { status: 409 });
   };
 
   const broadcast = (type, properties) => {
@@ -215,6 +215,7 @@ export function createRoutingRuntime({
       models = (await kernelOperations.getSelectionCatalog({ directory })).data.models;
       assertIdentity(identity);
     } catch (error) {
+      assertIdentity(identity);
       console.warn('[routing] model catalog unavailable, keeping the saved variant:', errorMessage(error));
       return selection;
     }
@@ -260,6 +261,7 @@ export function createRoutingRuntime({
       assertIdentity(identity);
       try {
         const access = await resolveAccess();
+        assertIdentity(identity);
         if (!access.endpoint) throw new Error('No classification provider is selected');
         const { answers, ms } = await jev.ask(buildRoutingRequest({ categories: enabledCategories(config), history, request: (requestText ?? '').trim() }), access.endpoint);
         assertIdentity(identity);
@@ -276,6 +278,7 @@ export function createRoutingRuntime({
       }
     }
     selection = await withKnownVariant(selection, directory, identity);
+    assertIdentity(identity);
     Object.assign(decision, selection.decision);
     broadcast('openchamber:routing.decision', decision);
     return { model: selection.model, agent: selection.agent, decision };
@@ -297,12 +300,13 @@ export function createRoutingRuntime({
   /**
    * Rewrites `body.model` in place when it is the Auto sentinel. Returns the
    * decision that was applied, or null when the body named a real model.
-   * Throws only when Auto cannot be honoured at all (no fallback configured):
-   * the sentinel must never reach OpenCode.
+   * Rejects a changed runtime or missing fallback before the sentinel can reach OpenCode.
    */
   const resolvePromptBody = async (body, { sessionId, directory }) => {
     if (!isAutoModel(body?.model)) return null;
+    const identity = currentIdentity();
     const state = await describe();
+    assertIdentity(identity);
     const config = state.config;
     if (!config?.fallback) {
       throw Object.assign(new Error('Auto routing is selected but no fallback model is configured'), { status: 400 });
@@ -316,9 +320,12 @@ export function createRoutingRuntime({
       } catch (error) {
         console.warn('[routing] history unavailable, routing on the request alone:', errorMessage(error));
       }
+      assertIdentity(identity);
       try {
         const token = await store.readToken();
+        assertIdentity(identity);
         const { answers, ms } = await jev.ask(buildRoutingRequest({ categories: enabledCategories(config), history, request }), token);
+        assertIdentity(identity);
         const result = decideRouting(answers.category, { categories: enabledCategories(config), minConfidence: config.minConfidence });
         decision.category = result.category?.id ?? null;
         decision.confidence = result.confidence;
@@ -326,6 +333,7 @@ export function createRoutingRuntime({
         decision.ms = ms;
         Object.assign(decision, applyChoice(body, config, result.category));
       } catch (error) {
+        assertIdentity(identity);
         decision.reason = 'error';
         decision.error = errorMessage(error);
         Object.assign(decision, applyChoice(body, config, null));

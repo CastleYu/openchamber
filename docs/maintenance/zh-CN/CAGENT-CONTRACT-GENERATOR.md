@@ -8,9 +8,20 @@ node /local/new-kit/protected/scripts/cagent/verify-kit.mjs --kit /local/new-kit
 bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-digest <workspace-digest> --node /absolute/path/to/node --out /local/new-artifact --json
 ```
 
-命令包包含十个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行 OpenAPI 导入、扩展结构检查、校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
+命令包包含十一个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行 OpenAPI 导入、扩展结构检查、校准、映射接收、准备、子进程夹具、最终组装及维护者批准／撤销。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成、有限扩展模板和可执行适配模型校准。独立批准提升、真实本地模型试验及目标权限仍属 CA-02 待办。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成、有限扩展模板、可执行适配模型校准及下述独立维护者批准命令。真实本地模型试验及目标权限仍属 CA-02 待办。
+
+### 维护者批准与撤销
+
+```sh
+node scripts/cagent/maintain-approval.mjs --approve --review /local/maintainer-review.json --artifact /local/output/artifact --manifest /local/output/control/manifest.json --digest <independent-artifact-digest> --directory /local/host-data/agent-approvals --json
+node scripts/cagent/maintain-approval.mjs --revoke --connection <connection-id> --directory /local/host-data/agent-approvals --json
+```
+
+独立维护者在真实操作验收后执行。`--review` 使用宿主严格的 `agentApprovalSchema`，包含 CAgent 类别、连接／适配器／服务器修订版、精确制品摘要及已审阅操作／扩展行。每行须明确声明 supported/adapted 并提供非空证据，至少一行。扩展行还包含动作修订版及规范化清单摘要。审阅文件、命令和已有批准目录须置于候选写权限之外。目录创建、操作系统权限及维护串行化由维护者负责；使用配置宿主实际读取的目录。
+
+批准过程校验清单、独立提供的摘要及整个制品树，不导入候选代码，再调用宿主原子写入器。命令不判断证据含义、不调用真实 API，也不选择后端。无效输入或制品校验失败会保留原有记录。撤销只处理指定 CAgent 连接，并报告记录是否存在。输出仅含固定错误或计数，不含路径、文档或凭据。普通、quiet、JSON 及非交互模式共用必需参数与检查，不运行提示。最终可用性仍由宿主权威层与已迁移消费者门槛决定。
 
 ### 有限扩展任务包
 
@@ -20,7 +31,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 准备阶段将清单、映射、文档身份、提供的引用摘录、双语指令及夹具纳入受保护摘要。每项候选只拥有 `candidate/<actionID>/handler.mjs`，导出 `createExtension(context)`。`check-packet --operation <actionID>` 复用有界修正记录及原生权限工作进程。扩展处理器接收输入和身份，其夹具请求端口只接受空 control，不接收核心操作的取消控制参数。
 
-最终打包捕获通过的源码，将核心与有限动作一起装配，再以组合模块重检每个任务包，之后发布制品清单。允许仅扩展制品。生成能力均保持 unverified，启用保持 unavailable。加载仍执行原生代码。真实服务器语义、独立批准提升、目标权限、模型试验及运行端验收仍是发布门槛。
+最终打包捕获通过的源码，将核心与有限动作一起装配，再以组合模块重检每个任务包，之后发布制品清单。允许仅扩展制品。生成能力均保持 unverified，启用保持 unavailable。加载仍执行原生代码。真实服务器语义、独立维护者审阅、目标权限、模型试验及运行端验收仍是发布门槛。
 
 ### 有限扩展模板
 

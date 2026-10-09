@@ -137,6 +137,19 @@ test('standalone bundle runs outside checkout without installed dependencies and
     const extraFinalized = run(process.execPath, 'finalize-adapter', ['--workspace', extraWorkspace, '--node', node, '--kit-digest', extraPrepared.digest, '--out', extraOutput]);
     assert.equal(extraFinalized.extensions, 1);
     assert.equal(extraFinalized.activation, 'unavailable');
+    const approvals = path.join(root, 'approvals');
+    await fs.mkdir(approvals);
+    const approvalFile = path.join(root, 'maintainer-approval.json');
+    await fs.writeFile(approvalFile, JSON.stringify({ family: 'cagent', connectionID: 'synthetic', adapterID: 'offline-test',
+      adapterRevision: 'r1', capabilityRevision: 'c1', serverRevision: 's1', artifactDigest: extraFinalized.artifactDigest,
+      operations: [{ operation: 'getSession', state: 'adapted', evidence: ['synthetic-owner-review'] }] }));
+    const reviewed = run(node, 'maintain-approval', ['--approve', '--review', approvalFile, '--artifact', path.join(extraOutput, 'artifact'),
+      '--manifest', path.join(extraOutput, 'control/manifest.json'), '--digest', extraFinalized.artifactDigest, '--directory', approvals]);
+    assert.equal(reviewed.activation, 'host-gated');
+    assert.equal(reviewed.operations, 1);
+    assert.equal((await fs.readdir(approvals)).length, 1);
+    assert.equal(run(node, 'maintain-approval', ['--revoke', '--connection', 'synthetic', '--directory', approvals]).removed, true);
+    assert.deepEqual(await fs.readdir(approvals), []);
     assert.equal(await fs.stat(path.join(root, 'node_modules')).then(() => true, () => false), false);
     await fs.appendFile(path.join(protectedRoot, 'START-HERE.md'), 'tampered');
     const results = [];

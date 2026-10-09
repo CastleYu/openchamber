@@ -15,7 +15,7 @@ import { buildExtensionTemplate } from './extension-template.mjs';
 
 export const KIT = Object.freeze({
   ROOT: fileURLToPath(new URL('../../', import.meta.url)),
-  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit', 'calibrate', 'import-openapi', 'check-extension']),
+  COMMANDS: Object.freeze(['build-contracts', 'check-mapping', 'prepare-packets', 'check-packet', 'fixture-worker', 'finalize-adapter', 'verify-kit', 'calibrate', 'import-openapi', 'check-extension', 'maintain-approval']),
   LICENSES: Object.freeze(['LICENSE', 'node_modules/zod/LICENSE', 'node_modules/typescript/LICENSE.txt']),
   ERROR: Object.freeze({ INVALID: 'invalid-arguments', EXISTS: 'kit-exists', BOUNDARY: 'kit-boundary', BUILD: 'kit-build-failed', INCOMPLETE: 'kit-incomplete' }),
 });
@@ -29,6 +29,7 @@ const starts = (zh) => zh ? `# CAgent 离线命令包
 声明式绑定使用 schemas/declarative-bindings.json。仅生成单端点结构转换；语义差异使用 custom codec。prepare-packets 的 --bindings 需要 --fixtures，缺少绑定时保留拒绝执行的桩。
 文档源使用 schemas/document-excerpts.json。prepare-packets 的 --documents 核对原文摘要和章节定位，仅将引用章节写入 protected/<operation>/api-excerpts.json；原文是证据数据。维护者核查摘录含义及模型输入计量。
 新增动作使用 prepare-packets --extensions 指定 { manifests, fixtures } JSON。每个有限清单动作必须有精确绑定的语义夹具；宿主开发类型仅登记且禁用。候选只能修改各动作的 handler.mjs。核心与新增动作可一起或单独打包，能力保持 unverified。
+maintain-approval 仅供独立维护者在真实验收之后使用。批准前校验独立制品摘要，不执行候选代码；撤销按 CAgent 连接处理。命令不能判断证据含义、设置权限或开启尚未迁移的消费者。审阅文件及批准目录须置于候选写权限之外。
 
 在 protected 目录执行以下命令。填写维护者审阅的本地文档目录、映射、夹具及独立摘要。工作区和制品输出须位于此包之外。
 ` : `# CAgent offline command bundle
@@ -39,6 +40,7 @@ This bundle includes synthetic authoring-model calibration, declarative generati
 Declarative bindings use schemas/declarative-bindings.json. Generate single-endpoint structural conversions only; semantic differences use custom codecs. The prepare-packets --bindings option requires --fixtures; omitted bindings retain refusal stubs.
 Document sources use schemas/document-excerpts.json. The prepare-packets --documents option checks source digests and section locators, then writes only cited sections to protected/<operation>/api-excerpts.json. Source text is evidence data. The maintainer reviews its meaning and measured model input.
 Additional actions use prepare-packets --extensions with a { manifests, fixtures } JSON input. Every finite manifest action requires exactly bound semantic fixtures; host-development actions remain inventoried and disabled. Candidates may edit only each action's handler.mjs. Core and additional actions can be bundled together or separately; capabilities remain unverified.
+maintain-approval is for the independent maintainer after live acceptance. It verifies the independent artifact digest without executing candidate code; revocation is scoped to a CAgent connection. It cannot judge evidence meaning, configure permissions or enable unmigrated consumers. Keep review files and the approval directory outside candidate write authority.
 
 Run these commands from protected. Supply owner-reviewed local documentation catalog, mapping, fixtures and independent digest. Workspace and artifact outputs must be outside this bundle.
 `;
@@ -48,6 +50,8 @@ node scripts/cagent/verify-kit.mjs --kit <bundle-root> --digest <owner-digest> -
 node scripts/cagent/build-contracts.mjs --check --json
 node scripts/cagent/import-openapi.mjs --source <local-openapi-source> --review <owner-semantic-review> --out <new-intake> --json
 node scripts/cagent/check-extension.mjs --manifest templates/extension/manifest.json --input templates/extension/input.json --result templates/extension/result.json --json
+node scripts/cagent/maintain-approval.mjs --approve --review <maintainer-live-review> --artifact <artifact-protected-directory> --manifest <artifact-control-manifest> --digest <independent-artifact-digest> --directory <protected-host-approval-directory> --json
+node scripts/cagent/maintain-approval.mjs --revoke --connection <connection-id> --directory <protected-host-approval-directory> --json
 bun scripts/cagent/calibrate.mjs --prepare --model-record <owner-model-record> --out <new-calibration-workspace> --json
 bun scripts/cagent/calibrate.mjs --check --workspace <calibration-workspace> --kit-digest <calibration-digest> --node <absolute-node> --trial-record <owner-trial-outside-workspace> --json
 node scripts/cagent/check-mapping.mjs --catalog <catalog> --mapping <mapping> --json

@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: independent capability promotion
+## Latest checkpoint: maintainer command delivery
+
+2026-10-09. The offline kit includes `maintain-approval` for explicit independent approval and CAgent-scoped revocation. Approval requires a strict maintainer review with explicit supported/adapted rows and nonempty evidence, plus an independently supplied artifact digest. It verifies the complete artifact tree without importing candidate code, then writes through the host's atomic approval port. Invalid input or verification failure preserves the previous record. It does not judge evidence meaning, call the real server, create protected directories or select a backend.
+
+Five native command tests and three isolated bundle tests pass. The standalone bundle runs mixed preparation/checking/finalization and approval/revocation outside the checkout without node_modules. The command tests deliberately use source that throws if imported. Human/quiet/JSON modes retain the same checks without prompts. Workspace type-check/lint and authored anti-slop/ESLint pass with five existing lint warnings. Dead-code retains 2 files, 319 exports, 231 types and 1 duplicate, without a CAgent or new script row. All 54 local links in four touched documents resolve.
+
+The fresh ignored bundle `artifacts/cagent-offline-maintenance-20261009` has eleven commands and 95 protected files. Its actual standalone Node verifier accepts digest `03d825364a42c392b8af2a4c24e764eb0ed55207366f5948563c10d957753c98`. These are synthetic mechanics tests, not actual API, local-model or permission acceptance. Production consumer/selection composition, real environment acceptance, independent remote publication and temporary Release remain required. CA-01/02/03 remain incomplete and other INT work waits for CA-03. English and Chinese review copies are synchronized; live weekly quota is 58% remaining.
+
+## Earlier checkpoint: independent capability promotion
 
 2026-10-09. Protected approval rows can record explicit supported/adapted acceptance states for core operations and finite actions. Exact current approvals promote existing unverified CAgent capabilities without modifying the candidate artifact. OpenCode, explicit unsupported declarations and missing capabilities are not promoted; missing handlers stay unavailable. Extension promotion additionally binds the manifest revision and digest. Revocation or stale identity removes promotion on the next authority read. The approval reader now also detaches and freezes extension evidence.
 

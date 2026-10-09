@@ -731,3 +731,7 @@ The VS Code extension owns its separate Git and proxy implementation.
 The behavior `GET /api/behavior/agents-md` response includes `path`, the effective
 server-side filename, whether or not the file exists. Settings displays this
 path without deriving a directory from the browser environment.
+
+## Profile admission
+
+`compatibility.js` owns `detectOpenCodeProfile` and the selection/profile/status constants. The result separates requested selection, resolved descriptor and server versus user-declared version provenance. Legacy admission requires GET-only health, session list/status, pending permissions/questions and command catalog contracts. Explicit version-absent Legacy declarations never probe `/api/info`, and failed authentication cannot be overridden. Admission is distinct from operation acceptance. Production hosts still use generation detection until selection persistence and capability dispatch are adopted together. Web and Electron share this owner; VS Code must adopt the same contract; hosted and Capacitor mobile inherit their selected host. The isolated executable harness consumes the admission helper now.

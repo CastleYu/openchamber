@@ -2,6 +2,10 @@ import { createServer } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   detectOpenCodeGeneration,
+  detectOpenCodeProfile,
+  OPENCODE_SELECTION,
+  OPENCODE_PROFILE,
+  PROFILE_STATUS,
   isSupportedOpenCodeVersion,
   supportsCredentialApi,
   OPENCODE_GENERATION,
@@ -181,5 +185,93 @@ describe('OpenCode generation detection', () => {
     expect(await readOpenCodeInfo(new Response('<html>OpenCode</html>'))).toBeNull();
     expect(await readOpenCodeInfo(Response.json({ version: '2.0.20' }))).toEqual({ version: '2.0.20' });
     expect(await readOpenCodeInfo(Response.json({ version: 'not a version' }))).toBeNull();
+  });
+});
+
+const legacyReads = {
+  '/session': { body: [{ id: 'session-1' }] }, '/session/status': { body: { 'session-1': { type: 'busy' } } },
+  '/permission': { body: [] }, '/question': { body: [] }, '/command': { body: [{ name: 'help' }] },
+};
+
+describe('OpenCode profile admission', () => {
+  it.each(['1.2.27', 'v1.2.27', '1.2.27+build.1'])('resolves %s through Auto and OC1 without an info request or writes', async version => {
+    for (const selection of [OPENCODE_SELECTION.AUTO, OPENCODE_SELECTION.OC1, OPENCODE_SELECTION.LEGACY]) {
+      const requests = [];
+      const endpoint = await serve({ ...legacyReads, '/global/health': health(version) }, requests);
+      const result = await detectOpenCodeProfile({ endpoint, epoch: 2, selection, headers: { Authorization: 'Basic profile-fixture' } });
+      expect(result).toMatchObject({ status: PROFILE_STATUS.READY, selection, provenance: 'server', exactVersion: true,
+        descriptor: { generation: OPENCODE_GENERATION.OC1, profile: OPENCODE_PROFILE.LEGACY, epoch: 2 } });
+      expect(requests.map(request => request.path)).toEqual(['/global/health', ...Object.keys(legacyReads)]);
+      expect(requests.every(request => request.method === 'GET' && request.auth === 'Basic profile-fixture')).toBe(true);
+    }
+  });
+
+  it.each([
+    [OPENCODE_SELECTION.AUTO, '1.18.32', OPENCODE_PROFILE.OC1],
+    [OPENCODE_SELECTION.OC1, '1.18.32', OPENCODE_PROFILE.OC1],
+    [OPENCODE_SELECTION.AUTO, '2.0.20', OPENCODE_PROFILE.OC2],
+    [OPENCODE_SELECTION.OC2, '2.0.20', OPENCODE_PROFILE.OC2],
+    [OPENCODE_SELECTION.AUTO, '1.2.27-rc.1', OPENCODE_PROFILE.OC1],
+  ])('preserves %s selection for %s as %s', async (selection, version, profile) => {
+    const endpoint = await serve({ '/global/health': health(version), '/api/info': info(version) });
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection })).toMatchObject({
+      status: PROFILE_STATUS.READY, descriptor: { profile }, exactVersion: false, provenance: 'server',
+    });
+  });
+
+  it.each([
+    [OPENCODE_SELECTION.OC2, '1.2.27'], [OPENCODE_SELECTION.OC1, '2.0.20'],
+    [OPENCODE_SELECTION.LEGACY, '1.18.32'], [OPENCODE_SELECTION.LEGACY, '1.2.27-rc.1'],
+    [OPENCODE_SELECTION.LEGACY, '2.0.20'],
+  ])('rejects contradictory %s selection on %s before catalog requests', async (selection, version) => {
+    const requests = [];
+    const endpoint = await serve({ '/global/health': health(version), '/api/info': info(version) }, requests);
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection })).toMatchObject({ status: PROFILE_STATUS.MISMATCH });
+    expect(requests.every(request => ['/global/health', '/api/info'].includes(request.path))).toBe(true);
+  });
+
+  it('permits version-absent declaration only for explicit Legacy after all read checks', async () => {
+    const requests = [];
+    const endpoint = await serve({ ...legacyReads, '/global/health': { body: { healthy: true } } }, requests);
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection: OPENCODE_SELECTION.LEGACY })).toMatchObject({
+      status: PROFILE_STATUS.READY, provenance: 'user-declared', exactVersion: false,
+      descriptor: { generation: OPENCODE_GENERATION.OC1, profile: OPENCODE_PROFILE.LEGACY, version: null },
+    });
+    expect(requests.some(request => request.path === '/api/info')).toBe(false);
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection: OPENCODE_SELECTION.AUTO })).toMatchObject({ status: PROFILE_STATUS.UNVERIFIED });
+  });
+
+  it.each(Object.keys(legacyReads))('refuses incomplete or malformed read contract %s', async path => {
+    const endpoint = await serve({ ...legacyReads, '/global/health': health('1.2.27'), [path]: { body: { malformed: true } } });
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection: OPENCODE_SELECTION.LEGACY })).toMatchObject({ status: PROFILE_STATUS.UNVERIFIED });
+  });
+
+  it.each([401, 403])('surfaces authentication failure %s before manual declaration', async status => {
+    const requests = [];
+    const endpoint = await serve({ ...legacyReads, '/global/health': { status, body: {} } }, requests);
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection: OPENCODE_SELECTION.LEGACY })).toMatchObject({ status: PROFILE_STATUS.AUTH });
+    expect(requests).toHaveLength(1);
+  });
+
+  it('distinguishes failed read authorization from malformed data', async () => {
+    const endpoint = await serve({ ...legacyReads, '/global/health': health('1.2.27'), '/permission': { status: 403, body: {} } });
+    expect(await detectOpenCodeProfile({ endpoint, epoch: 1, selection: OPENCODE_SELECTION.AUTO })).toMatchObject({ status: PROFILE_STATUS.AUTH });
+  });
+
+  it('reports conflict, unsupported versions and transport failure separately', async () => {
+    const conflict = await serve({ '/global/health': health('1.18.32'), '/api/info': info('2.0.20') });
+    expect(await detectOpenCodeProfile({ endpoint: conflict, epoch: 1, selection: OPENCODE_SELECTION.AUTO })).toMatchObject({ status: PROFILE_STATUS.CONFLICT });
+    const unsupported = await serve({ '/api/info': info('2.0.14') });
+    expect(await detectOpenCodeProfile({ endpoint: unsupported, epoch: 1, selection: OPENCODE_SELECTION.AUTO })).toMatchObject({ status: PROFILE_STATUS.UNSUPPORTED });
+    expect(await detectOpenCodeProfile({ endpoint: 'http://kernel.test', epoch: 1, selection: OPENCODE_SELECTION.AUTO,
+      fetchImpl: async () => { throw new Error('offline'); } })).toMatchObject({ status: PROFILE_STATUS.UNREACHABLE });
+  });
+
+  it('rejects invalid selection and endpoint before network work', async () => {
+    let calls = 0;
+    const fetchImpl = async () => { calls += 1; return Response.json({}); };
+    expect(await detectOpenCodeProfile({ endpoint: 'http://kernel.test', selection: 'invented', fetchImpl })).toEqual({ status: PROFILE_STATUS.INVALID_SELECTION });
+    expect(await detectOpenCodeProfile({ endpoint: 'file:///fixture', selection: OPENCODE_SELECTION.AUTO, fetchImpl })).toMatchObject({ status: PROFILE_STATUS.INVALID_ENDPOINT });
+    expect(calls).toBe(0);
   });
 });

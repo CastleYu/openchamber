@@ -1,0 +1,157 @@
+{
+  "date": "2026-10-09",
+  "base": "278ad1120",
+  "executableSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "policySha256": "5eb0a8e48ca0b5bd7ef67fa6a00a0fc437665fd8de7e5e7c8101a2a2b352ea6b",
+  "harnessSha256": "992554be38f4a9859635e3f52754b082dc0de154f920e49bd05cdfc3ab9d0c34",
+  "profileAdmissions": [
+    {
+      "selection": "auto",
+      "result": {
+        "status": "ready",
+        "selection": "auto",
+        "descriptor": {
+          "generation": "oc1",
+          "endpoint": "<isolated-loopback>",
+          "epoch": 1,
+          "version": "1.2.27",
+          "profile": "legacy-1.2.27"
+        },
+        "provenance": "server",
+        "exactVersion": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/global/health"
+        },
+        {
+          "method": "GET",
+          "path": "/session"
+        },
+        {
+          "method": "GET",
+          "path": "/session/status"
+        },
+        {
+          "method": "GET",
+          "path": "/permission"
+        },
+        {
+          "method": "GET",
+          "path": "/question"
+        },
+        {
+          "method": "GET",
+          "path": "/command"
+        }
+      ]
+    },
+    {
+      "selection": "oc1",
+      "result": {
+        "status": "ready",
+        "selection": "oc1",
+        "descriptor": {
+          "generation": "oc1",
+          "endpoint": "<isolated-loopback>",
+          "epoch": 1,
+          "version": "1.2.27",
+          "profile": "legacy-1.2.27"
+        },
+        "provenance": "server",
+        "exactVersion": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/global/health"
+        },
+        {
+          "method": "GET",
+          "path": "/session"
+        },
+        {
+          "method": "GET",
+          "path": "/session/status"
+        },
+        {
+          "method": "GET",
+          "path": "/permission"
+        },
+        {
+          "method": "GET",
+          "path": "/question"
+        },
+        {
+          "method": "GET",
+          "path": "/command"
+        }
+      ]
+    },
+    {
+      "selection": "legacy-1.2.27",
+      "result": {
+        "status": "ready",
+        "selection": "legacy-1.2.27",
+        "descriptor": {
+          "generation": "oc1",
+          "endpoint": "<isolated-loopback>",
+          "epoch": 1,
+          "version": "1.2.27",
+          "profile": "legacy-1.2.27"
+        },
+        "provenance": "server",
+        "exactVersion": true
+      },
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/global/health"
+        },
+        {
+          "method": "GET",
+          "path": "/session"
+        },
+        {
+          "method": "GET",
+          "path": "/session/status"
+        },
+        {
+          "method": "GET",
+          "path": "/permission"
+        },
+        {
+          "method": "GET",
+          "path": "/question"
+        },
+        {
+          "method": "GET",
+          "path": "/command"
+        }
+      ]
+    }
+  ],
+  "conversation": {
+    "requests": 48,
+    "events": 252,
+    "modelCalls": 11,
+    "checks": [
+      "text",
+      "history",
+      "async-acceptance-and-completion",
+      "permission",
+      "question",
+      "file-write",
+      "stop",
+      "stream",
+      "directory-disposal"
+    ],
+    "nonemptyDiff": true
+  },
+  "limitations": [
+    "Admission helper only; production host selection and persistence remain pending.",
+    "Controlled local model; real CAgent API and model quality are not exercised.",
+    "Read checks establish admission contracts, not full Legacy operation acceptance."
+  ]
+}

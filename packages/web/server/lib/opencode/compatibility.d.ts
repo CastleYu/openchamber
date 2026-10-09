@@ -31,3 +31,17 @@ export function detectOpenCodeGeneration(options: {
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
 }): Promise<OpenCodeGenerationDescriptor>;
+
+export const OPENCODE_PROFILE: Readonly<{ OC1: 'oc1'; OC2: 'oc2'; LEGACY: 'legacy-1.2.27' }>;
+export const OPENCODE_SELECTION: Readonly<{ AUTO: 'auto'; OC1: 'oc1'; OC2: 'oc2'; LEGACY: 'legacy-1.2.27' }>;
+export const PROFILE_STATUS: Readonly<{
+  READY: 'ready'; AUTH: 'auth'; UNREACHABLE: 'unreachable'; CONFLICT: 'conflict';
+  MISMATCH: 'mismatch'; UNSUPPORTED: 'unsupported'; UNVERIFIED: 'unverified';
+  INVALID_ENDPOINT: 'invalid-endpoint'; INVALID_SELECTION: 'invalid-selection';
+}>;
+export type OpenCodeSelection = typeof OPENCODE_SELECTION[keyof typeof OPENCODE_SELECTION];
+export type OpenCodeProfileAdmission =
+  | { status: 'ready'; selection: OpenCodeSelection; descriptor: OpenCodeGenerationDescriptor & { profile: OpenCodeProfile }; provenance: 'server' | 'user-declared'; exactVersion: boolean }
+  | { status: 'invalid-selection' }
+  | { status: Exclude<typeof PROFILE_STATUS[keyof typeof PROFILE_STATUS], 'ready' | 'invalid-selection'>; selection: OpenCodeSelection; descriptor: OpenCodeGenerationDescriptor };
+export function detectOpenCodeProfile(options: Parameters<typeof detectOpenCodeGeneration>[0] & { selection: OpenCodeSelection }): Promise<OpenCodeProfileAdmission>;

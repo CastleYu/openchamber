@@ -4,6 +4,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
+import { detectOpenCodeProfile, OPENCODE_SELECTION, PROFILE_STATUS, OPENCODE_PROFILE } from '../packages/web/server/lib/opencode/compatibility.js';
 
 assert(process.argv[2], 'Pass a fixture root containing bin/opencode.exe');
 const root = path.resolve(process.argv[2]);
@@ -77,6 +78,20 @@ async function session(dir = dirs[0], permission = []) { return request('POST', 
 try {
   await until(async () => { try { return (await fetch(`${endpoint}/global/health`, { headers: { Authorization: auth }, signal: AbortSignal.timeout(500) })).ok; } catch { return false; } }, 'startup');
   assert.deepEqual(await request('GET', '/global/health'), { healthy: true, version: '1.2.27' });
+  const profileAdmissions = [];
+  for (const selection of [OPENCODE_SELECTION.AUTO, OPENCODE_SELECTION.OC1, OPENCODE_SELECTION.LEGACY]) {
+    const paths = [];
+    const result = await detectOpenCodeProfile({ endpoint, epoch: 1, selection,
+      headers: { Authorization: auth, 'x-opencode-directory': dirs[0] },
+      fetchImpl: (url, options) => { paths.push({ method: options.method, path: new URL(url).pathname }); return fetch(url, options); },
+    });
+    assert.equal(result.status, PROFILE_STATUS.READY);
+    assert.equal(result.descriptor.profile, OPENCODE_PROFILE.LEGACY);
+    assert.equal(result.provenance, 'server');
+    assert.equal(result.exactVersion, true);
+    assert(paths.every(item => item.method === 'GET' && item.path !== '/api/info'));
+    profileAdmissions.push({ selection, result, requests: paths });
+  }
   const aStream = await stream(dirs[0]); const bStream = await stream(dirs[1]);
   const text = await session(); const answer = await request('POST', `/session/${text.id}/message`, input('LEGACY_TEXT')); assert.equal(answer.info.role, 'assistant'); assert.equal(answer.info.finish, 'stop'); assert(answer.parts.some(part => part.type === 'text' && part.text === 'LEGACY_COMPLETED'));
   const history = await request('GET', `/session/${text.id}/message`); assert.equal(history.length, 2);
@@ -104,7 +119,7 @@ try {
   await until(() => events.some(item => item.directory === 'b' && item.payload.type === 'permission.replied' && item.payload.properties.requestID === bPermission.id), 'B existing stream');
   assert.equal((await request('GET', `/session/${text.id}/message`)).length, 2);
   assert(aStream.ended || events.some(item => item.directory === 'a' && item.payload.type === 'server.instance.disposed'));
-  const summary = { output: out, exeSha256, requests: captures.length, events: events.length, modelCalls: calls.length, checks: ['text', 'history', 'async-acceptance-and-completion', 'permission', 'question', 'file-write', 'stop', 'stream', 'directory-disposal'], nonemptyDiff: diff.length > 0 };
+  const summary = { output: out, exeSha256, profileAdmissions, requests: captures.length, events: events.length, modelCalls: calls.length, checks: ['text', 'history', 'async-acceptance-and-completion', 'permission', 'question', 'file-write', 'stop', 'stream', 'directory-disposal'], nonemptyDiff: diff.length > 0 };
   fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary));
 } finally {

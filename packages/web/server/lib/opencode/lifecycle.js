@@ -923,6 +923,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   const startOpenCode = async () => {
     const selection = requireSelection();
+    if (env.ENV_CONFIGURED_OPENCODE_HOST || env.ENV_SKIP_OPENCODE_START || state.isExternalOpenCode) {
+      throw new Error('External OpenCode cannot be started by OpenChamber');
+    }
     let lastError = null;
     for (let attempt = 1; attempt <= START_OPEN_CODE_MAX_ATTEMPTS; attempt += 1) {
       try {
@@ -975,7 +978,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
       if (state.isExternalOpenCode) {
         console.log('Re-probing external OpenCode server...');
-        const probePort = state.openCodePort ?? env.ENV_EFFECTIVE_PORT ?? 4096;
+        const probePort = state.openCodePort ?? env.ENV_EFFECTIVE_PORT;
+        if (!probePort) throw new Error('External OpenCode requires an explicit host or port');
         const probeOrigin = state.openCodeBaseUrl ?? env.ENV_CONFIGURED_OPENCODE_HOST?.origin;
         const healthy = await probeExternalOpenCode(probePort, probeOrigin);
         requireSelection(selection);
@@ -1266,20 +1270,21 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
       requireSelection(selection);
       syncFromHmrState();
-      const processHealthy = await isOpenCodeProcessHealthy();
-      requireSelection(selection);
-      if (processHealthy) {
-        console.log(`[HMR] Reusing existing OpenCode process on port ${state.openCodePort}`);
-      } else if (env.ENV_SKIP_OPENCODE_START && env.ENV_EFFECTIVE_PORT) {
-        const label = env.ENV_CONFIGURED_OPENCODE_HOST ? env.ENV_CONFIGURED_OPENCODE_HOST.origin : `http://localhost:${env.ENV_EFFECTIVE_PORT}`;
-        console.log(`Using external OpenCode server at ${label} (skip-start mode)`);
-        state.openCodeBaseUrl = env.ENV_CONFIGURED_OPENCODE_HOST?.origin ?? null;
-        setOpenCodePort(env.ENV_EFFECTIVE_PORT);
-        state.isOpenCodeReady = true;
+      if (env.ENV_CONFIGURED_OPENCODE_HOST || env.ENV_SKIP_OPENCODE_START) {
+        // External intent survives failed readiness so recovery only re-probes.
         state.isExternalOpenCode = true;
+        state.isOpenCodeReady = false;
+        state.openCodeBaseUrl = env.ENV_CONFIGURED_OPENCODE_HOST?.origin ?? null;
+        setOpenCodePort(env.ENV_EFFECTIVE_PORT ?? null);
         state.lastOpenCodeError = null;
-        state.openCodeNotReadySince = 0;
+        state.openCodeNotReadySince = Date.now();
         syncToHmrState();
+        if (!env.ENV_EFFECTIVE_PORT) {
+          throw new Error('External OpenCode requires an explicit host or port');
+        }
+      } else if (await isOpenCodeProcessHealthy()) {
+        requireSelection(selection);
+        console.log(`[HMR] Reusing existing OpenCode process on port ${state.openCodePort}`);
       } else if (env.ENV_EFFECTIVE_PORT && await probeExternalOpenCode(env.ENV_EFFECTIVE_PORT, env.ENV_CONFIGURED_OPENCODE_HOST?.origin)) {
         requireSelection(selection);
         const label = env.ENV_CONFIGURED_OPENCODE_HOST ? env.ENV_CONFIGURED_OPENCODE_HOST.origin : `http://localhost:${env.ENV_EFFECTIVE_PORT}`;

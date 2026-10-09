@@ -142,3 +142,66 @@ describe('OpenCode lifecycle backend family guard', () => {
     expect(state.lastOpenCodeError).toBe('prior');
   });
 });
+
+describe('explicit external OpenCode ownership', () => {
+  it('preserves failed external intent and recovers only by re-probing', async () => {
+    vi.useFakeTimers();
+    const endpoint = 'http://external.example:4095';
+    const kernelRuntime = { refresh: vi.fn(async () => ({ generation: 'unreachable' })), invalidate: vi.fn() };
+    const { runtime, state, deps } = createRuntime({
+      env: { ENV_CONFIGURED_OPENCODE_HOST: { origin: endpoint, port: 4095 }, ENV_EFFECTIVE_PORT: 4095 },
+      kernelRuntime,
+    });
+    try {
+      const bootstrap = runtime.bootstrapOpenCodeAtStartup();
+      await vi.advanceTimersByTimeAsync(21000);
+      await bootstrap;
+      expect(state.isExternalOpenCode).toBe(true);
+      expect(state.openCodeBaseUrl).toBe(endpoint);
+      expect(state.openCodePort).toBe(4095);
+      expect(state.isOpenCodeReady).toBe(false);
+      expect(state.lastOpenCodeError).toContain('unreachable');
+      expect(state.openCodeProcess).toBeNull();
+      kernelRuntime.refresh.mockResolvedValue({ generation: 'oc2' });
+      await runtime.restartOpenCode();
+      expect(deps.waitForReady).toHaveBeenCalledWith(endpoint, 3000);
+      expect(state.isOpenCodeReady).toBe(true);
+      expect(state.lastOpenCodeError).toBeNull();
+      for (const dependency of [deps.applyOpencodeBinaryFromSettings, deps.ensureOpencodeCliEnv,
+        deps.ensureLocalOpenCodeServerPassword, deps.getManagedOpenCodeEnv, deps.registerManagedOpenCodeProcess]) {
+        expect(dependency).not.toHaveBeenCalled();
+      }
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('keeps skip-start without an endpoint in setup failure', async () => {
+    const { runtime, state, deps } = createRuntime({ env: { ENV_SKIP_OPENCODE_START: true } });
+    await runtime.bootstrapOpenCodeAtStartup();
+    expect(state.isExternalOpenCode).toBe(true);
+    expect(state.openCodePort).toBeNull();
+    expect(state.isOpenCodeReady).toBe(false);
+    expect(state.lastOpenCodeError).toBe('External OpenCode requires an explicit host or port');
+    expect(deps.applyOpencodeBinaryFromSettings).not.toHaveBeenCalled();
+    expect(deps.registerManagedOpenCodeProcess).not.toHaveBeenCalled();
+    await expect(runtime.restartOpenCode()).rejects.toThrow('External OpenCode requires an explicit host or port');
+    expect(deps.waitForReady).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { ENV_CONFIGURED_OPENCODE_HOST: { origin: 'http://external.example:4095', port: 4095 } },
+    { ENV_SKIP_OPENCODE_START: true },
+  ])('refuses direct managed start for explicit external configuration %j', async (env) => {
+    const { runtime, deps, select } = createRuntime({ env });
+    await expect(runtime.startOpenCode()).rejects.toThrow('External OpenCode cannot be started');
+    expect(deps.applyOpencodeBinaryFromSettings).not.toHaveBeenCalled();
+    select(AGENT_FAMILY.CAGENT, 2);
+    await expect(runtime.startOpenCode()).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+  });
+
+  it('refuses direct start when external ownership was established earlier', async () => {
+    const { runtime, state, deps } = createRuntime();
+    state.isExternalOpenCode = true;
+    await expect(runtime.startOpenCode()).rejects.toThrow('External OpenCode cannot be started');
+    expect(deps.applyOpencodeBinaryFromSettings).not.toHaveBeenCalled();
+  });
+});

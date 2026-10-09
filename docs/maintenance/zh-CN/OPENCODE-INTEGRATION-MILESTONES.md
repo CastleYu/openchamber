@@ -284,6 +284,10 @@ VS Code 选择检查点：Web 与 VS Code 现共用严格的模式解析。扩�
 
 ### INT-02 显式启动路径与托管验收
 
+有效的显式主机或跳过启动设置现在会在就绪探测前确立外部进程归属。外部就绪失败不再启动本机 CLI；直接托管启动被拒绝，恢复只重新探测原端点。跳过启动但缺少端点时，设置和恢复均报错，不再默认探测 4096。旧有仅端口自动探测分支及环境候选发现仍保留；本次没有实现五模式确认连接记录。
+
+验证：64 项生命周期回归通过，涵盖真实托管子进程树清理和外部失败恢复。Web 类型检查、lint、Node 语法及差异检查通过。Anti-slop 报告八项生命周期既有诊断，新增代码没有诊断。实际认证 Web 主机面对 HTTP 503 测试服务且存在真实 OC2 可执行文件时，通过五项失败、归属及设置检查。真实外部 OC2 2.0.20 仅使用 OPENCODE_HOST、未设置跳过启动标志，通过既有九项主机、SDK 及模式检查。测试服务不代表真实目标验收。证据：artifacts/int02-external-final-tests.log、int02-external-anti-review.json、int02-external-failure-Vl3TWt/evidence.json 和 int01-real/oc2-AGKXGl/evidence.json。没有新增依赖、导出或源码模块。打包桌面及模型对话仍未验证；CA-02 Release 保持不变。
+
 首个非空 CLI 环境路径失效或指向已识别的桌面程序时，现返回 OPENCODE_BINARY_INVALID，不再选择后续别名、捆绑 CLI 或 PATH 候选。托管启动与路径探测共用既有验证，包括带引号的路径。没有新增依赖、导出、源码模块或重试策略。五模式连接记录与切换界面仍待实现。
 
 验证：68 项聚焦测试通过，一项平台专属测试跳过。Web 类型检查与 lint 通过。Anti-slop 保留 47 项既有诊断，每项对应源码行均存在于同一文件的前一 HEAD，新代码没有诊断。实际认证 Web 主机验证确认失效路径不创建受管进程，即使存在 OC2 捆绑候选也不回退，且仍能读取设置并持久化修正后的二进制路径。未验证该主机保存修正后原地重启。另一次真实托管 OC2 2.0.20 回归通过精确模式启动、唯一归属注册、创建会话及重开历史、删除、进程与注册清理。证据：artifacts/int02-strict-tests-final.log、int02-strict-anti-review.json、int02-invalid-env-live.log 和 int02-strict-oc2-live.log。

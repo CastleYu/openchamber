@@ -66,12 +66,15 @@ export const agentBackendSelectionSchema = z.object({
   revision: z.number().int().nonnegative().safe(),
 }).strict();
 
+export const agentPrincipalSchema = z.string().regex(/^principal-[a-f0-9]{64}$/);
+
 export const agentIdentitySchema = z.object({
   family: z.enum([AGENT_FAMILY.OPENCODE, AGENT_FAMILY.CAGENT]),
   connectionID: id,
   epoch: z.number().int().nonnegative(),
   adapterRevision: id,
   capabilityRevision: id,
+  principalID: agentPrincipalSchema.optional(),
 }).strict();
 
 export const agentOperationSchema = z.enum(Object.values(AGENT_OPERATION));

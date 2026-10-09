@@ -16,12 +16,14 @@ import { createAgentHost } from './host.js';
 const identity = {
   family: AGENT_FAMILY.CAGENT, connectionID: 'test-connection', epoch: 1,
   adapterRevision: 'test-adapter', capabilityRevision: 'test-capability',
+  principalID: `principal-${'a'.repeat(64)}`,
 };
+const resolvePrincipal = () => identity.principalID;
 const envelope = (patch = {}) => ({
   operation: AGENT_OPERATION.GET_SESSION, identity,
   input: { workspaceID: 'w1', sessionID: 's1' }, ...patch,
 });
-const fixture = (patch = {}, { attempts, getHostSupport } = {}) => {
+const fixture = (patch = {}, { attempts, getHostSupport, resolvePrincipal: principal = resolvePrincipal } = {}) => {
   const handler = vi.fn(async () => ({ id: 's1', workspaceID: 'w1' }));
   const binding = {
     identity, ready: true, authorized: true,
@@ -36,7 +38,7 @@ const fixture = (patch = {}, { attempts, getHostSupport } = {}) => {
   app.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted'
     ? next() : res.status(401).json({ error: 'test-auth-required' }));
   const dispatcher = createAgentDispatcher({ getBinding, attempts });
-  registerAgentRoutes(app, { dispatcher, features: createAgentFeatures({ getRuntime: dispatcher.describeRuntime, getHostSupport }) });
+  registerAgentRoutes(app, { dispatcher, resolvePrincipal: principal, features: createAgentFeatures({ getRuntime: dispatcher.describeRuntime, getHostSupport }) });
   const fallback = vi.fn((_req, res) => res.status(418).end());
   app.use('/api', fallback);
   return { app, handler, getBinding, fallback, binding };
@@ -61,11 +63,33 @@ const mutationEnvelope = (requestID = 'request-1') => ({
 });
 
 describe('owned agent HTTP routes', () => {
+  it('binds runtime and feature snapshots to authenticated principals and refuses a foreign lease', async () => {
+    const other = `principal-${'b'.repeat(64)}`;
+    const f = fixture({}, { resolvePrincipal: (req) => req.get('x-test-principal') === 'other' ? other : identity.principalID });
+    const runtime = await request(f.app).get(AGENT_ROUTE.RUNTIME).set('x-test-auth', 'accepted').set('x-test-principal', 'other').expect(200);
+    const feature = await request(f.app).get(AGENT_ROUTE.FEATURES).set('x-test-auth', 'accepted').set('x-test-principal', 'other').expect(200);
+    expect(runtime.body.identity.principalID).toBe(other);
+    expect(feature.body.identity).toEqual(runtime.body.identity);
+    await request(f.app).post(AGENT_ROUTE.DISPATCH).set('x-test-auth', 'accepted').set('x-test-principal', 'other').send(envelope()).expect(409, { error: AGENT_ERROR.CHANGED });
+    expect(f.handler).not.toHaveBeenCalled();
+    await request(f.app).post(AGENT_ROUTE.DISPATCH).set('x-test-auth', 'accepted').set('x-test-principal', 'other')
+      .send(envelope({ identity: runtime.body.identity })).expect(200);
+    expect(f.handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses missing principal authority before operation or history access', async () => {
+    const f = fixture({}, { resolvePrincipal: () => null });
+    await request(f.app).get(AGENT_ROUTE.RUNTIME).set('x-test-auth', 'accepted').expect(403, { error: AGENT_ERROR.UNAUTHORIZED });
+    await post(f.app, envelope()).expect(403, { error: AGENT_ERROR.UNAUTHORIZED });
+    await attemptPost(f.app, { identity, requestID: 'r' }).expect(403, { error: AGENT_ERROR.UNAUTHORIZED });
+    expect(f.handler).not.toHaveBeenCalled();
+  });
   it('reads protected family selection without requiring an adapter binding', async () => {
     const host = createAgentHost({ getAcceptance: () => null });
     const app = express();
     registerAgentRoutes(app, {
       dispatcher: host.dispatcher, features: host.features, getSelection: host.getSelection,
+      resolvePrincipal,
     });
     const initial = await request(app).get(AGENT_ROUTE.SELECTION).expect(200);
     expect(initial.body).toEqual({ family: AGENT_FAMILY.OPENCODE, revision: 0 });
@@ -92,7 +116,7 @@ describe('owned agent HTTP routes', () => {
     const getBinding = vi.fn(() => null);
     const fallback = vi.fn((_req, res) => res.sendStatus(418));
     app.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted' ? next() : res.sendStatus(401));
-    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding }), getSelection });
+    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding }), getSelection, resolvePrincipal });
     app.use('/api', fallback);
     await request(app).get(AGENT_ROUTE.SELECTION).expect(401);
     expect(getSelection).not.toHaveBeenCalled();
@@ -206,7 +230,7 @@ describe('owned agent HTTP routes', () => {
       const getBinding = () => binding;
       const app = express();
       app.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted' ? next() : res.sendStatus(401));
-      registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding, attempts }) });
+      registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding, attempts }), resolvePrincipal });
       const accepted = await post(app, mutationEnvelope()).expect(200);
       expect(accepted.body).toEqual({ identity, data: { state: 'accepted', requestID: 'request-1' } });
       expect(handler).toHaveBeenCalledTimes(1);
@@ -214,7 +238,7 @@ describe('owned agent HTTP routes', () => {
 
       const restarted = express();
       restarted.use('/api', (req, res, next) => req.get('x-test-auth') === 'accepted' ? next() : res.sendStatus(401));
-      registerAgentRoutes(restarted, { dispatcher: createAgentDispatcher({ getBinding, attempts: createAgentAttempts({ directory }) }) });
+      registerAgentRoutes(restarted, { dispatcher: createAgentDispatcher({ getBinding, attempts: createAgentAttempts({ directory }) }), resolvePrincipal });
       const duplicate = await post(restarted, mutationEnvelope()).expect(409);
       expect(duplicate.body).toEqual({ error: AGENT_ERROR.ATTEMPT_EXISTS });
       expect(handler).toHaveBeenCalledTimes(1);
@@ -368,14 +392,14 @@ describe('owned agent HTTP routes', () => {
 
   it('refuses feature access when its owner is not composed', async () => {
     const app = express();
-    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }) });
+    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }), resolvePrincipal });
     expect((await request(app).get(AGENT_ROUTE.FEATURES).expect(503)).body).toEqual({ error: AGENT_ERROR.UNAVAILABLE });
     await request(app).post(AGENT_ROUTE.FEATURES).expect(404);
   });
 
   it('reports an inactive production-style binding as unavailable', async () => {
     const app = express();
-    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }) });
+    registerAgentRoutes(app, { dispatcher: createAgentDispatcher({ getBinding: () => null }), resolvePrincipal });
     expect((await request(app).get(AGENT_ROUTE.RUNTIME).expect(503)).body).toEqual({ error: AGENT_ERROR.UNAVAILABLE });
     expect((await request(app).post(AGENT_ROUTE.DISPATCH).send(envelope()).expect(503)).body)
       .toEqual({ error: AGENT_ERROR.UNAVAILABLE });

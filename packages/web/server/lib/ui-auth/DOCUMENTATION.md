@@ -29,6 +29,7 @@ The short-lived URL token check recognizes raw file reads at `/api/spaces/<12 lo
 - `createUiAuth({ password, cookieName, sessionTtlMs, readSettingsFromDiskMigrated })`: creates UI auth controller with methods:
   - `enabled`
   - `requireAuth(req, res, next)`
+  - `resolveVerifiedAuthContext(req)`: returns a verified password session or trusted client context without accepting URL auth tokens or issuing an anonymous session.
   - `handleSessionStatus(req, res)`
   - `handleSessionCreate(req, res)`
   - `handlePasskeyStatus(req, res)`

@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { AGENT_ERROR, AGENT_ROUTE } from './constants.js';
+import { AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_ROUTE } from './constants.js';
 import { AgentAttemptError } from './attempts.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { AgentFeatureError } from './features.js';
@@ -35,7 +35,9 @@ const failure = (res, error) => {
 };
 
 /** Mount after the host's API authentication gate and before the OpenCode proxy. */
-export const registerAgentRoutes = (app, { dispatcher, features, getSelection }) => {
+const requestContext = Symbol('agent-request-context');
+
+export const registerAgentRoutes = (app, { dispatcher, features, getSelection, resolvePrincipal }) => {
   // The protected selection survives a missing or failed adapter binding.
   // This descriptor chooses a family; it grants no operation authority.
   app.get(AGENT_ROUTE.SELECTION, (_req, res) => {
@@ -44,16 +46,29 @@ export const registerAgentRoutes = (app, { dispatcher, features, getSelection })
     try { return res.json(agentBackendSelectionSchema.parse(getSelection())); }
     catch (error) { return failure(res, error); }
   });
+  app.use([AGENT_ROUTE.RUNTIME, AGENT_ROUTE.FEATURES, AGENT_ROUTE.DISPATCH, AGENT_ROUTE.ATTEMPT], async (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      if (!resolvePrincipal) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, AGENT_HOST_OPERATION.GET_BINDING);
+      const scoped = dispatcher.forPrincipal(await resolvePrincipal(req));
+      res.locals[requestContext] = scoped;
+      return next();
+    } catch (error) { return failure(res, error); }
+  });
   app.get(AGENT_ROUTE.FEATURES, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     if (!features) return res.status(503).json({ error: AGENT_ERROR.UNAVAILABLE });
-    try { return res.json(agentFeatureSnapshotSchema.parse(features.describe())); }
+    try {
+      const snapshot = features.describe();
+      const identity = res.locals[requestContext].captureIdentity();
+      return res.json(agentFeatureSnapshotSchema.parse({ ...snapshot, identity }));
+    }
     catch (error) { return failure(res, error); }
   });
   app.get(AGENT_ROUTE.RUNTIME, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      return res.json(agentRuntimeSchema.parse(dispatcher.describeRuntime()));
+      return res.json(agentRuntimeSchema.parse(res.locals[requestContext].describeRuntime()));
     } catch (error) {
       return failure(res, error);
     }
@@ -65,7 +80,7 @@ export const registerAgentRoutes = (app, { dispatcher, features, getSelection })
     if (!request.success) return res.status(400).json({ error: AGENT_ERROR.INVALID_INPUT });
     const { operation, input, identity } = request.data;
     try {
-      return res.json(await dispatcher.dispatch(operation, input, identity));
+      return res.json(await res.locals[requestContext].dispatch(operation, input, identity));
     } catch (error) {
       return failure(res, error);
     }
@@ -76,7 +91,7 @@ export const registerAgentRoutes = (app, { dispatcher, features, getSelection })
     const parsed = attemptSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: AGENT_ERROR.INVALID_INPUT });
     try {
-      return res.json(await dispatcher.readAttempt(parsed.data.identity, parsed.data.requestID));
+      return res.json(await res.locals[requestContext].readAttempt(parsed.data.identity, parsed.data.requestID));
     } catch (error) {
       return failure(res, error);
     }

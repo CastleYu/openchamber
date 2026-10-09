@@ -23,6 +23,20 @@ afterEach(async () => {
 });
 
 describe('agent attempt ledger', () => {
+  it('isolates equal request IDs by principal without adopting old unscoped records', async () => {
+    const { directory, store } = await makeStore();
+    const first = identity({ principalID: `principal-${'a'.repeat(64)}` });
+    const second = identity({ principalID: `principal-${'b'.repeat(64)}` });
+    await store.begin(identity(), AGENT_MUTATIONS[0], 'same-request');
+    expect(await store.read(first, 'same-request')).toBeNull();
+    const record = await store.begin(first, AGENT_MUTATIONS[0], 'same-request');
+    await record.finish('accepted');
+    expect(await createAgentAttempts({ directory }).read(first, 'same-request')).toMatchObject({ state: 'accepted' });
+    expect(await store.read(second, 'same-request')).toBeNull();
+    await store.begin(second, AGENT_MUTATIONS[0], 'same-request');
+    expect(await store.read(first, 'same-request')).toMatchObject({ state: 'accepted' });
+    expect(await store.read(second, 'same-request')).toMatchObject({ state: 'unknown' });
+  });
   it('persists an unknown reservation without payload and reads it after restart', async () => {
     const { directory, store } = await makeStore();
     const who = identity();

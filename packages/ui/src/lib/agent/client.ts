@@ -30,7 +30,8 @@ export type AgentClientPorts = {
 
 const same = (left: AgentIdentity, right: AgentIdentity): boolean => left.family === right.family
   && left.connectionID === right.connectionID && left.epoch === right.epoch
-  && left.adapterRevision === right.adapterRevision && left.capabilityRevision === right.capabilityRevision;
+  && left.adapterRevision === right.adapterRevision && left.capabilityRevision === right.capabilityRevision
+  && left.principalID === right.principalID;
 const envelope = z.object({ identity: agentIdentitySchema, data: z.json() }).strict();
 const mutations = new Set(AGENT_MUTATIONS);
 const subscribeRuntimeLifetime = (onChange: () => void): (() => void) => {
@@ -199,7 +200,8 @@ export class AgentClient {
     if (!result.success || !same(result.data.identity, input.data.identity)) throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
     const attempt = result.data.attempt;
     if (attempt && (attempt.requestID !== requestID || attempt.identity.family !== input.data.identity.family
-      || attempt.identity.connectionID !== input.data.identity.connectionID)) {
+      || attempt.identity.connectionID !== input.data.identity.connectionID
+      || attempt.identity.principalID !== input.data.identity.principalID)) {
       throw new AgentClientError(AGENT_ERROR.INVALID_RESPONSE);
     }
     return attempt;

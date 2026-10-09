@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { AGENT_ERROR, AGENT_FAMILY } from '../../../../web/server/lib/agent/constants.js';
+import { agentPrincipalSchema } from '../../../../web/server/lib/agent/schemas.js';
 import { AgentClientError } from './client';
 
 const JOURNAL = Object.freeze({ PREFIX: ':request:', VERSION: 1, MAX_RECORD: 16384, MAX_ID: 1024, MAX_NAMESPACE: 128 } as const);
 const ownerSchema = z.object({
   family: z.enum([AGENT_FAMILY.OPENCODE, AGENT_FAMILY.CAGENT]), connectionID: z.string().min(1).max(JOURNAL.MAX_ID),
+  principalID: agentPrincipalSchema.optional(),
   workspaceID: z.string().min(1).max(JOURNAL.MAX_ID), sessionID: z.string().min(1).max(JOURNAL.MAX_ID),
 }).strict();
 const recordSchema = z.object({
@@ -14,7 +16,7 @@ export type AgentRequestOwner = Readonly<z.infer<typeof ownerSchema>>;
 type StoragePort = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
 
 const ownerKey = (owner: AgentRequestOwner): string => JSON.stringify([
-  owner.family, owner.connectionID, owner.workspaceID, owner.sessionID,
+  owner.family, owner.connectionID, owner.workspaceID, owner.sessionID, ...(owner.principalID ? [owner.principalID] : []),
 ]);
 const ownerPrefix = (namespace: string, owner: AgentRequestOwner): string =>
   `${namespace}${JOURNAL.PREFIX}${encodeURIComponent(ownerKey(owner))}:`;

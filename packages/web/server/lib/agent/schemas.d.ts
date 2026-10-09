@@ -10,6 +10,7 @@ import type { AgentConnection } from './transport.js';
 import type { AgentAdapter } from './loader.js';
 
 export const agentIdentitySchema: ZodType<AgentIdentity>;
+export const agentPrincipalSchema: ZodType<string>;
 export const agentBackendSelectionSchema: ZodType<AgentBackendSelection>;
 export const agentOperationSchema: ZodType<AgentOperation>;
 export const agentDispatchRequestSchema: ZodType<{ operation: AgentOperation; identity: AgentIdentity; input: JsonValue }>;

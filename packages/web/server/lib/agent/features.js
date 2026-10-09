@@ -34,7 +34,7 @@ const hostSchema = z.object({
 }).strict();
 const same = (left, right) => left.family === right.family && left.connectionID === right.connectionID
   && left.epoch === right.epoch && left.adapterRevision === right.adapterRevision
-  && left.capabilityRevision === right.capabilityRevision;
+  && left.capabilityRevision === right.capabilityRevision && left.principalID === right.principalID;
 const blocked = (reason) => Object.freeze({ available: false, reason });
 
 export class AgentFeatureError extends Error {

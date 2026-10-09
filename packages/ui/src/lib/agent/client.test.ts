@@ -94,6 +94,20 @@ const gate = <T,>() => {
 };
 
 describe('AgentClient', () => {
+  test('a foreign principal response retires its scope instead of exposing another session', async () => {
+    const h = new Harness();
+    const principalID = `principal-${'a'.repeat(64)}`;
+    const other = `principal-${'b'.repeat(64)}`;
+    h.answer = async () => response({ identity: { ...identity, principalID: other }, data: { modelID: null } });
+    let retired = 0;
+    h.client.subscribeRetirement(() => { retired += 1; });
+    const scope = { ...scopeOf(), identity: { ...identity, principalID } };
+    await code(h.client.dispatch(scope, AGENT_OPERATION.GET_DEFAULT_MODEL, { workspaceID: 'w' }), AGENT_ERROR.INVALID_RESPONSE);
+    expect(retired).toBe(1);
+    await code(h.client.dispatch(scope, AGENT_OPERATION.GET_DEFAULT_MODEL, { workspaceID: 'w' }), AGENT_ERROR.CHANGED);
+    expect(h.calls).toHaveLength(1);
+    h.client.dispose();
+  });
   test('authentication retirement aborts reads and preserves entered write uncertainty without replay', async () => {
     for (const operation of [AGENT_OPERATION.GET_DEFAULT_MODEL, AGENT_OPERATION.SEND_PROMPT]) {
       const waiting = gate<Response>();

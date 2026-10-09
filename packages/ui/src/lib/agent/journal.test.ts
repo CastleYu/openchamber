@@ -37,6 +37,20 @@ const code = (run: () => void, expected: string) => {
 };
 
 describe('AgentRequestJournal', () => {
+  test('principal scopes retain independent unresolved records within one namespace', () => {
+    const storage = new MemoryStorage();
+    const journal = new AgentRequestJournal(storage, 'same-runtime');
+    const first = { ...owner, principalID: `principal-${'a'.repeat(64)}` };
+    const second = { ...owner, principalID: `principal-${'b'.repeat(64)}` };
+    journal.mark(owner, 'legacy');
+    expect(journal.read(first)).toEqual([]);
+    journal.mark(first, 'request');
+    expect(journal.read(second)).toEqual([]);
+    journal.mark(second, 'request');
+    journal.clear(first, 'request');
+    expect(journal.read(second)).toEqual(['request']);
+    expect(journal.read(owner)).toEqual(['legacy']);
+  });
   test('corruption blocks its own session without blocking another complete owner', () => {
     const storage = new MemoryStorage();
     const journal = new AgentRequestJournal(storage, 'opaque-hash');

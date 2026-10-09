@@ -61,6 +61,7 @@ import { createAgentAttempts } from './lib/agent/attempts.js';
 import { createAgentApprovals } from './lib/agent/approvals.js';
 import { AGENT_APPROVAL, AGENT_ATTEMPT, AGENT_FAMILY } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
+import { createAgentPrincipalResolver } from './lib/agent/principal.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
 import { resolveOpenCodeEnvConfig } from './lib/opencode/env-config.js';
@@ -2239,6 +2240,7 @@ async function main(options = {}) {
     dispatcher: agentHost.dispatcher,
     features: agentHost.features,
     getSelection: agentHost.getSelection,
+    resolvePrincipal: createAgentPrincipalResolver({ getUiAuth: () => uiAuthController }),
   });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.
   // The slot is mounted once and reads the host at call time, so the switch can turn the feature

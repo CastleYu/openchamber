@@ -21,7 +21,9 @@ export const createAgentAttempts = ({ directory, fsPromises = fs }) => {
   const root = path.resolve(z.string().min(1).parse(directory));
   const file = (identity, requestID) => {
     // Epoch/revision changes must not make an old intent eligible for resend.
-    const key = JSON.stringify([identity.family, identity.connectionID, requestID]);
+    const parts = [identity.family, identity.connectionID];
+    if (identity.principalID) parts.push(identity.principalID);
+    const key = JSON.stringify([...parts, requestID]);
     return path.join(root, `${createHash('sha256').update(key).digest('hex')}.jsonl`);
   };
   const begin = async (identity, operation, requestID) => {
@@ -81,7 +83,8 @@ export const createAgentAttempts = ({ directory, fsPromises = fs }) => {
       const records = lines.map((line) => recordSchema.parse(JSON.parse(line)));
       const first = records[0];
       if (first.state !== AGENT_ATTEMPT.UNKNOWN || first.identity.family !== key.data.identity.family
-        || first.identity.connectionID !== key.data.identity.connectionID || first.requestID !== key.data.requestID
+        || first.identity.connectionID !== key.data.identity.connectionID
+        || first.identity.principalID !== key.data.identity.principalID || first.requestID !== key.data.requestID
         || records.some((record) => record.operation !== first.operation || record.requestID !== first.requestID
           || JSON.stringify(record.identity) !== JSON.stringify(first.identity))) {
         throw new AgentAttemptError(AGENT_ERROR.ATTEMPT_CORRUPT);

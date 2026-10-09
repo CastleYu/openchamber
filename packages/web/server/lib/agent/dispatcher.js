@@ -1,5 +1,5 @@
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
-import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentIdentitySchema } from './schemas.js';
+import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentIdentitySchema, agentPrincipalSchema } from './schemas.js';
 
 const operations = new Set(Object.values(AGENT_OPERATION));
 const mutations = new Set(AGENT_MUTATIONS);
@@ -30,7 +30,8 @@ const same = (left, right) => left.family === right.family
   && left.connectionID === right.connectionID
   && left.epoch === right.epoch
   && left.adapterRevision === right.adapterRevision
-  && left.capabilityRevision === right.capabilityRevision;
+  && left.capabilityRevision === right.capabilityRevision
+  && left.principalID === right.principalID;
 
 const refusal = (binding, operation) => {
   if (!binding) return AGENT_ERROR.UNAVAILABLE;
@@ -156,5 +157,16 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
     if (!same(identity, current)) throw new AgentDispatchError(AGENT_ERROR.CHANGED, operation);
     return { identity, attempt };
   };
-  return Object.freeze({ captureIdentity, describeRuntime, dispatch, readAttempt });
+  const forPrincipal = (principalID) => {
+    const parsed = agentPrincipalSchema.safeParse(principalID);
+    if (!parsed.success) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, AGENT_HOST_OPERATION.GET_BINDING);
+    return createAgentDispatcher({
+      attempts,
+      getBinding: () => {
+        const binding = getBinding();
+        return binding ? { ...binding, identity: { ...binding.identity, principalID: parsed.data } } : null;
+      },
+    });
+  };
+  return Object.freeze({ captureIdentity, describeRuntime, dispatch, readAttempt, forPrincipal });
 };

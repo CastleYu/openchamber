@@ -589,11 +589,22 @@ export const createUiAuth = ({
       return null;
     };
 
+    const resolveVerifiedAuthContext = async (req) => {
+      if (Object.hasOwn(req?.headers || {}, 'authorization')) {
+        const clientAuth = await authenticateClientRequest(req, { allowUrlToken: false });
+        return clientAuth ? clientAuthContext(clientAuth) : null;
+      }
+      if (requireClientAuth) return null;
+      const clientAuth = await authenticateClientRequest(req, { allowUrlToken: false });
+      return clientAuth ? clientAuthContext(clientAuth) : null;
+    };
+
     return {
       enabled: false,
       requireAuth,
       requireSessionAuth,
       resolveAuthContext,
+      resolveVerifiedAuthContext,
       handleSessionStatus: async (req, res) => {
         if (requireClientAuth) {
           const clientAuth = await authenticateClientRequest(req);
@@ -847,6 +858,18 @@ export const createUiAuth = ({
     return clientAuth ? clientAuthContext(clientAuth) : null;
   };
 
+  const resolveVerifiedAuthContext = async (req) => {
+    const hasAuthorization = Object.hasOwn(req?.headers || {}, 'authorization');
+    if (hasAuthorization) {
+      const clientAuth = await authenticateClientRequest(req, { allowUrlToken: false });
+      return clientAuth ? clientAuthContext(clientAuth) : null;
+    }
+    if (!normalizedPassword) return null;
+    const token = getTokenFromRequest(req);
+    if (await isSessionValid(token)) return { type: 'session', token };
+    return null;
+  };
+
   const handleUrlAuthToken = async (req, res) => {
     const scope = readRequestedUrlAuthScope(req);
     if (scope === undefined) {
@@ -1027,6 +1050,7 @@ export const createUiAuth = ({
     requireAuth,
     requireSessionAuth,
     resolveAuthContext,
+    resolveVerifiedAuthContext,
     handleSessionStatus,
     handleSessionCreate,
     handleUrlAuthToken,

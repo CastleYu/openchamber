@@ -7,6 +7,7 @@ export type AgentIdentity = Readonly<{
   epoch: number;
   adapterRevision: string;
   capabilityRevision: string;
+  principalID?: string;
 }>;
 export type AgentOperation = typeof AGENT_OPERATION[keyof typeof AGENT_OPERATION];
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
@@ -135,10 +136,8 @@ export class AgentDispatchError extends Error {
   readonly operation: string;
   constructor(code: string, operation: string);
 }
-export function createAgentDispatcher(options: {
-  getBinding: () => AgentBinding | null;
-  attempts?: import('./attempts.js').AgentAttempts;
-}): {
+export type AgentDispatcher = {
+  forPrincipal(principalID: string): AgentDispatcher;
   captureIdentity(): AgentIdentity;
   describeRuntime(): AgentRuntime;
   readAttempt(expected: AgentIdentity, requestID: string): Promise<{
@@ -146,3 +145,7 @@ export function createAgentDispatcher(options: {
   }>;
   dispatch<K extends AgentOperation>(operation: K, input: AgentInputs[K], expected?: AgentIdentity): Promise<AgentResult<K>>;
 };
+export function createAgentDispatcher(options: {
+  getBinding: () => AgentBinding | null;
+  attempts?: import('./attempts.js').AgentAttempts;
+}): AgentDispatcher;

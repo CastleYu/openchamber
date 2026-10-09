@@ -129,6 +129,51 @@ describe('ui auth client credential seam', () => {
     expect(deniedRes.body).toEqual({ error: 'Client authentication required', locked: true, clientAuthRequired: true });
   });
 
+  it('rejects a forged session cookie when client auth is required and password is disabled', async () => {
+    const createUiAuth = await loadCreateUiAuth();
+    const auth = createUiAuth({ requireClientAuth: true });
+    const req = { method: 'GET', headers: { cookie: 'oc_ui_session=forged' } };
+    const res = createResponse();
+    expect(await auth.resolveVerifiedAuthContext(req)).toBe(null);
+    await auth.requireAuth(req, res, () => {});
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('does not use a valid password cookie when an explicit bearer is invalid', async () => {
+    const createUiAuth = await loadCreateUiAuth();
+    const auth = createUiAuth({ password: 'secret', clientAuthController: {
+      authenticateBearerToken: async () => null,
+    } });
+    const loginReq = { method: 'POST', headers: {}, body: { password: 'secret' } };
+    const loginRes = createResponse();
+    await auth.handleSessionCreate(loginReq, loginRes);
+    const cookie = String(loginRes.getHeader('set-cookie')).split(';', 1)[0];
+    const req = { method: 'GET', headers: { cookie, authorization: 'Bearer revoked' } };
+    expect(await auth.resolveVerifiedAuthContext(req)).toBe(null);
+  });
+
+  it('returns the stable identity of an authenticated trusted client', async () => {
+    const createUiAuth = await loadCreateUiAuth();
+    const client = { id: 'stable-device', label: 'Desktop' };
+    const auth = createUiAuth({ clientAuthController: {
+      authenticateBearerToken: async (token) => token === 'trusted' ? { ok: true, clientId: client.id, client } : null,
+    } });
+    expect(await auth.resolveVerifiedAuthContext({ headers: { authorization: 'Bearer trusted' } })).toEqual({
+      type: 'client', token: 'client:stable-device', clientId: 'stable-device', client,
+    });
+  });
+
+  it('returns a verified password session from its cookie', async () => {
+    const createUiAuth = await loadCreateUiAuth();
+    const auth = createUiAuth({ password: 'secret' });
+    const loginReq = { method: 'POST', headers: {}, body: { password: 'secret' } };
+    const loginRes = createResponse();
+    await auth.handleSessionCreate(loginReq, loginRes);
+    const cookie = String(loginRes.getHeader('set-cookie')).split(';', 1)[0];
+    const token = decodeURIComponent(cookie.slice(cookie.indexOf('=') + 1));
+    expect(await auth.resolveVerifiedAuthContext({ headers: { cookie } })).toEqual({ type: 'session', token });
+  });
+
   it('reports authenticated client session status with bearer credentials', async () => {
     const createUiAuth = await loadCreateUiAuth();
     const auth = createUiAuth({

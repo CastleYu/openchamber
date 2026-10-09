@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: asynchronous credential retirement
+## Latest checkpoint: verified host principal isolation
+
+2026-10-09. The host derives an opaque principal from a verified trusted-client ID or password session. Explicit bearer failure never falls back to a cookie, and URL tokens cannot establish this principal. Runtime, feature, dispatch and attempt routes require this scope. Body-supplied identity cannot select another principal. The informational selection route remains outside this additional requirement.
+
+Attempt storage and conversation ownership now include the principal. Production chat binding inspects the host before hashing endpoint identity and principal for its browser journal. Same-principal credential rotation retains recovery; re-pairing a trusted device creates a new client ID and a separate journal. Old unscoped and credential-derived records are retained without automatic adoption. Cookie changes are observed on requests, with no background detection. There is no account model or proof of per-principal authorization at the remote CAgent server.
+
+Focused coverage includes 248 host tests and 67 authentication/client/conversation/journal tests. A real trusted-client authentication and HTTP dispatch journey verifies re-pairing, replaced-token refusal and revocation against a synthetic handler. Production chat binding uses real runtime authentication with a synthetic backend to verify recovery and isolation. These checks do not establish real CAgent API support. Workspace type-check and lint pass, with five existing lint warnings. Changed agent files pass anti-slop and ESLint; authentication composition passes ESLint. Whole-file auth anti-slop retains existing findings outside the added code. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. All 57 checked relative documentation links resolve.
+
+CA-01, CA-02 and CA-03 remain incomplete; production capabilities stay closed. Consumer completion, registered extension dispatch/rendering, target acceptance, independent remote publication and temporary Release remain required. Other INT work stays behind CA-03. Live weekly quota is 61% remaining. The earlier offline bundle predates this identity contract and must be regenerated before handoff.
+
+## Earlier checkpoint: asynchronous credential retirement
 
 2026-10-09. Shared runtime authentication now observes changes in one asynchronous provider's resolved credential, including removal and return. Replaced-provider results and older conflicting results are refused with a fixed error. Agent client regression coverage verifies retirement, aborted signals and refusal of stale scopes through an injected transport. Detection occurs during header resolution; this does not establish a host principal or background account-change detection.
 

@@ -101,12 +101,13 @@ export class AgentConversation {
 
   private owner(current: Extract<ConversationState, { state: 'bound' }>): string {
     const identity = current.snapshot.scope.identity;
-    return JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, current.workspaceID, current.session.id]);
+    return JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, identity.principalID, current.workspaceID, current.session.id]);
   }
 
   private requestOwner(current: Extract<ConversationState, { state: 'bound' }>): AgentRequestOwner {
-    const { family, connectionID } = current.snapshot.scope.identity;
-    return { family, connectionID, workspaceID: current.workspaceID, sessionID: current.session.id };
+    const { family, connectionID, principalID } = current.snapshot.scope.identity;
+    const owner = { family, connectionID, workspaceID: current.workspaceID, sessionID: current.session.id };
+    return principalID ? { ...owner, principalID } : owner;
   }
 
   private write(current: Extract<ConversationState, { state: 'bound' }>, value: ConversationWrite): void {
@@ -209,7 +210,7 @@ export class AgentConversation {
     const identity = current.snapshot.scope.identity;
     const owner = this.requestOwner(current);
     if (this.journal?.read(owner).length) throw new AgentClientError(AGENT_ERROR.UNKNOWN_OUTCOME);
-    const key = JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, requestID]);
+    const key = JSON.stringify([current.snapshot.scope.runtimeKey, identity.family, identity.connectionID, identity.principalID, requestID]);
     if (this.requests.has(key)) throw new AgentClientError(AGENT_ERROR.ATTEMPT_EXISTS);
     this.journal?.mark(owner, requestID);
     this.requests.add(key);

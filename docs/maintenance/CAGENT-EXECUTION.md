@@ -1,6 +1,16 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: constrained declarative generation
+## Latest checkpoint: reviewed document excerpts
+
+2026-10-09. Packet preparation now accepts strict owner-selected text and OpenAPI 3.0/3.1 JSON source sections. Source IDs, revisions, exact UTF-8 digests and section inventories must match the reviewed catalog. Text uses inclusive line ranges; JSON uses bounded own-property pointers and retains unresolved references. Each operation receives only its cited excerpts, covered by the protected artifact manifest. Missing, stale or oversized evidence stops preparation before workspace creation. Source text totals at most 1 MiB and serialized excerpts at most 16 KiB per packet; the owner still measures complete input against the calibrated model budget.
+
+Fifteen distinct focused tests pass across source extraction, packet planning, preparation and bundling. The native offline journey now supplies document sources, generates the handler, checks fixtures and finalizes outside the checkout without node_modules. Refusal checks prove that stale source creates no workspace and reveals no source in JSON or quiet output. Eight changed JavaScript files pass anti-slop and ESLint. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, with no CAgent row. Source identity checks do not prove API semantics or model compliance.
+
+The new ignored output `artifacts/cagent-offline-excerpts-20261009` contains eight commands and 84 protected files, including the source-selection schema. Its actual bundled Node verifier passes the independently supplied digest `e51d81060ea45cb377ca83843ff939eaa5551b491c487b16574e157a69cd5f37`. Prior outputs are retained. English and Chinese source-selection instructions and the workbook are synchronized.
+
+CA-01 remains in progress. CA-02 still needs automatic endpoint inventory, extension templates, real authoring-model trials and enforced target permissions. Actual host consumer/identity completion, CA-03 real acceptance, independent remote publication and temporary Release remain outstanding. Production capabilities stay closed. Live weekly quota remains 62%; other INT work stays after CA-03. Continue with endpoint inventory and finite extension delivery without expanding the local author's core editing scope.
+
+## Earlier checkpoint: constrained declarative generation
 
 2026-10-09. Reviewed single-endpoint mappings can now supply strict declarative bindings. The generator binds recipes to the exact mapping digest, derives methods and routes from the reviewed catalog and refuses missing or extra bindings, unsafe keys, invalid scopes, mismatched placeholders and GET bodies. Request projections read input, including items from input lists; response projections preserve list order. Optional fields may be omitted. Semantic differences remain custom codec work. Generated sources still require protected semantic fixtures, persistent packet checks and independent host approval; all 22 capabilities remain unverified.
 

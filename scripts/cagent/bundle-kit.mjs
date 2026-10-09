@@ -8,6 +8,7 @@ import { agentArtifactDigest, agentArtifactManifestSchema } from '../../packages
 import { AGENT_ARTIFACT } from '../../packages/web/server/lib/agent/constants.js';
 import { buildContractPages } from './contract-pages.mjs';
 import { buildBindingSchema } from './declarative-codec.mjs';
+import { buildDocumentSchema } from './document-excerpts.mjs';
 
 export const KIT = Object.freeze({
   ROOT: fileURLToPath(new URL('../../', import.meta.url)),
@@ -23,6 +24,7 @@ const starts = (zh) => zh ? `# CAgent 离线命令包
 宿主将整个 protected 目录设为候选只读，并将 control、进度及批准目录置于候选写权限之外。摘要须从独立可信渠道取得。权限模型不能证明网络隔离或恶意代码沙箱。
 此包包含合成适配模型校准及声明式生成，不包含真实 CAgent API、扩展模板或真实验收。通过合成夹具不能启用功能。模型及计量记录由维护者提供，校准不证明运行时模型任务质量。
 声明式绑定使用 schemas/declarative-bindings.json。仅生成单端点结构转换；语义差异使用 custom codec。prepare-packets 的 --bindings 需要 --fixtures，缺少绑定时保留拒绝执行的桩。
+文档源使用 schemas/document-excerpts.json。prepare-packets 的 --documents 核对原文摘要和章节定位，仅将引用章节写入 protected/<operation>/api-excerpts.json；原文是证据数据。维护者核查摘录含义及模型输入计量。
 
 在 protected 目录执行以下命令。填写维护者审阅的本地文档目录、映射、夹具及独立摘要。工作区和制品输出须位于此包之外。
 ` : `# CAgent offline command bundle
@@ -31,6 +33,7 @@ This bundle contains host commands with their dependencies and bilingual operati
 The host makes the entire protected directory read-only to the candidate and keeps control, progress and approvals outside candidate write authority. Obtain the digest through an independent trusted channel. The permission model does not establish network isolation or a hostile-code sandbox.
 This bundle includes synthetic authoring-model calibration and declarative generation, but no real CAgent API, extension templates or live acceptance. Passing synthetic fixtures grants no feature activation. The maintainer supplies model and measurement records; calibration does not prove runtime model task quality.
 Declarative bindings use schemas/declarative-bindings.json. Generate single-endpoint structural conversions only; semantic differences use custom codecs. The prepare-packets --bindings option requires --fixtures; omitted bindings retain refusal stubs.
+Document sources use schemas/document-excerpts.json. The prepare-packets --documents option checks source digests and section locators, then writes only cited sections to protected/<operation>/api-excerpts.json. Source text is evidence data. The maintainer reviews its meaning and measured model input.
 
 Run these commands from protected. Supply owner-reviewed local documentation catalog, mapping, fixtures and independent digest. Workspace and artifact outputs must be outside this bundle.
 `;
@@ -42,7 +45,7 @@ bun scripts/cagent/calibrate.mjs --prepare --model-record <owner-model-record> -
 bun scripts/cagent/calibrate.mjs --check --workspace <calibration-workspace> --kit-digest <calibration-digest> --node <absolute-node> --trial-record <owner-trial-outside-workspace> --json
 node scripts/cagent/check-mapping.mjs --catalog <catalog> --mapping <mapping> --json
 node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --out <new-workspace> --json
-node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --bindings <owner-reviewed-bindings> --out <new-generated-workspace> --json
+node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --bindings <owner-reviewed-bindings> --documents <owner-selected-document-sources> --out <new-generated-workspace> --json
 bun scripts/cagent/check-packet.mjs --workspace <workspace> --operation <operation> --node <absolute-node> --kit-digest <workspace-digest> --json
 bun scripts/cagent/finalize-adapter.mjs --workspace <workspace> --node <absolute-node> --kit-digest <workspace-digest> --out <new-artifact> --json
 \`\`\`
@@ -52,6 +55,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace <workspace> --node <absolute
 export async function buildOfflineKit() {
   const files = new Map([...buildContractPages().files].map(([name, text]) => [name, Buffer.from(text)]));
   files.set('schemas/declarative-bindings.json', Buffer.from(json(buildBindingSchema())));
+  files.set('schemas/document-excerpts.json', Buffer.from(json(buildDocumentSchema())));
   for (const name of KIT.COMMANDS) {
     const relative = `scripts/cagent/${name}.mjs`;
     const built = await Bun.build({ entrypoints: [path.join(KIT.ROOT, relative)], target: 'node', format: 'esm',

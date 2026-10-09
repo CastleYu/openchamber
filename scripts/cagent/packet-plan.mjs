@@ -7,6 +7,7 @@ import { OPERATION_REFERENCE } from './operation-reference.mjs';
 import { z } from 'zod';
 import { createFixtureChecks, FIXTURE, FixtureError } from './fixture-checks.mjs';
 import { compileBindings, DeclarativeError, DECLARATIVE } from './declarative-codec.mjs';
+import { compileDocuments, packetDocuments, DocumentError, DOCUMENT } from './document-excerpts.mjs';
 
 export const PACKET_PLAN = Object.freeze({
   VERSION: 1,
@@ -50,13 +51,14 @@ const operationFiles = (operation, contractFiles) => {
 };
 
 /** Builds review packets and an immutable protected snapshot description; it never writes or executes candidates. */
-export function buildPacketPlan(catalogInput, mappingInput, fixtureInput, bindingInput) {
+export function buildPacketPlan(catalogInput, mappingInput, fixtureInput, bindingInput, documentInput) {
   try {
     const coverage = compileMapping(catalogInput, mappingInput);
     const catalog = MAPPING_CATALOG_SCHEMA.parse(catalogInput);
     const mapping = MAPPING_SCHEMA.parse(mappingInput);
     if (bindingInput !== undefined && fixtureInput === undefined) throw new PacketPlanError(FIXTURE.INVALID);
     const generated = bindingInput === undefined ? null : compileBindings(catalogInput, mappingInput, bindingInput);
+    const excerpts = documentInput === undefined ? null : compileDocuments(catalogInput, documentInput);
     const contract = buildContractPages();
     const ready = Object.values(AGENT_OPERATION).filter((operation) =>
       mapping.operations[operation].kind === MAPPING.OPERATION_KIND.MAPPING && coverage.operations[operation] === MAPPING.STATE.READY);
@@ -95,6 +97,7 @@ export function buildPacketPlan(catalogInput, mappingInput, fixtureInput, bindin
       });
       const local = operationFiles(operation, contract.files);
       const base = `${PACKET_PLAN.DIRECTORY.PROTECTED}/${operation}`;
+      if (excerpts) files.set(`${base}/${DOCUMENT.FILE}`, packetDocuments(excerpts, documents));
       files.set(`${candidate}/${PACKET_PLAN.FILE.HANDLER}`, generated?.sources.get(operation) ?? handler(operation));
       if (generated?.sources.has(operation)) files.set(`${base}/${DECLARATIVE.FILE}`, json(generated.bindings.operations[operation]));
       files.set(`${base}/${PACKET_PLAN.FILE.PACKET}`, json(packet));
@@ -117,7 +120,7 @@ export function buildPacketPlan(catalogInput, mappingInput, fixtureInput, bindin
     return freeze({ version: PACKET_PLAN.VERSION, digest: artifactDigest, coverage, packets, files });
   } catch (error) {
     if (error instanceof FixtureError) throw new PacketPlanError(FIXTURE.INVALID);
-    if (error instanceof PacketPlanError || error instanceof MappingError || error instanceof DeclarativeError) throw error;
+    if (error instanceof PacketPlanError || error instanceof MappingError || error instanceof DeclarativeError || error instanceof DocumentError) throw error;
     throw new PacketPlanError(PACKET_PLAN.ERROR.INVALID);
   }
 }

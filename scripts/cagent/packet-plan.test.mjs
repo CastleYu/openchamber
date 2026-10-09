@@ -5,6 +5,7 @@ import { AGENT_OPERATION, AGENT_ERROR, AGENT_ARTIFACT } from '../../packages/web
 import { agentArtifactDigest } from '../../packages/web/server/lib/agent/artifacts.js';
 import { catalogDigest, MappingError } from './mapping-intake.mjs';
 import { buildPacketPlan, PACKET_PLAN, PacketPlanError } from './packet-plan.mjs';
+import { DOCUMENT, DocumentError } from './document-excerpts.mjs';
 
 const citation = [{ document: 'guide', section: 'routes' }];
 const catalog = {
@@ -28,6 +29,24 @@ const mapping = () => ({
   },
 });
 const get = (plan, path) => plan.files.get(path);
+
+test('freezes cited API excerpts and binds the protected digest to exact source identity', () => {
+  const text = 'Read endpoint facts\nUnrelated endpoint facts';
+  const value = structuredClone(catalog);
+  value.documents[0].digest = createHash('sha256').update(text).digest('hex');
+  const rows = mapping();
+  rows.catalogDigest = catalogDigest(value);
+  const documents = { version: 1, documents: [{ id: 'guide', revision: 'r1', format: 'text', text,
+    sections: [{ id: 'routes', fromLine: 1, toLine: 1 }, { id: 'other', fromLine: 2, toLine: 2 }] }] };
+  const plan = buildPacketPlan(value, rows, undefined, undefined, documents);
+  const contents = get(plan, `protected/getSession/${DOCUMENT.FILE}`);
+  assert.ok(contents.includes('Read endpoint facts'));
+  assert.equal(contents.includes('Unrelated endpoint facts'), false);
+  assert.ok(JSON.parse(get(plan, 'control/manifest.json')).files.some((item) => item.path === `getSession/${DOCUMENT.FILE}`));
+  const changed = structuredClone(documents);
+  changed.documents[0].text += ' changed';
+  assert.throws(() => buildPacketPlan(value, rows, undefined, undefined, changed), DocumentError);
+});
 
 test('creates one syntax-only packet with narrowly scoped protected references', async () => {
   const plan = buildPacketPlan(catalog, mapping());

@@ -9,6 +9,7 @@ import { AGENT_OPERATION } from '../../packages/web/server/lib/agent/constants.j
 import { verifyAgentArtifacts } from '../../packages/web/server/lib/agent/artifacts.js';
 import { catalogDigest } from './mapping-intake.mjs';
 import { runPrepareCommand, PREPARE_COMMAND } from './prepare-packets.mjs';
+import { DOCUMENT } from './document-excerpts.mjs';
 
 const fixture = async (root, ready = true) => {
   const citations = [{ document: 'guide', section: 'read' }];
@@ -32,6 +33,25 @@ const run = async (args) => {
   assert.equal(lines.length, 1);
   return { code, report: JSON.parse(lines[0]), line: lines[0] };
 };
+
+test('stale document input refuses preparation without source disclosure in JSON or quiet output', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cagent-document-refusal-'));
+  try {
+    const args = await fixture(root);
+    const documents = path.join(root, 'documents.json');
+    await fs.writeFile(documents, JSON.stringify({ version: 1, documents: [{ id: 'guide', revision: 'r1', format: 'text',
+      text: 'private source', sections: [{ id: 'read', fromLine: 1, toLine: 1 }] }] }));
+    const result = await run([...args, '--documents', documents]);
+    assert.equal(result.code, 1);
+    assert.equal(result.report.error, DOCUMENT.ERROR);
+    assert.equal(result.line.includes('private'), false);
+    assert.equal(result.line.includes(root), false);
+    assert.equal(await fs.stat(path.join(root, 'workspace')).then(() => true, () => false), false);
+    const lines = [];
+    assert.equal(await runPrepareCommand([...args.filter((item) => item !== '--json'), '--documents', documents, '--quiet'], (value) => lines.push(value)), 1);
+    assert.deepEqual(lines, [DOCUMENT.ERROR]);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
 
 test('native preparation creates verifiable protected files and preserves candidate work on repeat', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cagent-prepare-'));

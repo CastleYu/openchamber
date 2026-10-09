@@ -10,7 +10,7 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 The bundle includes eight standalone commands, 69 generated references, paired START-HERE files and project/Zod/TypeScript licenses. It bundles installed dependencies into ESM and refuses remaining imports outside Node builtins. It copies no local API inputs, credentials or candidate files. The owner supplies the validated Node and Bun executables separately. Fresh-directory tests run calibration, mapping intake, preparation, child fixtures and finalization outside the checkout without `node_modules`. These tests establish the tested Windows toolchain, not a different OS or local model.
 
-Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle includes constrained declarative generation and executable authoring calibration. Document extraction, extension templates, actual local-model trials and target permissions remain CA-02 work.
+Bundled paths preserve the worker and reference layout. The exact `protected/` inventory is covered by `control/manifest.json` outside that tree. Transfer the expected digest independently and protect the whole bundle from candidate writes. Verification cannot authenticate its own executable if the owner allows it to be replaced. Existing output is refused before building. Build failure creates no output; write failure leaves an incomplete directory and publishes no final manifest. The bundle includes reviewed source-section extraction, constrained declarative generation and executable authoring calibration. Automatic endpoint inventory, extension templates, actual local-model trials and target permissions remain CA-02 work.
 
 Finalization reads the protected registration, rechecks every registered packet using native persistent correction limits, and bundles captured passing bytes together. It then executes each operation's protected fixtures against that combined adapter in fresh bounded child processes. A combined-factory mismatch stops publication. The command never treats a candidate's progress report as acceptance evidence.
 
@@ -21,6 +21,20 @@ CAGENT_TEST_NODE=/absolute/path/to/node bun test scripts/cagent/bundle-kit.test.
 ```
 
 On Windows set `CAGENT_TEST_NODE` as a process environment variable before running Bun.
+
+## Reviewed API excerpts
+
+Add `--documents /local/documents.json` to preparation to freeze relevant API source alongside each operation. The bundle supplies `schemas/document-excerpts.json`. The owner supplies source text and selected locators, checks the resulting meaning and binds the catalog document digest to SHA-256 of the exact UTF-8 text, including line endings. Source text is evidence data, not instructions for the authoring agent. Keep credentials and personal samples out of it. Reports contain fixed outcomes and digests, never raw source.
+
+```json
+{"version":1,"documents":[{"id":"guide","revision":"r1","format":"text","text":"Title\nSynthetic request and result facts.","sections":[{"id":"read","fromLine":2,"toLine":2}]}]}
+```
+
+Text ranges are inclusive and one-based; extracted line endings normalize to LF. For OpenAPI 3.0/3.1 JSON, use `format: openapi-json` and section locators such as `{"id":"read","pointer":"/paths/~1records/get"}`. JSON Pointers use `~1` for slash and `~0` for tilde. The extractor retains `$ref` values without dereferencing, fetching or inferring missing semantics. YAML conversion and automatic endpoint inventory are not implemented. The catalog's methods, paths, request/result references and effect classification still require owner review.
+
+The document IDs, revisions, source digests and section inventories must match the complete reviewed catalog. Missing/extra documents or sections, duplicate IDs, stale text, invalid locators and unsupported document formats fail before workspace creation. Preparation writes only sections cited by each mapping and its endpoint rows into protected `<operation>/api-excerpts.json`; unrelated sections stay out of that packet. The protected manifest covers these bytes. A packet with the option omitted has references only and requires the owner to supply those documents separately.
+
+Document source text totals at most 1 MiB; the input JSON container also obeys the existing 1 MiB read limit. A packet's serialized excerpt record is at most 16 KiB. This byte ceiling is not a token measurement or the complete model prompt budget. The owner measures the complete task input under the calibrated model budget and selects smaller, sufficient sections when needed. Exceeding the ceiling blocks preparation rather than truncating evidence. Excerpt checks establish source identity and selection, not API correctness, model compliance or runtime support.
 
 ## Declarative structural generation
 

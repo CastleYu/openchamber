@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { runBundleKit } from './bundle-kit.mjs';
 import { runVerifyKit } from './verify-kit.mjs';
 import { catalogDigest, compileMapping } from './mapping-intake.mjs';
@@ -44,7 +45,10 @@ test('standalone bundle runs outside checkout without installed dependencies and
     assert.equal(run(node, 'build-contracts', ['--check']).ok, true);
     assert.ok(JSON.parse(await fs.readFile(path.join(protectedRoot, 'schemas/declarative-bindings.json'), 'utf8')).properties.operations);
     const citations = [{ document: 'guide', section: 'read' }];
-    const catalog = { version: 1, revision: 'r1', documents: [{ id: 'guide', revision: 'r1', digest: 'a'.repeat(64), sections: ['read'] }],
+    const text = 'Synthetic read returns one session in the requested workspace.';
+    const documents = { version: 1, documents: [{ id: 'guide', revision: 'r1', format: 'text', text,
+      sections: [{ id: 'read', fromLine: 1, toLine: 1 }] }] };
+    const catalog = { version: 1, revision: 'r1', documents: [{ id: 'guide', revision: 'r1', digest: createHash('sha256').update(text).digest('hex'), sections: ['read'] }],
       endpoints: [{ id: 'read', method: 'GET', path: '/fixture/session', requestRef: 'input', responseRef: 'output', effect: 'read', citations }] };
     const mapping = { version: 1, catalogRevision: 'r1', catalogDigest: catalogDigest(catalog),
       operations: Object.fromEntries(Object.values(AGENT_OPERATION).map((operation) => [operation, operation === 'getSession'
@@ -61,8 +65,10 @@ test('standalone bundle runs outside checkout without installed dependencies and
     const inputs = ['--catalog', path.join(root, 'catalog.json'), '--mapping', path.join(root, 'mapping.json')];
     assert.equal(run(node, 'check-mapping', inputs).ok, true);
     const workspace = path.join(root, 'workspace');
+    await fs.writeFile(path.join(root, 'documents.json'), JSON.stringify(documents));
     const prepared = run(node, 'prepare-packets', [...inputs, '--fixtures', path.join(root, 'fixtures.json'),
-      '--bindings', path.join(root, 'bindings.json'), '--out', workspace]);
+      '--bindings', path.join(root, 'bindings.json'), '--documents', path.join(root, 'documents.json'), '--out', workspace]);
+    assert.equal(JSON.parse(await fs.readFile(path.join(workspace, 'protected/getSession/api-excerpts.json'), 'utf8')).documents[0].sections[0].text, text);
     assert.equal(JSON.parse(await fs.readFile(path.join(workspace, 'protected/getSession/packet.json'), 'utf8')).status, 'awaiting-validation');
     assert.equal(run(process.execPath, 'check-packet', ['--workspace', workspace, '--operation', 'getSession', '--node', node, '--kit-digest', prepared.digest]).ok, true);
     const artifact = run(process.execPath, 'finalize-adapter', ['--workspace', workspace, '--node', node, '--kit-digest', prepared.digest, '--out', path.join(root, 'artifact')]);

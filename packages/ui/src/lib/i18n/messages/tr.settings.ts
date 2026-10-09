@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Profil doğrulandı",
+  'settings.openchamber.opencodeMode.auth': "Sunucu kimlik doğrulaması başarısız",
+  'settings.openchamber.opencodeMode.unreachable': "Sunucuya ulaşılamadı",
+  'settings.openchamber.opencodeMode.conflict': "Sunucu sürümü yanıtları uyuşmuyor",
+  'settings.openchamber.opencodeMode.mismatch': "Seçilen mod sunucuyla eşleşmiyor",
+  'settings.openchamber.opencodeMode.unsupported': "Sunucu sürümü desteklenmiyor",
+  'settings.openchamber.opencodeMode.unverified': "Sunucu uyumluluğu doğrulanmadı",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Sunucu adresi geçersiz",
+  'settings.openchamber.opencodeMode.invalidSelection': "Seçilen mod geçersiz",
+  'settings.openchamber.opencodeMode.version': "Sunucu sürümü: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Belirlenen mod: {mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode uyumluluğu",
   'settings.openchamber.opencodeMode.label': "Bağlantı modu",
   'settings.openchamber.opencodeMode.info': "Otomatik algılama sunucu sürümünü belirler. Elle seçim bağlı sunucuyla eşleşmelidir. Sonraki bağlantı denetimi kaydedilen modu uygular. Legacy 1.2.27 özellikleri uyumluluk denetimleri geçene kadar sınırlı kalır.",

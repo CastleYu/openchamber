@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Profil zweryfikowany",
+  'settings.openchamber.opencodeMode.auth': "Uwierzytelnianie serwera nie powiodło się",
+  'settings.openchamber.opencodeMode.unreachable': "Serwer jest nieosiągalny",
+  'settings.openchamber.opencodeMode.conflict': "Odpowiedzi dotyczące wersji serwera są sprzeczne",
+  'settings.openchamber.opencodeMode.mismatch': "Wybrany tryb nie pasuje do serwera",
+  'settings.openchamber.opencodeMode.unsupported': "Wersja serwera nie jest obsługiwana",
+  'settings.openchamber.opencodeMode.unverified': "Zgodność serwera nie została zweryfikowana",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Adres serwera jest nieprawidłowy",
+  'settings.openchamber.opencodeMode.invalidSelection': "Wybrany tryb jest nieprawidłowy",
+  'settings.openchamber.opencodeMode.version': "Wersja serwera: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Ustalony tryb: {mode}",
   'settings.openchamber.opencodeMode.title': "Zgodność OpenCode",
   'settings.openchamber.opencodeMode.label': "Tryb połączenia",
   'settings.openchamber.opencodeMode.info': "Automatyczne wykrywanie rozpoznaje wersję serwera. Ręczny wybór musi odpowiadać połączonemu serwerowi. Następne sprawdzenie połączenia zastosuje zapisany tryb. Funkcje Legacy 1.2.27 pozostają ograniczone do czasu pomyślnej weryfikacji zgodności.",

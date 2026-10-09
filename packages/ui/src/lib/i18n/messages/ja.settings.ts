@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "互換プロファイルを確認済み",
+  'settings.openchamber.opencodeMode.auth': "サーバー認証に失敗しました",
+  'settings.openchamber.opencodeMode.unreachable': "サーバーに接続できません",
+  'settings.openchamber.opencodeMode.conflict': "サーバーのバージョン応答が一致しません",
+  'settings.openchamber.opencodeMode.mismatch': "選択したモードがサーバーと一致しません",
+  'settings.openchamber.opencodeMode.unsupported': "このサーバーバージョンは未対応です",
+  'settings.openchamber.opencodeMode.unverified': "サーバーの互換性は未確認です",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "サーバーアドレスが無効です",
+  'settings.openchamber.opencodeMode.invalidSelection': "選択したモードが無効です",
+  'settings.openchamber.opencodeMode.version': "サーバーバージョン：{version}",
+  'settings.openchamber.opencodeMode.resolved': "実際のモード：{mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode の互換性",
   'settings.openchamber.opencodeMode.label': "接続モード",
   'settings.openchamber.opencodeMode.info': "自動検出でサーバーのバージョンを判定します。手動選択は接続先サーバーと一致する必要があります。次の接続確認で保存したモードを適用します。Legacy 1.2.27 の機能は互換性の検証が完了するまで制限されます。",

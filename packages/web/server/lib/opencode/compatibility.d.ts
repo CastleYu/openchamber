@@ -14,6 +14,7 @@ export type OpenCodeProfile = 'oc1' | 'oc2' | 'legacy-1.2.27';
 
 export interface OpenCodeGenerationDescriptor {
   profile?: OpenCodeProfile;
+  status?: typeof PROFILE_STATUS[keyof typeof PROFILE_STATUS];
   generation: OpenCodeGeneration;
   endpoint: string | null;
   epoch: string | number;

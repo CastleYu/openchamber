@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Profile verified",
+  'settings.openchamber.opencodeMode.auth': "Server authentication failed",
+  'settings.openchamber.opencodeMode.unreachable': "Server could not be reached",
+  'settings.openchamber.opencodeMode.conflict': "Server version responses disagree",
+  'settings.openchamber.opencodeMode.mismatch': "Selected mode does not match the server",
+  'settings.openchamber.opencodeMode.unsupported': "Server version is unsupported",
+  'settings.openchamber.opencodeMode.unverified': "Server compatibility is not verified",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Server address is invalid",
+  'settings.openchamber.opencodeMode.invalidSelection': "Selected mode is invalid",
+  'settings.openchamber.opencodeMode.version': "Server version: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Resolved mode: {mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode compatibility",
   'settings.openchamber.opencodeMode.label': "Connection mode",
   'settings.openchamber.opencodeMode.info': "Auto detects the server version. A manual choice must match the connected server. The next connection check applies the saved mode. Legacy 1.2.27 features remain limited until compatibility checks pass.",

@@ -11,13 +11,14 @@ let failWrite = false;
 let writes = 0;
 let probes = 0;
 let generation: 'oc1' | 'oc2' = 'oc1';
+let failure: 'auth' | 'unreachable' | null = null;
 const schema = z.object({ [OPEN_CODE_SETTING.SELECTION]: z.enum(Object.values(OPEN_CODE_SELECTION)).optional() });
 const server = createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   if (req.url?.startsWith('/api/opencode/runtime')) {
     probes++;
-    const accepted = selection === OPEN_CODE_SELECTION.AUTO || selection === generation;
-    res.end(JSON.stringify({ generation: accepted ? generation : 'unsupported', endpoint: accepted ? url : null, epoch: writes, version: generation === 'oc1' ? '1.18.32' : '2.0.16', profile: accepted ? generation : undefined }));
+    const accepted = failure === null && (selection === OPEN_CODE_SELECTION.AUTO || selection === generation);
+    res.end(JSON.stringify({ status: failure ?? (accepted ? 'ready' : 'mismatch'), generation: accepted ? generation : failure === 'unreachable' ? 'unreachable' : 'unsupported', endpoint: accepted ? url : null, epoch: writes, version: generation === 'oc1' ? '1.18.32' : '2.0.16', profile: accepted ? generation : undefined }));
     return;
   }
   if (req.method === 'PUT') {
@@ -84,6 +85,8 @@ test('mode control loads and saves explicit intent, retains choice on failure an
   expect(opencodeClient.getBoundRuntime()).toBeNull();
   expect(useConfigStore.getState().isConnected).toBe(false);
   expect(document.querySelector('[role="alert"]')?.textContent).toContain('Mode saved');
+  expect(document.querySelector('[role="status"]')?.textContent).toBe('Selected mode does not match the server');
+  expect(document.body.textContent).toContain('Server version: 1.18.32');
   const rejectedProbes = probes;
   await act(async () => button('OC2').click());
   expect(writes).toBe(1);
@@ -98,6 +101,8 @@ test('mode control loads and saves explicit intent, retains choice on failure an
   await wait(() => button('OC1').getAttribute('aria-pressed') === 'true' && !button('OC1').disabled);
   expect(opencodeClient.getBoundRuntime()?.generation).toBe('oc1');
   expect(useConfigStore.getState().isConnected).toBe(true);
+  expect(document.querySelector('[role="status"]')?.textContent).toBe('Profile verified');
+  expect(document.body.textContent).toContain('Resolved mode: OC1');
   expect(document.querySelector('[role="alert"]')).toBeNull();
   await act(async () => useI18nStore.getState().setLocale('zh-CN'));
   await wait(() => document.body.textContent?.includes('连接模式') === true);
@@ -127,6 +132,19 @@ test('mode control loads and saves explicit intent, retains choice on failure an
   await wait(() => !button('自动检测').disabled);
   expect(opencodeClient.getBoundRuntime()?.generation).toBe('oc2');
   expect(document.querySelector('[role="alert"]')).toBeNull();
+  expect(document.body.textContent).toContain('实际模式：OC2');
+  expect(document.body.textContent).toContain('服务器版本：2.0.16');
+  failure = 'auth';
+  await act(async () => { await opencodeClient.discoverRuntime(); });
+  expect(document.querySelector('[role="status"]')?.textContent).toBe('服务器认证失败');
+  expect(opencodeClient.getBoundRuntime()).toBeNull();
+  expect(document.body.textContent).not.toContain('实际模式：');
+  failure = 'unreachable';
+  await act(async () => { await opencodeClient.discoverRuntime(); });
+  expect(document.querySelector('[role="status"]')?.textContent).toBe('无法连接服务器');
+  failure = null;
+  await act(async () => { await opencodeClient.discoverRuntime(); });
+  expect(document.querySelector('[role="status"]')?.textContent).toBe('兼容配置已验证');
   invalidateSettingsCache();
   failRead = true;
   await act(async () => root.render(<I18nProvider><OpenCodeModeSettings key="unreadable" /></I18nProvider>));

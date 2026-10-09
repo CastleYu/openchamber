@@ -513,3 +513,17 @@ describe('VS Code session operation ownership', () => {
     });
   }
 });
+
+describe('shared kernel admission diagnostics', () => {
+  test.each(['ready', 'auth', 'unreachable', 'conflict', 'mismatch', 'unsupported', 'unverified', 'invalid-endpoint', 'invalid-selection'])('forwards %s through the runtime bridge', async status => {
+    const { createKernelRuntime } = await import('../../web/server/lib/opencode/kernel-runtime.js');
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}), getRequestedSelection: () => 'auto',
+      detectProfile: async ({ endpoint, epoch, selection }) => ({ status, selection, descriptor: { generation: 'oc2', profile: 'oc2', endpoint, epoch, version: '2.0.16' } }),
+    });
+    const response = await handleSystemBridgeMessage({ id: status, type: 'api:opencode/runtime' }, { manager: { refreshKernelRuntime: runtime.refresh } }, {});
+    expect(response.success).toBe(true);
+    expect(response.data.status).toBe(status);
+    expect(response.data.version).toBe('2.0.16');
+    expect(response.data).not.toHaveProperty('headers');
+  });
+});

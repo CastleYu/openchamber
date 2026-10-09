@@ -45,7 +45,12 @@ This module provides OpenCode server integration utilities for the web server ru
   closing. A health `reprobe` keeps a resolved OC1 or OC2 descriptor when detection
   returns `unreachable` or `unknown`. See lifecycle health monitoring below.
   `/api/opencode/runtime` exposes the descriptor through the authenticated
-  OpenChamber route with no-store caching.
+  OpenChamber route with no-store caching. When profile admission runs, the
+  descriptor carries its finite `PROFILE_STATUS` value. Invalidation removes
+  that status until a fresh probe commits. Web, Electron and mobile share this
+  descriptor; VS Code forwards the same kernel result. No credentials or raw
+  error details are added. A health reprobe that preserves a live descriptor
+  retains its committed status; runtime discovery performs a fresh refresh.
   Protected host family selection also retires this descriptor. CAgent selection,
   loading and failed loading produce `unsupported` with no OpenCode endpoint or
   probe. Clearing that selection does not select OpenCode. Explicit OpenCode

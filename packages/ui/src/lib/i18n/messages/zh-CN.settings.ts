@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "兼容配置已验证",
+  'settings.openchamber.opencodeMode.auth': "服务器认证失败",
+  'settings.openchamber.opencodeMode.unreachable': "无法连接服务器",
+  'settings.openchamber.opencodeMode.conflict': "服务器版本响应不一致",
+  'settings.openchamber.opencodeMode.mismatch': "选择的模式与服务器不匹配",
+  'settings.openchamber.opencodeMode.unsupported': "不支持该服务器版本",
+  'settings.openchamber.opencodeMode.unverified': "服务器兼容性尚未验证",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "服务器地址无效",
+  'settings.openchamber.opencodeMode.invalidSelection': "选择的模式无效",
+  'settings.openchamber.opencodeMode.version': "服务器版本：{version}",
+  'settings.openchamber.opencodeMode.resolved': "实际模式：{mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode 兼容性",
   'settings.openchamber.opencodeMode.label': "连接模式",
   'settings.openchamber.opencodeMode.info': "自动检测会识别服务器版本。手动选择必须与连接的服务器匹配。下一次连接检查会应用保存的模式。Legacy 1.2.27 的功能在兼容性验证通过前仍受限制。",

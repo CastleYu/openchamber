@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Profiel geverifieerd",
+  'settings.openchamber.opencodeMode.auth': "Serverauthenticatie mislukt",
+  'settings.openchamber.opencodeMode.unreachable': "Server niet bereikbaar",
+  'settings.openchamber.opencodeMode.conflict': "Serverversies in de antwoorden komen niet overeen",
+  'settings.openchamber.opencodeMode.mismatch': "Gekozen modus komt niet overeen met de server",
+  'settings.openchamber.opencodeMode.unsupported': "Serverversie wordt niet ondersteund",
+  'settings.openchamber.opencodeMode.unverified': "Servercompatibiliteit is niet geverifieerd",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Serveradres is ongeldig",
+  'settings.openchamber.opencodeMode.invalidSelection': "Gekozen modus is ongeldig",
+  'settings.openchamber.opencodeMode.version': "Serverversie: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Vastgestelde modus: {mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode-compatibiliteit",
   'settings.openchamber.opencodeMode.label': "Verbindingsmodus",
   'settings.openchamber.opencodeMode.info': "Automatische detectie herkent de serverversie. Een handmatige keuze moet overeenkomen met de verbonden server. De volgende verbindingscontrole past de opgeslagen modus toe. Functies van Legacy 1.2.27 blijven beperkt totdat de compatibiliteitscontroles slagen.",

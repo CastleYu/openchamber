@@ -64,3 +64,9 @@ describe('OpenCode profile identity', () => {
     expect(await pending).toBe('current');
   });
 });
+
+test('host and UI admission status constants agree', async () => {
+  const { OPEN_CODE_STATUS } = await import('./runtime');
+  const { PROFILE_STATUS } = await import('../../../../web/server/lib/opencode/compatibility.js');
+  expect(OPEN_CODE_STATUS).toEqual(PROFILE_STATUS);
+});

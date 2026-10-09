@@ -4,7 +4,7 @@ import { isMessageNotFoundError, isPermissionNotFoundError, type FormAnswer, typ
 import type { PermissionV2Request, PermissionV2Effect, PermissionV2Source } from "@opencode-ai/sdk/v2/client";
 import { z } from "zod";
 import { OpencodeRequestError, toUpstreamErrorDetail, upstreamErrorPayloadSchema } from "./upstreamError";
-import { OPEN_CODE_GENERATION, OPEN_CODE_PROFILE, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntime } from './runtime';
+import { OPEN_CODE_GENERATION, OPEN_CODE_PROFILE, OPEN_CODE_STATUS, OpenCodeRuntimeBinding, OpenCodeRuntimeChangedError, OpenCodeRuntimeError, type OpenCodeRuntime } from './runtime';
 import { V1SessionOperations } from './v1/sessions';
 import { projectLegacyMessage, projectLegacyPart, projectLegacySession } from './v1/projection';
 import type { Message as DomainMessage, Metadata, ModelRef, Part as DomainPart, Project as DomainProject, Session as DomainSession, Vcs as DomainVcs } from './model';
@@ -284,6 +284,7 @@ const fsHomeResponseSchema = z.object({
 });
 
 const runtimeDescriptorSchema = z.object({
+  status: z.enum(OPEN_CODE_STATUS).optional(),
   profile: z.enum(OPEN_CODE_PROFILE).optional(),
   generation: z.enum(OPEN_CODE_GENERATION),
   endpoint: z.string().min(1).nullable(),
@@ -293,6 +294,7 @@ const runtimeDescriptorSchema = z.object({
 
 class OpencodeService {
   private readonly runtimeBinding = new OpenCodeRuntimeBinding();
+  private runtimeDescriptor: OpenCodeRuntime | null = null;
   private connectionRevision = 0;
   private discovery: Promise<OpenCodeRuntime> | null = null;
   private readonly runtimeListeners = new Set<() => void>();
@@ -343,9 +345,15 @@ class OpencodeService {
       && current.epoch === runtime.epoch
       && current.generation === runtime.generation
       && current.version === runtime.version
-      && current.profile === runtime.profile) return;
+      && current.profile === runtime.profile
+      && current.status === runtime.status) return;
     this.runtimeBinding.set(runtime);
+    this.runtimeDescriptor = this.runtimeBinding.get();
     this.reconnectToRuntimeBaseUrl(true);
+  }
+
+  getRuntimeDescriptor(): OpenCodeRuntime | null {
+    return this.runtimeDescriptor;
   }
 
   getBoundRuntime(): OpenCodeRuntime | null {
@@ -375,9 +383,10 @@ class OpencodeService {
         if (revision !== this.connectionRevision || runtimeKey !== getRuntimeKey()) {
           throw new OpenCodeRuntimeChangedError();
         }
-        if (runtime.endpoint && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2)) {
+        if ((runtime.status === undefined || runtime.status === OPEN_CODE_STATUS.READY) && runtime.endpoint && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2)) {
           this.bindRuntime(runtime);
         } else {
+          this.runtimeDescriptor = Object.freeze(runtime);
           this.runtimeBinding.clear();
           this.syncSource = null;
           this.notifyRuntime();
@@ -385,6 +394,7 @@ class OpencodeService {
         return runtime;
       } catch (error) {
         if (revision === this.connectionRevision && runtimeKey === getRuntimeKey()) {
+          this.runtimeDescriptor = null;
           this.runtimeBinding.clear();
           this.syncSource = null;
           this.notifyRuntime();
@@ -461,7 +471,10 @@ class OpencodeService {
     this.connectionRevision += 1;
     this.discovery = null;
     this.syncSource = null;
-    if (!preserveBinding) this.runtimeBinding.clear();
+    if (!preserveBinding) {
+      this.runtimeDescriptor = null;
+      this.runtimeBinding.clear();
+    }
     const runtimeBase = resolveRuntimeBaseUrl();
     const nextBaseUrl = ensureAbsoluteBaseUrl(runtimeBase || DEFAULT_BASE_URL);
     // An explicit reconnect can change the instance or transport behind the
@@ -2447,8 +2460,8 @@ class OpencodeService {
   // Lightweight readiness check. Full diagnostics still live at /health.
   async checkHealth(): Promise<boolean> {
     try {
-      const runtime = await this.discoverRuntime();
-      return Boolean(runtime.endpoint) && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2);
+      await this.discoverRuntime();
+      return this.runtimeBinding.get() !== null;
     } catch {
       return false;
     }

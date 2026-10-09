@@ -205,3 +205,34 @@ describe('resolved profile at the service boundary', () => {
     } finally { fetch.mockRestore(); }
   });
 });
+
+describe('runtime diagnostic ownership', () => {
+  for (const status of ['auth', 'mismatch', 'unreachable']) test(`retains ${status} without admitting an SDK or sync source`, async () => {
+    const descriptor = { status, generation: 'unknown', endpoint: 'http://kernel.test', epoch: 2, version: '2.0.16' };
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(descriptor));
+    try {
+      expect(await opencodeClient.checkHealth()).toBe(false);
+      expect(opencodeClient.getRuntimeDescriptor()).toEqual(descriptor);
+      expect(opencodeClient.getBoundRuntime()).toBeNull();
+      expect(() => opencodeClient.getSyncSource()).toThrow(OpenCodeRuntimeError);
+      opencodeClient.reconnectToRuntimeBaseUrl();
+      expect(opencodeClient.getRuntimeDescriptor()).toBeNull();
+    } finally { fetch.mockRestore(); }
+  });
+  test('a rejected admission cannot bind even a resolved generation', async () => {
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ status: 'auth', generation: 'oc2', endpoint: 'http://kernel.test', epoch: 2, version: '2.0.16' }));
+    try {
+      await opencodeClient.discoverRuntime();
+      expect(opencodeClient.getBoundRuntime()).toBeNull();
+      expect(await opencodeClient.checkHealth()).toBe(false);
+    } finally { fetch.mockRestore(); }
+  });
+  test('unknown diagnostic values fail parsing and retire the diagnostic snapshot', async () => {
+    opencodeClient.bindRuntime({ generation: 'oc2', endpoint: 'http://kernel.test', epoch: 1, version: '2.0.16', status: 'ready' });
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ status: 'guessed', generation: 'oc2', endpoint: 'http://kernel.test', epoch: 2, version: '2.0.16' }));
+    try {
+      await expect(opencodeClient.discoverRuntime()).rejects.toThrow();
+      expect(opencodeClient.getRuntimeDescriptor()).toBeNull();
+    } finally { fetch.mockRestore(); }
+  });
+});

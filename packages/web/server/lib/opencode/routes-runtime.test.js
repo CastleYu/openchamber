@@ -107,3 +107,21 @@ describe('provider mutation protocol ownership', () => {
     expect(writes).toBe(0);
   });
 });
+
+describe('admission diagnostics over the shared host route', () => {
+  it.each(['ready', 'auth', 'unreachable', 'conflict', 'mismatch', 'unsupported', 'unverified', 'invalid-endpoint', 'invalid-selection'])('serializes %s from the kernel owner', async status => {
+    const { createKernelRuntime } = await import('./kernel-runtime.js');
+    const runtime = createKernelRuntime({ getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}), getRequestedSelection: () => 'auto',
+      detectProfile: async ({ endpoint, epoch, selection }) => ({ status, selection, descriptor: { generation: 'oc2', profile: 'oc2', endpoint, epoch, version: '2.0.16' } }),
+    });
+    const app = express();
+    registerOpenCodeRoutes(app, { kernelRuntime: runtime });
+    const response = await request(app).get('/api/opencode/runtime').expect(200);
+    expect(response.body.status).toBe(status);
+    expect(response.body.version).toBe('2.0.16');
+    expect(response.body).not.toHaveProperty('headers');
+    expect(response.headers['cache-control']).toBe('no-store');
+    runtime.invalidate();
+    expect(runtime.get().status).toBeUndefined();
+  });
+});

@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Profil geprüft",
+  'settings.openchamber.opencodeMode.auth': "Serverauthentifizierung fehlgeschlagen",
+  'settings.openchamber.opencodeMode.unreachable': "Server nicht erreichbar",
+  'settings.openchamber.opencodeMode.conflict': "Serverversionen in den Antworten widersprechen sich",
+  'settings.openchamber.opencodeMode.mismatch': "Gewählter Modus passt nicht zum Server",
+  'settings.openchamber.opencodeMode.unsupported': "Serverversion wird nicht unterstützt",
+  'settings.openchamber.opencodeMode.unverified': "Serverkompatibilität ist nicht geprüft",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Serveradresse ist ungültig",
+  'settings.openchamber.opencodeMode.invalidSelection': "Gewählter Modus ist ungültig",
+  'settings.openchamber.opencodeMode.version': "Serverversion: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Ermittelter Modus: {mode}",
   'settings.openchamber.opencodeMode.title': "OpenCode-Kompatibilität",
   'settings.openchamber.opencodeMode.label': "Verbindungsmodus",
   'settings.openchamber.opencodeMode.info': "Automatisch erkennt die Serverversion. Eine manuelle Auswahl muss zum verbundenen Server passen. Die nächste Verbindungsprüfung übernimmt den gespeicherten Modus. Funktionen von Legacy 1.2.27 bleiben bis zum erfolgreichen Kompatibilitätstest eingeschränkt.",

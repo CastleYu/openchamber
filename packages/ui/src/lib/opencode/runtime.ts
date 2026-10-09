@@ -15,12 +15,19 @@ export const OPEN_CODE_PROFILE = {
 } as const;
 
 export const OPEN_CODE_SELECTION = { AUTO: 'auto', ...OPEN_CODE_PROFILE } as const;
+export const OPEN_CODE_STATUS = {
+  READY: 'ready', AUTH: 'auth', UNREACHABLE: 'unreachable', CONFLICT: 'conflict',
+  MISMATCH: 'mismatch', UNSUPPORTED: 'unsupported', UNVERIFIED: 'unverified',
+  INVALID_ENDPOINT: 'invalid-endpoint', INVALID_SELECTION: 'invalid-selection',
+} as const;
+
 export const OPEN_CODE_SETTING = { SELECTION: 'opencodeSelection' } as const;
 
 export type OpenCodeProfile = typeof OPEN_CODE_PROFILE[keyof typeof OPEN_CODE_PROFILE];
 
 export type OpenCodeRuntime = Readonly<{
   profile?: OpenCodeProfile;
+  status?: typeof OPEN_CODE_STATUS[keyof typeof OPEN_CODE_STATUS];
   generation: OpenCodeGeneration;
   endpoint: string | null;
   epoch: string | number;

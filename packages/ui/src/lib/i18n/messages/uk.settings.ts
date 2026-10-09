@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Профіль перевірено",
+  'settings.openchamber.opencodeMode.auth': "Помилка автентифікації сервера",
+  'settings.openchamber.opencodeMode.unreachable': "Сервер недоступний",
+  'settings.openchamber.opencodeMode.conflict': "Відповіді про версію сервера суперечливі",
+  'settings.openchamber.opencodeMode.mismatch': "Вибраний режим не відповідає серверу",
+  'settings.openchamber.opencodeMode.unsupported': "Версія сервера не підтримується",
+  'settings.openchamber.opencodeMode.unverified': "Сумісність сервера не перевірено",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Недійсна адреса сервера",
+  'settings.openchamber.opencodeMode.invalidSelection': "Недійсний вибраний режим",
+  'settings.openchamber.opencodeMode.version': "Версія сервера: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Визначений режим: {mode}",
   'settings.openchamber.opencodeMode.title': "Сумісність OpenCode",
   'settings.openchamber.opencodeMode.label': "Режим підключення",
   'settings.openchamber.opencodeMode.info': "Автовизначення розпізнає версію сервера. Ручний вибір має відповідати підключеному серверу. Наступна перевірка підключення застосує збережений режим. Функції Legacy 1.2.27 залишаються обмеженими до успішної перевірки сумісності.",

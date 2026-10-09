@@ -73,7 +73,9 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
       || admission?.status !== probe.admission?.status;
     admission = probe.admission;
     if (changed) epoch += 1;
-    current = Object.freeze({ ...result, epoch });
+    const descriptor = { ...result, epoch };
+    if (admission) descriptor.status = admission.status;
+    current = Object.freeze(descriptor);
     if (changed) onChange(current);
     return current;
   };

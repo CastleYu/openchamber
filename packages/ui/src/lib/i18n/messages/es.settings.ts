@@ -4,6 +4,17 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.openchamber.opencodeMode.ready': "Perfil verificado",
+  'settings.openchamber.opencodeMode.auth': "Falló la autenticación del servidor",
+  'settings.openchamber.opencodeMode.unreachable': "No se pudo contactar con el servidor",
+  'settings.openchamber.opencodeMode.conflict': "Las respuestas de versión del servidor no coinciden",
+  'settings.openchamber.opencodeMode.mismatch': "El modo seleccionado no coincide con el servidor",
+  'settings.openchamber.opencodeMode.unsupported': "Versión del servidor no compatible",
+  'settings.openchamber.opencodeMode.unverified': "Compatibilidad del servidor no verificada",
+  'settings.openchamber.opencodeMode.invalidEndpoint': "Dirección del servidor no válida",
+  'settings.openchamber.opencodeMode.invalidSelection': "Modo seleccionado no válido",
+  'settings.openchamber.opencodeMode.version': "Versión del servidor: {version}",
+  'settings.openchamber.opencodeMode.resolved': "Modo detectado: {mode}",
   'settings.openchamber.opencodeMode.title': "Compatibilidad de OpenCode",
   'settings.openchamber.opencodeMode.label': "Modo de conexión",
   'settings.openchamber.opencodeMode.info': "La detección automática identifica la versión del servidor. La selección manual debe coincidir con el servidor conectado. La próxima comprobación de conexión aplica el modo guardado. Las funciones de Legacy 1.2.27 siguen limitadas hasta superar las pruebas de compatibilidad.",

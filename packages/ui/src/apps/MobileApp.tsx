@@ -63,6 +63,7 @@ import { closeTopmostBackLayer } from '@/lib/mobileBackLayers';
 import { useUpdateStore } from '@/stores/useUpdateStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { SyncProvider } from '@/sync/sync-context';
+import { StartupInitializationRecovery } from './StartupInitializationRecovery';
 import { ProjectConfigErrorToast } from '@/components/projects/ProjectConfigErrorToast';
 import { useOpenCodeSource } from './useOpenCodeSource';
 
@@ -732,6 +733,7 @@ export function MobileApp({ apis }: MobileAppProps) {
     spaces.closeSetupOutputDialog();
   });
   const syncSource = useOpenCodeSource();
+  const [isInitRetrying, setInitRetrying] = React.useState(false);
   const { t } = useI18n();
   const initializeApp = useConfigStore((state) => state.initializeApp);
   const isInitialized = useConfigStore((state) => state.isInitialized);
@@ -1288,6 +1290,26 @@ export function MobileApp({ apis }: MobileAppProps) {
   // be poisoned by a bootstrap that ran against the webview's own origin).
   const hasRuntimeEndpoint = Boolean(getRuntimeApiBaseUrl());
 
+  if (!syncSource && (!isNativeMobileApp || hasRuntimeEndpoint)) {
+    return (
+      <ErrorBoundary>
+        <RuntimeAPIProvider apis={apis}>
+          <TooltipProvider delayDuration={300} skipDelayDuration={150}>
+            <StartupInitializationRecovery
+              key={runtimeEndpointEpoch}
+              isRetrying={isInitRetrying}
+              onRetry={() => {
+                setInitRetrying(true);
+                void initializeApp().finally(() => setInitRetrying(false));
+              }}
+            />
+            <Toaster position="top-center" />
+          </TooltipProvider>
+        </RuntimeAPIProvider>
+      </ErrorBoundary>
+    );
+  }
+
   if (isNativeMobileApp && (!hasRuntimeEndpoint || (!isConnected && !isReconnecting))) {
     // A runtime endpoint is already selected (first connect or switching instances):
     // show a loader while it re-bootstraps instead of flashing the onboarding screen.
@@ -1371,6 +1393,7 @@ export function MobileApp({ apis }: MobileAppProps) {
       </main>
     );
   }
+
 
   return (
     <ErrorBoundary>

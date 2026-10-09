@@ -943,14 +943,19 @@ function App({ apis }: AppProps) {
     );
   }
 
-  if (initRetryExhausted && !isInitialized && !isVSCodeRuntime && !embeddedSessionChat) {
+  if ((!syncSource || (initRetryExhausted && !isInitialized)) && !isVSCodeRuntime && !embeddedSessionChat) {
     return (
       <ErrorBoundary>
-        <StartupInitializationRecovery
-          key={runtimeEndpointEpoch}
-          onRetry={() => { void handleManualInitRetry(); }}
-          isRetrying={manualInitRetrying}
-        />
+        <RuntimeAPIProvider apis={apis}>
+          <TooltipProvider delayDuration={300} skipDelayDuration={150}>
+            <StartupInitializationRecovery
+              key={runtimeEndpointEpoch}
+              onRetry={() => { void handleManualInitRetry(); }}
+              isRetrying={manualInitRetrying}
+            />
+            <Toaster />
+          </TooltipProvider>
+        </RuntimeAPIProvider>
       </ErrorBoundary>
     );
   }

@@ -6,6 +6,8 @@ This document covers the current client-side session/data architecture in `packa
 
 ## Runtime source
 
+App roots render connection recovery outside `SyncProvider` while no admitted source exists. Web and desktop preserve native boot routing first; mobile preserves host connection/login screens first. Configuration initialization alone cannot admit the sync tree. Recovery keeps the existing runtime API and tooltip providers and reuses the configuration owner for retry.
+
 `SyncProvider` receives one `SyncSource` for the current runtime binding. It does not bootstrap or subscribe until the runtime descriptor is bound. `opencodeClient.getSyncSource()` creates the source for that binding; an old source rejects work after a rebind, including a rebind to the same OpenCode generation.
 
 Before each SSE or WebSocket attempt, the pipeline awaits the configuration owner's full descriptor verification. A changed binding replaces the source before transport admission. SyncProvider rejects events, reconnect readiness, transport switches and Space updates from a retired source. Switching transport alone does not publish connected state. The SDK-only pipeline fixture path retains its existing behavior.

@@ -1,3 +1,6 @@
+import * as fsNative from 'fs';
+import './opencodeConfigTestHome';
+import { OPENCODE_CONFIG_DIR, OPENCODE_CONFIG_DIR_V2 } from './opencodeConfigPaths';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { AGENT_ERROR } from '../../web/server/lib/agent/constants.js';
@@ -593,6 +596,16 @@ describe('skill installation commit boundary', () => {
     expectClean();
   });
 
+  test.each(['oc1', 'oc2'])('rejects a retired %s repository scan result', async generation => {
+    let runtime = { generation, profile: generation, endpoint: 'http://oc.test', epoch: 1 };
+    const ctx = createCtx(project, undefined, generation);
+    ctx.manager.getKernelRuntime = () => runtime;
+    const pending = handleConfigBridgeMessage({ id: 'scan', type: 'api:config/skills:scan', payload: { source: 'openchamber-fixture/skills' } }, ctx, deps);
+    runtime = { ...runtime, profile: 'retired' };
+    await expect(pending).rejects.toThrow('OpenCode runtime changed during config operation');
+    expect(fs.existsSync(project)).toBe(false);
+  });
+
   test('keeps skipAll skills unchanged', async () => {
     seed('alpha');
     const result = await install({ conflictPolicy: 'skipAll' });
@@ -627,4 +640,103 @@ describe('skill installation commit boundary', () => {
     const scratch = fs.readdirSync(path.dirname(path.dirname(target('alpha')))).find(name => name.startsWith('.openchamber-skill-'));
     expect(fs.readFileSync(path.join(path.dirname(path.dirname(target('alpha'))), scratch, 'backup', 'SKILL.md'), 'utf8')).toBe('old alpha');
   });
+});
+
+describe('VS Code asynchronous configuration owner', () => {
+  afterEach(() => { mock.restore(); });
+
+  for (const generation of ['oc1', 'oc2']) {
+    const agentsPath = path.join(generation === 'oc1' ? OPENCODE_CONFIG_DIR : OPENCODE_CONFIG_DIR_V2, 'AGENTS.md');
+    const setup = () => {
+      // Module paths froze inside opencodeConfigTestHome, never the user's real home.
+      expect(agentsPath.startsWith(process.env.XDG_CONFIG_HOME + path.sep)).toBe(true);
+      fs.mkdirSync(path.dirname(agentsPath), { recursive: true });
+      fs.writeFileSync(agentsPath, 'original instructions');
+      let runtime = { generation, profile: generation, endpoint: 'http://oc.test', epoch: 1 };
+      const ctx = createCtx(undefined, undefined, generation);
+      ctx.manager.getKernelRuntime = () => runtime;
+      return { ctx, retire: patch => { runtime = { ...runtime, ...patch }; } };
+    };
+    const save = ctx => handleConfigBridgeMessage({ id: 'save', type: 'api:behavior/agents-md:save', payload: { content: 'new instructions' } }, ctx, deps);
+    const unchanged = () => {
+      expect(fs.readFileSync(agentsPath, 'utf8')).toBe('original instructions');
+      expect(fs.readdirSync(path.dirname(agentsPath)).filter(name => name.startsWith('.openchamber-agents-'))).toEqual([]);
+    };
+
+    test(generation + ' commits staged AGENTS.md and preserves response behavior', async () => {
+      const { ctx } = setup();
+      const result = await save(ctx);
+      expect(result).toMatchObject({ success: true });
+      expect(fs.readFileSync(agentsPath, 'utf8')).toBe('new instructions');
+      expect(fs.readdirSync(path.dirname(agentsPath)).filter(name => name.startsWith('.openchamber-agents-'))).toEqual([]);
+      expect(ctx.restart.mock.calls).toHaveLength(0);
+    });
+
+    test(generation + ' preserves AGENTS.md when its owner changes during mkdir', async () => {
+      const { ctx, retire } = setup();
+      const mkdir = fs.promises.mkdir;
+      spyOn(fs.promises, 'mkdir').mockImplementation(async (...args) => { await mkdir(...args); retire({ profile: 'retired' }); });
+      await expect(save(ctx)).rejects.toThrow('OpenCode runtime changed during config operation');
+      unchanged();
+    });
+
+    test(generation + ' preserves AGENTS.md when its owner changes after staging', async () => {
+      const { ctx, retire } = setup();
+      const write = fs.promises.writeFile;
+      spyOn(fs.promises, 'writeFile').mockImplementation(async (...args) => { await write(...args); retire({ epoch: 2 }); });
+      await expect(save(ctx)).rejects.toThrow('OpenCode runtime changed during config operation');
+      unchanged();
+    });
+
+    test(generation + ' preserves AGENTS.md after a preparation failure', async () => {
+      const { ctx } = setup();
+      spyOn(fs.promises, 'writeFile').mockRejectedValue(new Error('staging failure'));
+      await expect(save(ctx)).rejects.toThrow('staging failure');
+      unchanged();
+    });
+
+    test(generation + ' preserves AGENTS.md after a commit failure', async () => {
+      const { ctx } = setup();
+      spyOn(fsNative, 'renameSync').mockImplementation(() => { throw new Error('commit failure'); });
+      await expect(save(ctx)).rejects.toThrow('commit failure');
+      unchanged();
+    });
+
+    test(generation + ' rejects an old missing AGENTS.md response', async () => {
+      const { ctx, retire } = setup();
+      fs.unlinkSync(agentsPath);
+      const read = fs.promises.readFile;
+      spyOn(fs.promises, 'readFile').mockImplementation(async (...args) => { retire({ epoch: 2 }); return read(...args); });
+      await expect(handleConfigBridgeMessage({ id: 'read', type: 'api:behavior/agents-md:get' }, ctx, deps)).rejects.toThrow('OpenCode runtime changed during config operation');
+    });
+
+    test.each(['GET', 'PUT', 'DELETE'])(generation + ' refuses supporting-file %s after discovery loses its owner', async method => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'oc-vscode-support-owner-'));
+      tempRoots.push(root);
+      const dir = path.join(root, '.opencode', 'skills', 'reviewer');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'SKILL.md'), '---\nname: reviewer\ndescription: Fixture\n---\nReview');
+      fs.writeFileSync(path.join(dir, 'notes.txt'), 'original notes');
+      const { ctx, retire } = setup();
+      ctx.manager.getWorkingDirectory = () => root;
+      const fetchSkills = async () => { retire({ profile: 'retired' }); return []; };
+      await expect(handleConfigBridgeMessage({ id: 'file', type: 'api:config/skills/files', payload: { method, name: 'reviewer', filePath: 'notes.txt', content: 'replacement notes' } }, ctx, { ...deps, fetchOpenCodeSkillsFromApi: fetchSkills })).rejects.toThrow('OpenCode runtime changed during config operation');
+      expect(fs.readFileSync(path.join(dir, 'notes.txt'), 'utf8')).toBe('original notes');
+    });
+
+    test.each(['PUT', 'DELETE'])(generation + ' retains normal supporting-file %s behavior', async method => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'oc-vscode-support-normal-'));
+      tempRoots.push(root);
+      const dir = path.join(root, '.opencode', 'skills', 'reviewer');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'SKILL.md'), '---\nname: reviewer\ndescription: Fixture\n---\nReview');
+      fs.writeFileSync(path.join(dir, 'notes.txt'), 'original notes');
+      const { ctx } = setup();
+      ctx.manager.getWorkingDirectory = () => root;
+      const result = await handleConfigBridgeMessage({ id: 'file', type: 'api:config/skills/files', payload: { method, name: 'reviewer', filePath: 'notes.txt', content: 'replacement notes' } }, ctx, deps);
+      expect(result).toMatchObject({ success: true });
+      if (method === 'PUT') expect(fs.readFileSync(path.join(dir, 'notes.txt'), 'utf8')).toBe('replacement notes');
+      else expect(fs.existsSync(path.join(dir, 'notes.txt'))).toBe(false);
+    });
+  }
 });

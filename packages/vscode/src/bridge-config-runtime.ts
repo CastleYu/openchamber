@@ -1,3 +1,4 @@
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../../web/server/lib/opencode/compatibility.js';
 import { OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
@@ -84,6 +85,7 @@ const KERNEL_CONFIG_TYPES = new Set([
   'api:config/agents', 'api:config/commands', 'api:config/websearch',
   'api:config/warming', 'api:config/mcp', 'api:config/plugins',
   'api:config/snippets', 'api:config/skills', 'api:config/skills/files',
+  'api:config/skills:catalog', 'api:config/skills:scan', 'api:config/skills:install',
 ]);
 
 const AGENTS_MD_PATH = path.join(OPENCODE_CONFIG_DIR, 'AGENTS.md');
@@ -143,12 +145,24 @@ export async function handleConfigBridgeMessage(
   const { id, type, payload } = message;
 
   if (KERNEL_CONFIG_TYPES.has(type)) {
-    let generation = ctx?.manager?.getKernelRuntime().generation;
-    if (generation !== 'oc1' && generation !== 'oc2') {
-      generation = (await ctx?.manager?.refreshKernelRuntime())?.generation;
+    const initial = ctx?.manager?.getKernelRuntime();
+    let selected = initial;
+    if (selected?.generation !== OPENCODE_GENERATION.OC1 && selected?.generation !== OPENCODE_GENERATION.OC2) {
+      selected = await ctx?.manager?.refreshKernelRuntime();
+      const current = ctx?.manager?.getKernelRuntime();
+      // Successful discovery advances the epoch. Compare its returned owner to
+      // the current descriptor, while retaining an already known endpoint.
+      if ((initial?.endpoint && selected?.endpoint !== initial.endpoint)
+        || current?.endpoint !== selected?.endpoint || current?.epoch !== selected?.epoch
+        || current?.generation !== selected?.generation || current?.profile !== selected?.profile) {
+        return { id, type, success: false, error: 'OpenCode runtime changed during config discovery' };
+      }
     }
-    if (generation === 'oc2') return handleConfigBridgeMessageV2(message, ctx, deps);
-    if (generation !== 'oc1') return { id, type, success: false, error: 'OpenCode kernel is not ready' };
+    if (selected?.profile === OPENCODE_PROFILE.LEGACY) {
+      return { id, type, success: false, error: 'Legacy OpenCode configuration is not yet verified in VS Code' };
+    }
+    if (selected?.generation === OPENCODE_GENERATION.OC2) return handleConfigBridgeMessageV2(message, ctx, deps);
+    if (selected?.generation !== OPENCODE_GENERATION.OC1) return { id, type, success: false, error: 'OpenCode kernel is not ready' };
   }
 
   switch (type) {

@@ -18,6 +18,13 @@ legacy password variable after its generation is known. An external URL can
 use the CLI's service password only when the service status URL names the
 same scheme, port, and loopback server.
 
+The config bridge gates its OpenCode-owned config, behavior and Skill catalog,
+scan and installation routes before local I/O. A resolved Legacy profile is
+unverified and refuses these routes. Discovery cannot continue against a changed
+known endpoint or a retired returned descriptor. Its normal epoch advancement
+when resolving an unknown generation remains valid. This admission check does not yet protect asynchronous Skill
+installation against retirement after admission; that installer remains pending.
+
 ## Runtime modules
 
 - `bridge.ts`

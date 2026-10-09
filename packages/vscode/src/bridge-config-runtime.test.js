@@ -87,6 +87,56 @@ describe('VS Code config bridge plugin parity', () => {
     ]));
   });
 
+  test.each(['api:config/agents', 'api:config/commands', 'api:config/mcp', 'api:config/plugins',
+    'api:config/snippets', 'api:config/skills', 'api:config/skills/files', 'api:behavior/agents-md:save',
+    'api:config/skills:catalog', 'api:config/skills:scan', 'api:config/skills:install'])
+  ('refuses Legacy %s before local config or repository work', async (type) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-legacy-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root);
+    ctx.manager.getKernelRuntime = () => ({ generation: 'oc1', profile: 'legacy-1.2.27', endpoint: 'http://oc.test', epoch: 1 });
+    const result = await handleConfigBridgeMessage({ id: 'legacy', type,
+      payload: { method: 'POST', name: 'reviewer', source: 'invalid', content: 'Legacy must not write', body: { scope: 'project' } },
+    }, ctx, deps);
+    expect(result).toMatchObject({ success: false, error: 'Legacy OpenCode configuration is not yet verified in VS Code' });
+    expect(fs.readdirSync(root)).toEqual([]);
+    expect(ctx.restart).not.toHaveBeenCalled();
+  });
+
+  test('refuses config discovery after endpoint retirement', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-retired-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root, undefined, 'unknown');
+    let selected = { generation: 'unknown', endpoint: 'http://old.test', epoch: 1 };
+    ctx.manager.getKernelRuntime = () => selected;
+    ctx.manager.refreshKernelRuntime = async () => {
+      selected = { generation: 'oc1', endpoint: 'http://new.test', epoch: 2 };
+      return selected;
+    };
+    const result = await handleConfigBridgeMessage({ id: 'retired', type: 'api:config/agents',
+      payload: { method: 'POST', name: 'reviewer', body: { scope: 'project', description: 'Review' } },
+    }, ctx, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during config discovery' });
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  test('accepts discovery that resolves the same endpoint and advances its epoch', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-discovery-'));
+    tempRoots.push(root);
+    const ctx = createCtx(root, undefined, 'unknown');
+    let selected = { generation: 'unknown', endpoint: 'http://oc.test', epoch: 1 };
+    ctx.manager.getKernelRuntime = () => selected;
+    ctx.manager.refreshKernelRuntime = async () => {
+      selected = { generation: 'oc2', profile: 'oc2', endpoint: 'http://oc.test', epoch: 2 };
+      return selected;
+    };
+    const result = await handleConfigBridgeMessage({ id: 'discovery', type: 'api:config/agents',
+      payload: { method: 'POST', name: 'reviewer', directory: root, body: { scope: 'project', description: 'Review' } },
+    }, ctx, deps);
+    expect(result.success).toBe(true);
+    expect(fs.readFileSync(path.join(root, '.opencode', 'agents', 'reviewer.md'), 'utf8')).toContain('Review');
+  });
+
   test('refuses unknown generation before changing a config file', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-vscode-unknown-'));
     tempRoots.push(root);

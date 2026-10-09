@@ -239,3 +239,5 @@ VS Code 扩展与 webview 构建通过；保留既有 credential-db CJS import.m
 基于 c893787d0 的目标/子会话检查点：既有身份比较加入 profile。迟到审计不能跨模式写入或通知；子会话读取保留未知状态，不误报空闲。目标准备在写入 objective 前拒绝旧 profile。目标、子会话、队列及定时任务五个文件共 89 项测试通过；Web 类型检查/lint、语法及 diff 检查通过。Anti-slop 与 HEAD 相同，保留 64 条既有诊断。队列测试在临时目录清理后记录 ENOENT，本轮不据此宣称持久化验收通过。未新增依赖、导出或启用生产 profile。INT-01 继续进行中；CA-02 Release 未改变。
 
 基于 c36db7233 的定时任务检查点：在就绪等待前捕获身份，在目录/会话创建、权限登记及命令查询后复核。目标准备沿用同一身份。后续身份检查失败时，错误结果及任务状态保留已返回的会话 ID；未创建会话的空目录会清理。定时任务/目标四个文件共 59 项测试通过，覆盖五处 profile 切换和跨实例任务抢占。Web 类型检查/lint、语法及 diff 检查通过。Anti-slop 保留与 HEAD 相同的 22 条既有诊断。未新增依赖、导出或启用生产 profile。INT-01 继续进行中；CA-02 Release 未改变。
+
+基于 6b66c6320 的 VS Code 准入检查点：OpenCode 配置、行为文件及 Skill 目录/扫描/安装统一经过 generation 准入。已解析的 Legacy profile 在本地 I/O 前拒绝。发现过程允许正常 epoch 递增，但拒绝已知端点变化或已退休的发现结果。配置/Skill 两个文件共 26 项测试通过；ESLint 通过，Anti-slop 与既有基线一致。扩展类型检查/构建及 dead-code 结果记录在 artifacts/int01-vscode-admission-*.log。异步仓库安装及独立 provider 写入仍需在生产 profile 启用前审查。INT-01 继续进行中；CA-02 Release 未改变。

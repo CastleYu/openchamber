@@ -1,3 +1,4 @@
+import { isOpenCodeSelection, OPENCODE_SETTING } from '../../web/server/lib/opencode/compatibility.js';
 import { OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -479,6 +480,8 @@ export const persistSettings = async (changes: Record<string, unknown>, ctx?: Br
   // so the webview reports the save as failed. Also mirror into globalState so
   // older builds can still read recent values if a user downgrades the extension.
   await writeSharedSettingsToDisk(persistable, [...Object.keys(restChanges), ...keysToClear]);
+  const selection = restChanges[OPENCODE_SETTING.SELECTION];
+  if (isOpenCodeSelection(selection)) ctx?.manager?.setRequestedSelection(selection);
   await ctx?.context?.globalState.update(SETTINGS_KEY, persistable);
 
   // Return the same shape as readSettings (derived fields re-applied, secrets withheld).

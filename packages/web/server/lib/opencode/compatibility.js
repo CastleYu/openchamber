@@ -28,6 +28,8 @@ export const PROFILE_STATUS = Object.freeze({
 });
 const VERSION_PROVENANCE = Object.freeze({ SERVER: 'server', USER: 'user-declared' });
 const selectionSchema = z.enum(Object.values(OPENCODE_SELECTION));
+const selectionDocumentSchema = z.object({ [OPENCODE_SETTING.SELECTION]: selectionSchema.default(OPENCODE_SELECTION.AUTO) });
+export const parseOpenCodeSelection = settings => selectionDocumentSchema.parse(settings)[OPENCODE_SETTING.SELECTION];
 export const isOpenCodeSelection = value => selectionSchema.safeParse(value).success;
 const idSchema = z.object({ id: z.string().min(1) });
 const LEGACY_READ_CHECKS = Object.freeze([

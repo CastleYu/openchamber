@@ -8,6 +8,7 @@ const createManager = (): OpenCodeManager => ({
   stop: async () => {},
   restart: async () => {},
   upgradeCli: async () => {},
+  setRequestedSelection: () => {},
   setWorkingDirectory: async (path) => ({ success: true, path }),
   getStatus: () => 'connected',
   getApiUrl: () => 'http://127.0.0.1:3902',

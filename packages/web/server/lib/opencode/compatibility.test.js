@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  parseOpenCodeSelection,
   detectOpenCodeGeneration,
   detectOpenCodeProfile,
   OPENCODE_SELECTION,
@@ -273,5 +274,18 @@ describe('OpenCode profile admission', () => {
     expect(await detectOpenCodeProfile({ endpoint: 'http://kernel.test', selection: 'invented', fetchImpl })).toEqual({ status: PROFILE_STATUS.INVALID_SELECTION });
     expect(await detectOpenCodeProfile({ endpoint: 'file:///fixture', selection: OPENCODE_SELECTION.AUTO, fetchImpl })).toMatchObject({ status: PROFILE_STATUS.INVALID_ENDPOINT });
     expect(calls).toBe(0);
+  });
+});
+
+describe('shared requested selection document parser', () => {
+  it.each(['auto', 'oc1', 'oc2', 'legacy-1.2.27'])('reads %s without deriving an operation profile', selection => {
+    expect(parseOpenCodeSelection({ opencodeSelection: selection, profile: 'oc2' })).toBe(selection);
+  });
+  it('defaults only a missing field to Auto', () => {
+    expect(parseOpenCodeSelection({})).toBe('auto');
+    expect(parseOpenCodeSelection({ theme: 'dark' })).toBe('auto');
+  });
+  it.each([null, [], 'oc1', { opencodeSelection: null }, { opencodeSelection: 'guessed' }, { opencodeSelection: 1 }])('rejects malformed persisted selection %j', document => {
+    expect(() => parseOpenCodeSelection(document)).toThrow();
   });
 });

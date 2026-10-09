@@ -13,7 +13,7 @@ import { isSameOpenCodeServer } from './opencodeServiceUrl';
 import { spawnManagedOpenCodeProcess } from './managed-opencode-process';
 import { createKernelRuntime } from '../../web/server/lib/opencode/kernel-runtime.js';
 import { runOpenCodeCliUpgrade } from '../../web/server/lib/opencode/cli-upgrade.js';
-import { detectOpenCodeGeneration, type OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
+import { detectOpenCodeGeneration, parseOpenCodeSelection, OPENCODE_SELECTION, type OpenCodeSelection, type OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
 
 const t = vscode.l10n.t;
 
@@ -76,6 +76,7 @@ export interface OpenCodeManager {
   getApiUrl(): string | null;
   getKernelRuntime(): Readonly<OpenCodeGenerationDescriptor>;
   refreshKernelRuntime(): Promise<Readonly<OpenCodeGenerationDescriptor>>;
+  setRequestedSelection(selection: OpenCodeSelection): void;
   getOpenCodeAuthHeaders(): Record<string, string>;
   /** Environment passed to the current managed OpenCode process; absent for external kernels. */
   getManagedLaunchEnvironment(): NodeJS.ProcessEnv | null;
@@ -120,6 +121,18 @@ function readOpenChamberSettings(): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function readOpenChamberSelection(): OpenCodeSelection {
+  const settingsPath = path.join(os.homedir(), '.config', 'openchamber', 'settings.json');
+  let raw: string;
+  try {
+    raw = fs.readFileSync(settingsPath, 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return OPENCODE_SELECTION.AUTO;
+    throw error;
+  }
+  return parseOpenCodeSelection(JSON.parse(raw));
 }
 
 function resolvePortFromUrl(url: string): number | null {
@@ -836,7 +849,9 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     return { Authorization: buildOpenCodeAuthHeader(password, generation) };
   };
 
+  let requestedSelection = readOpenChamberSelection();
   const kernelRuntime = createKernelRuntime({
+    getRequestedSelection: () => requestedSelection,
     getEndpoint: () => status === 'disconnected' || status === 'error' ? null : getApiUrl(),
     getHeaders: () => getOpenCodeAuthHeaders(),
     headersForGeneration: getOpenCodeAuthHeaders,
@@ -1114,6 +1129,11 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     getApiUrl,
     getKernelRuntime: kernelRuntime.get,
     refreshKernelRuntime: kernelRuntime.refresh,
+    setRequestedSelection: (selection) => {
+      if (selection === requestedSelection) return;
+      requestedSelection = selection;
+      kernelRuntime.invalidate();
+    },
     getOpenCodeAuthHeaders,
     getManagedLaunchEnvironment: () => (server ? serverEnv : null),
     getWorkingDirectory: () => workingDirectory,

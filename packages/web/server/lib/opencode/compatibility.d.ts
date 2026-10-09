@@ -48,3 +48,4 @@ export function detectOpenCodeProfile(options: Parameters<typeof detectOpenCodeG
 
 export const OPENCODE_SETTING: Readonly<{ SELECTION: 'opencodeSelection' }>;
 export function isOpenCodeSelection(value: unknown): value is OpenCodeSelection;
+export function parseOpenCodeSelection(settings: unknown): OpenCodeSelection;

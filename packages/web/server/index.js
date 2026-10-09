@@ -54,7 +54,7 @@ import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
-import { isOpenCodeSelection, OPENCODE_SELECTION, OPENCODE_SETTING } from './lib/opencode/compatibility.js';
+import { parseOpenCodeSelection, OPENCODE_SELECTION } from './lib/opencode/compatibility.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
@@ -1823,10 +1823,7 @@ async function main(options = {}) {
   await selectAgentStartup(agentHost, options.agentBackend, process.env[AGENT_STARTUP.ENV]);
   if (agentHost.getSelection().family === AGENT_FAMILY.OPENCODE) {
     const settings = await readSettingsFromDiskStrict();
-    const selection = settings[OPENCODE_SETTING.SELECTION] === undefined
-      ? OPENCODE_SELECTION.AUTO : settings[OPENCODE_SETTING.SELECTION];
-    if (!isOpenCodeSelection(selection)) throw new Error("Invalid saved OpenCode selection");
-    requestedOpenCodeSelection = selection;
+    requestedOpenCodeSelection = parseOpenCodeSelection(settings);
     kernelRuntime.invalidate();
   }
   beginGuestServiceHost();

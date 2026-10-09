@@ -59,9 +59,16 @@ type EventPipelineDelivery = {
   onDomainEvents?: (directory: string, payloads: readonly DomainEvent[]) => void
 }
 
-export type EventPipelineInput = {
-  sdk?: OpencodeClient
-  source?: Pick<SyncSource, "generation" | "events">
+export type EventPipelineInput = ({
+  sdk: OpencodeClient
+  source?: never
+  beforeConnect?: never
+} | {
+  sdk?: never
+  source: Pick<SyncSource, "generation" | "events">
+  /** Verify the captured runtime before every transport attempt. */
+  beforeConnect: (signal: AbortSignal) => Promise<void>
+}) & {
   now?: () => number
   flushFrameMs?: number
   flushTimer?: {
@@ -276,6 +283,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   const {
     sdk,
     source,
+    beforeConnect,
     onDomainEvents,
     onEvent,
     onEvents,
@@ -930,6 +938,8 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
       abort.signal.addEventListener("abort", onAbort)
 
       try {
+        if (beforeConnect) await beforeConnect(attempt.signal)
+        if (attempt.signal.aborted) throw new DOMException("Aborted", "AbortError")
         if (currentTransport === "ws") {
           await runWsAttempt(attempt.signal)
         } else {

@@ -570,3 +570,26 @@ describe('message stream websocket runtime', () => {
     await runtime.close();
   });
 });
+
+it('retires global and directory sockets before peers reconnect to a replacement upstream', async () => {
+  const calls = [];
+  const hub = { stop() { calls.push('stop'); }, start() { calls.push('start'); }, subscribeEvent() { return () => {}; }, subscribeStatus() { return () => {}; } };
+  const runtime = createMessageStreamWsRuntime({
+    server: new EventEmitter(), globalEventHub: hub, wsClients: new Set(),
+    uiAuthController: null, isRequestOriginAllowed: async () => true,
+    rejectWebSocketUpgrade() {}, buildOpenCodeUrl: path => path,
+    getOpenCodeAuthHeaders: () => ({}), processForwardedEventPayload() {},
+  });
+  const global = new FakeSocket();
+  const directory = new FakeSocket();
+  for (const socket of [global, directory]) {
+    runtime.wsServer.clients.add(socket);
+    socket.on('close', () => runtime.wsServer.clients.delete(socket));
+  }
+  try {
+    runtime.rebindUpstream();
+    expect(calls).toEqual(['stop', 'start']);
+    for (const socket of [global, directory]) expect(socket.closeCalls).toEqual([{ code: 1012, reason: 'OpenCode upstream restarted' }]);
+    expect(runtime.wsServer.clients.size).toBe(0);
+  } finally { await runtime.close(); }
+});

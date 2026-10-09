@@ -1664,6 +1664,30 @@ describe('useConfigStore provider persistence', () => {
     expect(useConfigStore.getState().providers).toEqual([]);
   });
 
+  test('stream admission waits for full discovery even while the previous connection is ready', async () => {
+    const health = deferred<boolean>();
+    checkHealthImpl = () => health.promise;
+    useConfigStore.setState({ isInitialized: true, isConnected: true });
+    let finished = false;
+    const check = useConfigStore.getState().verifyConnection().then((value) => { finished = true; return value; });
+    await new Promise<void>((resolve) => setTimeout(resolve, 850));
+    expect(finished).toBe(false);
+    health.resolve(false);
+    expect(await check).toBe(false);
+    expect(useConfigStore.getState()).toMatchObject({ isConnected: false, isInitialized: false });
+  });
+
+  test('stream admission rejects a health completion from a retired host', async () => {
+    const health = deferred<boolean>();
+    checkHealthImpl = () => health.promise;
+    const check = useConfigStore.getState().verifyConnection();
+    useConfigStore.getState().retireConnection();
+    health.resolve(true);
+    expect(await check).toBe(false);
+    expect(getProvidersCalls).toBe(0);
+    expect(useConfigStore.getState().isConnected).toBe(false);
+  });
+
   test('retirement during health discovery cannot publish readiness or load providers', async () => {
     const health = deferred<boolean>();
     checkHealthImpl = () => health.promise;

@@ -25,7 +25,7 @@ test('default flush timers preserve browser timer receivers', async () => {
   let deliver!: (events: readonly DomainEvent[]) => void;
   const received = new Promise<readonly DomainEvent[]>((resolve) => { deliver = resolve; });
   const timeout = schedule(() => deliver([]), 1000);
-  const pipeline = createEventPipeline({ source, transport: 'sse', flushFrameMs: 0,
+  const pipeline = createEventPipeline({ source, beforeConnect: async () => {}, transport: 'sse', flushFrameMs: 0,
     onDomainEvents: (_directory, events) => deliver(events) });
   try {
     expect(await received).toEqual([delta]);
@@ -49,7 +49,7 @@ test('OC1 routes an unknown session using its event envelope directory', async (
   } satisfies Pick<SyncSource, 'generation' | 'events'>;
   let deliver!: (directory: string) => void;
   const received = new Promise<string>((resolve) => { deliver = resolve; });
-  const pipeline = createEventPipeline({ source, transport: 'sse', flushFrameMs: 0,
+  const pipeline = createEventPipeline({ source, beforeConnect: async () => {}, transport: 'sse', flushFrameMs: 0,
     onEvents: (directory) => deliver(directory) });
   try {
     expect(await Promise.race([received, new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timed out')), 1000))])).toBe('/new-project');
@@ -71,7 +71,7 @@ test('OC2 SSE events stay typed and duplicate event IDs are delivered once', asy
   let legacy = 0;
   let delivered!: (events: readonly DomainEvent[]) => void;
   const received = new Promise<readonly DomainEvent[]>((resolve) => { delivered = resolve; });
-  const pipeline = createEventPipeline({ source, transport: 'sse', flushFrameMs: 0,
+  const pipeline = createEventPipeline({ source, beforeConnect: async () => {}, transport: 'sse', flushFrameMs: 0,
     onEvents: () => { legacy += 1; }, onDomainEvents: (_directory, events) => delivered(events) });
   try {
     const events = await Promise.race([received, new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timed out')), 1000))]);

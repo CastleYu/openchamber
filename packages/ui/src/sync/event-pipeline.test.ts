@@ -308,7 +308,7 @@ describe("createEventPipeline", () => {
         yield* []
       },
     }
-    const pipeline = createEventPipeline({ source, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
+    const pipeline = createEventPipeline({ source, beforeConnect: async () => {}, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
     try {
       await until(() => attempts >= 2, 1_000)
       expect(errorSpy.mock.calls.length).toBe(0)
@@ -330,7 +330,7 @@ describe("createEventPipeline", () => {
         throw new Error("OpenCode service unavailable")
       },
     }
-    const pipeline = createEventPipeline({ source, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
+    const pipeline = createEventPipeline({ source, beforeConnect: async () => {}, transport: "sse", reconnectDelayMs: 1, heartbeatTimeoutMs: 1_000 })
     try {
       await until(() => errorSpy.mock.calls.length > 0, 2_000)
       expect(warnSpy.mock.calls.length > 0).toBe(true)

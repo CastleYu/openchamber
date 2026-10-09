@@ -18,6 +18,7 @@ import { useWindowTitle } from '@/hooks/useWindowTitle';
 import { useRootScrollLock } from '@/hooks/useRootScrollLock';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
 import { useGitHubAuthStore } from '@/stores/useGitHubAuthStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
@@ -70,9 +71,17 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
         void useConfigStore.getState().initializeApp();
       }
     };
+    const unsubscribe = useConfigStore.subscribe((state, previous) => {
+      const status = window.__OPENCHAMBER_CONNECTION__?.status;
+      if (previous.isInitialized && !state.isInitialized && !opencodeClient.getBoundRuntime()
+        && (status === 'connected' || !status)) {
+        void state.initializeApp();
+      }
+    });
     window.addEventListener('openchamber:connection-status', onConnection);
     onConnection();
     return () => {
+      unsubscribe();
       window.removeEventListener('openchamber:connection-status', onConnection);
       registerRuntimeAPIs(null);
     };

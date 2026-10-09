@@ -1395,6 +1395,7 @@ interface ConfigStore {
     saveAgentModelSelection: (agentName: string, providerId: string, modelId: string) => void;
     getAgentModelSelection: (agentName: string) => { providerId: string; modelId: string } | null;
     probeConnection: (options?: { timeoutMs?: number }) => Promise<boolean>;
+    verifyConnection: () => Promise<boolean>;
     retireConnection: () => void;
     checkConnection: () => Promise<boolean>;
     initializeApp: () => Promise<void>;
@@ -3691,6 +3692,22 @@ export const useConfigStore = create<ConfigStore>()(
                     if (typeof window !== 'undefined') {
                         localStorage.setItem('summarizeMaxLength', String(clamped));
                     }
+                },
+
+                verifyConnection: async () => {
+                    const context = captureConfigRuntimeContext();
+                    const healthy = await opencodeClient.checkHealth();
+                    if (!isConfigRuntimeContextCurrent(context)) return false;
+                    if (!healthy) {
+                        set((state) => ({
+                            isInitialized: false,
+                            isConnected: false,
+                            connectionPhase: state.hasEverConnected ? "reconnecting" : "connecting",
+                            lastDisconnectReason: 'runtime_discovery_unavailable',
+                        }));
+                        return false;
+                    }
+                    return refreshCatalogRuntime('verifyConnection:runtimeChanged', get().isInitialized && !_initializeAppInFlight);
                 },
 
                 probeConnection: async (options?: { timeoutMs?: number }) => {

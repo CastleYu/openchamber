@@ -104,7 +104,7 @@ describe('rebindUpstream (#2638)', () => {
     directory.close();
     await runtime.close();
   });
-  it('restarts the shared hub upstream so a connected client resumes receiving events on the new port', async () => {
+  it('retires the global socket and resumes on the replacement port after reconnect', async () => {
     const server = new EventEmitter();
     const wsClients = new Set();
     let port = 4096;
@@ -154,6 +154,8 @@ describe('rebindUpstream (#2638)', () => {
     });
 
     const socket = new FakeSocket();
+    runtime.wsServer.clients.add(socket);
+    socket.on('close', () => runtime.wsServer.clients.delete(socket));
     runtime.wsServer.emit('connection', socket, { url: '/api/global/event/ws' });
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(fetchCalls).toBe(1);
@@ -163,14 +165,21 @@ describe('rebindUpstream (#2638)', () => {
     // process's SSE stream stays open (orphaned survivor).
     port = 5000;
     runtime.rebindUpstream();
-    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    // The hub dialed the new port and the connected client received events
-    // from the new upstream without reconnecting its own socket.
+    expect(socket.readyState).toBe(3);
+    expect(socket.closeCalls).toEqual([{ code: 1012, reason: 'OpenCode upstream restarted' }]);
+    const replacement = new FakeSocket();
+    runtime.wsServer.clients.add(replacement);
+    replacement.on('close', () => runtime.wsServer.clients.delete(replacement));
+    runtime.wsServer.emit('connection', replacement, { url: '/api/global/event/ws' });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Only the new socket receives replacement upstream events.
     expect(fetchCalls).toBe(2);
     expect(fetchImpl.mock.calls[1][0]).toContain(':5000/global/event');
-    expect(socket.sent.some((frame) => frame.type === 'event' && frame.eventId === 'evt-2')).toBe(true);
-
+    expect(socket.sent.some((frame) => frame.type === 'event' && frame.eventId === 'evt-2')).toBe(false);
+    expect(replacement.sent.some((frame) => frame.type === 'event' && frame.eventId === 'evt-2')).toBe(true);
+    replacement.close();
+    globalHub.stop();
     socket.close();
     await runtime.close();
   });
@@ -208,6 +217,8 @@ describe('rebindUpstream (#2638)', () => {
     });
 
     const directorySocket = new FakeSocket();
+    runtime.wsServer.clients.add(directorySocket);
+    directorySocket.on('close', () => runtime.wsServer.clients.delete(directorySocket));
     runtime.wsServer.emit('connection', directorySocket, { url: '/api/event/ws?directory=%2Fproj' });
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(fetchCalls).toBe(1);

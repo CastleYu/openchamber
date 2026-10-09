@@ -8,6 +8,8 @@ This document covers the current client-side session/data architecture in `packa
 
 `SyncProvider` receives one `SyncSource` for the current runtime binding. It does not bootstrap or subscribe until the runtime descriptor is bound. `opencodeClient.getSyncSource()` creates the source for that binding; an old source rejects work after a rebind, including a rebind to the same OpenCode generation.
 
+Before each SSE or WebSocket attempt, the pipeline awaits the configuration owner's full descriptor verification. A changed binding replaces the source before transport admission. SyncProvider rejects events, reconnect readiness, transport switches and Space updates from a retired source. Switching transport alone does not publish connected state. The SDK-only pipeline fixture path retains its existing behavior.
+
 The source projects both OpenCode generations into the shared `Session`, `Message`, and `Part` model before data reaches a child store. OC1 events retain their complete event vocabulary in the existing reducer. OC2 events pass the pinned event schema at WebSocket ingress, then become `DomainEvent` records. Permission requests and user input remain tagged by generation. OC2 forms do not become OC1 questions.
 
 Both generations publish directory VCS snapshots to the child store's `vcs` field, which the tray reads. OC2 `vcs.branch.updated` updates that field for the event's directory; its optional branch can clear the current branch. The runtime binding and directory route reject stale or unrelated updates.

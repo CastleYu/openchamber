@@ -58,6 +58,7 @@ import { syncDebug } from "./debug"
 import { getReconnectCandidateSessionIds, mergeBootstrapSessions } from "./reconnect-recovery"
 import { messagesBefore } from "./message-ordering"
 import { opencodeClient } from "@/lib/opencode/client"
+import { OpenCodeRuntimeChangedError } from "@/lib/opencode/runtime"
 import { usePermissionStore } from "@/stores/permissionStore"
 import { permissionPolicyWireSchema, policySnapshotFromWire } from "@/stores/utils/permissionAutoAccept"
 import { useUIStore } from "@/stores/useUIStore"
@@ -2800,17 +2801,27 @@ function BoundSyncProvider(props: {
     const resyncAfterStreamGap = (reason: SessionMaterializationReason) => {
       for (const dir of childStores.children.keys()) triggerDirectoryResync(dir, reason)
     }
+    const isCurrentSource = () => getRuntimeKey() === runtimeKey
+      && opencodeClient.getBoundRuntime() !== null
+      && opencodeClient.getSyncSource() === props.source
     const pipeline = createEventPipeline({
       source: props.source,
+      beforeConnect: async (signal) => {
+        const healthy = await useConfigStore.getState().verifyConnection()
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+        if (!healthy || !isCurrentSource()) throw new OpenCodeRuntimeChangedError()
+      },
       transport: messageStreamTransport,
       routeDirectory: (directory, payload) => {
         return resolveDirectoryFromRoutingIndex(routingIndex, directory, payload, childStores)
       },
       // Keepalive comments and WS heartbeats prove liveness without becoming events.
       onStreamActivity: () => {
+        if (!isCurrentSource()) return
         lastStreamActivityAtRef.current = Date.now()
       },
       onEvents: (directory, payloads) => {
+        if (!isCurrentSource()) return
         const batch = createDirectoryEventBatch()
         try {
           for (const payload of payloads) {
@@ -2830,10 +2841,11 @@ function BoundSyncProvider(props: {
         }
       },
       onDomainEvents: (directory, payloads) => {
+        if (!isCurrentSource()) return
         applyDomainBatch(directory, payloads, props.source, childStores, routingIndex, messageLoader, runtimeKey)
       },
       onSpaceStream: ({ spaceId, status }) => {
-        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        if (!isCurrentSource() || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
         useSpacesStore.getState().noteStream(spaceId, status)
         if (status !== 'connected') {
           if (useSpacesStore.getState().journey?.get(spaceId)?.state === 'running') {
@@ -2852,16 +2864,17 @@ function BoundSyncProvider(props: {
         void useGlobalSessionsStore.getState().refreshSessionsForDirectories(directories).catch(() => undefined)
       },
       onSpaceProgress: (progress) => {
-        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        if (!isCurrentSource() || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
         const known = useSpacesStore.getState().noteProgress(progress)
         if (known && progress.step !== 'ready' && progress.step !== 'failed') return
         void refreshSpacesJourney().catch(() => undefined)
       },
       onSpaceSetup: () => {
-        if (getRuntimeKey() !== runtimeKey || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
+        if (!isCurrentSource() || isVSCodeRuntime() || !useUIStore.getState().isolatedSpacesEnabled) return
         void refreshSpacesJourney().catch(() => undefined)
       },
       onReconnect: ({ replayReset }) => {
+        if (!isCurrentSource()) return
         if (getRuntimeKey() === runtimeKey && useUIStore.getState().isolatedSpacesEnabled && !isVSCodeRuntime()) {
           void refreshSpacesJourney().catch(() => undefined)
         }
@@ -2883,6 +2896,7 @@ function BoundSyncProvider(props: {
         resyncAfterStreamGap("stream-reconnect")
       },
       onDisconnect: (reason) => {
+        if (getRuntimeKey() !== runtimeKey || (opencodeClient.getBoundRuntime() && !isCurrentSource())) return
         if (!pipelineHasConnectedRef.current) {
           pipelineDisconnectedBeforeFirstConnectRef.current = true
         }
@@ -2894,14 +2908,9 @@ function BoundSyncProvider(props: {
         })
       },
       onTransportSwitch: () => {
+        if (!isCurrentSource()) return
         void useMessageQueueStore.getState().resync().catch(() => undefined)
-        // Transport changes are gap-prone in real networks. Treat them like a
-        // reconnect and refresh active session snapshots from HTTP.
-        useConfigStore.setState({
-          isConnected: true,
-          hasEverConnected: true,
-          connectionPhase: "connected",
-        })
+        // Repair the gap, but readiness belongs to the next verified stream.
         resyncAfterStreamGap("transport-switch")
       },
     })

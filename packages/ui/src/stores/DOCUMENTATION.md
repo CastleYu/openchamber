@@ -684,3 +684,7 @@ checks it against the current manager before forwarding, strips it, and rejects
 changed or unavailable targets. Ordinary sends keep their existing path. This
 identifies configured intent, not a remote instance behind an unchanged URL.
 See the [Chinese archive](../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).
+
+### Reconnect admission
+
+`verifyConnection` waits for full runtime discovery before admitting a stream attempt. Unlike the short health probe, it cannot return cached readiness while discovery is pending. It refreshes the generation-owned catalog after a rebind and returns false after retirement or unavailable discovery. Successful discovery alone does not publish stream readiness.

@@ -37,6 +37,10 @@ Added 2026-10-10 at the maintainer's request. This requirement applies throughou
 
 Use the existing task notes and evidence files. This requirement does not introduce a cleanup service, scheduler, dependency or framework.
 
+## Peer restart stream admission
+
+An explicit managed upstream rebind closes global and directory WebSockets with code 1012 so peers cannot bypass admission on a retained socket. Every shared SSE/WebSocket connection attempt verifies the host's current descriptor before opening the transport. Changed runtime identity retires the previous source and refreshes its catalog. Old-source events and readiness callbacks cannot update the replacement runtime. A transport fallback is not evidence of connection readiness. VS Code reuses its initialization path when admission loses a binding while its host remains connected. This applies to Web, Electron, VS Code and hosted mobile; Capacitor keeps its existing SSE transport. Relay authentication and routing stay with the existing transport helpers.
+
 ## VS Code confirmed connection ownership
 
 VS Code does not own the browser queues. Its activity and confirmation responses report queue unknown with observedCount 0, which does not establish an empty queue. Web and Electron report known counts from their loaded host-owned queue. Hosted and Capacitor mobile observe their selected host. Shared confirmation parsing and rendering preserve this distinction. The foreground queue now captures the configured target at enqueue and the host enforces it at dispatch. Unstamped, changed and unavailable targets remain held. Each VS Code webview retires its shared SDK/configuration binding on an unavailable host status and rediscovers after connected, rejecting old health and catalog completions even behind the same URL. Peer-wide coordination and the full shared webview/bridge/editor journey remain R1 acceptance gates.

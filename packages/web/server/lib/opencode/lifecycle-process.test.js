@@ -10,7 +10,7 @@ const alive = (pid) => {
   try { process.kill(pid, 0); return true; } catch { return false; }
 };
 
-const createRuntime = (waitForReady, state) => createOpenCodeLifecycleRuntime({
+const createRuntime = (waitForReady, state, startupMs = 1500) => createOpenCodeLifecycleRuntime({
   state,
   env: { ENV_CONFIGURED_OPENCODE_PORT: 45678, ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
   syncToHmrState() {}, syncFromHmrState() {},
@@ -26,7 +26,7 @@ const createRuntime = (waitForReady, state) => createOpenCodeLifecycleRuntime({
   normalizeApiPrefix: (value) => value,
   setOpenCodePort() {}, setDetectedOpenCodeApiPrefix() {},
   waitForReady,
-  managedStartupTimeoutMs: 1500,
+  managedStartupTimeoutMs: startupMs,
 });
 
 describe('managed process lifecycle with real children', () => {
@@ -56,17 +56,19 @@ describe('managed process lifecycle with real children', () => {
         const runtime = createRuntime(async () => {
           if (failure === 'health-error') throw new Error('fixture health failure');
           return true;
-        }, state);
+        }, state, failure === 'shutdown-during-startup' ? 20_000 : 1500);
         if (failure === 'none') {
           const server = await runtime.startOpenCode();
           await Promise.all([server.close(), server.close()]);
         } else if (failure === 'shutdown-during-startup') {
           const starting = runtime.startOpenCode();
-          const rejected = expect(starting).rejects.toThrow('exited before serving');
+          // Shutdown closes a real Windows process tree, independently of the
+          // short deadline exercised by the separate startup-timeout case.
+          const rejected = starting.catch(error => error);
           await expect.poll(async () => (await fs.readFile(marker, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).length).toBe(2);
           state.isShuttingDown = true;
           await state.openCodeProcess.close();
-          await rejected;
+          expect(await rejected).toMatchObject({ message: expect.stringContaining('exited before serving') });
         } else if (failure === 'startup-timeout') {
           await expect(runtime.startOpenCode()).rejects.toThrow('Timeout waiting for OpenCode');
         } else {
@@ -84,9 +86,9 @@ describe('managed process lifecycle with real children', () => {
         }
         if (previousRegistry === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
         else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previousRegistry;
-        await fs.rm(root, { recursive: true, force: true });
+        await fs.rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
       }
-    }, 15_000);
+    }, failure === 'shutdown-during-startup' ? 25_000 : 15_000);
   }
 });
 
@@ -137,7 +139,7 @@ describe('confirmed restart with real owned children', () => {
     await fs.writeFile(script, "require('node:fs').appendFileSync(" + JSON.stringify(marker) + ", process.pid + '\\n'); process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setInterval(()=>{},1000);");
     const state = { openCodeWorkingDirectory: root, useWslForOpencode: false, openCodePort: null, currentRestartPromise: null };
     const command = { mode: 'command', binary: process.execPath, launchSpec: { binary: process.execPath, args: [] }, args: [script], cwd: root, commandEnv: {} };
-    let record = command; let resolutions = 0; let revision = 1; let retire = false;
+    let record = command; let resolutions = 0; let revision = 1; let connectionRevision = 1; let retire = false;
     let releaseSend; let entered = false; let delivered = 0; let pauseEntered = false;
     const accepted = new Promise(resolve => { releaseSend = resolve; });
     const queue = createMessageQueueRuntime({
@@ -156,7 +158,7 @@ describe('confirmed restart with real owned children', () => {
       state, env: { ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
       getConnection: async () => { resolutions += 1; return record; },
       pauseQueuedDispatch: () => { pauseEntered = true; return queue.pauseDispatch(); },
-      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision, connectionRevision }),
       syncToHmrState() {}, ensureLocalOpenCodeServerPassword: async () => 'fixture-only',
       getManagedOpenCodeEnv: () => { throw new Error('Command owns config'); },
       waitForReady: async () => true, normalizeApiPrefix: value => value,
@@ -180,11 +182,26 @@ describe('confirmed restart with real owned children', () => {
       const second = state.openCodeProcess.pid; pids.push(second);
       expect(second).not.toBe(first); expect(alive(first)).toBe(false); expect(alive(second)).toBe(true);
       expect(resolutions).toBe(2); expect(await fs.readdir(path.join(root, 'registry'))).toHaveLength(1);
-      record = { mode: 'external', endpoint: 'https://external.test/base' };
-      await runtime.restartOpenCode(); expect(alive(second)).toBe(false);
+      const external = { mode: 'external', endpoint: 'https://external.test/base' };
+      await runtime.restartOpenCode('confirmed-change', {
+        resolve: async () => external,
+        commit: async () => {
+          expect(alive(second)).toBe(false);
+          record = external; connectionRevision += 1;
+          return { family: AGENT_FAMILY.OPENCODE, revision, connectionRevision };
+        },
+      });
+      expect(alive(second)).toBe(false);
       expect(state.openCodeProcess).toBeNull(); expect(state.openCodeBaseUrl).toBe(record.endpoint);
       expect(state.isExternalOpenCode).toBe(true); expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
-      record = command; await runtime.restartOpenCode(); const third = state.openCodeProcess.pid; pids.push(third);
+      await runtime.restartOpenCode('explicit-return', {
+        resolve: async () => command,
+        commit: async () => {
+          record = command; connectionRevision += 1;
+          return { family: AGENT_FAMILY.OPENCODE, revision, connectionRevision };
+        },
+      });
+      const third = state.openCodeProcess.pid; pids.push(third);
       expect(alive(third)).toBe(true); expect(state.isExternalOpenCode).toBe(false);
       expect((await fs.readFile(marker, 'utf8')).trim().split('\n').map(Number)).toEqual(pids);
       const invalid = path.join(root, 'invalid.cjs'); await fs.writeFile(invalid, 'process.exit(1);');

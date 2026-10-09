@@ -985,10 +985,15 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     } finally { connectionTransitions -= 1; }
   };
 
-  const restartOpenCode = async (reason = 'managed-restart') => {
-    const selection = requireSelection();
-    if (state.isShuttingDown) return;
+  const restartOpenCode = async (reason = 'managed-restart', replacement = null) => {
+    let selection = requireSelection();
+    if (replacement && !getConnection) throw new OpenCodeConnectionError('Connection replacement is unavailable', 501);
+    if (state.isShuttingDown) {
+      if (replacement) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
+      return;
+    }
     if (state.currentRestartPromise) {
+      if (replacement) throw new OpenCodeConnectionError('A connection transition is already in progress', 409);
       await state.currentRestartPromise;
       requireSelection(selection);
       return;
@@ -1000,10 +1005,10 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     state.currentRestartPromise = (async () => {
       if (getConnection) {
         if (connectionTransitions > 0) throw new OpenCodeConnectionError('OpenCode startup is already in progress', 409);
-        // Resolve the entire saved target before touching the live owner. The
-        // settings service still refuses active-record changes until its busy
-        // work and peer-client confirmation contract is implemented.
-        const connection = await getConnection();
+        // The host confirmation owner resolves a replacement before retiring
+        // anything. Ordinary restarts retain the saved target.
+        const connection = await (replacement ? replacement.resolve() : getConnection());
+        if (!connection) throw new OpenCodeConnectionError('A confirmed connection is required', 422);
         requireSelection(selection);
         resumeQueuedDispatch = await pauseQueuedDispatch?.();
         requireSelection(selection);
@@ -1033,6 +1038,17 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           state.openCodeApiDetectionTimer = null;
         }
         if (state.isShuttingDown) throw new OpenCodeConnectionError('OpenChamber is shutting down', 409);
+        if (replacement) {
+          // Only the confirmed settings write may advance connectionRevision.
+          // A backend family change still retires this transaction.
+          const committed = await replacement.commit();
+          if (committed?.family !== selection.family || committed?.revision !== selection.revision) {
+            const error = new Error('OpenCode connection commit retired the backend selection');
+            error.code = AGENT_ERROR.CHANGED;
+            throw error;
+          }
+          selection = requireSelection(committed);
+        }
         await bootstrapOpenCodeAtStartup(connection);
         requireSelection(selection);
         if (!state.isOpenCodeReady) throw new OpenCodeConnectionError(state.lastOpenCodeError || 'OpenCode is not ready');

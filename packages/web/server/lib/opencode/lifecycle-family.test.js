@@ -381,3 +381,94 @@ describe('confirmed restart queue-drain boundary', () => {
     expect(resume).toHaveBeenCalledOnce(); expect(state.isOpenCodeReady).toBe(false);
   });
 });
+
+describe('confirmed connection settings commit', () => {
+  const target = { mode: 'external', endpoint: 'https://confirmed.test/base' };
+  const setup = () => {
+    let current = { family: AGENT_FAMILY.OPENCODE, revision: 1, connectionRevision: 1 };
+    const kernelRuntime = { invalidate: vi.fn(), refresh: vi.fn(async () => ({ generation: 'oc2' })) };
+    const getConnection = vi.fn(async () => { throw new Error('Saved connection must not be re-resolved'); });
+    const resume = vi.fn();
+    const fixture = createRuntime({ getConnection, kernelRuntime,
+      pauseQueuedDispatch: async () => resume, getBackendSelection: () => ({ ...current }) });
+    const old = { close: vi.fn() };
+    fixture.state.openCodeProcess = old; fixture.state.isOpenCodeReady = true;
+    const replacement = { resolve: vi.fn(async () => target), commit: vi.fn(async () => {
+      current = { ...current, connectionRevision: current.connectionRevision + 1 };
+      return { ...current };
+    }) };
+    return { ...fixture, old, resume, replacement, kernelRuntime, getConnection,
+      retire: () => { current = { family: AGENT_FAMILY.CAGENT, revision: 2, connectionRevision: 2 }; } };
+  };
+
+  it('saves after owned exit and starts the resolved candidate under the committed revision', async () => {
+    const f = setup();
+    let release; const closing = new Promise(resolve => { release = resolve; });
+    f.old.close.mockImplementation(async () => closing);
+    const switching = f.runtime.restartOpenCode('confirmed-change', f.replacement);
+    await vi.waitFor(() => expect(f.old.close).toHaveBeenCalledOnce());
+    expect(f.replacement.commit).not.toHaveBeenCalled(); expect(f.kernelRuntime.refresh).not.toHaveBeenCalled();
+    release(); await switching;
+    expect(f.replacement.commit).toHaveBeenCalledOnce(); expect(f.getConnection).not.toHaveBeenCalled();
+    expect(f.state.openCodeBaseUrl).toBe(target.endpoint); expect(f.state.isOpenCodeReady).toBe(true);
+    expect(f.state.openCodeProcess).toBeNull(); expect(f.resume).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a conflicting candidate rather than joining a different transition', async () => {
+    const f = setup();
+    let release; const closing = new Promise(resolve => { release = resolve; });
+    f.old.close.mockImplementation(async () => closing);
+    const switching = f.runtime.restartOpenCode('first-change', f.replacement);
+    await vi.waitFor(() => expect(f.old.close).toHaveBeenCalledOnce());
+    const other = { resolve: vi.fn(async () => target), commit: vi.fn() };
+    await expect(f.runtime.restartOpenCode('different-change', other)).rejects.toMatchObject({ status: 409 });
+    expect(other.resolve).not.toHaveBeenCalled(); expect(other.commit).not.toHaveBeenCalled();
+    release(); await switching;
+  });
+
+  it('preserves the live connection when candidate validation fails', async () => {
+    const f = setup(); f.replacement.resolve.mockRejectedValue(new Error('Invalid candidate'));
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toThrow('Invalid candidate');
+    expect(f.old.close).not.toHaveBeenCalled(); expect(f.replacement.commit).not.toHaveBeenCalled();
+    expect(f.kernelRuntime.invalidate).not.toHaveBeenCalled(); expect(f.state.isOpenCodeReady).toBe(true);
+  });
+
+  it('keeps cleanup failure visible and never saves or starts another target', async () => {
+    const f = setup(); f.old.close.mockRejectedValue(new Error('Still owned'));
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toThrow('Still owned');
+    expect(f.state.openCodeProcess).toBe(f.old); expect(f.replacement.commit).not.toHaveBeenCalled();
+    expect(f.kernelRuntime.refresh).not.toHaveBeenCalled(); expect(f.resume).toHaveBeenCalledOnce();
+    expect(f.state.isOpenCodeReady).toBe(false); expect(f.state.lastOpenCodeError).toBe('Still owned');
+  });
+
+  it('leaves an explicit failed state after a settings write fails', async () => {
+    const f = setup(); f.replacement.commit.mockRejectedValue(new Error('Settings write failed'));
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toThrow('Settings write failed');
+    expect(f.state.openCodeProcess).toBeNull(); expect(f.state.isOpenCodeReady).toBe(false);
+    expect(f.state.openCodeBaseUrl).toBeNull(); expect(f.kernelRuntime.refresh).not.toHaveBeenCalled();
+    expect(f.resume).toHaveBeenCalledOnce(); expect(f.state.lastOpenCodeError).toBe('Settings write failed');
+  });
+
+  it('does not authorize a backend retirement through the settings commit', async () => {
+    const f = setup();
+    f.replacement.commit.mockImplementation(async () => { f.retire(); return { family: AGENT_FAMILY.CAGENT, revision: 2, connectionRevision: 2 }; });
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    expect(f.state.isOpenCodeReady).toBe(false); expect(f.kernelRuntime.refresh).not.toHaveBeenCalled();
+    expect(f.state.openCodeBaseUrl).toBeNull(); expect(f.resume).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a stale returned revision instead of binding current mutable settings', async () => {
+    const f = setup();
+    const commit = f.replacement.commit;
+    f.replacement.commit = async () => { await commit(); return { family: AGENT_FAMILY.OPENCODE, revision: 1, connectionRevision: 1 }; };
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    expect(f.kernelRuntime.refresh).not.toHaveBeenCalled(); expect(f.state.isOpenCodeReady).toBe(false);
+  });
+
+  it('rejects replacement during shutdown before resolving or changing settings', async () => {
+    const f = setup(); f.state.isShuttingDown = true;
+    await expect(f.runtime.restartOpenCode('confirmed-change', f.replacement)).rejects.toMatchObject({ status: 409 });
+    expect(f.replacement.resolve).not.toHaveBeenCalled(); expect(f.replacement.commit).not.toHaveBeenCalled();
+    expect(f.old.close).not.toHaveBeenCalled();
+  });
+});

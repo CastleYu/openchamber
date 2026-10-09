@@ -51,7 +51,7 @@ import {
   UPSTREAM_STALL_TIMEOUT_CONCURRENT_MS,
 } from './lib/event-stream/index.js';
 import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/search.js';
-import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection } from './lib/opencode/connection.js';
+import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection, describeOpenCodeConnections } from './lib/opencode/connection.js';
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
@@ -2424,6 +2424,7 @@ async function main(options = {}) {
     deleteImportedTheme,
     refreshOpenCodeAfterConfigChange,
     getOpenCodeResolutionSnapshot,
+    getOpenCodeConnectionOptions: async () => describeOpenCodeConnections({ settings: await readSettingsFromDiskStrict(), env: process.env, resolveBinary: openCodeEnvRuntime.resolveConnectionBinary }),
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli: async () => {
       if (!getOpenCodeUpgradeCapability().supported) throw new Error('This OpenCode runtime cannot be upgraded by OpenChamber.');

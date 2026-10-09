@@ -26,7 +26,7 @@
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | done；[源码及程序证据](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | in progress |
-| INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | planned |
+| INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | in_progress |
 | INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Legacy 高级操作与重连恢复 | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy 设置、凭据、插件／MCP 与无人值守操作 | INT-04, CA-02 Release | planned |
@@ -303,3 +303,11 @@ VS Code 选择检查点：Web 与 VS Code 现共用严格的模式解析。扩�
 goal 轮次改为按依赖关系完成一批闭环：相关实现、专项回归及适用的真实运行验证、同步中英文文档、主代理审查后的本地提交／检查点及实时额度检查。按契约归属确定边界，不固定文件数。界面、迁移、热切换、跨宿主一致性及发布门槛继续明确保留，不为填满轮次扩展产品范围。原有额度停止条件与已发布版本边界保持有效。
 
 Web 消费者构建通过，保留既有构建警告。最终源码指纹及验证摘要：artifacts/int02-connection-final-evidence.json；检查点剩余额度为 46%。
+
+### INT-02 迁移发现与宿主边界检查点
+
+需认证且不缓存的连接发现接口，现向后续编辑器提供已保存记录、五种模式可用性、来源／键名、未确认的旧配置候选、有限的设置错误及可选内置文件建议。发现流程不启动、不探测、不写入。相同旧记录保留全部来源，不同记录要求用户明确解决冲突。非法端点不回显原值。可执行文件缺失、只有 skip-start 而没有端点时，不触发回退。已确认记录抑制旧环境预填；磁盘读取失败明确返回 503，不伪装为空的设置成功。VS Code 对该能力及 HTTP 记录写入返回 501，原生设置门禁也会在持久化前拒绝包含不支持记录的混合写入。设置键名沿用现有带类型声明的兼容性常量归属。
+
+迁移界面、完整状态与串行热切换、扩展管理器接入及打包／运行时验收仍未完成。本检查点不代表 INT-02 完成，不改变已冻结的 CA-02 Release。英文实施文档保持权威，本检查点同步提供中文归档。
+
+验证：Web 五个套件通过 213 项、跳过一项平台测试；VS Code 设置门禁通过 10 项。真实 OC2 隔离宿主通过 13 项，包含认证、连续读取无写入／启动、来源展示、确认后抑制旧候选，以及会话增删和自有进程退出。全工作区类型检查、lint 与 dead-code 通过；VS Code 完整构建及最终宿主扩展重建通过。Anti-slop 报告 283 条，逐行核对均为既有代码，新代码无诊断。没有依赖或 changelog 修改。证据：artifacts/int02-migration-final-tests.log、int02-migration-vscode-final-tests.log、int02-migration-final-live.log、int02-migration-anti-review.json 及 int02-migration-final-evidence.json。真实 IDE、打包桌面和界面验收仍未完成；检查点实时剩余额度 46%。

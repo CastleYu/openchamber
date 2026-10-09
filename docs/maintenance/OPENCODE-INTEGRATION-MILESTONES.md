@@ -24,7 +24,7 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
 | INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | done; [source and executable evidence](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | in progress |
-| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | planned |
+| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | in_progress |
 | INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy settings, credentials, plugins/MCP and unattended operations | INT-04, CA-02 Release | planned |
@@ -301,3 +301,11 @@ Validation on the current source: 228 Web regressions passed, two platform tests
 Goal rounds now complete one dependent batch: related implementation, focused regressions and applicable real-runtime acceptance, synchronized English/Chinese documentation, then a reviewed local commit/checkpoint and live quota check. Batch boundaries follow the owning contract, not a fixed file count. Keep UI/migration/live replacement, cross-runtime parity and release gates visible; do not enlarge product scope to fill a round. Preserve the existing stop threshold and frozen release boundaries.
 
 Web consumer build passed with existing build warnings. Final source fingerprints and validation summary: artifacts/int02-connection-final-evidence.json; live quota at the checkpoint has 46 percent remaining.
+
+### INT-02 migration discovery and host boundary checkpoint
+
+The authenticated, uncached connection discovery route now supplies the editor's saved record, five-mode availability, source/key provenance, unconfirmed legacy candidates, finite setup errors and optional bundle recommendation. Discovery has no launch/probe/write path. Matching legacy records keep every source; distinct records require explicit conflict resolution. Invalid endpoint values are omitted rather than echoed. Missing executable and skip-start-without-host intent cannot trigger fallback. A confirmed saved record suppresses legacy environment prefill. Failed disk reads remain 503 rather than an empty setup success. VS Code responds 501 for this capability and HTTP record writes; its host settings gate rejects mixed writes containing the unsupported record before persistence. The canonical setting key uses the existing typed compatibility constant owner.
+
+The migration UI, full state/serialized live replacement, extension-manager adoption and packaged/runtime gates remain open. This checkpoint does not complete INT-02 and does not change the frozen CA-02 Release. English implementation instructions remain authoritative; this checkpoint has a synchronized Chinese archive.
+
+Validation: five Web suites passed 213 tests with one platform skip; VS Code settings gate passed 10. An isolated real OC2 host passed 13 checks, including authentication, repeated discovery without writes/spawn, provenance, suppression of old candidates after confirmation, session CRUD and owned-process exit. Workspace type-check, lint and dead-code passed. The full VS Code build and final extension-host rebuild passed. Anti-slop reported 283 diagnostics; each source line exists at the prior HEAD, with none on new code. No dependency or changelog changed. Evidence: artifacts/int02-migration-final-tests.log, int02-migration-vscode-final-tests.log, int02-migration-final-live.log, int02-migration-anti-review.json and int02-migration-final-evidence.json. Real IDE, packaged desktop and editor acceptance remain open; live quota at the checkpoint has 46 percent remaining.

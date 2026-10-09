@@ -20,7 +20,7 @@ const PROBE_PATH = Object.freeze({
 
 export const OPENCODE_PROFILE = Object.freeze({ OC1: 'oc1', OC2: 'oc2', LEGACY: 'legacy-1.2.27' });
 export const OPENCODE_SELECTION = Object.freeze({ AUTO: 'auto', ...OPENCODE_PROFILE });
-export const OPENCODE_SETTING = Object.freeze({ SELECTION: 'opencodeSelection' });
+export const OPENCODE_SETTING = Object.freeze({ SELECTION: 'opencodeSelection', CONNECTION: 'opencodeConnection' });
 export const PROFILE_STATUS = Object.freeze({
   READY: 'ready', AUTH: 'auth', UNREACHABLE: 'unreachable', CONFLICT: 'conflict',
   MISMATCH: 'mismatch', UNSUPPORTED: 'unsupported', UNVERIFIED: 'unverified',

@@ -148,3 +148,20 @@ describe('settings connection HTTP boundary without a global body parser', () =>
     expect(stored).toEqual(record);
   });
 });
+
+describe('connection setup route', () => {
+  it('remains readable with no admitted kernel and never caches machine discovery', async () => {
+    const app = express(); let reads = 0;
+    registerOpenCodeRoutes(app, { getOpenCodeConnectionOptions: async () => ({ saved: null, error: null, candidates: [], modes: [], recommendation: ++reads }) });
+    for (const value of [1, 2]) {
+      const result = await request(app).get('/api/config/opencode-connection').expect(200);
+      expect(result.body.recommendation).toBe(value); expect(result.headers['cache-control']).toBe('no-store');
+    }
+  });
+  it('distinguishes unsupported discovery and failed authoritative settings reads', async () => {
+    const unsupported = express(); registerOpenCodeRoutes(unsupported, {});
+    await request(unsupported).get('/api/config/opencode-connection').expect(501, { error: 'unsupported_runtime' });
+    const failed = express(); registerOpenCodeRoutes(failed, { getOpenCodeConnectionOptions: async () => { throw new Error('sensitive path'); } });
+    await request(failed).get('/api/config/opencode-connection').expect(503, { error: 'settings_unavailable' });
+  });
+});

@@ -1,4 +1,4 @@
-import { CONNECTION_MODE, OpenCodeConnectionError } from './connection.js';
+import { OPENCODE_CONNECTION, CONNECTION_MODE, OpenCodeConnectionError } from './connection.js';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,12 +15,7 @@ const SHELL_PROBE_TIMEOUT_MS = 5_000;
 // PowerShell profile on a stuck OneDrive folder, `where` walking a dead
 // network drive in PATH) hangs the whole process with no output.
 const WINDOWS_PROBE_TIMEOUT_MS = 10_000;
-const OPENCODE_BINARY_ENV_KEYS = Object.freeze([
-  'OPENCODE_BINARY',
-  'OPENCODE_PATH',
-  'OPENCHAMBER_OPENCODE_PATH',
-  'OPENCHAMBER_OPENCODE_BIN',
-]);
+const OPENCODE_BINARY_ENV_KEYS = OPENCODE_CONNECTION.BINARY_ENV_KEYS;
 
 // Interactive rc files may print a banner, motd or other text to stdout before
 // the shell runs the probe command. That text would otherwise fuse with the

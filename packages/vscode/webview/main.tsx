@@ -352,6 +352,8 @@ const splitConfigEntityPath = (pathname: string, prefix: string) => {
   return { name: decodeURIComponent(segments.join('/')), resource: undefined };
 };
 
+const HOST_CONNECTION = { ROUTE: '/api/config/opencode-connection', SETTING: 'opencodeConnection', ERROR: 'unsupported_runtime' } as const;
+
 const unsupportedWebRouteResponse = (feature: string): Response => {
   return jsonResponse({ error: `${feature} is not supported in VS Code` }, 501);
 };
@@ -908,12 +910,15 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     }
   }
 
+  if (pathname === HOST_CONNECTION.ROUTE) return jsonResponse({ error: HOST_CONNECTION.ERROR }, 501);
+
   if (pathname.startsWith('/api/config/settings')) {
     if (method === 'GET') {
       const settings = await sendBridgeMessage('api:config/settings:get');
       return new Response(JSON.stringify(settings), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     const body = await extractJsonBody(input, init, method);
+    if (Object.hasOwn(body, HOST_CONNECTION.SETTING)) return jsonResponse({ error: HOST_CONNECTION.ERROR }, 501);
     const updated = await sendBridgeMessage('api:config/settings:save', body);
     return new Response(JSON.stringify(updated), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }

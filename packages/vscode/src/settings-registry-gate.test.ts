@@ -85,3 +85,9 @@ test('persists only valid requested OpenCode selections through the extension bo
   }
   assert.deepEqual(filterPersistableSettingsChanges({ opencodeSelection: 'guessed', profile: 'oc1' }), {});
 });
+
+test('rejects unsupported confirmed connection writes before any other field is returned', () => {
+  for (const opencodeConnection of [null, { version: 1, confirmed: true, mode: 'path' }]) {
+    assert.throws(() => filterPersistableSettingsChanges({ themeId: 'changed', opencodeConnection }), /not supported in VS Code/);
+  }
+});

@@ -38,6 +38,7 @@ export const filterPersistableSettingsChanges = (
   changes: Record<string, unknown>,
   fields: SettingsRegistryGateFields = SETTINGS_REGISTRY_FIELDS,
 ): Record<string, unknown> => {
+  if (Object.hasOwn(changes, OPENCODE_SETTING.CONNECTION)) throw new Error('OpenCode connection modes are not supported in VS Code');
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(changes)) {
     if (!Object.prototype.hasOwnProperty.call(fields, key)) continue;

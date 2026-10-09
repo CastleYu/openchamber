@@ -1,4 +1,4 @@
-import { OpenCodeConnectionError } from './connection.js';
+import { OPENCODE_CONNECTION, OpenCodeConnectionError } from './connection.js';
 import express from 'express';
 import { createProjectIdFromPath } from '../projects/project-id.js';
 import fs from 'fs';
@@ -23,6 +23,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     kernelRuntime,
     getBackendSelection,
     getOpenCodeResolutionSnapshot,
+    getOpenCodeConnectionOptions,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
     formatSettingsResponse,
@@ -484,6 +485,13 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
         error: error instanceof Error ? error.message : 'Failed to read OpenCode version',
       });
     }
+  });
+
+  app.get(OPENCODE_CONNECTION.ROUTE, async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!getOpenCodeConnectionOptions) return res.status(501).json({ error: 'unsupported_runtime' });
+    try { return res.json(await getOpenCodeConnectionOptions()); }
+    catch { return res.status(503).json({ error: 'settings_unavailable' }); }
   });
 
   app.put('/api/config/settings', express.json({ limit: '1mb' }), async (req, res) => {

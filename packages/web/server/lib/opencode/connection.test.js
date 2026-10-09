@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
-import { CONNECTION_MODE, parseOpenCodeConnection, prepareOpenCodeConnection, resolveConnectionEnv } from './connection.js';
+import { CONNECTION_MODE, describeOpenCodeConnections, parseOpenCodeConnection, prepareOpenCodeConnection, resolveConnectionEnv } from './connection.js';
 
 const base = { version: 1, confirmed: true };
 const exe = path.resolve('opencode.exe');
@@ -49,4 +49,59 @@ describe('confirmed OpenCode connection boundary', () => {
     expect(await prepareOpenCodeConnection(records[0], { resolveBinary })).toMatchObject({ endpoint: 'https://example.test/base' });
     expect(resolveBinary).not.toHaveBeenCalled();
   });
+});
+
+describe('connection migration discovery', () => {
+  const resolveBinary = vi.fn(record => record.exe ?? exe);
+  it('recommends an available bundle without confirming or mutating input', () => {
+    const settings = {}; const env = {};
+    const snapshot = describeOpenCodeConnections({ settings, env, resolveBinary });
+    expect(snapshot.saved).toBeNull(); expect(snapshot.error).toBeNull();
+    expect(snapshot.candidates).toEqual([]);
+    expect(snapshot.recommendation).toEqual({ source: 'bundled', mode: 'bundled', resolved: exe });
+    expect(snapshot.modes.map(item => item.mode)).toEqual(['external', 'command', 'path', 'configured', 'bundled']);
+    expect(settings).toEqual({}); expect(env).toEqual({});
+  });
+  it('keeps a saved record authoritative despite contradictory legacy inputs', () => {
+    const saved = records[2];
+    const snapshot = describeOpenCodeConnections({ settings: { opencodeConnection: saved, opencodeBinary: '/old' }, env: { OPENCODE_HOST: 'invalid' }, resolveBinary });
+    expect(snapshot.saved).toEqual(saved); expect(snapshot.candidates).toEqual([]); expect(snapshot.error).toBeNull();
+    expect(snapshot.recommendation).toBeNull();
+  });
+  it('retains separate matching source provenance and requires confirmation', () => {
+    const snapshot = describeOpenCodeConnections({ settings: { opencodeBinary: exe }, env: { OPENCODE_BINARY: '"' + exe + '"', OPENCODE_PATH: exe }, resolveBinary });
+    expect(snapshot.error).toBeNull(); expect(snapshot.recommendation).toBeNull();
+    expect(snapshot.candidates.map(item => [item.source, item.key])).toEqual([['environment', 'OPENCODE_BINARY'], ['environment', 'OPENCODE_PATH'], ['settings', 'opencodeBinary']]);
+    expect(snapshot.candidates.every(item => item.record.confirmed === false && item.resolved === exe)).toBe(true);
+    for (const candidate of snapshot.candidates) expect(() => parseOpenCodeConnection(candidate.record)).toThrow();
+  });
+  it('shows a conflict instead of choosing endpoint versus executable precedence', () => {
+    const snapshot = describeOpenCodeConnections({ settings: {}, env: { OPENCODE_HOST: 'https://example.test/base/', OPENCODE_BINARY: exe }, resolveBinary });
+    expect(snapshot.error).toBe('conflict'); expect(snapshot.candidates).toHaveLength(2);
+  });
+  it.each(['https://user:secret@example.test', 'https://example.test/?token=secret', 'secret', 42])('does not echo malformed or credential-bearing endpoint %s', host => {
+    const snapshot = describeOpenCodeConnections({ settings: {}, env: { OPENCODE_HOST: host }, resolveBinary });
+    expect(snapshot.error).toBe('invalid'); expect(snapshot.recommendation).toBeNull();
+    expect(snapshot.candidates).toEqual([{ source: 'environment', key: 'OPENCODE_HOST', record: null, error: 'invalid' }]);
+    expect(JSON.stringify(snapshot)).not.toContain('secret');
+  });
+  it('reports absent PATH/bundle and unavailable imported binary without substituting another mode', () => {
+    const resolveBinary = vi.fn(() => { throw new Error('fixture detail'); });
+    const snapshot = describeOpenCodeConnections({ settings: { opencodeBinary: exe }, env: {}, resolveBinary });
+    expect(snapshot.error).toBe('unavailable'); expect(snapshot.recommendation).toBeNull();
+    expect(snapshot.modes.filter(item => !item.available).map(item => item.mode)).toEqual(['path', 'bundled']);
+    expect(snapshot.candidates[0].record.confirmed).toBe(false);
+    expect(JSON.stringify(snapshot)).not.toContain('fixture detail');
+  });
+  it('keeps invalid saved state visible while allowing valid imported candidates to be edited', () => {
+    const snapshot = describeOpenCodeConnections({ settings: { opencodeConnection: { mode: 'guessed' }, opencodeBinary: exe }, env: {}, resolveBinary });
+    expect(snapshot.error).toBe('invalid'); expect(snapshot.saved).toBeNull();
+    expect(snapshot.candidates[0].record.exe).toBe(exe); expect(snapshot.recommendation).toBeNull();
+  });
+});
+
+it.each(['OPENCODE_SKIP_START', 'OPENCHAMBER_SKIP_OPENCODE_START'])('does not recommend a bundle for %s without an endpoint', key => {
+  const snapshot = describeOpenCodeConnections({ settings: {}, env: { [key]: 'true' }, resolveBinary: record => record.exe ?? exe });
+  expect(snapshot.error).toBe('invalid'); expect(snapshot.recommendation).toBeNull();
+  expect(snapshot.candidates[0].key).toBe(key);
 });

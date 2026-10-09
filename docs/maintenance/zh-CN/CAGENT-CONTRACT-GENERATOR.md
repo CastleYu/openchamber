@@ -10,7 +10,17 @@ bun scripts/cagent/finalize-adapter.mjs --workspace /local/workspace --kit-diges
 
 命令包包含十个独立命令、69 份生成参考、双语 START-HERE 文件及项目／Zod／TypeScript 许可证。它将已安装依赖打包为 ESM，拒绝剩余的非 Node 内置模块导入，不复制本地 API 输入、凭据或候选文件。维护者另行提供验证过的 Node 和 Bun 可执行文件。新目录测试在工作树之外、不含 `node_modules` 的环境中执行 OpenAPI 导入、扩展结构检查、校准、映射接收、准备、子进程夹具及最终组装。测试证明当前 Windows 工具链，不能证明其他操作系统或本地模型。
 
-打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成、有限扩展模板和可执行适配模型校准。扩展宿主接入、真实本地模型试验及目标权限仍属 CA-02 待办。
+打包路径保留工作进程及参考文件布局。准确的 `protected/` 清单由校验树外的 `control/manifest.json` 覆盖。通过独立渠道传递预期摘要，并保护整个包不被候选写入。如果维护者允许替换校验命令，命令不能验证自身真实性。已有输出在构建前即被拒绝。构建失败不创建输出；写入失败保留不完整目录，不发布最终清单。此包包含核查原文章节提取、受约束声明式生成、有限扩展模板和可执行适配模型校准。独立批准提升、真实本地模型试验及目标权限仍属 CA-02 待办。
+
+### 有限扩展任务包
+
+向 `prepare-packets --extensions /local/extensions.json` 提供严格的 `{ manifests, fixtures }` 对象。`manifests` 包含最多 64 个动作 ID 唯一的有限契约；`fixtures` 为每个动作 ID 精确提供一个 `{ version: 1, actionID, manifest, cases }` 定义，其中清单须等于已审查契约。端点映射必须完整登记有限动作和需要宿主开发的动作，后者保持禁用且不生成候选任务包。存在已映射核心操作时同时提供 `--fixtures`，仅扩展映射可省略它。
+
+每个用例包含 `id`、`input`、`identity`、`exchanges` 和 `expected`。输入为处理器封装 `{ values, workspaceID?, sessionID?, requestID? }`，上下文是否存在须匹配清单，只有变更包含请求 ID。成功预期使用 `{ kind: 'result', result: { result: <有限值>, receipt?: { requestID, state } } }`，失败使用 `{ kind: 'failure', error: <Agent 错误> }`。读取不得返回回执；observed 变更要求请求匹配的 complete 回执，accepted-only 允许 accepted 或 complete。未知结果不能计为成功夹具。交换必须精确匹配身份、请求及顺序。
+
+准备阶段将清单、映射、文档身份、提供的引用摘录、双语指令及夹具纳入受保护摘要。每项候选只拥有 `candidate/<actionID>/handler.mjs`，导出 `createExtension(context)`。`check-packet --operation <actionID>` 复用有界修正记录及原生权限工作进程。扩展处理器接收输入和身份，其夹具请求端口只接受空 control，不接收核心操作的取消控制参数。
+
+最终打包捕获通过的源码，将核心与有限动作一起装配，再以组合模块重检每个任务包，之后发布制品清单。允许仅扩展制品。生成能力均保持 unverified，启用保持 unavailable。加载仍执行原生代码。真实服务器语义、独立批准提升、目标权限、模型试验及运行端验收仍是发布门槛。
 
 ### 有限扩展模板
 

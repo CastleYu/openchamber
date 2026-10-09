@@ -4,9 +4,11 @@ import path from 'node:path';
 import { z } from 'zod';
 
 import { AgentArtifactError, agentArtifactDigest, agentArtifactManifestSchema, verifyAgentArtifacts } from './artifacts.js';
-import { AGENT_ARTIFACT, AGENT_ERROR, AGENT_OPERATION, AGENT_PACKET, AGENT_PACKET_ERROR, AGENT_PACKET_STATE } from './constants.js';
+import { AGENT_ARTIFACT, AGENT_ERROR, AGENT_EXTENSION, AGENT_OPERATION, AGENT_PACKET, AGENT_PACKET_ERROR, AGENT_PACKET_STATE } from './constants.js';
+import { extensionActionIDSchema } from './extensions.js';
 
-const operationSchema = z.enum(Object.values(AGENT_OPERATION));
+const operationSchema = z.union([z.enum(Object.values(AGENT_OPERATION)), extensionActionIDSchema]);
+const maxPackets = Object.keys(AGENT_OPERATION).length + AGENT_EXTENSION.MAX_ACTIONS;
 const idSchema = z.string().min(1).max(128).regex(/^[a-zA-Z0-9._-]+$/);
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/);
 const callable = z.function();
@@ -14,7 +16,7 @@ const checkSchema = z.object({ id: idSchema, run: callable }).strict();
 const packetSchema = z.object({
   operation: operationSchema, directory: z.string().refine(path.isAbsolute),
   files: z.array(z.string()).min(1).max(AGENT_PACKET.MAX_FILES),
-  dependsOn: z.array(operationSchema).max(Object.keys(AGENT_OPERATION).length),
+  dependsOn: z.array(operationSchema).max(maxPackets),
   checks: z.array(checkSchema).min(1).max(AGENT_PACKET.MAX_CHECKS),
 }).strict();
 const checkResultSchema = z.object({ id: idSchema, passed: z.boolean() }).strict();
@@ -27,7 +29,7 @@ export const agentPacketProgressSchema = z.object({
 const progressSchema = agentPacketProgressSchema;
 const optionsSchema = z.object({
   protectedDirectory: z.string().refine(path.isAbsolute), manifest: agentArtifactManifestSchema,
-  packets: z.array(packetSchema).min(1).max(Object.keys(AGENT_OPERATION).length),
+  packets: z.array(packetSchema).min(1).max(maxPackets),
   readProgress: callable, writeProgress: callable,
 }).strict();
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');

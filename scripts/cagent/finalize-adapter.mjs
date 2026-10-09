@@ -3,12 +3,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
-import { AGENT_ADAPTER, AGENT_ARTIFACT, AGENT_FILE_ERROR, AGENT_FILE_MODE, AGENT_OPERATION, AGENT_PACKET_ERROR, AGENT_PACKET_STATE, AGENT_PACKET_STORAGE, AGENT_SUPPORT } from '../../packages/web/server/lib/agent/constants.js';
+import { AGENT_ADAPTER, AGENT_ARTIFACT, AGENT_EXTENSION, AGENT_FILE_ERROR, AGENT_FILE_MODE, AGENT_OPERATION, AGENT_PACKET_ERROR, AGENT_PACKET_STATE, AGENT_PACKET_STORAGE, AGENT_SUPPORT } from '../../packages/web/server/lib/agent/constants.js';
+import { extensionActionIDSchema, extensionManifestSchema } from '../../packages/web/server/lib/agent/extensions.js';
 import { agentArtifactDigest, agentArtifactManifestSchema, verifyAgentArtifacts } from '../../packages/web/server/lib/agent/artifacts.js';
 import { createAgentPacketWorkspace } from '../../packages/web/server/lib/agent/packet-workspace.js';
 import { assembleAdapter, AssemblyError } from './adapter-assembly.mjs';
-import { createFixtureChecks } from './fixture-checks.mjs';
+import { createFixtureChecks, fixtureSchema } from './fixture-checks.mjs';
 import { runFixtureProcess, FixtureProcessError, PROCESS } from './fixture-process.mjs';
 import { readLocalJSON } from './read-input.mjs';
 import { PACKET_PLAN } from './packet-plan.mjs';
@@ -20,12 +22,18 @@ const operations = Object.values(AGENT_OPERATION);
 const opSchema = z.enum(operations);
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/);
 const registrationSchema = z.object({
-  operations: z.array(z.object({ operation: opSchema, directory: z.string(), entry: z.literal(PACKET_PLAN.FILE.HANDLER), factory: z.literal('createOperation') }).strict()).min(1).max(FINALIZE.MAX),
+  operations: z.array(z.object({ operation: opSchema, directory: z.string(), entry: z.literal(PACKET_PLAN.FILE.HANDLER), factory: z.literal('createOperation') }).strict()).max(FINALIZE.MAX),
+  extensions: z.array(z.object({ actionID: extensionActionIDSchema, manifest: extensionManifestSchema, directory: z.string(),
+    entry: z.literal(PACKET_PLAN.FILE.HANDLER), factory: z.literal('createExtension') }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).default([]),
   capabilities: z.record(opSchema, z.object({ state: z.literal(AGENT_SUPPORT.UNVERIFIED), evidence: z.array(z.never()).max(0) }).strict()),
 }).strict().superRefine((value, context) => {
   if (Object.keys(value.capabilities).length !== FINALIZE.MAX || operations.some((operation) => !Object.hasOwn(value.capabilities, operation))) {
     context.addIssue({ code: 'custom', message: 'invalid capabilities' });
   }
+  if (value.operations.length + value.extensions.length === 0
+    || new Set(value.extensions.map((row) => row.actionID)).size !== value.extensions.length
+    || value.extensions.some((row) => row.actionID !== row.manifest.actionID
+      || row.directory !== `${PACKET_PLAN.DIRECTORY.CANDIDATE}/${row.actionID}`)) context.addIssue({ code: 'custom', message: 'invalid extensions' });
 });
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const overlaps = (a, b) => { const rel = path.relative(a, b); return rel === '' || (!rel.startsWith(`..${path.sep}`) && rel !== '..' && !path.isAbsolute(rel)); };
@@ -78,15 +86,20 @@ export async function runFinalizeCommand(args, output) {
   const captured = new Map();
   const packets = [];
   try {
-    const registered = registration.operations.map(({ operation }) => operation);
-    for (const operation of registered) {
-      const definition = await readLocalJSON(path.join(protectedDirectory, operation, PACKET_PLAN.FILE.FIXTURES));
-      if (definition.operation !== operation) throw new Error();
+    const registered = [...registration.operations.map((row) => ({ operation: row.operation })),
+      ...registration.extensions.map((row) => ({ operation: row.actionID, manifest: row.manifest }))];
+    for (const row of registered) {
+      const operation = row.operation;
+      const definition = fixtureSchema.parse(await readLocalJSON(path.join(protectedDirectory, operation, PACKET_PLAN.FILE.FIXTURES)));
+      if ('operation' in definition ? definition.operation !== operation || Object.hasOwn(row, 'manifest')
+        : definition.actionID !== operation || !isDeepStrictEqual(definition.manifest, row.manifest)) throw new Error();
       const ids = createFixtureChecks(definition, async () => null).map(({ id }) => id);
       definitions.set(operation, definition); fixtureResults[operation] = ids.map((id) => ({ id, passed: false }));
       const check = { id: FINALIZE.CHECK, run: async (sources) => {
         try {
-          const built = await assembleAdapter(sources.map(({ text }) => ({ operation, text })));
+          const built = 'operation' in definition
+            ? await assembleAdapter(sources.map(({ text }) => ({ operation, text })))
+            : await assembleAdapter([], sources.map(({ text }) => ({ manifest: definition.manifest, text })));
           const options = { definition, source: built.source, nodePath: values.node };
           if (values.timeout !== undefined) options.timeoutMs = Number(values.timeout);
           const result = await runFixtureProcess(options); fixtureResults[operation] = result.checks;
@@ -103,7 +116,7 @@ export async function runFinalizeCommand(args, output) {
   let runner;
   try { runner = createAgentPacketWorkspace({ protectedDirectory, manifest, progressDirectory: path.join(workspace, FINALIZE.PROGRESS), packets }); }
   catch { return fail(FINALIZE.SETUP); }
-  const registered = registration.operations.map(({ operation }) => operation);
+  const registered = [...registration.operations.map(({ operation }) => operation), ...registration.extensions.map(({ actionID }) => actionID)];
   for (const operation of registered) {
     const result = await runner.run(operation);
     if (result.state !== AGENT_PACKET_STATE.PASSED) return fail(result.reason === AGENT_PACKET_ERROR.CHECK || result.reason === AGENT_PACKET_ERROR.LIMIT
@@ -112,7 +125,8 @@ export async function runFinalizeCommand(args, output) {
   }
   let writing = false;
   try {
-    const built = await assembleAdapter(registered.map((operation) => ({ operation, text: captured.get(operation) })));
+    const built = await assembleAdapter(registration.operations.map(({ operation }) => ({ operation, text: captured.get(operation) })),
+      registration.extensions.map(({ actionID, manifest }) => ({ manifest, text: captured.get(actionID) })));
     for (const operation of registered) {
       const options = { definition: definitions.get(operation), source: built.source, nodePath: values.node };
       if (values.timeout !== undefined) options.timeoutMs = Number(values.timeout);
@@ -125,7 +139,7 @@ export async function runFinalizeCommand(args, output) {
     const artifactDigest = agentArtifactDigest([artifactRecord]);
     const manifestBytes = Buffer.from(`${JSON.stringify({ version: AGENT_ARTIFACT.VERSION, artifactDigest, files: [artifactRecord] }, null, 2)}\n`);
     const report = { version: 1, sourceKitDigest: manifest.artifactDigest, artifactDigest,
-      candidateDigests, fixtures: fixtureResults, support: Object.fromEntries(operations.map((op) => [op, AGENT_SUPPORT.UNVERIFIED])), activation: FINALIZE.ACTIVATION };
+      candidateDigests, fixtures: fixtureResults, support: Object.fromEntries([...operations, ...registration.extensions.map(({ actionID }) => actionID)].map((op) => [op, AGENT_SUPPORT.UNVERIFIED])), activation: FINALIZE.ACTIVATION };
     await prepareOutput(out, workspace);
     await fs.mkdir(out, { mode: AGENT_PACKET_STORAGE.DIRECTORY_MODE });
     writing = true;
@@ -136,7 +150,7 @@ export async function runFinalizeCommand(args, output) {
     const pending = path.join(out, 'control', `${PACKET_PLAN.FILE.MANIFEST}.pending`);
     await fs.writeFile(pending, manifestBytes, { flag: AGENT_FILE_MODE.EXCLUSIVE, mode: AGENT_FILE_MODE.OWNER_READ_WRITE });
     await fs.rename(pending, path.join(out, 'control', PACKET_PLAN.FILE.MANIFEST));
-    emit({ ok: true, operations: registered.length, artifactDigest, activation: FINALIZE.ACTIVATION }); return 0;
+    emit({ ok: true, operations: registration.operations.length, extensions: registration.extensions.length, artifactDigest, activation: FINALIZE.ACTIVATION }); return 0;
   } catch (error) {
     if (writing) return fail(FINALIZE.INCOMPLETE);
     if (supportedProcessFailure(error)) return fail(FINALIZE.CANDIDATE);

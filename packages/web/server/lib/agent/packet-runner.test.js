@@ -70,6 +70,21 @@ afterEach(async () => {
 });
 
 describe('agent packet runner', () => {
+  it('persists finite extension packet progress without treating it as a core operation', async () => {
+    const context = await setup();
+    const actionID = 'cagent.fixture.report';
+    const runner = createAgentPacketRunner({
+      protectedDirectory: context.protectedDirectory,
+      manifest: manifestFor([fileRecord('host.js', 'host-owned runner')]),
+      packets: [{ ...context.packets[0], operation: actionID }],
+      readProgress: async (id) => context.progress.get(id) ?? null,
+      writeProgress: async (value) => context.progress.set(value.operation, value),
+    });
+    expect(await runner.run(actionID)).toMatchObject({ operation: actionID, state: AGENT_PACKET_STATE.PASSED });
+    expect(context.progress.get(actionID).operation).toBe(actionID);
+    expect(context.progress.has(AGENT_OPERATION.GET_SESSION)).toBe(false);
+  });
+
   it('accepts a candidate whose real files match the packet and reports a digest', async () => {
     const { runner, sources } = await setup();
     const result = await runner.run(AGENT_OPERATION.GET_SESSION);

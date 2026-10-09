@@ -1,6 +1,9 @@
 import { createFixtureChecks } from './fixture-checks.mjs';
 import { fixtureTaskSchema, PROCESS } from './fixture-process.mjs';
 import { z } from 'zod';
+import { isDeepStrictEqual } from 'node:util';
+import { agentAdapterSchema } from '../../packages/web/server/lib/agent/schemas.js';
+import { extensionManifestSchema } from '../../packages/web/server/lib/agent/extensions.js';
 
 const chunks = [];
 let size = 0;
@@ -16,8 +19,14 @@ try {
   const checks = createFixtureChecks(task.definition, async () => {
     const namespace = z.object({ createAdapter: z.function() }).strict().parse(await import(moduleUrl));
     return async (context) => {
-      const adapter = await namespace.createAdapter(context);
-      return adapter.handlers[task.definition.operation];
+      const candidate = await namespace.createAdapter(context);
+      if ('operation' in task.definition) return candidate.handlers[task.definition.operation];
+      const adapter = agentAdapterSchema.parse(candidate);
+      const manifest = extensionManifestSchema.parse(task.definition.manifest);
+      const matches = (adapter.extensions ?? []).filter((item) => item.manifest.actionID === task.definition.actionID
+        && isDeepStrictEqual(extensionManifestSchema.parse(item.manifest), manifest));
+      if (matches.length !== 1) return null;
+      return matches[0].handler;
     };
   });
   process.stdout.write(`${JSON.stringify({ ready: true })}\n`);

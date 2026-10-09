@@ -4,17 +4,18 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
 import { AGENT_FILE_ERROR, AGENT_OPERATION, AGENT_PACKET_STATE, AGENT_PACKET_STORAGE } from '../../packages/web/server/lib/agent/constants.js';
+import { extensionActionIDSchema } from '../../packages/web/server/lib/agent/extensions.js';
 import { agentArtifactManifestSchema, verifyAgentArtifacts } from '../../packages/web/server/lib/agent/artifacts.js';
 import { createAgentPacketWorkspace } from '../../packages/web/server/lib/agent/packet-workspace.js';
 import { assembleAdapter, AssemblyError } from './adapter-assembly.mjs';
-import { createFixtureChecks } from './fixture-checks.mjs';
+import { createFixtureChecks, fixtureSchema } from './fixture-checks.mjs';
 import { runFixtureProcess, FixtureProcessError, PROCESS } from './fixture-process.mjs';
 import { readLocalJSON } from './read-input.mjs';
 import { PACKET_PLAN } from './packet-plan.mjs';
 
 export const PACKET_COMMAND = Object.freeze({ INVALID: 'invalid-arguments', SETUP: 'packet-check-unavailable',
   PROTECTED: 'protected-kit-changed', PROGRESS: 'progress', CHECK: 'semantic-fixtures', JSON: '--json' });
-const operationSchema = z.enum(Object.values(AGENT_OPERATION));
+const operationSchema = z.union([z.enum(Object.values(AGENT_OPERATION)), extensionActionIDSchema]);
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/);
 
 /** Host command. Protected digest comes from the owner, never the candidate. */
@@ -42,8 +43,8 @@ export async function runPacketCommand(args, output) {
     if (manifest.artifactDigest !== values['kit-digest']) return fail(PACKET_COMMAND.PROTECTED);
     try { await verifyAgentArtifacts({ directory: protectedDirectory, manifest }); }
     catch { return fail(PACKET_COMMAND.PROTECTED); }
-    const definition = await readLocalJSON(path.join(protectedDirectory, values.operation, PACKET_PLAN.FILE.FIXTURES));
-    if (definition.operation !== values.operation) return fail(PACKET_COMMAND.SETUP);
+    const definition = fixtureSchema.parse(await readLocalJSON(path.join(protectedDirectory, values.operation, PACKET_PLAN.FILE.FIXTURES)));
+    if (('operation' in definition ? definition.operation : definition.actionID) !== values.operation) return fail(PACKET_COMMAND.SETUP);
     const cases = createFixtureChecks(definition, async () => null).map(({ id }) => id);
     const progressDirectory = path.join(root, PACKET_COMMAND.PROGRESS);
     try { await fs.mkdir(progressDirectory, { mode: AGENT_PACKET_STORAGE.DIRECTORY_MODE }); }
@@ -52,7 +53,9 @@ export async function runPacketCommand(args, output) {
     const check = { id: PACKET_COMMAND.CHECK, run: async (sources) => {
       fixtures = cases.map((id) => ({ id, passed: false }));
       try {
-        const built = await assembleAdapter(sources.map(({ text }) => ({ operation: values.operation, text })));
+        const built = 'operation' in definition
+          ? await assembleAdapter(sources.map(({ text }) => ({ operation: values.operation, text })))
+          : await assembleAdapter([], sources.map(({ text }) => ({ manifest: definition.manifest, text })));
         const options = { definition, source: built.source, nodePath: values.node };
         if (values.timeout) options.timeoutMs = Number(values.timeout);
         const result = await runFixtureProcess(options);

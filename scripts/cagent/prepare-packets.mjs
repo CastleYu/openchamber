@@ -65,7 +65,7 @@ export async function runPrepareCommand(args, output) {
   try {
     ({ values } = parseArgs({ args, options: {
       catalog: { type: 'string' }, mapping: { type: 'string' }, out: { type: 'string' }, fixtures: { type: 'string' }, bindings: { type: 'string' },
-      documents: { type: 'string' },
+      documents: { type: 'string' }, extensions: { type: 'string' },
       json: { type: 'boolean' }, quiet: { type: 'boolean' },
     }, allowPositionals: false }));
     if (!values.catalog || !values.mapping || !values.out) return fail(PREPARE_COMMAND.INVALID);
@@ -75,7 +75,7 @@ export async function runPrepareCommand(args, output) {
   let sources;
   try { sources = await Promise.all([readLocalJSON(values.catalog), readLocalJSON(values.mapping),
     values.fixtures ? readLocalJSON(values.fixtures) : undefined, values.bindings ? readLocalJSON(values.bindings) : undefined,
-    values.documents ? readLocalJSON(values.documents) : undefined]); }
+    values.documents ? readLocalJSON(values.documents) : undefined, values.extensions ? readLocalJSON(values.extensions) : undefined]); }
   catch { return fail(PREPARE_COMMAND.INPUT); }
   try {
     const plan = buildPacketPlan(...sources);

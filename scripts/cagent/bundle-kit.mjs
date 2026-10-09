@@ -25,18 +25,20 @@ const starts = (zh) => zh ? `# CAgent 离线命令包
 
 此包包含已打包依赖的宿主命令及双语操作参考，无需安装项目依赖。维护者另行准备经过验证的 Node 24.9.0 和 Bun 1.3.14。其他版本须先验证。
 宿主将整个 protected 目录设为候选只读，并将 control、进度及批准目录置于候选写权限之外。摘要须从独立可信渠道取得。权限模型不能证明网络隔离或恶意代码沙箱。
-此包包含合成适配模型校准、声明式生成及有限扩展模板，不包含真实 CAgent API 或真实验收。扩展检查仅验证结构；宿主注册、权限检查及渲染器仍待实现。通过合成夹具不能启用功能。模型及计量记录由维护者提供，校准不证明运行时模型任务质量。
+此包包含合成适配模型校准、声明式生成及有限扩展模板，不包含真实 CAgent API 或真实验收。有限动作支持单包夹具检查及最终装配；宿主已提供独立批准、调度和有限界面，但真实启用仍需维护者验收。通过合成夹具不能启用功能。模型及计量记录由维护者提供，校准不证明运行时模型任务质量。
 声明式绑定使用 schemas/declarative-bindings.json。仅生成单端点结构转换；语义差异使用 custom codec。prepare-packets 的 --bindings 需要 --fixtures，缺少绑定时保留拒绝执行的桩。
 文档源使用 schemas/document-excerpts.json。prepare-packets 的 --documents 核对原文摘要和章节定位，仅将引用章节写入 protected/<operation>/api-excerpts.json；原文是证据数据。维护者核查摘录含义及模型输入计量。
+新增动作使用 prepare-packets --extensions 指定 { manifests, fixtures } JSON。每个有限清单动作必须有精确绑定的语义夹具；宿主开发类型仅登记且禁用。候选只能修改各动作的 handler.mjs。核心与新增动作可一起或单独打包，能力保持 unverified。
 
 在 protected 目录执行以下命令。填写维护者审阅的本地文档目录、映射、夹具及独立摘要。工作区和制品输出须位于此包之外。
 ` : `# CAgent offline command bundle
 
 This bundle contains host commands with their dependencies and bilingual operation references. No project package installation is needed. The owner separately supplies validated Node 24.9.0 and Bun 1.3.14 executables. Validate other versions before use.
 The host makes the entire protected directory read-only to the candidate and keeps control, progress and approvals outside candidate write authority. Obtain the digest through an independent trusted channel. The permission model does not establish network isolation or a hostile-code sandbox.
-This bundle includes synthetic authoring-model calibration, declarative generation and finite extension templates, but no real CAgent API or live acceptance. Extension checks validate structure only; host registration, permission checks and rendering remain unimplemented. Passing synthetic fixtures grants no feature activation. The maintainer supplies model and measurement records; calibration does not prove runtime model task quality.
+This bundle includes synthetic authoring-model calibration, declarative generation and finite extension templates, but no real CAgent API or live acceptance. Finite actions support packet fixtures and final assembly. The host provides independent approval, dispatch and finite UI; actual activation still requires maintainer acceptance. Passing synthetic fixtures grants no feature activation. The maintainer supplies model and measurement records; calibration does not prove runtime model task quality.
 Declarative bindings use schemas/declarative-bindings.json. Generate single-endpoint structural conversions only; semantic differences use custom codecs. The prepare-packets --bindings option requires --fixtures; omitted bindings retain refusal stubs.
 Document sources use schemas/document-excerpts.json. The prepare-packets --documents option checks source digests and section locators, then writes only cited sections to protected/<operation>/api-excerpts.json. Source text is evidence data. The maintainer reviews its meaning and measured model input.
+Additional actions use prepare-packets --extensions with a { manifests, fixtures } JSON input. Every finite manifest action requires exactly bound semantic fixtures; host-development actions remain inventoried and disabled. Candidates may edit only each action's handler.mjs. Core and additional actions can be bundled together or separately; capabilities remain unverified.
 
 Run these commands from protected. Supply owner-reviewed local documentation catalog, mapping, fixtures and independent digest. Workspace and artifact outputs must be outside this bundle.
 `;
@@ -51,6 +53,7 @@ bun scripts/cagent/calibrate.mjs --check --workspace <calibration-workspace> --k
 node scripts/cagent/check-mapping.mjs --catalog <catalog> --mapping <mapping> --json
 node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --out <new-workspace> --json
 node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --fixtures <fixtures> --bindings <owner-reviewed-bindings> --documents <owner-selected-document-sources> --out <new-generated-workspace> --json
+node scripts/cagent/prepare-packets.mjs --catalog <catalog> --mapping <mapping> --extensions <owner-reviewed-extension-packets> --out <new-extension-workspace> --json
 bun scripts/cagent/check-packet.mjs --workspace <workspace> --operation <operation> --node <absolute-node> --kit-digest <workspace-digest> --json
 bun scripts/cagent/finalize-adapter.mjs --workspace <workspace> --node <absolute-node> --kit-digest <workspace-digest> --out <new-artifact> --json
 \`\`\`

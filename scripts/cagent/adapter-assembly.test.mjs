@@ -121,11 +121,12 @@ test('rejects invalid, duplicate, over-limit extensions and mixed aggregate byte
   await assert.rejects(assembleAdapter([], Array.from({ length: AGENT_EXTENSION.MAX_ACTIONS + 1 }, (_, i) => extension(`cagent.test.${i}`))), AssemblyError);
   const padded = (actionID) => {
     const base = 'export function createExtension() { /* */ return () => 1; }';
-    const target = 15 * 1024 * 1024;
+    const target = Math.floor(ASSEMBLY.LIMIT.TOTAL_BYTES / 8);
     return extension(actionID, base.replace('/* */', `/*${'x'.repeat(target - Buffer.byteLength(base))}*/`));
   };
   await assert.rejects(assembleAdapter([source(AGENT_OPERATION.GET_SESSION)],
-    Array.from({ length: 9 }, (_, i) => padded(`cagent.test.total${i}`))), AssemblyError);
+    Array.from({ length: 9 }, (_, i) => padded(`cagent.test.total${i}`))),
+  (error) => error instanceof AssemblyError && error.code === ASSEMBLY.ERROR.INPUT);
   await assert.rejects(assembleAdapter([], [extension('cagent.test.invalid', 'export function createOperation() {}')]), AssemblyError);
 });
 

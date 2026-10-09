@@ -1,6 +1,5 @@
 import type { AgentArtifactManifest } from './artifacts.js';
-import type { AgentOperation } from './dispatcher.js';
-import type { AgentPacket, AgentPacketResult } from './packet-runner.js';
+import type { AgentPacket, AgentPacketID, AgentPacketResult } from './packet-runner.js';
 
 /** Maintainer-owned directories and checks. Candidate code cannot supply this composition. */
 export function createAgentPacketWorkspace(options: {
@@ -8,4 +7,4 @@ export function createAgentPacketWorkspace(options: {
   progressDirectory: string;
   manifest: AgentArtifactManifest;
   packets: readonly AgentPacket[];
-}): Readonly<{ run(operation: AgentOperation): Promise<AgentPacketResult> }>;
+}): Readonly<{ run(operation: AgentPacketID): Promise<AgentPacketResult> }>;

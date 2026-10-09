@@ -117,6 +117,26 @@ test('standalone bundle runs outside checkout without installed dependencies and
       '--kit-digest', calibrated.digest, '--node', node, '--trial-record', trialRecord]);
     assert.equal(calibratedResult.assignment, 'bounded-codec');
     assert.equal(calibratedResult.activation, 'unavailable');
+    const extraFixtures = { version: 1, actionID: extensionManifest.actionID, manifest: extensionManifest, cases: [{ id: 'completed',
+      input: { workspaceID: 'space', requestID: 'request-1', values: { query: 'hello' } }, identity: fixtures.getSession.cases[0].identity,
+      exchanges: [{ request: { method: 'POST', path: '/synthetic/action', body: { query: 'hello' } },
+        outcome: { kind: 'response', response: { status: 200, body: { text: 'hello' } } } }],
+      expected: { kind: 'result', result: { result: { text: 'hello' }, receipt: { requestID: 'request-1', state: 'complete' } } },
+    }] };
+    await fs.writeFile(path.join(root, 'extensions.json'), JSON.stringify({ manifests: [extensionManifest], fixtures: { [extensionManifest.actionID]: extraFixtures } }));
+    const extraWorkspace = path.join(root, 'extra-workspace');
+    const extraPrepared = run(node, 'prepare-packets', ['--catalog', path.join(root, 'extension-catalog.json'),
+      '--mapping', path.join(root, 'extension-mapping.json'), '--fixtures', path.join(root, 'fixtures.json'),
+      '--extensions', path.join(root, 'extensions.json'), '--out', extraWorkspace]);
+    await fs.copyFile(path.join(workspace, 'candidate/getSession/handler.mjs'), path.join(extraWorkspace, 'candidate/getSession/handler.mjs'));
+    await fs.writeFile(path.join(extraWorkspace, 'candidate/cagent.sample/handler.mjs'), `export function createExtension(context) {
+      return async (input, identity) => { const response = await context.request({ method: 'POST', path: '/synthetic/action', body: { query: input.values.query } }, identity);
+        return { result: response.body, receipt: { requestID: input.requestID, state: 'complete' } }; }; }`);
+    assert.equal(run(process.execPath, 'check-packet', ['--workspace', extraWorkspace, '--operation', 'cagent.sample', '--node', node, '--kit-digest', extraPrepared.digest]).ok, true);
+    const extraOutput = path.join(root, 'extra-output');
+    const extraFinalized = run(process.execPath, 'finalize-adapter', ['--workspace', extraWorkspace, '--node', node, '--kit-digest', extraPrepared.digest, '--out', extraOutput]);
+    assert.equal(extraFinalized.extensions, 1);
+    assert.equal(extraFinalized.activation, 'unavailable');
     assert.equal(await fs.stat(path.join(root, 'node_modules')).then(() => true, () => false), false);
     await fs.appendFile(path.join(protectedRoot, 'START-HERE.md'), 'tampered');
     const results = [];

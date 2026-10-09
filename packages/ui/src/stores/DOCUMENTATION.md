@@ -15,6 +15,8 @@ remain available on OC1. OC2 package updates use the exact reported target
 and refresh the inventory after installation; config entries keep their
 `sourcePath` so relative local specs resolve against the declaring file.
 
+Skill catalog installation preserves committed/skipped entries in failed responses. It records the error and returns the progress without applying or reloading after failure. Runtime ownership and replacement checks belong to the server installer; VS Code keeps its separate host implementation.
+
 Not all state in the UI belongs here.
 
 Use a store when state is:

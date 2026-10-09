@@ -361,7 +361,7 @@ export const useSkillsCatalogStore = create<SkillsCatalogState>()(
           if (!response.ok || !payload.ok) {
             const error = payload.error || ({ kind: 'unknown', message: 'Failed to install skills' } as SkillsInstallError);
             set({ lastInstallError: error });
-            return { ok: false, error };
+            return { ...payload, ok: false, error };
           }
 
           invalidateSkillsLoadCache(currentDirectory);

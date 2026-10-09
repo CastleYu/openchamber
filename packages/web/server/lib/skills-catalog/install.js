@@ -4,7 +4,10 @@ import path from 'path';
 
 import { assertGitAvailable, looksLikeAuthError, runGit } from './git.js';
 import { parseSkillRepoSource } from './source.js';
+import { AGENT_ERROR } from '../agent/constants.js';
 import { OPENCODE_CONFIG_DIR } from '../opencode/shared.js';
+
+const INSTALL_DIR = Object.freeze({ PREFIX: '.openchamber-skill-', STAGED: 'skill', BACKUP: 'backup' });
 
 const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 
@@ -139,7 +142,9 @@ export async function installSkillsFromRepository({
   selections,
   conflictPolicy,
   conflictDecisions,
+  assertCurrent = () => {},
 } = {}) {
+  assertCurrent();
   const gitCheck = await assertGitAvailable();
   if (!gitCheck.ok) {
     return { ok: false, error: gitCheck.error };
@@ -226,6 +231,8 @@ export async function installSkillsFromRepository({
       return { ok: false, error: { kind: 'networkError', message: msg || 'Failed to clone repository' } };
     }
 
+    assertCurrent();
+
     // Selective checkout for only requested skill dirs.
     await runGit(['-C', tempBase, 'sparse-checkout', 'init', '--cone'], { identity, timeoutMs: 15_000 });
     const setResult = await runGit(['-C', tempBase, 'sparse-checkout', 'set', ...requestedDirs], { identity, timeoutMs: 30_000 });
@@ -269,22 +276,51 @@ export async function installSkillsFromRepository({
         continue;
       }
 
-      if (exists && decision === 'overwrite') {
-        await safeRm(targetDir);
-      }
-
-      // Ensure project parent directories exist
-      await ensureDir(path.dirname(targetDir));
-
+      let scratch;
+      let backup;
+      let committed = false;
       try {
-        await copyDirectoryNoSymlinks(srcDir, targetDir);
+        assertCurrent();
+        // Keep preparation outside the recursively scanned skill collection.
+        fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+        scratch = fs.mkdtempSync(path.join(path.dirname(path.dirname(targetDir)), INSTALL_DIR.PREFIX));
+        const staged = path.join(scratch, INSTALL_DIR.STAGED);
+        backup = path.join(scratch, INSTALL_DIR.BACKUP);
+        await copyDirectoryNoSymlinks(srcDir, staged);
+        assertCurrent();
+
+        // No async work between the identity check and replacement.
+        if (fs.existsSync(targetDir)) {
+          if (!exists && conflictPolicy !== 'overwriteAll' && conflictDecisions?.[plan.skillName] !== 'overwrite') {
+            throw new Error('Skill target appeared during installation; retry with a conflict decision');
+          }
+          fs.renameSync(targetDir, backup);
+        }
+        try {
+          fs.renameSync(staged, targetDir);
+        } catch (error) {
+          if (fs.existsSync(backup)) {
+            try {
+              fs.renameSync(backup, targetDir);
+            } catch {
+              throw new Error('Skill replacement failed; original files remain at ' + backup);
+            }
+          }
+          throw error;
+        }
+        committed = true;
         installed.push({ skillName: plan.skillName, scope, source: targetSource === 'agents' ? 'agents' : 'opencode' });
       } catch (error) {
-        await safeRm(targetDir);
+        if (error.statusCode === 409) {
+          return { ok: false, installed, skipped, error: { kind: AGENT_ERROR.CHANGED, message: error.message + (installed.length ? '. Installed before the change: ' + installed.map(item => item.skillName).join(', ') : '') } };
+        }
         skipped.push({
           skillName: plan.skillName,
           reason: error instanceof Error ? error.message : 'Failed to copy skill files',
         });
+      } finally {
+        // Preserve the backup if restoration itself failed.
+        if (scratch && (committed || !fs.existsSync(backup))) await safeRm(scratch);
       }
     }
 

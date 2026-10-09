@@ -1,3 +1,4 @@
+import type { AGENT_ERROR } from '../../../../web/server/lib/agent/constants.js';
 import type { WorktreeMetadata } from '@/types/worktree';
 import type { DesktopSettings } from '@/lib/settings/registry';
 
@@ -1674,7 +1675,7 @@ export type SkillsInstallError = SkillsRepoScanError | {
   kind: 'conflicts';
   message: string;
   conflicts: Array<{ skillName: string; scope: 'user' | 'project'; source?: 'opencode' | 'agents' }>;
-};
+} | { kind: typeof AGENT_ERROR.CHANGED; message: string };
 
 export interface SkillsInstallResponse {
   ok: boolean;

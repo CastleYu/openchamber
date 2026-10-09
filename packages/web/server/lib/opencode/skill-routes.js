@@ -3,6 +3,7 @@ import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
 import { buildDeferredRestartResponse } from './config-mutation-response.js';
 import { OPENCODE_CONFIG_DIR } from './shared.js';
+import { AGENT_ERROR } from '../agent/constants.js';
 import { createOpenCodeFamilyGuard } from './family-guard.js';
 
 /**
@@ -566,6 +567,7 @@ export const registerSkillRoutes = (app, dependencies) => {
 
       assertCurrent(req);
       const result = await installSkillsFromRepository({
+        assertCurrent: () => assertCurrent(req),
         source,
         subpath,
         identity,
@@ -579,6 +581,9 @@ export const registerSkillRoutes = (app, dependencies) => {
       });
 
       if (!result.ok) {
+        if (result.error?.kind === AGENT_ERROR.CHANGED) {
+          return res.status(409).json(result);
+        }
         if (result.error?.kind === 'conflicts') {
           return res.status(409).json({ ok: false, error: result.error });
         }

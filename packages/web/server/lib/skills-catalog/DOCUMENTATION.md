@@ -40,7 +40,11 @@ The following functions are exported and used by the web server:
 - `scanSkillsRepository({ source, subpath, defaultSubpath, identity })`: Scan git repository for skills by cloning and analyzing SKILL.md files. Returns array of skill items with metadata.
 
 ### Git Repository Installation (`install.js`)
-- `installSkillsFromRepository({ source, subpath, defaultSubpath, identity, scope, targetSource, workingDirectory, userSkillDir, selections, conflictPolicy, conflictDecisions })`: Install skills from git repository. Supports user/project scopes, opencode/agents targets, conflict resolution (prompt/skipAll/overwriteAll), and sparse checkout for efficiency.
+- `installSkillsFromRepository({ source, subpath, defaultSubpath, identity, scope, targetSource, workingDirectory, userSkillDir, selections, conflictPolicy, conflictDecisions, assertCurrent })`: Install skills from git repository. Supports user/project scopes, opencode/agents targets, conflict resolution (prompt/skipAll/overwriteAll), and sparse checkout for efficiency.
+
+The optional synchronous assertCurrent precondition belongs to the calling runtime. Skill routes supply a captured generation/profile/endpoint/epoch and backend family/revision check. Copies are prepared outside the recursively scanned skill collection, then the precondition runs before synchronous replacement. If the collection is on a separate mounted filesystem, rename failure preserves the old target and reports the skipped install. A failed copy preserves the old target; a failed replacement restores the backup. If restoration fails, the backup remains and the skipped reason reports its path. Successful replacement removes the backup during cleanup. Temporary-directory cleanup remains best-effort.
+
+A changed owner during preparation returns ok: false, error kind backend-changed, and earlier committed/skipped entries; the route maps it to HTTP 409. Earlier completed installs remain committed. The error message names them so clients do not mistake the whole batch for zero progress. Other clients may omit the precondition and retain existing behavior. VS Code uses its own installer. These checks do not activate production profile selection.
 
 ## Internal Helpers
 
@@ -83,7 +87,7 @@ The following functions are internal helpers used by exported functions:
 - `ok`: Boolean indicating success.
 - `installed`: Array of installed skills with `{ skillName, scope, source }`.
 - `skipped`: Array of skipped skills with `{ skillName, reason }`.
-- `error`: Error object with `{ kind, message, conflicts? }` on failure. Kinds: `authRequired`, `networkError`, `conflicts`, `invalidSource`, `unknown`.
+- `error`: Error object with `{ kind, message, conflicts? }` on failure. Kinds: `authRequired`, `networkError`, `conflicts`, `invalidSource`, `unknown`, `backend-changed`.
 
 ### Parse Source Response
 - `ok`: Boolean indicating success.

@@ -470,3 +470,11 @@ VS Code webview 收到宿主 connecting、disconnected 或 error 状态时，现
 通过：85 项配置测试、23 项事件流准入／领域测试、49 项隔离 SDK／同步源／重连回归、最终 8 项事件流测试、69 项宿主事件流测试及 22 项翻译测试。全工作区类型／lint、最终 UI 类型和 Web／VS Code 构建通过。已审查既有 lint／anti-slop 诊断，本轮新增行无诊断。真实鉴权 OC2 2.0.20 宿主通过 SSE 及 WebSocket 同伴重启／同步源替换、React 连接确认和已配置归属恢复流程。这是模拟浏览器环境中的生产宿主检查，不代表原生 UI 或真实 CAgent 验收。精简证据：artifacts/int02-admission-evidence.json 及 int02-admission-live-evidence.json。
 
 进程及路径核对后清理失效隔离目录和一次性修改脚本；证据记录字节数、保留产物及下一清理节点。R1 仍待完整共享 webview／桥接／编辑器流程、更广运行时验收及 Windows 控制台闪现观察。批次开始时周额度剩余 36%。远端分支与冻结 CA-02 Release 不变。
+
+## R1 原生编辑器恢复检查点，2026-10-10
+
+真实 Windows VS Code 编辑器 webview 复现了冷启动空白页：SyncProvider 在未绑定同步源时按设计返回空内容，恢复控件也位于该树内。VSCodeApp 现于准入提供同步源之前，在同步树外复用 StartupInitializationRecovery。聊天与 Agent Manager 均可确认首次连接或恢复不可用连接。Web、Electron 及移动端保留既有主应用恢复流程。延迟桥接及 SSE 启动／停止响应仅回传给仍在注册的所属面板；成功保存设置后的广播在面板关闭后仍执行。未新增状态归属方、依赖或持久化格式。
+
+隔离的已安装 VS Code 加载当前生产 webview，通过真实扩展管理器／面板与 OC2 2.0.20 执行 30 项检查，覆盖冷启动候选选择、显式确认、准入描述符、编辑器会话切换、原生编辑器选区附件、会话创建／读取／删除、不可达目标拒绝，以及在界面重新确认后恢复先前连接。这是原生 webview／桥接／编辑器证据；未执行模型请求、真实 CAgent 或精确 Legacy 对话。UI 及 VS Code 宿主／webview 类型检查、两个文件的 ESLint、VS Code 构建、既有 5 项组件测试（139 个断言）与 11 项面板／路由／HTML 测试通过。原生退出未报告向已销毁 webview 回包。Anti-slop 保留 14 项原有诊断，新增行无诊断；已检查非阻断 dead-code 清单。
+
+证据：artifacts/int02-editor-webview-evidence.json。确认夹具进程退出后，清理记录写入 artifacts/int02-editor-webview-cleanup.json。可复用原生驱动、精简证据及当前生产构建保留至 R1 收尾。R1 仍待其余跨端／同伴检查及 Windows 控制台闪现观察。已核对进程、归属及重解析点，并删除 9 个失效原生测试目录，释放 297896710 字节。批次开始时实时周额度剩余 36%，收尾时剩余 35%；未修改远端分支或冻结 Release。

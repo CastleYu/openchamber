@@ -253,13 +253,17 @@ export class SessionEditorPanelProvider {
 
       if (message.type === 'api:sse:start') {
         const response = await this._startSseProxy(message, state);
-        state.panel.webview.postMessage(response);
+        if (this._panels.get(panelId) === state) {
+          state.panel.webview.postMessage(response);
+        }
         return;
       }
 
       if (message.type === 'api:sse:stop') {
         const response = await this._stopSseProxy(message, state);
-        state.panel.webview.postMessage(response);
+        if (this._panels.get(panelId) === state) {
+          state.panel.webview.postMessage(response);
+        }
         return;
       }
 
@@ -267,7 +271,9 @@ export class SessionEditorPanelProvider {
         manager: this._openCodeManager,
         context: this._context,
       });
-      state.panel.webview.postMessage(response);
+      if (this._panels.get(panelId) === state) {
+        state.panel.webview.postMessage(response);
+      }
 
       if (message.type === 'api:config/settings:save' && response.success) {
         void vscode.commands.executeCommand('openchamber.internal.settingsSynced', response.data);

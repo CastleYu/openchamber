@@ -43,6 +43,8 @@ An explicit managed upstream rebind closes global and directory WebSockets with 
 
 ## VS Code confirmed connection ownership
 
+Without an admitted sync source, VS Code renders the existing startup connection recovery outside SyncProvider. Chat and Agent Manager must remain able to confirm a first connection and explicitly restore the previous configured connection after failure. Admission alone enables the live sync subtree.
+
 VS Code does not own the browser queues. Its activity and confirmation responses report queue unknown with observedCount 0, which does not establish an empty queue. Web and Electron report known counts from their loaded host-owned queue. Hosted and Capacitor mobile observe their selected host. Shared confirmation parsing and rendering preserve this distinction. The foreground queue now captures the configured target at enqueue and the host enforces it at dispatch. Unstamped, changed and unavailable targets remain held. Each VS Code webview retires its shared SDK/configuration binding on an unavailable host status and rediscovers after connected, rejecting old health and catalog completions even behind the same URL. Peer-wide coordination and the full shared webview/bridge/editor journey remain R1 acceptance gates.
 
 The extension host composes the existing connection discovery, confirmation and SDK activity owners. Its dedicated bridge handles discovery, activity, prepare, apply and previous-target requests before the generic OpenCode proxy. Ordinary settings writes reject connection changes. Connection commits and ordinary settings writes serialize in the host; ordinary writes preserve the latest confirmed record. A commit saves the previous record before atomically replacing settings. Malformed settings reject the write.

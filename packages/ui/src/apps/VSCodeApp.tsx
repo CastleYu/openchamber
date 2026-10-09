@@ -33,6 +33,7 @@ import { useConfigStore } from '@/stores/useConfigStore';
 import { SyncAppEffects } from './AppEffects';
 import { useAppFontEffects } from './useAppFontEffects';
 import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
+import { StartupInitializationRecovery } from './StartupInitializationRecovery';
 
 type VSCodePanelType = 'chat' | 'agentManager';
 
@@ -48,6 +49,7 @@ type VSCodeAppProps = {
 
 export function VSCodeApp({ apis }: VSCodeAppProps) {
   const syncSource = useOpenCodeSource();
+  const [isRetrying, setRetrying] = React.useState(false);
   const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
   const error = useSessionUIStore((state) => state.error);
   const clearError = useSessionUIStore((state) => state.clearError);
@@ -144,6 +146,25 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
     const timeout = window.setTimeout(() => clearError(), 5000);
     return () => window.clearTimeout(timeout);
   }, [clearError, error]);
+
+  if (!syncSource) {
+    return (
+      <ErrorBoundary>
+        <RuntimeAPIProvider apis={apis}>
+          <TooltipProvider delayDuration={300} skipDelayDuration={150}>
+            <StartupInitializationRecovery
+              isRetrying={isRetrying}
+              onRetry={() => {
+                setRetrying(true);
+                void useConfigStore.getState().initializeApp().finally(() => setRetrying(false));
+              }}
+            />
+            <Toaster position="top-center" />
+          </TooltipProvider>
+        </RuntimeAPIProvider>
+      </ErrorBoundary>
+    );
+  }
 
   if (panelType === 'agentManager') {
     return (

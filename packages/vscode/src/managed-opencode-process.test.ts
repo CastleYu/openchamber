@@ -136,3 +136,44 @@ test('failed startup excludes child stdout and stderr from diagnostics', async (
     await fs.rm(cwd, { recursive: true, force: true });
   }
 });
+
+test('failed Windows termination retains ownership and allows explicit retry', { skip: process.platform !== 'win32' }, async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-close-retry-'));
+  const registry = path.join(cwd, 'registry');
+  const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+  const previousPath = process.env.PATH;
+  process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+  const server = spawnManagedOpenCodeProcess(process.execPath, ['-e', "process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setInterval(() => {}, 1000);"], {
+    cwd, env: process.env, port: 45678, timeoutMs: 3000,
+    signal: new AbortController().signal, sourceBinary: process.execPath, appBundleHint: '',
+  });
+  let pid: number | undefined;
+  try {
+    await server.ready;
+    const entries = await fs.readdir(registry);
+    assert.equal(entries.length, 1);
+    pid = Number(path.basename(entries[0], '.json'));
+    process.env.PATH = cwd;
+    try {
+      await assert.rejects(server.close(), { code: 'ENOENT' });
+    } finally {
+      process.env.PATH = previousPath;
+    }
+    assert.equal(alive(pid), true, 'failed termination retains the live process');
+    assert.deepEqual(await fs.readdir(registry), entries, 'failed termination retains ownership');
+    await Promise.all([server.close(), server.close()]);
+    assert.equal(alive(pid), false);
+    assert.deepEqual(await fs.readdir(registry), []);
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH;
+    else process.env.PATH = previousPath;
+    await server.close().catch(() => {});
+    if (pid && alive(pid)) {
+      process.kill(pid, 'SIGKILL');
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+    await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  }
+});

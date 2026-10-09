@@ -20,7 +20,7 @@ export function spawnManagedOpenCodeProcess(
       await registration;
       await owned.terminate();
       await unregisterManagedProcess(owned.child.pid);
-    })();
+    })().catch((error) => { closing = null; throw error; });
     return closing;
   };
   let url: string | null = null;

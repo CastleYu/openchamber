@@ -58,7 +58,7 @@ export function spawnOwnedProcess(binary: string, args: string[], options: Pick<
         signalGroup('SIGKILL');
       }
       if (!await waitForClose(1000)) throw new Error('Owned process did not close after termination');
-    })();
+    })().catch((error) => { termination = null; throw error; });
     return termination;
   };
   return { child, closed, terminate };

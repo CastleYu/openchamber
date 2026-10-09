@@ -43,6 +43,8 @@ The extension host composes the existing connection discovery, confirmation and 
 
 The manager retires its owned process before saving and starting the confirmed replacement. External servers remain externally owned. Explicit commands preserve their literal arguments, cwd and environment references. Native OC1 and OC2 readiness prefixes are accepted. Native VS Code settings are unconfirmed discovery candidates with their original keys. VS Code has no bundled executable; unavailable modes remain visible as unavailable. Windows batch shims, failure recovery and client queue coordination still require acceptance. Neither a successful native executable check nor a build closes those gates.
 
+Failed owned-process termination retains the handle and registry entry, sets the manager to error and retires its resolved kernel. Replacement startup remains blocked until an explicit stop retry succeeds. A failed close releases only its rejected in-flight promise so that retry can perform termination again; successful and concurrent closes remain idempotent.
+
 ## Existing architecture and target model
 
 The current product already has `opencodeClient`, UI `v1/` and `v2/` operations, server `kernel-operations.js`, a runtime descriptor, generation-specific config/auth/plugin owners and runtime-epoch checks. OC1 uses the SDK namespace `@opencode-ai/sdk/v2`; that name does not mean OpenCode 2.x. OC2 uses `@opencode/client`.

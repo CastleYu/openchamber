@@ -962,8 +962,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
         throw new Error('Server started but URL is missing');
       }
     } catch (err) {
-      await server?.close();
-      server = null;
+      await closeOwnedServer();
       if (startup.signal.aborted) {
         setStatus('disconnected');
         return;
@@ -994,12 +993,21 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     }
   }
 
-  async function stopInternal(): Promise<void> {
-    kernelRuntime.invalidate();
-    if (server) {
+  async function closeOwnedServer(): Promise<void> {
+    if (!server) return;
+    try {
       await server.close();
       server = null;
+    } catch (error) {
+      setStatus('error', error instanceof Error ? error.message : String(error));
+      kernelRuntime.invalidate();
+      throw error;
     }
+  }
+
+  async function stopInternal(): Promise<void> {
+    kernelRuntime.invalidate();
+    await closeOwnedServer();
 
     managedApiUrlOverride = null;
     detectedPort = null;

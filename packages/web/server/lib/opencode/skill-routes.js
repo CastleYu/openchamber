@@ -55,7 +55,7 @@ export const registerSkillRoutes = (app, dependencies) => {
     getProfile,
   } = dependencies;
 
-  app.use('/api/config/skills', createOpenCodeFamilyGuard(getBackendSelection));
+  app.use('/api/config/skills', createOpenCodeFamilyGuard(getBackendSelection, () => kernelRuntime?.get()));
 
   const findWorktreeRootForSkills = (workingDirectory) => {
     if (!workingDirectory) return null;
@@ -176,7 +176,7 @@ export const registerSkillRoutes = (app, dependencies) => {
       }
 
       const current = kernelRuntime.get();
-      if (current.generation !== runtime.generation || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
+      if (current.generation !== runtime.generation || current.profile !== runtime.profile || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
         throw Object.assign(new Error('OpenCode runtime changed during skill discovery'), { code: 'runtime-changed' });
       }
 
@@ -215,7 +215,7 @@ export const registerSkillRoutes = (app, dependencies) => {
         .filter(Boolean);
     } catch (error) {
       const current = kernelRuntime.get();
-      if (current.generation !== runtime.generation || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
+      if (current.generation !== runtime.generation || current.profile !== runtime.profile || current.endpoint !== runtime.endpoint || current.epoch !== runtime.epoch) {
         throw Object.assign(new Error('OpenCode runtime changed during skill discovery'), { code: 'runtime-changed' });
       }
       if (runtime.generation === 'oc2' || error?.code === 'runtime-changed') throw error;

@@ -4,6 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { createServer } from 'node:http';
+import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerSkillRoutes } from './skill-routes.js';
 import {
   createSkill,
@@ -304,7 +305,7 @@ describe('skill-routes directory soft fallback', () => {
     expect((await detail.json()).exists).toBe(true);
   });
 
-  it('does not present a stale OC2 skill response as a current listing', async () => {
+  it.each(['epoch', 'profile'])('does not present an OC2 skill response as current after a %s change', async (identity) => {
     projectRoot = createTempProject();
     let release;
     const waiting = new Promise((resolve) => { release = resolve; });
@@ -317,11 +318,13 @@ describe('skill-routes directory soft fallback', () => {
       res.end(JSON.stringify({ location: { directory: projectRoot }, data: [] }));
     });
     let epoch = 1;
-    const kernelRuntime = { get: () => ({ generation: 'oc2', endpoint: kernelHandle.endpoint, epoch }) };
+    let profile = OPENCODE_PROFILE.OC2;
+    const kernelRuntime = { get: () => ({ generation: 'oc2', profile, endpoint: kernelHandle.endpoint, epoch }) };
     appHandle = startSkillsApp({ projectRoot, kernelRuntime });
     const pending = fetch(`${appHandle.baseUrl}/api/config/skills`);
     await startedPromise;
-    epoch = 2;
+    if (identity === 'epoch') epoch = 2;
+    else profile = undefined;
     release();
     const response = await pending;
     expect(response.status).toBe(500);

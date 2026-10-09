@@ -272,6 +272,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     };
     registerConfigEntityRoutes(app, {
       getGeneration: generation,
+      getKernelRuntime: kernelRuntime.get,
       getBackendSelection,
       resolveProjectDirectory,
       resolveOptionalProjectDirectory,

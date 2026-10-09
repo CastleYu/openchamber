@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerOpenCodeRoutes } from './routes.js';
 
 describe('OpenChamber kernel discovery route', () => {
@@ -11,6 +12,15 @@ describe('OpenChamber kernel discovery route', () => {
     const current = await request(app).get('/api/opencode/version').expect(200);
     expect(health.body).toEqual({ healthy: true });
     expect(current.body).toEqual({ version });
+  });
+
+  it('keeps Legacy health and version diagnostics available without admitting operations', async () => {
+    const app = express();
+    const descriptor = { generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY, version: '1.2.27' };
+    registerOpenCodeRoutes(app, { kernelRuntime: { get: () => descriptor, refresh: async () => descriptor } });
+    await request(app).get('/api/opencode/health').expect(200, { healthy: true });
+    await request(app).get('/api/opencode/version').expect(200, { version: '1.2.27' });
+    await request(app).put('/api/provider').send({}).expect(501);
   });
 
   it('keeps an unknown generation unhealthy', async () => {
@@ -79,13 +89,18 @@ describe('provider mutation protocol ownership', () => {
     expect(result.body.requiresRestart).toBe(generation === 'oc1' ? true : undefined);
   });
 
-  it('rejects a mutation after the selected connection changes', async () => {
+  it.each(['epoch', 'profile'])('rejects a provider mutation after the selected %s changes', async (identity) => {
     let epoch = 1;
+    let profile = OPENCODE_PROFILE.OC2;
     let writes = 0;
     const app = express();
     registerOpenCodeRoutes(app, {
-      kernelRuntime: { get: () => ({ generation: 'oc2', epoch }) },
-      resolveProjectDirectory: async () => { epoch += 1; return { directory: '/repo' }; },
+      kernelRuntime: { get: () => ({ generation: 'oc2', profile, epoch }) },
+      resolveProjectDirectory: async () => {
+        if (identity === 'epoch') epoch += 1;
+        else profile = undefined;
+        return { directory: '/repo' };
+      },
       removeProviderConfig: () => { writes += 1; return true; },
     });
     await request(app).delete('/api/provider/example/auth?scope=user').expect(409);

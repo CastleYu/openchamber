@@ -10,7 +10,7 @@ import { getClaudeCliAuthStatus } from './claude-cli-auth.js';
 import { OPENCODE_CONFIG_DIR, readConfigLayers as readLegacyConfigLayers } from './shared.js';
 import { readConfigLayers as readCurrentConfigLayers } from './shared-v2.js';
 import { settingsSurfaceOf } from './settings-files.js';
-import { OPENCODE_GENERATION } from './compatibility.js';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './compatibility.js';
 import { createOpenCodeFamilyGuard } from './family-guard.js';
 import { parseWebSearchSelection, readStoredProviderEntry } from './config-v2.js';
 import { getWebSearchSource, setWarmingEnabled, setWebSearchSelection } from './websearch-config.js';
@@ -41,7 +41,8 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     fsPromises = fs.promises,
   } = dependencies;
 
-  const requireOpenCode = createOpenCodeFamilyGuard(getBackendSelection);
+  const requireFamily = createOpenCodeFamilyGuard(getBackendSelection);
+  const requireOpenCode = createOpenCodeFamilyGuard(getBackendSelection, () => kernelRuntime?.get());
 
   const authLibraries = new Map();
   const selectedKernel = () => {
@@ -49,11 +50,14 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     if (selected.generation !== OPENCODE_GENERATION.OC1 && selected.generation !== OPENCODE_GENERATION.OC2) {
       throw Object.assign(new Error('OpenCode runtime is not ready for provider settings'), { statusCode: 503 });
     }
+    if (selected.profile === OPENCODE_PROFILE.LEGACY) {
+      throw Object.assign(new Error('OpenCode Legacy provider operations are not yet accepted'), { statusCode: 501 });
+    }
     return selected;
   };
   const assertSelectedKernel = (selected) => {
     const current = selectedKernel();
-    if (current.generation !== selected.generation || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+    if (current.generation !== selected.generation || current.profile !== selected.profile || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
       throw Object.assign(new Error('OpenCode runtime changed during provider settings request'), { statusCode: 409 });
     }
   };
@@ -270,7 +274,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/config/opencode-resolution', requireOpenCode, async (_req, res) => {
+  app.get('/api/config/opencode-resolution', requireFamily, async (_req, res) => {
     try {
       const settings = await readSettingsFromDiskMigrated();
       const resolution = await getOpenCodeResolutionSnapshot(settings);
@@ -435,7 +439,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/opencode/health', requireOpenCode, async (_req, res) => {
+  app.get('/api/opencode/health', requireFamily, async (_req, res) => {
     try {
       if (kernelRuntime) {
         const descriptor = await kernelRuntime.refresh();
@@ -463,7 +467,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.get('/api/opencode/version', requireOpenCode, async (_req, res) => {
+  app.get('/api/opencode/version', requireFamily, async (_req, res) => {
     try {
       const current = await readOpenCodeCurrentVersion();
       if (!current.ok) {
@@ -768,6 +772,7 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
 
       const { getProviderAuth } = await getAuthLibrary(selected);
       const hasStoredAuth = (selected.generation === OPENCODE_GENERATION.OC2 && req.body?.hasCredential === true) || Boolean(await getProviderAuth(providerID));
+      assertSelectedKernel(selected);
       const upsertResult = upsertProviderConfig(providerID, config, directory, scope, { hasStoredAuth });
 
       return res.json({

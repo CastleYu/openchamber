@@ -6,6 +6,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
   const {
     getGeneration = () => 'oc1',
     getBackendSelection,
+    getKernelRuntime,
     resolveProjectDirectory,
     resolveOptionalProjectDirectory,
     getAgentSources,
@@ -34,7 +35,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
   app.use(
     ['/api/config/agents', '/api/config/commands', '/api/config/mcp'],
-    createOpenCodeFamilyGuard(getBackendSelection),
+    createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime),
     (_req, res, next) => {
       const generation = getGeneration();
       if (generation !== OPENCODE_GENERATION.OC1 && generation !== OPENCODE_GENERATION.OC2) {

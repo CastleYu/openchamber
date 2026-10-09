@@ -5,6 +5,7 @@ import os from 'os';
 import path from 'path';
 import request from 'supertest';
 
+import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerPluginRoutes } from './plugin-routes.js';
 
 let projectDir;
@@ -444,6 +445,18 @@ describe('opencode plugin routes', () => {
     const current = createApp({
       getKernelRuntime: () => ({ generation: 'oc2', epoch }),
       resolveOptionalProjectDirectory: async () => { epoch += 1; return { directory: projectDir }; },
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(409);
+    expect(writes).toHaveLength(0);
+  });
+
+  test('a profile-only change during directory resolution blocks plugin mutation', async () => {
+    let profile = OPENCODE_PROFILE.OC1;
+    const writes = [];
+    const current = createApp({
+      getKernelRuntime: () => ({ generation: 'oc1', profile, epoch: 1 }),
+      resolveOptionalProjectDirectory: async () => { profile = OPENCODE_PROFILE.LEGACY; return { directory: projectDir }; },
       createPluginEntry: (value) => writes.push(value),
     });
     await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(409);

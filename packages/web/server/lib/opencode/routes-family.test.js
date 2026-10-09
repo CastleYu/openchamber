@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerOpenCodeRoutes } from './routes.js';
 
 const guardedRoutes = [
@@ -67,6 +68,26 @@ const createGuardedApp = (getBackendSelection) => {
 };
 
 describe('OpenCode route family boundary', () => {
+  it.each(guardedRoutes.filter(([, route]) => !['/api/config/opencode-resolution', '/api/opencode/health', '/api/opencode/version'].includes(route)))('%s %s rejects unaccepted Legacy before route work', async (method, route) => {
+    const { app, calls, dependencies, fsPromises } = createGuardedApp(() => ({ family: AGENT_FAMILY.OPENCODE }));
+    calls.get.mockReturnValue({ generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY });
+    const response = await request(app)[method](route).send({ state: 'state', path: '/tmp/project' }).expect(501, {
+      error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY,
+    });
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(calls.refresh).not.toHaveBeenCalled();
+    expect(dependencies.buildOpenCodeUrl).not.toHaveBeenCalled();
+    expect(dependencies.getOpenCodeAuthHeaders).not.toHaveBeenCalled();
+    for (const spy of Object.values(fsPromises)) expect(spy).not.toHaveBeenCalled();
+  });
+  it('keeps OpenCode resolution diagnostics available under Legacy', async () => {
+    const { app, calls, dependencies } = createGuardedApp(() => ({ family: AGENT_FAMILY.OPENCODE }));
+    calls.get.mockReturnValue({ generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY });
+    dependencies.readSettingsFromDiskMigrated.mockResolvedValue({});
+    dependencies.getOpenCodeResolutionSnapshot.mockReturnValue({ profile: OPENCODE_PROFILE.LEGACY });
+    await request(app).get('/api/config/opencode-resolution').expect(200, { profile: OPENCODE_PROFILE.LEGACY });
+    expect(calls.get).not.toHaveBeenCalled();
+  });
   it.each(guardedRoutes)('%s %s rejects CAgent before route work', async (method, route) => {
     const selection = { family: AGENT_FAMILY.CAGENT, revision: 1 };
     const { app, calls, fsPromises } = createGuardedApp(() => selection);

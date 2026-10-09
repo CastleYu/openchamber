@@ -209,3 +209,9 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 基于 271ad8997 的转发准备已在 Web/Electron 代理探测前缀之前，以及异步就绪/目录处理之后，加入 Legacy 默认拒绝。覆盖普通 HTTP、会话写入、SSE 和交互式 OAuth 转发。在代理之前注册的 OpenChamber 自有路由仍可使用。直接 SSE 的身份检查包含 profile，仅 profile 变化后的迟到上游响应不会产生旧帧。VS Code 公共请求解析器在构造转发 URL 前拒绝 Legacy，完成检查也包含 profile；普通请求、消息、SSE、活动与 Git 辅助调用共用此入口。托管移动端及 Capacitor 继承所连接宿主的规则。这些检查不会启用生产 profile 选择，也不代表 Legacy 操作已获支持。宿主启用前仍需盘点配置写入与后台调用并加入相应检查。
 
 2026-10-09 验证：22 项代理测试及 6 项 VS Code 解析器测试通过，包含拒绝请求不执行前缀/就绪/凭据/传输操作，以及真实回环 SSE 迟到响应。工作区类型检查与 lint 通过，保留 5 条既有警告。扩展宿主构建通过，保留 credential-db 的既有 CJS import.meta 警告；不宣称扩展运行时或真实 relay 验收。Anti-slop 报告 33 条既有诊断，与 HEAD 规则计数相同。JavaScript 语法与差异检查通过；dead-code 仍为 2 个未使用文件、319 项导出及 231 个类型。INT-01 继续进行中。
+
+基于 76e76e718 的配置准备扩展现有 family 守卫，增加可选运行时 getter。明确但尚未验收的 Legacy profile 会在路由依赖执行前拒绝 Agent、Command、MCP、插件、Skill、Provider、OAuth 上下文及升级操作。生产配置实体注册已传入 getter，插件与 Skill 使用既有描述符所有者。CAgent family 拒绝仍早于描述符访问。OpenChamber 设置、片段、运行时发现、模式解析、健康与版本诊断保持独立，不代表操作准入。Provider、插件写入及 Skill 结果检查包含 profile，Provider 保存前再检查身份。Web 与 Electron 共用服务端规则，托管移动端及 Capacitor 继承宿主；VS Code 本地配置仍需单独覆盖。
+
+2026-10-09 验证：9 个配置、family、目录、运行时、升级、插件、Skill 与 WebSearch 测试文件中的 128 项测试通过。覆盖拒绝时不执行路由依赖、动态 profile 变化、插件/Provider 模式变化后零写入、Skill 迟到结果及 Legacy 诊断。工作区类型检查/lint、JavaScript 语法与差异检查通过，保留 5 条既有 lint 警告。Anti-slop 保留 33 条既有诊断，HEAD 规则计数一致。Dead-code 保留 2 个未使用文件、319 项导出及 231 个类型。未新增依赖。
+
+启用生产 profile 前，补齐配置实体与 Skill 磁盘写入在异步目录解析期间的身份检查。完成 VS Code 本地配置检查，并结合生产依赖注入检查 auth.js 凭据读取、routing/runtime.js 的历史读取回退及 openchamber-control/service.js 的直连客户端路径。多数后台调用使用核心操作层，但此观察不等于完整直连审计。选择控件、诊断及当前 OC1/OC2 真实探测仍待完成。INT-01 继续进行中，本检查点不修改已发布的 CA-02 预览。

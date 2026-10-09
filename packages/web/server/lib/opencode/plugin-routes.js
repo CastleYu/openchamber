@@ -34,7 +34,7 @@ export const registerPluginRoutes = (app, dependencies) => {
     isPathSpec = defaultIsPathSpec,
   } = dependencies;
 
-  app.use('/api/config/plugins', createOpenCodeFamilyGuard(getBackendSelection));
+  app.use('/api/config/plugins', createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime));
 
   const parsedKindForSpec = (spec) => (isPathSpec(spec) ? 'path' : 'npm');
   const requestKernels = new WeakMap();
@@ -57,7 +57,7 @@ export const registerPluginRoutes = (app, dependencies) => {
   const completePluginMutation = async (res, operation, _noun, applyChange) => {
     const selected = requestKernels.get(res);
     const current = getKernelRuntime();
-    if (!selected || selected.generation !== current.generation || selected.endpoint !== current.endpoint || selected.epoch !== current.epoch) {
+    if (!selected || selected.generation !== current.generation || selected.profile !== current.profile || selected.endpoint !== current.endpoint || selected.epoch !== current.epoch) {
       return res.status(409).json({ error: 'OpenCode changed during plugin configuration' });
     }
     applyChange();

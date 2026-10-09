@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerConfigEntityRoutes } from './config-entity-routes.js';
 import { registerPluginRoutes } from './plugin-routes.js';
 import { registerSkillRoutes } from './skill-routes.js';
@@ -10,7 +11,7 @@ const fail = (name) => vi.fn(() => { throw new Error(`Unexpected ${name} call`);
 
 const createDependencies = (getBackendSelection, overrides = {}) => {
   const calls = {};
-  const dependencies = new Proxy({ getBackendSelection, getGeneration: () => 'oc1', ...overrides }, {
+  const dependencies = new Proxy({ getBackendSelection, getGeneration: () => 'oc1', getKernelRuntime: () => ({ generation: 'oc1' }), ...overrides }, {
     get(target, name) {
       if (name in target) return target[name];
       if (!(name in calls)) calls[name] = fail(String(name));
@@ -35,6 +36,47 @@ const entityCases = [
 ];
 
 describe('OpenCode configuration family boundary', () => {
+  it.each([
+    [registerConfigEntityRoutes, 'get', '/api/config/agents/a'],
+    [registerConfigEntityRoutes, 'post', '/api/config/agents/a'],
+    [registerConfigEntityRoutes, 'get', '/api/config/commands/c'],
+    [registerConfigEntityRoutes, 'post', '/api/config/commands/c'],
+    [registerConfigEntityRoutes, 'get', '/api/config/mcp'],
+    [registerConfigEntityRoutes, 'post', '/api/config/mcp/m'],
+    [registerPluginRoutes, 'get', '/api/config/plugins'],
+    [registerPluginRoutes, 'post', '/api/config/plugins/entry'],
+    [registerPluginRoutes, 'get', '/api/config/plugins/registry?specs=package'],
+    [registerSkillRoutes, 'get', '/api/config/skills'],
+    [registerSkillRoutes, 'post', '/api/config/skills/scan'],
+    [registerSkillRoutes, 'post', '/api/config/skills/install'],
+  ])('refuses unaccepted Legacy configuration before route dependencies', async (register, method, route) => {
+    const getKernelRuntime = () => ({ generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY });
+    const { app, calls } = createApp(register, () => ({ family: AGENT_FAMILY.OPENCODE }), {
+      getKernelRuntime, kernelRuntime: { get: getKernelRuntime },
+    });
+    const response = await request(app)[method](route).send({ scope: 'user', content: 'test' }).expect(501, {
+      error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY,
+    });
+    expect(response.headers['cache-control']).toBe('no-store');
+    for (const call of Object.values(calls)) expect(call).not.toHaveBeenCalled();
+  });
+  it('reads profile on every configuration request while keeping snippets independent', async () => {
+    let profile = OPENCODE_PROFILE.OC1;
+    const getAgentSources = vi.fn(() => ({ md: { exists: false }, json: { exists: false } }));
+    const { app } = createApp(registerConfigEntityRoutes, () => ({ family: AGENT_FAMILY.OPENCODE }), {
+      getKernelRuntime: () => ({ generation: 'oc1', profile }),
+      resolveProjectDirectory: async () => ({ directory: '/tmp/project', error: null }),
+      resolveOptionalProjectDirectory: async () => ({ directory: null, error: null }),
+      getAgentSources, listSnippets: () => [{ name: 'hello' }],
+    });
+    await request(app).get('/api/config/agents/a').expect(200);
+    profile = OPENCODE_PROFILE.LEGACY;
+    await request(app).get('/api/config/agents/a').expect(501);
+    await request(app).get('/api/config/snippets').expect(200, [{ name: 'hello' }]);
+    profile = OPENCODE_PROFILE.OC1;
+    await request(app).get('/api/config/agents/a').expect(200);
+    expect(getAgentSources).toHaveBeenCalledTimes(2);
+  });
   it.each(entityCases)('%s reads and mutations refuse CAgent before dependencies', async (_name, readMethod, readPath, writeMethod, writePath) => {
     const getGeneration = fail('getGeneration');
     const { app, calls } = createApp(registerConfigEntityRoutes, () => ({ family: AGENT_FAMILY.CAGENT }), { getGeneration });

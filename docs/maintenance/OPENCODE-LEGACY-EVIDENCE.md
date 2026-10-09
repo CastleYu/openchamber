@@ -1,6 +1,6 @@
 # Legacy 1.2.27 evidence checkpoint
 
-Updated 2026-10-09 at OpenChamber base `ca43c5a01`. INT-00L is in progress. This checkpoint records exact source/schema evidence and 27 checks against the official executable. Remaining conversation and disposal-scope gates stay open. The temporary CAgent Release is already delivered. Continue from the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md).
+Updated 2026-10-09 at OpenChamber base `ca43c5a01`. INT-00L passed as a contract preflight; full Legacy application acceptance remains in INT-03 and later gates. This checkpoint records exact source/schema evidence and 27 checks against the official executable. The controlled conversation and active-directory scope evidence is recorded below. The temporary CAgent Release is already delivered. Continue from the [milestone queue](OPENCODE-INTEGRATION-MILESTONES.md).
 
 ## Pinned origin
 
@@ -30,7 +30,17 @@ The complete ZIP matched the published digest. Extracted executable SHA-256 is `
 
 Local artifacts are `artifacts/legacy-1.2.27/run-SIvnhx/identity.json` and `fixtures.json`. The 27 checks cover health rejection/acceptance, path/project/catalog reads, session create/get/update/history, a stored `noReply` user message without a model call, a completed echo shell, invalid prompt input, missing session, initial SSE connection, directory disposal and global disposal. Create/update success discarded the supplied metadata. Directory B remained readable after disposing A; this does not prove its existing streams or active approvals survive.
 
-Before accepting INT-00L, capture controlled model completion, pending permission/question replies, nonempty diff and active two-directory disposal/recovery. Establish any deduplication or outcome-lookup guarantee from evidence. Empty decision lists and initial SSE do not accept those operations. The dedicated Legacy profile stays disabled until its implementations pass the later gates.
+The final controlled-provider run captured 45 HTTP requests, 252 events and 11 local model requests. The [sanitized wire evidence](evidence/2026-10-09-legacy-contracts.json) preserves request/response shapes and selected event ordinals. It proves streamed text completion and stored history, prompt_async 204 acceptance followed by completed history, pending bash permission and question replies, a completed file edit, nonempty diff, MessageAbortedError after stop, and directory disposal/rebootstrap. While disposing A, B retained a pending approval and its existing stream delivered the approval reply and completed work. This tests API contracts through the official executable with a controlled local provider; it does not measure a real model or accept the OpenChamber Legacy UI.
+
+Reproduce on Windows with Node, Git and the verified executable at `<fixture-root>/bin/opencode.exe`:
+
+`node scripts/legacy-contract-probe.mjs <fixture-root>`
+
+The harness verifies the executable digest, creates its own Git projects and data directories, and cleans up only its child server and local provider sockets. Read result.json together with fixtures.json; nonemptyDiff must be true. Syntax and authored-file oxlint pass. The required dead-code report completes without flagging this script; it retains repository-wide unused-file/export findings.
+
+Two earlier instant tool-output runs edited the file before the first recorded step-start snapshot and returned an empty diff. Waiting for the observed step-start before emitting the controlled tool produced the recorded full diff. This timing limit remains an upstream acceptance case for INT-04/INT-10, rather than a guarantee that all tool streams produce diffs.
+
+The pinned schema exposes messageID and message/history reads, but no separate idempotency-key, retention or request-outcome lookup guarantee was established. Treat interrupted mutation outcomes as unknown and do not automatically resend. Replay/reconnect, attachments, advanced operations, config/plugins/MCP, profile selection and host parity retain their later gates. The dedicated Legacy profile stays disabled until its implementations pass.
 
 
 ## Probe correction scope

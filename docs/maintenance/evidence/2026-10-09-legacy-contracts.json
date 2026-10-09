@@ -1,0 +1,2014 @@
+{
+  "date": "2026-10-09",
+  "sourceCommit": "4ee426ba549131c4903a71dfb6259200467aca81",
+  "version": "1.2.27",
+  "exeSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "harnessSha256": "627e2110a7b0478ec10a607eb8a2b2fcb98e147142fcb74444bb1fa549298191",
+  "model": "controlled loopback OpenAI-compatible fixture, not a real model",
+  "checks": [
+    "text",
+    "history",
+    "async-acceptance-and-completion",
+    "permission",
+    "question",
+    "file-write",
+    "stop",
+    "stream",
+    "directory-disposal"
+  ],
+  "nonemptyDiff": true,
+  "captured": {
+    "requests": 45,
+    "events": 252,
+    "modelCalls": 11
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/global/health",
+      "directory": "a",
+      "status": 200,
+      "response": {
+        "healthy": true,
+        "version": "1.2.27"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": []
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+        "slug": "mighty-comet",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [],
+        "time": {
+          "created": 1791529925047,
+          "updated": 1791529925047
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ec648ffeCMQvF1a0KVEH7r/message",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_TEXT"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529925188,
+            "completed": 1791529926621
+          },
+          "parentID": "msg_11f8139d3001RgP83ks0XlWYfV",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\a",
+            "root": "<isolated-root>\\a"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_11f813a44001wf0J9l3hoC0K7c",
+          "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "id": "prt_11f813d79001UdjqBdfoKKrvkx",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+            "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+          },
+          {
+            "type": "text",
+            "text": "LEGACY_COMPLETED",
+            "time": {
+              "start": 1791529926014,
+              "end": 1791529926014
+            },
+            "id": "prt_11f813d7b001Nvfp5ZottF7LDp",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+            "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_11f813d82001V0g6upQssHER4B",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+            "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec648ffeCMQvF1a0KVEH7r/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529925075
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f8139d3001RgP83ks0XlWYfV",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f8139d4001Zou2NWfSR4YJ6P",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f8139d3001RgP83ks0XlWYfV"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529925188,
+              "completed": 1791529926621
+            },
+            "parentID": "msg_11f8139d3001RgP83ks0XlWYfV",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_11f813a44001wf0J9l3hoC0K7c",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "id": "prt_11f813d79001UdjqBdfoKKrvkx",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791529926014,
+                "end": 1791529926014
+              },
+              "id": "prt_11f813d7b001Nvfp5ZottF7LDp",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_11f813d82001V0g6upQssHER4B",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": []
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07ec00bffeHq0AemVjtucAw5",
+        "slug": "jolly-cabin",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [],
+        "time": {
+          "created": 1791529926644,
+          "updated": 1791529926644
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/prompt_async",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_TEXT"
+          }
+        ]
+      },
+      "status": 204,
+      "response": null
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": []
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": []
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": []
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "id": "prt_11f814158001aZnhT04j4DYrZB",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791529927003,
+                "end": 1791529927003
+              },
+              "id": "prt_11f814159001KTKXsE2E5Kks0C",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "id": "prt_11f814158001aZnhT04j4DYrZB",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791529927003,
+                "end": 1791529927003
+              },
+              "id": "prt_11f814159001KTKXsE2E5Kks0C",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec00bffeHq0AemVjtucAw5/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529926655
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f813fff002AKSpDUqpK0kgZd",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f813fff001mf5ZhHKHBSUgHG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529926662
+            },
+            "parentID": "msg_11f813fff001mf5ZhHKHBSUgHG",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_11f814006001Z2fAi7JjhEu2BU",
+            "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "id": "prt_11f814158001aZnhT04j4DYrZB",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791529927003,
+                "end": 1791529927003
+              },
+              "id": "prt_11f814159001KTKXsE2E5Kks0C",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_11f81415c001C2q4QVp6Lorc34",
+              "sessionID": "ses_ee07ec00bffeHq0AemVjtucAw5",
+              "messageID": "msg_11f814006001Z2fAi7JjhEu2BU"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": [
+          {
+            "permission": "bash",
+            "pattern": "*",
+            "action": "ask"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+        "slug": "calm-circuit",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [
+          {
+            "permission": "bash",
+            "pattern": "*",
+            "action": "ask"
+          }
+        ],
+        "time": {
+          "created": 1791529927275,
+          "updated": 1791529927275
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "id": "per_11f8143eb001NdaajezHUPJtTN",
+          "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+          "permission": "bash",
+          "patterns": [
+            "echo LEGACY_APPROVED"
+          ],
+          "metadata": {},
+          "always": [
+            "echo *"
+          ],
+          "tool": {
+            "messageID": "msg_11f814278001tSnm2g6ecSIyx7",
+            "callID": "call_3"
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/permission/per_11f8143eb001NdaajezHUPJtTN/reply",
+      "directory": "a",
+      "request": {
+        "reply": "once"
+      },
+      "status": 200,
+      "response": true
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ebd94ffeVgKNdr7tj1n9hL/message",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_PERMISSION"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529928335,
+            "completed": 1791529929091
+          },
+          "parentID": "msg_11f814273001IH7LFJZ0XlozcK",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\a",
+            "root": "<isolated-root>\\a"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_11f81468f001ZBLnOunJqBnztC",
+          "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "id": "prt_11f8147a40012cPEjI5lHK5CzH",
+            "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+            "messageID": "msg_11f81468f001ZBLnOunJqBnztC"
+          },
+          {
+            "type": "text",
+            "text": "LEGACY_COMPLETED",
+            "time": {
+              "start": 1791529928614,
+              "end": 1791529928614
+            },
+            "id": "prt_11f8147a5001N8ydgd5r48DDWp",
+            "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+            "messageID": "msg_11f81468f001ZBLnOunJqBnztC"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_11f8147a70014WJfyQ0q2LOTp5",
+            "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+            "messageID": "msg_11f81468f001ZBLnOunJqBnztC"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": []
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+        "slug": "sunny-star",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [],
+        "time": {
+          "created": 1791529929100,
+          "updated": 1791529929100
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/question",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/question",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/question",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/question",
+      "directory": "a",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/question",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "id": "que_11f814af3001mQ81RtLysHx3vg",
+          "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+          "questions": [
+            {
+              "question": "Choose probe answer",
+              "header": "Probe",
+              "options": [
+                {
+                  "label": "Yes",
+                  "description": "Continue probe"
+                },
+                {
+                  "label": "No",
+                  "description": "Stop probe"
+                }
+              ]
+            }
+          ],
+          "tool": {
+            "messageID": "msg_11f81499f001tpQQL43lVPzN90",
+            "callID": "call_5"
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/question/que_11f814af3001mQ81RtLysHx3vg/reply",
+      "directory": "a",
+      "request": {
+        "answers": [
+          [
+            "Yes"
+          ]
+        ]
+      },
+      "status": 200,
+      "response": true
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07eb673ffexvMm2H5MdBDeA4/message",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_QUESTION"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529930046,
+            "completed": 1791529930755
+          },
+          "parentID": "msg_11f814999001ihbdHqyjGyfxYP",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\a",
+            "root": "<isolated-root>\\a"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_11f814d3e001cOIXxgNFyNvssw",
+          "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "id": "prt_11f814e3d001Z1bIXVhlf5JrlM",
+            "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+            "messageID": "msg_11f814d3e001cOIXxgNFyNvssw"
+          },
+          {
+            "type": "text",
+            "text": "LEGACY_COMPLETED",
+            "time": {
+              "start": 1791529930303,
+              "end": 1791529930303
+            },
+            "id": "prt_11f814e3e001P08TEJZHlqQ84l",
+            "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+            "messageID": "msg_11f814d3e001cOIXxgNFyNvssw"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_11f814e3f0011KDb5e6sCudB8Q",
+            "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+            "messageID": "msg_11f814d3e001cOIXxgNFyNvssw"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": []
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+        "slug": "stellar-orchid",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [],
+        "time": {
+          "created": 1791529930762,
+          "updated": 1791529930762
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07eaff5ffejIWY38FAQTZl7I/message",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_EDIT"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529931611,
+            "completed": 1791529932366
+          },
+          "parentID": "msg_11f815011001x2q5Hl4Y16kqR1",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\a",
+            "root": "<isolated-root>\\a"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_11f81535b001JrENGrJSLgLRHS",
+          "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "9f24ec46d7d3bcc5ee42bff0b8d83c8e54046c54",
+            "id": "prt_11f81546c001ywfLqWk2GZAx2M",
+            "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+            "messageID": "msg_11f81535b001JrENGrJSLgLRHS"
+          },
+          {
+            "type": "text",
+            "text": "LEGACY_COMPLETED",
+            "time": {
+              "start": 1791529931886,
+              "end": 1791529931886
+            },
+            "id": "prt_11f81546c002yFQmhYLaqZiNeX",
+            "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+            "messageID": "msg_11f81535b001JrENGrJSLgLRHS"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "9f24ec46d7d3bcc5ee42bff0b8d83c8e54046c54",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_11f81546e001Sf5cgS9I9q60ju",
+            "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+            "messageID": "msg_11f81535b001JrENGrJSLgLRHS"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07eaff5ffejIWY38FAQTZl7I/diff",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "file": "created.txt",
+          "before": "",
+          "after": "after\n",
+          "additions": 1,
+          "deletions": 0,
+          "status": "added"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "a",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": []
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07ea9a1ffesHieeSp5f6J6d6",
+        "slug": "quiet-meadow",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\a",
+        "title": "Controlled Legacy conversation",
+        "permission": [],
+        "time": {
+          "created": 1791529932382,
+          "updated": 1791529932382
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ea9a1ffesHieeSp5f6J6d6/abort",
+      "directory": "a",
+      "status": 200,
+      "response": true
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ea9a1ffesHieeSp5f6J6d6/message",
+      "directory": "a",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_HOLD"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529932394,
+            "completed": 1791529932909
+          },
+          "error": {
+            "name": "MessageAbortedError",
+            "data": {
+              "message": "The operation was aborted."
+            }
+          },
+          "parentID": "msg_11f8156660017CDYpnt7QwTbP7",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\a",
+            "root": "<isolated-root>\\a"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "id": "msg_11f81566a001ruxOmogOMGDcif",
+          "sessionID": "ses_ee07ea9a1ffesHieeSp5f6J6d6"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "9f24ec46d7d3bcc5ee42bff0b8d83c8e54046c54",
+            "id": "prt_11f81577d0017RRnQkkOXE5yLU",
+            "sessionID": "ses_ee07ea9a1ffesHieeSp5f6J6d6",
+            "messageID": "msg_11f81566a001ruxOmogOMGDcif"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/session",
+      "directory": "b",
+      "request": {
+        "title": "Controlled Legacy conversation",
+        "permission": [
+          {
+            "permission": "bash",
+            "pattern": "*",
+            "action": "ask"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "id": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+        "slug": "stellar-cabin",
+        "version": "1.2.27",
+        "projectID": "067d9622b24674e34e0913614ffc81c93d297153",
+        "directory": "<isolated-root>\\b",
+        "title": "Controlled Legacy conversation",
+        "permission": [
+          {
+            "permission": "bash",
+            "pattern": "*",
+            "action": "ask"
+          }
+        ],
+        "time": {
+          "created": 1791529932918,
+          "updated": 1791529932918
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": [
+        {
+          "id": "per_11f8159f1001Zu8ZKmZa3S3q98",
+          "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+          "permission": "bash",
+          "patterns": [
+            "echo LEGACY_APPROVED"
+          ],
+          "metadata": {},
+          "always": [
+            "echo *"
+          ],
+          "tool": {
+            "messageID": "msg_11f8158a2001QKBLU0G09HPZIH",
+            "callID": "call_10"
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/instance/dispose",
+      "directory": "a",
+      "status": 200,
+      "response": true
+    },
+    {
+      "method": "GET",
+      "path": "/permission",
+      "directory": "b",
+      "status": 200,
+      "response": [
+        {
+          "id": "per_11f8159f1001Zu8ZKmZa3S3q98",
+          "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+          "permission": "bash",
+          "patterns": [
+            "echo LEGACY_APPROVED"
+          ],
+          "metadata": {},
+          "always": [
+            "echo *"
+          ],
+          "tool": {
+            "messageID": "msg_11f8158a2001QKBLU0G09HPZIH",
+            "callID": "call_10"
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/permission/per_11f8159f1001Zu8ZKmZa3S3q98/reply",
+      "directory": "b",
+      "request": {
+        "reply": "once"
+      },
+      "status": 200,
+      "response": true
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_ee07ea789ffexkoTHcIMx1n3Pp/message",
+      "directory": "b",
+      "request": {
+        "agent": "build",
+        "model": {
+          "providerID": "legacy-probe",
+          "modelID": "probe"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "LEGACY_PERMISSION"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791529934201,
+            "completed": 1791529934989
+          },
+          "parentID": "msg_11f815884001WzgdQEF02v05MC",
+          "modelID": "probe",
+          "providerID": "legacy-probe",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "<isolated-root>\\b",
+            "root": "<isolated-root>\\b"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_11f815d79001qMlLqBGNYEgbgw",
+          "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "id": "prt_11f815e880018nihaNWhoWOOv4",
+            "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+            "messageID": "msg_11f815d79001qMlLqBGNYEgbgw"
+          },
+          {
+            "type": "text",
+            "text": "LEGACY_COMPLETED",
+            "time": {
+              "start": 1791529934474,
+              "end": 1791529934474
+            },
+            "id": "prt_11f815e89001eGfy9jIJYQZFcw",
+            "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+            "messageID": "msg_11f815d79001qMlLqBGNYEgbgw"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_11f815e8b001DH0SjAadkfl9yk",
+            "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+            "messageID": "msg_11f815d79001qMlLqBGNYEgbgw"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_ee07ec648ffeCMQvF1a0KVEH7r/message",
+      "directory": "a",
+      "status": 200,
+      "response": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791529925075
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_11f8139d3001RgP83ks0XlWYfV",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT",
+              "id": "prt_11f8139d4001Zou2NWfSR4YJ6P",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f8139d3001RgP83ks0XlWYfV"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791529925188,
+              "completed": 1791529926621
+            },
+            "parentID": "msg_11f8139d3001RgP83ks0XlWYfV",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "<isolated-root>\\a",
+              "root": "<isolated-root>\\a"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_11f813a44001wf0J9l3hoC0K7c",
+            "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "id": "prt_11f813d79001UdjqBdfoKKrvkx",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791529926014,
+                "end": 1791529926014
+              },
+              "id": "prt_11f813d7b001Nvfp5ZottF7LDp",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "d2718b2327643112a76b13918ce35591e8e12a17",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_11f813d82001V0g6upQssHER4B",
+              "sessionID": "ses_ee07ec648ffeCMQvF1a0KVEH7r",
+              "messageID": "msg_11f813a44001wf0J9l3hoC0K7c"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "ordinal": 69,
+      "directory": "a",
+      "payload": {
+        "type": "permission.asked",
+        "properties": {
+          "id": "per_11f8143eb001NdaajezHUPJtTN",
+          "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+          "permission": "bash",
+          "patterns": [
+            "echo LEGACY_APPROVED"
+          ],
+          "metadata": {},
+          "always": [
+            "echo *"
+          ],
+          "tool": {
+            "messageID": "msg_11f814278001tSnm2g6ecSIyx7",
+            "callID": "call_3"
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 70,
+      "directory": "a",
+      "payload": {
+        "type": "permission.replied",
+        "properties": {
+          "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+          "requestID": "per_11f8143eb001NdaajezHUPJtTN",
+          "reply": "once"
+        }
+      }
+    },
+    {
+      "ordinal": 73,
+      "directory": "a",
+      "payload": {
+        "type": "message.part.updated",
+        "properties": {
+          "part": {
+            "id": "prt_11f8143c7001Tkpv439lYTAvZ1",
+            "sessionID": "ses_ee07ebd94ffeVgKNdr7tj1n9hL",
+            "messageID": "msg_11f814278001tSnm2g6ecSIyx7",
+            "type": "tool",
+            "callID": "call_3",
+            "tool": "bash",
+            "state": {
+              "status": "completed",
+              "input": {
+                "command": "echo LEGACY_APPROVED",
+                "description": "Echo isolated probe"
+              },
+              "output": "LEGACY_APPROVED\n",
+              "title": "Echo isolated probe",
+              "metadata": {
+                "output": "LEGACY_APPROVED\n",
+                "exit": 0,
+                "description": "Echo isolated probe",
+                "truncated": false
+              },
+              "time": {
+                "start": 1791529927635,
+                "end": 1791529927850
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 112,
+      "directory": "a",
+      "payload": {
+        "type": "question.asked",
+        "properties": {
+          "id": "que_11f814af3001mQ81RtLysHx3vg",
+          "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+          "questions": [
+            {
+              "question": "Choose probe answer",
+              "header": "Probe",
+              "options": [
+                {
+                  "label": "Yes",
+                  "description": "Continue probe"
+                },
+                {
+                  "label": "No",
+                  "description": "Stop probe"
+                }
+              ]
+            }
+          ],
+          "tool": {
+            "messageID": "msg_11f81499f001tpQQL43lVPzN90",
+            "callID": "call_5"
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 115,
+      "directory": "a",
+      "payload": {
+        "type": "question.replied",
+        "properties": {
+          "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+          "requestID": "que_11f814af3001mQ81RtLysHx3vg",
+          "answers": [
+            [
+              "Yes"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "ordinal": 116,
+      "directory": "a",
+      "payload": {
+        "type": "message.part.updated",
+        "properties": {
+          "part": {
+            "id": "prt_11f814af0001R8GmdSS8aRa5PS",
+            "sessionID": "ses_ee07eb673ffexvMm2H5MdBDeA4",
+            "messageID": "msg_11f81499f001tpQQL43lVPzN90",
+            "type": "tool",
+            "callID": "call_5",
+            "tool": "question",
+            "state": {
+              "status": "completed",
+              "input": {
+                "questions": [
+                  {
+                    "question": "Choose probe answer",
+                    "header": "Probe",
+                    "options": [
+                      {
+                        "label": "Yes",
+                        "description": "Continue probe"
+                      },
+                      {
+                        "label": "No",
+                        "description": "Stop probe"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "output": "User has answered your questions: \"Choose probe answer\"=\"Yes\". You can now continue with the user's answers in mind.",
+              "title": "Asked 1 question",
+              "metadata": {
+                "answers": [
+                  [
+                    "Yes"
+                  ]
+                ],
+                "truncated": false
+              },
+              "time": {
+                "start": 1791529929459,
+                "end": 1791529929558
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 160,
+      "directory": "a",
+      "payload": {
+        "type": "message.part.updated",
+        "properties": {
+          "part": {
+            "id": "prt_11f815169001rhPvrb6wUE0jTS",
+            "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+            "messageID": "msg_11f815015001FvYnxHpNNrxM4u",
+            "type": "tool",
+            "callID": "call_7",
+            "tool": "edit",
+            "state": {
+              "status": "completed",
+              "input": {
+                "filePath": "<isolated-root>\\a\\created.txt",
+                "oldString": "",
+                "newString": "after\n"
+              },
+              "output": "Edit applied successfully.",
+              "title": "created.txt",
+              "metadata": {
+                "diagnostics": {},
+                "diff": "Index: <isolated-root>\\a\\created.txt\n===================================================================\n--- <isolated-root>\\a\\created.txt\n+++ <isolated-root>\\a\\created.txt\n@@ -0,0 +1,1 @@\n+after\n",
+                "filediff": {
+                  "file": "<isolated-root>\\a\\created.txt",
+                  "before": "",
+                  "after": "after\n",
+                  "additions": 1,
+                  "deletions": 0
+                },
+                "truncated": false
+              },
+              "time": {
+                "start": 1791529931119,
+                "end": 1791529931124
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 174,
+      "directory": "a",
+      "payload": {
+        "type": "session.diff",
+        "properties": {
+          "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+          "diff": [
+            {
+              "file": "created.txt",
+              "before": "",
+              "after": "after\n",
+              "additions": 1,
+              "deletions": 0,
+              "status": "added"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ordinal": 201,
+      "directory": "a",
+      "payload": {
+        "type": "session.diff",
+        "properties": {
+          "sessionID": "ses_ee07eaff5ffejIWY38FAQTZl7I",
+          "diff": [
+            {
+              "file": "created.txt",
+              "before": "",
+              "after": "after\n",
+              "additions": 1,
+              "deletions": 0,
+              "status": "added"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ordinal": 220,
+      "directory": "b",
+      "payload": {
+        "type": "permission.asked",
+        "properties": {
+          "id": "per_11f8159f1001Zu8ZKmZa3S3q98",
+          "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+          "permission": "bash",
+          "patterns": [
+            "echo LEGACY_APPROVED"
+          ],
+          "metadata": {},
+          "always": [
+            "echo *"
+          ],
+          "tool": {
+            "messageID": "msg_11f8158a2001QKBLU0G09HPZIH",
+            "callID": "call_10"
+          }
+        }
+      }
+    },
+    {
+      "ordinal": 223,
+      "directory": "a",
+      "payload": {
+        "type": "server.instance.disposed",
+        "properties": {
+          "directory": "<isolated-root>\\a"
+        }
+      }
+    },
+    {
+      "ordinal": 224,
+      "directory": "b",
+      "payload": {
+        "type": "permission.replied",
+        "properties": {
+          "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+          "requestID": "per_11f8159f1001Zu8ZKmZa3S3q98",
+          "reply": "once"
+        }
+      }
+    },
+    {
+      "ordinal": 227,
+      "directory": "b",
+      "payload": {
+        "type": "message.part.updated",
+        "properties": {
+          "part": {
+            "id": "prt_11f8159ee0013MUy0QR1PcL0ac",
+            "sessionID": "ses_ee07ea789ffexkoTHcIMx1n3Pp",
+            "messageID": "msg_11f8158a2001QKBLU0G09HPZIH",
+            "type": "tool",
+            "callID": "call_10",
+            "tool": "bash",
+            "state": {
+              "status": "completed",
+              "input": {
+                "command": "echo LEGACY_APPROVED",
+                "description": "Echo isolated probe"
+              },
+              "output": "LEGACY_APPROVED\n",
+              "title": "Echo isolated probe",
+              "metadata": {
+                "output": "LEGACY_APPROVED\n",
+                "exit": 0,
+                "description": "Echo isolated probe",
+                "truncated": false
+              },
+              "time": {
+                "start": 1791529933298,
+                "end": 1791529933716
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "No real model quality acceptance",
+    "No application or cross-host Legacy profile acceptance",
+    "No verified replay, idempotency or automatic retry guarantee",
+    "Instant tool output produced empty diff before its first snapshot; sequential step-start fixture produced the recorded nonempty diff"
+  ]
+}

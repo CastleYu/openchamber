@@ -1,6 +1,6 @@
 # Legacy 1.2.27 证据检查点
 
-更新于 2026-10-09，OpenChamber 基线为 `ca43c5a01`。INT-00L 正在执行。本检查点记录准确源码／schema 及官方程序的 27 项检查。完整对话和清理作用域门槛仍未关闭。CAgent 临时 Release 已交付。后续遵循[里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)。
+更新于 2026-10-09，OpenChamber 基线为 `ca43c5a01`。INT-00L 契约预检已通过；完整 Legacy 应用验收仍由 INT-03 及后续门槛负责。本检查点记录准确源码／schema 及官方程序的 27 项检查。受控对话和活动目录作用域证据见下文。CAgent 临时 Release 已交付。后续遵循[里程碑队列](OPENCODE-INTEGRATION-MILESTONES.md)。
 
 ## 固定来源
 
@@ -30,7 +30,17 @@
 
 本地证据位于 `artifacts/legacy-1.2.27/run-SIvnhx/identity.json` 和 `fixtures.json`。27 项检查覆盖健康鉴权、路径／项目／目录读取、会话创建／读取／更新／历史、不调用模型的 noReply 用户消息存储、echo shell 完成、无效提示输入、缺失会话、初始 SSE、目录及全局清理。创建／更新成功但丢弃传入 metadata。清理 A 后 B 仍能读取，这不能证明 B 的既有流或活动审批未受影响。
 
-关闭 INT-00L 前仍需受控模型完成、真实待审批权限／问题答复、非空 diff，以及双目录活动清理／恢复证据。去重和结果查询保证必须另行证实。空决策列表与初始 SSE 不代表这些操作通过验收。专用 Legacy profile 在后续实现验收前保持禁用。
+最终受控接口运行采集 45 次 HTTP 请求、252 个事件和 11 次本地模型请求。[脱敏协议证据](../evidence/2026-10-09-legacy-contracts.json) 保留请求／响应结构及选定事件序号。已验证流式文本完成及历史存储、prompt_async 204 接收后历史完成、待审批 bash 权限及问题答复、文件修改、非空 diff、停止后的 MessageAbortedError，以及目录清理／重新初始化。清理 A 时，B 的待审批请求保留，既有流继续收到答复事件并完成任务。这里使用官方程序及受控本地接口验证 API 契约，不代表真实模型质量或 OpenChamber Legacy UI 已验收。
+
+Windows 复现需要 Node、Git，以及位于 `<fixture-root>/bin/opencode.exe` 的已验证程序：
+
+`node scripts/legacy-contract-probe.mjs <fixture-root>`
+
+脚本验证程序摘要，创建自己的 Git 项目与数据目录，仅清理自己的子服务器和本地接口连接。须同时检查 result.json 和 fixtures.json，nonemptyDiff 必须为 true。语法与修改文件 oxlint 通过。必需的 dead-code 检查未标记本脚本，仍报告仓库原有未使用文件／导出。
+
+此前两次瞬时工具输出在首个 step-start 快照前修改文件，返回空 diff。等观察到 step-start 再发出受控工具调用后，取得记录中的完整差异。此时序限制留作 INT-04／INT-10 上游验收用例，不能保证任意工具流都有 diff。
+
+固定 schema 提供 messageID 和消息／历史读取，但未建立独立幂等键、保留期或请求结果查询保证。中断写操作按结果未知处理，不自动重发。重放／重连、附件、高级操作、配置／插件／MCP、兼容配置选择及宿主一致性保留后续门槛。专用 Legacy profile 在实现验收前保持禁用。
 
 
 ## 探测修正范围

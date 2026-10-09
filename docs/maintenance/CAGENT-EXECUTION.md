@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: verified host principal isolation
+## Latest checkpoint: protected finite extension dispatch
+
+2026-10-09. Protected registrations now carry detached frozen extension manifests and handlers. Independent approval binds each action's ID, revision and canonical manifest digest alongside existing server/connection/artifact identity. Old approvals grant no extension. Enumeration and dispatch use the verified principal gate; unknown actions, undeclared context and malformed finite values are refused. Mutations reserve durable intent, require matching receipts and retain unknown outcomes without replay. Revocation before handler entry records not-sent.
+
+Host authority, schemas, HTTP routes and attempt storage have 183 distinct passing focused tests, including six extension dispatch cases. Eight finite-contract/offline bundle tests pass with an actual standalone Node journey. Changed source passes anti-slop and ESLint. Workspace type-check and lint pass with five existing lint warnings. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate, without a CAgent row. The browser contract build and 54 relative documentation links pass. Synthetic results do not establish actual CAgent APIs, local model performance or target permissions.
+
+The ignored refreshed bundle `artifacts/cagent-offline-extension-dispatch-20261009` has ten commands and 94 protected files. Its bundled Node verifier passes independent digest `37cb221f322fc6f1502ea7244ecb3127360f284394ca3c4a018669987438d309`; rebuilding from the final source yields the same digest. Adapter assembly for extra actions and shared UI controls/renderers remain required. CA-01, CA-02 and CA-03 stay incomplete; production support is closed. Real environment acceptance, independent remote publication and temporary Release are still outstanding, and other INT work waits for CA-03. Live weekly quota is 60% remaining.
+
+## Earlier checkpoint: verified host principal isolation
 
 2026-10-09. The host derives an opaque principal from a verified trusted-client ID or password session. Explicit bearer failure never falls back to a cookie, and URL tokens cannot establish this principal. Runtime, feature, dispatch and attempt routes require this scope. Body-supplied identity cannot select another principal. The informational selection route remains outside this additional requirement.
 

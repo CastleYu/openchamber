@@ -21,8 +21,9 @@ const column = z.object({ key, label, required: z.boolean(), value: scalar }).st
 const fields = (schema) => z.array(schema).max(AGENT_EXTENSION.MAX_FIELDS)
   .refine((items) => new Set(items.map((item) => item.key)).size === items.length
     && new Set(items.map((item) => item.label.key)).size === items.length);
+export const extensionActionIDSchema = z.string().max(87).regex(/^cagent\.[A-Za-z0-9][A-Za-z0-9._-]{0,78}$/);
 export const extensionManifestSchema = z.object({ version: z.literal(AGENT_EXTENSION.VERSION),
-  actionID: z.string().max(87).regex(/^cagent\.[A-Za-z0-9][A-Za-z0-9._-]{0,78}$/), revision: id, label,
+  actionID: extensionActionIDSchema, revision: id, label,
   context: z.object({ workspace: z.boolean(), session: z.boolean() }).strict()
     .refine((scope) => !scope.session || scope.workspace),
   effect: z.enum(Object.values(AGENT_EXTENSION.EFFECT)), authorization: z.literal('current-principal'),

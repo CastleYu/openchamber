@@ -6,6 +6,7 @@ import { AgentDispatchError } from './dispatcher.js';
 import { AgentFeatureError } from './features.js';
 import { AgentTransportError } from './transport.js';
 import { agentBackendSelectionSchema, agentFeatureSnapshotSchema, agentDispatchRequestSchema as requestSchema, agentAttemptRequestSchema as attemptSchema, agentRuntimeSchema } from './schemas.js';
+import { agentExtensionRequestSchema } from './extension-runtime.js';
 const statuses = Object.freeze({
   [AGENT_ERROR.INVALID_INPUT]: 400,
   [AGENT_ERROR.UNKNOWN_OPERATION]: 400,
@@ -46,7 +47,8 @@ export const registerAgentRoutes = (app, { dispatcher, features, getSelection, r
     try { return res.json(agentBackendSelectionSchema.parse(getSelection())); }
     catch (error) { return failure(res, error); }
   });
-  app.use([AGENT_ROUTE.RUNTIME, AGENT_ROUTE.FEATURES, AGENT_ROUTE.DISPATCH, AGENT_ROUTE.ATTEMPT], async (req, res, next) => {
+  app.use([AGENT_ROUTE.RUNTIME, AGENT_ROUTE.FEATURES, AGENT_ROUTE.DISPATCH, AGENT_ROUTE.ATTEMPT,
+    AGENT_ROUTE.EXTENSIONS, AGENT_ROUTE.EXTENSION_DISPATCH], async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
       if (!resolvePrincipal) throw new AgentDispatchError(AGENT_ERROR.UNAUTHORIZED, AGENT_HOST_OPERATION.GET_BINDING);
@@ -72,6 +74,19 @@ export const registerAgentRoutes = (app, { dispatcher, features, getSelection, r
     } catch (error) {
       return failure(res, error);
     }
+  });
+
+  app.get(AGENT_ROUTE.EXTENSIONS, (_req, res) => {
+    try { return res.json(res.locals[requestContext].describeExtensions()); }
+    catch (error) { return failure(res, error); }
+  });
+  app.post(AGENT_ROUTE.EXTENSION_DISPATCH, express.json({ limit: '64kb' }), async (req, res) => {
+    const parsed = agentExtensionRequestSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: AGENT_ERROR.INVALID_INPUT });
+    try {
+      const { actionID, input, identity } = parsed.data;
+      return res.json(await res.locals[requestContext].dispatchExtension(actionID, input, identity));
+    } catch (error) { return failure(res, error); }
   });
 
   app.post(AGENT_ROUTE.DISPATCH, express.json({ limit: '64kb' }), async (req, res) => {

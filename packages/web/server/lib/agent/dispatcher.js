@@ -1,5 +1,6 @@
 import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_MUTATIONS, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AGENT_INPUT_SCHEMAS, AGENT_OUTPUT_SCHEMAS, agentIdentitySchema, agentPrincipalSchema } from './schemas.js';
+import { createAgentExtensionRuntime } from './extension-runtime.js';
 
 const operations = new Set(Object.values(AGENT_OPERATION));
 const mutations = new Set(AGENT_MUTATIONS);
@@ -52,6 +53,7 @@ const refusal = (binding, operation) => {
 
 /** A host-owned binding, never an adapter manifest, grants dispatch authority. */
 export const createAgentDispatcher = ({ getBinding, attempts }) => {
+  const extensions = createAgentExtensionRuntime({ getBinding, attempts });
   const requireOperation = (operation) => {
     if (!operations.has(operation)) throw new AgentDispatchError(AGENT_ERROR.UNKNOWN_OPERATION, operation);
   };
@@ -168,5 +170,6 @@ export const createAgentDispatcher = ({ getBinding, attempts }) => {
       },
     });
   };
-  return Object.freeze({ captureIdentity, describeRuntime, dispatch, readAttempt, forPrincipal });
+  return Object.freeze({ captureIdentity, describeRuntime, dispatch, readAttempt, forPrincipal,
+    describeExtensions: () => extensions.describe(captureIdentity()), dispatchExtension: extensions.dispatch });
 };

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AgentDispatchError, createAgentDispatcher } from './dispatcher.js';
-import { createAgentAuthority } from './authority.js';
+import { agentExtensionDigest, createAgentAuthority } from './authority.js';
 
 const digest = 'a'.repeat(64);
 const selection = (patch = {}) => ({
@@ -38,6 +38,34 @@ const approval = (patch = {}) => ({
   serverRevision: 'server-r1',
   artifactDigest: digest,
   operations: [{ operation: AGENT_OPERATION.GET_SESSION, evidence: ['host-reviewed:v1'] }],
+  ...patch,
+});
+const extensionManifest = (patch = {}) => ({
+  version: 1,
+  actionID: 'cagent.sample.lookup',
+  revision: 'r1',
+  label: { key: 'cagent.sample.lookup', en: 'Lookup', zhCN: '查询' },
+  context: { workspace: true, session: false },
+  effect: 'read',
+  authorization: 'current-principal',
+  cancellation: 'none',
+  outcome: 'observed',
+  input: [],
+  output: { kind: 'text', maxLength: 100 },
+  evidence: [{ document: 'guide', section: 'lookup' }],
+  ...patch,
+});
+const extension = (patch = {}) => ({
+  manifest: extensionManifest(),
+  capability: { state: AGENT_SUPPORT.SUPPORTED, evidence: ['tested:r1'] },
+  handler: vi.fn(async () => ({ result: { text: 'ok' } })),
+  ...patch,
+});
+const extensionApproval = (manifest = extensionManifest(), patch = {}) => ({
+  actionID: manifest.actionID,
+  revision: manifest.revision,
+  manifestDigest: agentExtensionDigest(manifest),
+  evidence: ['host-reviewed:r1'],
   ...patch,
 });
 const authorityFor = (options = {}) => {
@@ -153,6 +181,77 @@ describe('agent authority', () => {
       ], getSelection: () => null, getAcceptance: () => null })).toThrow(AgentDispatchError);
     expect(() => createAgentAuthority({ registrations: [{ ...item, handlers: { [AGENT_OPERATION.GET_SESSION]: 'bad' } },
       ], getSelection: () => null, getAcceptance: () => null })).toThrow(AgentDispatchError);
+  });
+
+  it('keeps registered extensions unaccepted without extension approval or with a legacy approval', () => {
+    for (const accepted of [null, approval()]) {
+      const item = registration({ extensions: [extension()] });
+      const authority = createAgentAuthority({ registrations: [item], getSelection: () => selection(),
+        getAcceptance: () => accepted });
+      expect(authority.getBinding().extensions).toHaveLength(1);
+      expect(authority.getBinding().extensions[0].accepted).toBe(false);
+    }
+  });
+
+  it('accepts a matching extension digest independently of core operation grants', () => {
+    const ext = extension();
+    const authority = createAgentAuthority({ registrations: [registration({ extensions: [ext] })],
+      getSelection: () => selection(), getAcceptance: () => approval({ operations: [], extensions: [extensionApproval(ext.manifest)] }) });
+    const [binding] = authority.getBinding().extensions;
+    expect(binding.accepted).toBe(true);
+    expect(binding.manifest).toEqual(ext.manifest);
+  });
+
+  it.each([
+    { revision: 'old' },
+    { manifestDigest: 'b'.repeat(64) },
+  ])('rejects an extension approval with mismatched revision or digest %j', (patch) => {
+    const ext = extension();
+    const authority = createAgentAuthority({ registrations: [registration({ extensions: [ext] })],
+      getSelection: () => selection(), getAcceptance: () => approval({ operations: [],
+        extensions: [extensionApproval(ext.manifest, patch)] }) });
+    expect(authority.getBinding().extensions[0].accepted).toBe(false);
+  });
+
+  it('detaches and deeply freezes registered extension metadata', () => {
+    const ext = extension();
+    const authority = createAgentAuthority({ registrations: [registration({ extensions: [ext] })],
+      getSelection: () => selection(), getAcceptance: () => approval({ operations: [], extensions: [extensionApproval(ext.manifest)] }) });
+    const binding = authority.getBinding().extensions[0];
+    ext.manifest.label.en = 'Changed';
+    ext.manifest.evidence[0].section = 'changed';
+    ext.capability.evidence[0] = 'changed';
+    expect(binding.manifest.label.en).toBe('Lookup');
+    expect(binding.manifest.evidence[0].section).toBe('lookup');
+    expect(binding.capability.evidence).toEqual(['tested:r1']);
+    expect(Object.isFrozen(binding.manifest.label)).toBe(true);
+    expect(Object.isFrozen(binding.manifest.evidence[0])).toBe(true);
+    expect(Object.isFrozen(binding.capability.evidence)).toBe(true);
+  });
+
+  it('rechecks extension approval and filters rows independently', () => {
+    const first = extension();
+    const second = extension({ manifest: extensionManifest({ actionID: 'cagent.sample.other' }) });
+    let accepted = approval({ operations: [], extensions: [
+      extensionApproval(first.manifest, { revision: 'old' }), extensionApproval(second.manifest),
+    ] });
+    const authority = createAgentAuthority({ registrations: [registration({ extensions: [first, second] })],
+      getSelection: () => selection(), getAcceptance: () => accepted });
+    expect(authority.getBinding().extensions.map(({ accepted: value }) => value)).toEqual([false, true]);
+    accepted = approval({ operations: [] });
+    expect(authority.getBinding().extensions.map(({ accepted: value }) => value)).toEqual([false, false]);
+  });
+
+  it('refuses duplicate extension registration and approval action IDs', () => {
+    const ext = extension();
+    expect(() => createAgentAuthority({ registrations: [registration({ extensions: [ext, ext] })],
+      getSelection: () => null, getAcceptance: () => null })).toThrow(AgentDispatchError);
+    const authority = createAgentAuthority({ registrations: [registration({ extensions: [ext] })],
+      getSelection: () => selection(), getAcceptance: () => approval({ operations: [], extensions: [
+        extensionApproval(ext.manifest), extensionApproval(ext.manifest),
+      ] }) });
+    expect(authority.getBinding().acceptance).toBeNull();
+    expect(authority.getBinding().extensions[0].accepted).toBe(false);
   });
 
   it('rejects malformed approval schemas and duplicate operation rows as no acceptance', () => {

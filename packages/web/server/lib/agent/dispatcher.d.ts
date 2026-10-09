@@ -1,4 +1,5 @@
 import { AGENT_ERROR, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_OPERATION, AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_TOOL_STATE } from './constants.js';
+import type { AgentExtensionBinding } from './authority.js';
 
 export type AgentFamily = 'opencode' | 'cagent';
 export type AgentIdentity = Readonly<{
@@ -125,6 +126,7 @@ export type AgentBinding = Readonly<{
   capabilities: Readonly<Partial<{ [K in AgentOperation]: AgentCapability }>>;
   acceptance: AgentAcceptance | null;
   handlers: AgentHandlers;
+  extensions?: readonly AgentExtensionBinding[];
 }>;
 export type AgentResult<K extends AgentOperation> = { identity: AgentIdentity; data: AgentOutputs[K] };
 export type AgentAvailability = { available: true } | {
@@ -137,6 +139,8 @@ export class AgentDispatchError extends Error {
   constructor(code: string, operation: string);
 }
 export type AgentDispatcher = {
+  describeExtensions(): import('./extension-runtime.js').AgentExtensionSnapshot;
+  dispatchExtension(actionID: string, input: JsonValue, identity: AgentIdentity): Promise<import('./extension-runtime.js').AgentExtensionResult>;
   forPrincipal(principalID: string): AgentDispatcher;
   captureIdentity(): AgentIdentity;
   describeRuntime(): AgentRuntime;

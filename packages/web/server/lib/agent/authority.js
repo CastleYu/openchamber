@@ -1,11 +1,25 @@
+import { createHash } from 'node:crypto';
 import { AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AgentDispatchError } from './dispatcher.js';
+import { extensionManifestSchema } from './extensions.js';
 import { agentApprovalSchema, agentRegistrationSchema, agentSelectionSchema } from './schemas.js';
 
 const key = (item) => JSON.stringify([
   item.family, item.adapterID, item.adapterRevision, item.capabilityRevision,
 ]);
 const refuse = (code) => new AgentDispatchError(code, AGENT_HOST_OPERATION.GET_BINDING);
+const deepFreeze = (value) => {
+  if (value === null || Object(value) !== value || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) {
+    if (child !== null && Object(child) === child) deepFreeze(child);
+  }
+  Object.freeze(value);
+  return value;
+};
+
+export const agentExtensionDigest = (manifest) => createHash('sha256')
+  .update(JSON.stringify(extensionManifestSchema.parse(manifest)))
+  .digest('hex');
 
 /** Only protected host composition supplies registrations and acceptance ports. */
 export const createAgentAuthority = ({ registrations, getSelection, getAcceptance }) => {
@@ -17,7 +31,14 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
     const capabilities = Object.freeze(Object.fromEntries(Object.entries(item.capabilities).map(([operation, value]) => [
       operation, Object.freeze({ ...value, evidence: Object.freeze([...value.evidence]) }),
     ])));
-    registry.set(key(item), Object.freeze({ ...item, capabilities, handlers: Object.freeze({ ...item.handlers }) }));
+    const extensions = item.extensions?.map(({ manifest, capability, handler }) => Object.freeze({
+      manifest: deepFreeze(manifest),
+      capability: Object.freeze({ ...capability, evidence: Object.freeze([...capability.evidence]) }),
+      handler,
+    }));
+    const registered = { ...item, capabilities, handlers: Object.freeze({ ...item.handlers }) };
+    if (extensions) registered.extensions = Object.freeze(extensions);
+    registry.set(key(item), Object.freeze(registered));
   }
 
   const getBinding = () => {
@@ -47,7 +68,19 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
       return support && (support.state === AGENT_SUPPORT.SUPPORTED || support.state === AGENT_SUPPORT.ADAPTED)
         && support.evidence.length > 0 && Object.hasOwn(adapter.handlers, item.operation);
     }).map((item) => item.operation) : null;
-    return Object.freeze({
+    const approvals = matches ? new Map(accepted.data.extensions?.map((item) => [item.actionID, item]) ?? []) : new Map();
+    const extensions = (adapter.extensions ?? []).map((item) => {
+      const acceptedExtension = approvals.get(item.manifest.actionID);
+      const capability = item.capability;
+      const supported = (capability.state === AGENT_SUPPORT.SUPPORTED || capability.state === AGENT_SUPPORT.ADAPTED)
+        && capability.evidence.length > 0;
+      return Object.freeze({
+        ...item,
+        accepted: Boolean(acceptedExtension && acceptedExtension.revision === item.manifest.revision
+          && acceptedExtension.manifestDigest === agentExtensionDigest(item.manifest) && supported),
+      });
+    });
+    const binding = {
       identity: Object.freeze({
         family: current.family, connectionID: current.connectionID, epoch: current.epoch,
         adapterRevision: current.adapterRevision, capabilityRevision: current.capabilityRevision,
@@ -60,7 +93,9 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
         adapterRevision: current.adapterRevision, capabilityRevision: current.capabilityRevision,
         operations: Object.freeze(operations),
       }),
-    });
+    };
+    if (adapter.extensions) binding.extensions = Object.freeze(extensions);
+    return Object.freeze(binding);
   };
   return Object.freeze({ getBinding });
 };

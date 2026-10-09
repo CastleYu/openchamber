@@ -4,6 +4,7 @@ import {
   AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_FEATURE, AGENT_FINISH, AGENT_MESSAGE_ERROR, AGENT_MESSAGE_STATE, AGENT_MUTATIONS, AGENT_OPERATION,
   AGENT_PART, AGENT_PERMISSION_OUTCOME, AGENT_PERMISSION_SCOPE, AGENT_ROLE, AGENT_SERVER_METHOD, AGENT_SUPPORT, AGENT_TOOL_STATE,
 } from './constants.js';
+import { extensionActionIDSchema, extensionManifestSchema } from './extensions.js';
 
 const id = z.string().min(1);
 const json = z.json();
@@ -61,6 +62,11 @@ const receipt = z.discriminatedUnion('state', [
 const resultPage = (item) => z.object({ items: z.array(item), next: z.string().optional() }).strict();
 const labelItem = z.object({ id, label: z.string() }).strict();
 
+const agentCapabilitySchema = z.object({
+  state: z.enum(Object.values(AGENT_SUPPORT)),
+  evidence: z.array(id).refine((items) => new Set(items).size === items.length), reason: id.optional(),
+}).strict();
+
 export const agentBackendSelectionSchema = z.object({
   family: z.enum([AGENT_FAMILY.OPENCODE, AGENT_FAMILY.CAGENT]),
   revision: z.number().int().nonnegative().safe(),
@@ -83,7 +89,7 @@ export const agentAttemptRequestSchema = z.object({ identity: agentIdentitySchem
 export const agentAttemptStateSchema = z.enum([AGENT_ATTEMPT.UNKNOWN, AGENT_ATTEMPT.ACCEPTED, AGENT_ATTEMPT.COMPLETE, AGENT_ATTEMPT.NOT_SENT]);
 export const agentAttemptSchema = z.object({
   version: z.literal(AGENT_ATTEMPT.VERSION), identity: agentIdentitySchema,
-  operation: agentOperationSchema.refine((operation) => AGENT_MUTATIONS.includes(operation)),
+  operation: z.union([agentOperationSchema.refine((operation) => AGENT_MUTATIONS.includes(operation)), extensionActionIDSchema]),
   requestID: id,
   state: agentAttemptStateSchema,
 }).strict();
@@ -100,15 +106,15 @@ export const agentServerResponseSchema = z.object({
   status: z.number().int().min(100).max(599), body: z.json(),
 }).strict();
 export const agentAdapterSchema = z.object({
-  capabilities: z.partialRecord(agentOperationSchema, z.object({
-    state: z.enum(Object.values(AGENT_SUPPORT)),
-    evidence: z.array(id).refine((items) => new Set(items).size === items.length), reason: id.optional(),
-  }).strict()),
+  capabilities: z.partialRecord(agentOperationSchema, agentCapabilitySchema),
   handlers: z.partialRecord(agentOperationSchema, z.function()),
 }).strict();
 export const agentRegistrationSchema = agentAdapterSchema.extend({
   adapterID: id, family: z.enum(Object.values(AGENT_FAMILY)), adapterRevision: id, capabilityRevision: id,
   artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
+  extensions: z.array(z.object({
+    manifest: extensionManifestSchema, capability: agentCapabilitySchema, handler: z.function(),
+  }).strict()).max(64).refine((items) => new Set(items.map((item) => item.manifest.actionID)).size === items.length).optional(),
 }).strict();
 export const agentSelectionSchema = agentIdentitySchema.extend({
   adapterID: id, serverRevision: id, ready: z.boolean(), authorized: z.boolean(),
@@ -132,6 +138,12 @@ export const agentApprovalSchema = z.object({
     operation: agentOperationSchema,
     evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
   }).strict()).refine((items) => new Set(items.map((item) => item.operation)).size === items.length),
+  extensions: z.array(z.object({
+    actionID: extensionActionIDSchema,
+    revision: id,
+    manifestDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
+  }).strict()).max(64).refine((items) => new Set(items.map((item) => item.actionID)).size === items.length).optional(),
 }).strict();
 export const agentRuntimeSchema = z.object({
   identity: agentIdentitySchema,

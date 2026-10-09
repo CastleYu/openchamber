@@ -3,10 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 
-import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FILE_ERROR, AGENT_MUTATIONS } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FILE_ERROR } from './constants.js';
 import { agentAttemptSchema as recordSchema, agentAttemptRequestSchema as keySchema, agentAttemptStateSchema as stateSchema } from './schemas.js';
-
-const mutations = new Set(AGENT_MUTATIONS);
 
 export class AgentAttemptError extends Error {
   constructor(code) {

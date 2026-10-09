@@ -84,6 +84,7 @@ export const AGENT_HOST_OPERATION = Object.freeze({
   CAPTURE_IDENTITY: 'captureIdentity', READ_ATTEMPT: 'readAttempt', GET_BINDING: 'getBinding',
   DESCRIBE_RUNTIME: 'describeRuntime',
   DESCRIBE_FEATURES: 'describeFeatures',
+  DESCRIBE_EXTENSIONS: 'describeExtensions',
 });
 export const AGENT_ROUTE = Object.freeze({
   PREFIX: '/api/agent-backend', RUNTIME: '/api/agent-backend/runtime',
@@ -91,6 +92,8 @@ export const AGENT_ROUTE = Object.freeze({
   ATTEMPT: '/api/agent-backend/attempt',
   FEATURES: '/api/agent-backend/features',
   SELECTION: '/api/agent-backend/selection',
+  EXTENSIONS: '/api/agent-backend/extensions',
+  EXTENSION_DISPATCH: '/api/agent-backend/extension-dispatch',
 });
 export const AGENT_OPERATION = Object.freeze({
   GET_SESSION: 'getSession', CREATE_SESSION: 'createSession', LIST_SESSIONS: 'listSessions',

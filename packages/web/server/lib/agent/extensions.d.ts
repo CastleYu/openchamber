@@ -18,6 +18,7 @@ export type ExtensionValue = string | number | boolean | (string | number | bool
 export interface ExtensionValues { [key: string]: ExtensionValue }
 export type ExtensionResult = { text: string } | { fields: ExtensionValues } | { rows: ExtensionValues[] };
 export const extensionManifestSchema: z.ZodType<ExtensionManifest>;
+export const extensionActionIDSchema: z.ZodType<string>;
 export function parseExtensionInput(manifest: ExtensionManifest, input: JsonValue): ExtensionValues;
 export function parseExtensionResult(manifest: ExtensionManifest, input: JsonValue): ExtensionResult;
 export function buildExtensionSchema(): ReturnType<typeof import('zod').toJSONSchema>;

@@ -1061,9 +1061,9 @@ subscribeRuntimeEndpointChanged((detail) => {
     });
 });
 
-const refreshCatalogRuntime = async (source: string, reload: boolean): Promise<void> => {
+const refreshCatalogRuntime = async (source: string, reload: boolean): Promise<boolean> => {
     const runtime = opencodeClient.getBoundRuntime();
-    if (!runtime?.endpoint) return;
+    if (!runtime?.endpoint) return true;
     const previous = catalogRuntime;
     const identity = JSON.stringify([runtime.endpoint, runtime.epoch, runtime.generation]);
     const previousIdentity = useConfigStore.getState().catalogRuntimeID;
@@ -1072,7 +1072,7 @@ const refreshCatalogRuntime = async (source: string, reload: boolean): Promise<v
     if (!((previousIdentity && previousIdentity !== identity)
         || (previous && (previous.endpoint !== runtime.endpoint
             || previous.epoch !== runtime.epoch
-            || previous.generation !== runtime.generation)))) return;
+            || previous.generation !== runtime.generation)))) return true;
 
     configRuntimeGeneration += 1;
     invalidateOpenChamberDefaultsCache();
@@ -1092,13 +1092,16 @@ const refreshCatalogRuntime = async (source: string, reload: boolean): Promise<v
         opencodeDefaultModel: undefined,
         isInitialized: false,
     });
-    if (!reload) return;
+    if (!reload) return true;
+    const context = captureConfigRuntimeContext();
     const directory = fromDirectoryKey(useConfigStore.getState().activeDirectoryKey);
     await Promise.all([
         useConfigStore.getState().loadProviders({ directory, source }),
         useConfigStore.getState().loadAgents({ directory, source }),
     ]);
+    if (!isConfigRuntimeContextCurrent(context)) return false;
     useConfigStore.setState({ isInitialized: true });
+    return true;
 };
 
 const isConfigFresh = (loadedAt: Map<string, number>, key: string): boolean => {
@@ -1392,6 +1395,7 @@ interface ConfigStore {
     saveAgentModelSelection: (agentName: string, providerId: string, modelId: string) => void;
     getAgentModelSelection: (agentName: string) => { providerId: string; modelId: string } | null;
     probeConnection: (options?: { timeoutMs?: number }) => Promise<boolean>;
+    retireConnection: () => void;
     checkConnection: () => Promise<boolean>;
     initializeApp: () => Promise<void>;
     prewarmProjectConfigs: (initialDirectory?: string | null) => Promise<void>;
@@ -3690,9 +3694,11 @@ export const useConfigStore = create<ConfigStore>()(
                 },
 
                 probeConnection: async (options?: { timeoutMs?: number }) => {
+                    const context = captureConfigRuntimeContext();
                     const isHealthy = await probeOpenCodeHealth(options?.timeoutMs);
+                    if (!isConfigRuntimeContextCurrent(context)) return false;
                     if (isHealthy) {
-                        await refreshCatalogRuntime('probeConnection:runtimeChanged', get().isInitialized && !_initializeAppInFlight);
+                        if (!await refreshCatalogRuntime('probeConnection:runtimeChanged', get().isInitialized && !_initializeAppInFlight)) return false;
                         set({ isConnected: true, hasEverConnected: true, connectionPhase: "connected" });
                         return true;
                     }
@@ -3708,6 +3714,17 @@ export const useConfigStore = create<ConfigStore>()(
                         lastDisconnectReason: 'health_probe_unhealthy',
                     });
                     return false;
+                },
+
+                retireConnection: () => {
+                    configRuntimeGeneration += 1;
+                    _initializeAppInFlight = null;
+                    opencodeClient.reconnectToRuntimeBaseUrl();
+                    set((state) => ({
+                        isConnected: false,
+                        connectionPhase: state.hasEverConnected ? "reconnecting" : "connecting",
+                        lastDisconnectReason: 'host_connection_unavailable',
+                    }));
                 },
 
                 checkConnection: async () => {
@@ -3726,9 +3743,9 @@ export const useConfigStore = create<ConfigStore>()(
                                 () => opencodeClient.checkHealth(),
                                 { attempt: attempt + 1 },
                             );
-                            if (runtimeContext.runtimeKey !== getRuntimeKey()) return false;
+                            if (!isConfigRuntimeContextCurrent(runtimeContext)) return false;
                             if (isHealthy) {
-                                await refreshCatalogRuntime('checkConnection:runtimeChanged', get().isInitialized && !_initializeAppInFlight);
+                                if (!await refreshCatalogRuntime('checkConnection:runtimeChanged', get().isInitialized && !_initializeAppInFlight)) return false;
                                 runtimeContext = captureConfigRuntimeContext();
                             }
                             if (!isConfigRuntimeContextCurrent(runtimeContext)) return false;
@@ -3782,7 +3799,8 @@ export const useConfigStore = create<ConfigStore>()(
                     }
 
                     let runtimeContext = captureConfigRuntimeContext();
-                    const run = (async () => {
+                    let run: Promise<void> | null = null;
+                    run = (async () => {
                         const initStarted = typeof performance !== 'undefined' ? performance.now() : Date.now();
                         markStartupTrace('initializeApp:start');
                         try {
@@ -3793,7 +3811,7 @@ export const useConfigStore = create<ConfigStore>()(
                             // or project discovery. Publish a known choice immediately.
                             void get().loadSessionDefaults();
                             const isConnected = await get().checkConnection();
-                            if (runtimeContext.runtimeKey !== getRuntimeKey()) return;
+                            if (_initializeAppInFlight !== run || runtimeContext.runtimeKey !== getRuntimeKey()) return;
                             runtimeContext = captureConfigRuntimeContext();
                             if (!isConfigRuntimeContextCurrent(runtimeContext)) return;
                             if (debug) console.log("Connection check result:", isConnected);

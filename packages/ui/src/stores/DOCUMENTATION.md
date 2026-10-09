@@ -524,6 +524,8 @@ does not treat an invalid project config as a disconnected server: it finishes
 initializing so the user can read the project error and switch to another
 project. Other agent-load failures keep the existing startup retry/failure path.
 
+`retireConnection` invalidates configuration requests and the shared SDK binding when the VS Code host reports connecting, disconnected or error. It releases the obsolete initialization slot so a connected notification can discover the replacement, including one behind the same URL and descriptor. Health and catalog waits cannot restore retired readiness. Existing provider display and user intent remain until authoritative replacement data arrives. Web, Electron, hosted mobile and Capacitor keep their existing runtime-switch flow.
+
 Startup does not warm the projects nobody opened. `initializeApp` loads the
 active project's config, then `prewarmProjectConfigs` used to walk every other
 registered project one second apart. On Desktop that is local filesystem work: a

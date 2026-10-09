@@ -59,13 +59,19 @@ export function VSCodeApp({ apis }: VSCodeAppProps) {
 
   React.useEffect(() => {
     registerRuntimeAPIs(apis);
-    void useConfigStore.getState().initializeApp();
+    let previousStatus: string | undefined;
     const onConnection = () => {
-      if (window.__OPENCHAMBER_CONNECTION__?.status === 'connected') {
+      const status = window.__OPENCHAMBER_CONNECTION__?.status;
+      if (status && status === previousStatus) return;
+      previousStatus = status;
+      if (status === 'connecting' || status === 'disconnected' || status === 'error') {
+        useConfigStore.getState().retireConnection();
+      } else if (status === 'connected' || !status) {
         void useConfigStore.getState().initializeApp();
       }
     };
     window.addEventListener('openchamber:connection-status', onConnection);
+    onConnection();
     return () => {
       window.removeEventListener('openchamber:connection-status', onConnection);
       registerRuntimeAPIs(null);

@@ -200,6 +200,7 @@ mock.module('@/stores/useProjectsStore', () => ({
 mock.module('@/lib/opencode/client', () => ({
   opencodeClient: {
     getBoundRuntime: mock(() => boundRuntime),
+    reconnectToRuntimeBaseUrl: () => { boundRuntime = null; },
     setDirectory: mock(() => undefined),
     getDirectory: mock(() => DIRECTORY),
     getFilesystemHome: async () => '/workspace',
@@ -1661,6 +1662,69 @@ describe('useConfigStore provider persistence', () => {
     await useConfigStore.persist.rehydrate();
     expect(useConfigStore.getState().settingsDefaultModel).toBeUndefined();
     expect(useConfigStore.getState().providers).toEqual([]);
+  });
+
+  test('retirement during health discovery cannot publish readiness or load providers', async () => {
+    const health = deferred<boolean>();
+    checkHealthImpl = () => health.promise;
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-a.test', epoch: 1, version: '1.18.33' };
+    let loads = 0;
+    getProvidersForConfigImpl = async () => {
+      loads += 1;
+      return { providers: [providerResponse('obsolete')], default: { default: 'obsolete' } };
+    };
+    const initialization = useConfigStore.getState().initializeApp();
+    useConfigStore.getState().retireConnection();
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-a.test', epoch: 1, version: '1.18.33' };
+    health.resolve(true);
+    await initialization;
+    expect(useConfigStore.getState().isConnected).toBe(false);
+    expect(useConfigStore.getState().isInitialized).toBe(false);
+    expect(loads).toBe(0);
+  });
+
+  test('retirement during catalog reload cannot restore old readiness', async () => {
+    liveAgents = [testAgent('build')];
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-a.test', epoch: 1, version: '1.18.33' };
+    await useConfigStore.getState().initializeApp();
+    const providers = deferred<TestProviderResponse>();
+    getProvidersForConfigImpl = () => providers.promise;
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-b.test', epoch: 2, version: '1.18.33' };
+    const checking = useConfigStore.getState().checkConnection();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    useConfigStore.getState().retireConnection();
+    providers.resolve({ providers: [providerResponse('obsolete')], default: { default: 'obsolete' } });
+    expect(await checking).toBe(false);
+    expect(useConfigStore.getState().isConnected).toBe(false);
+    expect(useConfigStore.getState().isInitialized).toBe(false);
+    expect(useConfigStore.getState().providers).toEqual([]);
+  });
+
+  test('host retirement blocks old initialization while a same-host replacement becomes ready', async () => {
+    const pendingA = deferred<TestProviderResponse>();
+    const pendingB = deferred<TestProviderResponse>();
+    let calls = 0;
+    getProvidersForConfigImpl = () => ++calls === 1 ? pendingA.promise : pendingB.promise;
+    liveAgents = [testAgent('build')];
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-a.test', epoch: 1, version: '1.18.33' };
+    const initA = useConfigStore.getState().initializeApp();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const providersBefore = useConfigStore.getState().providers;
+    useConfigStore.getState().retireConnection();
+    expect(boundRuntime).toBeNull();
+    expect(useConfigStore.getState().isConnected).toBe(false);
+    expect(useConfigStore.getState().providers).toBe(providersBefore);
+    boundRuntime = { generation: 'oc1', endpoint: 'http://kernel-a.test', epoch: 1, version: '1.18.33' };
+    const initB = useConfigStore.getState().initializeApp();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(calls).toBe(2);
+    pendingA.resolve({ providers: [providerResponse('obsolete')], default: { default: 'obsolete' } });
+    await initA;
+    expect(useConfigStore.getState().isInitialized).toBe(false);
+    pendingB.resolve({ providers: [providerResponse('replacement')], default: { default: 'replacement' } });
+    await initB;
+    expect(useConfigStore.getState().isInitialized).toBe(true);
+    expect(useConfigStore.getState().providers[0]?.id).toBe('replacement');
   });
 
   test('an obsolete initialization cannot publish readiness or consume the new initialization', async () => {

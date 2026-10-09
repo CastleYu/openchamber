@@ -112,6 +112,24 @@ describe('directory-scoped protocol ownership', () => {
     }
   });
 
+  test('reconnect retires retained SDK and sync clients before replacement discovery', async () => {
+    opencodeClient.bindRuntime({
+      generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32',
+    });
+    const retained = opencodeClient.getScopedApiClient('/repo');
+    const source = opencodeClient.getSyncSource();
+    opencodeClient.reconnectToRuntimeBaseUrl();
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json([]));
+    try {
+      expect(opencodeClient.getBoundRuntime()).toBeNull();
+      await expect(retained.session.list({}, { throwOnError: true })).rejects.toThrow(OpenCodeRuntimeError);
+      await expect(source.status('/repo')).rejects.toThrow(OpenCodeRuntimeChangedError);
+      expect(fetch.mock.calls.length).toBe(0);
+    } finally {
+      fetch.mockRestore();
+    }
+  });
+
   test('blocks both retained and new OC1 SDK clients after binding OC2', async () => {
     opencodeClient.bindRuntime({
       generation: 'oc1', endpoint: 'http://127.0.0.1:4096', epoch: 1, version: '1.18.32',

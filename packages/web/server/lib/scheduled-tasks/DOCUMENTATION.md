@@ -1,5 +1,12 @@
 # Scheduled Tasks module
 
+The production host injects `canRun` from its current backend selection. CAgent
+keeps this OpenCode consumer unavailable. Startup and project synchronization
+do not arm tasks while unavailable; manual and scheduled dispatch refuse before
+taking a running slot or claiming an occurrence. Persisted task state remains
+unchanged. This guard does not replay missed occurrences or accept CAgent
+autonomous model quality. Standalone callers retain the default OpenCode behavior.
+
 The server injects `kernelOperations` for OpenCode session creation, command
 lookup and dispatch. OC1 keeps its prompt body. OC2 selects model and agent
 on the session, admits non-resuming context before the prompt or command, and

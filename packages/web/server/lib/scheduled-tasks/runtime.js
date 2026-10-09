@@ -4,6 +4,7 @@ import { CronExpressionParser } from 'cron-parser';
 import { expandSnippets } from '../opencode/snippets.js';
 import { buildGoalIntroText, createSessionGoal } from '../session-goal/create.js';
 import { discoverLoops } from './loops.js';
+import { AGENT_ERROR } from '../agent/constants.js';
 
 const DEFAULT_GLOBAL_CONCURRENCY = 4;
 const DEFAULT_PROJECT_CONCURRENCY = 2;
@@ -248,6 +249,7 @@ export const formatScheduledSessionTitle = (task, nowMs = Date.now()) => {
 export const createScheduledTasksRuntime = (deps) => {
   const {
     kernelOperations = null,
+    canRun = () => true,
     projectConfigRuntime,
     listProjects,
     buildOpenCodeUrl,
@@ -349,6 +351,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const syncTaskSchedule = async (projectID, task) => {
+    if (!canRun()) return;
     if (!task) {
       return;
     }
@@ -393,6 +396,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const syncProject = async (projectID) => {
+    if (!canRun()) return;
     await ensureProjectPath(projectID);
     const projectPath = projectPathByID.get(projectID) || null;
 
@@ -417,6 +421,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const syncAllProjects = async () => {
+    if (!canRun()) return;
     const projects = await listScopes();
     const activeProjectIDs = new Set();
     projectPathByID.clear();
@@ -751,6 +756,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const runTask = async (projectID, taskID, reason, scheduledFor) => {
+    if (!canRun()) return { ok: false, skipped: true, reason: AGENT_ERROR.UNSUPPORTED };
     const taskMap = tasksByProject.get(projectID);
     const task = taskMap?.get(taskID);
     // Manual runNow runs paused tasks too; only scheduled dispatches skip them.
@@ -1134,6 +1140,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const runNow = async (projectID, taskID) => {
+    if (!canRun()) return { ok: false, skipped: true, reason: AGENT_ERROR.UNSUPPORTED };
     const taskKey = buildTaskKey(projectID, taskID);
     if (runningTaskKeys.has(taskKey)) {
       return {
@@ -1154,6 +1161,7 @@ export const createScheduledTasksRuntime = (deps) => {
   };
 
   const start = async () => {
+    if (!canRun()) return;
     if (started) {
       return;
     }

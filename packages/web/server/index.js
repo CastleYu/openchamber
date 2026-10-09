@@ -1495,6 +1495,7 @@ const triggerHealthCheck = () => openCodeLifecycleRuntime.triggerHealthCheck();
 const scheduledChatsScope = createChatsScope(OPENCHAMBER_CHATS_DIR);
 const scheduledTasksRuntime = createScheduledTasksRuntime({
   kernelOperations,
+  canRun: () => agentHost.getSelection().family === AGENT_FAMILY.OPENCODE,
   projectConfigRuntime,
   chatsScope: scheduledChatsScope,
   listProjects: async () => {

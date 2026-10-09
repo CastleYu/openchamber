@@ -11,6 +11,7 @@ import {
 } from './runtime.js';
 import { createProjectConfigRuntime } from '../projects/project-config.js';
 import { createChatsScope } from './chats-scope.js';
+import { AGENT_ERROR } from '../agent/constants.js';
 
 describe('scheduled-tasks runtime helpers', () => {
   it.each([
@@ -143,7 +144,7 @@ describe('scheduled chat scope with the dual-kernel operations', () => {
     state: { createdAt: 1, updatedAt: 1 },
   };
 
-  const setup = async (generation = 'oc2', failCreate = false) => {
+  const setup = async (generation = 'oc2', failCreate = false, canRun = () => true) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'oc-scheduled-chat-'));
     const chatsScope = createChatsScope(path.join(root, 'chats'));
     const createSession = vi.fn(async ({ directory }) => {
@@ -158,6 +159,7 @@ describe('scheduled chat scope with the dual-kernel operations', () => {
       updateScheduledTaskStateIf: vi.fn(async () => ({ task })),
     };
     const runtime = createScheduledTasksRuntime({
+      canRun,
       kernelOperations: {
         captureIdentity: () => ({ generation, endpoint: 'http://local', epoch: 1 }),
         createSession,
@@ -173,6 +175,57 @@ describe('scheduled chat scope with the dual-kernel operations', () => {
     });
     return { root, chatsScope, runtime, config, createSession, sendPrompt };
   };
+
+  it('preserves task intent when startup and manual execution are unavailable', async () => {
+    const fixture = await setup('oc2', false, () => false);
+    try {
+      await fixture.runtime.start();
+      await fixture.runtime.syncAllProjects();
+      await fixture.runtime.syncProject(fixture.chatsScope.id);
+      expect(await fixture.runtime.runNow(fixture.chatsScope.id, task.id))
+        .toEqual({ ok: false, skipped: true, reason: AGENT_ERROR.UNSUPPORTED });
+      for (const effect of Object.values(fixture.config)) expect(effect).not.toHaveBeenCalled();
+      expect(fixture.createSession).not.toHaveBeenCalled();
+      expect(fixture.sendPrompt).not.toHaveBeenCalled();
+      expect(fixture.runtime.getStatus().runningScheduledTasksCount).toBe(0);
+    } finally {
+      fixture.runtime.stop();
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it('leaves a scheduled occurrence unclaimed after backend retirement', async () => {
+    let available = true;
+    const fixture = await setup('oc2', false, () => available);
+    const persisted = structuredClone(task);
+    fixture.config.listScheduledTasks.mockImplementation(async () => [persisted]);
+    fixture.config.reconcileLoopTasks.mockImplementation(async () => [persisted]);
+    fixture.config.updateScheduledTaskState.mockImplementation(async (_project, _task, patch) => {
+      persisted.state = { ...persisted.state, ...patch };
+      return { task: persisted };
+    });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T07:59:59Z'));
+    try {
+      await fixture.runtime.start();
+      const before = structuredClone(persisted);
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      fixture.config.updateScheduledTaskState.mockClear();
+      available = false;
+      await vi.runAllTimersAsync();
+      expect(vi.getTimerCount()).toBe(0);
+      expect(fixture.config.updateScheduledTaskStateIf).not.toHaveBeenCalled();
+      expect(fixture.config.updateScheduledTaskState).not.toHaveBeenCalled();
+      expect(fixture.createSession).not.toHaveBeenCalled();
+      expect(fixture.sendPrompt).not.toHaveBeenCalled();
+      expect(persisted).toEqual(before);
+      expect(fixture.runtime.getStatus().runningScheduledTasksCount).toBe(0);
+    } finally {
+      fixture.runtime.stop();
+      vi.useRealTimers();
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
 
   it('gives each OC2 run a fresh directory and skips project loop discovery', async () => {
     const fixture = await setup();

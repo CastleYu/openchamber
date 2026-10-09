@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Current checkpoint: explicit generic proxy refusal
+## Current checkpoint: scheduled intent preservation
+
+The production scheduler checks the current backend before startup, synchronization and manual or scheduled execution. CAgent cannot arm or claim OpenCode tasks. A queued occurrence refuses before taking a running slot or updating persisted state. The guard preserves the existing task and does not replay missed occurrences.
+
+Thirty-nine native scheduler and duplicate-occurrence tests pass, including an armed timer firing after backend retirement with zero claim, state writes or session calls. The actual authenticated server probe passes conversation approval/read/revocation, generic proxy refusal, zero active scheduled tasks, no managed OpenCode process and clean shutdown. Web type-check/lint, focused ESLint and source syntax pass. Anti-slop retains the same 22 previous scheduler/test diagnostics. Dead-code retains 2 files, 319 exports, 231 types and 1 duplicate, with no new Agent entry.
+
+The rebuilt offline command kit is `artifacts/cagent-offline-proxy-20261009`. It contains 11 commands and 95 protected files. Its bundled native Node verifier accepts independent digest `938a1f171f7e3afc25dcc7eb57fce3758a06e288f4910a8e4b1bca5730213788`; generated contracts report 69 files with zero mismatches. This is the adaptation toolchain, not a packaged application or live CAgent acceptance. CA-01/02/03 remain incomplete. Real environment entry, API and model evidence, independent remote publication and temporary Release remain outstanding. English and Chinese copies stay synchronized. Live weekly quota remains 58%.
+
+## Previous checkpoint: explicit generic proxy refusal
 
 Dead-code completes with the existing 2 unused files, 319 unused exports, 231 unused exported types and 1 duplicate. There is no new Agent entry.
 

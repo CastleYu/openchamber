@@ -735,7 +735,13 @@ export async function handleConfigBridgeMessage(
 
       const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
+      const owner = ctx?.manager?.getKernelRuntime();
       const data = await installSkillsFromGit({
+        isCurrent: () => {
+          const current = ctx?.manager?.getKernelRuntime();
+          return current?.generation === owner?.generation && current?.profile === owner?.profile
+            && current?.endpoint === owner?.endpoint && current?.epoch === owner?.epoch;
+        },
         source: String(body.source || ''),
         subpath: body.subpath,
         scope: body.scope === 'project' ? 'project' : 'user',

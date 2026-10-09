@@ -840,7 +840,7 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     const data = payload as { ok?: boolean; error?: { kind?: string } };
     if (data.ok === false) {
       const kind = data.error?.kind;
-      if (kind === 'conflicts') return 409;
+      if (kind === 'conflicts' || kind === AGENT_ERROR.CHANGED) return 409;
       if (kind === 'authRequired') return 401;
       return 400;
     }

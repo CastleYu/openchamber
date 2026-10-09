@@ -1,3 +1,4 @@
+import { AGENT_ERROR } from '../../web/server/lib/agent/constants.js';
 import { OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import fs from 'fs';
 import os from 'os';
@@ -12,6 +13,8 @@ const execFileAsync = promisify(execFile);
 
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_BUFFER = 4 * 1024 * 1024;
+
+const INSTALL_DIR = Object.freeze({ PREFIX: '.openchamber-skill-', STAGED: 'skill', BACKUP: 'backup' });
 
 const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 
@@ -55,15 +58,19 @@ type SkillsRepoError =
   | { kind: 'gitUnavailable'; message: string }
   | { kind: 'networkError'; message: string }
   | { kind: 'unknown'; message: string }
+  | { kind: typeof AGENT_ERROR.CHANGED; message: string }
   | { kind: 'conflicts'; message: string; conflicts: Array<{ skillName: string; scope: SkillScope; source?: SkillInstallSource }> };
 
 type SkillsRepoScanResult =
   | { ok: true; items: SkillsCatalogItem[] }
   | { ok: false; error: SkillsRepoError };
 
+type InstalledSkill = { skillName: string; scope: SkillScope; source?: SkillInstallSource };
+type SkippedSkill = { skillName: string; reason: string };
+
 type SkillsInstallResult =
-  | { ok: true; installed: Array<{ skillName: string; scope: SkillScope; source?: SkillInstallSource }>; skipped: Array<{ skillName: string; reason: string }> }
-  | { ok: false; error: SkillsRepoError };
+  | { ok: true; installed: InstalledSkill[]; skipped: SkippedSkill[] }
+  | { ok: false; error: SkillsRepoError; installed?: InstalledSkill[]; skipped?: SkippedSkill[] };
 
 const CURATED_SOURCES: CuratedSource[] = [
   {
@@ -439,7 +446,19 @@ export async function installSkillsFromRepository(options: {
   selections: Array<{ skillDir: string }>;
   conflictPolicy?: 'prompt' | 'skipAll' | 'overwriteAll';
   conflictDecisions?: Record<string, 'skip' | 'overwrite'>;
-}): Promise<SkillsInstallResult> { 
+  isCurrent?: () => boolean;
+}): Promise<SkillsInstallResult> {
+  const isCurrent = options.isCurrent ?? (() => true);
+  const installed: InstalledSkill[] = [];
+  const skipped: SkippedSkill[] = [];
+  const changed = (): SkillsInstallResult => ({
+    ok: false, installed, skipped, error: {
+      kind: AGENT_ERROR.CHANGED,
+      message: 'OpenCode runtime changed during skill installation'
+        + (installed.length ? '. Installed before the change: ' + installed.map(item => item.skillName).join(', ') : ''),
+    },
+  });
+  if (!isCurrent()) return changed();
   const gitCheck = await assertGitAvailable();
   if (!gitCheck.ok) {
     return { ok: false as const, error: gitCheck.error };
@@ -513,9 +532,6 @@ export async function installSkillsFromRepository(options: {
       return { ok: false as const, error: { kind: 'unknown' as const, message: checkoutResult.stderr || checkoutResult.message || 'Failed to checkout repository' } };
     }
 
-    const installed: Array<{ skillName: string; scope: SkillScope; source?: SkillInstallSource }> = [];
-    const skipped: Array<{ skillName: string; reason: string }> = [];
-
     for (const plan of skillPlans) {
       if (!plan.installable) {
         skipped.push({ skillName: plan.skillName, reason: 'Invalid skill name (directory basename)' });
@@ -550,21 +566,44 @@ export async function installSkillsFromRepository(options: {
         continue;
       }
 
-      if (exists && decision === 'overwrite') {
-        await safeRm(targetDir);
-      }
-
-      await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
-
+      let scratch: string | undefined;
+      let backup: string | undefined;
+      let committed = false;
       try {
-        await copyDirectoryNoSymlinks(srcDir, targetDir);
+        if (!isCurrent()) return changed();
+        fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+        // Keep staging outside the recursively discovered skills collection.
+        scratch = fs.mkdtempSync(path.join(path.dirname(path.dirname(targetDir)), INSTALL_DIR.PREFIX));
+        const staged = path.join(scratch, INSTALL_DIR.STAGED);
+        backup = path.join(scratch, INSTALL_DIR.BACKUP);
+        await copyDirectoryNoSymlinks(srcDir, staged);
+        if (!isCurrent()) return changed();
+        // No async work between the owner check and replacement.
+        if (fs.existsSync(targetDir)) {
+          if (!exists && options.conflictPolicy !== 'overwriteAll' && options.conflictDecisions?.[plan.skillName] !== 'overwrite') {
+            throw new Error('Skill target appeared during installation; retry with a conflict decision');
+          }
+          fs.renameSync(targetDir, backup);
+        }
+        try {
+          fs.renameSync(staged, targetDir);
+        } catch (error) {
+          if (fs.existsSync(backup)) {
+            try {
+              fs.renameSync(backup, targetDir);
+            } catch {
+              throw new Error('Skill replacement failed; original files remain at ' + backup);
+            }
+          }
+          throw error;
+        }
+        committed = true;
         installed.push({ skillName: plan.skillName, scope: options.scope, source: targetSource });
       } catch (error) {
-        await safeRm(targetDir);
-        skipped.push({
-          skillName: plan.skillName,
-          reason: error instanceof Error ? error.message : 'Failed to copy skill files',
-        });
+        skipped.push({ skillName: plan.skillName, reason: error instanceof Error ? error.message : 'Failed to copy skill files' });
+      } finally {
+        // Leave the original backup available when restoration fails.
+        if (scratch && (committed || !backup || !fs.existsSync(backup))) await safeRm(scratch);
       }
     }
 

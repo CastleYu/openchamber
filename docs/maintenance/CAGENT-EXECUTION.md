@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: finite extension contracts and templates
+## Latest checkpoint: reviewed extension inventory binding
+
+2026-10-09. Extension checking now binds the full finite manifest array to the reviewed catalog and mapping digest. Every documented form-action-result action requires exactly one manifest; missing, duplicate or extra actions fail. Multi-endpoint actions retain every endpoint, cannot weaken a mutation to a read, and must cite all reviewed action sections. Conflicting interaction classifications fail. Requires-host-development actions remain explicitly unavailable and cannot supply a finite manifest. This checks additional-action inventory, not complete existing-consumer migration or real support.
+
+Twenty-one focused extension, mapping and bundle tests pass. The actual standalone Node journey checks a nonempty synthetic extension inventory outside the checkout without node_modules. Four changed JavaScript files pass anti-slop and ESLint. No real CAgent API, local model or host extension dispatcher was exercised. CA-01, CA-02 and CA-03 remain incomplete; production capabilities remain closed, and other INT implementation stays behind CA-03. The urgent integration and temporary publication remain the active objective.
+
+The fresh ignored bundle `artifacts/cagent-offline-extension-inventory-20261009` contains ten commands and 94 protected files. Its actual Node verifier passes independent digest `42be5682b13942607d70a6c2c41ee064358c512bd8ba1396b3d16137e495d6d8`. Dead-code retains 2 unused files, 319 exports, 231 types and 1 duplicate with no CAgent row. Weekly quota is 62% remaining. The next required work is host identity/consumer completion and registered extension dispatch/rendering before target acceptance and temporary Release.
+
+## Earlier checkpoint: finite extension contracts and templates
 
 2026-10-09. The host-owned extension schema and parsers now constrain inputs to text, numbers, booleans, choices and bounded scalar lists, and results to text, fields or bounded tables. Strict manifests require namespaced IDs, bilingual labels, context, effect, current-principal authorization, cancellation/outcome semantics and document references. Unknown versions, extra keys, unsafe keys and executable UI are refused. The offline kit includes a synthetic manifest, values, constants and a handler that refuses before transport, plus a structural-only check command. This is template delivery; host registration, authorization enforcement and rendering remain outstanding.
 

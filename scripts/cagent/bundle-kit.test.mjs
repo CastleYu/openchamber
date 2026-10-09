@@ -70,6 +70,22 @@ test('standalone bundle runs outside checkout without installed dependencies and
     for (const [name, value] of Object.entries({ catalog, mapping, fixtures, bindings })) await fs.writeFile(path.join(root, `${name}.json`), JSON.stringify(value));
     const inputs = ['--catalog', path.join(root, 'catalog.json'), '--mapping', path.join(root, 'mapping.json')];
     assert.equal(run(node, 'check-mapping', inputs).ok, true);
+    const extensionCatalog = structuredClone(catalog);
+    extensionCatalog.endpoints.push({ id: 'extra', method: 'POST', path: '/synthetic/action', requestRef: 'input', responseRef: 'result', effect: 'mutation', citations });
+    const extensionMapping = structuredClone(mapping);
+    extensionMapping.catalogDigest = catalogDigest(extensionCatalog);
+    extensionMapping.endpoints.extra = { kind: 'extension', actionID: 'cagent.sample', fit: 'form-action-result', citations };
+    const extensionManifest = JSON.parse(await fs.readFile(path.join(protectedRoot, 'templates/extension/manifest.json'), 'utf8'));
+    extensionManifest.effect = 'mutation';
+    extensionManifest.evidence = citations;
+    for (const [name, value] of Object.entries({ 'extension-catalog': extensionCatalog, 'extension-mapping': extensionMapping, manifests: [extensionManifest] })) {
+      await fs.writeFile(path.join(root, `${name}.json`), JSON.stringify(value));
+    }
+    const extensionInventory = run(node, 'check-extension', ['--catalog', path.join(root, 'extension-catalog.json'),
+      '--mapping', path.join(root, 'extension-mapping.json'), '--manifests', path.join(root, 'manifests.json')]);
+    assert.equal(extensionInventory.checkScope, 'inventory-and-structure-only');
+    assert.equal(extensionInventory.coverage.actions.length, 1);
+    assert.equal(extensionInventory.coverage.actions[0].available, false);
     const workspace = path.join(root, 'workspace');
     await fs.writeFile(path.join(root, 'documents.json'), JSON.stringify(documents));
     const prepared = run(node, 'prepare-packets', [...inputs, '--fixtures', path.join(root, 'fixtures.json'),

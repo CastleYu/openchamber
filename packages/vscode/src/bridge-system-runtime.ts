@@ -1,3 +1,4 @@
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../../web/server/lib/opencode/compatibility.js';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -35,11 +36,30 @@ const legacyClient = (ctx: BridgeContext | undefined) => {
   };
   return { client, check };
 };
-const providerGeneration = async (ctx: BridgeContext | undefined): Promise<'oc1' | 'oc2'> => {
-  let selected = ctx?.manager?.getKernelRuntime().generation;
-  if (selected !== 'oc1' && selected !== 'oc2') selected = (await ctx?.manager?.refreshKernelRuntime())?.generation;
-  if (selected !== 'oc1' && selected !== 'oc2') throw new Error('OpenCode kernel is not ready');
-  return selected;
+const providerRuntime = async (ctx: BridgeContext | undefined): Promise<{ generation: 'oc1' | 'oc2'; check: () => void }> => {
+  const manager = ctx?.manager;
+  if (!manager) throw new Error('OpenCode kernel is not ready');
+  const initial = manager.getKernelRuntime();
+  let selected = initial;
+  if (selected.generation !== OPENCODE_GENERATION.OC1 && selected.generation !== OPENCODE_GENERATION.OC2) {
+    selected = await manager.refreshKernelRuntime();
+    if (initial.endpoint && selected.endpoint !== initial.endpoint) {
+      throw new Error('OpenCode runtime changed during provider discovery');
+    }
+  }
+  const check = () => {
+    const current = manager.getKernelRuntime();
+    if (current.generation !== selected.generation || current.profile !== selected.profile
+      || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+      throw new Error('OpenCode runtime changed during provider operation');
+    }
+  };
+  check();
+  if (selected.profile === OPENCODE_PROFILE.LEGACY) throw new Error('Legacy OpenCode provider operations are not yet verified in VS Code');
+  if (selected.generation !== OPENCODE_GENERATION.OC1 && selected.generation !== OPENCODE_GENERATION.OC2) {
+    throw new Error('OpenCode kernel is not ready');
+  }
+  return { generation: selected.generation, check };
 };
 
 type BridgeMessageInput = {
@@ -467,7 +487,8 @@ export async function handleSystemBridgeMessage(
         ? directory.trim()
         : ctx?.manager?.getWorkingDirectory();
       try {
-        const generation = await providerGeneration(ctx);
+        const { generation, check } = await providerRuntime(ctx);
+        check();
         if (generation === 'oc2') {
           if (normalizedScope === 'auth') {
             return { id, type, success: false, error: 'OpenCode 2 owns provider credentials. Disconnect through OpenCode credential settings.' };
@@ -530,7 +551,8 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Provider ID is required' };
       }
       try {
-        const generation = await providerGeneration(ctx);
+        const { generation, check } = await providerRuntime(ctx);
+        check();
         const workingDirectory = typeof directory === 'string' && directory.trim().length > 0
           ? directory.trim()
           : ctx?.manager?.getWorkingDirectory();
@@ -538,6 +560,7 @@ export async function handleSystemBridgeMessage(
           ? v2Config.getProviderSources(providerId, workingDirectory)
           : getProviderSources(providerId, workingDirectory);
         const auth = generation === 'oc2' ? await getOpenCodeProviderAuth(providerId) : getLegacyProviderAuth(providerId);
+        check();
         sources.auth.exists = Boolean(auth);
         const config = generation === 'oc2' ? v2Config.getStoredProviderConfig(providerId, workingDirectory) : undefined;
         return { id, type, success: true, data: { providerId, sources, ...(config ? { config } : {}) } };
@@ -580,12 +603,14 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Invalid scope' };
       }
       try {
-        const generation = await providerGeneration(ctx);
+        const { generation, check } = await providerRuntime(ctx);
+        check();
         const workingDirectory = typeof directory === 'string' && directory.trim().length > 0
           ? directory.trim()
           : ctx?.manager?.getWorkingDirectory();
         const writeConfig = generation === 'oc2' ? v2Config.upsertProviderConfig : upsertProviderConfig;
         const storedAuth = generation === 'oc2' ? await getOpenCodeProviderAuth(providerId) : getLegacyProviderAuth(providerId);
+        check();
         const result = writeConfig(
           providerId,
           config,
@@ -659,11 +684,13 @@ export async function handleSystemBridgeMessage(
         return { id, type, success: false, error: 'Provider ID is required' };
       }
       try {
-        const generation = await providerGeneration(ctx);
+        const { generation, check } = await providerRuntime(ctx);
+        check();
         const runtime = ctx?.manager?.getKernelRuntime();
         if (!runtime || runtime.generation !== generation) throw new Error('OpenCode connection changed during quota lookup');
         const runtimeScope = `${runtime.endpoint}:${runtime.epoch}`;
         const result = await fetchQuotaForProvider(providerId, generation, ctx?.manager?.getWorkingDirectory(), runtimeScope);
+        check();
         return { id, type, success: true, data: result };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

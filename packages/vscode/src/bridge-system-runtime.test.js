@@ -39,8 +39,12 @@ mock.module('vscode', () => ({
   Range,
 }));
 
+const legacyRemove = mock(() => true);
+const legacyAuth = mock(() => null);
+const providerAuth = mock(async () => null);
+const providerQuota = mock(async () => ({}));
 mock.module('./opencodeConfig', () => ({
-  removeProviderConfig: mock(),
+  removeProviderConfig: legacyRemove,
   getProviderSources: mock(),
   upsertProviderConfig: mock(),
 }));
@@ -54,12 +58,12 @@ mock.module('./opencodeConfigV2', () => ({
 }));
 mock.module('./opencodeAuthV2', () => ({ getProviderAuth: mock(() => ({ type: 'api', key: 'test' })) }));
 mock.module('./opencodeAuth', () => ({
-  getLegacyProviderAuth: mock(),
-  getOpenCodeProviderAuth: mock(),
+  getLegacyProviderAuth: legacyAuth,
+  getOpenCodeProviderAuth: providerAuth,
   removeProviderAuth: mock(),
 }));
 mock.module('./quotaProviders', () => ({
-  fetchQuotaForProvider: mock(),
+  fetchQuotaForProvider: providerQuota,
   listConfiguredQuotaProviders: mock(),
 }));
 mock.module('./opencodeGoQuota', () => ({ fetchOpenCodeGoUsage: mock() }));
@@ -341,5 +345,114 @@ describe('VS Code system bridge api:workspace:addFolder', () => {
       error: 'Directory path is required',
     });
     expect(updateWorkspaceFolders).not.toHaveBeenCalled();
+  });
+});
+
+describe('VS Code provider owner admission', () => {
+  beforeEach(() => {
+    v2Upsert.mockClear();
+    v2Remove.mockClear();
+    legacyRemove.mockClear();
+    legacyAuth.mockClear();
+    providerAuth.mockReset();
+    providerAuth.mockImplementation(async () => null);
+    providerQuota.mockReset();
+    providerQuota.mockImplementation(async () => ({}));
+  });
+
+  test.each(['api:provider/auth:delete', 'api:provider/source:get', 'api:provider:upsert', 'api:quota:get'])
+  ('refuses Legacy %s before credentials/config work', async type => {
+    const manager = managerFor('oc1');
+    manager.getKernelRuntime = () => ({ generation: 'oc1', profile: 'legacy-1.2.27', endpoint: 'http://oc.test', epoch: 1 });
+    const result = await handleSystemBridgeMessage({ id: 'legacy', type, payload: { providerId: 'custom', scope: 'project', config: { name: 'Custom' } } }, { manager }, deps);
+    expect(result).toMatchObject({ success: false, error: 'Legacy OpenCode provider operations are not yet verified in VS Code' });
+    expect(v2Upsert).not.toHaveBeenCalled();
+    expect(v2Remove).not.toHaveBeenCalled();
+    expect(legacyRemove).not.toHaveBeenCalled();
+    expect(legacyAuth).not.toHaveBeenCalled();
+    expect(providerAuth).not.toHaveBeenCalled();
+    expect(providerQuota).not.toHaveBeenCalled();
+  });
+
+  for (const generation of ['oc1', 'oc2']) {
+    test.each([
+      ['generation', { generation: 'unknown' }],
+      ['profile', { profile: 'legacy-1.2.27' }],
+      ['endpoint', { endpoint: 'http://other.test' }],
+      ['epoch', { epoch: 2 }],
+    ])('stops ' + generation + ' deletion when %s changes at admission', async (_label, patch) => {
+      let runtime = { generation, profile: generation, endpoint: 'http://oc.test', epoch: 1 };
+      const manager = managerFor(generation);
+      manager.getKernelRuntime = () => runtime;
+      const pending = handleSystemBridgeMessage({ id: 'delete', type: 'api:provider/auth:delete', payload: { providerId: 'custom', scope: 'project' } }, { manager }, deps);
+      runtime = { ...runtime, ...patch };
+      const result = await pending;
+      expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider operation' });
+      expect(v2Remove).not.toHaveBeenCalled();
+      expect(legacyRemove).not.toHaveBeenCalled();
+    });
+  }
+
+  test('accepts normal discovery epoch advancement before an OC2 write', async () => {
+    let runtime = { generation: 'unknown', endpoint: 'http://oc.test', epoch: 1 };
+    const manager = managerFor('unknown');
+    manager.getKernelRuntime = () => runtime;
+    manager.refreshKernelRuntime = async () => {
+      runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://oc.test', epoch: 2 };
+      return runtime;
+    };
+    const result = await handleSystemBridgeMessage({ id: 'discover', type: 'api:provider:upsert', payload: { providerId: 'custom', config: { name: 'Custom' }, scope: 'project' } }, { manager }, deps);
+    expect(result).toMatchObject({ success: true });
+    expect(v2Upsert).toHaveBeenCalledTimes(1);
+    expect(manager.restart).not.toHaveBeenCalled();
+  });
+
+  test('does not adopt a different known endpoint during provider discovery', async () => {
+    let runtime = { generation: 'unknown', endpoint: 'http://oc.test', epoch: 1 };
+    const manager = managerFor('unknown');
+    manager.getKernelRuntime = () => runtime;
+    manager.refreshKernelRuntime = async () => {
+      runtime = { generation: 'oc2', endpoint: 'http://other.test', epoch: 2 };
+      return runtime;
+    };
+    const result = await handleSystemBridgeMessage({ id: 'discover', type: 'api:provider/auth:delete', payload: { providerId: 'custom', scope: 'project' } }, { manager }, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider discovery' });
+    expect(v2Remove).not.toHaveBeenCalled();
+    expect(legacyRemove).not.toHaveBeenCalled();
+  });
+
+  test('rejects a retired discovery result before config deletion', async () => {
+    let runtime = { generation: 'unknown', endpoint: 'http://oc.test', epoch: 1 };
+    const manager = managerFor('unknown');
+    manager.getKernelRuntime = () => runtime;
+    manager.refreshKernelRuntime = async () => {
+      runtime = { generation: 'oc1', endpoint: 'http://oc.test', epoch: 3 };
+      return { generation: 'oc2', endpoint: 'http://oc.test', epoch: 2 };
+    };
+    const result = await handleSystemBridgeMessage({ id: 'discover', type: 'api:provider/auth:delete', payload: { providerId: 'custom', scope: 'project' } }, { manager }, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider operation' });
+    expect(v2Remove).not.toHaveBeenCalled();
+    expect(legacyRemove).not.toHaveBeenCalled();
+  });
+
+  test.each(['api:provider:upsert', 'api:provider/source:get'])
+  ('rejects %s after an OC2 credential read changes profile', async type => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://oc.test', epoch: 1 };
+    const manager = managerFor('oc2');
+    manager.getKernelRuntime = () => runtime;
+    providerAuth.mockImplementation(async () => { runtime = { ...runtime, profile: 'retired' }; return null; });
+    const result = await handleSystemBridgeMessage({ id: 'auth', type, payload: { providerId: 'custom', config: { name: 'Custom' }, scope: 'project' } }, { manager }, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider operation' });
+    expect(v2Upsert).not.toHaveBeenCalled();
+    expect(manager.restart).not.toHaveBeenCalled();
+  });
+
+  test('rejects a quota response from a retired profile', async () => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://oc.test', epoch: 1 };
+    const manager = managerFor('oc2');
+    manager.getKernelRuntime = () => runtime;
+    providerQuota.mockImplementation(async () => { runtime = { ...runtime, profile: 'retired' }; return { remaining: 1 }; });
+    const result = await handleSystemBridgeMessage({ id: 'quota', type: 'api:quota:get', payload: { providerId: 'custom' } }, { manager }, deps);
+    expect(result).toMatchObject({ success: false, error: 'OpenCode runtime changed during provider operation' });
   });
 });

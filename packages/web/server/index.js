@@ -60,7 +60,7 @@ import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
 import { selectAgentStartup, startOpenCodeConsumers } from './lib/agent/startup.js';
 import { createAgentAttempts } from './lib/agent/attempts.js';
 import { createAgentApprovals } from './lib/agent/approvals.js';
-import { AGENT_APPROVAL, AGENT_ATTEMPT, AGENT_FAMILY } from './lib/agent/constants.js';
+import { AGENT_APPROVAL, AGENT_ATTEMPT, AGENT_FAMILY, AGENT_STARTUP } from './lib/agent/constants.js';
 import { registerAgentRoutes } from './lib/agent/routes.js';
 import { createAgentPrincipalResolver } from './lib/agent/principal.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
@@ -1813,7 +1813,7 @@ const gracefulShutdownRuntime = createGracefulShutdownRuntime({
 const gracefulShutdown = (...args) => gracefulShutdownRuntime.gracefulShutdown(...args);
 
 async function main(options = {}) {
-  await selectAgentStartup(agentHost, options.agentBackend);
+  await selectAgentStartup(agentHost, options.agentBackend, process.env[AGENT_STARTUP.ENV]);
   beginGuestServiceHost();
   const port = Number.isFinite(options.port) && options.port >= 0 ? Math.trunc(options.port) : DEFAULT_PORT;
   const host = typeof options.host === 'string' && options.host.length > 0 ? options.host : undefined;

@@ -1,5 +1,29 @@
 # Agent dispatch contracts
 
+## Protected process startup file
+
+Set `OPENCHAMBER_AGENT_BACKEND_FILE` in the launching process to an absolute,
+maintainer-owned JSON file. The ordinary server and Electron in-process backend
+read it through `selectAgentStartup`. The file uses `AgentStartupSelection` from
+`startup.d.ts`: either `{ "family": "opencode" }` or a CAgent selection with
+`candidate.directory`, `manifest`, `profile` and `connection`. The owner supplies
+the real reviewed connection facts and artifact manifest. This grants no approval.
+
+Keep the descriptor, credentials, approval and attempt directories outside
+candidate write authority. Provision the latter two under the selected
+`OPENCHAMBER_DATA_DIR` before launch. The reader accepts only a bounded regular
+file with one hard link, strict UTF-8, a canonical path and valid selection schema.
+It rejects observed read changes. Missing, linked, malformed or oversized files,
+and simultaneous explicit `agentBackend` plus file inputs, fail before selection
+with a fixed error. No file bytes or credentials appear in that error. File checks
+do not configure ACLs or sandbox native adapter code.
+
+An unset variable retains ordinary OpenCode startup. A supplied invalid descriptor
+stops startup; it never falls back to OpenCode. Changing the file requires a fresh
+process start and independent approval of the selected revision. There is no HTTP
+selector or hot reload. Web and Electron use this entry; hosted and Capacitor mobile
+use their selected remote host. VS Code CAgent remains explicitly unsupported.
+
 ## Independent acceptance of generated capabilities
 
 Maintainer-owned approval operation and extension rows may include `state: supported` or `state: adapted`. After real evidence review, this explicit state can promote an existing unverified CAgent capability in the current binding. The candidate artifact stays unchanged. Approval must match the family, connection, adapter/revisions, server revision and artifact digest; extensions additionally match action revision and canonical manifest digest. Each row requires evidence. Legacy approval rows without state preserve their prior behavior and cannot promote an unverified candidate.
@@ -46,11 +70,11 @@ Host composition must supply normalized, immutable bindings. It must keep activa
 
 Approval is an independent host record, never a field in the candidate manifest. It must match family, connection, adapter ID/revision, capability revision, server revision and artifact digest, and include nonempty evidence for each operation. Malformed, missing or mismatched approval grants nothing. Valid approval rows grant only candidate operations with supported/adapted evidence and a registered handler; an ineligible operation does not remove unrelated valid rows. Each read rechecks the host ports; an unauthorized or unready selection never reads approval storage. All binding metadata, capability evidence and operation lists are frozen copies, so later source edits cannot alter an in-flight snapshot.
 
-Authority compares a host-supplied digest; it does not itself hash files or verify evidence artifacts. No public route, user setting or adapter workspace can supply these ports. Production supplies the read-only approval port and the initially inactive host coordinator below, so activation is still unavailable. A trusted adapter's executable handlers are not sandboxed by this metadata boundary. Protected runner enforcement and composition, selectors and consumer migration remain required before activation.
+Authority compares a host-supplied digest; it does not itself hash files or verify evidence artifacts. No public route, user setting or adapter workspace can supply these ports. Production supplies the read-only approval port and host coordinator below. The protected startup entry selects a reviewed artifact; independent approval and migrated consumers decide availability. A trusted adapter's executable handlers are not sandboxed by this metadata boundary. The maintainer owns permissions and live acceptance.
 
 `createAgentHost` owns selection lifetime and composes immutable loading, current-connection transport, independent approval, durable dispatch and feature checks. Construction performs no I/O. Maintainer-only `select` validates the profile/connection, retires the old binding and allocates an epoch before asynchronous loading. Failure leaves the host inactive; it never silently restores or replays old work. A later selection or `clear` invalidates an earlier load, which cannot replace the newer binding. Each factory's request port expires with its selection, including when revisions are reused. Loading factories have no current connection. After loading, only independently approved operations can dispatch. Credentials remain in the host, and selection returns only the frozen neutral identity.
 
-The coordinator validates structural inputs and verified artifact bytes, not server identity or acceptance evidence meaning. Readiness, authorization, endpoint and server revision come from protected maintainer composition. Endpoint/auth changes require another selection and therefore a new epoch. Candidate code receives neither `select`, `clear` nor approval-writing ports. Production routes now consume this coordinator's dispatcher/features, and trusted process startup can select a reviewed candidate. No user selector or protected runner is provided yet. All five runtimes retain unsupported feature behavior. Native `host.test.js` joins actual temporary artifacts, persisted approvals and loopback HTTP, including revocation, failed/overlapping loads and a cleared in-flight read. These synthetic journeys do not establish real CAgent compatibility.
+The coordinator validates structural inputs and verified artifact bytes, not server identity or acceptance evidence meaning. Readiness, authorization, endpoint and server revision come from protected maintainer composition. Endpoint/auth changes require another selection and therefore a new epoch. Candidate code receives neither `select`, `clear` nor approval-writing ports. Production routes consume this coordinator's dispatcher/features. The protected process startup file above provides selection; public selectors and hot switching remain unavailable. Only migrated and independently approved features can open. Native `host.test.js` joins actual temporary artifacts, persisted approvals and loopback HTTP, including revocation, failed/overlapping loads and a cleared in-flight read. These synthetic journeys do not establish real CAgent compatibility.
 
 `createAgentApprovals({ directory })` reads strict version-1 records from a host-owned directory. `agentApprovalName` hashes the family/connection tuple into an opaque basename. Each binding check reads one file, bounded to 64 KiB, without caching approval. Missing records return null; malformed JSON/UTF-8, extra fields, invalid evidence and scope mismatches fail closed. Linked roots/files, non-files and observed read-time changes are refused. The reader returns detached frozen approval rows and exposes no mutation methods. Unready or unauthorized selections return before filesystem access.
 

@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, link } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { AGENT_ERROR, AGENT_FAMILY } from './constants.js';
+import { AGENT_ERROR, AGENT_FAMILY, AGENT_HOST_OPERATION, AGENT_STARTUP } from './constants.js';
 import { agentArtifactDigest } from './artifacts.js';
 import { createAgentHost } from './host.js';
 import { selectAgentStartup, startOpenCodeConsumers } from './startup.js';
@@ -27,6 +27,59 @@ const consumerHost = (family = AGENT_FAMILY.OPENCODE) => {
 };
 
 describe('selectAgentStartup', () => {
+  it('reads a protected local descriptor for an explicit CAgent selection', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'agent-startup-file-'));
+    const file = path.join(root, 'selection.json');
+    const input = { family: AGENT_FAMILY.CAGENT, candidate: candidate() };
+    let forwarded;
+    try {
+      await writeFile(file, JSON.stringify(input));
+      const host = { selectOpenCode: () => { throw new Error('unexpected'); },
+        select: async (value) => { forwarded = value; return 'selected'; } };
+      await expect(selectAgentStartup(host, undefined, file)).resolves.toBe('selected');
+      expect(forwarded).toEqual(input.candidate);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
+  it('refuses invalid local descriptors before selection and never discloses their bytes', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'agent-startup-file-'));
+    const file = path.join(root, 'selection.json');
+    let effects = 0;
+    const host = { selectOpenCode: () => { effects += 1; }, select: () => { effects += 1; } };
+    const refused = (input, target = file) => expect(selectAgentStartup(host, input, target))
+      .rejects.toMatchObject({ code: AGENT_ERROR.INVALID_INPUT,
+        message: `Agent operation ${AGENT_HOST_OPERATION.GET_BINDING} refused: ${AGENT_ERROR.INVALID_INPUT}` });
+    try {
+      await refused(undefined);
+      await refused(undefined, 'relative.json');
+      await refused(undefined, root);
+      for (const content of [Buffer.from([0xff]), 'private-secret-json',
+        JSON.stringify({ family: AGENT_FAMILY.OPENCODE, secret: 'private-secret' }),
+        ' '.repeat(AGENT_STARTUP.MAX_BYTES + 1)]) {
+        await writeFile(file, content);
+        await refused(undefined);
+      }
+      await writeFile(file, JSON.stringify({ family: AGENT_FAMILY.OPENCODE }));
+      await refused({ family: AGENT_FAMILY.OPENCODE });
+      const alias = path.join(root, 'linked.json');
+      await link(file, alias);
+      await refused(undefined, alias);
+      expect(effects).toBe(0);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
+  it('accepts an explicit OpenCode descriptor from the same local entry', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'agent-startup-file-'));
+    const file = path.join(root, 'selection.json');
+    let effects = 0;
+    try {
+      await writeFile(file, JSON.stringify({ family: AGENT_FAMILY.OPENCODE }));
+      const host = { selectOpenCode: () => { effects += 1; }, select: () => { throw new Error('unexpected'); } };
+      await expect(selectAgentStartup(host, undefined, file)).resolves.toBeNull();
+      expect(effects).toBe(1);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
   it('selects OpenCode by default', async () => {
     let selections = 0;
     const host = { selectOpenCode: () => { selections += 1; }, select: () => { throw new Error('unexpected'); } };

@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Current checkpoint: scheduled intent preservation
+## Current checkpoint: protected ordinary startup entry
+
+Ordinary server and Electron backend startup now read the maintainer-owned absolute file named by `OPENCHAMBER_AGENT_BACKEND_FILE`. Strict parsing, bounded UTF-8 reads and file checks precede selection. Invalid or conflicting inputs stop startup without an OpenCode fallback. Approval and attempt directories remain separately protected. Web/Electron use this host entry, mobile uses its selected remote host, and VS Code remains unsupported. There is no public selector or hot reload.
+
+Forty-nine native startup, host and feature tests pass. The actual authenticated production-server probe selects CAgent through the environment file without programmatic selection, reads a synthetic session after approval, revokes it and refuses further calls. No managed OpenCode process or active scheduled tasks start; shutdown completes. Workspace type-check/lint and direct strict compilation of server contracts/startup declarations pass. Lint retains five existing warnings. Authored anti-slop reports zero diagnostics and focused ESLint passes. Dead-code retains 2 files, 319 exports, 231 types and 1 duplicate without a new Agent entry. Generated contracts pass 69 files with zero mismatches.
+
+Remote inspection found no `codex/cagent-integration` branch. The personal branch remains a separate publication target and will not be pushed by this work. Packaging and a temporary release still require completion. This host composition is synthetic evidence, not real CAgent/API/model or packaged-desktop acceptance. CA-01/02/03 remain incomplete; other INT work waits for CA-03. The current live weekly quota is 57% remaining.
+
+## Previous checkpoint: scheduled intent preservation
 
 The production scheduler checks the current backend before startup, synchronization and manual or scheduled execution. CAgent cannot arm or claim OpenCode tasks. A queued occurrence refuses before taking a running slot or updating persisted state. The guard preserves the existing task and does not replay missed occurrences.
 

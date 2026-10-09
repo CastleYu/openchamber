@@ -48,6 +48,7 @@ export const AGENT_APPROVAL: Readonly<{
   VERSION: 1; DIRECTORY: 'agent-approvals'; MAX_RECORD_BYTES: 65536; TEMP_SUFFIX: '.tmp';
 }>;
 export const AGENT_FILE_MODE: Readonly<{ EXCLUSIVE: 'wx'; OWNER_READ_WRITE: 384 }>;
+export const AGENT_STARTUP: Readonly<{ ENV: 'OPENCHAMBER_AGENT_BACKEND_FILE'; MAX_BYTES: 65536; READ: 'r' }>;
 export const AGENT_ADAPTER: Readonly<{ ENTRY: 'adapter.mjs'; FACTORY: 'createAdapter' }>;
 export const AGENT_SERVER_METHOD: Readonly<{ GET: 'GET'; POST: 'POST'; PUT: 'PUT'; PATCH: 'PATCH'; DELETE: 'DELETE' }>;
 export const AGENT_HTTP: Readonly<{

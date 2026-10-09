@@ -1,3 +1,4 @@
+import { CONNECTION_MODE, OpenCodeConnectionError } from './connection.js';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -299,7 +300,7 @@ export const createOpenCodeEnvRuntime = (deps) => {
       return;
     }
 
-    process.env.PATH = mergePathValues(shellPath, currentPath, path.delimiter);
+    process.env.PATH = mergePathValues(currentPath, shellPath, path.delimiter);
   };
 
   const isWslExecutableValue = (value) => {
@@ -1227,6 +1228,22 @@ export const createOpenCodeEnvRuntime = (deps) => {
     return state.resolvedGitBinary;
   };
 
+  const resolveConnectionBinary = (record) => {
+    let binary;
+    switch (record.mode) {
+      case CONNECTION_MODE.EXTERNAL: return null;
+      case CONNECTION_MODE.PATH: binary = searchPathFor('opencode'); break;
+      case CONNECTION_MODE.BUNDLED: binary = resolveBundledOpenCodeCliPath(); break;
+      case CONNECTION_MODE.CONFIGURED:
+      case CONNECTION_MODE.COMMAND: binary = record.exe; break;
+      default: throw new OpenCodeConnectionError('Unsupported OpenCode connection mode');
+    }
+    if (!binary || !isExecutable(binary) || isKnownOpenCodeDesktopAppPath(binary)) {
+      throw new OpenCodeConnectionError('The selected OpenCode executable is unavailable');
+    }
+    return binary;
+  };
+
   const clearResolvedOpenCodeBinary = () => {
     state.resolvedOpencodeBinary = null;
   };
@@ -1237,6 +1254,7 @@ export const createOpenCodeEnvRuntime = (deps) => {
     applyOpencodeBinaryFromSettings,
     getLoginShellEnvSnapshot,
     resolveOpencodeCliPath,
+    resolveConnectionBinary,
     isBundledOpenCodeCliPath,
     resolveManagedOpenCodeLaunchSpec,
     isExecutable,

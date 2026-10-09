@@ -205,3 +205,52 @@ describe('explicit external OpenCode ownership', () => {
     expect(deps.applyOpencodeBinaryFromSettings).not.toHaveBeenCalled();
   });
 });
+
+describe('confirmed cold connection authority', () => {
+  it('stays unconfigured with no record, despite legacy endpoint and binary candidates', async () => {
+    const { runtime, state, deps } = createRuntime({ getConnection: async () => { throw new Error('Confirm an OpenCode connection before starting'); } });
+    await runtime.bootstrapOpenCodeAtStartup();
+    expect(state.openCodePort).toBeNull();
+    expect(state.lastOpenCodeError).toMatch('Confirm an OpenCode connection');
+    expect(deps.syncFromHmrState).not.toHaveBeenCalled();
+    expect(deps.applyOpencodeBinaryFromSettings).not.toHaveBeenCalled();
+    expect(deps.ensureLocalOpenCodeServerPassword).not.toHaveBeenCalled();
+    expect(runtime.isConnectionTransitioning()).toBe(false);
+  });
+  it('uses only the confirmed external endpoint, including its base path and default port', async () => {
+    const kernelRuntime = { refresh: vi.fn(async () => ({ generation: 'oc2' })) };
+    const { runtime, state, deps } = createRuntime({ getConnection: async () => ({ mode: 'external', endpoint: 'https://example.test/base' }), kernelRuntime });
+    await runtime.bootstrapOpenCodeAtStartup();
+    expect(state.openCodeBaseUrl).toBe('https://example.test/base');
+    expect(state.openCodePort).toBe(443); expect(state.isExternalOpenCode).toBe(true);
+    expect(state.isOpenCodeReady).toBe(true);
+    expect(deps.ensureOpencodeCliEnv).not.toHaveBeenCalled();
+    await expect(runtime.startOpenCode()).rejects.toThrow('External OpenCode');
+  });
+  it('rejects a second owned launch before resolving or spawning', async () => {
+    const getConnection = vi.fn();
+    const { runtime, state } = createRuntime({ getConnection });
+    state.openCodeProcess = { pid: 123 };
+    await expect(runtime.startOpenCode()).rejects.toMatchObject({ status: 409 });
+    expect(getConnection).not.toHaveBeenCalled();
+  });
+});
+
+describe('confirmed record transition retirement', () => {
+  it('retires a pending resolution before credentials or native spawn', async () => {
+    let release;
+    let revision = 0;
+    const pending = new Promise(resolve => { release = resolve; });
+    const { runtime, deps } = createRuntime({
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision: 1, connectionRevision: revision }),
+      getConnection: async () => pending,
+    });
+    const starting = runtime.startOpenCode();
+    expect(runtime.isConnectionTransitioning()).toBe(true);
+    revision += 1; release({ mode: 'configured', binary: '/fixture/opencode' });
+    await expect(starting).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    expect(deps.ensureLocalOpenCodeServerPassword).not.toHaveBeenCalled();
+    expect(deps.probeManagedOpenCodeGeneration).not.toHaveBeenCalled();
+    expect(runtime.isConnectionTransitioning()).toBe(false);
+  });
+});

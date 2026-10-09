@@ -8,11 +8,13 @@ import { createProjectIdFromPath, projectConfigFileStemOf } from '../projects/pr
 import { createSettingsRuntime } from './settings-runtime.js';
 import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
 
-const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes, onManagedPluginSettingsChanged, onOpenCodeSelectionChanged } = {}) => {
+const createRuntime = async ({ mergePersistedSettings = (_current, changes) => changes, onManagedPluginSettingsChanged, onOpenCodeSelectionChanged, validateOpenCodeConnection, onOpenCodeConnectionChanged, fileSystem = fsPromises } = {}) => {
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'oc-settings-runtime-'));
   const settingsFilePath = path.join(tempRoot, 'settings.json');
   const runtime = createSettingsRuntime({
-    fsPromises,
+    fsPromises: fileSystem,
+    validateOpenCodeConnection,
+    onOpenCodeConnectionChanged,
     path,
     crypto,
     SETTINGS_FILE_PATH: settingsFilePath,
@@ -647,5 +649,55 @@ describe('persisted OpenCode selection adoption', () => {
       expect(kernel.get().generation).toBe('unknown');
       expect(kernel.getAdmission()).toBeNull();
     } finally { await setup.cleanup(); }
+  });
+});
+
+describe('confirmed connection persistence', () => {
+  const record = { version: 1, confirmed: true, mode: 'path' };
+  it('backs up prior instance settings, saves only once and notifies after durability', async () => {
+    const changed = vi.fn();
+    const validate = vi.fn(async () => {});
+    const { runtime, settingsFilePath, tempRoot, cleanup } = await createRuntime({
+      mergePersistedSettings: (current, changes) => ({ ...current, ...changes }), validateOpenCodeConnection: validate, onOpenCodeConnectionChanged: changed,
+    });
+    try {
+      await runtime.persistSettings({ opencodeBinary: 'old' });
+      await runtime.persistSettings({ opencodeConnection: record });
+      expect(JSON.parse(await fsPromises.readFile(path.join(tempRoot, 'settings.opencode-previous.json'), 'utf8'))).toEqual({ opencodeBinary: 'old' });
+      expect(JSON.parse(await fsPromises.readFile(settingsFilePath, 'utf8')).opencodeConnection).toEqual(record);
+      await runtime.persistSettings({ opencodeConnection: record });
+      expect(validate).toHaveBeenCalledOnce(); expect(changed).toHaveBeenCalledOnce();
+      await runtime.persistSettings({ opencodeConnection: null });
+      expect((await runtime.readSettingsFromDisk()).opencodeConnection).toBeNull();
+    } finally { await cleanup(); }
+  });
+  it('preserves the previous record after admission failure and permits another save', async () => {
+    const validate = vi.fn().mockRejectedValueOnce(new Error('active connection')).mockResolvedValue(undefined);
+    const changed = vi.fn();
+    const { runtime, settingsFilePath, cleanup } = await createRuntime({ validateOpenCodeConnection: validate, onOpenCodeConnectionChanged: changed });
+    try {
+      await fsPromises.writeFile(settingsFilePath, JSON.stringify({ opencodeBinary: 'old' }));
+      await expect(runtime.persistSettings({ opencodeConnection: record })).rejects.toThrow('active connection');
+      expect(JSON.parse(await fsPromises.readFile(settingsFilePath, 'utf8'))).toEqual({ opencodeBinary: 'old' });
+      expect(changed).not.toHaveBeenCalled();
+      await runtime.persistSettings({ opencodeConnection: record });
+      expect(changed).toHaveBeenCalledOnce();
+    } finally { await cleanup(); }
+  });
+  it('restores instance settings when a later preferences write fails', async () => {
+    let fail = false;
+    const fileSystem = { ...fsPromises, writeFile: async (file, ...args) => {
+      if (fail && path.basename(file).startsWith('preferences.json')) throw new Error('fixture preferences write failure');
+      return fsPromises.writeFile(file, ...args);
+    } };
+    const changed = vi.fn();
+    const { runtime, settingsFilePath, tempRoot, cleanup } = await createRuntime({ fileSystem, onOpenCodeConnectionChanged: changed });
+    try {
+      await fsPromises.writeFile(settingsFilePath, JSON.stringify({ opencodeBinary: 'old' })); fail = true;
+      await expect(runtime.persistSettings({ opencodeConnection: record, theme: 'dark' })).rejects.toThrow('fixture preferences');
+      expect(JSON.parse(await fsPromises.readFile(settingsFilePath, 'utf8'))).toEqual({ opencodeBinary: 'old' });
+      expect(JSON.parse(await fsPromises.readFile(path.join(tempRoot, 'settings.opencode-previous.json'), 'utf8'))).toEqual({ opencodeBinary: 'old' });
+      expect(changed).not.toHaveBeenCalled();
+    } finally { await cleanup(); }
   });
 });

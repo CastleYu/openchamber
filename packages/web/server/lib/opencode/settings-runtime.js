@@ -1,3 +1,4 @@
+import { OPENCODE_CONNECTION, parseOpenCodeConnection } from './connection.js';
 import { OPENCODE_SETTING } from './compatibility.js';
 import { createProjectIdFromPath, projectConfigFileStemOf } from '../projects/project-id.js';
 import {
@@ -70,6 +71,8 @@ export const createSettingsRuntime = (deps) => {
     upsertManagedRemoteTunnelToken,
     onManagedPluginSettingsChanged = async () => {},
     onOpenCodeSelectionChanged = () => {},
+    validateOpenCodeConnection = async () => {},
+    onOpenCodeConnectionChanged = () => {},
     onMessageSearchEnabledChanged = () => {},
     onMessageSearchReasoningChanged = () => {},
   } = deps;
@@ -1045,12 +1048,19 @@ export const createSettingsRuntime = (deps) => {
   };
 
   const persistSettings = async (changes, { surface = null } = {}) => {
-    persistSettingsLock = persistSettingsLock.then(async () => {
+    persistSettingsLock = persistSettingsLock.catch(() => {}).then(async () => {
       // Log field names only — changes can carry credentials (UI password,
       // client tokens, tunnel tokens) that must never reach the log file.
       console.log('[persistSettings] Updating fields:', Object.keys(changes || {}).join(', ') || '(none)');
       const current = await readSettingsFromDisk({ surface });
       const sanitized = sanitizeSettingsUpdate(changes);
+      const touchesConnection = Object.hasOwn(sanitized, OPENCODE_CONNECTION.SETTING);
+      const connectionChanged = touchesConnection && JSON.stringify(current[OPENCODE_CONNECTION.SETTING] ?? null)
+        !== JSON.stringify(sanitized[OPENCODE_CONNECTION.SETTING]);
+      if (touchesConnection) {
+        const record = parseOpenCodeConnection(sanitized[OPENCODE_CONNECTION.SETTING]);
+        if (connectionChanged) await validateOpenCodeConnection(record);
+      }
       for (const key of Object.keys(sanitized)) {
         // Device state belongs to the install in front of the user, never to
         // the instance; a client that still sends it is simply ignored.
@@ -1125,7 +1135,18 @@ export const createSettingsRuntime = (deps) => {
       }
 
       const changedKeys = Object.keys(sanitized);
-      await writeSettingsToDisk(next, { surface, changedKeys });
+      let priorInstance;
+      if (connectionChanged) {
+        priorInstance = await readSettingsFromDiskStrict();
+        await writeJsonFileAtomic(path.join(path.dirname(SETTINGS_FILE_PATH), OPENCODE_CONNECTION.BACKUP), JSON.stringify(priorInstance, null, 2));
+      }
+      try {
+        await writeSettingsToDisk(next, { surface, changedKeys });
+      } catch (error) {
+        if (connectionChanged) await writeJsonFileAtomic(SETTINGS_FILE_PATH, JSON.stringify(priorInstance, null, 2));
+        throw error;
+      }
+      if (connectionChanged) onOpenCodeConnectionChanged();
       if (changedKeys.includes(OPENCODE_SETTING.SELECTION)
         && next[OPENCODE_SETTING.SELECTION] !== current[OPENCODE_SETTING.SELECTION]) {
         onOpenCodeSelectionChanged(next[OPENCODE_SETTING.SELECTION]);

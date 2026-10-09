@@ -31,6 +31,14 @@
     "opencodeBinary": {
       "scope": "instance"
     },
+    "opencodeConnection": {
+      "scope": "instance",
+      "surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
     "opencodeSelection": {
       "scope": "instance"
     },

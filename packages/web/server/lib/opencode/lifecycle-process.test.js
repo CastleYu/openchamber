@@ -87,3 +87,40 @@ describe('managed process lifecycle with real children', () => {
     }, 15_000);
   }
 });
+
+describe('complete server command with a real owned child', () => {
+  it('passes the exact arguments, cwd and referenced environment without native config injection', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-command-'));
+    const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = path.join(root, 'registry');
+    const script = path.join(root, 'server.cjs');
+    const marker = path.join(root, 'invocation.json');
+    await fs.writeFile(script, "require('node:fs').writeFileSync(" + JSON.stringify(marker) + ", JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),reference:process.env.OC_COMMAND_REF,pid:process.pid})); process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setInterval(()=>{},1000);");
+    const state = { openCodeWorkingDirectory: root, useWslForOpencode: false, openCodePort: null };
+    const runtime = createOpenCodeLifecycleRuntime({
+      state, env: { ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
+      getConnection: async () => ({ mode: 'command', binary: process.execPath, launchSpec: { binary: process.execPath, args: [] }, args: [script, 'literal argument'], cwd: root, commandEnv: { OC_COMMAND_REF: 'fixture-reference' } }),
+      syncToHmrState() {}, ensureLocalOpenCodeServerPassword: async () => 'fixture-only',
+      getManagedOpenCodeEnv: () => { throw new Error('Command must own its config'); },
+      probeManagedOpenCodeGeneration: () => { throw new Error('Command is not a CLI version probe'); },
+      waitForReady: async () => true, normalizeApiPrefix: value => value,
+      setOpenCodePort: port => { state.openCodePort = port; }, setDetectedOpenCodeApiPrefix() {},
+      managedStartupTimeoutMs: 1500,
+    });
+    let server;
+    try {
+      server = await runtime.startOpenCode();
+      const invocation = JSON.parse(await fs.readFile(marker, 'utf8'));
+      expect(invocation).toMatchObject({ args: ['literal argument'], cwd: root, reference: 'fixture-reference' });
+      expect(state.lastOpenCodeLaunchDiagnostics.args).toEqual([]);
+      expect(state.openCodeBaseUrl).toBe('http://127.0.0.1:45678');
+      await server.close(); expect(alive(invocation.pid)).toBe(false);
+      expect(await fs.readdir(path.join(root, 'registry'))).toEqual([]);
+    } finally {
+      await server?.close();
+      if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+      else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  }, 10_000);
+});

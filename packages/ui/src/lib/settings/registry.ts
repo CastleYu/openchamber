@@ -211,6 +211,20 @@ const withOfferedBuiltInStarters = (starters: DraftStarterRef[], snapshot: Setti
   return next;
 };
 
+// This boundary parses host records for transport. The host additionally
+// validates its filesystem, environment references and lifecycle admission.
+const connectionMode = { EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' } as const;
+const connectionSetting = 'opencodeConnection';
+const confirmedConnection = { version: z.literal(1), confirmed: z.literal(true) };
+const connectionSchema = z.discriminatedUnion('mode', [
+  z.strictObject({ ...confirmedConnection, mode: z.literal(connectionMode.EXTERNAL), endpoint: z.url() }),
+  z.strictObject({ ...confirmedConnection, mode: z.literal(connectionMode.COMMAND), exe: z.string().trim().min(1),
+    args: z.array(z.string()).min(1), cwd: z.string().trim().min(1), env: z.array(z.strictObject({ name: z.string(), ref: z.string() })).default([]) }),
+  z.strictObject({ ...confirmedConnection, mode: z.literal(connectionMode.PATH) }),
+  z.strictObject({ ...confirmedConnection, mode: z.literal(connectionMode.CONFIGURED), exe: z.string().trim().min(1) }),
+  z.strictObject({ ...confirmedConnection, mode: z.literal(connectionMode.BUNDLED) }),
+]).nullable();
+
 export const SETTINGS_REGISTRY = {
   // ── Theme (profile, per surface; ThemeSystemContext owns the live copy) ──
   themeId: field({ scope: 'profile', perSurface: true, parse: parseNonEmptyString }),
@@ -223,6 +237,7 @@ export const SETTINGS_REGISTRY = {
   lastDirectory: field({ scope: 'instance', adopt: 'bootstrap-only', parse: parseNonEmptyString }),
   homeDirectory: field({ scope: 'instance', parse: parseNonEmptyString }),
   opencodeBinary: field({ scope: 'instance', parse: parseTrimmedString }),
+  [connectionSetting]: field({ scope: 'instance', surfaces: ['web', 'desktop', 'mobile'], parse: fromSchema(connectionSchema) }),
   [OPEN_CODE_SETTING.SELECTION]: field({ scope: 'instance', parse: fromSchema(z.enum(Object.values(OPEN_CODE_SELECTION))) }),
   projects: field<ProjectEntry[]>({ scope: 'instance', parse: parseProjects }),
   activeProjectId: field({ scope: 'instance', adopt: 'bootstrap-only', parse: parseNonEmptyString }),

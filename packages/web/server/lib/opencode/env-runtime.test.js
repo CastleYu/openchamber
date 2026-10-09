@@ -695,3 +695,33 @@ describe('OpenCode env runtime', () => {
     });
   });
 });
+
+describe('confirmed mode executable resolution', () => {
+  it('keeps PATH, configured and bundle sources independent of legacy overrides', () => {
+    const binary = createBundledCli();
+    process.env.OPENCODE_BINARY = 'invalid-legacy';
+    process.env.PATH = path.dirname(binary);
+    const { runtime } = createRuntime({ opencodeBinary: 'invalid-setting' });
+    expect(pathIdentity(runtime.resolveConnectionBinary({ mode: 'path' }))).toBe(pathIdentity(binary));
+    expect(runtime.resolveConnectionBinary({ mode: 'bundled' })).toBe(binary);
+    expect(runtime.resolveConnectionBinary({ mode: 'configured', exe: binary })).toBe(binary);
+    expect(() => runtime.resolveConnectionBinary({ mode: 'configured', exe: path.join(path.dirname(binary), 'missing') })).toThrow('unavailable');
+    process.env.PATH = '';
+    expect(() => runtime.resolveConnectionBinary({ mode: 'path' })).toThrow('unavailable');
+    expect(runtime.resolveConnectionBinary({ mode: 'bundled' })).toBe(binary);
+    delete process.env.OPENCHAMBER_BUNDLED_OPENCODE_CLI_DIR;
+    Object.defineProperty(process, 'resourcesPath', { configurable: true, value: undefined });
+    process.env.PATH = path.dirname(binary);
+    expect(() => runtime.resolveConnectionBinary({ mode: 'bundled' })).toThrow('unavailable');
+  });
+});
+
+describe('backend PATH authority', () => {
+  it('keeps the backend PATH before login-shell additions', () => {
+    const { runtime, state } = createRuntime({});
+    process.env.PATH = path.join(os.tmpdir(), 'backend-bin');
+    state.cachedLoginShellEnvSnapshot = { PATH: path.join(os.tmpdir(), 'shell-bin') };
+    runtime.applyLoginShellEnvSnapshot();
+    expect(process.env.PATH.split(path.delimiter)).toEqual([path.join(os.tmpdir(), 'backend-bin'), path.join(os.tmpdir(), 'shell-bin')]);
+  });
+});

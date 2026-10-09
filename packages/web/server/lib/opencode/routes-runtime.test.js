@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { OPENCODE_PROFILE } from './compatibility.js';
+import { OpenCodeConnectionError, parseOpenCodeConnection } from './connection.js';
 import { registerOpenCodeRoutes } from './routes.js';
 
 describe('OpenChamber kernel discovery route', () => {
@@ -123,5 +124,27 @@ describe('admission diagnostics over the shared host route', () => {
     expect(response.headers['cache-control']).toBe('no-store');
     runtime.invalidate();
     expect(runtime.get().status).toBeUndefined();
+  });
+});
+
+describe('settings connection HTTP boundary without a global body parser', () => {
+  it('parses a real JSON record and returns validation and active-transition errors', async () => {
+    const app = express();
+    let stored;
+    let active = false;
+    registerOpenCodeRoutes(app, { persistSettings: async changes => {
+      const record = parseOpenCodeConnection(changes.opencodeConnection);
+      if (active) throw new OpenCodeConnectionError('Active transition', 409);
+      stored = record;
+      return { opencodeConnection: record };
+    } });
+    const record = { version: 1, confirmed: true, mode: 'path' };
+    await request(app).put('/api/config/settings').send({ opencodeConnection: { ...record, confirmed: false } }).expect(400);
+    expect(stored).toBeUndefined();
+    const saved = await request(app).put('/api/config/settings').send({ opencodeConnection: record }).expect(200);
+    expect(saved.body).toEqual({ opencodeConnection: record }); expect(stored).toEqual(record);
+    active = true;
+    await request(app).put('/api/config/settings').send({ opencodeConnection: null }).expect(409);
+    expect(stored).toEqual(record);
   });
 });

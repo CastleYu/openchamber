@@ -51,6 +51,7 @@ import {
   UPSTREAM_STALL_TIMEOUT_CONCURRENT_MS,
 } from './lib/event-stream/index.js';
 import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/search.js';
+import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection } from './lib/opencode/connection.js';
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
@@ -434,6 +435,16 @@ const resolveProjectDirectory = (...args) => projectDirectoryRuntime.resolveProj
 const resolveOptionalProjectDirectory = (...args) => projectDirectoryRuntime.resolveOptionalProjectDirectory(...args);
 
 const settingsRuntime = createSettingsRuntime({
+  validateOpenCodeConnection: async (record) => {
+    if (isOpenCodeReady || openCodeProcess || openCodeLifecycleRuntime.isConnectionTransitioning()) {
+      throw new OpenCodeConnectionError('Stop the active connection before changing its record', 409);
+    }
+    if (record) await prepareConnection(record);
+  },
+  onOpenCodeConnectionChanged: () => {
+    openCodeConnectionRevision += 1;
+    kernelRuntime.invalidate();
+  },
   onOpenCodeSelectionChanged: (selection) => {
     requestedOpenCodeSelection = selection;
     kernelRuntime.invalidate();
@@ -730,6 +741,7 @@ const ENV_DESKTOP_NOTIFY = (() => {
 })();
 let kernelRuntime = null;
 let requestedOpenCodeSelection = OPENCODE_SELECTION.AUTO;
+let openCodeConnectionRevision = 0;
 let messageSearchRuntime = null;
 const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
 const agentHost = createAgentHost({
@@ -866,6 +878,17 @@ const openCodeEnvRuntime = createOpenCodeEnvRuntime({
   readSettingsFromDiskMigrated,
   providedLoginShellEnvSnapshot,
 });
+
+const prepareConnection = (record) => prepareOpenCodeConnection(record, {
+  resolveBinary: openCodeEnvRuntime.resolveConnectionBinary,
+  resolveLaunchSpec: openCodeEnvRuntime.resolveManagedOpenCodeLaunchSpec,
+  stat: fsPromises.stat,
+  env: process.env,
+});
+const readOpenCodeConnection = async () => {
+  const settings = await readSettingsFromDiskStrict();
+  return prepareConnection(settings[OPENCODE_CONNECTION.SETTING] ?? null);
+};
 
 const applyLoginShellEnvSnapshot = (...args) => openCodeEnvRuntime.applyLoginShellEnvSnapshot(...args);
 const getLoginShellEnvSnapshot = (...args) => openCodeEnvRuntime.getLoginShellEnvSnapshot(...args);
@@ -1381,7 +1404,8 @@ Object.defineProperties(openCodeLifecycleState, {
 
 const openCodeLifecycleRuntime = createOpenCodeLifecycleRuntime({
   kernelRuntime,
-  getBackendSelection: agentHost.getSelection,
+  getConnection: readOpenCodeConnection,
+  getBackendSelection: () => ({ ...agentHost.getSelection(), connectionRevision: openCodeConnectionRevision }),
   state: openCodeLifecycleState,
   env: {
     ENV_CONFIGURED_OPENCODE_PORT,
@@ -1788,7 +1812,7 @@ const gracefulShutdownRuntime = createGracefulShutdownRuntime({
   setMessageStreamRuntime: (value) => {
     messageStreamRuntime = value;
   },
-  shouldSkipOpenCodeStop: () => ENV_SKIP_OPENCODE_START || isExternalOpenCode,
+  shouldSkipOpenCodeStop: () => isExternalOpenCode,
   getOpenCodePort: () => openCodePort,
   getOpenCodeProcess: () => openCodeProcess,
   setOpenCodeProcess: (value) => {
@@ -2579,7 +2603,7 @@ async function main(options = {}) {
     isReady: () => isOpenCodeReady,
     restartOpenCode: () => restartOpenCode(),
     getOpenCodeProcessInfo: () => {
-      const managed = Boolean((openCodeProcess || openCodePort) && !ENV_SKIP_OPENCODE_START && !isExternalOpenCode);
+      const managed = Boolean((openCodeProcess || openCodePort) && !isExternalOpenCode);
       // Only ever expose pid/port for a server WE manage. The Electron-side
       // killer kills by port (lsof + kill -KILL), so returning a port we don't
       // own — e.g. an external/desktop OpenCode on 4096 we attached to — would

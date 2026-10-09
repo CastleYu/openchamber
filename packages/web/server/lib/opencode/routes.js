@@ -1,3 +1,4 @@
+import { OpenCodeConnectionError } from './connection.js';
 import express from 'express';
 import { createProjectIdFromPath } from '../projects/project-id.js';
 import fs from 'fs';
@@ -485,11 +486,12 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     }
   });
 
-  app.put('/api/config/settings', async (req, res) => {
+  app.put('/api/config/settings', express.json({ limit: '1mb' }), async (req, res) => {
     try {
       const updated = await persistSettings(req.body ?? {}, { surface: settingsSurfaceOf(req) });
       res.json(updated);
     } catch (error) {
+      if (error instanceof OpenCodeConnectionError) return res.status(error.status).json({ error: error.message });
       console.error('[API:PUT /api/config/settings] Failed to save settings:', error);
       console.error('[API:PUT /api/config/settings] Error stack:', error.stack);
       res.status(500).json({ error: 'Failed to save settings' });

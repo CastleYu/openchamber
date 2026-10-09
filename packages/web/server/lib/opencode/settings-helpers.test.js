@@ -778,7 +778,7 @@ describe('settings registry gate', () => {
     mermaidStyle: 'openchamber',
     themeId: 'openchamber-dark', useSystemTheme: true, themeVariant: 'dark', lightThemeId: 'openchamber-light', darkThemeId: 'openchamber-dark',
     splashBgLight: '#fff', splashFgLight: '#000', splashBgDark: '#000', splashFgDark: '#fff',
-    lastDirectory: '/home/testuser/project', homeDirectory: '/home/testuser', opencodeBinary: '/usr/local/bin/opencode', opencodeSelection: 'auto',
+    lastDirectory: '/home/testuser/project', homeDirectory: '/home/testuser', opencodeBinary: '/usr/local/bin/opencode', opencodeSelection: 'auto', opencodeConnection: { version: 1, confirmed: true, mode: 'path' },
     projects: [{ id: 'p', path: '/home/testuser/project' }], activeProjectId: 'p',
     securityScopedBookmarks: ['bookmark'], pinnedDirectories: ['/home/testuser/project'],
     desktopLanAccessEnabled: true, desktopKeepAwakeEnabled: true, desktopMinimizeToTrayEnabled: true, desktopMacMenuBarEnabled: true,
@@ -928,4 +928,14 @@ it('round-trips only requested OpenCode selections through the settings boundary
     expect(changes.opencodeSelection).toBeUndefined();
     expect(helpers.formatSettingsResponse(helpers.mergePersistedSettings(saved, changes)).opencodeSelection).toBe('legacy-1.2.27');
   }
+});
+
+describe('connection settings recovery', () => {
+  it('rejects an invalid write while keeping the settings read repairable', () => {
+    const helpers = createTestHelpers();
+    const input = { opencodeConnection: { mode: 'path', confirmed: false }, editorFontSize: 18 };
+    expect(() => helpers.sanitizeSettingsUpdate(input)).toThrow('Invalid or unconfirmed');
+    expect(helpers.formatSettingsResponse(input)).toMatchObject({ editorFontSize: 18, opencodeConnectionError: 'Invalid or unconfirmed OpenCode connection' });
+    expect(helpers.formatSettingsResponse(input)).not.toHaveProperty('opencodeConnection');
+  });
 });

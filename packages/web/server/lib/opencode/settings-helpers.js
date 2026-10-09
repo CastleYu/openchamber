@@ -1,3 +1,4 @@
+import { OPENCODE_CONNECTION, OpenCodeConnectionError, parseOpenCodeConnection } from './connection.js';
 import { createRequire } from 'node:module';
 import { isOpenCodeSelection, OPENCODE_SETTING } from './compatibility.js';
 
@@ -172,6 +173,9 @@ export const createSettingsHelpers = (dependencies) => {
 
     const candidate = payload;
     const result = {};
+    if (Object.hasOwn(candidate, OPENCODE_CONNECTION.SETTING)) {
+      result[OPENCODE_CONNECTION.SETTING] = parseOpenCodeConnection(candidate[OPENCODE_CONNECTION.SETTING]);
+    }
 
     if (typeof candidate.themeId === 'string' && candidate.themeId.length > 0) {
       result.themeId = candidate.themeId;
@@ -1073,7 +1077,15 @@ export const createSettingsHelpers = (dependencies) => {
   };
 
   const formatSettingsResponse = (settings) => {
-    const sanitized = sanitizeSettingsUpdate(settings);
+    let sanitized;
+    try { sanitized = sanitizeSettingsUpdate(settings); }
+    catch (error) {
+      if (!(error instanceof OpenCodeConnectionError)) throw error;
+      const remaining = { ...settings };
+      delete remaining[OPENCODE_CONNECTION.SETTING];
+      sanitized = sanitizeSettingsUpdate(remaining);
+      sanitized[OPENCODE_CONNECTION.ERROR] = error.message;
+    }
     for (const key of SECRET_SETTINGS_KEYS) {
       delete sanitized[key];
     }

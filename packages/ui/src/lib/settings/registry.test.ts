@@ -236,3 +236,15 @@ test('keeps the requested OpenCode selection as an instance fact and rejects inf
   expect(SETTINGS_REGISTRY.opencodeSelection.scope).toBe('instance');
   expect(parseSettingsDocument({ profile: 'legacy-1.2.27' })?.opencodeSelection).toBeUndefined();
 });
+
+test('transports confirmed host connection records without turning candidates into authority', () => {
+  for (const mode of ['path', 'bundled']) {
+    const record = { version: 1, confirmed: true, mode };
+    expect(parseSettingsDocument({ opencodeConnection: record })?.opencodeConnection).toEqual(record);
+  }
+  for (const record of [{ version: 1, confirmed: false, mode: 'path' }, { version: 2, confirmed: true, mode: 'path' }, { version: 1, confirmed: true, mode: 'guessed' }]) {
+    expect(parseSettingsDocument({ opencodeConnection: record })?.opencodeConnection).toBeUndefined();
+  }
+  expect(parseSettingsDocument({ opencodeConnection: null })?.opencodeConnection).toBeNull();
+  expect(SETTINGS_REGISTRY.opencodeConnection.surfaces).not.toContain('vscode');
+});

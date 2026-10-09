@@ -1,5 +1,11 @@
 # Agent dispatch contracts
 
+## Independent acceptance of generated capabilities
+
+Maintainer-owned approval operation and extension rows may include `state: supported` or `state: adapted`. After real evidence review, this explicit state can promote an existing unverified CAgent capability in the current binding. The candidate artifact stays unchanged. Approval must match the family, connection, adapter/revisions, server revision and artifact digest; extensions additionally match action revision and canonical manifest digest. Each row requires evidence. Legacy approval rows without state preserve their prior behavior and cannot promote an unverified candidate.
+
+Promotion never changes OpenCode support, an explicit unsupported declaration or a missing capability. A missing handler remains unavailable. Revocation or changed identity restores candidate capabilities on the next authority read, including the dispatcher check after execution. Finite actions follow the same rule. The reader returns detached frozen operation and extension rows and evidence. Approval structure cannot establish evidence meaning; the maintainer must verify actual operation semantics. Fixture passage still grants no live support. No HTTP approval endpoint or production activation is added by this module.
+
 Extension input, receipt, result-envelope and snapshot wire schemas now live in
 `schemas.js` for host and browser reuse. The host still parses manifest-specific
 values through `extensions.js`. The shared client checks exact identity, declared

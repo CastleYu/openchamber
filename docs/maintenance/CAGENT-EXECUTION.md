@@ -1,6 +1,14 @@
 # CAgent execution checkpoint
 
-## Latest checkpoint: finite action packet delivery
+## Latest checkpoint: independent capability promotion
+
+2026-10-09. Protected approval rows can record explicit supported/adapted acceptance states for core operations and finite actions. Exact current approvals promote existing unverified CAgent capabilities without modifying the candidate artifact. OpenCode, explicit unsupported declarations and missing capabilities are not promoted; missing handlers stay unavailable. Extension promotion additionally binds the manifest revision and digest. Revocation or stale identity removes promotion on the next authority read. The approval reader now also detaches and freezes extension evidence.
+
+Ninety-three focused authority, approval reader/writer, host and extension-runtime tests pass. A native Node journey loads an unverified artifact, persists its independent review, makes one synthetic HTTP request, revokes the review and refuses further requests. Older approval rows cannot promote an unverified adapter. Workspace type-check/lint and authored anti-slop/ESLint pass; lint retains five existing warnings. Dead-code retains 2 files, 319 exports, 231 types and 1 duplicate, without a CAgent row. All 92 local links in eight touched documents resolve. The English/Chinese workbook adds the environment entry gate before handler authoring. Live weekly quota is 58% remaining.
+
+This is host approval mechanics, not evidence that CAgent supports any actual operation. Production consumer migration, maintenance composition, real API/model/environment acceptance, independent remote publication and temporary Release remain outstanding. CA-01/02/03 remain incomplete; other INT work waits for CA-03. The existing offline bundle predates these host approval changes. Final delivery must rebuild and independently verify its protected digest.
+
+## Earlier checkpoint: finite action packet delivery
 
 2026-10-09. Preparation accepts a strict optional extension input containing reviewed finite manifests and exactly matching semantic fixtures. It binds complete extension inventory, effects and citations to the mapping; actions requiring host development remain disabled inventory entries. Each finite action gets one editable handler and protected manifest, mapping, bilingual instructions, fixtures and cited source excerpts when supplied. Core and action packets share bounded persisted progress. Extension-only and mixed finalization capture passing sources and recheck every fixture against the combined module before publishing an artifact. Generated capabilities remain unverified.
 

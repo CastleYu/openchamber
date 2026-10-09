@@ -20,6 +20,7 @@ export type AgentExtensionApproval = Readonly<{
   actionID: string;
   revision: string;
   manifestDigest: string;
+  state?: 'supported' | 'adapted';
   evidence: readonly string[];
 }>;
 
@@ -47,7 +48,7 @@ export type AgentApproval = Readonly<{
   capabilityRevision: string;
   serverRevision: string;
   artifactDigest: string;
-  operations: readonly Readonly<{ operation: AgentOperation; evidence: readonly string[] }>[];
+  operations: readonly Readonly<{ operation: AgentOperation; state?: 'supported' | 'adapted'; evidence: readonly string[] }>[];
   extensions?: readonly AgentExtensionApproval[];
 }>;
 export function agentExtensionDigest(manifest: ExtensionManifest): string;

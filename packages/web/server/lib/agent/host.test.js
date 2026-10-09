@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION } from './constants.js';
+import { AGENT_ATTEMPT, AGENT_ERROR, AGENT_FAMILY, AGENT_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { createAgentAttempts } from './attempts.js';
 import { agentArtifactDigest } from './artifacts.js';
 import { createAgentApprovals } from './approvals.js';
@@ -77,6 +77,35 @@ afterEach(async () => {
 });
 
 describe('createAgentHost', () => {
+  it('loads an unverified artifact and dispatches only while its persisted live review remains exact', async () => {
+    const item = await artifact(source().replace("state: 'supported'", "state: 'unverified'"));
+    let calls = 0;
+    const url = await start((_request, response) => {
+      calls += 1;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify(session));
+    });
+    const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'oc-agent-host-review-'));
+    roots.add(directory);
+    const store = createAgentApprovals({ directory });
+    const writer = createAgentApprovalWriter({ directory });
+    const host = makeHost(store.read);
+    const identity = await select(host, item, connection(url));
+    const input = { workspaceID: 'w1', sessionID: 's1' };
+    await expect(host.dispatcher.dispatch(operation, input, identity)).rejects.toMatchObject({ code: AGENT_ERROR.UNVERIFIED });
+    writer.write(approvalFor(identity, item.manifest.artifactDigest));
+    await expect(host.dispatcher.dispatch(operation, input, identity)).rejects.toMatchObject({ code: AGENT_ERROR.UNVERIFIED });
+    expect(calls).toBe(0);
+    writer.write(approvalFor(identity, item.manifest.artifactDigest, { operations: [
+      { operation, state: AGENT_SUPPORT.ADAPTED, evidence: ['independent-live-review:r1'] },
+    ] }));
+    expect((await host.dispatcher.dispatch(operation, input, identity)).data).toEqual(session);
+    expect(calls).toBe(1);
+    writer.revoke({ family: profile.family, connectionID: identity.connectionID });
+    await expect(host.dispatcher.dispatch(operation, input, identity)).rejects.toMatchObject({ code: AGENT_ERROR.UNVERIFIED });
+    expect(calls).toBe(1);
+  });
+
   it('preserves entered mutation uncertainty across selection cancellation and refuses replay after reselection', async () => {
     const effect = AGENT_OPERATION.SEND_PROMPT;
     const item = await artifact(`export function createAdapter(context) {

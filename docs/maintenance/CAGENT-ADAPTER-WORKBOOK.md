@@ -24,6 +24,14 @@ The kit commands must return nonzero for failed required checks and produce a co
 
 ## API evidence intake
 
+### Environment entry gate
+
+Before handler authoring, the local maintainer freezes the documentation revision, kit digest, selected server and authentication reference. Run the untouched kit and authoring-model calibration inside the environment. Record toolchain failures separately from mapping failures. Failed calibration selects smaller declarative packets or maintainer-authored codecs with the same acceptance criteria.
+
+Review the complete operation/endpoint disposition report before generating writable packets. Each unresolved question names its source section, missing semantics, affected feature IDs and owner. Give the local agent only the selected operation's reviewed excerpts, generated stub, fixed examples and check command. Documentation changes invalidate affected packets and dependent evidence before regeneration; preserve unrelated accepted packets.
+
+Completion: the untouched kit runs, calibration selects a recorded authoring path, every consumed operation and documented endpoint has a disposition, and every unresolved question has an owner. Missing API documentation blocks real adaptation. Deliver the kit and unresolved report while keeping dependent features disabled and remaining INT work behind CA-03.
+
 The local maintainer supplies endpoint/auth references and the API documentation within the environment. The agent records the document revision, server build when known, and exact section for each mapping. Keep source documents and samples local; no external upload is required. An external handoff may contain only an approved sanitized coverage summary.
 
 | Mapping field | Fill rule |

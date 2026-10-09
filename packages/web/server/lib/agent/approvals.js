@@ -75,8 +75,11 @@ export const createAgentApprovals = ({ directory }) => {
         throw new AgentApprovalError(AGENT_ERROR.APPROVAL_CORRUPT);
       }
       const approval = decoded.data.approval;
-      return Object.freeze({ ...approval, operations: Object.freeze(approval.operations.map((item) =>
-        Object.freeze({ ...item, evidence: Object.freeze([...item.evidence]) }))) });
+      const result = { ...approval, operations: Object.freeze(approval.operations.map((item) =>
+        Object.freeze({ ...item, evidence: Object.freeze([...item.evidence]) }))) };
+      if (approval.extensions) result.extensions = Object.freeze(approval.extensions.map((item) =>
+        Object.freeze({ ...item, evidence: Object.freeze([...item.evidence]) })));
+      return Object.freeze(result);
     } catch (error) {
       if (error instanceof AgentApprovalError) throw error;
       if (error?.code === AGENT_FILE_ERROR.MISSING) return null;

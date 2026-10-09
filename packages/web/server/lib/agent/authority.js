@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { AGENT_ERROR, AGENT_HOST_OPERATION, AGENT_SUPPORT } from './constants.js';
+import { AGENT_ERROR, AGENT_FAMILY, AGENT_HOST_OPERATION, AGENT_SUPPORT } from './constants.js';
 import { AgentDispatchError } from './dispatcher.js';
 import { extensionManifestSchema } from './extensions.js';
 import { agentApprovalSchema, agentRegistrationSchema, agentSelectionSchema } from './schemas.js';
@@ -8,6 +8,10 @@ const key = (item) => JSON.stringify([
   item.family, item.adapterID, item.adapterRevision, item.capabilityRevision,
 ]);
 const refuse = (code) => new AgentDispatchError(code, AGENT_HOST_OPERATION.GET_BINDING);
+const reviewedCapability = (family, capability, approval) => {
+  if (family !== AGENT_FAMILY.CAGENT || capability?.state !== AGENT_SUPPORT.UNVERIFIED || !approval?.state) return capability;
+  return Object.freeze({ state: approval.state, evidence: Object.freeze([...approval.evidence]) });
+};
 const deepFreeze = (value) => {
   if (value === null || Object(value) !== value || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) {
@@ -63,21 +67,27 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
       && accepted.data.connectionID === current.connectionID
       && accepted.data.serverRevision === current.serverRevision
       && accepted.data.artifactDigest === adapter.artifactDigest;
+    const approvedOperations = matches ? new Map(accepted.data.operations.map((item) => [item.operation, item])) : new Map();
+    const capabilities = Object.freeze(Object.fromEntries(Object.entries(adapter.capabilities).map(([operation, capability]) => [
+      operation, reviewedCapability(current.family, capability, approvedOperations.get(operation)),
+    ])));
     const operations = matches ? accepted.data.operations.filter((item) => {
-      const support = adapter.capabilities[item.operation];
+      const support = capabilities[item.operation];
       return support && (support.state === AGENT_SUPPORT.SUPPORTED || support.state === AGENT_SUPPORT.ADAPTED)
         && support.evidence.length > 0 && Object.hasOwn(adapter.handlers, item.operation);
     }).map((item) => item.operation) : null;
     const approvals = matches ? new Map(accepted.data.extensions?.map((item) => [item.actionID, item]) ?? []) : new Map();
     const extensions = (adapter.extensions ?? []).map((item) => {
       const acceptedExtension = approvals.get(item.manifest.actionID);
-      const capability = item.capability;
+      const exact = acceptedExtension && acceptedExtension.revision === item.manifest.revision
+        && acceptedExtension.manifestDigest === agentExtensionDigest(item.manifest);
+      const capability = reviewedCapability(current.family, item.capability, exact ? acceptedExtension : null);
       const supported = (capability.state === AGENT_SUPPORT.SUPPORTED || capability.state === AGENT_SUPPORT.ADAPTED)
         && capability.evidence.length > 0;
       return Object.freeze({
         ...item,
-        accepted: Boolean(acceptedExtension && acceptedExtension.revision === item.manifest.revision
-          && acceptedExtension.manifestDigest === agentExtensionDigest(item.manifest) && supported),
+        capability,
+        accepted: Boolean(exact && supported),
       });
     });
     const binding = {
@@ -87,7 +97,7 @@ export const createAgentAuthority = ({ registrations, getSelection, getAcceptanc
       }),
       ready: current.ready,
       authorized: current.authorized,
-      capabilities: adapter.capabilities,
+      capabilities,
       handlers: adapter.handlers,
       acceptance: operations === null ? null : Object.freeze({
         adapterRevision: current.adapterRevision, capabilityRevision: current.capabilityRevision,

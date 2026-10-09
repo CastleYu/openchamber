@@ -136,12 +136,14 @@ export const agentApprovalSchema = z.object({
   artifactDigest: z.string().regex(/^[a-f0-9]{64}$/),
   operations: z.array(z.object({
     operation: agentOperationSchema,
+    state: z.enum([AGENT_SUPPORT.SUPPORTED, AGENT_SUPPORT.ADAPTED]).optional(),
     evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
   }).strict()).refine((items) => new Set(items.map((item) => item.operation)).size === items.length),
   extensions: z.array(z.object({
     actionID: extensionActionIDSchema,
     revision: id,
     manifestDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    state: z.enum([AGENT_SUPPORT.SUPPORTED, AGENT_SUPPORT.ADAPTED]).optional(),
     evidence: z.array(id).min(1).refine((items) => new Set(items).size === items.length),
   }).strict()).max(AGENT_EXTENSION.MAX_ACTIONS).refine((items) => new Set(items.map((item) => item.actionID)).size === items.length).optional(),
 }).strict();

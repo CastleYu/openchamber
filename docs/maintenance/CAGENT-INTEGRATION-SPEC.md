@@ -95,6 +95,8 @@ For every delivered extension test input rejection, effect/permission checks, su
 
 ## Local agent constraints and validation
 
+The workbook's [environment entry gate](CAGENT-ADAPTER-WORKBOOK.md#environment-entry-gate) precedes handler authoring. It binds reviewed documentation, local toolchain/model calibration and complete operation/endpoint dispositions before writable packets are generated. This is a required CA-03 preparation step, not a claim that the unknown API has been inspected.
+
 The kit freezes shared contracts, reference tests, feature dependency rules and extension schemas outside the writable adapter workspace. Supply one operation per task packet, with its relevant documentation excerpt, input/output examples, allowed files, fixed test command and completion rule. Generate the operation skeleton and registry rather than asking the model to invent architecture or symbols. Ambiguous documentation produces a specific evidence gap, not a guessed mapping.
 
 Use deterministic mapping for simple methods/paths/fields. Custom typed codecs handle verified semantic differences. Both pass the same fixtures and host-level checks. Keep secrets out of mapping files and exported reports; runtime auth uses the existing secret owner. The kit works offline with its tested toolchain and dependencies; no package installation or online code generation is required inside the environment.

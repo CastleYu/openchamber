@@ -79,6 +79,54 @@ const authorityFor = (options = {}) => {
 const errorCode = (call, code) => expect(call).rejects.toMatchObject({ code });
 
 describe('agent authority', () => {
+  it.each([AGENT_SUPPORT.SUPPORTED, AGENT_SUPPORT.ADAPTED])('promotes an unverified CAgent operation only under reviewed state %s', async (state) => {
+    const item = registration({ family: AGENT_FAMILY.CAGENT, capabilities: {
+      [AGENT_OPERATION.GET_SESSION]: { state: AGENT_SUPPORT.UNVERIFIED, evidence: [] },
+    } });
+    let accepted = approval({ family: AGENT_FAMILY.CAGENT, operations: [
+      { operation: AGENT_OPERATION.GET_SESSION, state, evidence: ['live:session-r1'] },
+    ] });
+    const authority = createAgentAuthority({ registrations: [item], getSelection: () => selection({ family: AGENT_FAMILY.CAGENT }),
+      getAcceptance: () => accepted });
+    const dispatcher = createAgentDispatcher({ getBinding: authority.getBinding });
+    expect((await dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' })).data.id).toBe('s1');
+    expect(authority.getBinding().capabilities[AGENT_OPERATION.GET_SESSION]).toEqual({ state, evidence: ['live:session-r1'] });
+    expect(item.capabilities[AGENT_OPERATION.GET_SESSION].state).toBe(AGENT_SUPPORT.UNVERIFIED);
+    accepted = approval({ family: AGENT_FAMILY.CAGENT });
+    await expect(dispatcher.dispatch(AGENT_OPERATION.GET_SESSION, { workspaceID: 'w1', sessionID: 's1' })).rejects.toMatchObject({ code: AGENT_ERROR.UNVERIFIED });
+    expect(item.handlers[AGENT_OPERATION.GET_SESSION]).toHaveBeenCalledTimes(1);
+  });
+
+  it('cannot promote OpenCode, explicit absence, missing handlers or stale artifacts', () => {
+    for (const [family, state, handlers, artifactDigest] of [
+      [AGENT_FAMILY.OPENCODE, AGENT_SUPPORT.UNVERIFIED, registration().handlers, digest],
+      [AGENT_FAMILY.CAGENT, AGENT_SUPPORT.UNSUPPORTED, registration().handlers, digest],
+      [AGENT_FAMILY.CAGENT, AGENT_SUPPORT.UNVERIFIED, {}, digest],
+      [AGENT_FAMILY.CAGENT, AGENT_SUPPORT.UNVERIFIED, registration().handlers, 'b'.repeat(64)],
+    ]) {
+      const authority = createAgentAuthority({ registrations: [registration({ family, handlers, capabilities: {
+        [AGENT_OPERATION.GET_SESSION]: { state, evidence: [] },
+      } })], getSelection: () => selection({ family }), getAcceptance: () => approval({ family, artifactDigest, operations: [
+        { operation: AGENT_OPERATION.GET_SESSION, state: AGENT_SUPPORT.SUPPORTED, evidence: ['live:r1'] },
+      ] }) });
+      expect(authority.getBinding().acceptance?.operations ?? []).toEqual([]);
+    }
+  });
+
+  it('promotes finite CAgent actions only under an exact reviewed manifest and revokes them on replacement', () => {
+    const ext = extension({ capability: { state: AGENT_SUPPORT.UNVERIFIED, evidence: [] } });
+    let accepted = approval({ family: AGENT_FAMILY.CAGENT, operations: [], extensions: [
+      extensionApproval(ext.manifest, { state: AGENT_SUPPORT.ADAPTED }),
+    ] });
+    const authority = createAgentAuthority({ registrations: [registration({ family: AGENT_FAMILY.CAGENT, extensions: [ext] })],
+      getSelection: () => selection({ family: AGENT_FAMILY.CAGENT }), getAcceptance: () => accepted });
+    expect(authority.getBinding().extensions[0]).toMatchObject({ accepted: true, capability: { state: AGENT_SUPPORT.ADAPTED } });
+    accepted = { ...accepted, extensions: [extensionApproval(ext.manifest, { state: AGENT_SUPPORT.ADAPTED, manifestDigest: 'b'.repeat(64) })] };
+    expect(authority.getBinding().extensions[0]).toMatchObject({ accepted: false, capability: { state: AGENT_SUPPORT.UNVERIFIED } });
+    accepted = { ...accepted, extensions: [extensionApproval(ext.manifest, { state: AGENT_SUPPORT.UNVERIFIED })] };
+    expect(authority.getBinding().acceptance).toBeNull();
+  });
+
   it('does not read protected approval when selection is unauthorized or unready', () => {
     const getAcceptance = vi.fn(() => { throw new Error('private storage must not be read'); });
     for (const patch of [{ authorized: false }, { ready: false }]) {

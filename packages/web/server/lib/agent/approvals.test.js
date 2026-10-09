@@ -44,6 +44,20 @@ afterEach(async () => {
 });
 
 describe('agent approvals', () => {
+  it('persists reviewed states and returns detached frozen extension evidence', async () => {
+    const { directory, store } = await makeStore();
+    const value = approval({ operations: [{ operation: AGENT_OPERATION.GET_SESSION, state: AGENT_SUPPORT.ADAPTED, evidence: ['live:r1'] }],
+      extensions: [{ actionID: 'cagent.sample.lookup', revision: 'r1', manifestDigest: digest, state: AGENT_SUPPORT.SUPPORTED, evidence: ['live:lookup'] }] });
+    writeRecord(directory, { version: AGENT_APPROVAL.VERSION, approval: value });
+    const loaded = store.read(selection());
+    expect(loaded).toEqual(value);
+    expect(Object.isFrozen(loaded.extensions)).toBe(true);
+    expect(Object.isFrozen(loaded.extensions[0])).toBe(true);
+    expect(Object.isFrozen(loaded.extensions[0].evidence)).toBe(true);
+    value.extensions[0].evidence[0] = 'changed';
+    expect(loaded.extensions[0].evidence).toEqual(['live:lookup']);
+  });
+
   it('uses an opaque family-scoped filename and validates selection before storage', async () => {
     const key = { family: AGENT_FAMILY.CAGENT, connectionID: '../private/connection' };
     expect(agentApprovalName(key)).toMatch(/^[a-f0-9]{64}\.json$/);

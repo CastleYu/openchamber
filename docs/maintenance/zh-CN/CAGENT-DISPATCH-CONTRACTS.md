@@ -120,6 +120,10 @@ Web、Electron、托管移动端及 Capacitor 共用这些宿主 HTTP 路由。V
 
 ## 后端家族选择
 
+### 通用 OpenCode 代理拒绝
+
+`proxy.js` 依据内核描述符处理 OC1／OC2 的 HTTP 和 SSE 转发。未知版本继续使用原有就绪等待；明确的 unsupported 描述符在等待或转发前返回 501 `unsupported`，涵盖 HTTP 变更及 SSE。已等待请求在每轮等待后重新检查，因此切换到 CAgent 不会变成“正在重启”的响应。此前已注册的 OpenChamber 自有路由继续由各自守卫管理。英文归属文档为 [OpenCode 模块文档](../../../packages/web/server/lib/opencode/DOCUMENTATION.md)。
+
 Web 生命周期与 readiness 循环现在消费同一个家族／修订版快照。选择 CAgent 后跳过 OpenCode 启动和监控；直接调用 OpenCode 生命周期操作会在执行前拒绝，异步边界会拒绝已失效的启动或就绪结果。失效启动中新创建的进程会关闭，已有自有进程的关闭能力仍保留。选择修订版变化会重置健康计数和缓存。启动包装器不会在其选择失效后启动 OpenCode watcher。已发出的探测轮次仍可在现有期限内完成，因此这不代表立即取消网络请求。受保护运行器约束、完整能力覆盖及尚未迁移的自有路由／UI 仍是启用前提。本次没有授予任何 CAgent 宿主支持。
 
 协调器默认选择 OpenCode，通过 `getSelection()` 暴露包含家族及修订版的不可变快照。结构有效的 CAgent 选择在加载前推进修订版；加载失败及 `clear()` 均保留 CAgent 家族，且没有活动绑定。只有维护者拥有的 `selectOpenCode()` 端口才能返回 OpenCode，同时停用待完成的适配器加载及选择范围内的请求端口。快照不包含凭据、不执行 I/O，后续选择不会修改旧快照。

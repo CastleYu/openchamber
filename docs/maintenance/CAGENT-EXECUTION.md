@@ -1,5 +1,13 @@
 # CAgent execution checkpoint
 
+## Current checkpoint: explicit generic proxy refusal
+
+Dead-code completes with the existing 2 unused files, 319 unused exports, 231 unused exported types and 1 duplicate. There is no new Agent entry.
+
+2026-10-09. The generic OpenCode proxy now returns 501 `unsupported` for an explicit unsupported kernel descriptor before readiness or forwarding. HTTP mutations and SSE use this gate. A request already held for readiness rechecks after each wait; switching to CAgent refuses it rather than returning a restarting response. Unknown/unreachable OpenCode descriptors retain their existing waiting behavior, and previously registered owned routes retain their own guards.
+
+Forty-three native proxy, kernel and utility tests pass, including OC1/OC2 forwarding regressions, unsupported HTTP/mutation/SSE paths with zero readiness or credential/upstream work, and retirement during a held request. The actual authenticated production-server probe passes approval, synthetic session read, revocation, explicit configuration refusal, no managed OpenCode process and shutdown. Web package type-check/lint, focused ESLint and proxy syntax pass. Anti-slop reports the same 33 pre-existing diagnostics as the previous proxy source, with no authored-test diagnostics; it is not a clean whole-file pass. Live weekly quota remains 58%. Real CAgent/environment/model acceptance, full remaining gates, independent remote publication and temporary Release remain required. This checkpoint does not pass CA-03 or start other INT implementation.
+
 ## Current checkpoint: production conversation feature composition
 
 2026-10-09. Production now registers only the separate CAgent page's acquisition, history and prompt consumers through the frozen `AGENT_CONVERSATION_FEATURES` list. The host port captures current identity on each read; every dependency still requires exact independent approval, and mutations require the durable ledger. Other core features remain unmigrated. Default hosts without this port stay closed. The page opens only existing sessions and requires GET_SESSION, even though the general acquisition rule also permits creation.

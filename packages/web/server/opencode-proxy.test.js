@@ -4,6 +4,8 @@ import express from 'express';
 import path from 'path';
 
 import { createSseBoundaryTracker, registerOpenCodeProxy, writeSseChunkWithBackpressure } from './lib/opencode/proxy.js';
+import { AGENT_ERROR } from './lib/agent/constants.js';
+import { OPENCODE_GENERATION } from './lib/opencode/compatibility.js';
 
 const listen = (app, host = '127.0.0.1') => new Promise((resolve, reject) => {
   const server = app.listen(0, host, () => resolve(server));
@@ -33,6 +35,53 @@ describe('OpenCode proxy SSE forwarding', () => {
     await closeServer(upstreamServer);
     proxyServer = undefined;
     upstreamServer = undefined;
+  });
+
+  it('refuses unsupported HTTP, mutation and SSE paths before readiness or upstream work', async () => {
+    let reads = 0;
+    let requests = 0;
+    const app = express();
+    app.get('/api/health', (_req, res) => res.json({ owned: true }));
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 6000,
+      getRuntime: () => { reads += 1; return { openCodePort: null, isOpenCodeReady: false }; },
+      getKernelRuntime: () => ({ generation: OPENCODE_GENERATION.UNSUPPORTED, endpoint: null, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => { throw new Error('must not read credentials'); },
+      buildOpenCodeUrl: () => { requests += 1; throw new Error('must not forward'); },
+      ensureOpenCodeApiPrefix: () => {},
+    });
+    reads = 0; // Registration reads runtime only to choose its diagnostic line.
+    proxyServer = await listen(app);
+    const origin = `http://127.0.0.1:${proxyServer.address().port}`;
+    for (const [route, method] of [['config', 'GET'], ['session/s/message', 'POST'], ['event', 'GET'], ['global/event', 'GET']]) {
+      const response = await fetch(`${origin}/api/${route}`, { method });
+      expect(response.status).toBe(501);
+      expect(await response.json()).toEqual({ error: AGENT_ERROR.UNSUPPORTED });
+    }
+    expect(await (await fetch(`${origin}/api/health`)).json()).toEqual({ owned: true });
+    expect(reads).toBe(0);
+    expect(requests).toBe(0);
+  });
+
+  it('refuses a held readiness request when its descriptor becomes unsupported', async () => {
+    let generation = OPENCODE_GENERATION.UNKNOWN;
+    let enter;
+    const entered = new Promise((resolve) => { enter = resolve; });
+    const app = express();
+    registerOpenCodeProxy(app, {
+      fs: {}, os: {}, path, OPEN_CODE_READY_GRACE_MS: 6000,
+      getRuntime: () => { if (proxyServer) enter(); return { openCodePort: null, isOpenCodeReady: false }; },
+      getKernelRuntime: () => ({ generation, endpoint: null, epoch: 1 }),
+      getOpenCodeAuthHeaders: () => { throw new Error('must not read credentials'); },
+      buildOpenCodeUrl: () => { throw new Error('must not forward'); }, ensureOpenCodeApiPrefix: () => {},
+    });
+    proxyServer = await listen(app);
+    const response = fetch(`http://127.0.0.1:${proxyServer.address().port}/api/config`);
+    await entered;
+    generation = OPENCODE_GENERATION.UNSUPPORTED;
+    const refused = await response;
+    expect(refused.status).toBe(501);
+    expect(await refused.json()).toEqual({ error: AGENT_ERROR.UNSUPPORTED });
   });
 
   it('forwards event streams with nginx-safe headers', async () => {

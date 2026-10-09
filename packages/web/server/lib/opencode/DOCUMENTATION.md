@@ -70,7 +70,12 @@ This module provides OpenCode server integration utilities for the web server ru
   it rejects OC1 and checks the epoch before sending a DELETE to OpenCode.
 - `proxy.js` uses that descriptor to route OC1 requests without `/api` and OC2
   requests with `/api`, including SSE. Unknown generations remain behind the
-  readiness gate. OC1 retains Windows session merging and sanitization; OC2
+  readiness gate. An explicit unsupported descriptor returns 501 `unsupported`
+  before readiness or forwarding, including HTTP mutations and SSE. A held
+  readiness request rechecks that refusal after each wait, so selection of CAgent
+  cannot become a restarting response. Previously registered OpenChamber-owned
+  routes retain their own guards. The [Chinese review note](../../../../../docs/maintenance/zh-CN/CAGENT-DISPATCH-CONTRACTS.md#通用-opencode-代理拒绝)
+  records this boundary. OC1 retains Windows session merging and sanitization; OC2
   preserves cursor envelopes and overlays app-owned archive or pending legacy
   metadata when the owner supplies those getters. The encoded OC2 directory
   header remains intact during upstream forwarding, while the worktree gate

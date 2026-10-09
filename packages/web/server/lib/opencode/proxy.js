@@ -13,6 +13,8 @@ import { createRealpathCache } from '../path-realpath-cache.js';
 import { DEFAULT_UPSTREAM_STALL_TIMEOUT_MS } from '../event-stream/upstream-reader.js';
 import { recordStartupPerformance } from './startup-performance.js';
 import { getWorktreeBootstrapStatus } from '../git/service.js';
+import { AGENT_ERROR } from '../agent/constants.js';
+import { OPENCODE_GENERATION } from './compatibility.js';
 
 const DEFAULT_SSE_HEARTBEAT_INTERVAL_MS = 20_000;
 const directSseRetireCallbacks = new Set();
@@ -861,6 +863,9 @@ export const registerOpenCodeProxy = (app, deps) => {
       return next();
     }
 
+    if (kernel().generation === OPENCODE_GENERATION.UNSUPPORTED) {
+      return res.status(501).json({ error: AGENT_ERROR.UNSUPPORTED });
+    }
     if (!isStillWaiting(getRuntime())) {
       return next();
     }
@@ -879,6 +884,9 @@ export const registerOpenCodeProxy = (app, deps) => {
         return;
       }
       await sleep(READINESS_HOLD_POLL_MS);
+      if (kernel().generation === OPENCODE_GENERATION.UNSUPPORTED) {
+        return res.status(501).json({ error: AGENT_ERROR.UNSUPPORTED });
+      }
       if (!isStillWaiting(getRuntime())) {
         recordStartupPerformance('proxy.readiness-hold', {
           durationMs: performance.now() - holdStartedAt,

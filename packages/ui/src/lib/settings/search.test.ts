@@ -171,3 +171,11 @@ test('connection editor has a stable General entry including the explicit unsupp
     expect(results.some(result => result.id === 'sessions.opencode-binary')).toBe(false);
   }
 });
+
+
+test('read-only connection testing has its own General search result on every host', () => {
+  for (const context of [runtimeCtx, {...runtimeCtx,isDesktop:true}, {...runtimeCtx,isVSCode:true}, {...runtimeCtx,isMobile:true}]) {
+    const results=buildSettingsSearchResults({query:'connection',runtimeCtx:context,t,getPageTitle:page=>page});
+    expect(results.find(result=>result.id==='general.opencode-connection-test')?.page).toBe('general');
+  }
+});

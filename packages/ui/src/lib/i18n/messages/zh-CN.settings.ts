@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "测试连接",
+  "settings.openchamber.connection.testing": "正在测试连接…",
+  "settings.openchamber.connection.testCancelled": "测试已取消，设置保持不变。",
+  "settings.openchamber.connection.testFailed": "测试失败或超时，设置保持不变。",
+  "settings.openchamber.connection.launchValidated": "启动输入有效。尚未运行程序，服务器就绪状态未经验证。",
+  "settings.openchamber.connection.testInfo": "测试不保存或切换连接。启动模式仅检查路径与输入；外部模式按已保存的兼容选择探测地址，仅对当前端点复用凭据。",
   "settings.openchamber.connection.activityBusyGlobal": "全服务器忙碌会话：{count}",
   "settings.openchamber.connection.coverage": "权限和问题仅检查以下已配置目录。其他目录可能仍有工作。",
   "settings.openchamber.connection.review": "检查连接切换",

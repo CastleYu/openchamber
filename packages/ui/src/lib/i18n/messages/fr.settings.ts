@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Tester la connexion",
+  "settings.openchamber.connection.testing": "Test de la connexion…",
+  "settings.openchamber.connection.testCancelled": "Test annulé. Les paramètres sont conservés.",
+  "settings.openchamber.connection.testFailed": "Échec ou délai du test dépassé. Les paramètres sont conservés.",
+  "settings.openchamber.connection.launchValidated": "Les données de lancement sont valides. Le programme n’a pas été exécuté ; la disponibilité du serveur reste à vérifier.",
+  "settings.openchamber.connection.testInfo": "Les tests ne sauvegardent ni ne changent la connexion. Les modes de lancement vérifient uniquement les chemins et les données. Le mode externe teste l’URL avec la compatibilité enregistrée ; les identifiants ne sont réutilisés que pour le serveur actuel.",
   "settings.openchamber.connection.activityBusyGlobal": "Sessions occupées sur tout le serveur : {count}",
   "settings.openchamber.connection.coverage": "Les autorisations et questions couvrent les répertoires configurés ci-dessous. D’autres répertoires peuvent contenir du travail en cours.",
   "settings.openchamber.connection.review": "Vérifier le changement de connexion",

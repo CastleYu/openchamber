@@ -51,6 +51,7 @@ import {
   UPSTREAM_STALL_TIMEOUT_CONCURRENT_MS,
 } from './lib/event-stream/index.js';
 import { createFsSearchRuntime as createFsSearchRuntimeFactory } from './lib/fs/search.js';
+import { createConnectionTest } from './lib/opencode/connection-test.js';
 import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection, describeOpenCodeConnections, parseOpenCodeConnection } from './lib/opencode/connection.js';
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
@@ -1535,6 +1536,11 @@ const connectionActivity = createConnectionActivity({
   getDirectories: async () => [openCodeWorkingDirectory, ...sanitizeProjects((await readSettingsFromDiskStrict()).projects || []).map(project => project.path)],
   getState: connectionState,
 });
+const connectionTest = createConnectionTest({ prepareConnection, getContext: async () => ({
+  family: agentHost.getSelection().family, owner: JSON.stringify({ ...connectionSelection(), ...kernelRuntime.get() }),
+  endpoint: kernelRuntime.get().endpoint, selection: parseOpenCodeSelection(await readSettingsFromDiskStrict()),
+  headersForGeneration: getOpenCodeAuthHeaders,
+}) });
 const connectionSwitch = createConnectionSwitch({
   activity: connectionActivity, lifecycle: openCodeLifecycleRuntime, prepareConnection,
   readConnection: async () => (await readSettingsFromDiskStrict())[OPENCODE_CONNECTION.SETTING] ?? null,
@@ -2454,6 +2460,7 @@ async function main(options = {}) {
     getOpenCodeResolutionSnapshot,
     getOpenCodeConnectionActivity: () => connectionActivity.inspect(),
     connectionSwitch,
+    connectionTest,
     getOpenCodeConnectionOptions: async () => describeOpenCodeConnections({ settings: await readSettingsFromDiskStrict(), env: process.env, resolveBinary: openCodeEnvRuntime.resolveConnectionBinary }),
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli: async () => {

@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SettingsSection, SettingsControlGroup, SettingsCheckboxRow, SettingsFieldRow, SettingsStackedField, SettingsChipGroup, SETTINGS_DESCRIPTION_CLASS } from '@/components/sections/shared/SettingsSection';
 import { useI18n } from '@/lib/i18n';
-import { CONNECTION, CONNECTION_MODE, CONNECTION_ISSUE, CONNECTION_SOURCE, CONNECTION_DECISION, ACTIVITY_STATE, ACTIVITY_SCOPE, prepareConnection, applyConnection, type ConnectionReview, type ConnectionRequest, connectionDraft, parseConnectionDraft, readConnections, type ConnectionRecord, type ConnectionDraft } from '@/lib/opencode/connection';
+import { CONNECTION, CONNECTION_TEST, testConnection, type ConnectionTestResult, CONNECTION_MODE, CONNECTION_ISSUE, CONNECTION_SOURCE, CONNECTION_DECISION, ACTIVITY_STATE, ACTIVITY_SCOPE, prepareConnection, applyConnection, type ConnectionReview, type ConnectionRequest, connectionDraft, parseConnectionDraft, readConnections, type ConnectionRecord, type ConnectionDraft } from '@/lib/opencode/connection';
+import { OPEN_CODE_STATUS } from '@/lib/opencode/runtime';
 import { reportSettingsSaveState } from '@/lib/persistence';
 import { getRuntimeKey, subscribeRuntimeEndpointChanged } from '@/lib/runtime-switch';
 import { opencodeClient } from '@/lib/opencode/client';
@@ -27,12 +28,27 @@ const ERROR_KEYS = {
   switchFailed: 'settings.openchamber.connection.switchFailed', activityChanged: 'settings.openchamber.connection.activityChanged',
   connectionFailed: 'settings.openchamber.connection.connectionFailed',
 } as const;
+const TEST_KEYS = {
+  [OPEN_CODE_STATUS.READY]: 'settings.openchamber.opencodeMode.ready',
+  [OPEN_CODE_STATUS.AUTH]: 'settings.openchamber.opencodeMode.auth',
+  [OPEN_CODE_STATUS.UNREACHABLE]: 'settings.openchamber.opencodeMode.unreachable',
+  [OPEN_CODE_STATUS.CONFLICT]: 'settings.openchamber.opencodeMode.conflict',
+  [OPEN_CODE_STATUS.MISMATCH]: 'settings.openchamber.opencodeMode.mismatch',
+  [OPEN_CODE_STATUS.UNSUPPORTED]: 'settings.openchamber.opencodeMode.unsupported',
+  [OPEN_CODE_STATUS.UNVERIFIED]: 'settings.openchamber.opencodeMode.unverified',
+  [OPEN_CODE_STATUS.INVALID_ENDPOINT]: 'settings.openchamber.opencodeMode.invalidEndpoint',
+  [OPEN_CODE_STATUS.INVALID_SELECTION]: 'settings.openchamber.opencodeMode.invalidSelection',
+} as const;
+type TestState = ConnectionTestResult | { kind: 'idle' | 'testing' | 'cancelled' | 'failed' };
+
 type Choices = Awaited<ReturnType<typeof readConnections>> | { status: 'loading' | 'failed' };
 export const OpenCodeConnectionSettings: React.FC = () => {
   const { t } = useI18n();
   const [choices, setChoices] = React.useState<Choices>({ status: 'loading' });
   const [draft, setDraft] = React.useState(connectionDraft);
   const [saved, setSaved] = React.useState<ConnectionRecord | null>(null);
+  const [test, setTest] = React.useState<TestState>({ kind: 'idle' });
+  const probe = React.useRef<AbortController | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<'invalid' | 'reviewFailed' | 'switchFailed' | 'activityChanged' | 'connectionFailed' | null>(null);
   const [review, setReview] = React.useState<ConnectionReview | null>(null);
@@ -43,7 +59,7 @@ export const OpenCodeConnectionSettings: React.FC = () => {
   const alive = React.useRef(false);
   const flight = React.useRef(false);
   const epoch = React.useRef(0);
-  React.useEffect(() => subscribeRuntimeEndpointChanged(() => reload()), []);
+  React.useEffect(() => subscribeRuntimeEndpointChanged(() => { probe.current?.abort(); reload(); }), []);
   React.useEffect(() => {
     alive.current = true;
     flight.current = false;
@@ -51,6 +67,7 @@ export const OpenCodeConnectionSettings: React.FC = () => {
     const ticket = ++epoch.current;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
+    probe.current?.abort(); probe.current = null; setTest({ kind: 'idle' });
     setChoices({ status: 'loading' }); setDraft(connectionDraft()); setSaved(null); setError(null); setBusy(false); setReview(null); setRequest(null); acknowledge(false);
     void readConnections(controller.signal).then(result => {
       if (controller.signal.aborted || ticket !== epoch.current || owner !== getRuntimeKey()) return;
@@ -59,7 +76,7 @@ export const OpenCodeConnectionSettings: React.FC = () => {
     }).catch(() => {
       if (alive.current && ticket === epoch.current && owner === getRuntimeKey()) setChoices({ status: 'failed' });
     }).finally(() => clearTimeout(timeout));
-    return () => { alive.current = false; controller.abort(); clearTimeout(timeout); };
+    return () => { alive.current = false; probe.current?.abort(); probe.current = null; controller.abort(); clearTimeout(timeout); };
   }, [revision]);
   const inspect = async (candidate: ConnectionRequest) => {
     if (flight.current) return;
@@ -114,12 +131,28 @@ export const OpenCodeConnectionSettings: React.FC = () => {
     } catch { if (current()) { reportSettingsSaveState('error'); setReview(null); acknowledge(false); setError('switchFailed'); } }
     finally { if (current()) { flight.current = false; setBusy(false); } }
   };
+  const runTest = async () => {
+    if (flight.current) return;
+    const parsed = parseConnectionDraft(draft);
+    if (!parsed.success) { setError('invalid'); return; }
+    const controller = new AbortController();
+    probe.current = controller; flight.current = true;
+    const owner = getRuntimeKey();
+    const ticket = epoch.current;
+    const current = () => alive.current && ticket === epoch.current && owner === getRuntimeKey() && probe.current === controller;
+    setBusy(true); setError(null); setTest({ kind: 'testing' });
+    try {
+      const result = await testConnection(parsed.data, AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]));
+      if (current()) setTest(result);
+    } catch { if (current()) setTest({ kind: controller.signal.aborted ? 'cancelled' : 'failed' }); }
+    finally { if (current()) { probe.current = null; flight.current = false; setBusy(false); } }
+  };
   const confirm = () => {
     const result = parseConnectionDraft(draft);
     if (!result.success) { setError('invalid'); return; }
     void inspect({ source: CONNECTION_SOURCE.CANDIDATE, connection: result.data });
   };
-  const edit = (changes: Partial<ConnectionDraft>) => { setDraft(value => ({ ...value, ...changes })); setError(null); };
+  const edit = (changes: Partial<ConnectionDraft>) => { setDraft(value => ({ ...value, ...changes })); setError(null); setTest({ kind: 'idle' }); };
   return <SettingsSection title={t('settings.openchamber.connection.title')} settingsItem={CONNECTION.ITEM}>
     {choices.status === 'loading' && <p role="status" className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.openchamber.connection.loading')}</p>}
     {choices.status === 'unsupported' && <p role="status" className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.openchamber.connection.unsupported')}</p>}
@@ -135,7 +168,7 @@ export const OpenCodeConnectionSettings: React.FC = () => {
       {choices.data.error && <p role="status" className={SETTINGS_DESCRIPTION_CLASS}>{t(ISSUE_KEYS[choices.data.error])}</p>}
       {choices.data.recommendation && !saved && <p className={SETTINGS_DESCRIPTION_CLASS}>{t('settings.openchamber.connection.recommendation')}</p>}
       {choices.data.candidates.map(item => <SettingsFieldRow key={item.source + ':' + item.key} label={t(item.source === 'environment' ? 'settings.openchamber.connection.environment' : 'settings.openchamber.connection.settings')} description={item.key}>
-        {item.record && <Button variant="outline" disabled={blocked} onClick={() => { setDraft(connectionDraft(item.record)); setError(null); }}>{t('settings.openchamber.connection.candidate')}</Button>}
+        {item.record && <Button variant="outline" disabled={blocked} onClick={() => { setDraft(connectionDraft(item.record)); setError(null); setTest({ kind: 'idle' }); }}>{t('settings.openchamber.connection.candidate')}</Button>}
         <span className={SETTINGS_DESCRIPTION_CLASS}>{item.resolved ?? (item.record?.mode === CONNECTION_MODE.EXTERNAL ? item.record.endpoint : item.record?.mode === CONNECTION_MODE.CONFIGURED ? item.record.exe : '')}</span>
         {item.error && <span className={SETTINGS_DESCRIPTION_CLASS}>{t(ISSUE_KEYS[item.error])}</span>}
       </SettingsFieldRow>)}
@@ -156,6 +189,21 @@ export const OpenCodeConnectionSettings: React.FC = () => {
           <Textarea aria-label={t('settings.openchamber.connection.env')} value={draft.env} disabled={blocked} onChange={event => edit({ env: event.target.value })} />
         </SettingsStackedField>
       </>}
+      {!review && <SettingsFieldRow label={t('settings.openchamber.connection.test')} info={t('settings.openchamber.connection.testInfo')} settingsItem={CONNECTION_TEST.ITEM}>
+        <Button variant="outline" disabled={blocked || draft.mode === null} onClick={() => { void runTest(); }}>{t('settings.openchamber.connection.test')}</Button>
+        {test.kind === 'testing' && <Button variant="ghost" onClick={() => probe.current?.abort()}>{t('settings.common.actions.cancel')}</Button>}
+      </SettingsFieldRow>}
+      {test.kind !== 'idle' && <p role="status" className={SETTINGS_DESCRIPTION_CLASS}>
+        {test.kind === 'testing' && t('settings.openchamber.connection.testing')}
+        {test.kind === 'cancelled' && t('settings.openchamber.connection.testCancelled')}
+        {test.kind === 'failed' && t('settings.openchamber.connection.testFailed')}
+        {test.kind === 'launch' && <>{t('settings.openchamber.connection.launchValidated')}<br />{test.binary}</>}
+        {test.kind === 'endpoint' && <>
+          {t(TEST_KEYS[test.status])}
+          {test.version && <><br />{t('settings.openchamber.opencodeMode.version', { version: test.version })}</>}
+          {test.profile && <><br />{t('settings.openchamber.opencodeMode.resolved', { mode: test.profile })}</>}
+        </>}
+      </p>}
       {error && <p role="alert" className={SETTINGS_DESCRIPTION_CLASS}>{t(ERROR_KEYS[error])}</p>}
       {review && <SettingsControlGroup title={t('settings.openchamber.connection.review')}>
         <p className={SETTINGS_DESCRIPTION_CLASS}>{t(MODE_KEYS[review.connection.mode])}</p>

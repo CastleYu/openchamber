@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "연결 테스트",
+  "settings.openchamber.connection.testing": "연결 테스트 중…",
+  "settings.openchamber.connection.testCancelled": "테스트를 취소했습니다. 설정은 유지됩니다.",
+  "settings.openchamber.connection.testFailed": "테스트에 실패했거나 시간이 초과되었습니다. 설정은 유지됩니다.",
+  "settings.openchamber.connection.launchValidated": "시작 입력이 유효합니다. 프로그램을 실행하지 않았으므로 서버 준비 상태는 확인되지 않았습니다.",
+  "settings.openchamber.connection.testInfo": "테스트는 연결을 저장하거나 전환하지 않습니다. 시작 모드는 경로와 입력만 확인합니다. 외부 모드는 저장된 호환성 선택으로 URL을 확인하며, 자격 증명은 현재 연결 대상에만 재사용합니다.",
   "settings.openchamber.connection.activityBusyGlobal": "서버 전체의 작업 중인 세션: {count}",
   "settings.openchamber.connection.coverage": "권한과 질문은 아래에 구성된 디렉터리만 확인합니다. 다른 디렉터리에서 작업이 진행 중일 수 있습니다.",
   "settings.openchamber.connection.review": "연결 전환 검토",

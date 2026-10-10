@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Перевірити з’єднання",
+  "settings.openchamber.connection.testing": "Перевірка з’єднання…",
+  "settings.openchamber.connection.testCancelled": "Перевірку скасовано. Налаштування збережено.",
+  "settings.openchamber.connection.testFailed": "Перевірка не вдалася або час вичерпано. Налаштування збережено.",
+  "settings.openchamber.connection.launchValidated": "Дані запуску правильні. Програму не запускали; готовність сервера не перевірено.",
+  "settings.openchamber.connection.testInfo": "Перевірки не зберігають і не змінюють з’єднання. Режими запуску перевіряють лише шляхи та дані. Зовнішній режим перевіряє адресу зі збереженим вибором сумісності; облікові дані повторно використовуються лише для поточного сервера.",
   "settings.openchamber.connection.activityBusyGlobal": "Зайняті сеанси на всьому сервері: {count}",
   "settings.openchamber.connection.coverage": "Дозволи й запитання охоплюють налаштовані каталоги нижче. В інших каталогах може тривати робота.",
   "settings.openchamber.connection.review": "Перевірити зміну підключення",

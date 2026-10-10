@@ -1,9 +1,24 @@
 import { z } from 'zod';
 import { runtimeFetch } from '@/lib/runtime-fetch';
+import { OPEN_CODE_PROFILE, OPEN_CODE_SELECTION, OPEN_CODE_STATUS } from './runtime';
 
 export const QUEUE_TARGET = { ROUTE: '/api/config/opencode-connection/queue-target', HEADER: 'x-openchamber-queue-target' } as const;
 
 export const CONNECTION = { SETTING: 'opencodeConnection', ROUTE: '/api/config/opencode-connection', PREPARE: '/api/config/opencode-connection/prepare', APPLY: '/api/config/opencode-connection/apply', RELOAD: '/api/config/reload', ITEM: 'general.opencode-connection' } as const;
+export const CONNECTION_TEST = { ROUTE: '/api/config/opencode-connection/test', CANCEL_ROUTE: '/api/config/opencode-connection/test/cancel', ITEM: 'general.opencode-connection-test' } as const;
+const testResultSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('launch'), status: z.literal('validated'), binary: z.string().min(1) }),
+  z.strictObject({ kind: z.literal('endpoint'), status: z.enum(Object.values(OPEN_CODE_STATUS)), selection: z.enum(Object.values(OPEN_CODE_SELECTION)),
+    version: z.string().nullable(), profile: z.enum(Object.values(OPEN_CODE_PROFILE)).nullable() }),
+]);
+export type ConnectionTestResult = z.infer<typeof testResultSchema>;
+export const testConnection = async (connection: ConnectionRecord, signal: AbortSignal): Promise<ConnectionTestResult> => {
+  const response = await runtimeFetch(CONNECTION_TEST.ROUTE, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: crypto.randomUUID(), connection }) });
+  if (!response.ok) throw new Error('Connection test failed');
+  return testResultSchema.parse(await response.json());
+};
+
 export const CONNECTION_MODE = { EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', CONFIGURED: 'configured', BUNDLED: 'bundled' } as const;
 export const CONNECTION_ISSUE = { INVALID: 'invalid', UNAVAILABLE: 'unavailable', CONFLICT: 'conflict' } as const;
 const modeSchema = z.enum(Object.values(CONNECTION_MODE));

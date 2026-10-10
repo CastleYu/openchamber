@@ -10,7 +10,7 @@ export function createVSCodeConnectionRuntime(deps: {
   stat(path: string): Promise<{ isDirectory(): boolean }>;
   getEnv(): NodeJS.ProcessEnv;
   getRuntime(): OpenCodeGenerationDescriptor;
-  getHeaders(): HeadersInit;
+  getHeaders(generation?: 'oc1' | 'oc2'): HeadersInit;
   getQueueTarget(): string;
   getDirectories(): string[];
   getState(): { ready: boolean; transitioning: boolean; external: boolean };

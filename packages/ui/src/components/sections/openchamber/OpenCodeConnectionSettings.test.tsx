@@ -3,9 +3,15 @@ import { createServer } from 'node:http';
 import React, { act } from 'react';
 import { Window } from 'happy-dom';
 import { z } from 'zod';
-import { CONNECTION, CONNECTION_MODE, connectionSchema, connectionDraft, parseConnectionDraft } from '@/lib/opencode/connection';
+import { CONNECTION, CONNECTION_TEST, CONNECTION_MODE, connectionSchema, connectionDraft, parseConnectionDraft } from '@/lib/opencode/connection';
 
 const modes = Object.values(CONNECTION_MODE).map(mode => ({ mode, available: mode !== CONNECTION_MODE.PATH }));
+let tests = 0;
+let delayTest = false;
+let failTest = false;
+let malformedTest = false;
+let holdTest: (() => void) | null = null;
+let launchTest = false;
 let saved: z.infer<typeof connectionSchema> | null = null;
 let previous: z.infer<typeof connectionSchema> | null = null;
 let pending: z.infer<typeof connectionSchema> | null = null;
@@ -33,6 +39,15 @@ const server = createServer(async (req, res) => {
     res.statusCode = unsupported ? 501 : failRead ? 503 : 200;
     res.end(JSON.stringify({ saved, error: saved ? null : 'conflict', modes, candidates: saved ? [] : [candidate], recommendation: null }));
     return;
+  }
+  if (req.url === CONNECTION_TEST.ROUTE) {
+    tests++;
+    let body = ''; for await (const chunk of req) body += chunk.toString();
+    z.strictObject({ token:z.uuid(),connection:connectionSchema }).parse(JSON.parse(body));
+    if (delayTest) { delayTest = false; await new Promise<void>(resolve => { holdTest = resolve; }); }
+    res.statusCode = failTest ? 503 : 200;
+    res.end(JSON.stringify(malformedTest ? {status:'ready'} : launchTest ? {kind:'launch',status:'validated',binary:'C:/Tools/opencode.exe'}
+      : {kind:'endpoint',status:'ready',selection:'auto',version:'2.0.20',profile:'oc2'})); return;
   }
   if (req.url === CONNECTION.PREPARE) {
     preparations++;
@@ -95,7 +110,7 @@ const wait = async (condition: () => boolean) => {
 };
 const mount = async (key: string) => { await act(async () => root.render(<I18nProvider><OpenCodeConnectionSettings key={key} /></I18nProvider>)); };
 afterAll(async () => {
-  hold?.(); holdWrite?.();
+  hold?.(); holdWrite?.(); holdTest?.();
   await act(async () => root.unmount());
   await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   await browser.happyDOM.close();
@@ -251,3 +266,45 @@ test('failed discovery can retry, unsupported never offers writes, retired respo
   expect(document.querySelector('input')).toBeNull();
   expect(document.querySelector('[role="alert"]')).toBeNull();
 }, 20000);
+
+test('read-only testing shows results, preserves settings and cancels without late success', async () => {
+  await act(async () => useI18nStore.getState().setLocale('en'));
+  failRead = false; unsupported = false; saved = {version:1,confirmed:true,mode:'external',endpoint:'http://saved.test'};
+  const before = {writes,starts,preparations};
+  await mount('test-flow'); await wait(() => !!document.querySelector('input'));
+  await act(async () => button('Test connection').click());
+  await wait(() => document.body.textContent?.includes('Profile verified') === true);
+  expect(document.body.textContent).toContain('Server version: 2.0.20');
+  expect({writes,starts,preparations}).toEqual(before);
+  const firstTests = tests;
+  delayTest = true;
+  await act(async () => { button('Test connection').click(); button('Test connection').click(); });
+  await wait(() => holdTest !== null);
+  expect(tests).toBe(firstTests + 1);
+  expect(document.querySelector('input')?.disabled).toBe(true);
+  expect(button('Cancel').disabled).toBe(false);
+  await act(async () => button('Cancel').click());
+  await wait(() => document.body.textContent?.includes('Test cancelled') === true);
+  expect(button('Confirm and connect').disabled).toBe(false);
+  await act(async () => { holdTest?.(); holdTest = null; });
+  expect(document.body.textContent).not.toContain('Profile verified');
+  expect({writes,starts,preparations}).toEqual(before);
+  failTest = true;
+  await act(async () => button('Test connection').click());
+  await wait(() => document.body.textContent?.includes('Test failed or timed out') === true);
+  failTest = false; malformedTest = true;
+  await act(async () => button('Test connection').click());
+  await wait(() => !button('Test connection').disabled);
+  expect(document.body.textContent).not.toContain('Profile verified');
+  malformedTest = false; launchTest = true;
+  saved = {version:1,confirmed:true,mode:'configured',exe:'C:/Tools/opencode.exe'};
+  await mount('test-launch'); await wait(() => document.querySelector('input')?.value === 'C:/Tools/opencode.exe');
+  await act(async () => button('Test connection').click());
+  await wait(() => document.body.textContent?.includes('Launch inputs are valid') === true);
+  expect(document.body.textContent).not.toContain('Profile verified');
+  await act(async () => useI18nStore.getState().setLocale('zh-CN'));
+  expect(document.body.textContent).toContain('启动输入有效');
+  expect({writes,starts,preparations}).toEqual(before);
+  launchTest = false;
+  await act(async () => useI18nStore.getState().setLocale('en'));
+});

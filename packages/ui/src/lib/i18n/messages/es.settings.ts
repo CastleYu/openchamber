@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Probar conexión",
+  "settings.openchamber.connection.testing": "Probando conexión…",
+  "settings.openchamber.connection.testCancelled": "Prueba cancelada. Se conservaron los ajustes.",
+  "settings.openchamber.connection.testFailed": "La prueba falló o agotó el tiempo. Se conservaron los ajustes.",
+  "settings.openchamber.connection.launchValidated": "Los datos de inicio son válidos. No se ejecutó el programa; no se comprobó si el servidor está listo.",
+  "settings.openchamber.connection.testInfo": "Las pruebas no guardan ni cambian conexiones. Los modos de inicio solo comprueban rutas y datos. El modo externo consulta la URL con la compatibilidad guardada; las credenciales solo se reutilizan para el destino actual.",
   "settings.openchamber.connection.activityBusyGlobal": "Sesiones ocupadas en todo el servidor: {count}",
   "settings.openchamber.connection.coverage": "Los permisos y preguntas abarcan los directorios configurados que aparecen abajo. Puede haber trabajo en otros directorios.",
   "settings.openchamber.connection.review": "Revisar el cambio de conexión",

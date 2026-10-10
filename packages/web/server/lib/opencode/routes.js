@@ -1,5 +1,6 @@
 import { OPENCODE_CONNECTION, CONNECTION_SWITCH, OpenCodeConnectionError } from './connection.js';
 import express from 'express';
+import { CONNECTION_TEST } from './connection-test.js';
 import { createProjectIdFromPath } from '../projects/project-id.js';
 import fs from 'fs';
 import path from 'path';
@@ -26,6 +27,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     getOpenCodeConnectionOptions,
     getOpenCodeConnectionActivity,
     connectionSwitch,
+    connectionTest,
     getOpenCodeUpgradeCapability,
     upgradeOpenCodeCli,
     formatSettingsResponse,
@@ -495,6 +497,21 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     try { return res.json(await getOpenCodeConnectionOptions()); }
     catch { return res.status(503).json({ error: 'settings_unavailable' }); }
   });
+
+  for (const route of [CONNECTION_TEST.ROUTE, CONNECTION_TEST.CANCEL_ROUTE]) {
+    app.post(route, express.json({ limit: '32kb' }), async (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      if (!connectionTest) return res.status(501).json({ error: 'unsupported_runtime' });
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      res.on('close', abort);
+      try { return res.json(route === CONNECTION_TEST.CANCEL_ROUTE ? connectionTest.cancel(req.body) : await connectionTest.test(req.body, controller.signal)); }
+      catch (error) {
+        const status = error instanceof OpenCodeConnectionError ? error.status : 503;
+        return res.status(status).json({ error: status === 501 ? 'unsupported_runtime' : status === 409 ? 'connection_changed' : 'connection_test_failed' });
+      } finally { res.off('close', abort); }
+    });
+  }
 
   app.get(OPENCODE_CONNECTION.ACTIVITY_ROUTE, async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');

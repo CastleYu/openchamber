@@ -1,4 +1,5 @@
 import { createVSCodeAPIs } from './api';
+import { CONNECTION_TEST } from '@openchamber/ui/lib/opencode/connection';
 import { AGENT_ERROR, AGENT_ROUTE } from '../../web/server/lib/agent/constants.js';
 import { createRemovalTombstones } from './inlineCommentRemovals';
 import { resolveCommentTarget } from './inlineCommentTarget';
@@ -914,7 +915,10 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     const body = method === 'GET' ? undefined : await extractJsonBody(input, init, method);
     const signal = input instanceof Request ? input.signal : init?.signal;
     const payload = body === undefined ? { method, path: pathname } : { method, path: pathname, body };
-    const result = await sendBridgeMessageWithOptions<{ status: number; body: unknown }>(HOST_CONNECTION.BRIDGE, payload, { timeoutMs: 90000, signal: signal ?? undefined });
+    const result = await sendBridgeMessageWithOptions<{ status: number; body: unknown }>(HOST_CONNECTION.BRIDGE, payload, { timeoutMs: 90000, signal: signal ?? undefined,
+      onAbort: pathname === CONNECTION_TEST.ROUTE ? () => {
+        void sendBridgeMessage(HOST_CONNECTION.BRIDGE, { method: 'POST', path: CONNECTION_TEST.CANCEL_ROUTE, body }).catch(() => {});
+      } : undefined });
     return new Response(JSON.stringify(result.body), { status: result.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
 

@@ -126,6 +126,14 @@ During a switch, pause dispatch, drain/cancel in-flight work according to its ow
 
 Bounded retries may reconnect to the same selected endpoint or restart the same owned executable under a displayed policy. They cannot change mode, executable, endpoint configuration or compatibility profile. There is no automatic fallback to another mode in this milestone.
 
+
+
+### Read-only connection test
+
+POST /api/config/opencode-connection/test accepts a UUID token and a candidate connection record. Testing never saves settings, starts a process, replaces the active connection or rebinds the SDK. Managed modes validate launch inputs only; success does not prove startup or readiness. External mode probes profile admission using the saved compatibility selection; success does not prove feature coverage. Credentials are reused only for the exact active endpoint, and probes do not follow redirects.
+
+The host cancels tests after 15 seconds. POST /api/config/opencode-connection/test/cancel accepts the original token. Cancel, unmount and runtime retirement discard the UI result; duplicate tokens and retired owners are rejected. Web and Electron share the host owner. Hosted and Capacitor mobile test their chosen host. VS Code composes the same owner through its dedicated connection bridge, including cancellation on the original bridge.
+
 ## 3.3 Reload and dispose
 
 The paths below define OpenCode behavior. CAgent config/reload remains disabled until its own documented scope and outcome contracts pass; neither an OpenCode dispose route nor a process restart is a CAgent fallback.

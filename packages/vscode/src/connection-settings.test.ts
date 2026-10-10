@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs/promises';
 import os from 'node:os';
+import http from 'node:http';
+import { once } from 'node:events';
+import { z } from 'zod';
 import path from 'node:path';
+import { CONNECTION_TEST } from '../../web/server/lib/opencode/connection-test.js';
+import { randomUUID } from 'node:crypto';
 import { CONNECTION_MODE, OPENCODE_CONNECTION } from '../../web/server/lib/opencode/connection.js';
 import { createConnectionSettings, serializeSettingsWrite, writeSettingsAtomic } from './connection-settings';
 import { createVSCodeConnectionRuntime } from './connection-runtime.js';
@@ -104,4 +109,34 @@ test('extension-host activity cannot claim browser queues are empty', async () =
     queue: { state: 'unknown', observedCount: 0 },
     clients: { state: 'unknown', observedCount: 0 },
   });
+});
+
+test('extension connection test validates without saving, replacing or reading activity', async () => {
+  let effects = 0;
+  const effect = () => { effects++; throw new Error('Read-only test reached a mutation'); };
+  const runtime = createVSCodeConnectionRuntime({
+    resolveBinary: () => process.execPath, resolveLaunchSpec: binary => ({binary,args:[]}), stat:fs.stat, getEnv:() => process.env,
+    getRuntime: () => ({generation:'unknown',endpoint:null,epoch:0,version:null}), getHeaders:() => ({}),
+    getOwner: () => ({generation:'unknown',endpoint:null,epoch:0,version:null,revision:0}), getQueueTarget:effect,
+    readSettings: () => ({}), readPrevious:async () => null, saveConnection:async () => effect(),
+    getConfigured:() => [], replace:async () => effect(), getDirectories:effect,
+    getState:() => ({ready:false,transitioning:false,external:false}),
+  });
+  const token = randomUUID();
+  assert.deepEqual(await runtime.request({method:'POST',path:CONNECTION_TEST.ROUTE,body:{token,connection:{version:1,confirmed:true,mode:'path'}}}),
+    {status:200,body:{kind:'launch',status:'validated',binary:process.execPath}});
+  assert.deepEqual(await runtime.request({method:'POST',path:CONNECTION_TEST.CANCEL_ROUTE,body:{token}}),{status:200,body:{cancelled:true}});
+  assert.equal((await runtime.request({method:'POST',path:CONNECTION_TEST.ROUTE,body:{token:'invalid'}})).status,400);
+  const server=http.createServer();
+  server.listen(0,'127.0.0.1'); await once(server,'listening');
+  const address=z.object({port:z.number()}).parse(server.address());
+  try {
+    const body={token:randomUUID(),connection:{version:1,confirmed:true,mode:'external',endpoint:'http://127.0.0.1:'+address.port}};
+    const entered=once(server,'request');
+    const running=runtime.request({method:'POST',path:CONNECTION_TEST.ROUTE,body});
+    await entered;
+    assert.deepEqual(await runtime.request({method:'POST',path:CONNECTION_TEST.CANCEL_ROUTE,body}),{status:200,body:{cancelled:true}});
+    assert.equal((await running).status,408);
+  } finally { server.closeAllConnections(); await new Promise<void>(resolve=>server.close(()=>resolve())); }
+  assert.equal(effects,0);
 });

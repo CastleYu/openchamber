@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Bağlantıyı test et",
+  "settings.openchamber.connection.testing": "Bağlantı test ediliyor…",
+  "settings.openchamber.connection.testCancelled": "Test iptal edildi. Ayarlar korundu.",
+  "settings.openchamber.connection.testFailed": "Test başarısız oldu veya zaman aşımına uğradı. Ayarlar korundu.",
+  "settings.openchamber.connection.launchValidated": "Başlatma girdileri geçerli. Program çalıştırılmadı; sunucunun hazır olduğu doğrulanmadı.",
+  "settings.openchamber.connection.testInfo": "Testler bağlantıyı kaydetmez veya değiştirmez. Başlatma modları yalnızca yolları ve girdileri denetler. Harici mod, kaydedilen uyumluluk seçimiyle adresi sınar; kimlik bilgileri yalnızca mevcut uç nokta için yeniden kullanılır.",
   "settings.openchamber.connection.activityBusyGlobal": "Sunucu genelindeki meşgul oturumlar: {count}",
   "settings.openchamber.connection.coverage": "İzinler ve sorular aşağıdaki yapılandırılmış dizinleri kapsar. Diğer dizinlerde çalışma olabilir.",
   "settings.openchamber.connection.review": "Bağlantı değişimini incele",

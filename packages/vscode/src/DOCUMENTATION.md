@@ -339,3 +339,8 @@ A webview also restarts its existing initialization path when stream admission c
 ## Unavailable connection recovery
 
 VSCodeApp renders the existing StartupInitializationRecovery outside SyncProvider while no admitted source is bound. Both chat and Agent Manager retain connection confirmation and previous-connection recovery during cold start or host failure; the live sync subtree remains gated. Replies after awaited bridge or SSE-start/stop work must check the panel still owns its registered state before posting. Successful settings writes still broadcast after closure. The actual native editor checkpoint is recorded in the paired integration milestones.
+
+
+## Read-only connection tests
+
+The extension connection runtime composes the shared host test owner. The dedicated connection bridge handles test and cancel before proxying. A webview abort sends the original token through the original bridge. Tests do not save settings or replace the extension manager connection. See the [host contract](../../web/server/lib/opencode/DOCUMENTATION.md#read-only-connection-test). Console host tests and webview builds do not establish real IDE acceptance.

@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "接続をテスト",
+  "settings.openchamber.connection.testing": "接続をテスト中…",
+  "settings.openchamber.connection.testCancelled": "テストをキャンセルしました。設定は保持されています。",
+  "settings.openchamber.connection.testFailed": "テストに失敗したか、タイムアウトしました。設定は保持されています。",
+  "settings.openchamber.connection.launchValidated": "起動入力は有効です。プログラムは実行していないため、サーバーの準備状態は未確認です。",
+  "settings.openchamber.connection.testInfo": "テストでは接続の保存や切り替えは行いません。起動モードではパスと入力のみ確認します。外部モードでは保存済みの互換性設定でURLを確認し、認証情報は現在の接続先にのみ使用します。",
   "settings.openchamber.connection.activityBusyGlobal": "サーバー全体で処理中のセッション：{count}",
   "settings.openchamber.connection.coverage": "権限と質問は以下の設定済みディレクトリのみを確認します。他のディレクトリで作業中の場合があります。",
   "settings.openchamber.connection.review": "接続切り替えを確認",

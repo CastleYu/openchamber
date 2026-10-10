@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "測試連線",
+  "settings.openchamber.connection.testing": "正在測試連線…",
+  "settings.openchamber.connection.testCancelled": "測試已取消，設定保持不變。",
+  "settings.openchamber.connection.testFailed": "測試失敗或逾時，設定保持不變。",
+  "settings.openchamber.connection.launchValidated": "啟動輸入有效。尚未執行程式，伺服器就緒狀態未經驗證。",
+  "settings.openchamber.connection.testInfo": "測試不儲存或切換連線。啟動模式僅檢查路徑與輸入；外部模式依已儲存的相容選擇探測位址，僅對目前端點重用憑證。",
   "settings.openchamber.connection.activityBusyGlobal": "全伺服器忙碌工作階段：{count}",
   "settings.openchamber.connection.coverage": "權限和問題僅檢查以下已設定目錄。其他目錄可能仍有工作。",
   "settings.openchamber.connection.review": "檢查連線切換",

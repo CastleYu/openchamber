@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { CONNECTION_TEST, createConnectionTest } from '../../web/server/lib/opencode/connection-test.js';
+import { parseOpenCodeSelection } from '../../web/server/lib/opencode/compatibility.js';
 import { QUEUE_TARGET } from '../../web/server/lib/opencode/queue-target.js';
 import { AGENT_FAMILY } from '../../web/server/lib/agent/constants.js';
 import { createConnectionActivity } from '../../web/server/lib/opencode/connection-activity.js';
@@ -15,6 +17,10 @@ export const createVSCodeConnectionRuntime = deps => {
     resolveBinary: deps.resolveBinary, resolveLaunchSpec: deps.resolveLaunchSpec,
     stat: deps.stat, env: deps.getEnv(),
   });
+  const tester = createConnectionTest({ prepareConnection, getContext: () => ({
+    family: AGENT_FAMILY.OPENCODE, owner: JSON.stringify(deps.getOwner()), endpoint: deps.getRuntime().endpoint,
+    selection: parseOpenCodeSelection(deps.readSettings()), headersForGeneration: deps.getHeaders,
+  }) });
   const kernelOperations = createKernelOperations({ getRuntime: deps.getRuntime, getHeaders: deps.getHeaders });
   // VS Code has no server-owned dispatch queue. Browser drafts/queues belong to their client.
   const activity = createConnectionActivity({ kernelOperations, queue: null, getDirectories: deps.getDirectories, getState: deps.getState });
@@ -30,6 +36,8 @@ export const createVSCodeConnectionRuntime = deps => {
     if (!parsed.success) return { status: 400, body: { error: 'invalid_connection_request' } };
     const { method, path, body } = parsed.data;
     try {
+      if (method === 'POST' && path === CONNECTION_TEST.ROUTE) return { status: 200, body: await tester.test(body) };
+      if (method === 'POST' && path === CONNECTION_TEST.CANCEL_ROUTE) return { status: 200, body: tester.cancel(body) };
       if (method === 'GET' && path === QUEUE_TARGET.ROUTE) return { status: 200, body: { target: deps.getQueueTarget() } };
       if (method === 'GET' && path === OPENCODE_CONNECTION.ROUTE) return { status: 200, body: discover() };
       if (method === 'GET' && path === OPENCODE_CONNECTION.ACTIVITY_ROUTE) return { status: 200, body: await activity.inspect() };

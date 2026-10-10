@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Test connection",
+  "settings.openchamber.connection.testing": "Testing connection…",
+  "settings.openchamber.connection.testCancelled": "Test cancelled. Settings were kept.",
+  "settings.openchamber.connection.testFailed": "Test failed or timed out. Settings were kept.",
+  "settings.openchamber.connection.launchValidated": "Launch inputs are valid. The executable was not run; server readiness is unverified.",
+  "settings.openchamber.connection.testInfo": "Tests do not save or switch connections. Launch modes check paths and inputs only. External mode probes the URL using the saved compatibility choice; credentials are reused only for the current endpoint.",
   "settings.openchamber.connection.activityBusyGlobal": "Busy sessions across the server: {count}",
   "settings.openchamber.connection.coverage": "Permissions and questions cover the configured directories below. Other directories may have work.",
   "settings.openchamber.connection.review": "Review connection switch",

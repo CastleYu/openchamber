@@ -1,4 +1,4 @@
-import { CONNECTION } from '@/lib/opencode/connection';
+import { CONNECTION, CONNECTION_TEST } from '@/lib/opencode/connection';
 import type { I18nKey } from '@/lib/i18n/store';
 import { UPDATE_HISTORY_PAGE, UPDATE_HISTORY_ANCHOR } from './updateHistory';
 import { ISOLATED_SPACES_RELEASED } from '@/lib/spaces/release';
@@ -631,6 +631,13 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     titleKey: 'settings.openchamber.connection.title',
     descriptionKey: 'settings.openchamber.connection.info',
     keywords: ['opencode', 'connection', 'endpoint', 'server', 'PATH', 'command', 'bundled', 'executable'],
+  },
+  {
+    id: CONNECTION_TEST.ITEM,
+    page: 'general',
+    titleKey: 'settings.openchamber.connection.test',
+    descriptionKey: 'settings.openchamber.connection.testInfo',
+    keywords: ['opencode', 'connection', 'test', 'probe', 'validate'],
   },
   {
     id: 'sessions.opencode-restart',

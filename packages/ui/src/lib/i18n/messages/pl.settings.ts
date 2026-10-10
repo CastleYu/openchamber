@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Testuj połączenie",
+  "settings.openchamber.connection.testing": "Testowanie połączenia…",
+  "settings.openchamber.connection.testCancelled": "Test anulowany. Ustawienia zachowano.",
+  "settings.openchamber.connection.testFailed": "Test nie powiódł się lub przekroczył limit czasu. Ustawienia zachowano.",
+  "settings.openchamber.connection.launchValidated": "Dane uruchomienia są poprawne. Program nie został uruchomiony; gotowość serwera nie została sprawdzona.",
+  "settings.openchamber.connection.testInfo": "Testy nie zapisują ani nie zmieniają połączeń. Tryby uruchomienia sprawdzają tylko ścieżki i dane. Tryb zewnętrzny sprawdza adres zgodnie z zapisaną zgodnością; dane logowania są używane ponownie tylko dla bieżącego serwera.",
   "settings.openchamber.connection.activityBusyGlobal": "Zajęte sesje na całym serwerze: {count}",
   "settings.openchamber.connection.coverage": "Uprawnienia i pytania obejmują poniższe skonfigurowane katalogi. W innych katalogach może trwać praca.",
   "settings.openchamber.connection.review": "Sprawdź zmianę połączenia",

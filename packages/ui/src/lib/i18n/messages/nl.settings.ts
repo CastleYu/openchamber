@@ -4,6 +4,12 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.openchamber.connection.test": "Verbinding testen",
+  "settings.openchamber.connection.testing": "Verbinding wordt getest…",
+  "settings.openchamber.connection.testCancelled": "Test geannuleerd. Instellingen zijn behouden.",
+  "settings.openchamber.connection.testFailed": "Test mislukt of tijdslimiet bereikt. Instellingen zijn behouden.",
+  "settings.openchamber.connection.launchValidated": "De startgegevens zijn geldig. Het programma is niet uitgevoerd; de serverstatus is niet gecontroleerd.",
+  "settings.openchamber.connection.testInfo": "Tests slaan geen verbinding op en wisselen deze niet. Startmodi controleren alleen paden en invoer. Externe modus test de URL met de opgeslagen compatibiliteitskeuze; inloggegevens worden alleen voor het huidige eindpunt hergebruikt.",
   "settings.openchamber.connection.activityBusyGlobal": "Bezette sessies op de hele server: {count}",
   "settings.openchamber.connection.coverage": "Machtigingen en vragen omvatten de hieronder geconfigureerde mappen. In andere mappen kan nog werk plaatsvinden.",
   "settings.openchamber.connection.review": "Verbindingswissel controleren",

@@ -8,7 +8,9 @@ import { spawn } from 'child_process';
 import { pathToFileURL } from 'url';
 
 import { isModuleCliExecution, normalizeCliEntryPath } from './cli-entry.js';
-import { requestJson } from './lib/cli-http.js';
+import { requestJson, requestServerShutdown } from './lib/cli-http.js';
+import { createServeCommand } from './lib/commands-serve.js';
+import { terminateProcessTree } from './lib/cli-process.js';
 import { requestControlAction } from './lib/cli-control.js';
 import { inspectTunnelAttachability } from './lib/cli-lifecycle.js';
 import { startupCommand } from './lib/commands-startup.js';
@@ -1569,5 +1571,87 @@ describe('startup command lingering output', () => {
       { json: true },
       'status'
     )).rejects.toMatchObject({ exitCode: EXIT_CODE.USAGE_ERROR });
+  });
+});
+
+
+describe('confirmed connection CLI admission', () => {
+  it('starts the host without a local CLI gate and preserves the imported binary candidate', async () => {
+    await withTempOpenChamberDataDir(async (dir) => {
+      const previous = process.env.OPENCODE_BINARY;
+      const candidate = path.join(dir, 'missing-opencode');
+      process.env.OPENCODE_BINARY = candidate;
+      const marker = path.join(dir, 'child.json');
+      const fixture = path.join(dir, 'host.cjs');
+      fs.writeFileSync(fixture, `
+const fs = require('node:fs');
+const server = require('node:http').createServer((req, res) => res.end());
+server.listen(0, '127.0.0.1', () => {
+  fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ pid: process.pid, binary: process.env.OPENCODE_BINARY }));
+  process.send({ type: 'openchamber:ready', port: server.address().port });
+});
+`);
+      const serve = createServeCommand({
+        serverPath: fixture,
+        bunBin: process.execPath,
+        getPreferredServerRuntime: () => 'node',
+        setForegroundServerActive: () => {},
+        setForegroundShutdown: () => {},
+      });
+      try {
+        const port = await serve({ port: 0, host: '127.0.0.1', quiet: true, suppressQuietOutput: true });
+        const child = JSON.parse(fs.readFileSync(marker, 'utf8'));
+        expect(port).toBeGreaterThan(0);
+        expect(child.binary).toBe(candidate);
+      } finally {
+        if (fs.existsSync(marker)) {
+          const child = JSON.parse(fs.readFileSync(marker, 'utf8'));
+          expect(await terminateProcessTree(child.pid)).toBe(true);
+        }
+        if (previous === undefined) delete process.env.OPENCODE_BINARY;
+        else process.env.OPENCODE_BINARY = previous;
+      }
+    });
+  });
+});
+
+describe('authenticated CLI shutdown', () => {
+  it.each(['saved', 'wrong', 'missing'])('uses only the saved instance credential: %s', async (credential) => {
+    await withTempOpenChamberDataDir(async () => {
+      let shutdown = false;
+      const server = createServer(async (req, res) => {
+        if (req.url === '/auth/session') {
+          let body = '';
+          for await (const chunk of req) body += chunk;
+          if (JSON.parse(body).password === 'fixture-password') {
+            res.writeHead(200, { 'set-cookie': 'oc_ui_session_123=fixture; HttpOnly' });
+            res.end('{}');
+          } else {
+            res.writeHead(401);
+            res.end('{}');
+          }
+          return;
+        }
+        if (req.url === '/api/system/shutdown' && req.headers.cookie === 'oc_ui_session_123=fixture') {
+          shutdown = true;
+          res.writeHead(200);
+        } else res.writeHead(401);
+        res.end('{}');
+      });
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const port = server.address().port;
+      try {
+        if (credential !== 'missing') {
+          fs.writeFileSync(await getInstanceFilePath(port), JSON.stringify({
+            port,
+            uiPassword: credential === 'saved' ? 'fixture-password' : 'wrong-password',
+          }));
+        }
+        expect(await requestServerShutdown(port, '127.0.0.1')).toBe(credential === 'saved');
+        expect(shutdown).toBe(credential === 'saved');
+      } finally {
+        await new Promise((resolve) => server.close(resolve));
+      }
+    });
   });
 });

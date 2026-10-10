@@ -46,14 +46,14 @@ async function resolveUiPasswordForPort(port, options = {}) {
     : null;
 }
 
-async function createUiSessionCookie(port, password, timeoutMs) {
+async function createUiSessionCookie(port, password, timeoutMs, hostOverride) {
   if (typeof password !== 'string' || password.length === 0) {
     return null;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(buildLocalUrl(port, '/auth/session'), {
+    const response = await fetch(buildLocalUrl(port, '/auth/session', hostOverride), {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -90,11 +90,19 @@ async function requestServerShutdown(port, hostOverride) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 1500);
   try {
-    const resp = await fetch(buildLocalUrl(port, '/api/system/shutdown', hostOverride), {
+    const url = buildLocalUrl(port, '/api/system/shutdown', hostOverride);
+    const resp = await fetch(url, { method: 'POST', signal: controller.signal });
+    if (resp.status !== 401) return resp.ok;
+
+    const password = await resolveUiPasswordForPort(port);
+    const cookie = await createUiSessionCookie(port, password, 1500, hostOverride);
+    if (!cookie) return false;
+    const retry = await fetch(url, {
       method: 'POST',
+      headers: { Cookie: cookie },
       signal: controller.signal,
     });
-    return resp.ok;
+    return retry.ok;
   } catch {
     return false;
   } finally {

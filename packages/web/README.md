@@ -16,7 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/openchamber/openchamber/main/script
 
 Or install manually: `bun add -g @openchamber/web` (or npm, pnpm, yarn).
 
-> **Prerequisites:** [OpenCode CLI](https://opencode.ai) installed, Node.js 22+.
+> **Prerequisites:** Node.js 22+. Configure an OpenCode connection in Settings after startup. A local [OpenCode CLI](https://opencode.ai) is required only for modes that launch it; external-server mode does not require a local executable.
 
 ## Usage
 

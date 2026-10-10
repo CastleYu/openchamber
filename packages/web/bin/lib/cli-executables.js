@@ -25,17 +25,6 @@ function isExecutable(filePath) {
   }
 }
 
-function resolveExplicitBinary(candidate) {
-  if (!candidate) {
-    return null;
-  }
-  if (candidate.includes(path.sep) || path.isAbsolute(candidate)) {
-    const resolved = path.isAbsolute(candidate) ? candidate : path.resolve(candidate);
-    return isExecutable(resolved) ? resolved : null;
-  }
-  return null;
-}
-
 function searchPathFor(command) {
   const pathValue = process.env.PATH || '';
   const segments = pathValue.split(path.delimiter).filter(Boolean);
@@ -51,4 +40,4 @@ function searchPathFor(command) {
   return null;
 }
 
-export { resolveExplicitBinary, searchPathFor };
+export { searchPathFor };

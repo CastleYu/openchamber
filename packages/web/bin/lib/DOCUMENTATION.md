@@ -19,7 +19,8 @@ Command modules implement user-facing commands and preserve output contracts acr
 
 - `commands-serve.js`
   - Implements `openchamber serve`.
-  - Owns OpenCode CLI checks, port resolution, log rotation, PID/instance registry writes, foreground/background server launch, startup summaries, and foreground shutdown behavior.
+  - Owns port resolution, log rotation, PID/instance registry writes, foreground/background server launch, startup summaries, and foreground shutdown behavior.
+  - Starts the configuration host without a local OpenCode prerequisite. The backend resolves the confirmed connection record; original environment values remain migration candidates and are never replaced by CLI PATH discovery. Setup and failed kernels must leave authenticated settings reachable.
 
 - `commands-lifecycle.js`
   - Implements `openchamber stop` and `openchamber restart`.
@@ -105,7 +106,7 @@ These modules hold reusable, non-presentational logic for commands.
 
 - `cli-http.js`
   - HTTP helpers for health checks, shutdown requests, JSON API calls, tunnel provider fetches, and system info fetches.
-  - Owns local desktop bearer auth and managed CLI-instance UI password retry for control-plane requests.
+  - Owns local desktop bearer auth and managed CLI-instance UI password retry for control-plane requests. Shutdown retries a UI-auth challenge using the saved instance password and the same target host, allowing graceful owned-process cleanup before PID termination is considered.
 
 - `cli-control.js`
   - Sends one typed action request to the authenticated OpenChamber control endpoint and maps HTTP failures to CLI exit behavior.

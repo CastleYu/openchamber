@@ -953,6 +953,15 @@ notificationTemplateRuntime = createNotificationTemplateRuntime({
 
 const notificationTriggerRuntime = createNotificationTriggerRuntime({
   kernelOperations,
+  getOwner: () => {
+    const selection = agentHost.getSelection();
+    if (selection.family !== AGENT_FAMILY.OPENCODE) return undefined;
+    const identity = kernelRuntime.get();
+    if (identity.profile === OPENCODE_SELECTION.LEGACY
+      || identity.generation !== OPENCODE_GENERATION.OC1 && identity.generation !== OPENCODE_GENERATION.OC2) return undefined;
+    return JSON.stringify([selection.family, selection.revision,
+      identity.generation, identity.profile, identity.endpoint, identity.epoch]);
+  },
   readSettingsFromDisk,
   prepareNotificationLastMessage,
   buildTemplateVariables,

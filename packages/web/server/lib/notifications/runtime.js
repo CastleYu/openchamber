@@ -3,6 +3,7 @@ import { isEnterpriseMode } from '../enterprise-mode.js';
 export const createNotificationTriggerRuntime = (deps) => {
   const {
     kernelOperations = null,
+    getOwner = () => null,
     readSettingsFromDisk,
     prepareNotificationLastMessage,
     buildTemplateVariables,
@@ -132,7 +133,28 @@ export const createNotificationTriggerRuntime = (deps) => {
   // 500ms debounce race otherwise leaks notifications for auto-accepted
   // permissions when the replied round-trip is slower than the debounce).
   const autoAcceptingSessions = new Set();
+  let owner;
+  const captureOwner = () => {
+    const next = getOwner();
+    if (next !== owner) {
+      for (const timer of pushQuestionDebounceTimers.values()) clearTimeout(timer);
+      for (const pending of pushPermissionDebounceTimers.values()) clearTimeout(pending.timer);
+      pushQuestionDebounceTimers.clear();
+      pushPermissionDebounceTimers.clear();
+      notifiedPermissionRequests.clear();
+      lastReadyNotificationAt.clear();
+      lastErrorNotificationAt.clear();
+      sessionParentIdCache.clear();
+      autoAcceptingSessions.clear();
+      pendingPushTags.clear();
+      owner = next;
+    }
+    return next;
+  };
+  const isCurrent = (expected) => captureOwner() !== undefined && owner === expected;
+
   const setAutoAcceptSession = (sessionId, enabled) => {
+    if (captureOwner() === undefined) return;
     if (typeof sessionId !== 'string' || sessionId.length === 0) return;
     if (enabled) {
       autoAcceptingSessions.add(sessionId);
@@ -149,8 +171,7 @@ export const createNotificationTriggerRuntime = (deps) => {
   };
 
   const getSessionParentCacheKey = (sessionId, directory) => {
-    const identity = kernelOperations?.captureIdentity();
-    return `${identity?.endpoint ?? ''}\0${identity?.epoch ?? ''}\0${directory || ''}\0${sessionId}`;
+    return `${captureOwner() ?? ''}\0${directory || ''}\0${sessionId}`;
   };
 
   const getCachedSessionParentId = (sessionId, directory) => {
@@ -186,6 +207,8 @@ export const createNotificationTriggerRuntime = (deps) => {
 
   const fetchSessionParentId = async (sessionId, directory) => {
     if (!sessionId) return undefined;
+    const owner = captureOwner();
+    if (owner === undefined) return undefined;
 
     const cached = getCachedSessionParentId(sessionId, directory);
     if (cached !== undefined) return cached;
@@ -193,6 +216,7 @@ export const createNotificationTriggerRuntime = (deps) => {
     try {
       if (kernelOperations) {
         const session = (await kernelOperations.getSession({ sessionID: sessionId, directory })).data;
+        if (!isCurrent(owner)) return undefined;
         const parentID = session.parentID ?? null;
         setCachedSessionParentId(sessionId, directory, parentID);
         return parentID;
@@ -211,6 +235,7 @@ export const createNotificationTriggerRuntime = (deps) => {
         return undefined;
       }
       const session = await response.json().catch(() => null);
+      if (!isCurrent(owner)) return undefined;
       if (!session || typeof session !== 'object') {
         return undefined;
       }
@@ -329,6 +354,8 @@ export const createNotificationTriggerRuntime = (deps) => {
       return;
     }
 
+    const owner = captureOwner();
+    if (owner === undefined) return;
     maybeCacheSessionParentFromPayload(payload);
 
     const sessionId = extractSessionIdFromPayload(payload);
@@ -358,6 +385,7 @@ export const createNotificationTriggerRuntime = (deps) => {
       const info = payload.properties?.info;
       if (info?.role === 'assistant' && info?.finish === 'stop' && sessionId) {
         const settings = await readSettingsFromDisk();
+        if (!isCurrent(owner)) return;
 
         if (settings.notifyOnSubtasks === false) {
           const parentIDFromPayload = getParentIdFromPayload(payload);
@@ -377,10 +405,12 @@ export const createNotificationTriggerRuntime = (deps) => {
         // While a goal drives the session, per-turn "ready" notifications are
         // noise produced by the goal loop itself — the goal's own settle
         // notification (complete/blocked/budget) is the final word instead.
+        if (!isCurrent(owner)) return;
         if (await hasActiveSessionGoal(sessionId, notificationDirectory)) {
           return;
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.notificationMode !== 'always' && getIsWindowFocused?.()) {
           return;
         }
@@ -399,17 +429,20 @@ export const createNotificationTriggerRuntime = (deps) => {
         try {
           const templates = settings.notificationTemplates || {};
           const isSubtask = await fetchSessionParentId(sessionId, notificationDirectory);
+          if (!isCurrent(owner)) return;
           const completionTemplate = isSubtask && settings.notifyOnSubtasks !== false
             ? (templates.subtask || templates.completion || { title: '{agent_name} is ready', message: '{model_name} completed the task' })
             : (templates.completion || { title: '{agent_name} is ready', message: '{model_name} completed the task' });
 
           const variables = await buildTemplateVariables(payload, sessionId);
+          if (!isCurrent(owner)) return;
           sessionName = typeof variables.session_name === 'string' ? variables.session_name : sessionName;
 
           const messageId = info?.id;
           let lastMessage = extractLastMessageText(payload);
           if (!lastMessage) {
             lastMessage = await fetchLastAssistantMessageText(sessionId, messageId);
+            if (!isCurrent(owner)) return;
           }
 
           variables.last_message = await prepareNotificationLastMessage({
@@ -425,6 +458,7 @@ export const createNotificationTriggerRuntime = (deps) => {
           console.warn('[Notification] Template resolution failed, using defaults:', error?.message || error);
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.nativeNotificationsEnabled) {
           const notificationPayload = {
             title,
@@ -457,6 +491,7 @@ export const createNotificationTriggerRuntime = (deps) => {
 
       if (info?.role === 'assistant' && info?.finish === 'error' && sessionId) {
         const settings = await readSettingsFromDisk();
+        if (!isCurrent(owner)) return;
         if (settings.notifyOnError === false) return;
 
         const now = Date.now();
@@ -464,6 +499,7 @@ export const createNotificationTriggerRuntime = (deps) => {
         if (now - lastAt < PUSH_READY_COOLDOWN_MS) return;
         lastErrorNotificationAt.set(sessionId, now);
 
+        if (!isCurrent(owner)) return;
         if (settings.notificationMode !== 'always' && getIsWindowFocused?.()) {
           return;
         }
@@ -474,11 +510,13 @@ export const createNotificationTriggerRuntime = (deps) => {
 
         try {
           const variables = await buildTemplateVariables(payload, sessionId);
+          if (!isCurrent(owner)) return;
           sessionName = typeof variables.session_name === 'string' ? variables.session_name : sessionName;
           const errorMessageId = info?.id;
           let lastMessage = extractLastMessageText(payload);
           if (!lastMessage) {
             lastMessage = await fetchLastAssistantMessageText(sessionId, errorMessageId);
+            if (!isCurrent(owner)) return;
           }
 
           variables.last_message = await prepareNotificationLastMessage({
@@ -495,6 +533,7 @@ export const createNotificationTriggerRuntime = (deps) => {
           console.warn('[Notification] Error template resolution failed, using defaults:', error?.message || error);
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.nativeNotificationsEnabled) {
           const notificationPayload = {
             title,
@@ -535,13 +574,16 @@ export const createNotificationTriggerRuntime = (deps) => {
       }
 
       const timer = setTimeout(async () => {
+        if (!isCurrent(owner) || pushQuestionDebounceTimers.get(sessionId) !== timer) return;
         pushQuestionDebounceTimers.delete(sessionId);
 
         const settings = await readSettingsFromDisk();
+        if (!isCurrent(owner)) return;
         if (settings.notifyOnQuestion === false) {
           return;
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.notificationMode !== 'always' && getIsWindowFocused?.()) {
           return;
         }
@@ -560,6 +602,7 @@ export const createNotificationTriggerRuntime = (deps) => {
 
         try {
           const variables = await buildTemplateVariables(payload, sessionId);
+          if (!isCurrent(owner)) return;
           sessionName = typeof variables.session_name === 'string' ? variables.session_name : sessionName;
           variables.last_message = questionText || header || '';
 
@@ -574,6 +617,7 @@ export const createNotificationTriggerRuntime = (deps) => {
           console.warn('[Notification] Question template resolution failed, using defaults:', error?.message || error);
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.nativeNotificationsEnabled) {
           const notificationPayload = {
             kind: 'question',
@@ -637,30 +681,36 @@ export const createNotificationTriggerRuntime = (deps) => {
       // Only a request that was actually answered automatically is silent.
       if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory, requestId)
         ?? isSessionAutoAccepting(sessionId, notificationDirectory))) {
+        if (!isCurrent(owner)) return;
         if (requestKey) notifiedPermissionRequests.add(requestKey);
         return;
       }
 
+      if (!isCurrent(owner)) return;
       const existingTimer = pushPermissionDebounceTimers.get(sessionId);
       if (existingTimer) {
         clearTimeout(existingTimer.timer);
       }
 
       const timer = setTimeout(async () => {
+        if (!isCurrent(owner) || pushPermissionDebounceTimers.get(sessionId)?.timer !== timer) return;
         pushPermissionDebounceTimers.delete(sessionId);
 
         if (await (getIsSessionAutoAccepting?.(sessionId, notificationDirectory, requestId)
           ?? isSessionAutoAccepting(sessionId, notificationDirectory))) {
+          if (!isCurrent(owner)) return;
           if (requestKey) notifiedPermissionRequests.add(requestKey);
           return;
         }
 
         const settings = await readSettingsFromDisk();
+        if (!isCurrent(owner)) return;
 
         if (settings.notifyOnQuestion === false) {
           return;
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.notificationMode !== 'always' && getIsWindowFocused?.()) {
           return;
         }
@@ -677,6 +727,7 @@ export const createNotificationTriggerRuntime = (deps) => {
 
         try {
           const variables = await buildTemplateVariables(payload, sessionId);
+          if (!isCurrent(owner)) return;
           sessionName = typeof variables.session_name === 'string' ? variables.session_name : sessionName;
           variables.last_message = fallbackMessage;
 
@@ -691,6 +742,7 @@ export const createNotificationTriggerRuntime = (deps) => {
           console.warn('[Notification] Permission template resolution failed, using defaults:', error?.message || error);
         }
 
+        if (!isCurrent(owner)) return;
         if (settings.nativeNotificationsEnabled) {
           const notificationPayload = {
             kind: 'permission',
@@ -733,6 +785,8 @@ export const createNotificationTriggerRuntime = (deps) => {
   // full text; APNs with the generic per-type title and the session name as
   // body, so the relay never sees content).
   const sendGoalSettlePush = async ({ sessionId, directory, status, title, body }) => {
+    const owner = captureOwner();
+    if (owner === undefined) return;
     let sessionName = '';
     try {
       if (kernelOperations) {
@@ -754,6 +808,7 @@ export const createNotificationTriggerRuntime = (deps) => {
     } catch {
       // Session name is presentation sugar for the mobile push — never block on it.
     }
+    if (!isCurrent(owner)) return;
     const type = status === 'complete' ? 'goal_complete' : (status === 'budgetLimited' ? 'goal_budget' : 'goal_blocked');
     await fanoutPush(
       {

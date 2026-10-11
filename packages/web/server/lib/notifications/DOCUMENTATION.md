@@ -4,6 +4,16 @@ The server injects `kernelOperations` for OpenCode session and message
 lookups used by notification text, parent suppression and goal state. The
 message page's declared order decides which assistant reply is newest.
 
+The production trigger runtime also receives a stable scalar `getOwner` key
+covering backend family/revision and kernel generation/profile/endpoint/epoch.
+An unavailable owner returns `undefined` and suppresses trigger work. The default
+`null` owner supports standalone fixtures. Owner changes retire debounce timers,
+parent caches, duplicate/cooldown state, local auto-accept flags and badge tags.
+Async enrichment and goal lookup results must still belong to the captured owner
+before notification fanout. Delivery already handed to a push transport cannot
+be recalled. Web and Electron use this host; hosted and Capacitor mobile use
+their selected host. VS Code retains its independent native notification path.
+
 Enterprise mode replaces outbound web push and APNs titles with scenario labels,
 clears their bodies, and removes the session name from web push data. Opaque
 session IDs remain for deep links. Local desktop and UI notifications retain

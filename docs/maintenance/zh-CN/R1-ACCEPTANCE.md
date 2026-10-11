@@ -21,6 +21,6 @@
 
 运行时范围：Web/Electron 共用主机路由；托管移动端和 Capacitor 使用所选主机；VS Code 保留明确不支持响应。真实 CAgent 映射仍属 CA-03，中立消费方迁移仍属 R6，但不能因迁移在后续而接受当前无守卫的调用。
 
-主机事件流 /api/openchamber/events 归 scheduled-tasks/routes.js；/api/notifications/stream 归 notifications/routes.js，在输出主机通知前调用会话 watcher，后端观察仍须经过其守卫归属。配置路由混合主机设置与 OpenCode 实体写入，config-entity-routes.js 使用既有 family guard。这些追踪用于确认归属，不代表全部调用方已通过运行时验收。下一步检查 global-hub.js 和 watcher.js 的 profile 准入，以及 git/routes.js 直接 OC2 工作树清理调用的 family/revision 准入。现有 family 退役测试不能证明 Legacy 事件流拒绝。生成的 managed-plugin 和桥接调用方仍需核对。
+已完成的边界复核覆盖 HTTP 路由入口、异步退役、事件投递和托管插件准备。本次复核的插件与 agent-tool 入口拒绝非 OpenCode family 和未验收的 Legacy profile。插件路由会在目录解析期间及变更前保存并复核 family/revision 与 kernel 身份。全局事件 hub 在提交事件时负责 kernel/epoch 拒绝；watcher 检查当前 family/revision 和 Legacy 准入，独立 reader 还会检查所附 kernel。Git 工作树清理在等待前捕获 family/revision 与 kernel 身份，并在清理前复核。生产组合将所选 host 传给这些守卫，并把共享 hub 接入 watcher。agent-tool 回调在 family/profile 准入后按 OC1/OC2 分发；托管准备使用 family/revision lease，但代际探测本身不会禁用所有 Legacy 插件准备。
 
-详细测试位置及源码指纹见 artifacts/int02-r1-clause-audit.json。保留历史证据，不改写其旧状态。验收此修正并核对剩余路由、插件和桥接条目后，才能宣布 R1 完成。打包运行时验收仍属 R7，精确 1.2.27 对话仍属 R2。
+VS Code agent proxy 仍会在转发前返回 501。适配器绑定仍是计划项，`packages/vscode/src/bridge-proxy-runtime.ts` 及其测试验证了这一点。当前复核记录和指纹见 `artifacts/int02-r1-boundary-evidence.json`；保留既有证据计数及其原始范围。R1 仍未完成，剩余事项包括队列、浏览器关闭和连接切换验收旅程。精确 Legacy 对话属于 R2，消费方迁移属于 R6，打包验收属于 R7。浏览器关闭旅程必须确认自有待处理活动和队列意图在关闭后仍保留，不能声称进行中的请求已恢复。最终边界测试通过 14 个文件、171 项测试，包括同目标 watcher 重启和八项真实 Git/回环 HTTP 清理测试。这些契约不能证明真实 CAgent 或打包宿主行为。

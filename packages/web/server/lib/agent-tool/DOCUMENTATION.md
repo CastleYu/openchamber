@@ -53,6 +53,13 @@ both settings are `false`.
    required inputs or one non-obvious behavior, while completed calls use the
    short title in native tool metadata.
 
+The production callback router admits only the OpenCode family and non-Legacy
+profile before dispatching OC1 to the retained plugin and OC2 to the current
+plugin. An unknown generation returns 503. The callback boundary rejects
+unaccepted Legacy requests; managed plugin preparation has its own family and
+revision lease, so this callback guard does not imply every Legacy plugin
+preparation path is disabled.
+
 ## Agent context budget
 
 - The tool exposes one shared parameter object rather than repeating parameters

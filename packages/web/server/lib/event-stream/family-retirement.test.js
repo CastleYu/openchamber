@@ -4,10 +4,12 @@ import { createAgentHost } from '../agent/host.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
 import { createGlobalMessageStreamHub } from './global-hub.js';
 import { createOpenCodeWatcherRuntime } from '../opencode/watcher.js';
+import { OPENCODE_PROFILE } from '../opencode/compatibility.js';
 
 const kernel = { generation: 'oc1', endpoint: 'http://opencode.test', epoch: 4 };
 const urlFor = (path) => `http://opencode.test${path}`;
 const openCodeHost = () => createAgentHost({ getAcceptance: () => null });
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('event stream family retirement', () => {
   it('does no kernel or HTTP work for CAgent hub selection', () => {
@@ -183,3 +185,159 @@ async function waitFor(assertion) {
   }
   throw lastError;
 }
+
+  it('rejects Legacy hub startup, injection, and replay without opening HTTP', async () => {
+    const descriptor = { generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY, endpoint: 'http://opencode.test', epoch: 4 };
+    let fetchCalls = 0;
+    const events = [];
+    const hub = createGlobalMessageStreamHub({
+      getKernelRuntime: () => descriptor,
+      buildOpenCodeUrl: urlFor,
+      fetchImpl: async () => { fetchCalls += 1; throw new Error('unexpected HTTP'); },
+    });
+    hub.subscribeEvent((event) => events.push(event), { spaces: true });
+    hub.injectEvent({ payload: { type: 'session.updated', id: 'legacy-injection' } });
+    hub.start();
+    await wait(10);
+    expect(fetchCalls).toBe(0);
+    expect(events).toEqual([]);
+    expect(hub.replayAfter('legacy-cursor')).toBeNull();
+  });
+
+  it('does not wait, subscribe, or fetch for Legacy watcher profiles', async () => {
+    const descriptor = { generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY, endpoint: 'http://opencode.test', epoch: 4 };
+    let waits = 0;
+    let subscriptions = 0;
+    let fetchCalls = 0;
+    const globalEventHub = {
+      subscribeEvent: () => { subscriptions += 1; return () => {}; },
+      subscribeStatus: () => { subscriptions += 1; return () => {}; },
+      start: () => {},
+    };
+    const deps = {
+      waitForOpenCodePort: async () => { waits += 1; },
+      buildOpenCodeUrl: urlFor,
+      getKernelRuntime: () => descriptor,
+      onPayload: () => {},
+      fetchImpl: async () => { fetchCalls += 1; throw new Error('unexpected HTTP'); },
+    };
+    await createOpenCodeWatcherRuntime({ ...deps, globalEventHub }).start();
+    await createOpenCodeWatcherRuntime(deps).start();
+    expect(waits).toBe(0);
+    expect(subscriptions).toBe(0);
+    expect(fetchCalls).toBe(0);
+  });
+
+  it('refuses watcher admission when readiness resolves to Legacy', async () => {
+    let descriptor = { generation: 'oc1', endpoint: 'http://opencode.test', epoch: 4 };
+    let subscriptions = 0;
+    const globalEventHub = {
+      subscribeEvent: () => { subscriptions += 1; return () => {}; },
+      subscribeStatus: () => { subscriptions += 1; return () => {}; },
+      start: () => {},
+    };
+    const watcher = createOpenCodeWatcherRuntime({
+      waitForOpenCodePort: async () => { descriptor = { ...descriptor, profile: OPENCODE_PROFILE.LEGACY }; },
+      buildOpenCodeUrl: urlFor,
+      getKernelRuntime: () => descriptor,
+      globalEventHub,
+      onPayload: () => {},
+    });
+    await watcher.start();
+    expect(subscriptions).toBe(0);
+
+    let standaloneDescriptor = { generation: 'oc1', endpoint: 'http://opencode.test', epoch: 4 };
+    let standaloneFetches = 0;
+    const standalone = createOpenCodeWatcherRuntime({
+      waitForOpenCodePort: async () => { standaloneDescriptor = { ...standaloneDescriptor, profile: OPENCODE_PROFILE.LEGACY }; },
+      buildOpenCodeUrl: urlFor,
+      getKernelRuntime: () => standaloneDescriptor,
+      fetchImpl: async () => { standaloneFetches += 1; throw new Error('unexpected HTTP'); },
+      onPayload: () => {},
+    });
+    await standalone.start();
+    expect(standaloneFetches).toBe(0);
+  });
+
+it('retires buffered and replayed events when only the profile changes', () => {
+  let descriptor = { generation: 'oc2', profile: OPENCODE_PROFILE.OC2, endpoint: 'http://opencode.test', epoch: 4 };
+  const events = [];
+  const hub = createGlobalMessageStreamHub({
+    getKernelRuntime: () => descriptor,
+    buildOpenCodeUrl: urlFor,
+    deltaCoalesceWindowMs: 1_000,
+  });
+  hub.subscribeEvent((event) => events.push(event), { spaces: true });
+  hub.injectEvent({ payload: { type: 'session.updated', id: 'before-profile-change' } });
+  const cursor = events[0].eventId;
+  hub.injectEvent({ payload: { type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'first' } } });
+  hub.injectEvent({ payload: { type: 'message.part.delta', properties: { sessionID: 's', messageID: 'm', partID: 'p', field: 'text', delta: 'buffered' } } });
+  const deliveredBeforeRetirement = events.length;
+  descriptor = { ...descriptor, profile: OPENCODE_PROFILE.LEGACY };
+  hub.stop();
+  hub.injectEvent({ payload: { type: 'session.updated', id: 'legacy-injection' } });
+  expect(events).toHaveLength(deliveredBeforeRetirement);
+  expect(hub.replayAfter(cursor)).toBeNull();
+});
+it('drops a subscribed watcher event after a profile-only retirement', async () => {
+  let descriptor = { generation: 'oc2', profile: OPENCODE_PROFILE.OC2, endpoint: 'http://opencode.test', epoch: 4 };
+  let receive;
+  let translated = 0;
+  const payloads = [];
+  const watcher = createOpenCodeWatcherRuntime({
+    waitForOpenCodePort: async () => {},
+    getKernelRuntime: () => descriptor,
+    buildOpenCodeUrl: urlFor,
+    onPayload: (value) => payloads.push(value),
+    globalEventHub: {
+      subscribeEvent: (callback) => { receive = callback; return () => {}; },
+      subscribeStatus: () => () => {},
+      start: () => {},
+    },
+  });
+  await watcher.start();
+  descriptor = { ...descriptor, profile: OPENCODE_PROFILE.LEGACY };
+  receive({ translated: () => { translated += 1; return [{ type: 'session.updated' }]; } });
+  watcher.stop();
+  expect(translated).toBe(0);
+  expect(payloads).toEqual([]);
+});
+
+it('drops standalone watcher data completed after a profile-only retirement', async () => {
+  let descriptor = { generation: 'oc2', profile: OPENCODE_PROFILE.OC2, endpoint: 'http://opencode.test', epoch: 4 };
+  let respond;
+  const payloads = [];
+  const watcher = createOpenCodeWatcherRuntime({
+    waitForOpenCodePort: async () => {},
+    getKernelRuntime: () => descriptor,
+    buildOpenCodeUrl: urlFor,
+    onPayload: (value) => payloads.push(value),
+    fetchImpl: () => new Promise((resolve) => { respond = resolve; }),
+  });
+  await watcher.start();
+  await waitFor(() => expect(respond).toBeDefined());
+  descriptor = { ...descriptor, profile: OPENCODE_PROFILE.LEGACY };
+  respond(new Response('data: {"type":"session.updated"}\n\n', { headers: { 'content-type': 'text/event-stream' } }));
+  await wait(10);
+  watcher.stop();
+  expect(payloads).toEqual([]);
+});
+it('continues watching committed hub events after a same-target restart', async () => {
+  let descriptor = { generation: 'oc2', profile: OPENCODE_PROFILE.OC2, endpoint: 'http://opencode.test', epoch: 4 };
+  const payloads = [];
+  const hub = createGlobalMessageStreamHub({ getKernelRuntime: () => descriptor, buildOpenCodeUrl: urlFor });
+  const watcher = createOpenCodeWatcherRuntime({
+    waitForOpenCodePort: async () => {},
+    getKernelRuntime: () => descriptor,
+    buildOpenCodeUrl: urlFor,
+    onPayload: (payload) => payloads.push(payload),
+    globalEventHub: { ...hub, start: () => {} },
+  });
+  await watcher.start();
+  hub.injectEvent({ payload: { type: 'session.updated', id: 'before-restart' } });
+  descriptor = { ...descriptor, epoch: 5 };
+  hub.injectEvent({ payload: { type: 'session.updated', id: 'after-restart' } });
+  watcher.stop();
+  hub.stop();
+  expect(payloads.map((payload) => payload.id)).toEqual(['before-restart', 'after-restart']);
+});

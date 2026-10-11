@@ -1,6 +1,7 @@
 import { createUpstreamSseReader } from '../event-stream/upstream-reader.js';
 import { translateWireEvent } from '../event-stream/translate-v2.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_PROFILE } from './compatibility.js';
 
 export const createOpenCodeWatcherRuntime = (deps) => {
   const {
@@ -38,6 +39,7 @@ export const createOpenCodeWatcherRuntime = (deps) => {
   const start = async () => {
     const selected = getBackendSelection();
     if (selected.family !== AGENT_FAMILY.OPENCODE) return;
+    if (getKernelRuntime?.()?.profile === OPENCODE_PROFILE.LEGACY) return;
     if (abortController) {
       return;
     }
@@ -45,7 +47,7 @@ export const createOpenCodeWatcherRuntime = (deps) => {
     await waitForOpenCodePort();
 
     const current = getBackendSelection();
-    if (current.family !== selected.family || current.revision !== selected.revision || abortController) return;
+    if (current.family !== selected.family || current.revision !== selected.revision || abortController || getKernelRuntime?.()?.profile === OPENCODE_PROFILE.LEGACY) return;
 
     selectionSignal = getSelectionSignal();
     if (selectionSignal?.aborted) return;
@@ -62,7 +64,8 @@ export const createOpenCodeWatcherRuntime = (deps) => {
       // The events of isolated spaces feed this watcher too, so live status, unread marks and
       // notifications work for a space's sessions as for the host's.
       unsubscribeEvent = globalEventHub.subscribeEvent((event) => {
-        if (!isCurrent()) return;
+        const currentKernel = getKernelRuntime?.();
+        if (!isCurrent() || currentKernel?.profile === OPENCODE_PROFILE.LEGACY) return;
         for (const value of event.translated()) {
           const payload = unwrapGlobalEventPayload(value);
           if (payload) onPayload(payload);
@@ -90,10 +93,11 @@ export const createOpenCodeWatcherRuntime = (deps) => {
       buildUrl: () => {
         if (!isCurrent()) throw new Error('OpenCode selection retired');
         attached = getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+        if (attached.profile === OPENCODE_PROFILE.LEGACY) throw new Error('OpenCode profile is not admitted');
         if (attached.generation !== 'oc1' && attached.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
         return buildOpenCodeUrl(attached.generation === 'oc2' ? '/api/event' : '/global/event', '');
       },
-      getConnectionKey: () => `${attached.endpoint}|${attached.epoch}|${attached.generation}`,
+      getConnectionKey: () => `${attached.endpoint}|${attached.epoch}|${attached.generation}|${attached.profile ?? ''}`,
       getHeaders: getOpenCodeAuthHeaders,
       fetchImpl,
       stallTimeoutMs: upstreamStallTimeoutMs,
@@ -104,7 +108,7 @@ export const createOpenCodeWatcherRuntime = (deps) => {
       onEvent(event) {
         if (!isCurrent()) return;
         const current = getKernelRuntime?.() ?? attached;
-        if (current.endpoint !== attached.endpoint || current.epoch !== attached.epoch || current.generation !== attached.generation) return;
+        if (current.endpoint !== attached.endpoint || current.epoch !== attached.epoch || current.generation !== attached.generation || current.profile !== attached.profile || current.profile === OPENCODE_PROFILE.LEGACY) return;
         const payload = unwrapGlobalEventPayload(event.payload);
         for (const value of attached.generation === 'oc2' ? translateWireEvent(payload) : [payload]) {
           if (value) onPayload(value);

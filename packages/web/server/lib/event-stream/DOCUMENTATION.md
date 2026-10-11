@@ -79,6 +79,8 @@ The directory WS bridge and the SSE proxy (`/api/global/event`, used by Capacito
 
 ## Notes for contributors
 
+The shared global hub and watcher admit OC1/OC2 profiles only. `legacy-1.2.27` does not open or subscribe to the R1 event stream; the kernel connection key includes profile so same-endpoint and epoch profile changes reject late events and buffered commits. Existing streams are filtered at event commit boundaries; this does not add a profile polling lifecycle.
+
 The production global hub and OpenCode push watcher consume the Agent host's family/revision snapshot and selection signal. CAgent startup does no OpenCode readiness, kernel or HTTP work. Retirement stops the active upstream reader, detaches watcher subscriptions and clears hub replay even when the kernel descriptor has not changed. Event commits and Space injections reject a retired selection. Normal stop preserves same-selection replay; restarting an unused hub after a selection change clears it. The existing global WS identity-change frame resets client cursors. These synthetic lifecycle tests establish isolation, not CAgent event support or browser/native acceptance.
 
 - Keep protocol helpers pure and small so they can be unit tested without spinning up a server.

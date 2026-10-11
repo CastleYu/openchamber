@@ -5,6 +5,7 @@ import { serializeMessageStreamWsEvent } from './protocol.js';
 import { createDeltaCoalescer, DELTA_COALESCE_WINDOW_MS } from './delta-coalescer.js';
 import { translateWireEvent } from './translate-v2.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_PROFILE } from '../opencode/compatibility.js';
 
 // Raised from 512 → 2048 to improve recovery after brief disconnects during
 // long-running agent sessions where many events accumulate quickly.
@@ -102,7 +103,7 @@ export function createGlobalMessageStreamHub({
     return current.family === AGENT_FAMILY.OPENCODE && current.revision === selection.revision;
   };
   const descriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
-  const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}`;
+  const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}|${value.profile ?? ''}`;
 
   const notifySubscriber = (kind, subscriber, payload) => {
     try {
@@ -154,7 +155,7 @@ export function createGlobalMessageStreamHub({
   // replay buffer in the same step that delivers it, so a client's cursor
   // always names a frame the buffer can find.
   const commitEvent = (event) => {
-    if (!isCurrent() || selectionSignal?.aborted) return;
+    if (!isCurrent() || selectionSignal?.aborted || descriptor()?.profile === OPENCODE_PROFILE.LEGACY) return;
     // A timer or stop() may flush after the upstream epoch was retired.
     // Same-identity stop still commits pending text for replay continuity.
     const eventKey = event.envelope?.kernelKey ?? connectionKey;
@@ -228,6 +229,11 @@ export function createGlobalMessageStreamHub({
         return;
       }
 
+      if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY) {
+        stop();
+        return;
+      }
+
       reader = createUpstreamSseReader({
         signal: readerController.signal,
         stallTimeoutMs: upstreamStallTimeoutMs,
@@ -238,6 +244,7 @@ export function createGlobalMessageStreamHub({
           try {
             const next = descriptor();
             if (!isCurrent()) throw new Error('OpenCode selection retired');
+            if (next.profile === OPENCODE_PROFILE.LEGACY) throw new Error('OpenCode profile is not admitted');
             if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
             const nextKey = keyOf(next);
             if (connectionKey !== undefined && connectionKey !== nextKey) {
@@ -271,7 +278,7 @@ export function createGlobalMessageStreamHub({
         },
         onEvent(event) {
           if (controller !== readerController || readerController.signal.aborted || !isCurrent()) return;
-          if (keyOf(descriptor()) !== connectionKey) return;
+          if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY || keyOf(descriptor()) !== connectionKey) return;
           coalescer.push(event);
         },
         onError(error) {
@@ -326,7 +333,7 @@ export function createGlobalMessageStreamHub({
       };
     },
     injectEvent({ payload, directory, spaceId }) {
-      if (!isCurrent() || selectionSignal?.aborted) return;
+      if (!isCurrent() || selectionSignal?.aborted || descriptor()?.profile === OPENCODE_PROFILE.LEGACY) return;
       coalescer.push({ envelope: { directory, spaceId, kernelKey: keyOf(descriptor()) }, payload });
     },
     subscribeStatus(subscriber) {

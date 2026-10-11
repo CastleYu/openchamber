@@ -1,22 +1,42 @@
 import { OpenCode } from '@opencode/client';
+import { AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../opencode/compatibility.js';
 
 const WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS = 5_000;
-const createWorktreeInstanceDisposer = ({ getOpenCodeAuthHeaders, getKernelRuntime }) => async (worktreeDirectory) => {
-  const identity = getKernelRuntime();
-  if (identity?.generation !== 'oc2' || !identity.endpoint) return;
+const createWorktreeInstanceDisposer = ({ getOpenCodeAuthHeaders, getKernelRuntime, getBackendSelection }, selection, identity) => async (worktreeDirectory) => {
+  const assertCurrent = () => {
+    const backend = getBackendSelection();
+    const current = getKernelRuntime();
+    if (backend?.family !== selection.family || backend?.revision !== selection.revision
+      || current?.generation !== identity.generation || current?.profile !== identity.profile
+      || current?.endpoint !== identity.endpoint || current?.epoch !== identity.epoch) {
+      throw new Error('OpenCode connection changed during worktree disposal');
+    }
+  };
+
+  assertCurrent();
+  const headers = getOpenCodeAuthHeaders();
+  assertCurrent();
   const client = OpenCode.make({
     baseUrl: identity.endpoint,
-    headers: getOpenCodeAuthHeaders(),
-    fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS) }),
+    headers,
+    fetch: (input, init) => {
+      assertCurrent();
+      const requestSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+      const timeoutSignal = AbortSignal.timeout(WORKTREE_INSTANCE_DISPOSE_TIMEOUT_MS);
+      const signal = requestSignal ? AbortSignal.any([requestSignal, timeoutSignal]) : timeoutSignal;
+      return fetch(input, { ...init, signal }).then((response) => {
+        assertCurrent();
+        return response;
+      });
+    },
   });
+  assertCurrent();
   await client.debug.location.evict({ location: { directory: worktreeDirectory } });
-  const current = getKernelRuntime();
-  if (current?.generation !== identity.generation || current?.endpoint !== identity.endpoint || current?.epoch !== identity.epoch) {
-    throw new Error('OpenCode connection changed during worktree disposal');
-  }
+  assertCurrent();
 };
 
-export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHeaders, getKernelRuntime } = {}) {
+export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHeaders, getKernelRuntime, getBackendSelection } = {}) {
   let gitLibraries = null;
   const getGitLibraries = async () => {
     if (!gitLibraries) {
@@ -59,8 +79,6 @@ export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHea
   };
 
   const isNonRepoGitError = (error) => /not a git repository/i.test(extractGitErrorText(error));
-  const canDisposeWorktreeInstance = Boolean(getOpenCodeAuthHeaders && getKernelRuntime);
-
   const nonRepoStatusPayload = () => ({
     isGitRepository: false,
     files: [],
@@ -1222,6 +1240,12 @@ export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHea
   });
 
   app.delete('/api/git/worktrees', async (req, res) => {
+    const selection = getBackendSelection?.();
+    const identity = selection?.family === AGENT_FAMILY.OPENCODE ? getKernelRuntime?.() : null;
+    const canDispose = selection?.family === AGENT_FAMILY.OPENCODE
+      && identity?.generation === OPENCODE_GENERATION.OC2
+      && identity?.profile === OPENCODE_PROFILE.OC2
+      && Boolean(identity.endpoint && getOpenCodeAuthHeaders && getKernelRuntime && getBackendSelection);
     const { removeWorktree } = await getGitLibraries();
     if (typeof removeWorktree !== 'function') {
       return res.status(501).json({ error: 'Worktree removal is not available' });
@@ -1241,8 +1265,8 @@ export function registerGitRoutes(app, { emitWorktreeChanged, getOpenCodeAuthHea
       const result = await removeWorktree(directory, {
         directory: worktreeDirectory,
         deleteLocalBranch: req.body?.deleteLocalBranch === true,
-        disposeInstance: canDisposeWorktreeInstance
-          ? createWorktreeInstanceDisposer({ getOpenCodeAuthHeaders, getKernelRuntime })
+        disposeInstance: canDispose
+          ? createWorktreeInstanceDisposer({ getOpenCodeAuthHeaders, getKernelRuntime, getBackendSelection }, selection, identity)
           : undefined,
       });
       res.json({ success: Boolean(result) });

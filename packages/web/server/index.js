@@ -1340,7 +1340,8 @@ const bootstrapRuntime = createBootstrapRuntime({
   registerAgentToolRoutes: (app, options) => registerDualAgentToolRoutes(app, options.express, {
     legacy: options.agentToolRuntime,
     current: agentToolRuntimeV2,
-    getGeneration: () => kernelRuntime.get().generation,
+    getKernelRuntime: kernelRuntime.get,
+    getBackendSelection: agentHost.getSelection,
   }),
   express,
 });

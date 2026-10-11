@@ -18,7 +18,7 @@
 | 共享 UI 外观层 | `packages/ui/src/lib/opencode/client.ts`、`operations.ts` 和 `model.ts` 通过中立契约保留调用方行为。原始 SDK 访问仍仅供 OpenCode 使用，并拒绝 CAgent。`createDirectory(asProject)` 属于后端变更，普通 mkdir 则由宿主负责。 |
 | 同步 | `packages/ui/src/sync/source.ts` 和 `sync-context.tsx` 需要 CAgent 数据源，并提供规范化的引导数据、消息、状态和事件顺序。保留 OC1/OC2 数据源。代际字段不能代替后端类型。 |
 | 宿主传输 | 现有 RuntimeAPIs、runtimeFetch 和经过认证的事件传输承载中立操作。不得由浏览器持有 CAgent 凭据，也不得伪造 `/session` 协议。 |
-| VS Code | `packages/vscode/src/bridge.ts` 和 `bridge-proxy-runtime.ts` 在扩展宿主中绑定同一适配器。现有本地 FS/Git 桥接仍由原所有者负责。该宿主集成通过验收前，CAgent 在此处保持不可用。 |
+| VS Code | `packages/vscode/src/bridge.ts` 中的适配器绑定仍是计划项。`bridge-proxy-runtime.ts` 当前会在转发前对 agent-proxy 路径返回 501，其测试验证了这一拒绝行为。现有本地 FS/Git 桥接仍由原所有者负责。扩展宿主分发完成并通过验收前，CAgent 在此处保持不可用。 |
 | Electron 与移动端 | Electron 复用进程内 Web 后端。托管移动端和 Capacitor 使用选定的 OpenChamber 服务器。不得额外复制 CAgent 进程或协议。每个宿主都有独立验收行。 |
 
 新模块的路径是实现目标，不表示这些文件已经存在。引入模块时，须补充对应所有者的文档。CA-02 会在 CA-01 契约编译通过后，冻结精确的生成适配器路径和可执行命令。

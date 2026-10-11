@@ -4,6 +4,7 @@ import os from 'os';
 import { getNpmInfo as defaultGetNpmInfo } from './npm-registry.js';
 import { isExactSemver as defaultIsExactSemver, isPathSpec as defaultIsPathSpec, parseNpmSpec as defaultParseNpmSpec, parsePathSpec as defaultParsePathSpec } from './plugin-spec.js';
 import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
 import { createOpenCodeFamilyGuard } from './family-guard.js';
 
 const ENTRY_EXISTS_CODES = new Set(['ENTRY_EXISTS', 'EEXIST']);
@@ -14,7 +15,7 @@ const BAD_REQUEST_CODES = new Set(['INVALID_FILENAME', 'INVALID_SCOPE', 'INVALID
 export const registerPluginRoutes = (app, dependencies) => {
   const {
     getKernelRuntime = () => ({ generation: 'oc1' }),
-    getBackendSelection,
+    getBackendSelection = () => ({ family: AGENT_FAMILY.OPENCODE, revision: 0 }),
     resolveOptionalProjectDirectory,
     listPluginEntries,
     getPluginEntry,
@@ -37,7 +38,18 @@ export const registerPluginRoutes = (app, dependencies) => {
   app.use('/api/config/plugins', createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime));
 
   const parsedKindForSpec = (spec) => (isPathSpec(spec) ? 'path' : 'npm');
-  const requestKernels = new WeakMap();
+  const requestContexts = new WeakMap();
+  const isCurrent = (res) => {
+    const context = requestContexts.get(res);
+    if (!context) return false;
+    const selection = getBackendSelection();
+    if (selection.family !== AGENT_FAMILY.OPENCODE
+      || selection.family !== context.selection.family || selection.revision !== context.selection.revision) return false;
+    const current = getKernelRuntime();
+    const selected = context.kernel;
+    return selected.generation === current.generation && selected.profile === current.profile
+      && selected.endpoint === current.endpoint && selected.epoch === current.epoch;
+  };
 
   const resolveDirectory = async (req, res) => {
     const selected = getKernelRuntime();
@@ -45,8 +57,12 @@ export const registerPluginRoutes = (app, dependencies) => {
       res.status(503).json({ error: 'OpenCode is not ready for plugin configuration' });
       return null;
     }
-    requestKernels.set(res, selected);
+    requestContexts.set(res, { kernel: selected, selection: getBackendSelection() });
     const { directory, error } = await resolveOptionalProjectDirectory(req);
+    if (!isCurrent(res)) {
+      res.status(409).json({ error: 'OpenCode changed during plugin configuration' });
+      return null;
+    }
     if (error) {
       res.status(400).json({ error });
       return null;
@@ -55,9 +71,8 @@ export const registerPluginRoutes = (app, dependencies) => {
   };
 
   const completePluginMutation = async (res, operation, _noun, applyChange) => {
-    const selected = requestKernels.get(res);
-    const current = getKernelRuntime();
-    if (!selected || selected.generation !== current.generation || selected.profile !== current.profile || selected.endpoint !== current.endpoint || selected.epoch !== current.epoch) {
+    const selected = requestContexts.get(res)?.kernel;
+    if (!isCurrent(res)) {
       return res.status(409).json({ error: 'OpenCode changed during plugin configuration' });
     }
     applyChange();

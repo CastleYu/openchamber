@@ -5,6 +5,7 @@ import os from 'os';
 import path from 'path';
 import request from 'supertest';
 
+import { AGENT_FAMILY } from '../agent/constants.js';
 import { OPENCODE_PROFILE } from './compatibility.js';
 import { registerPluginRoutes } from './plugin-routes.js';
 
@@ -463,6 +464,37 @@ describe('opencode plugin routes', () => {
     expect(writes).toHaveLength(0);
   });
 
+  test.each([
+    { name: 'family', next: { family: AGENT_FAMILY.CAGENT, revision: 1 } },
+    { name: 'revision', next: { family: AGENT_FAMILY.OPENCODE, revision: 2 } },
+  ])('a $name change with the same kernel blocks plugin mutation', async ({ next }) => {
+    let selection = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+    const writes = [];
+    const current = createApp({
+      getBackendSelection: () => selection,
+      getKernelRuntime: () => ({ generation: 'oc2', epoch: 1 }),
+      resolveOptionalProjectDirectory: async () => { selection = next; return { directory: projectDir }; },
+      createPluginEntry: (value) => writes.push(value),
+    });
+    await request(current).post('/api/config/plugins/entry').send({ spec: 'example-plugin', scope: 'user' }).expect(409);
+    expect(writes).toHaveLength(0);
+  });
+
+  test('a family change during directory resolution blocks plugin reads', async () => {
+    let selection = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
+    const reads = [];
+    const current = createApp({
+      getBackendSelection: () => selection,
+      getKernelRuntime: () => ({ generation: 'oc2', epoch: 1 }),
+      resolveOptionalProjectDirectory: async () => {
+        selection = { family: AGENT_FAMILY.CAGENT, revision: 2 };
+        return { directory: projectDir };
+      },
+      listPluginEntries: () => { reads.push('entries'); return []; },
+    });
+    await request(current).get('/api/config/plugins').expect(409);
+    expect(reads).toHaveLength(0);
+  });
   test('POST invalid fileName returns 400', async () => {
     const response = await request(app)
       .post('/api/config/plugins/file')

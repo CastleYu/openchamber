@@ -17,6 +17,23 @@ This module provides OpenCode server integration utilities for the web server ru
 - `managed-generation.js` probes the selected CLI through its resolved launch
   specification before managed configuration or plugin writes. Lifecycle spawning
   reuses that specification. An unknown generation stops startup before writing.
+- `../agent-tool/dual-routes.js` checks the active family and Legacy profile before dispatching
+  the agent-tool callback by generation. `plugin-routes.js` applies that same
+  entry refusal, then captures family/revision and the kernel descriptor around
+  directory resolution and rechecks them before plugin reads or mutations.
+  Retirement returns 409 before a later effect; it cannot undo a synchronous
+  operation that already began.
+- Production composition in `packages/web/server/index.js` passes the selected
+  agent host into the callback router, event hub, watcher and Git routes.
+  `feature-routes-runtime.js` registers plugin routes with generation-specific
+  operations. The managed environment lease checks family/revision at entry and
+  after each awaited preparation phase. Generation probing identifies OC1/OC2;
+  it does not classify or disable the Legacy profile for all plugin preparation.
+- The shared event hub owns upstream kernel identity and epoch checks when it
+  commits events. The watcher checks current family/revision and refuses Legacy
+  events; its standalone reader also checks the attached kernel descriptor.
+  Watcher event callbacks do not capture the startup epoch, so a same-target
+  managed restart can reconnect through the hub.
 - OC1 keeps its existing file-URL plugins, configuration merge and `auth.json`
   ownership. OC2 uses `managed-config-file.js` for watched `OPENCODE_CONFIG` and
   directory plugins; a user-owned config path retains the environment-based

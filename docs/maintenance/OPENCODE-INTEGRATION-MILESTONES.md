@@ -1,6 +1,6 @@
 # Agent integration milestones
 
-Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are in progress. Current evidence and handoff: [execution checkpoint](CAGENT-EXECUTION.md).
+Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are in progress. The [execution checkpoint](CAGENT-EXECUTION.md) records the historical preview release. Current R1 evidence and continuation are in the [acceptance review](R1-ACCEPTANCE.md).
 R1 clause review and image boundary correction: [acceptance review](R1-ACCEPTANCE.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
 

@@ -396,6 +396,8 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerGitRoutes(app, {
       buildOpenCodeUrl,
       getOpenCodeAuthHeaders,
+      getKernelRuntime: kernelRuntime.get,
+      getBackendSelection,
       emitWorktreeChanged: ({ directories, at }) => {
         const clients = getOpenChamberEventClients();
         for (const client of clients) {

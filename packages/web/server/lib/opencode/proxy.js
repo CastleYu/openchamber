@@ -15,7 +15,7 @@ import { recordStartupPerformance } from './startup-performance.js';
 import { getWorktreeBootstrapStatus } from '../git/service.js';
 import { AGENT_ERROR } from '../agent/constants.js';
 import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './compatibility.js';
-import { supportsLegacyStream } from './legacy-contract.js';
+import { supportsLegacyRequest } from './legacy-contract.js';
 
 const DEFAULT_SSE_HEARTBEAT_INTERVAL_MS = 20_000;
 const directSseRetireCallbacks = new Set();
@@ -305,6 +305,7 @@ export const registerOpenCodeProxy = (app, deps) => {
     WORKTREE_READY_TIMEOUT_MS = 5 * 60 * 1000,
     getArchivedSessions = null,
     getStoredSessionMetadata = null,
+    legacySessionHttp = null,
     // Isolated spaces, when the feature's switch is on: the merged session list, and the hub
     // whose space events the global SSE stream carries beside the host's. Both absent means
     // the host's own answers go out exactly as before spaces.
@@ -330,7 +331,7 @@ export const registerOpenCodeProxy = (app, deps) => {
     const selected = kernel();
     if (selected.profile !== OPENCODE_PROFILE.LEGACY) return false;
     const route = req.path.replace(/^\/api(?=\/|$)/, '');
-    if (req.method === 'GET' && (route === '/event' || route === '/global/event') && supportsLegacyStream(selected)) return false;
+    if (supportsLegacyRequest(selected, req.method, route) || legacySessionHttp?.accepts(req.method, route)) return false;
     res.status(501).json({ error: AGENT_ERROR.UNACCEPTED, profile: OPENCODE_PROFILE.LEGACY });
     return true;
   };
@@ -786,7 +787,8 @@ export const registerOpenCodeProxy = (app, deps) => {
   const forwardSanitizedSessionListRequest = async (req, res, next, logLabel) => {
     try {
       const upstreamPath = await getRequestUpstreamPath(req);
-      const generation = kernel().generation;
+      const selected = { ...kernel() };
+      const generation = selected.generation;
       const result = await fetchSessionListPayload(upstreamPath, { req, generation });
 
       res.status(result.upstream.status);
@@ -809,7 +811,7 @@ export const registerOpenCodeProxy = (app, deps) => {
         ? await overlayResponse(Array.isArray(result.payload?.data)
           ? { ...result.payload, data: sanitizeSessionListPayload(result.payload.data) }
           : sanitizeSessionListPayload(result.payload), true)
-        : sanitizeSessionListPayload(result.payload);
+        : legacySessionHttp ? await legacySessionHttp.overlay(sanitizeSessionListPayload(result.payload), selected) : sanitizeSessionListPayload(result.payload);
       const listQuery = new URL(upstreamPath, 'http://localhost').searchParams;
       const scopedToDirectory = Boolean(listQuery.get('directory') || req.get('x-opencode-directory'));
       const wantsSpaces = generation === 'oc2' && typeof mergeSpaceSessionList === 'function' && !listQuery.get('cursor') && !scopedToDirectory;
@@ -957,9 +959,12 @@ export const registerOpenCodeProxy = (app, deps) => {
   });
 
   // Windows: session merge for cross-directory session listing
+  legacySessionHttp?.register(app);
+
   if (process.platform === 'win32') {
     app.get('/api/session', async (req, res, next) => {
       if (isOc2()) return next();
+      const selected = { ...kernel() };
       const rawUrl = req.originalUrl || req.url || '';
       if (rawUrl.includes('directory=')) return next();
 
@@ -1029,7 +1034,7 @@ export const registerOpenCodeProxy = (app, deps) => {
           return bTime - aTime;
         });
         console.log(`[SessionMerge] ${globalSessions?.length || 0} global + ${extraSessions.length} extra = ${merged.length} total`);
-        return res.json(sanitizeSessionListPayload(merged));
+        return res.json(legacySessionHttp ? await legacySessionHttp.overlay(sanitizeSessionListPayload(merged), selected) : sanitizeSessionListPayload(merged));
       } catch (error) {
         console.log(`[SessionMerge] Error: ${error.message}`);
         return res.status(500).json({ error: error.message || 'Failed to merge Windows sessions' });
@@ -1042,14 +1047,16 @@ export const registerOpenCodeProxy = (app, deps) => {
   });
 
   app.get('/api/session/:sessionID', async (req, res, next) => {
-    if (!isOc2() || (!getArchivedSessions && !getStoredSessionMetadata)) return next();
+    const selected = { ...kernel() };
+    if (selected.profile !== OPENCODE_PROFILE.LEGACY && (!isOc2() || (!getArchivedSessions && !getStoredSessionMetadata))) return next();
     try {
-      const result = await fetchSessionListPayload(await getRequestUpstreamPath(req), { req, generation: 'oc2' });
+      const result = await fetchSessionListPayload(await getRequestUpstreamPath(req), { req, generation: selected.generation });
       res.status(result.upstream.status);
       applyForwardProxyResponseHeaders(result.upstream.headers, res);
       res.setHeader('content-type', result.contentType);
       if (!result.isJson || result.parseError) return res.end(result.bodyText);
-      return res.json(await overlayResponse(result.payload, false));
+      return res.json(selected.profile === OPENCODE_PROFILE.LEGACY && legacySessionHttp
+        ? await legacySessionHttp.overlay(result.payload, selected) : await overlayResponse(result.payload, false));
     } catch (error) {
       if (isAbortError(error)) return;
       if (!res.headersSent) return res.status(503).json({ error: 'OpenCode service unavailable' });

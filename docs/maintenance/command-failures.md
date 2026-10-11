@@ -145,3 +145,13 @@
 - 2026-10-11 R2 transport verification: the exact transport probe requires an explicit fixture-root argument; the initial invocation omitted it and failed before starting a process. Pass artifacts/legacy-1.2.27. Source discovery must use rg -g '*runtime.js' against a directory on Windows rather than a positional wildcard. Vitest esbuild spawn EPERM requires scoped escalation for the same focused command; use the confirmed package executable path.
 
 - 2026-10-11 R2 verification follow-up: baseline oxlint copies under ignored artifacts produced "No files found"; use temporary sibling source copies and remove them after checking. Do not interpret an empty scan as a clean baseline. Optional CIM process inspection was denied; use the existing exec session handle. Discover lint config paths rather than assuming .oxlintrc.json.
+
+- 2026-10-11 R2 UI discovery: positional wildcard paths in rg fail with Windows os error 123; use an existing directory and -g filters. The UI package has no root README; enumerate docs before reads. These discovery failures did not run or modify product code.
+
+- 2026-10-11 R2 HTTP test setup: PowerShell braced path syntax failed parsing; an outer wrapper expanded $LASTEXITCODE and emitted -ne; report inspection used the package cwd instead of the repository root. Use direct exec_command with explicit repository workdir, a single PowerShell layer, and individually listed test paths. The final focused rerun passed. The UI package has no root README; use rg --files before reading package documentation.
+
+- 2026-10-11 R2 UI-host contract setup: default sandbox denied writing the test log into dijiang-next; reran the unchanged test using scoped escalation for that execution worktree. New cross-workspace HTTP test uses Bun JavaScript because server proxy modules have no TypeScript declarations, avoiding type assertions or compiler suppression.
+
+### 2026-10-11: context verification path discovery
+
+Reading an assumed UI type-log filename and `packages/ui/README.md` failed because those paths do not exist. Enumerate artifact/document paths before reading. The real type log is `artifacts/int03-conversation-ui-types.log`; the UI package has no root README. No source was changed by these failed reads.

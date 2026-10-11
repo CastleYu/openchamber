@@ -23,3 +23,4 @@ export declare const LEGACY_OPERATION: Readonly<{
 
 export declare function supportsLegacyOperation(operation: string): boolean;
 export declare function supportsLegacyStream(runtime: OpenCodeGenerationDescriptor): boolean;
+export declare function supportsLegacyRequest(runtime: OpenCodeGenerationDescriptor, method: string, route: string): boolean;

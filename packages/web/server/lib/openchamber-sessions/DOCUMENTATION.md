@@ -47,5 +47,7 @@ at session creation. Metadata stays off the upstream wire. Failed create metadat
 storage attempts deletion only against the captured runtime and reports the created
 ID with rollback/partial status. A successful title write followed by a failed local
 metadata write reports partial state. A post-dispatch runtime change cannot undo an
-entered upstream mutation. Generic proxy, shared UI, events and VS Code acceptance
-remain separate R2 integration work.
+entered upstream mutation. The SDK HTTP create/update bridge and session read
+projection share this store with the kernel; see
+[the bridge owner](../opencode/DOCUMENTATION.md#exact-legacy-minimum-host-writes).
+Full authenticated UI and VS Code acceptance remain separate R2 integration work.

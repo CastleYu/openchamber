@@ -21,6 +21,20 @@ export const OPEN_CODE_STATUS = {
   INVALID_ENDPOINT: 'invalid-endpoint', INVALID_SELECTION: 'invalid-selection',
 } as const;
 
+const LEGACY_CLIENT_OPERATION = Object.freeze({
+  SDK: 'SDK request', SCOPED_SDK: 'scoped SDK request', QUEUED_SDK: 'queued SDK request', EVENTS: 'event stream',
+  LIST: 'session.list', CREATE: 'session.create', GET: 'session.get', UPDATE: 'session.update',
+  MESSAGES: 'session.messages', MESSAGE: 'session.message', PAGES: 'experimental.session.list',
+  PATH: 'path.get', PROJECTS: 'project.list', PROJECT: 'project.current', VCS: 'vcs.get', LSP: 'lsp.status',
+  CONFIG: 'global.config.get', PERMISSION: 'permission.reply', QUESTION_REJECT: 'question.reject',
+  SYNC_PAGES: 'sync.session.pages', SYNC_PATH: 'sync.path', SYNC_PROJECT: 'sync.project', SYNC_VCS: 'sync.vcs',
+  SYNC_LSP: 'sync.lsp', SYNC_CONFIG: 'sync.config', SYNC_PROVIDERS: 'sync.providers', SYNC_AGENTS: 'sync.agents',
+  SYNC_LIST: 'sync.session.list', SYNC_GET: 'sync.session.get', SYNC_MESSAGES: 'sync.message.page',
+  SYNC_MESSAGE: 'sync.message.get', SYNC_STATUS: 'sync.status', SYNC_PERMISSIONS: 'sync.permission.list',
+  SYNC_QUESTIONS: 'sync.question.list',
+});
+const legacyOperations = new Set<string>(Object.values(LEGACY_CLIENT_OPERATION));
+
 export const OPEN_CODE_SETTING = { SELECTION: 'opencodeSelection' } as const;
 
 export type OpenCodeProfile = typeof OPEN_CODE_PROFILE[keyof typeof OPEN_CODE_PROFILE];
@@ -75,7 +89,8 @@ export class OpenCodeRuntimeBinding {
 
   assert(generation: 'oc1' | 'oc2', operation: string): void {
     if (!this.current) throw new OpenCodeRuntimeError('unknown', operation);
-    if (this.current.profile === OPEN_CODE_PROFILE.LEGACY) {
+    if (this.current.profile === OPEN_CODE_PROFILE.LEGACY
+      && (this.current.generation !== OPEN_CODE_GENERATION.OC1 || this.current.version !== '1.2.27' || !legacyOperations.has(operation))) {
       throw new OpenCodeRuntimeError(this.current.generation, operation, this.current.profile);
     }
     if (this.current && this.current.generation !== generation) {

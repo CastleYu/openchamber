@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream } from './legacy-contract.js';
+import { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyRequest, supportsLegacyStream } from './legacy-contract.js';
 
 describe('Legacy operation contract', () => {
   it('admits the accepted read and minimum conversation operations', () => {
@@ -51,5 +51,33 @@ describe('Legacy stream descriptor', () => {
     for (const change of [{ generation: 'oc2' }, { profile: 'oc1' }, { version: '1.2.28' }, { version: undefined }]) {
       expect(supportsLegacyStream({ ...exact, ...change })).toBe(false);
     }
+  });
+});
+
+describe('Legacy HTTP admission contract', () => {
+  const exact = { generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27' };
+  it.each([
+    ['GET', '/event'], ['GET', '/global/event'], ['GET', '/path'], ['GET', '/project'],
+    ['GET', '/project/current'], ['GET', '/vcs'], ['GET', '/lsp'], ['GET', '/global/config'],
+    ['GET', '/config'], ['GET', '/config/providers'], ['GET', '/provider'], ['GET', '/agent'],
+    ['GET', '/command'], ['GET', '/permission'], ['GET', '/question'], ['GET', '/session'], ['GET', '/experimental/session'],
+    ['GET', '/session/status'], ['GET', '/session/s1'], ['GET', '/session/s1/message'],
+    ['GET', '/session/s1/message/m1'], ['GET', '/session/s1/children'],
+    ['POST', '/session/s1/prompt_async'], ['POST', '/session/s1/abort'],
+    ['POST', '/permission/p1/reply'], ['POST', '/question/q1/reply'], ['POST', '/question/q1/reject'],
+  ])('admits %s %s on the exact Legacy descriptor', (method, route) => {
+    expect(supportsLegacyRequest(exact, method, route)).toBe(true);
+  });
+  it.each([
+    ['POST', '/session'], ['PATCH', '/session/s1'], ['DELETE', '/session/s1'],
+    ['GET', '/session/s1/message/'], ['GET', '/session/s1/children/more'],
+    ['POST', '/session/s1/prompt_async/more'], ['POST', '/question/q1/reply/extra'],
+    ['GET', '/event/other'], ['GET', '/unknown'], ['POST', '/config'],
+  ])('refuses %s %s', (method, route) => {
+    expect(supportsLegacyRequest(exact, method, route)).toBe(false);
+  });
+  it('requires the exact supported Legacy descriptor', () => {
+    expect(supportsLegacyRequest({ ...exact, version: '1.2.28' }, 'GET', '/session')).toBe(false);
+    expect(supportsLegacyRequest({ ...exact, generation: 'oc2' }, 'POST', '/session/s1/abort')).toBe(false);
   });
 });

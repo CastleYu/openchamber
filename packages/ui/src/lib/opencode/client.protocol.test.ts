@@ -210,11 +210,11 @@ describe('resolved profile at the service boundary', () => {
     } finally { fetch.mockRestore(); }
   });
 
-  test('refuses unaccepted Legacy reads, writes and retained SDK calls before transport', async () => {
+  test('refuses mismatched Legacy reads, writes and retained SDK calls before transport', async () => {
     const descriptor = { generation: 'oc1' as const, endpoint: 'http://127.0.0.1:4096', epoch: 6, version: '1.2.27' };
     opencodeClient.bindRuntime({ ...descriptor, profile: 'oc1' });
     const retained = opencodeClient.getScopedApiClient('/repo');
-    opencodeClient.bindRuntime({ ...descriptor, profile: 'legacy-1.2.27' });
+    opencodeClient.bindRuntime({ ...descriptor, profile: 'legacy-1.2.27', version: '1.2.28' });
     const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json([]));
     try {
       await expect(opencodeClient.listSessions()).rejects.toThrow(OpenCodeRuntimeError);

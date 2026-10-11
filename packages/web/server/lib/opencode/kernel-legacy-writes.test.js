@@ -51,6 +51,42 @@ const makeOps = (endpoint, dataDir, scope = SCOPE.PRIMARY, extra = {}) => create
 });
 
 describe('Legacy profile write contracts', () => {
+  it('preserves OpenCode 1.2.27 create permissions and workspace through the SDK request', async () => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-legacy-kernel-'));
+    dirs.push(dataDir);
+    const requests = [];
+    const endpoint = await serve(({ method, path: route }) => {
+      if (method === 'POST' && route === '/session') return { body: { ...SESSION, title: 'created' } };
+      return { status: 404, body: { error: 'unexpected' } };
+    }, requests);
+    const metadata = { openchamber: { goal: 'g' } };
+    const permission = [{ permission: 'read', pattern: '**', action: 'allow' }];
+    await makeOps(endpoint, dataDir).createSession({
+      directory: DIR, title: 'created', permission, workspaceID: 'wrk_1', metadata,
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ method: 'POST', path: '/session', body: {
+      title: 'created', permission, workspaceID: 'wrk_1',
+    } });
+    expect(requests[0].search.get('directory')).toBe(DIR);
+    expect(requests[0].body).not.toHaveProperty('metadata');
+    expect(await createLegacyMetadataStore({ dataDir }).read(SCOPE.PRIMARY, SESSION.id)).toEqual(metadata);
+  });
+
+  it('rejects Legacy create permission and workspace fields on OC2 before fetching', async () => {
+    const requests = [];
+    const endpoint = await serve(() => ({ body: { ...SESSION } }), requests);
+    const ops = createKernelOperations({
+      getRuntime: () => ({ generation: 'oc2', endpoint, epoch: 1 }),
+      getHeaders: () => ({}),
+    });
+
+    await expect(ops.createSession({ directory: DIR, permission: [], workspaceID: 'wrk_1' }))
+      .rejects.toMatchObject({ code: 'unsupported-operation', generation: 'oc2' });
+    expect(requests).toHaveLength(0);
+  });
+
   it('keeps create metadata off the wire, rejects create-time selection, and isolates persisted metadata by scope', async () => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-legacy-kernel-'));
     dirs.push(dataDir);

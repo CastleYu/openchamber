@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，R2 / INT-03 已开始。宿主读取基础通过精确 1.2.27 检查，见 `artifacts/int03-exact-host-read.json`；最小宿主写操作和隔离的补充元数据已通过 `artifacts/int03-exact-host-write.json` 及针对性服务／内核契约检查；事件传输基础已通过 134 项聚焦回归及 15 项精确可执行文件／受控模型检查（`artifacts/int03-exact-host-transport.json`），接通既有全局事件中心、直接 SSE 代理及目录 WS 桥，并严格检查版本和连接身份。共享 UI／完整鉴权宿主、relay 和 VS Code 流程仍待验收，R2 尚未通过。续接范围和验证限制见 `artifacts/int03-transport-checkpoint.json`。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。[执行检查点](CAGENT-EXECUTION.md) 保留历史预览发布记录。当前 R1 证据与续接范围见[验收复核](R1-ACCEPTANCE.md)。
+状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，R2 / INT-03 已开始。宿主读取基础通过精确 1.2.27 检查，见 `artifacts/int03-exact-host-read.json`；最小宿主写操作和隔离的补充元数据已通过 `artifacts/int03-exact-host-write.json` 及针对性服务／内核契约检查；事件传输基础已通过 134 项聚焦回归及 15 项精确可执行文件／受控模型检查（`artifacts/int03-exact-host-transport.json`），接通既有全局事件中心、直接 SSE 代理及目录 WS 桥，并严格检查版本和连接身份。共享 UI／完整鉴权宿主、relay 和 VS Code 流程仍待验收，R2 尚未通过。共享客户端／HTTP 桥实现检查点新增 169 项聚焦宿主回归及 54 项隔离 UI 契约检查，覆盖元数据往返与部分失败。实际浏览器／完整鉴权宿主及 VS Code 验收仍未完成。当前续接范围和验证限制见 `artifacts/int03-conversation-http-checkpoint.json`；传输证据仍见 `artifacts/int03-transport-checkpoint.json`。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。[执行检查点](CAGENT-EXECUTION.md) 保留历史预览发布记录。当前 R1 证据与续接范围见[验收复核](R1-ACCEPTANCE.md)。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 

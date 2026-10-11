@@ -193,7 +193,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     return stamped(context, await sessionViewFor(context, data));
   };
 
-  const createSession = async ({ directory, title, parentID, agent, model, metadata, signal, expectedIdentity }) => {
+  const createSession = async ({ directory, title, parentID, agent, model, metadata, permission, workspaceID, signal, expectedIdentity }) => {
     const context = capture(directory, LEGACY_OPERATION.SESSION_CREATE);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
     if (!z.string().min(1).safeParse(directory).success) {
@@ -201,6 +201,9 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     }
     if (context.generation === GENERATION.OC2 && parentID) {
       throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Use forkSession to create an OC2 child session', context.generation);
+    }
+    if (context.generation === GENERATION.OC2 && (permission !== undefined || workspaceID !== undefined)) {
+      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Legacy session permissions and workspaces are not supported by OC2 create', context.generation);
     }
     const legacy = context.profile === OPENCODE_PROFILE.LEGACY;
     if (legacy && (agent !== undefined || model !== undefined)) {
@@ -216,6 +219,8 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     if (agent) input.agent = agent;
     if (model) input.model = model;
     if (metadata && !legacy) input.metadata = metadata;
+    if (permission !== undefined) input.permission = permission;
+    if (workspaceID !== undefined) input.workspaceID = workspaceID;
     check(context);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.create({ directory, ...input }, requestOptions(signal))

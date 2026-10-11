@@ -60,6 +60,7 @@ import { parseOpenCodeSelection, OPENCODE_SELECTION, OPENCODE_GENERATION } from 
 import { createConnectionActivity } from './lib/opencode/connection-activity.js';
 import { createConnectionSwitch } from './lib/opencode/connection-switch.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
+import { createLegacySessionHttp } from './lib/opencode/legacy-session-http.js';
 import { createLegacyMetadataStore } from './lib/openchamber-sessions/legacy-metadata-store.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
@@ -841,11 +842,13 @@ kernelRuntime = createKernelRuntime({
     }
   },
 });
+const legacyMetadataStore = createLegacyMetadataStore({ dataDir: OPENCHAMBER_DATA_DIR });
+const getLegacyStorageScope = () => isExternalOpenCode ? `external:${kernelRuntime.get().endpoint}` : 'managed';
 const kernelOperations = createKernelOperations({
   getRuntime: kernelRuntime.get,
   getHeaders: getOpenCodeAuthHeaders,
-  legacyMetadataStore: createLegacyMetadataStore({ dataDir: OPENCHAMBER_DATA_DIR }),
-  getStorageScope: () => isExternalOpenCode ? `external:${kernelRuntime.get().endpoint}` : 'managed',
+  legacyMetadataStore,
+  getStorageScope: getLegacyStorageScope,
   prepareSession: (input) => openChamberSessionService.prepareSessionMetadata(input),
 });
 
@@ -1271,6 +1274,7 @@ const processForwardedEventPayload = (payload, emitSyntheticEvent) => {
 
 
 const serverUtilsRuntime = createServerUtilsRuntime({
+  legacySessionHttp: createLegacySessionHttp({ getRuntime: kernelRuntime.get, operations: kernelOperations, metadataStore: legacyMetadataStore, getStorageScope: getLegacyStorageScope }),
   getKernelRuntime: kernelRuntime.get,
   getArchivedSessions: () => openChamberSessionService.getArchivedSessions(),
   getStoredSessionMetadata: () => openChamberSessionService.getStoredSessionMetadata(),

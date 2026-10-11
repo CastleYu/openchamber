@@ -1,7 +1,7 @@
 import type { LegacyMetadataStore } from '../openchamber-sessions/legacy-metadata-store.js';
 import type {
   Command as LegacyCommand, Message as LegacyMessage, Part as LegacyPart,
-  Session as LegacySession, SessionCommandResponse, OpencodeClient,
+  Session as LegacySession, SessionCommandResponse, SessionCreateData, OpencodeClient,
 } from '@opencode-ai/sdk/v2';
 import type {
   CommandInfo, SessionCommandInput, SessionInfo, SessionInterruptResponse,
@@ -91,7 +91,7 @@ export function createKernelOperations(dependencies: {
 }): {
   captureIdentity(): KernelIdentity;
   getSession(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<SessionView>>;
-  createSession(input: { directory: string; title?: string; parentID?: string; agent?: string; model?: SessionInfo['model']; metadata?: LegacySession['metadata']; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionView>>;
+  createSession(input: { directory: string; title?: string; parentID?: string; agent?: string; model?: SessionInfo['model']; metadata?: LegacySession['metadata']; permission?: NonNullable<SessionCreateData['body']>['permission']; workspaceID?: NonNullable<SessionCreateData['body']>['workspaceID']; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionView>>;
   listSessions(input?: { directory?: string; limit?: number; cursor?: string | number; search?: string; signal?: AbortSignal }): Promise<KernelResult<SessionPage>>;
   listMessages(input: { sessionID: string; directory?: string; limit?: number; cursor?: string; order?: 'asc' | 'desc'; signal?: AbortSignal }): Promise<KernelResult<MessagePage>>;
   listChildren(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<SessionView[]>>;

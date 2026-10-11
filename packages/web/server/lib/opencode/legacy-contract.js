@@ -2,6 +2,28 @@ import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './compatibility.js';
 
 const LEGACY_STREAM_VERSION = '1.2.27';
 
+const LEGACY_HTTP_METHOD = Object.freeze({ GET: 'GET', POST: 'POST' });
+const LEGACY_HTTP_ROUTE = Object.freeze({
+  GET: Object.freeze([
+    '/event', '/global/event', '/path', '/project', '/project/current', '/vcs', '/lsp',
+    '/global/config', '/config', '/config/providers', '/provider', '/agent', '/command',
+    '/permission', '/question', '/session', '/session/status', '/experimental/session',
+  ]),
+  POST: Object.freeze([
+    /^\/session\/[^/]+\/prompt_async$/,
+    /^\/session\/[^/]+\/abort$/,
+    /^\/permission\/[^/]+\/reply$/,
+    /^\/question\/[^/]+\/reply$/,
+    /^\/question\/[^/]+\/reject$/,
+  ]),
+  GET_PATTERN: Object.freeze([
+    /^\/session\/[^/]+$/,
+    /^\/session\/[^/]+\/message$/,
+    /^\/session\/[^/]+\/message\/[^/]+$/,
+    /^\/session\/[^/]+\/children$/,
+  ]),
+});
+
 const LEGACY_OPERATION = Object.freeze({
   IDENTITY: 'identity',
   SESSION_LIST: 'session.list',
@@ -35,4 +57,13 @@ function supportsLegacyStream(runtime) {
     && runtime?.version === LEGACY_STREAM_VERSION;
 }
 
-export { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream };
+function supportsLegacyRequest(runtime, method, route) {
+  if (!supportsLegacyStream(runtime)) return false;
+  if (method === LEGACY_HTTP_METHOD.GET && LEGACY_HTTP_ROUTE.GET.includes(route)) return true;
+  const patterns = method === LEGACY_HTTP_METHOD.GET
+    ? LEGACY_HTTP_ROUTE.GET_PATTERN
+    : method === LEGACY_HTTP_METHOD.POST ? LEGACY_HTTP_ROUTE.POST : [];
+  return patterns.some((pattern) => pattern.test(route));
+}
+
+export { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream, supportsLegacyRequest };

@@ -18,10 +18,10 @@ export class DomainEventAuthority {
     return authority;
   }
 
-  accept(event: DomainEvent, sessionID: string | undefined, committedSequence = 0): boolean {
+  accept(event: DomainEvent, sessionID: string | undefined, committedSequence = -1): boolean {
     if (!sessionID) return true;
     if ('sequence' in event && event.sequence !== undefined) {
-      const previous = Math.max(this.sequences.get(sessionID) ?? 0, committedSequence);
+      const previous = Math.max(this.sequences.get(sessionID) ?? -1, committedSequence);
       if (event.sequence <= previous) return false;
       this.sequences.set(sessionID, event.sequence);
     }

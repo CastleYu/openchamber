@@ -647,7 +647,7 @@ export function applyDomainEvent(draft: State, event: DomainEvent): DomainEventR
     : "request" in event ? event.request.value.sessionID
     : undefined
   if (sessionID && "sequence" in event && event.sequence !== undefined) {
-    const previous = draft.eventSequence?.[sessionID] ?? 0
+    const previous = draft.eventSequence?.[sessionID] ?? -1
     if (event.sequence <= previous) return { changed: false }
     draft.eventSequence = { ...draft.eventSequence, [sessionID]: event.sequence }
   }

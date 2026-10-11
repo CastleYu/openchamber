@@ -25,6 +25,38 @@ function fixture(getSession: () => Promise<Session>) {
   return { store, stores, apply: (...events: DomainEvent[]) => applyDomainBatch('/repo', events, source, stores, routing, loader, getRuntimeKey()) };
 }
 
+test('the first zero sequence discovers a session in both caches exactly once', async () => {
+  resetLive();
+  const session = makeSession('first-zero');
+  let reads = 0;
+  const f = fixture(async () => { reads += 1; return session; });
+  const event: DomainEvent = { type: 'session-refresh', sessionID: session.id, eventID: 'created', sequence: 0 };
+  try {
+    f.apply(event);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reads).toBe(1);
+    expect(f.store.getState().session).toEqual([session]);
+    expect(useGlobalSessionsStore.getState().entityById.get(session.id)).toEqual(session);
+    expect(f.store.getState().eventSequence?.[session.id]).toBe(0);
+    f.apply(event);
+    expect(reads).toBe(1);
+    f.apply({ ...event, sequence: 1 });
+    expect(reads).toBe(2);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  } finally { f.stores.disposeAll(); resetLive(); }
+});
+
+test('a replacement source still rejects an already committed zero sequence', () => {
+  const session = makeSession('committed-zero');
+  let reads = 0;
+  const f = fixture(async () => { reads += 1; return session; });
+  try {
+    f.store.setState({ eventSequence: { [session.id]: 0 } });
+    f.apply({ type: 'session-refresh', sessionID: session.id, eventID: 'replayed', sequence: 0 });
+    expect(reads).toBe(0);
+  } finally { f.stores.disposeAll(); }
+});
+
 test('a late OC2 refresh cannot restore a deleted session in either cache', async () => {
   const session = makeSession('deleted-during-refresh');
   let finish: (value: Session) => void = () => { throw new Error('Refresh was not started'); };

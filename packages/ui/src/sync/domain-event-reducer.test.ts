@@ -6,6 +6,15 @@ import { INITIAL_STATE } from './types';
 const state = () => structuredClone(INITIAL_STATE);
 
 describe('OC2 domain event reducer', () => {
+  test('accepts the first zero sequence and rejects its replay', () => {
+    const draft = state();
+    const event: DomainEvent = { type: 'session-refresh', sessionID: 'zero', eventID: 'created', sequence: 0 };
+    expect(applyDomainEvent(draft, event)).toEqual({ changed: false, refresh: { type: 'session', sessionID: 'zero' } });
+    expect(draft.eventSequence?.zero).toBe(0);
+    expect(applyDomainEvent(draft, event)).toEqual({ changed: false });
+    expect(applyDomainEvent(draft, { ...event, sequence: 1 })).toEqual({ changed: false, refresh: { type: 'session', sessionID: 'zero' } });
+  });
+
   test('updates and clears the tray branch without losing the default branch', () => {
     const draft = state();
     draft.vcs = { branch: 'main', default_branch: 'main' };

@@ -19,7 +19,7 @@ The retained session snapshot gap is fixed in the current worktree. The runtime 
 | Actual connection Test/Cancel and session discovery | int02-r1-zero-evidence.json and int02-r1-native-evidence.json | 44 actual VS Code checks pass with real OC2. No model conversation. |
 | Direct SDK consumers | int02-r1-consumer-evidence.json and CAGENT-BOUNDARIES.md | Six retained getter consumers have documented guards or migration ownership. Current fingerprints are recorded in int02-r1-clause-audit.json. |
 | Dynamic HTTP and generated/host consumers | SPEC 3.1 and the route-owner trace below | Open. The existing inventory contains tentative classifications and does not prove every retained escape is guarded. |
-| Existing-feature regression | int02-r1-zero-evidence.json | UI checks and Web/VS Code builds pass. Sync passes 81/82 files; the retention test still exceeds its default timeout. Its 22-test suite passes with a 30-second timeout. |
+| Existing-feature regression | int02-r1-zero-evidence.json; int02-r1-final-reconciliation.json | Historical UI checks and Web/VS Code builds pass. The historical sync run passed 81/82 files with a default-timeout failure. At `7115f32fb`, all 82 isolated sync files pass without changing the timeout; the standalone retention suite passes 22 tests. This resolves the current failing check, without establishing a performance budget. |
 
 ## Image message boundary correction
 

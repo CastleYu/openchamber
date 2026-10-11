@@ -19,7 +19,7 @@
 | 实际 Test/Cancel 控件与会话发现 | int02-r1-zero-evidence.json 和 int02-r1-native-evidence.json | 真实 OC2 的 VS Code 检查通过 44 项，不包含模型对话。 |
 | 直接 SDK 消费方 | int02-r1-consumer-evidence.json 和 CAGENT-BOUNDARIES.md | 六个保留的 getter 消费方已有守卫或迁移归属说明。当前指纹记录在 int02-r1-clause-audit.json。 |
 | 动态 HTTP 及生成插件、主机消费方 | SPEC 3.1 和下方路由归属追踪 | 未完成。既有清单含暂定分类，不能证明所有保留调用都有守卫。 |
-| 原功能回归 | int02-r1-zero-evidence.json | UI 检查及 Web/VS Code 构建通过。同步测试通过 81/82 文件；保留测试仍超过默认超时，其 22 项测试在 30 秒超时下通过。 |
+| 原功能回归 | int02-r1-zero-evidence.json；int02-r1-final-reconciliation.json | 历史 UI 检查及 Web/VS Code 构建通过。历史同步回归通过 81/82 文件，一项默认超时失败。在 `7115f32fb` 上，未调整超时的完整隔离同步回归通过全部 82 文件；独立保留测试通过 22 项。当前失败检查已通过，但这不构成性能预算验收。 |
 
 ## 图片消息边界修正
 

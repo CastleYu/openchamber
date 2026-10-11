@@ -1,3 +1,5 @@
+import type { OpenCodeGenerationDescriptor } from './compatibility.js';
+
 export declare const LEGACY_OPERATION: Readonly<{
   IDENTITY: 'identity';
   SESSION_LIST: 'session.list';
@@ -20,3 +22,4 @@ export declare const LEGACY_OPERATION: Readonly<{
 }>;
 
 export declare function supportsLegacyOperation(operation: string): boolean;
+export declare function supportsLegacyStream(runtime: OpenCodeGenerationDescriptor): boolean;

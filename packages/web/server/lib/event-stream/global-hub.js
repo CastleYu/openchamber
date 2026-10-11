@@ -6,6 +6,7 @@ import { createDeltaCoalescer, DELTA_COALESCE_WINDOW_MS } from './delta-coalesce
 import { translateWireEvent } from './translate-v2.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
 import { OPENCODE_PROFILE } from '../opencode/compatibility.js';
+import { supportsLegacyStream } from '../opencode/legacy-contract.js';
 
 // Raised from 512 → 2048 to improve recovery after brief disconnects during
 // long-running agent sessions where many events accumulate quickly.
@@ -103,7 +104,7 @@ export function createGlobalMessageStreamHub({
     return current.family === AGENT_FAMILY.OPENCODE && current.revision === selection.revision;
   };
   const descriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
-  const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}|${value.profile ?? ''}`;
+  const keyOf = (value) => `${value.endpoint}|${value.generation}|${value.epoch}|${value.profile ?? ''}|${value.version ?? ''}`;
 
   const notifySubscriber = (kind, subscriber, payload) => {
     try {
@@ -155,7 +156,8 @@ export function createGlobalMessageStreamHub({
   // replay buffer in the same step that delivers it, so a client's cursor
   // always names a frame the buffer can find.
   const commitEvent = (event) => {
-    if (!isCurrent() || selectionSignal?.aborted || descriptor()?.profile === OPENCODE_PROFILE.LEGACY) return;
+    if (!isCurrent() || selectionSignal?.aborted) return;
+    if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(descriptor())) return;
     // A timer or stop() may flush after the upstream epoch was retired.
     // Same-identity stop still commits pending text for replay continuity.
     const eventKey = event.envelope?.kernelKey ?? connectionKey;
@@ -229,7 +231,7 @@ export function createGlobalMessageStreamHub({
         return;
       }
 
-      if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY) {
+      if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(descriptor())) {
         stop();
         return;
       }
@@ -244,7 +246,7 @@ export function createGlobalMessageStreamHub({
           try {
             const next = descriptor();
             if (!isCurrent()) throw new Error('OpenCode selection retired');
-            if (next.profile === OPENCODE_PROFILE.LEGACY) throw new Error('OpenCode profile is not admitted');
+            if (next.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(next)) throw new Error('OpenCode profile is not admitted');
             if (next.generation !== 'oc1' && next.generation !== 'oc2') throw new Error('OpenCode generation unavailable');
             const nextKey = keyOf(next);
             if (connectionKey !== undefined && connectionKey !== nextKey) {
@@ -266,6 +268,7 @@ export function createGlobalMessageStreamHub({
         getConnectionKey: () => connectionKey,
         onConnect() {
           if (controller !== readerController || readerController.signal.aborted || !isCurrent()) return;
+          if (keyOf(descriptor()) !== connectionKey) { readerController.abort(); return; }
           connected = true;
           const wasReady = everConnected;
           everConnected = true;
@@ -278,7 +281,9 @@ export function createGlobalMessageStreamHub({
         },
         onEvent(event) {
           if (controller !== readerController || readerController.signal.aborted || !isCurrent()) return;
-          if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY || keyOf(descriptor()) !== connectionKey) return;
+          const current = descriptor();
+          if (current.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(current)) return;
+          if (keyOf(current) !== connectionKey) return;
           coalescer.push(event);
         },
         onError(error) {
@@ -350,6 +355,7 @@ export function createGlobalMessageStreamHub({
     },
     replayAfter(eventId) {
       if (!isCurrent() || selectionSignal?.aborted) return null;
+      if (descriptor()?.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(descriptor())) return null;
       if (!eventId) {
         return [];
       }

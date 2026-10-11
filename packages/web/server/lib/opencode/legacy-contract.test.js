@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEGACY_OPERATION, supportsLegacyOperation } from './legacy-contract.js';
+import { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream } from './legacy-contract.js';
 
 describe('Legacy operation contract', () => {
   it('admits the accepted read and minimum conversation operations', () => {
@@ -42,5 +42,14 @@ describe('Legacy operation contract', () => {
 
   it('exposes frozen operation constants', () => {
     expect(Object.isFrozen(LEGACY_OPERATION)).toBe(true);
+  });
+});
+describe('Legacy stream descriptor', () => {
+  const exact = { generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27' };
+  it('admits only the exact Legacy OC1 descriptor', () => {
+    expect(supportsLegacyStream(exact)).toBe(true);
+    for (const change of [{ generation: 'oc2' }, { profile: 'oc1' }, { version: '1.2.28' }, { version: undefined }]) {
+      expect(supportsLegacyStream({ ...exact, ...change })).toBe(false);
+    }
   });
 });

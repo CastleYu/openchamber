@@ -186,7 +186,7 @@ async function waitFor(assertion) {
   throw lastError;
 }
 
-  it('rejects Legacy hub startup, injection, and replay without opening HTTP', async () => {
+  it('rejects a Legacy hub profile without its exact version, and refuses synthetic injection', async () => {
     const descriptor = { generation: 'oc1', profile: OPENCODE_PROFILE.LEGACY, endpoint: 'http://opencode.test', epoch: 4 };
     let fetchCalls = 0;
     const events = [];

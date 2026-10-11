@@ -1,6 +1,8 @@
 import { sendMessageStreamWsEvent, sendMessageStreamWsFrame, sendSerializedMessageStreamWsFrame } from './protocol.js';
 import { createUpstreamSseReader } from './upstream-reader.js';
 import { waitForKernelReady } from './global-hub.js';
+import { OPENCODE_PROFILE } from '../opencode/compatibility.js';
+import { supportsLegacyStream } from '../opencode/legacy-contract.js';
 
 export function acceptSharedDirectoryMessageStreamWsConnection({ socket, requestedDirectory, requestedLastEventId, globalHub, wsClients, heartbeatIntervalMs }) {
   let ready = false;
@@ -67,6 +69,8 @@ export function acceptDirectoryMessageStreamWsConnection({
   let streamReady = false;
   let reader = null;
   const resolveDescriptor = () => getKernelRuntime?.() ?? { generation: 'oc1', endpoint: 'legacy', epoch: 0 };
+  const keyOf = (current) => `${current.endpoint}|${current.epoch}|${current.generation}|${current.profile ?? ''}|${current.version ?? ''}`;
+  let connectionKey;
 
   const cleanup = () => {
     if (!controller.signal.aborted) {
@@ -108,6 +112,7 @@ export function acceptDirectoryMessageStreamWsConnection({
 
   const run = async () => {
     const forwardEvent = ({ envelope, payload }) => {
+      if (controller.signal.aborted || keyOf(resolveDescriptor()) !== connectionKey) return;
       const directory = requestedDirectory || envelope?.directory || 'global';
 
       sendMessageStreamWsEvent(socket, payload, {
@@ -149,7 +154,10 @@ export function acceptDirectoryMessageStreamWsConnection({
           buildUrlFailed = false;
           let targetUrl;
           try {
-            if (resolveDescriptor().generation !== 'oc1') throw new Error('OpenCode generation unavailable');
+            const selected = resolveDescriptor();
+            if (selected.generation !== 'oc1') throw new Error('OpenCode generation unavailable');
+            if (selected.profile === OPENCODE_PROFILE.LEGACY && !supportsLegacyStream(selected)) throw new Error('OpenCode profile is not admitted');
+            connectionKey = keyOf(selected);
             targetUrl = new URL(buildOpenCodeUrl('/event', ''));
           } catch {
             buildUrlFailed = true;
@@ -165,9 +173,10 @@ export function acceptDirectoryMessageStreamWsConnection({
         getHeaders: getOpenCodeAuthHeaders,
         getConnectionKey: () => {
           const current = resolveDescriptor();
-          return `${current.endpoint}|${current.epoch}|${current.generation}`;
+          return keyOf(current);
         },
         onConnect() {
+          if (controller.signal.aborted || keyOf(resolveDescriptor()) !== connectionKey) { cleanup(); return; }
           if (!streamReady) {
             sendMessageStreamWsFrame(socket, {
               type: 'ready',

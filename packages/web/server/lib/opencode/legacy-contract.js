@@ -1,3 +1,7 @@
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from './compatibility.js';
+
+const LEGACY_STREAM_VERSION = '1.2.27';
+
 const LEGACY_OPERATION = Object.freeze({
   IDENTITY: 'identity',
   SESSION_LIST: 'session.list',
@@ -25,4 +29,10 @@ function supportsLegacyOperation(operation) {
   return supportedOperations.has(operation);
 }
 
-export { LEGACY_OPERATION, supportsLegacyOperation };
+function supportsLegacyStream(runtime) {
+  return runtime?.generation === OPENCODE_GENERATION.OC1
+    && runtime?.profile === OPENCODE_PROFILE.LEGACY
+    && runtime?.version === LEGACY_STREAM_VERSION;
+}
+
+export { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream };

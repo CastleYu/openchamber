@@ -141,3 +141,7 @@
 - 2026-10-11 R2 write verification: the controlled model probe incorrectly awaited a fixed success response after rejecting a question and timed out. Verify authoritative pending-request retirement and the question tool error instead, then explicitly stop that probe session. The isolated process/home were removed. A previous source discovery searched a nonexistent config-settings/config-settings.js; discover module paths before reading.
 
 - 2026-10-11 R2 anti-slop: authored conditional empty-object spreads in Legacy update triggered three diagnostics. Replaced them with explicit property assignments; rerun the changed-source check.
+
+- 2026-10-11 R2 transport verification: the exact transport probe requires an explicit fixture-root argument; the initial invocation omitted it and failed before starting a process. Pass artifacts/legacy-1.2.27. Source discovery must use rg -g '*runtime.js' against a directory on Windows rather than a positional wildcard. Vitest esbuild spawn EPERM requires scoped escalation for the same focused command; use the confirmed package executable path.
+
+- 2026-10-11 R2 verification follow-up: baseline oxlint copies under ignored artifacts produced "No files found"; use temporary sibling source copies and remove them after checking. Do not interpret an empty scan as a clean baseline. Optional CIM process inspection was denied; use the existing exec session handle. Discover lint config paths rather than assuming .oxlintrc.json.

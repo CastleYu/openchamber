@@ -105,7 +105,11 @@ This module provides OpenCode server integration utilities for the web server ru
   reader failure makes the OC2 session read fail with 503 rather than returning
   an apparently complete upstream snapshot. Direct SSE responses capture the
   full kernel identity and close on retirement so clients reconnect to the
-  selected endpoint.
+  selected endpoint. Exact OC1 Legacy 1.2.27 admits only GET `/event` and
+  `/global/event` through this generic proxy. Other Legacy HTTP routes retain
+  their 501 refusal; kernel-owned operations have their separate finite contract.
+  Admission and stale-response checks include the exact version. Stream tests
+  cover auth, directory, replay cursor and rejection before upstream work.
 - `packages/web/server/lib/opencode/index.js`: public entrypoint (currently baseline placeholder).
 - `packages/web/server/lib/opencode/auth.js`: provider authentication file operations.
 - `packages/web/server/lib/opencode/auth-state-runtime.js`: managed OpenCode server auth password/header runtime.

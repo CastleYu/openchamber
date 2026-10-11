@@ -48,7 +48,7 @@ The maintainer still needs to define the exact scope. Current flow: `DirectoryEx
 
 Revised 2026-10-08 for the current OC1/OC2 architecture. This milestone completes requirements 3.1-3.7 and adds a dedicated Legacy OpenCode 1.2.27 profile with automatic detection or manual selection and operation-wide compatibility.
 
-Urgent addition on the same date: CAgent is an independent backend with an API available only inside the target environment. Deliver its shared architecture, offline adaptation kit and environment-local acceptance before the remaining integration work. A local agent works in a bounded adapter workspace; evidence-based capability gates disable unavailable features and typed extensions expose CAgent-specific features.
+Urgent addition on the same date: CAgent is an independent backend with an API available only inside the target environment. Deliver its shared architecture and offline adaptation kit first, then verify existing features, build and publish the preview Release before the remaining integration work. Real API mapping and acceptance belong to CA-03 inside the target environment; they do not block publication of the offline kit. A local agent works in a bounded adapter workspace; evidence-based capability gates disable unavailable features and typed extensions expose CAgent-specific features.
 
 Detailed requirements and execution gates now live in:
 

@@ -86,7 +86,10 @@ export class OpenCodeRuntimeBinding {
   async run<T>(generation: 'oc1' | 'oc2', operation: string, fn: () => Promise<T>): Promise<T> {
     this.assert(generation, operation);
     const revision = this.revision;
-    const value = await fn();
+    const value = await fn().catch(error => {
+      if (revision !== this.revision) throw new OpenCodeRuntimeChangedError();
+      throw error;
+    });
     if (revision !== this.revision) throw new OpenCodeRuntimeChangedError();
     return value;
   }

@@ -70,3 +70,18 @@ test('host and UI admission status constants agree', async () => {
   const { PROFILE_STATUS } = await import('../../../../web/server/lib/opencode/compatibility.js');
   expect(OPEN_CODE_STATUS).toEqual(PROFILE_STATUS);
 });
+
+describe('failed completion ownership', () => {
+  for (const changed of [false, true]) test('failed request with replacement ' + changed, async () => {
+    const binding = new OpenCodeRuntimeBinding();
+    const runtime = { generation: 'oc1' as const, endpoint: 'http://kernel.test', epoch: 1, version: '1.18.33' };
+    binding.set(runtime);
+    let fail!: (error: Error) => void;
+    const failure = new Error('upstream unavailable');
+    const pending = binding.run('oc1', 'provider.auth', () => new Promise<void>((_resolve, reject) => { fail = reject; }));
+    if (changed) binding.set({ ...runtime, epoch: 2 });
+    fail(failure);
+    if (changed) await expect(pending).rejects.toThrow(OpenCodeRuntimeChangedError);
+    else expect(await pending.catch(error => error)).toBe(failure);
+  });
+});

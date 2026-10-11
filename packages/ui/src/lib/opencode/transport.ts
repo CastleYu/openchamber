@@ -16,6 +16,15 @@ export const createTimeoutSignal = (milliseconds: number): TimeoutLease => {
 /** Both SDK generations use this one runtime-aware fetch implementation. */
 export const createOpenCodeFetch = (options: { requestTimeoutMs?: number; assertProtocol?: () => void; queueTarget?: string } = {}): typeof fetch => {
   const requestTimeoutMs = options.requestTimeoutMs ?? READ_TIMEOUT_MS;
+  const checkResponse = (response: Response): Response => {
+    try {
+      options.assertProtocol?.();
+      return response;
+    } catch (error) {
+      void response.body?.cancel().catch(() => undefined);
+      throw error;
+    }
+  };
   return async (input: string | URL | Request, init?: RequestInit) => {
     options.assertProtocol?.();
     if (options.queueTarget) {
@@ -25,7 +34,7 @@ export const createOpenCodeFetch = (options: { requestTimeoutMs?: number; assert
     }
     const url = input instanceof Request ? input.url : String(input);
     const method = String(init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
-    if (url.includes('/event') || method === 'POST') return runtimeFetch(input, init);
+    if (url.includes('/event') || method === 'POST') return checkResponse(await runtimeFetch(input, init));
 
     const timeout = createTimeoutSignal(requestTimeoutMs);
     const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
@@ -56,6 +65,7 @@ export const createOpenCodeFetch = (options: { requestTimeoutMs?: number; assert
     let responseHasBody = false;
     try {
       const response = await runtimeFetch(input, { ...init, signal });
+      checkResponse(response);
       responseHasBody = response.body !== null;
       return response;
     } catch (error) {

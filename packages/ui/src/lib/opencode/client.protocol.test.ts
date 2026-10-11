@@ -285,3 +285,49 @@ describe('queued request identity through real SDK clients', () => {
     });
   }
 });
+
+describe('raw SDK completion ownership', () => {
+  for (const change of ['epoch', 'profile'] as const) {
+    for (const phase of ['headers', 'body'] as const) {
+      test(change + ' replacement rejects a raw provider result during ' + phase, async () => {
+        const original = { generation: 'oc1' as const, endpoint: 'http://kernel.test', epoch: 1, version: '1.18.33', profile: 'oc1' as const };
+        opencodeClient.bindRuntime(original);
+        const sdk = opencodeClient.getSdkClient();
+        let started!: () => void;
+        const ready = new Promise<void>(resolve => { started = resolve; });
+        let finish!: (response: Response) => void;
+        let body!: ReadableStreamDefaultController<Uint8Array>;
+        const fetch = spyOn(globalThis, 'fetch').mockImplementation(async () => {
+          started();
+          if (phase === 'headers') return new Promise<Response>(resolve => { finish = resolve; });
+          return new Response(new ReadableStream<Uint8Array>({ start(stream) { body = stream; } }), { headers: { 'content-type': 'application/json' } });
+        });
+        try {
+          const request = sdk.provider.auth({}, { throwOnError: true });
+          const outcome = request.then(value => ({ state: 'resolved' as const, value }), error => ({ state: 'rejected' as const, error }));
+          await ready;
+          if (phase === 'body') await new Promise(resolve => setTimeout(resolve, 0));
+          opencodeClient.bindRuntime(change === 'epoch' ? { ...original, epoch: 2 } : { ...original, profile: 'legacy-1.2.27', version: '1.2.27' });
+          if (phase === 'headers') finish(Response.json({ fixture: [] }));
+          else { body.enqueue(new TextEncoder().encode('{"fixture":[]}')); body.close(); }
+          expect((await outcome).state).toBe('rejected');
+          expect(fetch.mock.calls).toHaveLength(1);
+        } finally { fetch.mockRestore(); }
+      });
+    }
+  }
+
+  test('retained SDK cannot send after same-generation replacement is admitted', async () => {
+    const original = { generation: 'oc1' as const, endpoint: 'http://kernel.test', epoch: 1, version: '1.18.33' };
+    opencodeClient.bindRuntime(original);
+    const sdk = opencodeClient.getScopedApiClient('/repo');
+    opencodeClient.bindRuntime({ ...original, epoch: 2 });
+    const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({}));
+    try {
+      await expect(sdk.provider.auth({}, { throwOnError: true })).rejects.toThrow(OpenCodeRuntimeChangedError);
+      expect(fetch.mock.calls).toHaveLength(0);
+      expect((await opencodeClient.getSdkClient().provider.auth()).data).toEqual({});
+      expect(fetch.mock.calls).toHaveLength(1);
+    } finally { fetch.mockRestore(); }
+  });
+});

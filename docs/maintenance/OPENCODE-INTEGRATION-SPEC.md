@@ -1,6 +1,6 @@
 # Agent integration milestone specification
 
-Status: planned, 2026-10-08. No implementation or runtime acceptance is claimed.
+Status: executing, 2026-10-11. The minimum CAgent architecture/kit preview is published. R1 / INT-01 and INT-02 remain open. Acceptance scope and remaining work are recorded in the [milestones](OPENCODE-INTEGRATION-MILESTONES.md) and [execution checkpoint](CAGENT-EXECUTION.md).
 Source baseline: `codex/personal` commit `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`, workspace version `2.0.4`, DIJIANG `4.0`.
 
 ## Scope and document ownership
@@ -36,6 +36,12 @@ Added 2026-10-10 at the maintainer's request. This requirement applies throughou
 - At each checkpoint, record what was removed, approximate space reclaimed, and retained temporary files with their reason and next cleanup point. An applicable round is complete only after obsolete temporary files are removed or a concrete retention reason is recorded. Cleanup failures remain explicit follow-up items.
 
 Use the existing task notes and evidence files. This requirement does not introduce a cleanup service, scheduler, dependency or framework.
+
+## Raw SDK result retirement
+
+SDK instances belong to the connection revision that created them. A retained client must reject dispatch after replacement, including a same-generation rebind at the same address. The shared transport checks the bound revision again when headers arrive and cancels a retired response body. The OC1 SDK checks JSON completion before returning data to direct consumers. Generation-bound operations classify both successful and failed late completions as runtime changes, while preserving errors from the current runtime.
+
+Web, Electron, VS Code, hosted mobile and Capacitor all use this shared SDK boundary. Existing sync-source guards continue to own streamed events; this JSON result check does not replace stream admission. Legacy operations remain gated until their dedicated milestone accepts them.
 
 ## Peer restart stream admission
 

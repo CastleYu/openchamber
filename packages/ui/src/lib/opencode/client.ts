@@ -206,6 +206,7 @@ export const createRuntimeOpencodeClient = (config: RuntimeOpencodeClientConfig)
   return createOpencodeClient({
     ...sdkConfig,
     fetch: createOpenCodeFetch({ assertProtocol, requestTimeoutMs, queueTarget }),
+    responseValidator: async () => { assertProtocol?.(); },
   });
 };
 
@@ -322,11 +323,19 @@ class OpencodeService {
     const runtimeBase = resolveRuntimeBaseUrl();
     const requestedBaseUrl = runtimeBase || baseUrl;
     this.baseUrl = ensureAbsoluteBaseUrl(requestedBaseUrl);
-    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc1', 'SDK request') });
+    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: this.sdkGuard('oc1', 'SDK request') });
     this.sessions = new V1SessionOperations(this.client);
-    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc2', 'SDK request') });
+    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: this.sdkGuard('oc2', 'SDK request') });
     this.v2Sessions = new V2SessionOperations((directory, queueTarget) => this.v2ClientFor(directory, queueTarget), this.runtimeBinding);
     this.v2Catalog = new V2CatalogOperations((directory) => this.v2ClientFor(directory), this.runtimeBinding);
+  }
+
+  private sdkGuard(generation: 'oc1' | 'oc2', operation: string): () => void {
+    const revision = this.connectionRevision;
+    return () => {
+      this.runtimeBinding.assert(generation, operation);
+      if (revision !== this.connectionRevision) throw new OpenCodeRuntimeChangedError();
+    };
   }
 
   private assertRuntimeUnchanged(runtimeKey?: string): void {
@@ -414,7 +423,7 @@ class OpencodeService {
 
   private queuedV1Client(queueTarget?: string): OpencodeClient {
     return queueTarget ? createRuntimeOpencodeClient({ baseUrl: this.baseUrl, queueTarget,
-      assertProtocol: () => this.runtimeBinding.assert('oc1', 'queued SDK request') }) : this.client;
+      assertProtocol: this.sdkGuard('oc1', 'queued SDK request') }) : this.client;
   }
 
   private isV2(): boolean {
@@ -462,7 +471,7 @@ class OpencodeService {
         events: (signal, lastEventID, onActivity) => {
           const events = lastEventID ? createV2RuntimeClient({
             baseUrl, lastEventID,
-            assertProtocol: () => this.runtimeBinding.assert('oc2', 'event stream'),
+            assertProtocol: this.sdkGuard('oc2', 'event stream'),
           }) : client;
           return events.event.subscribe({ signal, onActivity });
         },
@@ -486,9 +495,9 @@ class OpencodeService {
     // An explicit reconnect can change the instance or transport behind the
     // same URL. Its SDK client and in-flight directory requests are obsolete.
     this.baseUrl = nextBaseUrl;
-    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc1', 'SDK request') });
+    this.client = createRuntimeOpencodeClient({ baseUrl: this.baseUrl, assertProtocol: this.sdkGuard('oc1', 'SDK request') });
     this.sessions = new V1SessionOperations(this.client);
-    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: () => this.runtimeBinding.assert('oc2', 'SDK request') });
+    this.v2Client = createV2RuntimeClient({ baseUrl: this.baseUrl, assertProtocol: this.sdkGuard('oc2', 'SDK request') });
     this.scopedClients.clear();
     this.v2ScopedClients.clear();
     this.listDirectoryInFlight.clear();
@@ -514,14 +523,14 @@ class OpencodeService {
   private v2ClientFor(directory?: string | null, queueTarget?: string): OpenCodeClient {
     const normalized = this.normalizeCandidatePath(directory);
     if (queueTarget) return createV2RuntimeClient({ baseUrl: this.baseUrl, directory: normalized ?? undefined, queueTarget,
-      assertProtocol: () => this.runtimeBinding.assert('oc2', 'queued SDK request') });
+      assertProtocol: this.sdkGuard('oc2', 'queued SDK request') });
     if (!normalized) return this.v2Client;
     const existing = this.v2ScopedClients.get(normalized);
     if (existing) return existing;
     const scoped = createV2RuntimeClient({
       baseUrl: this.baseUrl,
       directory: normalized,
-      assertProtocol: () => this.runtimeBinding.assert('oc2', 'scoped SDK request'),
+      assertProtocol: this.sdkGuard('oc2', 'scoped SDK request'),
     });
     this.v2ScopedClients.set(normalized, scoped);
     return scoped;
@@ -546,7 +555,7 @@ class OpencodeService {
     const scoped = createRuntimeOpencodeClient({
       baseUrl: this.baseUrl,
       directory: normalized,
-      assertProtocol: () => this.runtimeBinding.assert('oc1', 'scoped SDK request'),
+      assertProtocol: this.sdkGuard('oc1', 'scoped SDK request'),
     });
     this.scopedClients.set(key, scoped);
     return scoped;

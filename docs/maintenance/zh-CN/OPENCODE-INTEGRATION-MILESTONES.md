@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，R2 / INT-03 已开始。宿主读取基础通过精确 1.2.27 检查，见 `artifacts/int03-exact-host-read.json`；最小宿主写操作和隔离的补充元数据已通过 `artifacts/int03-exact-host-write.json` 及针对性服务／内核契约检查；事件传输基础已通过 134 项聚焦回归及 15 项精确可执行文件／受控模型检查（`artifacts/int03-exact-host-transport.json`），接通既有全局事件中心、直接 SSE 代理及目录 WS 桥，并严格检查版本和连接身份。共享 UI／完整鉴权宿主、relay 和 VS Code 流程仍待验收，R2 尚未通过。共享客户端／HTTP 桥实现检查点新增 169 项聚焦宿主回归及 54 项隔离 UI 契约检查，覆盖元数据往返与部分失败。实际浏览器／完整鉴权宿主及 VS Code 验收仍未完成。当前续接范围和验证限制见 `artifacts/int03-conversation-http-checkpoint.json`；传输证据仍见 `artifacts/int03-transport-checkpoint.json`。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。[执行检查点](CAGENT-EXECUTION.md) 保留历史预览发布记录。当前 R1 证据与续接范围见[验收复核](R1-ACCEPTANCE.md)。
+状态：执行中，2026-10-11。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余消费者迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收（artifacts/int02-r1-exit.json）。R2 / INT-03 仍未验收。在源码 055c46c8e 上，实际鉴权 Web UI 配合官方精确 1.2.27 程序及本地受控模型，通过自动／手动选择、文本、文本附件、流式工具、权限／问题响应、停止及历史重开。证据与限制见 artifacts/int03-browser-acceptance.json。既有六个 VS Code 契约文件通过 23 项测试，但 IDE 仍拒绝 Legacy 请求，需要接入对话桥。Relay 及其余适用的 R2 跨宿主／当前配置检查仍未完成。此前实现检查通过 169 项宿主测试、54 项隔离 UI 契约、工作区类型／lint 及 Web 构建（artifacts/int03-conversation-http-checkpoint.json）。[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
@@ -22,8 +22,8 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | --- | --- | --- | --- | --- |
 | INT-00 | 预检，不升版本 | 固定当前 OC1/OC2 基线及相关验证 | 无 | done |
 | CA-00 | 不升版本 | 盘点已使用操作并冻结 CAgent 责任边界 | INT-00 | done |
-| CA-01 | 5.0 | 类型化宿主契约、能力守卫及 OC1/OC2 回归 | CA-00 | in progress |
-| CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | planned |
+| CA-01 | 5.0 | 类型化宿主契约、能力守卫及 OC1/OC2 回归 | CA-00 | 最小预览已发布；剩余迁移 R6 |
+| CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | 最小工具包已发布；剩余门槛 R6 |
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | done；[源码及程序证据](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | done |

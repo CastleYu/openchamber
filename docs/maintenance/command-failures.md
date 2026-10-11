@@ -155,3 +155,24 @@
 ### 2026-10-11: context verification path discovery
 
 Reading an assumed UI type-log filename and `packages/ui/README.md` failed because those paths do not exist. Enumerate artifact/document paths before reading. The real type log is `artifacts/int03-conversation-ui-types.log`; the UI package has no root README. No source was changed by these failed reads.
+
+### 2026-10-11: integration discovery wildcard
+
+A positional `connection*.js` path was rejected by Windows rg with error 123. Re-ran using the existing directory and `-g` filters. No source was changed by the failed search.
+
+### 2026-10-11: browser fixture preparation
+
+The first fixture observer subscribed the project directory while the UI used its no-project chat directory. The generated helper also used `host.close` instead of the exported `host.stop({ exitProcess: false })`. Corrected the helper and stopped only its verified parent/upstream PIDs before restarting. A browser click timed out after its target disappeared on navigation; refresh the DOM controls after a route change.
+
+### 2026-10-11: VS Code contract runner sandbox
+
+Subagent Bun/Node focused test launches against dijiang-next failed before executing tests with EPERM under the default sandbox. Main reran the exact scoped tests with require_escalated in the authorized execution checkout. These startup failures are not product test failures.
+
+
+### 2026-10-11: isolated runner and browser controls
+
+Node --test could not resolve extensionless imports in four TypeScript VS Code suites. The repository runner sends all TypeScript files to Bun; rerunning these four with Bun passes 14 tests. Two unchanged JavaScript suites pass nine tests. A positional OpenCode* search failed on Windows; enumerate with rg --files and -g instead. A question choice changes Next to Submit, so query the current controls after choosing. The held model fixture exposes Stop generating while its partial text is not yet committed; assert authoritative busy/idle and abort state rather than waiting for a text fragment. These observation/runner failures do not establish product failures.
+
+### 2026-10-11: fixture cleanup junctions
+
+Initial cleanup correctly refused six Bun cache junctions. Verified every junction and target remained within its named task-owned fixture root, removed only the links with Directory.Delete(path, false), rechecked for reparse points, then deleted the two exited roots. Process and port absence were checked before deletion.

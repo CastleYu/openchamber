@@ -137,3 +137,7 @@
 - 2026-09-24 DIJIANG 3.7：长时间 QA 探测无法保存截图，因为 H: 空间耗尽。首次便携运行留下了任务自己的 1.97 GB 解包目录；确认没有进程使用且解析后的路径位于 `.codex-temp` 内，才仅删除该目录。之后磁盘约有 2 GB 可用空间。避免在空间受限的工作区反复完整解包便携程序。
 
 - 2026-10-11 session-knowledge owner lease: `bunx vitest run server/lib/session-knowledge/runtime.test.js` cannot transform this existing `bun:test` test file; use `bun test server/lib/session-knowledge/runtime.test.js`. An initial Bun test exposed a syntax typo in the new fixture, which was corrected before the regression run. Scoped oxlint reports existing anti-slop findings at runtime.js lines 24, 129, 161, 213, 235 and runtime.test.js lines 30-31; none is in the new code.
+
+- 2026-10-11 R2 write verification: the controlled model probe incorrectly awaited a fixed success response after rejecting a question and timed out. Verify authoritative pending-request retirement and the question tool error instead, then explicitly stop that probe session. The isolated process/home were removed. A previous source discovery searched a nonexistent config-settings/config-settings.js; discover module paths before reading.
+
+- 2026-10-11 R2 anti-slop: authored conditional empty-object spreads in Legacy update triggered three diagnostics. Replaced them with explicit property assignments; rerun the changed-source check.

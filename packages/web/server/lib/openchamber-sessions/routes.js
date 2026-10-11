@@ -1,4 +1,5 @@
 import express from 'express';
+import { OPENCODE_PROFILE } from '../opencode/compatibility.js';
 import { createWorktree, getWorktreeBootstrapStatus, resolvePrimaryWorktreeRoot } from '../git/index.js';
 import { expandSnippets } from '../opencode/snippets.js';
 import { expandCommandGoalObjective, parseScheduledCommandPrompt } from '../scheduled-tasks/runtime.js';
@@ -356,6 +357,13 @@ export const createOpenChamberSessionService = (dependencies) => {
   const oc2 = () => {
     const identity = kernelOperations.captureIdentity();
     if (identity.generation !== 'oc2') throw new OpenChamberControlError('This route requires OpenCode 2.x', 404);
+    return identity;
+  };
+  const metadataIdentity = () => {
+    const identity = kernelOperations.captureIdentity();
+    if (identity.generation !== 'oc2' && identity.profile !== OPENCODE_PROFILE.LEGACY) {
+      throw new OpenChamberControlError('Session metadata requires OpenCode 2.x or Legacy 1.2.27', 404);
+    }
     return identity;
   };
   const scopes = dataDir ? createSessionStorageScopes({ dataDir }) : null;
@@ -754,34 +762,45 @@ export const createOpenChamberSessionService = (dependencies) => {
   };
 
   const setMetadata = async (sessionID, payload = {}) => {
-    const identity = oc2();
+    const identity = metadataIdentity();
     const id = asNonEmptyString(sessionID);
     if (!id) throw new OpenChamberControlError('a session id is required', 400);
     const patch = payload.patch;
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
       throw new OpenChamberControlError('patch must be an object', 400);
     }
-    const { sessionMetadataStore } = await storesFor(identity);
-    current(identity);
-    const metadata = await sessionMetadataStore.setSessionMetadata(id, patch,
-      { directory: asNonEmptyString(payload.directory) || '' });
+    const directory = asNonEmptyString(payload.directory) || '';
+    let metadata;
+    if (identity.profile === OPENCODE_PROFILE.LEGACY) {
+      const result = await kernelOperations.updateSession({ sessionID: id, directory, metadata: patch, expectedIdentity: identity });
+      metadata = result.data.metadata ?? {};
+    } else {
+      const { sessionMetadataStore } = await storesFor(identity);
+      current(identity);
+      metadata = await sessionMetadataStore.setSessionMetadata(id, patch, { directory });
+    }
     current(identity);
     broadcastGlobalUiEvent?.({ type: 'openchamber:session-metadata', properties: { sessionID: id, metadata } });
     return { metadata };
   };
 
   const getMetadata = async (sessionID, directory = '') => {
-    const identity = oc2();
+    const identity = metadataIdentity();
     const id = asNonEmptyString(sessionID);
     if (!id) throw new OpenChamberControlError('a session id is required', 400);
-    const { sessionMetadataStore } = await storesFor(identity);
-    const metadata = await sessionMetadataStore.get(id, { directory });
+    let metadata;
+    if (identity.profile === OPENCODE_PROFILE.LEGACY) {
+      metadata = (await kernelOperations.getSession({ sessionID: id, directory })).data.metadata ?? {};
+    } else {
+      const { sessionMetadataStore } = await storesFor(identity);
+      metadata = await sessionMetadataStore.get(id, { directory });
+    }
     current(identity);
     return { metadata };
   };
 
   const updateMetadata = async (sessionID, decide, { directory = '' } = {}) => {
-    const identity = oc2();
+    const identity = metadataIdentity();
     const result = await kernelOperations.updateSession({
       sessionID, directory, decideMetadata: decide, expectedIdentity: identity,
     });

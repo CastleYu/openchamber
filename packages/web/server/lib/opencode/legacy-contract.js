@@ -10,6 +10,13 @@ const LEGACY_OPERATION = Object.freeze({
   QUESTION_LIST: 'question.list',
   COMMAND_LIST: 'command.list',
   CATALOG_READ: 'catalog.read',
+  SESSION_CREATE: 'session.create',
+  SESSION_UPDATE: 'session.update',
+  SESSION_SEND: 'session.prompt',
+  SESSION_STOP: 'session.stop',
+  PERMISSION_REPLY: 'permission.reply',
+  QUESTION_REPLY: 'question.reply',
+  QUESTION_REJECT: 'question.reject',
 });
 
 const supportedOperations = new Set(Object.values(LEGACY_OPERATION));

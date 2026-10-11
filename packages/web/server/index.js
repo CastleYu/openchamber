@@ -60,6 +60,7 @@ import { parseOpenCodeSelection, OPENCODE_SELECTION, OPENCODE_GENERATION } from 
 import { createConnectionActivity } from './lib/opencode/connection-activity.js';
 import { createConnectionSwitch } from './lib/opencode/connection-switch.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
+import { createLegacyMetadataStore } from './lib/openchamber-sessions/legacy-metadata-store.js';
 import { createAgentHost } from './lib/agent/host.js';
 import { AGENT_CONVERSATION_FEATURES } from './lib/agent/features.js';
 import { selectAgentStartup, startOpenCodeConsumers } from './lib/agent/startup.js';
@@ -843,6 +844,8 @@ kernelRuntime = createKernelRuntime({
 const kernelOperations = createKernelOperations({
   getRuntime: kernelRuntime.get,
   getHeaders: getOpenCodeAuthHeaders,
+  legacyMetadataStore: createLegacyMetadataStore({ dataDir: OPENCHAMBER_DATA_DIR }),
+  getStorageScope: () => isExternalOpenCode ? `external:${kernelRuntime.get().endpoint}` : 'managed',
   prepareSession: (input) => openChamberSessionService.prepareSessionMetadata(input),
 });
 

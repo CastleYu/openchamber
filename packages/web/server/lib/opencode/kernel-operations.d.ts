@@ -1,3 +1,4 @@
+import type { LegacyMetadataStore } from '../openchamber-sessions/legacy-metadata-store.js';
 import type {
   Command as LegacyCommand, Message as LegacyMessage, Part as LegacyPart,
   Session as LegacySession, SessionCommandResponse, OpencodeClient,
@@ -84,6 +85,8 @@ export function createKernelOperations(dependencies: {
   getRuntime: () => OpenCodeGenerationDescriptor;
   getHeaders: () => HeadersInit;
   fetchImpl?: typeof fetch;
+  legacyMetadataStore?: LegacyMetadataStore;
+  getStorageScope?: () => string;
   prepareSession?: (input: { sessionID: string; directory?: string; identity: KernelIdentity }) => Promise<void>;
 }): {
   captureIdentity(): KernelIdentity;
@@ -95,6 +98,8 @@ export function createKernelOperations(dependencies: {
   listActiveStatuses(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ [sessionID: string]: { type: 'busy' | 'retry' | 'idle' } }>>;
   getSessionStatus(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ type: 'busy' | 'retry' | 'idle' }>>;
   listPendingPermissions(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<{ id: string; sessionID: string; directory?: string }>>>;
+  replyQuestion(input: { requestID: string; directory?: string; answers: string[][]; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean>>;
+  rejectQuestion(input: { requestID: string; directory?: string; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean>>;
   listPendingQuestions(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<{ id: string; sessionID: string }>>>;
   replyPermission(input: { requestID: string; sessionID: string; directory?: string; decision?: 'once' | 'always' | 'reject'; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean | void>>;
   getMessage(input: { sessionID: string; messageID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<LegacyMessageRecord | SessionMessageInfo>>;
@@ -108,7 +113,7 @@ export function createKernelOperations(dependencies: {
   >>;
   forkSession(input: { sessionID: string; directory?: string; messageID?: string; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionView>>;
   removeSession(input: { sessionID: string; directory?: string; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean>>;
-  updateSession(input: { sessionID: string; directory?: string; title?: string; metadata?: LegacySession['metadata']; replaceMetadata?: boolean; time?: { archived: number }; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<LegacySession | void>>;
+  updateSession(input: { sessionID: string; directory?: string; title?: string; metadata?: LegacySession['metadata']; decideMetadata?: (metadata: NonNullable<LegacySession['metadata']>) => NonNullable<LegacySession['metadata']> | null; replaceMetadata?: boolean; time?: { archived: number }; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<LegacySession | void> & { metadataChanged?: boolean }>;
   sendPrompt(input: { sessionID: string; directory?: string; request: LegacySend | CurrentSend; signal?: AbortSignal }): Promise<KernelResult<import('@opencode/client').SessionInboxUser | null> & { accepted: true }>;
   sendCommand(input: { sessionID: string; directory?: string; request: LegacyCommandSend | CurrentCommandSend; signal?: AbortSignal }): Promise<KernelResult<SessionCommandResponse | null> & { accepted: true }>;
   interruptSession(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<boolean | SessionInterruptResponse>>;

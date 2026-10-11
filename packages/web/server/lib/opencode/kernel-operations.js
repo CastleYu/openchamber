@@ -119,7 +119,7 @@ const activeStatus = (value, generation) => {
   throw kernelError(ERROR_CODE.UNKNOWN_STATUS, `Unrecognized ${generation} session status: ${type}`, generation);
 };
 
-export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fetch, prepareSession = null }) => {
+export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fetch, prepareSession = null, legacyMetadataStore = null, getStorageScope = null }) => {
   const metadataWrites = new Map();
   const capture = (directory, operation) => {
     const runtime = getRuntime();
@@ -143,12 +143,14 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     const client = generation === GENERATION.OC1
       ? createOpencodeClient({ ...options, throwOnError: true })
       : OpenCode.make(options);
-    return { generation, profile: runtime.profile, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory };
+    return { generation, profile: runtime.profile, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory,
+      storageScope: runtime.profile === OPENCODE_PROFILE.LEGACY ? (getStorageScope?.() ?? `external:${runtime.endpoint}`) : null };
   };
 
   const check = (context) => {
     const current = getRuntime();
-    if (current?.generation !== context.generation || current.profile !== context.profile || current.endpoint !== context.endpoint || current.epoch !== context.epoch) {
+    if (current?.generation !== context.generation || current.profile !== context.profile || current.endpoint !== context.endpoint || current.epoch !== context.epoch
+      || (context.profile === OPENCODE_PROFILE.LEGACY && getStorageScope && getStorageScope() !== context.storageScope)) {
       throw kernelError(ERROR_CODE.RUNTIME_CHANGED, 'OpenCode runtime changed during operation', context.generation);
     }
   };
@@ -168,6 +170,18 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     check(context);
   };
 
+  const requireLegacyMetadata = () => {
+    if (!legacyMetadataStore) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Legacy supplementary metadata storage is unavailable', GENERATION.OC1);
+    return legacyMetadataStore;
+  };
+  const sessionViewFor = async (context, session) => {
+    const view = sessionView(session, context.generation);
+    if (context.profile !== OPENCODE_PROFILE.LEGACY || !legacyMetadataStore) return view;
+    const metadata = await legacyMetadataStore.read(context.storageScope, session.id);
+    check(context);
+    return { ...view, metadata };
+  };
+
   const getSession = async ({ sessionID, directory, signal }) => {
     const context = capture(directory, LEGACY_OPERATION.SESSION_GET);
     await prepare(context, sessionID);
@@ -176,11 +190,11 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
       : context.client.session.get({ sessionID }, requestOptions(signal)));
     check(context);
     const data = context.generation === GENERATION.OC1 ? requireData(response, sessionSchema, 'Session get') : sessionSchema.parse(response);
-    return stamped(context, sessionView(data, context.generation));
+    return stamped(context, await sessionViewFor(context, data));
   };
 
   const createSession = async ({ directory, title, parentID, agent, model, metadata, signal, expectedIdentity }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_CREATE);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
     if (!z.string().min(1).safeParse(directory).success) {
       throw kernelError(ERROR_CODE.INVALID_DIRECTORY, 'Session directory is required', context.generation);
@@ -188,19 +202,45 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     if (context.generation === GENERATION.OC2 && parentID) {
       throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Use forkSession to create an OC2 child session', context.generation);
     }
+    const legacy = context.profile === OPENCODE_PROFILE.LEGACY;
+    if (legacy && (agent !== undefined || model !== undefined)) {
+      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Legacy model and agent selection belongs to the prompt request', context.generation);
+    }
+    if (legacy && metadata !== undefined) {
+      requireLegacyMetadata();
+      if (!isRecord(metadata)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata must be an object', context.generation);
+    }
     const input = {};
     if (title) input.title = title;
     if (parentID) input.parentID = parentID;
     if (agent) input.agent = agent;
     if (model) input.model = model;
-    if (metadata) input.metadata = metadata;
+    if (metadata && !legacy) input.metadata = metadata;
     check(context);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.create({ directory, ...input }, requestOptions(signal))
       : context.client.session.create({ location: { directory }, ...input }, requestOptions(signal)));
-    check(context);
     const data = context.generation === GENERATION.OC1 ? requireData(response, sessionSchema, 'Session create') : sessionSchema.parse(response);
-    return stamped(context, sessionView(data, context.generation));
+    try { check(context); } catch (error) {
+      if (legacy) throw Object.assign(error, { createdSessionID: data.id, rolledBack: false, cleanupFailed: true, partial: true });
+      throw error;
+    }
+    if (legacy && metadata !== undefined) {
+      try {
+        await legacyMetadataStore.patch(context.storageScope, data.id, metadata, { replace: true, check: () => check(context) });
+        check(context);
+      } catch (error) {
+        let cleanupFailed = false;
+        try {
+          check(context);
+          const removed = await context.client.session.delete({ sessionID: data.id, directory }, requestOptions(signal));
+          check(context);
+          requireData(removed, z.literal(true), 'Legacy create rollback');
+        } catch { cleanupFailed = true; }
+        throw Object.assign(error, { createdSessionID: data.id, rolledBack: !cleanupFailed, cleanupFailed, partial: cleanupFailed });
+      }
+    }
+    return stamped(context, await sessionViewFor(context, data));
   };
 
   const listSessions = async ({ directory, limit, cursor, search, signal } = {}) => {
@@ -216,7 +256,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     check(context);
     if (context.generation === GENERATION.OC1) {
       const data = requireData(response, z.array(sessionSchema), 'Session list');
-      const page = { items: data.map((item) => sessionView(item, context.generation)), raw: data };
+      const page = { items: await Promise.all(data.map((item) => sessionViewFor(context, item))), raw: data };
       const next = response.response?.headers.get('x-next-cursor');
       if (next && z.coerce.number().int().nonnegative().safeParse(next).success) page.cursor = { next: Number(next) };
       return stamped(context, page);
@@ -253,8 +293,8 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     if (context.generation === GENERATION.OC1) {
       const response = await context.client.session.children({ sessionID, directory }, requestOptions(signal));
       check(context);
-      return stamped(context, requireData(response, z.array(sessionSchema), 'Session children')
-        .map((item) => sessionView(item, context.generation)));
+      return stamped(context, await Promise.all(requireData(response, z.array(sessionSchema), 'Session children')
+        .map((item) => sessionViewFor(context, item))));
     }
     const children = [];
     let cursor;
@@ -310,7 +350,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const replyPermission = async ({ requestID, sessionID, directory, decision = 'once', signal, expectedIdentity }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.PERMISSION_REPLY);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
     check(context);
     const response = await (context.generation === GENERATION.OC1
@@ -318,6 +358,25 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
       : context.client.permission.reply({ requestID, sessionID, decision }, requestOptions(signal)));
     check(context);
     return stamped(context, context.generation === GENERATION.OC1 ? response.data : response);
+  };
+
+  const replyQuestion = async ({ requestID, directory, answers, signal, expectedIdentity }) => {
+    const context = capture(directory, LEGACY_OPERATION.QUESTION_REPLY);
+    if (context.generation !== GENERATION.OC1) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Question replies require the OC1 question contract', context.generation);
+    if (expectedIdentity) assertRequest(context, expectedIdentity);
+    check(context);
+    const response = await context.client.question.reply({ requestID, directory, answers }, requestOptions(signal));
+    check(context);
+    return stamped(context, response.data);
+  };
+  const rejectQuestion = async ({ requestID, directory, signal, expectedIdentity }) => {
+    const context = capture(directory, LEGACY_OPERATION.QUESTION_REJECT);
+    if (context.generation !== GENERATION.OC1) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Question rejection requires the OC1 question contract', context.generation);
+    if (expectedIdentity) assertRequest(context, expectedIdentity);
+    check(context);
+    const response = await context.client.question.reject({ requestID, directory }, requestOptions(signal));
+    check(context);
+    return stamped(context, response.data);
   };
 
   const getMessage = async ({ sessionID, messageID, directory, signal }) => {
@@ -466,15 +525,56 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const updateSession = async ({ sessionID, directory, title, metadata, decideMetadata, replaceMetadata = false, time, signal, expectedIdentity }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_UPDATE);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
-    if (decideMetadata && context.generation !== GENERATION.OC2) {
+    if (decideMetadata && context.generation !== GENERATION.OC2 && context.profile !== OPENCODE_PROFILE.LEGACY) {
       throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Conditional metadata writes require OC2', context.generation);
     }
     if ((metadata || decideMetadata) && !replaceMetadata) await prepare(context, sessionID);
     const write = async () => {
       check(context);
       if (expectedIdentity) assertRequest(context, expectedIdentity);
+      if (context.profile === OPENCODE_PROFILE.LEGACY) {
+        const hasMetadata = metadata !== undefined || Boolean(decideMetadata);
+        if (hasMetadata) {
+          requireLegacyMetadata();
+          if (!decideMetadata && !isRecord(metadata)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata patch must be an object', context.generation);
+        }
+        const session = (await getSession({ sessionID, directory, signal })).data;
+        check(context);
+        const patch = decideMetadata ? decideMetadata(session.metadata ?? {}) : metadata;
+        if (decideMetadata && patch === null) return { ...stamped(context, { ...session.raw, metadata: session.metadata }), metadataChanged: false };
+        if (hasMetadata && !isRecord(patch)) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Session metadata patch must be an object', context.generation);
+        let raw = session.raw;
+        let upstreamUpdated = false;
+        if (title !== undefined || time !== undefined) {
+          const input = { sessionID, directory };
+          if (title !== undefined) input.title = title;
+          if (time !== undefined) input.time = time;
+          const response = await context.client.session.update(input, requestOptions(signal));
+          upstreamUpdated = true;
+          try {
+            check(context);
+            raw = requireData(response, sessionSchema, 'Legacy session update');
+          } catch (error) {
+            throw Object.assign(error, { sessionID, upstreamUpdated, partial: true });
+          }
+        }
+        let saved = session.metadata;
+        if (hasMetadata) {
+          try {
+            saved = await legacyMetadataStore.patch(context.storageScope, sessionID, patch,
+              { replace: replaceMetadata, check: () => check(context) });
+            check(context);
+          } catch (error) {
+            throw Object.assign(error, { sessionID, upstreamUpdated, partial: upstreamUpdated });
+          }
+        }
+        const data = { ...raw };
+        if (saved !== undefined) data.metadata = saved;
+        const result = stamped(context, data);
+        return decideMetadata ? { ...result, metadataChanged: true } : result;
+      }
       const input = { sessionID };
       let decidedSession = null;
       if (title !== undefined) input.title = title;
@@ -507,7 +607,8 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
       const result = stamped(context, context.generation === GENERATION.OC1 ? response.data : response);
       return decideMetadata ? { ...result, data: decidedSession, metadataChanged: true } : result;
     };
-    if (context.generation !== GENERATION.OC2 || (!metadata && !decideMetadata)) return write();
+    if ((context.generation !== GENERATION.OC2 && context.profile !== OPENCODE_PROFILE.LEGACY)
+      || (metadata === undefined && !decideMetadata)) return write();
     const key = `${context.generation}\0${context.profile ?? ''}\0${context.endpoint}\0${context.epoch}\0${sessionID}`;
     const previous = metadataWrites.get(key) ?? Promise.resolve();
     const current = previous.catch(() => undefined).then(write);
@@ -539,7 +640,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const sendPrompt = async ({ sessionID, directory, request, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_SEND);
     assertRequest(context, request);
     if (context.generation === GENERATION.OC1) {
       await context.client.session.promptAsync({ ...request.body, sessionID, directory }, requestOptions(signal));
@@ -573,7 +674,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const interruptSession = async ({ sessionID, directory, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_STOP);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.abort({ sessionID, directory }, requestOptions(signal))
       : context.client.session.interrupt({ sessionID }, requestOptions(signal)));
@@ -584,6 +685,6 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
     listCommands, getSelectionCatalog, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
-    listPendingPermissions, listPendingQuestions, replyPermission, getMessage, getMessageView, addSynthetic, switchSessionSelection,
+    listPendingPermissions, listPendingQuestions, replyPermission, replyQuestion, rejectQuestion, getMessage, getMessageView, addSynthetic, switchSessionSelection,
   };
 };

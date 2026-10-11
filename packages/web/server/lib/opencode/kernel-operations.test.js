@@ -598,7 +598,7 @@ describe('server kernel operations', () => {
 });
 
 describe('Legacy operation acceptance boundary', () => {
-  it('refuses mutations and default-model lookup before headers, transport or preparation', async () => {
+  it('refuses unaccepted operations before headers, transport or preparation', async () => {
     let headerCalls = 0;
     let transportCalls = 0;
     let preparationCalls = 0;
@@ -610,16 +610,10 @@ describe('Legacy operation acceptance boundary', () => {
     expect(ops.captureIdentity()).toMatchObject({ generation: 'oc1', profile: 'legacy-1.2.27' });
     const identityHeaderCalls = headerCalls;
     const denied = [
-      () => ops.createSession({ directory: 'C:/work' }),
-      () => ops.updateSession({ sessionID: 'ses_1', title: 'blocked' }),
       () => ops.forkSession({ sessionID: 'ses_1' }),
       () => ops.removeSession({ sessionID: 'ses_1' }),
-      () => ops.replyPermission({ requestID: 'perm_1', sessionID: 'ses_1' }),
-      () => ops.sendPrompt({ sessionID: 'ses_1', request: { generation: 'oc1', profile: 'legacy-1.2.27',
-        endpoint: 'http://fixture.test', epoch: 1, body: { parts: [] } } }),
       () => ops.sendCommand({ sessionID: 'ses_1', request: { generation: 'oc1', profile: 'legacy-1.2.27',
         endpoint: 'http://fixture.test', epoch: 1, body: { command: 'review' } } }),
-      () => ops.interruptSession({ sessionID: 'ses_1' }),
       () => ops.addSynthetic({ sessionID: 'ses_1', text: 'blocked' }),
       () => ops.switchSessionSelection({ sessionID: 'ses_1', agent: 'build' }),
       () => ops.importSession({ chat: {} }),

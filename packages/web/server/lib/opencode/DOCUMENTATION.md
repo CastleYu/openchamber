@@ -859,3 +859,12 @@ All three routes require host authentication, use no-store and register before t
 POST /api/config/opencode-connection/test accepts a UUID token and a candidate connection record. Testing never saves settings, starts a process, replaces the active connection or rebinds the SDK. Managed modes validate launch inputs only; success does not prove startup or readiness. External mode probes profile admission using the saved compatibility selection; success does not prove feature coverage. Credentials are reused only for the exact active endpoint, and probes do not follow redirects.
 
 The host cancels tests after 15 seconds. POST /api/config/opencode-connection/test/cancel accepts the original token. Cancel, unmount and runtime retirement discard the UI result; duplicate tokens and retired owners are rejected. Web and Electron share the host owner. Hosted and Capacitor mobile test their chosen host. VS Code composes the same owner through its dedicated connection bridge, including cancellation on the original bridge.
+
+### Exact Legacy minimum host writes
+
+The Legacy operation allowlist now admits create/update, async prompt, stop,
+permission reply and question reply/rejection. Unaccepted operations still refuse
+before transport. The supplementary metadata owner and failure semantics are in
+[session routes](../openchamber-sessions/DOCUMENTATION.md#legacy-1227-supplementary-metadata).
+The exact executable host journey is recorded in `artifacts/int03-exact-host-write.json`.
+This host evidence does not establish shared UI, proxy/SSE or VS Code acceptance.

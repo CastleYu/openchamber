@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { LEGACY_OPERATION, supportsLegacyOperation } from './legacy-contract.js';
 
-describe('Legacy read operation contract', () => {
-  it('admits the canonical read operations', () => {
+describe('Legacy operation contract', () => {
+  it('admits the accepted read and minimum conversation operations', () => {
     expect(Object.values(LEGACY_OPERATION)).toEqual([
       'identity',
       'session.list',
@@ -15,6 +15,13 @@ describe('Legacy read operation contract', () => {
       'question.list',
       'command.list',
       'catalog.read',
+      'session.create',
+      'session.update',
+      'session.prompt',
+      'session.stop',
+      'permission.reply',
+      'question.reply',
+      'question.reject',
     ]);
     for (const operation of Object.values(LEGACY_OPERATION)) {
       expect(supportsLegacyOperation(operation)).toBe(true);
@@ -23,12 +30,8 @@ describe('Legacy read operation contract', () => {
 
   it.each([
     'session.send',
-    'session.create',
-    'session.update',
     'config.update',
     'auth.login',
-    'permission.reply',
-    'question.reply',
     'experimental.session.import',
     'session.fork',
     'session.list ',

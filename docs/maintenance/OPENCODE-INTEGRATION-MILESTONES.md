@@ -1,6 +1,6 @@
 # Agent integration milestones
 
-Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are in progress. The [execution checkpoint](CAGENT-EXECUTION.md) records the historical preview release. Current R1 evidence and continuation are in the [acceptance review](R1-ACCEPTANCE.md).
+Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are accepted on 2026-10-11. The next implementation batch is R2 / INT-03. Evidence and its source/runtime limits are recorded in `artifacts/int02-r1-exit.json`. The [execution checkpoint](CAGENT-EXECUTION.md) records the historical preview release. Current R1 evidence and continuation are in the [acceptance review](R1-ACCEPTANCE.md).
 R1 clause review and image boundary correction: [acceptance review](R1-ACCEPTANCE.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
 
@@ -24,8 +24,8 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | CA-02 | 5.1 | Complete offline adapter kit with protected tests, generator, sparse and synthetic-extension samples, allowlist validation and runnable toolchain | CA-01 | planned |
 | CA-03 | 5.2 | Local real-server CAgent adaptation, minimum chat and complete feature disposition | CA-02 | planned |
 | INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | done; [source and executable evidence](OPENCODE-LEGACY-EVIDENCE.md) |
-| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | in progress |
-| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | in_progress |
+| INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | done |
+| INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | done |
 | INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy settings, credentials, plugins/MCP and unattended operations | INT-04, CA-02 Release | planned |
@@ -54,7 +54,7 @@ Every round also applies the [temporary-file cleanup requirement](OPENCODE-INTEG
 | R6 | Remaining CA-01 / CA-02 and INT-10 contract work | Close remaining consumer migration and cross-host backend-switching gaps using protected sparse/extension samples. Verify feature refusal, host guards, stale-result retirement and offline kit reproducibility. Keep real CAgent mappings and model calibration at the CA-03 environment-local gate. |
 | R7 | INT-10 release acceptance | Run the integrated regression and available real-host journeys against the frozen candidate, build distributable artifacts, verify their startup/core journeys and publish only the evidence-backed scope on the independent branch. Claims requiring unavailable CA-03 evidence remain excluded or keep the full release gate incomplete. |
 
-R1 is the next implementation batch. Do not end a round merely because one API, component, test file or documentation edit is complete. Split only at a real dependency, unavailable runtime/environment, quota limit, or an implementation-to-integration/release phase boundary required by repository guidance. Write the completed evidence and exact continuation scope before such a split; retain the enclosing round until its acceptance gate passes. A quota check or context handoff does not itself advance milestone status.
+R1 is accepted; R2 is the next implementation batch. Do not end a round merely because one API, component, test file or documentation edit is complete. Split only at a real dependency, unavailable runtime/environment, quota limit, or an implementation-to-integration/release phase boundary required by repository guidance. Write the completed evidence and exact continuation scope before such a split; retain the enclosing round until its acceptance gate passes. A quota check or context handoff does not itself advance milestone status.
 
 ## Completion contracts
 

@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 正在进行。[执行检查点](CAGENT-EXECUTION.md) 保留历史预览发布记录。当前 R1 证据与续接范围见[验收复核](R1-ACCEPTANCE.md)。
+状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，下一实施批次为 R2 / INT-03。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。[执行检查点](CAGENT-EXECUTION.md) 保留历史预览发布记录。当前 R1 证据与续接范围见[验收复核](R1-ACCEPTANCE.md)。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
@@ -26,8 +26,8 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | CA-02 | 5.1 | 完整离线适配工具包，含受保护测试、生成器、精简样例与合成扩展样例、文件白名单校验及可运行工具链 | CA-01 | planned |
 | CA-03 | 5.2 | 本地真实服务器上的 CAgent 适配、最小对话及完整功能处理清单 | CA-02 | planned |
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | done；[源码及程序证据](OPENCODE-LEGACY-EVIDENCE.md) |
-| INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | in progress |
-| INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | in_progress |
+| INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | done |
+| INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | done |
 | INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | planned |
 | INT-04 | 5.6 | Legacy 高级操作与重连恢复 | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy 设置、凭据、插件／MCP 与无人值守操作 | INT-04, CA-02 Release | planned |
@@ -56,7 +56,7 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | R6 | CA-01 / CA-02 剩余部分及 INT-10 契约工作 | 使用受保护的稀疏／扩展示例补齐消费者迁移及跨宿主后端切换缺口。验证功能拒绝、宿主守卫、过期结果退休及离线工具包可复现性。真实 CAgent 映射与模型校准保留在 CA-03 环境内门槛。 |
 | R7 | INT-10 发布验收 | 对冻结候选版本运行集成回归及可执行的真实宿主流程，构建分发产物，验证启动／核心流程，仅在独立分支发布有证据支持的范围。需要尚不可用 CA-03 证据的兼容声明继续排除，或使完整发布门槛保持未完成。 |
 
-R1 为下一实现批次。单个 API、组件、测试文件或文档修改完成不作为结束轮次的理由。仅在真实依赖、运行时／环境不可用、额度限制，或仓库要求的实现与集成／发布阶段边界拆分。拆分前记录已完成证据与准确续接范围，所属轮次在验收通过前保持进行中。额度检查或上下文交接本身不推进里程碑状态。
+R1 已通过验收，R2 为下一实现批次。单个 API、组件、测试文件或文档修改完成不作为结束轮次的理由。仅在真实依赖、运行时／环境不可用、额度限制，或仓库要求的实现与集成／发布阶段边界拆分。拆分前记录已完成证据与准确续接范围，所属轮次在验收通过前保持进行中。额度检查或上下文交接本身不推进里程碑状态。
 
 ## 完成契约
 

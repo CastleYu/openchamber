@@ -236,6 +236,58 @@ describe('reading what a session was told', () => {
     expect(runtime.readDeliveredSignature({})).toBe('');
     expect(runtime.readDeliveredSignature(null)).toBe('');
   });
+
+  test.each(['setPin', 'recordDelivered'])('%s does not write after its owner retires during the read', async (method) => {
+    const oldIdentity = { generation: 'oc2', endpoint: 'http://old', epoch: 1 };
+    const newIdentity = { generation: 'oc2', endpoint: 'http://new', epoch: 2 };
+    let currentIdentity = oldIdentity;
+    let finishRead;
+    const writtenOwners = [];
+    const kernelOperations = {
+      captureIdentity: () => currentIdentity,
+      getSession: () => new Promise((resolve) => { finishRead = resolve; }),
+      updateSession: async ({ expectedIdentity }) => {
+        if (expectedIdentity && expectedIdentity.epoch !== currentIdentity.epoch) throw new Error('retired owner');
+        writtenOwners.push(currentIdentity);
+      },
+    };
+    const runtime = createSessionKnowledgeRuntime({
+      resolveProjectId: async () => PROJECT_ID,
+      projectContextRuntime: { readContext: async () => ({ notes: [], todos: [], plans: [] }) },
+      agentMemoryRuntime: { readAll: async () => ({ global: [], project: [], globalFailed: false, projectFailed: false }) },
+      kernelOperations,
+    });
+
+    const write = method === 'setPin'
+      ? runtime.setPin('ses_a', DIRECTORY, 'note', 'n1', true)
+      : runtime.recordDelivered('ses_a', DIRECTORY, 'signature');
+    currentIdentity = newIdentity;
+    finishRead({ data: { metadata: { openchamber: { project_context_pins: { notes: [], plans: [] } } } } });
+
+    await expect(write).rejects.toThrow('retired owner');
+    expect(writtenOwners).toEqual([]);
+  });
+
+  test.each(['setPin', 'recordDelivered'])('%s writes for the captured current owner', async (method) => {
+    const identity = { generation: 'oc2', endpoint: 'http://current', epoch: 3 };
+    const writes = [];
+    const kernelOperations = {
+      captureIdentity: () => identity,
+      getSession: async () => ({ data: { metadata: { openchamber: { project_context_pins: { notes: [], plans: [] } } } } }),
+      updateSession: async (request) => writes.push(request.expectedIdentity),
+    };
+    const runtime = createSessionKnowledgeRuntime({
+      resolveProjectId: async () => PROJECT_ID,
+      projectContextRuntime: { readContext: async () => ({ notes: [], todos: [], plans: [] }) },
+      agentMemoryRuntime: { readAll: async () => ({ global: [], project: [], globalFailed: false, projectFailed: false }) },
+      kernelOperations,
+    });
+
+    if (method === 'setPin') await runtime.setPin('ses_a', DIRECTORY, 'note', 'n1', true);
+    else await runtime.recordDelivered('ses_a', DIRECTORY, 'signature');
+
+    expect(writes).toEqual([identity]);
+  });
 });
 
 describe('size', () => {

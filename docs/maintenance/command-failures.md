@@ -135,3 +135,5 @@
 - 2026-09-24 DIJIANG 3.7：便携包构建期间，可选的 CIM 进程命令行查询返回“拒绝访问”。应改用构建日志、限定范围的进程状态和退出码，不再扩大进程检查范围。
 - 2026-09-24 DIJIANG 3.7：首次便携包 CDP 探测遇到目标页面导航，第二次封装程序启动在解包前退出。应重试连接稳定的渲染进程，并分别检查封装程序启动与解包后应用运行；只停止任务隔离配置目录下的进程。
 - 2026-09-24 DIJIANG 3.7：长时间 QA 探测无法保存截图，因为 H: 空间耗尽。首次便携运行留下了任务自己的 1.97 GB 解包目录；确认没有进程使用且解析后的路径位于 `.codex-temp` 内，才仅删除该目录。之后磁盘约有 2 GB 可用空间。避免在空间受限的工作区反复完整解包便携程序。
+
+- 2026-10-11 session-knowledge owner lease: `bunx vitest run server/lib/session-knowledge/runtime.test.js` cannot transform this existing `bun:test` test file; use `bun test server/lib/session-knowledge/runtime.test.js`. An initial Bun test exposed a syntax typo in the new fixture, which was corrected before the regression run. Scoped oxlint reports existing anti-slop findings at runtime.js lines 24, 129, 161, 213, 235 and runtime.test.js lines 30-31; none is in the new code.

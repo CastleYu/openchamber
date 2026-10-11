@@ -66,6 +66,10 @@ Delivery is recorded only after the send is accepted. Recording it when the text
 is handed over would leave a failed send believing the agent had context it never
 received.
 
+Pin changes and delivery records capture the active kernel identity before
+reading session metadata. Their writes carry that identity, so a connection
+switch during the read cannot apply stale metadata to the new owner.
+
 ## Entries that read as instructions
 
 Memory is the one place where text from outside can settle permanently. The

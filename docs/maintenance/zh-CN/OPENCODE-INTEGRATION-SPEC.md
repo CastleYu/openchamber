@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-SPEC.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 仍未关闭。验收范围及剩余工作见[里程碑](OPENCODE-INTEGRATION-MILESTONES.md)和[执行检查点](CAGENT-EXECUTION.md)。
+状态：执行中，2026-10-11。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，下一实施批次为 R2 / INT-03。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。验收范围及剩余工作见[里程碑](OPENCODE-INTEGRATION-MILESTONES.md)和[执行检查点](CAGENT-EXECUTION.md)。
 源基线：`codex/personal` 提交 `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`，工作区版本 `2.0.4`，DIJIANG `4.0`。
 
 ## 范围与文档归属
@@ -57,7 +57,7 @@ Web、Electron、VS Code、托管移动端和 Capacitor 均使用这一共享 SD
 
 未取得准入同步源时，VS Code 在 SyncProvider 之外显示既有启动连接恢复页。聊天与 Agent Manager 必须能够确认首次连接，并在失败后显式恢复先前配置连接。仅准入成功后才启用实时同步树。
 
-VS Code 不拥有浏览器队列。其活动及确认响应将队列报告为 unknown、observedCount 0，这不能证明队列为空。Web 与 Electron 从已加载的宿主队列报告权威计数；Hosted mobile 与 Capacitor 观察所选宿主。共享确认解析和显示保留这一差异。前台队列现于入队时捕获配置目标，由宿主在派发时强制核对。历史无归属、目标变更及不可用项目保持暂停。每个 VS Code webview 收到宿主不可用状态时撤销共享 SDK／配置绑定，在已连接后重新发现；即使地址不变，旧健康检查及目录加载也不能恢复就绪。同伴整体协调及完整共享 webview／桥接／编辑器流程仍是 R1 验收门槛。
+VS Code 不拥有浏览器队列。其活动及确认响应将队列报告为 unknown、observedCount 0，这不能证明队列为空。Web 与 Electron 从已加载的宿主队列报告权威计数；Hosted mobile 与 Capacitor 观察所选宿主。共享确认解析和显示保留这一差异。前台队列现于入队时捕获配置目标，由宿主在派发时强制核对。历史无归属、目标变更及不可用项目保持暂停。每个 VS Code webview 收到宿主不可用状态时撤销共享 SDK／配置绑定，在已连接后重新发现；即使地址不变，旧健康检查及目录加载也不能恢复就绪。R1 验收复核记录同伴整体协调及共享 webview／桥接／编辑器流程，并保留对应历史源码范围。
 
 自有进程终止失败时保留句柄和注册记录，管理器进入错误状态并退休已解析内核。在显式重试停止成功前，阻止启动替代进程。关闭失败仅清除被拒绝的在途 Promise，使重试能够再次执行终止；成功关闭及并发关闭仍保持幂等。
 

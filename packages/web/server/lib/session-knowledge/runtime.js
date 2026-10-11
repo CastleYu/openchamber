@@ -268,6 +268,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
   };
 
   const setPin = async (sessionId, directory, kind, id, pinned) => {
+    const identity = kernelOperations?.captureIdentity();
     const fresh = await readSession(sessionId, directory);
     const metadata = isRecord(fresh?.metadata) ? fresh.metadata : {};
     const openchamber = isRecord(metadata.openchamber) ? metadata.openchamber : {};
@@ -284,7 +285,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
             [KNOWLEDGE_METADATA_KEY]: '',
           },
         };
-    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, expectedIdentity: identity, metadata: nextMetadata });
     else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
     return { ...pins, [key]: [...next] };
   };
@@ -299,6 +300,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
    * drop whatever changed in between.
    */
   const recordDelivered = async (sessionId, directory, signature) => {
+    const identity = kernelOperations?.captureIdentity();
     const fresh = await readSession(sessionId, directory);
     const metadata = isRecord(fresh?.metadata) ? fresh.metadata : {};
     const openchamber = isRecord(metadata.openchamber) ? metadata.openchamber : {};
@@ -306,7 +308,7 @@ export const createSessionKnowledgeRuntime = (dependencies) => {
           ...metadata,
           openchamber: { ...openchamber, [KNOWLEDGE_METADATA_KEY]: signature },
         };
-    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, metadata: nextMetadata });
+    if (kernelOperations) await kernelOperations.updateSession({ sessionID: sessionId, directory, expectedIdentity: identity, metadata: nextMetadata });
     else await openCodeFetch(`/session/${encodeURIComponent(sessionId)}`, { directory, method: 'PATCH', body: { metadata: nextMetadata } });
   };
 

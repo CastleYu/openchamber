@@ -88,12 +88,12 @@ describe('failed completion ownership', () => {
 
 describe('exact Legacy conversation admission', () => {
   const runtime = { generation: 'oc1' as const, profile: OPEN_CODE_PROFILE.LEGACY, endpoint: 'http://kernel.test', epoch: 1, version: '1.2.27' };
-  test('admits conversation and bootstrap operations while advanced mutations stay closed', () => {
+  test('admits conversation, bootstrap, and owned metadata operations', () => {
     const binding = new OpenCodeRuntimeBinding(); binding.set(runtime);
-    for (const operation of ['session.list', 'session.create', 'session.update', 'sync.session.pages', 'sync.permission.list', 'SDK request']) {
+    for (const operation of ['session.list', 'session.create', 'session.update', 'session.delete', 'sync.session.pages', 'sync.permission.list', 'SDK request']) {
       binding.assert('oc1', operation);
     }
-    for (const operation of ['session.delete', 'session.share', 'session.fork', 'config.update']) {
+    for (const operation of ['session.share', 'session.fork', 'config.update']) {
       expect(() => binding.assert('oc1', operation)).toThrow(OpenCodeRuntimeError);
     }
     expect(() => binding.assert('oc2', 'session.list')).toThrow(OpenCodeRuntimeError);

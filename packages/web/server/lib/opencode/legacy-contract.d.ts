@@ -13,6 +13,9 @@ export declare const LEGACY_OPERATION: Readonly<{
   COMMAND_LIST: 'command.list';
   CATALOG_READ: 'catalog.read';
   SESSION_CREATE: 'session.create';
+  SESSION_FORK: 'session.fork';
+  SESSION_REMOVE: 'session.delete';
+  SESSION_COMMAND: 'session.command';
   SESSION_UPDATE: 'session.update';
   SESSION_SEND: 'session.prompt';
   SESSION_STOP: 'session.stop';

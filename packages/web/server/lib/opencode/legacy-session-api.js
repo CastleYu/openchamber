@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { OPENCODE_PROFILE } from './compatibility.js';
 import { supportsLegacyStream } from './legacy-contract.js';
 
-const METHOD = Object.freeze({ CREATE: 'POST', UPDATE: 'PATCH' });
+const METHOD = Object.freeze({ CREATE: 'POST', UPDATE: 'PATCH', REMOVE: 'DELETE' });
 const ERROR = Object.freeze({ INVALID: 'invalid-request', CHANGED: 'runtime-changed', FAILED: 'legacy-session-failed' });
 const metadataSchema = z.record(z.string(), z.unknown());
 const createSchema = z.object({
@@ -31,7 +31,7 @@ export const createLegacySessionApi = ({ getRuntime, operations, metadataStore, 
   };
   const accepts = (method, route) => supportsLegacyStream(getRuntime())
     && ((method === METHOD.CREATE && route === '/session')
-      || (method === METHOD.UPDATE && /^\/session\/[^/]+$/.test(route)));
+      || ([METHOD.UPDATE, METHOD.REMOVE].includes(method) && /^\/session\/[^/]+$/.test(route)));
   const overlay = async (payload, identity) => {
     if (identity.profile !== OPENCODE_PROFILE.LEGACY) return payload;
     const scope = getStorageScope();
@@ -49,7 +49,8 @@ export const createLegacySessionApi = ({ getRuntime, operations, metadataStore, 
     const identity = { ...getRuntime() };
     if (!accepts(method, route)) return { status: 501, body: { error: 'unaccepted', profile: identity.profile } };
     const create = method === METHOD.CREATE;
-    const body = (create ? createSchema : updateSchema).safeParse(rawBody === undefined ? {} : rawBody);
+    const remove = method === METHOD.REMOVE;
+    const body = (create ? createSchema : remove ? z.object({}).strict() : updateSchema).safeParse(rawBody === undefined ? {} : rawBody);
     const query = querySchema.safeParse(rawQuery === undefined ? {} : rawQuery);
     if (!body.success || !query.success) return { status: 400, body: { error: ERROR.INVALID } };
     const directory = query.data.directory ?? headerDirectory;
@@ -59,6 +60,7 @@ export const createLegacySessionApi = ({ getRuntime, operations, metadataStore, 
       check(identity, scope);
       const input = { ...body.data, directory, signal, expectedIdentity: identity };
       const result = create ? await operations.createSession(input)
+        : remove ? await operations.removeSession({ directory, signal, expectedIdentity: identity, sessionID: route.split('/')[2] })
         : await operations.updateSession({ ...input, sessionID: route.split('/')[2] });
       try { check(identity, scope); } catch (error) {
         error.partial = true;
@@ -66,7 +68,8 @@ export const createLegacySessionApi = ({ getRuntime, operations, metadataStore, 
           error.createdSessionID = result.data.id;
           error.rolledBack = false;
           error.cleanupFailed = true;
-        } else if (body.data.title !== undefined || body.data.time !== undefined) error.upstreamUpdated = true;
+        } else if (remove) error.upstreamDeleted = true;
+        else if (body.data.title !== undefined || body.data.time !== undefined) error.upstreamUpdated = true;
         throw error;
       }
       return { status: 200, body: create ? { ...result.data.raw, metadata: result.data.metadata } : result.data };
@@ -80,6 +83,7 @@ export const createLegacySessionApi = ({ getRuntime, operations, metadataStore, 
         failure.cleanupFailed = error.cleanupFailed === true;
       }
       if (error?.upstreamUpdated === true) failure.upstreamUpdated = true;
+      if (error?.upstreamDeleted === true) failure.upstreamDeleted = true;
       return { status, body: failure };
     }
   };

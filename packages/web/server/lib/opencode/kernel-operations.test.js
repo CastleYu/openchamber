@@ -610,10 +610,6 @@ describe('Legacy operation acceptance boundary', () => {
     expect(ops.captureIdentity()).toMatchObject({ generation: 'oc1', profile: 'legacy-1.2.27' });
     const identityHeaderCalls = headerCalls;
     const denied = [
-      () => ops.forkSession({ sessionID: 'ses_1' }),
-      () => ops.removeSession({ sessionID: 'ses_1' }),
-      () => ops.sendCommand({ sessionID: 'ses_1', request: { generation: 'oc1', profile: 'legacy-1.2.27',
-        endpoint: 'http://fixture.test', epoch: 1, body: { command: 'review' } } }),
       () => ops.addSynthetic({ sessionID: 'ses_1', text: 'blocked' }),
       () => ops.switchSessionSelection({ sessionID: 'ses_1', agent: 'build' }),
       () => ops.importSession({ chat: {} }),
@@ -672,11 +668,11 @@ describe('Legacy operation acceptance boundary', () => {
     expect(requests.every((request) => request.search.get('directory') === 'C:/work ü')).toBe(true);
     const listQuery = requests.find((request) => request.path === '/session').search;
     expect(Object.fromEntries(listQuery)).toMatchObject({ directory: 'C:/work ü', limit: '25', start: '10', search: 'one' });
-    expect(requests.map((request) => request.path)).toEqual([
+    expect(requests.map((request) => request.path).sort()).toEqual([
       '/session', '/session/ses_1', '/session/ses_1/message', '/session/ses_1/message/msg_1',
       '/session/ses_1/children', '/session/status', '/permission', '/question', '/command',
       '/config/providers', '/agent', '/config',
-    ]);
+    ].sort());
   });
 
   it('rejects malformed, failed, canceled and retired Legacy reads', async () => {
@@ -714,6 +710,78 @@ describe('Legacy operation acceptance boundary', () => {
       return response;
     } });
     await expect(ops.listSessions()).rejects.toMatchObject({ code: 'runtime-changed' });
+  });
+});
+
+describe('Legacy advanced kernel operations', () => {
+  const selected = (endpoint) => ({ ...runtime('oc1', endpoint), version: '1.2.27', profile: 'legacy-1.2.27' });
+
+  it('preserves fork boundaries, command bodies, directory and authentication', async () => {
+    const requests = [];
+    const endpoint = await serve(({ path: route }) => ({ body: route.endsWith('/fork') ? oc1Session : { info: { id: 'msg_command' }, parts: [] } }), requests);
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({ authorization: 'Basic fixture' }) });
+    const identity = ops.captureIdentity();
+    await expect(ops.forkSession({ sessionID: 'ses_1', messageID: 'msg_before', directory: 'C:/work ü', expectedIdentity: identity }))
+      .resolves.toMatchObject({ profile: 'legacy-1.2.27', data: { id: 'ses_1' } });
+    await expect(ops.sendCommand({ sessionID: 'ses_1', directory: 'C:/work ü', request: { ...identity, body: { command: 'review', arguments: 'one two', agent: 'build' } } }))
+      .resolves.toMatchObject({ accepted: true, data: { info: { id: 'msg_command' } } });
+    expect(requests.map(({ method, path, body }) => ({ method, path, body }))).toEqual([
+      { method: 'POST', path: '/session/ses_1/fork', body: { messageID: 'msg_before' } },
+      { method: 'POST', path: '/session/ses_1/command', body: { command: 'review', arguments: 'one two', agent: 'build' } },
+    ]);
+    expect(requests.every(({ search, headers }) => search.get('directory') === 'C:/work ü' && headers.authorization === 'Basic fixture')).toBe(true);
+  });
+
+  it('refuses Legacy deletion without a metadata owner before upstream work', async () => {
+    const requests = [];
+    const endpoint = await serve(() => ({ body: true }), requests);
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}) });
+    await expect(ops.removeSession({ sessionID: 'ses_1' })).rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(requests).toHaveLength(0);
+  });
+
+  it('does not clean metadata when upstream deletion fails or returns malformed success', async () => {
+    const patch = vi.fn();
+    let answer = { status: 503, body: { error: 'failed' } };
+    const endpoint = await serve(() => answer);
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}), legacyMetadataStore: { read: async () => ({}), patch } });
+    await expect(ops.removeSession({ sessionID: 'ses_1' })).rejects.toBeDefined();
+    answer = { status: 200, body: false };
+    await expect(ops.removeSession({ sessionID: 'ses_1' })).rejects.toMatchObject({ code: 'invalid-response' });
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('reports completed upstream deletion when metadata cleanup fails', async () => {
+    const endpoint = await serve(() => ({ body: true }));
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}),
+      legacyMetadataStore: { read: async () => ({}), patch: async () => { throw new Error('storage unavailable'); } } });
+    await expect(ops.removeSession({ sessionID: 'ses_1' })).rejects.toMatchObject({ sessionID: 'ses_1', upstreamDeleted: true, partial: true });
+  });
+
+  it('rejects deletion completed for a retired storage scope without writing to the replacement', async () => {
+    const patch = vi.fn();
+    let scope = 'first';
+    const endpoint = await serve(() => ({ body: true }));
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}), getStorageScope: () => scope,
+      legacyMetadataStore: { read: async () => ({}), patch }, fetchImpl: async (url, init) => {
+        const response = await fetch(url, init);
+        scope = 'replacement';
+        return response;
+      } });
+    await expect(ops.removeSession({ sessionID: 'ses_1' })).rejects.toMatchObject({ code: 'runtime-changed', upstreamDeleted: true, partial: true });
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('rejects canceled forks and commands captured before a runtime change', async () => {
+    const requests = [];
+    const endpoint = await serve(() => ({ body: oc1Session }), requests);
+    let state = selected(endpoint);
+    const ops = createKernelOperations({ getRuntime: () => state, getHeaders: () => ({}) });
+    await expect(ops.forkSession({ sessionID: 'ses_1', signal: AbortSignal.abort() })).rejects.toBeDefined();
+    const identity = ops.captureIdentity();
+    state = { ...state, epoch: state.epoch + 1 };
+    await expect(ops.sendCommand({ sessionID: 'ses_1', request: { ...identity, body: { command: 'review' } } })).rejects.toMatchObject({ code: 'runtime-changed' });
+    expect(requests).toHaveLength(0);
   });
 });
 

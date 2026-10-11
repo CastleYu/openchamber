@@ -8,7 +8,7 @@ type LegacySessionPayload = JSONType;
 // SDK wire payloads are parsed inside this boundary. Hosts only serialize the result.
 export function createLegacySessionApi(options: {
   getRuntime: () => OpenCodeGenerationDescriptor;
-  operations: Pick<ReturnType<typeof createKernelOperations>, 'createSession' | 'updateSession'>;
+  operations: Pick<ReturnType<typeof createKernelOperations>, 'createSession' | 'updateSession' | 'removeSession'>;
   metadataStore: LegacyMetadataStore;
   getStorageScope: () => string;
 }): {

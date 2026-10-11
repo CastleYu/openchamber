@@ -23,7 +23,7 @@ export const OPEN_CODE_STATUS = {
 
 const LEGACY_CLIENT_OPERATION = Object.freeze({
   SDK: 'SDK request', SCOPED_SDK: 'scoped SDK request', QUEUED_SDK: 'queued SDK request', EVENTS: 'event stream',
-  LIST: 'session.list', CREATE: 'session.create', GET: 'session.get', UPDATE: 'session.update',
+  LIST: 'session.list', CREATE: 'session.create', GET: 'session.get', UPDATE: 'session.update', REMOVE: 'session.delete',
   MESSAGES: 'session.messages', MESSAGE: 'session.message', PAGES: 'experimental.session.list',
   PATH: 'path.get', PROJECTS: 'project.list', PROJECT: 'project.current', VCS: 'vcs.get', LSP: 'lsp.status',
   CONFIG: 'global.config.get', PERMISSION: 'permission.reply', QUESTION_REJECT: 'question.reject',

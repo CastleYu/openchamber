@@ -506,7 +506,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const forkSession = async ({ sessionID, directory, messageID, signal, expectedIdentity }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_FORK);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
     check(context);
     const response = await (context.generation === GENERATION.OC1
@@ -518,14 +518,28 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const removeSession = async ({ sessionID, directory, signal, expectedIdentity }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_REMOVE);
     if (expectedIdentity) assertRequest(context, expectedIdentity);
-    if (context.generation !== GENERATION.OC2) {
-      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Fork rollback requires OpenCode 2.x', context.generation);
+    const legacy = context.profile === OPENCODE_PROFILE.LEGACY;
+    if (context.generation !== GENERATION.OC2 && !legacy) {
+      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Session removal requires OpenCode 2.x or accepted Legacy', context.generation);
     }
+    if (legacy) requireLegacyMetadata();
     check(context);
-    await context.client.session.remove({ sessionID }, requestOptions(signal));
-    check(context);
+    if (legacy) {
+      const response = await context.client.session.delete({ sessionID, directory }, requestOptions(signal));
+      requireData(response, z.literal(true), 'Legacy session delete');
+      try {
+        check(context);
+        await legacyMetadataStore.patch(context.storageScope, sessionID, {}, { replace: true, check: () => check(context) });
+        check(context);
+      } catch (error) {
+        throw Object.assign(error, { sessionID, upstreamDeleted: true, partial: true });
+      }
+    } else {
+      await context.client.session.remove({ sessionID }, requestOptions(signal));
+      check(context);
+    }
     return stamped(context, true);
   };
 
@@ -664,7 +678,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const sendCommand = async ({ sessionID, directory, request, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_COMMAND);
     assertRequest(context, request);
     if (context.generation === GENERATION.OC1) {
       const response = await context.client.session.command({ ...request.body, sessionID, directory }, requestOptions(signal));

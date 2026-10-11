@@ -44,10 +44,11 @@ const readBody = async (request) => {
   return text ? JSON.parse(text) : null;
 };
 
-const createHarness = async ({ runtime = { ...IDENTITY }, upstreamRequest = () => {}, storeOptions = {} } = {}) => {
+const createHarness = async ({ runtime = { ...IDENTITY }, upstreamRequest = () => {}, storeOptions = {}, deleteEnabled = false, deleteStatus = 200 } = {}) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-legacy-session-http-'));
   directories.push(dataDir);
   const currentSession = { ...SESSION, time: { ...SESSION.time } };
+  let currentSessionDeleted = false;
   const upstream = await listen(async (request, response) => {
     const body = await readBody(request);
     const url = new URL(request.url, 'http://upstream');
@@ -58,7 +59,13 @@ const createHarness = async ({ runtime = { ...IDENTITY }, upstreamRequest = () =
       response.writeHead(200, { 'content-type': 'application/json' });
       return response.end(JSON.stringify(currentSession));
     }
+    if (request.method === 'DELETE' && deleteEnabled && url.pathname === `/session/${SESSION.id}`) {
+      if (deleteStatus >= 200 && deleteStatus < 300) currentSessionDeleted = true;
+      response.writeHead(deleteStatus, { 'content-type': 'application/json' });
+      return response.end(JSON.stringify(deleteStatus === 200 ? true : { error: 'failed' }));
+    }
     if (request.method === 'GET' && url.pathname === `/session/${SESSION.id}`) {
+      if (currentSessionDeleted) { response.writeHead(404); return response.end(); }
       response.writeHead(200, { 'content-type': 'application/json' });
       return response.end(JSON.stringify(currentSession));
     }
@@ -188,6 +195,77 @@ describe('Legacy session HTTP integration', () => {
 
 
 describe('Legacy HTTP partial outcomes', () => {
+  it('deletes only the selected session and its supplementary metadata', async () => {
+    const requests = [];
+    const harness = await createHarness({ upstreamRequest: (request) => requests.push(request), deleteEnabled: true });
+    const otherID = 'ses_other';
+    await harness.metadataStore.patch(SCOPE, SESSION.id, { openchamber: { selected: true } }, { replace: true });
+    await harness.metadataStore.patch(SCOPE, otherID, { openchamber: { keep: true } }, { replace: true });
+
+    const response = await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork'), { method: 'DELETE' });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toBe(true);
+    expect(requests.some(({ method, path }) => method === 'DELETE' && path === '/session/' + SESSION.id)).toBe(true);
+    expect(await harness.metadataStore.read(SCOPE, SESSION.id)).toEqual({});
+    expect(await harness.metadataStore.read(SCOPE, otherID)).toEqual({ openchamber: { keep: true } });
+    expect((await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork'))).status).toBe(404);
+  });
+
+  it('preserves supplementary metadata when upstream deletion fails', async () => {
+    const requests = [];
+    const harness = await createHarness({ upstreamRequest: (request) => requests.push(request), deleteEnabled: true, deleteStatus: 500 });
+    const metadata = { openchamber: { keep: true } };
+    await harness.metadataStore.patch(SCOPE, SESSION.id, metadata, { replace: true });
+
+    const response = await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork'), { method: 'DELETE' });
+
+    expect(response.status).toBe(503);
+    expect(await harness.metadataStore.read(SCOPE, SESSION.id)).toEqual(metadata);
+    expect(requests.some(({ method }) => method === 'DELETE')).toBe(true);
+  });
+
+  it('rejects an invalid DELETE body and missing directory before side effects', async () => {
+    const requests = [];
+    const harness = await createHarness({ upstreamRequest: (request) => requests.push(request), deleteEnabled: true });
+    await harness.metadataStore.patch(SCOPE, SESSION.id, { openchamber: { keep: true } }, { replace: true });
+    const invalid = await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork'), {
+      method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ unexpected: true }),
+    });
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toEqual({ error: 'invalid-request' });
+
+    const missingDirectory = await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory='), { method: 'DELETE' });
+    expect(missingDirectory.status).toBe(400);
+    expect(await missingDirectory.json()).toEqual({ error: 'invalid-request' });
+    expect(requests).toHaveLength(0);
+    expect(await harness.metadataStore.read(SCOPE, SESSION.id)).toEqual({ openchamber: { keep: true } });
+  });
+
+  it('reports upstream deletion when supplementary metadata cleanup fails', async () => {
+    let failRename = false;
+    const requests = [];
+    const harness = await createHarness({ upstreamRequest: (request) => requests.push(request), deleteEnabled: true, storeOptions: {
+      fsPromises: { ...fs, rename: async (...args) => {
+        if (failRename) throw new Error('private-storage-path');
+        return fs.rename(...args);
+      } },
+    } });
+    const selected = { openchamber: { selected: true } };
+    const unrelated = { openchamber: { keep: true } };
+    await harness.metadataStore.patch(SCOPE, SESSION.id, selected, { replace: true });
+    await harness.metadataStore.patch(SCOPE, 'ses_other', unrelated, { replace: true });
+    failRename = true;
+
+    const response = await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork'), { method: 'DELETE' });
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'legacy-session-failed', partial: true, upstreamDeleted: true });
+    expect(requests.some(({ method }) => method === 'DELETE')).toBe(true);
+    expect(await harness.metadataStore.read(SCOPE, 'ses_other')).toEqual(unrelated);
+    expect(await fetch(hostUrl(harness.host, '/session/' + SESSION.id + '?directory=C%3A%2Fwork')).then((result) => result.status)).toBe(404);
+  });
+
   it('reports the created session when metadata storage and rollback fail without leaking the storage error', async () => {
     const requests = [];
     const harness = await createHarness({ upstreamRequest: (request) => requests.push(request), storeOptions: {

@@ -8,10 +8,12 @@ const LEGACY_HTTP_ROUTE = Object.freeze({
     '/event', '/global/event', '/path', '/project', '/project/current', '/vcs', '/lsp',
     '/global/config', '/config', '/config/providers', '/provider', '/agent', '/command',
     '/permission', '/question', '/session', '/session/status', '/experimental/session',
+    '/file', '/file/content', '/file/status', '/find/file', '/find', '/find/symbol',
   ]),
   POST: Object.freeze([
     /^\/session\/[^/]+\/prompt_async$/,
     /^\/session\/[^/]+\/abort$/,
+    /^\/session\/[^/]+\/(fork|command|shell|summarize|revert|unrevert)$/,
     /^\/permission\/[^/]+\/reply$/,
     /^\/question\/[^/]+\/reply$/,
     /^\/question\/[^/]+\/reject$/,
@@ -21,6 +23,7 @@ const LEGACY_HTTP_ROUTE = Object.freeze({
     /^\/session\/[^/]+\/message$/,
     /^\/session\/[^/]+\/message\/[^/]+$/,
     /^\/session\/[^/]+\/children$/,
+    /^\/session\/[^/]+\/(todo|diff)$/,
   ]),
 });
 
@@ -37,6 +40,9 @@ const LEGACY_OPERATION = Object.freeze({
   COMMAND_LIST: 'command.list',
   CATALOG_READ: 'catalog.read',
   SESSION_CREATE: 'session.create',
+  SESSION_FORK: 'session.fork',
+  SESSION_REMOVE: 'session.delete',
+  SESSION_COMMAND: 'session.command',
   SESSION_UPDATE: 'session.update',
   SESSION_SEND: 'session.prompt',
   SESSION_STOP: 'session.stop',

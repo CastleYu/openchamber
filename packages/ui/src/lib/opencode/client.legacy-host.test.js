@@ -68,6 +68,7 @@ const makeHost = async (requests) => {
       Object.assign(session, body, { id: SESSION_ID, directory: DIRECTORY, time: SESSION.time });
       return json(res, session);
     }
+    if (req.method === 'DELETE' && url.pathname === `/session/${SESSION_ID}`) return json(res, true);
     if (req.method === 'PATCH' && url.pathname === `/session/${SESSION_ID}`) {
       session.title = body.title ?? session.title;
       return json(res, session);
@@ -151,10 +152,15 @@ describe('Legacy 1.2.27 shared UI to host contract', () => {
     expect(requests.every((request) => request.authorization === 'Bearer fixture-token')).toBe(true);
   });
 
-  test('refuses advanced delete and a mismatched Legacy profile before host effects', async () => {
+  test('deletes through the owned host and refuses a mismatched Legacy profile', async () => {
     const requests = [];
     const state = await makeHost(requests);
-    await expect(opencodeClient.deleteSession(SESSION_ID, DIRECTORY)).rejects.toThrow();
+    await state.metadataStore.patch(SCOPE, SESSION_ID, { openchamber: { goal: 'g' } }, { replace: true });
+    expect(await opencodeClient.deleteSession(SESSION_ID, DIRECTORY)).toBe(true);
+    expect(await state.metadataStore.read(SCOPE, SESSION_ID)).toEqual({});
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ method: 'DELETE', path: `/session/${SESSION_ID}`, authorization: 'Bearer fixture-token' });
+    requests.length = 0;
     state.runtime.version = '1.2.28';
     await expect(opencodeClient.createSession({ title: 'blocked' }, DIRECTORY)).rejects.toThrow();
     expect(requests).toHaveLength(0);

@@ -204,3 +204,13 @@ Resolve ws from the owning Web package and esbuild from the existing VS Code dep
 A guessed managed-config-v2.js path did not exist; use enumerated managed-config-file.js and config-v2.js. The document-context inspection also included nonexistent .codex/root DEV-PLAN paths; the real plan is docs/maintenance/DEV-PLAN.md. A sandbox process-use inventory returned access denied; the same targeted read succeeded with escalation before cleanup. The routing focused Vitest first hit esbuild spawn EPERM in the sandbox; its exact targeted escalation passed. An agent initially guessed session-work/index.js; consumers are in server/index.js and session-work/runtime.js.
 
 - 2026-10-12 context recheck: a timestamp read assumed DEV-PLAN.md was at the checkout root and returned path-not-found. Discovery with rg --files confirmed docs/maintenance/DEV-PLAN.md. Subsequent reads used the discovered path.
+
+## R3 advanced-operation validation, 2026-10-12
+
+- A pre-existing Legacy read test assumed a fixed order for concurrent catalog requests. The first run reported 159 pass / 1 fail; compare the complete request set rather than completion order. The corrected five-file suite passes all 160 tests.
+- The exact-host driver initially used the synchronous prompt endpoint, which is intentionally outside the admitted UI contract. Use prompt_async and wait for an authoritative completed assistant message.
+- File search initially missed a file created after instance initialization. Create known files before startup and request type=file explicitly; the exact host journey then passes. This is a fixture correction, not a new product fallback.
+- Selectively retained upstream sources do not include server/routes/find.ts. Inspect the retained OpenAPI and discover available paths instead of assuming a full source checkout. The helper checkout also lacks docs/maintenance; documentation lives in the dijiang-next execution checkout.
+
+- Sandbox CIM inventory returned access denied. Repeat the same scoped inventory with escalation; never interpret a failed inventory as an empty process list. Exclude the inventory process itself because its command contains fixture paths.
+- Cleanup stopped on Bun cache links before deleting fixtures. Inventory links without traversal, unlink each link itself, then remove only checked task-owned roots. The final receipt records six removed fixture homes and all link-only actions.

@@ -22,6 +22,7 @@ export const createLegacySessionHttp = (options) => {
   const register = (app) => {
     app.post(ROUTE.CREATE, express.json(), handle);
     app.patch(ROUTE.UPDATE, express.json(), handle);
+    app.delete(ROUTE.UPDATE, express.json(), handle);
   };
   return { accepts: api.accepts, overlay: api.overlay, register };
 };

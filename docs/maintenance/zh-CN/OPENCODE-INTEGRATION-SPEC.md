@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-SPEC.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-12。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已验收，证据、源码／运行时限制及清理记录见 artifacts/int03-r2-exit.json。Legacy 在高级操作、配置及最终宿主验收前仍为实验支持。下一批次为 R3。[里程碑](OPENCODE-INTEGRATION-MILESTONES.md) 维护当前验收及剩余工作，[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录。
+状态：执行中，2026-10-12。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已验收，证据、源码／运行时限制及清理记录见 artifacts/int03-r2-exit.json。Legacy 在高级操作、配置及最终宿主验收前仍为实验支持。R3 正在进行。[里程碑](OPENCODE-INTEGRATION-MILESTONES.md) 维护当前验收及剩余工作，[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录。
 源基线：`codex/personal` 提交 `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`，工作区版本 `2.0.4`，DIJIANG `4.0`。
 
 ## 范围与文档归属

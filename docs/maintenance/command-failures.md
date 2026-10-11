@@ -310,3 +310,17 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
 - The first probe fixture was nested under the helper repository and discovered ancestor command metadata. Its mutations stayed in the isolated fixture. The corrected probe used system TEMP and returned only controlled command entries.
 - Baseline oxlint inside ignored artifacts reported no files, including with --no-ignore. A temporary baseline copy beside the owning module allowed a valid comparison and was immediately removed. A missing helper failure-log read was corrected by locating the child's mistakenly named helper artifacts directory, moving its only file to the helper checkout, and deleting the empty directory.
 - A child ran bunx without --no-install once and received "Resolved, downloaded and extracted [2]" and "Saved lockfile" without package names. The project bun.lock was unchanged. All later tool invocations use installed packages with --no-install.
+
+### 2026-10-12 INT-05 native configuration ownership
+
+- Reads guessed missing config-family.js, server-state.js and retained global/index.ts paths. Locate paths with rg --files before reading.
+- Restricted Windows CIM process-tree reads failed with access denied. The VS Code subprocess suite consequently retained registry records and failed 8 of 12 cases. Astra confirmed this matches the existing fail-closed cleanup contract. The identical suite passed all 12 cases with narrowly scoped escalation; no cleanup algorithm change was needed. Use bun test --timeout 30000 for further Windows lifecycle runs.
+- Child reads also used stale connection.ts and an invalid literal Windows wildcard. Use the discovered connection.js and explicit registry path.
+- Focused oxlint reports existing findings in lifecycle.js and sseProxy.test.ts; inspect changed lines and retain the baseline rather than weakening rules.
+
+### 2026-10-12 INT-05 configuration layers
+
+- Read-only searches guessed missing shared/config and kernel-contract paths. Locate the flat shared.js and legacy-contract.js files first. The helper worktree has no docs/maintenance directory; execution documentation is in dijiang-next.
+- Test cleanup initially contained one extra closing parenthesis. Corrected before the passing run. A prototype-key test initially expected JSONC to preserve __proto__; the same upstream parser filters it, so the final contract checks filtering and ordinary constructor keys.
+- Vitest is not installed at root node_modules or packages/web/node_modules. A guessed direct CLI invocation failed with MODULE_NOT_FOUND. The verified cached no-install runner is Vitest 5.0.3; report this version rather than assuming package.json resolves to a local installation. No dependency installation was performed.
+- A child combined Git inspection with tests and encountered automatic approval rejection under its narrower task authorization. It reran tests alone. Product modifications and checks remained within the authorized integration worktree.

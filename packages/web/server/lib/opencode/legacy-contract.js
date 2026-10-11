@@ -40,6 +40,7 @@ const LEGACY_OPERATION = Object.freeze({
   QUESTION_LIST: 'question.list',
   COMMAND_LIST: 'command.list',
   CATALOG_READ: 'catalog.read',
+  CONFIG_READ: 'config.read',
   SESSION_CREATE: 'session.create',
   SESSION_FORK: 'session.fork',
   SESSION_REMOVE: 'session.delete',

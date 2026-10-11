@@ -862,3 +862,57 @@ describe('pending question and form inspection', () => {
     expect(requests).toHaveLength(1);
   });
 });
+
+describe('exact Legacy configuration snapshot', () => {
+  const paths = { home: 'C:/fixture/home', config: 'C:/fixture/config', directory: 'C:/fixture/project/sub', worktree: 'C:/fixture/project' };
+  const selected = endpoint => ({ ...runtime('oc1', endpoint), profile: 'legacy-1.2.27', version: '1.2.27' });
+  it('preserves SDK directory and authentication for path and effective configuration', async () => {
+    const requests = [];
+    const mcp = { remote: { type: 'remote', url: 'https://mcp.example', oauth: false, timeout: 3500 }, disabled: { enabled: false } };
+    const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : { mcp, model: 'fixture/model' } }), requests);
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({ Authorization: 'Basic fixture' }) });
+    const result = await ops.getLegacyConfiguration({ directory: paths.directory });
+    expect(result.data).toEqual({ paths, mcp });
+    expect(requests.map(record => record.path).sort()).toEqual(['/config', '/path']);
+    for (const request of requests) {
+      expect(request.method).toBe('GET');
+      expect(request.search.get('directory')).toBe(paths.directory);
+      expect(request.headers.authorization).toBe('Basic fixture');
+    }
+  });
+  it.each([{ profile: 'oc1' }, { generation: 'oc2', profile: 'oc2' }, { version: '1.2.28' }])('refuses a non-exact descriptor before transport %j', async change => {
+    let calls = 0;
+    const ops = createKernelOperations({ getRuntime: () => ({ ...selected('http://fixture.test'), ...change }), getHeaders: () => ({}), fetchImpl: async () => { calls++; throw new Error('must not transport'); } });
+    await expect(ops.getLegacyConfiguration()).rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(calls).toBe(0);
+  });
+  it('rejects a version change while configuration reads are pending', async () => {
+    let current = selected('http://fixture.test');
+    const ops = createKernelOperations({ getRuntime: () => current, getHeaders: () => ({}), fetchImpl: async request => {
+      current = { ...current, version: '1.2.28' };
+      return Response.json(new URL(request.url).pathname === '/path' ? paths : {});
+    } });
+    await expect(ops.getLegacyConfiguration()).rejects.toMatchObject({ code: 'runtime-changed' });
+  });
+  it.each([{ mcp: null }, { mcp: { invalid: { type: 'remote', url: 'secret-fixture', timeout: -1 } } }])('refuses invalid effective MCP data without returning secrets', async body => {
+    const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : body }));
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}) });
+    await expect(ops.getLegacyConfiguration()).rejects.toThrow(/Invalid/);
+  });
+
+  it('classifies a failed late read as retired instead of an active-runtime error', async () => {
+    let current = selected('http://fixture.test');
+    const ops = createKernelOperations({ getRuntime: () => current, getHeaders: () => ({}), fetchImpl: async () => {
+      current = { ...current, epoch: 2 };
+      return Response.json({ error: 'old instance failure' }, { status: 503 });
+    } });
+    await expect(ops.getLegacyConfiguration()).rejects.toMatchObject({ code: 'runtime-changed' });
+  });
+
+  it('preserves cancellation without returning an authoritative empty configuration', async () => {
+    const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : {} }));
+    const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({}) });
+    await expect(ops.getLegacyConfiguration({ signal: AbortSignal.abort() })).rejects.toBeDefined();
+  });
+
+});

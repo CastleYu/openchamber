@@ -182,6 +182,17 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   let managedProcessEnv = null;
+  let nativeConfigContext = null;
+
+  const getNativeConfigContext = () => {
+    const context = nativeConfigContext;
+    if (!context || context.process !== state.openCodeProcess
+      || !state.isOpenCodeReady || state.isExternalOpenCode || state.isShuttingDown
+      || state.isRestartingOpenCode || state.currentRestartPromise || connectionTransitions > 0
+      || context.process.exitCode != null || context.process.signalCode != null) return null;
+    try { requireSelection(context.selection); } catch { return null; }
+    return { env: { ...context.env }, cwd: context.cwd };
+  };
 
   const killProcessOnPortWin32 = (port) => {
     try {
@@ -536,6 +547,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       get signalCode() { return observedSignalCode ?? child.signalCode; },
       get stderrTail() { return getManagedProcessSnapshot().stderrTail; },
       close() {
+        if (nativeConfigContext?.process === serverProcess) nativeConfigContext = null;
         if (!closePromise) closePromise = registration.then(() => closeManagedOpenCodeChild(child, dropRegistration)).catch(error => {
           closePromise = null;
           throw error;
@@ -789,6 +801,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   const startOpenCodeOnce = async (attempt, connection) => {
     const selection = requireSelection();
+    nativeConfigContext = null;
     const attemptStartedAt = performance.now();
     let phaseStartedAt = attemptStartedAt;
     recordStartupPerformance('opencode.attempt.start', { attempt });
@@ -862,6 +875,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     })));
     managedProcessEnv = processEnv;
 
+    const cwd = command ? connection.cwd : state.openCodeWorkingDirectory;
     let serverInstance;
     try {
       if (state.isShuttingDown) throw new Error('OpenCode startup cancelled during shutdown');
@@ -872,7 +886,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         hostname: env.ENV_CONFIGURED_OPENCODE_HOSTNAME,
         port: spawnPort,
         timeout: managedStartupTimeoutMs,
-        cwd: command ? connection.cwd : state.openCodeWorkingDirectory,
+        cwd,
         serverArgs: command ? connection.args : null,
         shellEnvKeysCount: Object.keys(shellEnv).length,
         env: processEnv,
@@ -915,6 +929,9 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           outcome: 'ready',
         });
 
+        if ([CONNECTION_MODE.PATH, CONNECTION_MODE.CONFIGURED, CONNECTION_MODE.BUNDLED].includes(connection?.mode)) {
+          nativeConfigContext = { process: serverInstance, env: { ...processEnv }, cwd, selection };
+        }
         return serverInstance;
       }
 
@@ -1705,6 +1722,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   return {
     isConnectionTransitioning: () => connectionTransitions > 0 || Boolean(state.currentRestartPromise),
     getManagedOpenCodeProcessEnv: () => (state.isExternalOpenCode ? null : managedProcessEnv),
+    getNativeConfigContext,
     killProcessOnPort,
     startOpenCode,
     restartOpenCode,

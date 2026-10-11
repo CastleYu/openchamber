@@ -15,6 +15,7 @@ describe('Legacy operation contract', () => {
       'question.list',
       'command.list',
       'catalog.read',
+      'config.read',
       'session.create',
       'session.fork',
       'session.delete',

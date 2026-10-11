@@ -345,3 +345,6 @@ VSCodeApp renders the existing StartupInitializationRecovery outside SyncProvide
 ## Read-only connection tests
 
 The extension connection runtime composes the shared host test owner. The dedicated connection bridge handles test and cancel before proxying. A webview abort sends the original token through the original bridge. Tests do not save settings or replace the extension manager connection. See the [host contract](../../web/server/lib/opencode/DOCUMENTATION.md#read-only-connection-test). Console host tests and webview builds do not establish real IDE acceptance.
+
+
+The private getNativeConfigContext getter returns a copied launch environment and cwd only while the ready native managed process still owns the current connection. It returns null during transitions, after retirement or process exit, and for Command/external connections. Null must never fall back to the host user's configuration. This getter does not itself admit Legacy file operations.

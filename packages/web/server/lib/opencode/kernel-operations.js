@@ -2,7 +2,8 @@ import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
 import { OPENCODE_PROFILE } from './compatibility.js';
-import { LEGACY_OPERATION, supportsLegacyOperation } from './legacy-contract.js';
+import { LEGACY_OPERATION, supportsLegacyOperation, supportsLegacyStream } from './legacy-contract.js';
+import { LEGACY_CONFIG_KIND, parseLegacyConfig } from './legacy-config.js';
 
 const GENERATION = Object.freeze({ OC1: 'oc1', OC2: 'oc2' });
 const STATUS = Object.freeze({ BUSY: 'busy', RETRY: 'retry', IDLE: 'idle', RUNNING: 'running' });
@@ -143,13 +144,13 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     const client = generation === GENERATION.OC1
       ? createOpencodeClient({ ...options, throwOnError: true })
       : OpenCode.make(options);
-    return { generation, profile: runtime.profile, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory,
+    return { generation, profile: runtime.profile, version: runtime.version, endpoint: runtime.endpoint, epoch: runtime.epoch, client, directory,
       storageScope: runtime.profile === OPENCODE_PROFILE.LEGACY ? (getStorageScope?.() ?? `external:${runtime.endpoint}`) : null };
   };
 
   const check = (context) => {
     const current = getRuntime();
-    if (current?.generation !== context.generation || current.profile !== context.profile || current.endpoint !== context.endpoint || current.epoch !== context.epoch
+    if (current?.generation !== context.generation || current.profile !== context.profile || current.version !== context.version || current.endpoint !== context.endpoint || current.epoch !== context.epoch
       || (context.profile === OPENCODE_PROFILE.LEGACY && getStorageScope && getStorageScope() !== context.storageScope)) {
       throw kernelError(ERROR_CODE.RUNTIME_CHANGED, 'OpenCode runtime changed during operation', context.generation);
     }
@@ -488,6 +489,34 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     });
   };
 
+  // Read both endpoints through the selected SDK. Local configuration ownership
+  // remains the host's responsibility; this operation grants no file access.
+  const getLegacyConfiguration = async ({ directory, signal } = {}) => {
+    const context = capture(directory, LEGACY_OPERATION.CONFIG_READ);
+    if (!supportsLegacyStream(getRuntime())) {
+      throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Exact Legacy configuration requires OpenCode 1.2.27', context.generation);
+    }
+    const [paths, config] = await Promise.all([
+      context.client.path.get({ directory }, requestOptions(signal)),
+      context.client.config.get({ directory }, requestOptions(signal)),
+    ]).catch(error => {
+      check(context);
+      throw error;
+    });
+    check(context);
+    const pathResult = z.object({
+      home: z.string().min(1), config: z.string().min(1),
+      directory: z.string().min(1), worktree: z.string().min(1),
+    }).safeParse(paths.data);
+    const configResult = z.object({ mcp: z.record(z.string(), z.json()).default({}) }).safeParse(config.data);
+    if (!pathResult.success || !configResult.success) {
+      throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Invalid Legacy configuration response', context.generation);
+    }
+    const mcp = Object.fromEntries(Object.entries(configResult.data.mcp)
+      .map(([name, entry]) => [name, parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, entry)]));
+    return stamped(context, { paths: pathResult.data, mcp });
+  };
+
   const getDefaultModel = async ({ directory, signal } = {}) => {
     const context = capture(directory);
     if (context.generation !== GENERATION.OC2) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Default model lookup requires OC2', context.generation);
@@ -703,7 +732,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
 
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
-    listCommands, getSelectionCatalog, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
+    listCommands, getSelectionCatalog, getLegacyConfiguration, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
     listPendingPermissions, listPendingQuestions, replyPermission, replyQuestion, rejectQuestion, getMessage, getMessageView, addSynthetic, switchSessionSelection,
   };
 };

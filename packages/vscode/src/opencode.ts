@@ -86,6 +86,7 @@ export interface OpenCodeManager {
   getOpenCodeAuthHeaders(): Record<string, string>;
   /** Environment passed to the current managed OpenCode process; absent for external kernels. */
   getManagedLaunchEnvironment(): NodeJS.ProcessEnv | null;
+  getNativeConfigContext(): { env: NodeJS.ProcessEnv; cwd: string } | null;
   getWorkingDirectory(): string;
   isCliAvailable(): boolean;
   getDebugInfo(): OpenCodeDebugInfo;
@@ -696,6 +697,8 @@ async function allocateManagedOpenCodePort(): Promise<number> {
 export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCodeManager {
   let server: ReturnType<typeof spawnManagedOpenCodeServer> | null = null;
   let serverEnv: NodeJS.ProcessEnv | null = null;
+  type ManagedServer = ReturnType<typeof spawnManagedOpenCodeServer>;
+  let nativeConfigContext: { env: NodeJS.ProcessEnv; cwd: string; server: ManagedServer; revision: number; prepared: PreparedConnection } | null = null;
   let startupAbort: AbortController | null = null;
   let lifecycleRevision = 0;
   let reapedOrphansOnce = false;
@@ -884,6 +887,8 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
       if (status === 'connected') return;
       throw new OpenCodeConnectionError('Owned process cleanup is unresolved', 409);
     }
+    nativeConfigContext = null;
+    const startRevision = lifecycleRevision;
     startCount += 1;
     setStatus('connecting');
     lastStartAt = Date.now();
@@ -970,6 +975,9 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
           version = ready.version;
           setStatus('connected');
           await kernelRuntime.refresh();
+          if (server && !server.closed && lifecycleRevision === startRevision && prepared.mode !== CONNECTION_MODE.COMMAND && serverEnv) {
+            nativeConfigContext = { env: serverEnv, cwd: serverCwd, server, revision: startRevision, prepared };
+          }
         } else {
           throw new Error('Server started but health check failed');
         }
@@ -1009,6 +1017,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
   }
 
   async function closeOwnedServer(): Promise<void> {
+    nativeConfigContext = null;
     if (!server) return;
     try {
       await server.close();
@@ -1067,6 +1076,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
 
   function restart(): Promise<void> {
     const revision = lifecycleRevision;
+    nativeConfigContext = null;
     return enqueueOperation(async () => {
       if (revision !== lifecycleRevision) return;
       lastStartAttempts = 1;
@@ -1125,6 +1135,11 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     },
     getOpenCodeAuthHeaders,
     getManagedLaunchEnvironment: () => (server ? serverEnv : null),
+    getNativeConfigContext: () => {
+      const current = nativeConfigContext;
+      if (!current || status !== 'connected' || transitionActive || current.server !== server || current.revision !== lifecycleRevision || current.server.closed || selectedConnection !== current.prepared) return null;
+      return { env: { ...current.env }, cwd: current.cwd };
+    },
     getWorkingDirectory: () => workingDirectory,
     isCliAvailable: () => !cliMissing || Boolean(cliPath || resolveOpencodeCliPath()),
     getDebugInfo: () => {

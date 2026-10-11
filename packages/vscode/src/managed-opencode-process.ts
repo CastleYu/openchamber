@@ -30,6 +30,8 @@ export function spawnManagedOpenCodeProcess(
   options.signal.throwIfAborted();
   const launch = resolveManagedLaunch(binary, args);
   const owned = spawnOwnedProcess(launch.binary, launch.args, { cwd: options.cwd, env: options.env, windowsVerbatimArguments: launch.windowsVerbatimArguments });
+  let exited = false;
+  void owned.closed.then(() => { exited = true; });
   const registration = registerManagedProcess({
     pid: owned.child.pid, ownerPid: process.pid, port: options.port, binary: options.sourceBinary, runtime: 'vscode',
   });
@@ -87,5 +89,5 @@ export function spawnManagedOpenCodeProcess(
     await close();
     throw error;
   });
-  return { get url() { return url; }, ready, close };
+  return { get url() { return url; }, get closed() { return exited; }, ready, close };
 }

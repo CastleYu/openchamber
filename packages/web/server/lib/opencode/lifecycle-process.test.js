@@ -10,7 +10,7 @@ const alive = (pid) => {
   try { process.kill(pid, 0); return true; } catch { return false; }
 };
 
-const createRuntime = (waitForReady, state, startupMs = 1500) => createOpenCodeLifecycleRuntime({
+const createRuntime = (waitForReady, state, startupMs = 1500, overrides = {}) => createOpenCodeLifecycleRuntime({
   state,
   env: { ENV_CONFIGURED_OPENCODE_PORT: 45678, ENV_CONFIGURED_OPENCODE_HOSTNAME: '127.0.0.1' },
   syncToHmrState() {}, syncFromHmrState() {},
@@ -27,6 +27,7 @@ const createRuntime = (waitForReady, state, startupMs = 1500) => createOpenCodeL
   setOpenCodePort() {}, setDetectedOpenCodeApiPrefix() {},
   waitForReady,
   managedStartupTimeoutMs: startupMs,
+  ...overrides,
 });
 
 describe('managed process lifecycle with real children', () => {
@@ -228,4 +229,56 @@ describe('confirmed restart with real owned children', () => {
       await fs.rm(root, { recursive: true, force: true });
     }
   }, 35_000);
+});
+
+describe('native configuration launch ownership', () => {
+  it.each(['path', 'configured', 'bundled'])('binds %s configuration to the ready owned process and actual launch environment', async (mode) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-native-config-'));
+    const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = path.join(root, 'registry');
+    await fs.writeFile(path.join(root, 'serve'), "process.stdout.write('opencode server listening on http://127.0.0.1:45678\\n');setInterval(()=>{},1000);");
+    const state = { openCodeWorkingDirectory: root, useWslForOpencode: false };
+    let revision = 1;
+    const env = { XDG_CONFIG_HOME: path.join(root, 'child-xdg'), OPENCODE_CONFIG: 'custom.json' };
+    let runtime;
+    runtime = createRuntime(async () => {
+      expect(runtime.getNativeConfigContext()).toBeNull();
+      return true;
+    }, state, 5000, {
+      getConnection: async () => ({ mode, binary: process.execPath }),
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
+      getManagedOpenCodeEnv: async () => env,
+    });
+    let server;
+    try {
+      expect(runtime.getNativeConfigContext()).toBeNull();
+      server = await runtime.startOpenCode();
+      const context = runtime.getNativeConfigContext();
+      expect(context.cwd).toBe(root);
+      expect(context.env.XDG_CONFIG_HOME).toBe(env.XDG_CONFIG_HOME);
+      expect(context.env.OPENCODE_CONFIG).toBe('custom.json');
+      context.env.XDG_CONFIG_HOME = 'caller-mutation';
+      env.XDG_CONFIG_HOME = 'provider-mutation';
+      expect(runtime.getNativeConfigContext().env.XDG_CONFIG_HOME).toBe(path.join(root, 'child-xdg'));
+      revision = 2;
+      expect(runtime.getNativeConfigContext()).toBeNull();
+      revision = 1;
+      state.isRestartingOpenCode = true;
+      expect(runtime.getNativeConfigContext()).toBeNull();
+      state.isRestartingOpenCode = false;
+      if (mode === 'path') {
+        process.kill(server.pid);
+        await expect.poll(() => runtime.getNativeConfigContext()).toBeNull();
+      } else {
+        const closing = server.close();
+        expect(runtime.getNativeConfigContext()).toBeNull();
+        await closing;
+      }
+    } finally {
+      await server?.close();
+      if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+      else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+      await fs.rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    }
+  }, 15000);
 });

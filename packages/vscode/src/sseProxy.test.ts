@@ -17,6 +17,7 @@ const createManager = (): OpenCodeManager => ({
   refreshKernelRuntime: async () => ({ generation: 'oc1', endpoint: 'http://127.0.0.1:3902', epoch: 1, version: '1.18.32' }),
   getOpenCodeAuthHeaders: () => ({}),
   getManagedLaunchEnvironment: () => null,
+  getNativeConfigContext: () => null,
   getWorkingDirectory: () => '/workspace',
   isCliAvailable: () => true,
   getDebugInfo: () => ({

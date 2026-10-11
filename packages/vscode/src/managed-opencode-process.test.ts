@@ -97,12 +97,37 @@ test('managed command preserves literal argv, cwd and child environment', async 
     assert.equal(process.env[key], parentValue);
     assert.equal(process.cwd(), parentCwd);
     assert.equal(server.url, 'http://127.0.0.1:45678');
+    assert.equal(server.closed, false);
     assert.ok(await fs.stat(path.join(registry, result.pid + '.json')));
     await Promise.all([server.close(), server.close()]);
+    assert.equal(server.closed, true);
     assert.equal(alive(result.pid), false);
     assert.deepEqual(await fs.readdir(registry), []);
   } finally {
     await server.close();
+    if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+    await fs.rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('managed process reports a natural exit after readiness', async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-natural-exit-'));
+  const registry = path.join(cwd, 'registry');
+  const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+  process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+  const server = spawnManagedOpenCodeProcess(process.execPath, ['-e', "process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setTimeout(() => process.exit(0), 30);"], {
+    cwd, env: process.env, port: 45678, timeoutMs: 3000,
+    signal: new AbortController().signal, sourceBinary: process.execPath, appBundleHint: '',
+  });
+  try {
+    await server.ready;
+    assert.equal(server.closed, false, 'readiness does not imply process exit');
+    for (let attempt = 0; attempt < 100 && !server.closed; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(server.closed, true, 'the handle follows the actual child close event');
+    assert.equal(server.url, 'http://127.0.0.1:45678');
+  } finally {
+    await server.close().catch(() => {});
     if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
     else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
     await fs.rm(cwd, { recursive: true, force: true });

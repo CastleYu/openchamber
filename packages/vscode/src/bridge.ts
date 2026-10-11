@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { createLegacySessionApi } from '../../web/server/lib/opencode/legacy-session-api.js';
+import { createKernelOperations } from '../../web/server/lib/opencode/kernel-operations.js';
+import { createLegacyMetadataStore } from '../../web/server/lib/openchamber-sessions/legacy-metadata-store.js';
 import * as vscode from 'vscode';
 import { CONNECTION_BRIDGE } from './connection-runtime.js';
 import { type OpenCodeManager } from './opencode';
@@ -69,6 +72,21 @@ const sessionStoreFor = (manager: OpenCodeManager | undefined): SessionStateStor
     sessionStores.set(manager, store);
   }
   return store;
+};
+
+const legacySessions = new WeakMap<OpenCodeManager, ReturnType<typeof createLegacySessionApi>>();
+const legacySessionFor = (manager: OpenCodeManager | undefined) => {
+  if (!manager) return undefined;
+  let api = legacySessions.get(manager);
+  if (!api) {
+    const metadataStore = createLegacyMetadataStore({ dataDir: getOpenChamberDataDir() });
+    const getStorageScope = () => manager.getDebugInfo().mode === 'external' ? `external:${manager.getKernelRuntime().endpoint}` : 'managed';
+    const operations = createKernelOperations({ getRuntime: () => manager.getKernelRuntime(),
+      getHeaders: () => manager.getOpenCodeAuthHeaders(), legacyMetadataStore: metadataStore, getStorageScope });
+    api = createLegacySessionApi({ getRuntime: () => manager.getKernelRuntime(), operations, metadataStore, getStorageScope });
+    legacySessions.set(manager, api);
+  }
+  return api;
 };
 
 const UPDATE_CHECK_URL = process.env.OPENCHAMBER_UPDATE_API_URL || 'https://api.openchamber.dev/v1/update/check';
@@ -166,6 +184,7 @@ export async function handleBridgeMessage(message: BridgeRequest, ctx?: BridgeCo
       {
         tryHandleLocalFsProxy,
         sessionState: sessionStoreFor(ctx?.manager),
+        legacySessions: legacySessionFor(ctx?.manager),
         buildUnavailableApiResponse,
         sanitizeForwardHeaders,
         collectHeaders,

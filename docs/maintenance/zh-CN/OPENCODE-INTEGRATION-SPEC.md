@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-SPEC.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，下一实施批次为 R2 / INT-03。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。验收范围及剩余工作见[里程碑](OPENCODE-INTEGRATION-MILESTONES.md)和[执行检查点](CAGENT-EXECUTION.md)。
+状态：执行中，2026-10-12。最小 CAgent 架构／工具包预览已发布。R1 / INT-01 和 INT-02 于 2026-10-11 通过验收，R2 / INT-03 正在进行。Web 对话证据与 VS Code 桥接实现检查点见里程碑；真实 IDE 及其余跨宿主验收仍未完成。证据及源码、运行时范围限制见 `artifacts/int02-r1-exit.json`。验收范围及剩余工作见[里程碑](OPENCODE-INTEGRATION-MILESTONES.md)和[执行检查点](CAGENT-EXECUTION.md)。
 源基线：`codex/personal` 提交 `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`，工作区版本 `2.0.4`，DIJIANG `4.0`。
 
 ## 范围与文档归属

@@ -1,6 +1,6 @@
 # Agent integration milestone specification
 
-Status: executing, 2026-10-11. The minimum CAgent architecture/kit preview is published. R1 / INT-01 and INT-02 are accepted on 2026-10-11. The next implementation batch is R2 / INT-03. Evidence and its source/runtime limits are recorded in `artifacts/int02-r1-exit.json`. Acceptance scope and remaining work are recorded in the [milestones](OPENCODE-INTEGRATION-MILESTONES.md) and [execution checkpoint](CAGENT-EXECUTION.md).
+Status: executing, 2026-10-12. The minimum CAgent architecture/kit preview is published. R1 / INT-01 and INT-02 are accepted on 2026-10-11. R2 / INT-03 is in progress. Its Web conversation evidence and VS Code bridge implementation checkpoint are recorded in the milestones; actual IDE and remaining cross-host acceptance are still open. Evidence and its source/runtime limits are recorded in `artifacts/int02-r1-exit.json`. Acceptance scope and remaining work are recorded in the [milestones](OPENCODE-INTEGRATION-MILESTONES.md) and [execution checkpoint](CAGENT-EXECUTION.md).
 Source baseline: `codex/personal` commit `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`, workspace version `2.0.4`, DIJIANG `4.0`.
 
 ## Scope and document ownership

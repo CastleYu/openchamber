@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-11。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余消费者迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收（artifacts/int02-r1-exit.json）。R2 / INT-03 仍未验收。在源码 055c46c8e 上，实际鉴权 Web UI 配合官方精确 1.2.27 程序及本地受控模型，通过自动／手动选择、文本、文本附件、流式工具、权限／问题响应、停止及历史重开。证据与限制见 artifacts/int03-browser-acceptance.json。既有六个 VS Code 契约文件通过 23 项测试，但 IDE 仍拒绝 Legacy 请求，需要接入对话桥。Relay 及其余适用的 R2 跨宿主／当前配置检查仍未完成。此前实现检查通过 169 项宿主测试、54 项隔离 UI 契约、工作区类型／lint 及 Web 构建（artifacts/int03-conversation-http-checkpoint.json）。[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
+状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余消费者迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收（artifacts/int02-r1-exit.json）。R2 / INT-03 仍未验收。在源码 055c46c8e 上，实际鉴权 Web UI 配合官方精确 1.2.27 程序及本地受控模型，通过自动／手动选择、文本、文本附件、流式工具、权限／问题响应、停止及历史重开。证据与限制见 artifacts/int03-browser-acceptance.json。VS Code 对话桥现已允许精确版本的有限操作集，并复用 Web 会话转换／元数据所有权。六个隔离桥接契约文件通过 28 项测试，新增的回环／原生 Node 集成文件通过 8 项。工作区类型／lint、Web／VS Code 构建及最终扩展构建通过。最终新增代码 anti-slop 检查没有新增诊断；13 项既存代理诊断和未变化的死代码基线均有记录。证据：artifacts/int03-vscode-bridge-checkpoint.json。真实 IDE 对话仍未验收。Relay 及其余适用的 R2 跨宿主／当前配置检查仍未完成。此前实现检查通过 169 项宿主测试、54 项隔离 UI 契约、工作区类型／lint 及 Web 构建（artifacts/int03-conversation-http-checkpoint.json）。[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 

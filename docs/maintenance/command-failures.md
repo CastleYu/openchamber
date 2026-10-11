@@ -176,3 +176,13 @@ Node --test could not resolve extensionless imports in four TypeScript VS Code s
 ### 2026-10-11: fixture cleanup junctions
 
 Initial cleanup correctly refused six Bun cache junctions. Verified every junction and target remained within its named task-owned fixture root, removed only the links with Directory.Delete(path, false), rechecked for reparse points, then deleted the two exited roots. Process and port absence were checked before deletion.
+
+### 2026-10-12: inspection checkout and paths
+
+A search guessed a nonexistent UI legacy/sessions.ts path. Enumerate existing adapter files with rg --files before reading. Two check-log reads used the cdee helper checkout instead of the dijiang-next execution checkout. The actual checks completed successfully; use explicit execution-root paths for logs. A literal helper edit stopped on CRLF versus LF after three completed replacements. Normalized line endings and made the remaining replacements resumable before continuing. These inspection/helper failures do not establish product failures.
+
+The resumed helper matched an already extended parameter prefix and duplicated onHeldClose, producing a test parse error. Removed that duplicate and reran the reviewed tests. Do not resume substring replacements whose replacement contains their original anchor.
+
+The strengthened abort case confirmed that Bun settles the bridge request with 502 but does not emit upstream socket close within the five-second test. Added a native Node runtime check for VS Code socket cancellation instead of treating Bun socket behavior as product evidence.
+
+A declaration-file read also guessed legacy-session-http.d.ts, which does not exist. Use the new legacy-session-api.d.ts and enumerate declarations before future reads.

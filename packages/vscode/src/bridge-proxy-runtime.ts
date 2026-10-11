@@ -11,6 +11,8 @@ import {
 import { resolveKernelRequest } from './kernelRequest';
 import { QUEUE_TARGET } from '../../web/server/lib/opencode/queue-target.js';
 import { z } from 'zod';
+import { OPENCODE_PROFILE, type OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
+import type { createLegacySessionApi } from '../../web/server/lib/opencode/legacy-session-api.js';
 import type { OpenCodeManager } from './opencode';
 import { isSessionRecordPath, overlaySessionResponseBody, parseJson, type SessionStateStore } from './openchamberSessionState';
 
@@ -79,7 +81,8 @@ const collectProxyResponseHeaders = (headers: Headers, deps: Pick<ProxyRuntimeDe
 const isSseProxyPath = (requestPath: string): boolean => {
   try {
     const parsed = new URL(requestPath, 'https://openchamber.invalid');
-    return parsed.pathname === '/event' || parsed.pathname === '/global/event';
+    const pathname = parsed.pathname.replace(/^\/api(?=\/|$)/, '');
+    return pathname === '/event' || pathname === '/global/event';
   } catch {
     return requestPath === '/event' || requestPath === '/global/event';
   }
@@ -98,6 +101,7 @@ const isAgentProxyPath = (requestPath: string): boolean => {
 type ProxyRuntimeDeps = {
   tryHandleLocalFsProxy: (method: string, requestPath: string) => Promise<ApiProxyResponsePayload | null>;
   sessionState?: Pick<SessionStateStore, 'readArchived' | 'readMetadata'>;
+  legacySessions?: ReturnType<typeof createLegacySessionApi>;
   buildUnavailableApiResponse: () => ApiProxyResponsePayload;
   sanitizeForwardHeaders: (input: Record<string, string> | undefined) => Record<string, string>;
   collectHeaders: (headers: Headers) => Record<string, string>;
@@ -105,17 +109,23 @@ type ProxyRuntimeDeps = {
 };
 
 const overlayOwnedSessionState = async (
-  generation: string,
+  identity: OpenCodeGenerationDescriptor,
   method: string,
   requestPath: string,
   data: ApiProxyResponsePayload,
   sessionState: ProxyRuntimeDeps['sessionState'],
+  legacySessions: ProxyRuntimeDeps['legacySessions'],
 ): Promise<ApiProxyResponsePayload> => {
-  if (generation !== 'oc2' || !sessionState || method !== 'GET' || data.status !== 200 || !data.bodyText) return data;
-  const pathname = new URL(requestPath, 'https://openchamber.invalid').pathname;
-  if (!isSessionRecordPath(pathname)) return data;
+  if (method !== 'GET' || data.status !== 200 || !data.bodyText) return data;
+  const pathname = new URL(requestPath, 'https://openchamber.invalid').pathname.replace(/^\/api(?=\/|$)/, '');
+  if (!isSessionRecordPath(pathname) && pathname !== '/experimental/session') return data;
   const body = parseJson(data.bodyText);
   if (body === null) return data;
+  if (identity.profile === OPENCODE_PROFILE.LEGACY) {
+    if (!legacySessions) throw new Error('Legacy session state is unavailable');
+    return { ...data, bodyText: JSON.stringify(await legacySessions.overlay(body, identity)) };
+  }
+  if (identity.generation !== 'oc2' || !sessionState) return data;
   const [archived, metadata] = await Promise.all([sessionState.readArchived(), sessionState.readMetadata()]);
   return { ...data, bodyText: JSON.stringify(overlaySessionResponseBody(body, archived, metadata)) };
 };
@@ -258,7 +268,29 @@ export async function handleProxyBridgeMessage(
       }
 
       if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
-      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      const parsedPath = new URL(normalizedPath, 'https://openchamber.invalid');
+      const route = parsedPath.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+      if (deps.legacySessions?.accepts(normalizedMethod, route)) {
+        const selected = await resolveKernelRequest(ctx.manager, '/session');
+        const forwarded = new Headers(deps.sanitizeForwardHeaders(headers));
+        const queueFailure = await checkQueueTarget(ctx.manager, forwarded);
+        selected.assertCurrent();
+        if (queueFailure) return { id, type, success: true, data: queueFailure };
+        const controller = new AbortController();
+        proxyAbortControllers.set(id, controller);
+        try {
+          const query: { [key: string]: string | string[] } = {};
+          for (const [key, value] of parsedPath.searchParams) {
+            const previous = query[key];
+            query[key] = previous === undefined ? value : Array.isArray(previous) ? [...previous, value] : [previous, value];
+          }
+          const body = bodyBase64 ? parseJson(Buffer.from(bodyBase64, 'base64').toString('utf8')) : {};
+          const reply = await deps.legacySessions.request({ method: normalizedMethod, route, body, query,
+            directory: forwarded.get('x-opencode-directory') ?? undefined, signal: controller.signal });
+          return { id, type, success: true, data: { status: reply.status, headers: { 'content-type': 'application/json' }, bodyText: JSON.stringify(reply.body) } };
+        } finally { proxyAbortControllers.delete(id); }
+      }
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath, normalizedMethod);
       const targetUrl = selected.url;
       const forwardedHeaders = new Headers(deps.sanitizeForwardHeaders(headers));
       const queueFailure = await checkQueueTarget(ctx.manager, forwardedHeaders);
@@ -286,8 +318,8 @@ export async function handleProxyBridgeMessage(
         if (existing) {
           const shared = await existing;
           selected.assertCurrent();
-          const data = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath,
-            { ...shared, headers: { ...shared.headers } }, deps.sessionState);
+          const data = await overlayOwnedSessionState(selected.descriptor, normalizedMethod, normalizedPath,
+            { ...shared, headers: { ...shared.headers } }, deps.sessionState, deps.legacySessions);
           selected.assertCurrent();
           return { id, type, success: true, data };
         }
@@ -299,7 +331,7 @@ export async function handleProxyBridgeMessage(
         );
         const data = await pending;
         selected.assertCurrent();
-        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        const projected = await overlayOwnedSessionState(selected.descriptor, normalizedMethod, normalizedPath, data, deps.sessionState, deps.legacySessions);
         selected.assertCurrent();
         return { id, type, success: true, data: projected };
       }
@@ -317,7 +349,7 @@ export async function handleProxyBridgeMessage(
           deps,
         );
         selected.assertCurrent();
-        const projected = await overlayOwnedSessionState(selected.descriptor.generation, normalizedMethod, normalizedPath, data, deps.sessionState);
+        const projected = await overlayOwnedSessionState(selected.descriptor, normalizedMethod, normalizedPath, data, deps.sessionState, deps.legacySessions);
         selected.assertCurrent();
         return { id, type, success: true, data: projected };
       } finally {
@@ -351,7 +383,7 @@ export async function handleProxyBridgeMessage(
       }
 
       if (!ctx?.manager) return { id, type, success: true, data: deps.buildUnavailableApiResponse() };
-      const selected = await resolveKernelRequest(ctx.manager, normalizedPath);
+      const selected = await resolveKernelRequest(ctx.manager, normalizedPath, 'POST');
       if (selected.descriptor.generation !== 'oc1') {
         return { id, type, success: false, error: 'Legacy message forwarding requires OpenCode 1' };
       }

@@ -96,7 +96,8 @@ The webview build emits each worker as one self-contained file. VS Code webviews
   - Proxy route handlers (`api:proxy`, `api:session:message`) with injected helper dependencies.
   - SSE routes are intentionally excluded from the generic proxy and use `sseProxy.ts`, whose upstream-only stall watchdog closes a quiet OpenCode stream so the webview can reconnect instead of trusting an open but silent response.
   - The webview allocates each SSE stream ID and installs its listener before requesting the upstream stream, so immediate OpenCode replay events cannot race the bridge start response.
-  - OC2 session GET responses overlay OpenChamber archive and pending metadata from the same scoped stores as the web server. OC1 responses pass through. A store read failure rejects the overlay rather than publishing an empty session state.
+  - OC2 session GET responses overlay OpenChamber archive and pending metadata from the same scoped stores as the web server. Current OC1 responses pass through. Exact Legacy 1.2.27 create/update and session metadata reads reuse `legacy-session-api.js` with the kernel operation owner and its isolated metadata store. The generic proxy admits only the shared finite Legacy method/path set; SSE stays on its dedicated bridge. Captured generation, profile, endpoint, version, epoch and storage scope retire stale results. A store read failure rejects the overlay rather than publishing an empty session state.
+  - `bridge-legacy-session.test.js` covers real loopback HTTP/SSE, request fidelity, metadata round-trip, malformed requests, unsupported operations, owner changes and abort. Its native Node subprocess also checks upstream socket closure. These fixtures do not establish a real IDE conversation; R2 retains that gate.
 
 - `bridge-config-runtime.ts`
   - Config and skills message handlers (`api:config/*`).

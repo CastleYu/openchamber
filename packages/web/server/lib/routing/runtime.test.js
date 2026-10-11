@@ -138,6 +138,71 @@ describe('OC2 session routing', () => {
 });
 
 describe('OC2 classification policy', () => {
+  it('rejects a classifier endpoint when its runtime retires during credential reads', async () => {
+    let identity = { generation: 'oc2', endpoint: 'http://oc2', epoch: 1 };
+    let release;
+    const token = new Promise((resolve) => { release = resolve; });
+    const runtime = createRoutingRuntime({
+      kernelOperations: { captureIdentity: () => identity },
+      store: {
+        readToken: () => token,
+        readClassifierSource: async () => 'typesafe',
+        readCustomEndpoint: async () => null,
+      },
+      readProviderKeys: async () => ({}),
+    });
+    const pending = runtime.classifierEndpoint();
+    identity = { ...identity, epoch: 2 };
+    release('fixture-token');
+    await expect(pending).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('exposes the selected usable endpoint and returns null when classification is off', async () => {
+    const runtime = createRoutingRuntime({
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }) },
+      store: {
+        readToken: async () => 'typesafe-secret',
+        readClassifierSource: async () => 'typesafe',
+        readCustomEndpoint: async () => null,
+      },
+      readProviderKeys: async () => ({}),
+    });
+    await expect(runtime.classifierEndpoint()).resolves.toEqual({
+      url: expect.any(String), model: expect.any(String),
+      headers: { authorization: 'Bearer typesafe-secret' },
+    });
+
+    const disabled = createRoutingRuntime({
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }) },
+      store: {
+        readToken: async () => 'typesafe-secret',
+        readClassifierSource: async () => 'off',
+        readCustomEndpoint: async () => null,
+      },
+      readProviderKeys: async () => ({}),
+    });
+    await expect(disabled.classifierEndpoint()).resolves.toBeNull();
+  });
+
+  it('returns null for OC1 and applies enterprise pinned-source policy for OC2', async () => {
+    const oc1 = createRoutingRuntime({ store: {} });
+    await expect(oc1.classifierEndpoint()).resolves.toBeNull();
+
+    const pinned = { url: 'https://classifier.example/v1/chat/completions', model: 'pinned-model' };
+    const oc2 = createRoutingRuntime({
+      kernelOperations: { captureIdentity: () => ({ generation: 'oc2', endpoint: 'http://oc2', epoch: 1 }) },
+      store: {
+        readToken: async () => null,
+        readClassifierSource: async () => 'custom',
+        readCustomEndpoint: async () => null,
+      },
+      enterpriseMode: () => true,
+      readPinnedEndpoint: () => pinned,
+      readProviderKeys: async () => ({}),
+    });
+    await expect(oc2.classifierEndpoint()).resolves.toEqual({ url: pinned.url, model: pinned.model, headers: {} });
+  });
+
   it('keeps Jev off until a provider is explicitly selected, even when keys exist', () => {
     const state = resolveClassifier({ selected: null, typesafeKey: 'saved', zenKey: 'saved', zenPromotionActive: true });
     expect(state.selected).toBe('off');

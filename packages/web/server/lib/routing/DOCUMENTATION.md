@@ -32,7 +32,11 @@ For OC1, `OPENCHAMBER_ROUTING_ENABLE` (`feature-flag.js`, read per call) gates t
   tool payloads), each user message cut to its head and each answer to head
   plus tail. The new request is never cut.
 - `runtime.js` — `createRoutingRuntime`: `describe`, `resolvePromptBody`,
-  `evaluatePermission`, config and token writes, event broadcasts.
+  `evaluatePermission`, `classifierEndpoint` (OC2's selected usable endpoint,
+  or `null` for OC1/Off), config and token writes, event broadcasts. Endpoint
+  access uses the same source selection and enterprise pinned-endpoint policy
+  as routing, and rejects a result if the OpenCode runtime changes while keys
+  are being read.
 
 The dual-kernel runtime also exposes `noteModelSelection`, `isAutoSession`,
 `resolveAutoSelection`, and `routeSend` for OC2. The OC2 sentinel is held in

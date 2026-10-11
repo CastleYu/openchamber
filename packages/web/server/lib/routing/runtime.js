@@ -122,6 +122,14 @@ export function createRoutingRuntime({
     return { typesafeKey, classification, endpoint, customEndpoint, pinned: Boolean(pinned) };
   };
 
+  const getClassifierEndpoint = async () => {
+    const identity = currentIdentity();
+    if (identity?.generation !== 'oc2') return null;
+    const access = await resolveAccess();
+    assertIdentity(identity);
+    return access.endpoint;
+  };
+
   /** What the client needs to decide whether to offer Auto and what the settings page shows. */
   const describe = async () => {
     const current = generation() === 'oc2';
@@ -460,7 +468,7 @@ export function createRoutingRuntime({
     return held;
   };
 
-  return { generation, describe, resolvePromptBody, noteModelSelection, isAutoSession, resolveAutoSelection, routeSend,
+  return { generation, describe, classifierEndpoint: getClassifierEndpoint, resolvePromptBody, noteModelSelection, isAutoSession, resolveAutoSelection, routeSend,
     evaluatePermission, forgetPermission, heldPermissions, updateConfig, setToken, clearToken,
     legacySafetyNetEnabled, setClassifierSource, setCustomEndpoint, clearCustomEndpoint };
 }

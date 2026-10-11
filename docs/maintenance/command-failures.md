@@ -186,3 +186,21 @@ The resumed helper matched an already extended parameter prefix and duplicated o
 The strengthened abort case confirmed that Bun settles the bridge request with 502 but does not emit upstream socket close within the five-second test. Added a native Node runtime check for VS Code socket cancellation instead of treating Bun socket behavior as product evidence.
 
 A declaration-file read also guessed legacy-session-http.d.ts, which does not exist. Use the new legacy-session-api.d.ts and enumerate declarations before future reads.
+
+### 2026-10-12: native Legacy fixture selectors
+
+A positional ChatInput* wildcard and a guessed src/locales directory failed during inspection. Enumerate with rg --files and pass -g to an existing directory. The first real VS Code journey reached the permission card after successful text and attachment turns, but its exact Allow once button matcher missed the rendered Allow Once plus shortcut text. Match the observed case-insensitive label prefix. This locator timeout is not a product failure; retain its failed evidence separately before rerunning.
+
+The second native journey completed permission, question and stop checks. Its deliberate unsupported fork probe rejected fetch with the explicit Legacy admission error rather than returning an HTTP Response. Assert that named bridge refusal as an accepted outcome; unrelated fetch failures still fail the probe.
+
+Calling location.reload inside the VS Code test webview produced no second test result and the fixture reached its 240-second deadline. The IDE and upstream were observed live before waiting on the same process to finish. Replace that fixture navigation with actual panel disposal and provider.createOrShow(sessionID), then verify a fresh production webview restores history and sends another turn.
+
+### 2026-10-12: R2 current-profile and Relay fixtures
+
+The current-profile fixtures initially omitted confirmed external settings; production startup correctly refused them. Persist the isolated confirmed external record before composing the host. Current OC1 1.18.33 uses profile oc1, not the exact Legacy profile. A Node fixture initially checked exitCode only after kill; signalCode also establishes terminal completion, and independent process inspection confirmed absence. Its first failed shutdown also emitted UV_HANDLE_CLOSING; subsequent successful runs did not reproduce it.
+
+Resolve ws from the owning Web package and esbuild from the existing VS Code dependency. Windows generated/dynamic ESM imports need file URLs; a resolved CommonJS ws index supplies its default export. The local Layer-1 broker must assign a connection ID for the production client; the old scripted fixture supplied its own. The first handshake deadline ended that fixture before retry. Legacy SDK calls through the Web/Relay host require its /api base prefix; a root /session path was correctly refused by the tunnel allowlist. None required a dependency or transport change.
+
+A guessed managed-config-v2.js path did not exist; use enumerated managed-config-file.js and config-v2.js. The document-context inspection also included nonexistent .codex/root DEV-PLAN paths; the real plan is docs/maintenance/DEV-PLAN.md. A sandbox process-use inventory returned access denied; the same targeted read succeeded with escalation before cleanup. The routing focused Vitest first hit esbuild spawn EPERM in the sandbox; its exact targeted escalation passed. An agent initially guessed session-work/index.js; consumers are in server/index.js and session-work/runtime.js.
+
+- 2026-10-12 context recheck: a timestamp read assumed DEV-PLAN.md was at the checkout root and returned path-not-found. Discovery with rg --files confirmed docs/maintenance/DEV-PLAN.md. Subsequent reads used the discovered path.

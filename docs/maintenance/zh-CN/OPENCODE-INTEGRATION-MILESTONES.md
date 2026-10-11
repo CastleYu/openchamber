@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余消费者迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收（artifacts/int02-r1-exit.json）。R2 / INT-03 仍未验收。在源码 055c46c8e 上，实际鉴权 Web UI 配合官方精确 1.2.27 程序及本地受控模型，通过自动／手动选择、文本、文本附件、流式工具、权限／问题响应、停止及历史重开。证据与限制见 artifacts/int03-browser-acceptance.json。VS Code 对话桥现已允许精确版本的有限操作集，并复用 Web 会话转换／元数据所有权。六个隔离桥接契约文件通过 28 项测试，新增的回环／原生 Node 集成文件通过 8 项。工作区类型／lint、Web／VS Code 构建及最终扩展构建通过。最终新增代码 anti-slop 检查没有新增诊断；13 项既存代理诊断和未变化的死代码基线均有记录。证据：artifacts/int03-vscode-bridge-checkpoint.json。真实 IDE 对话仍未验收。Relay 及其余适用的 R2 跨宿主／当前配置检查仍未完成。此前实现检查通过 169 项宿主测试、54 项隔离 UI 契约、工作区类型／lint 及 Web 构建（artifacts/int03-conversation-http-checkpoint.json）。[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
+状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已通过精确 Legacy Web、实际 VS Code 对话、经本地 broker 的生产 E2EE Relay，以及当前 OC1 1.18.33／OC2 2.0.20 真实核心回归验收。OC2 验证发现分类器端点访问方法缺失；修复复用现有来源策略，并拒绝已退役的运行时身份。最终专项检查通过 81 项测试、Web 类型／lint、语法和新增代码 anti-slop；死代码基线不变。证据、源码指纹及清理见 artifacts/int03-r2-exit.json。Legacy 在 R3/R4 和最终宿主验收前仍为实验支持。本地 Relay 结果不覆盖公网 Relay／WAN、打包后的原生宿主及真机移动端。下一轮为 R3。[执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
@@ -28,7 +28,7 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | INT-00L | Legacy 预检，不升版本 | 精确 1.2.27 身份、协议契约及隔离运行证据 | INT-00, CA-02 Release | done；[源码及程序证据](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | 感知兼容配置的门面、描述符、自动／手动选择与能力分派 | INT-00, CA-02 Release | done |
 | INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | done |
-| INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | in progress |
+| INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | done |
 | INT-04 | 5.6 | Legacy 高级操作与重连恢复 | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy 设置、凭据、插件／MCP 与无人值守操作 | INT-04, CA-02 Release | planned |
 | INT-06 | 5.8 | 当前 OC1/OC2 释放实例、应用配置及外部／托管服务器重载 | INT-02, CA-02 Release | planned |
@@ -56,7 +56,7 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | R6 | CA-01 / CA-02 剩余部分及 INT-10 契约工作 | 使用受保护的稀疏／扩展示例补齐消费者迁移及跨宿主后端切换缺口。验证功能拒绝、宿主守卫、过期结果退休及离线工具包可复现性。真实 CAgent 映射与模型校准保留在 CA-03 环境内门槛。 |
 | R7 | INT-10 发布验收 | 对冻结候选版本运行集成回归及可执行的真实宿主流程，构建分发产物，验证启动／核心流程，仅在独立分支发布有证据支持的范围。需要尚不可用 CA-03 证据的兼容声明继续排除，或使完整发布门槛保持未完成。 |
 
-R1 已通过验收，R2 为下一实现批次。单个 API、组件、测试文件或文档修改完成不作为结束轮次的理由。仅在真实依赖、运行时／环境不可用、额度限制，或仓库要求的实现与集成／发布阶段边界拆分。拆分前记录已完成证据与准确续接范围，所属轮次在验收通过前保持进行中。额度检查或上下文交接本身不推进里程碑状态。
+R1 和 R2 已通过验收，R3 为下一实现批次。单个 API、组件、测试文件或文档修改完成不作为结束轮次的理由。仅在真实依赖、运行时／环境不可用、额度限制，或仓库要求的实现与集成／发布阶段边界拆分。拆分前记录已完成证据与准确续接范围，所属轮次在验收通过前保持进行中。额度检查或上下文交接本身不推进里程碑状态。
 
 ## 完成契约
 

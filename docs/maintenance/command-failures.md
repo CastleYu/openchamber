@@ -278,3 +278,12 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
 - A targeted read guessed packages/vscode/webview/VSCodeApp.tsx and failed because that path does not exist. Discover the owning app with rg --files before reading; no source changed.
 
 - R3 native recovery FCun7x still failed after reconnect ordering was corrected. Astra consultation and source inspection identified server.connected bootstrap replacing busy with an empty status map without interruption reconciliation. The final correction reuses successful status coverage and reconciles on each OC1 recovery commit. Two newly added ordering regressions failed before the correction and passed after it. Final actual-host evidence: artifacts/int04-bootstrap-settle-native-evidence.json.
+
+- 2026-10-12: A read-only search guessed packages/web/server/lib/opencode/kernel-policy.js, which does not exist, and rg returned os error 2. No source changed. Locate policy ownership with rg --files and the existing compatibility/legacy-contract modules before future reads.
+- 2026-10-12: Two reads attempted the OC2 evidence file while its confirmed runner was still live, before the report existed. Use the live session handle and log until termination, then inspect its report. No runner was restarted on the basis of the missing report.
+- 2026-10-12: OC2 recovery probe falsely required the final history record to be an assistant. Read-only inspection of its isolated database proved the explicit user turn and completed assistant, followed by OC2's persisted idle record. Corrected the probe to require the completed assistant after the specific new user record and exact completion text. Product source was unchanged. Preserve the failed report and diagnostic separately before rerunning.
+
+﻿- Runner attempt failed before producing usable results: Windows PowerShell treated Bun stderr as NativeCommandError under ErrorActionPreference=Stop. No source files were edited; rerunning with redirected Process streams.
+- Test runs exited 1 for all four files: Bun reported EPERM reading the actual repo at C:\Users\74756\.codex\worktrees\dijiang-next\openchamber (test file, repo root, and tsconfig paths). This is an environment sandbox access failure; no tests could execute. Results/logs were saved, and tests were not retried.
+
+- 2026-10-12: Two evidence/log reads used the wrong worktree-relative artifacts directory. Product evidence belongs to dijiang-next; driver logs belong to cdee. Use explicit absolute roots for mixed-worktree reads. No test or product source was affected.

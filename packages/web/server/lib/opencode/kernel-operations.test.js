@@ -598,18 +598,117 @@ describe('server kernel operations', () => {
 });
 
 describe('Legacy operation acceptance boundary', () => {
-  it('refuses reads and mutations before client headers, transport or session preparation', async () => {
-    let calls = 0;
+  it('refuses mutations and default-model lookup before headers, transport or preparation', async () => {
+    let headerCalls = 0;
+    let transportCalls = 0;
+    let preparationCalls = 0;
     const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc1', 'http://fixture.test'), profile: 'legacy-1.2.27' }),
-      getHeaders: () => { calls += 1; return {}; },
-      fetchImpl: async () => { calls += 1; return Response.json({}); },
-      prepareSession: async () => { calls += 1; },
+      getHeaders: () => { headerCalls += 1; return {}; },
+      fetchImpl: async () => { transportCalls += 1; return Response.json({}); },
+      prepareSession: async () => { preparationCalls += 1; },
     });
-    await expect(ops.listSessions()).rejects.toMatchObject({ code: 'unsupported-operation', profile: 'legacy-1.2.27' });
-    await expect(ops.createSession({ directory: 'C:/work' })).rejects.toMatchObject({ code: 'unsupported-operation' });
-    await expect(ops.updateSession({ sessionID: 'ses_1', title: 'blocked' })).rejects.toMatchObject({ code: 'unsupported-operation' });
-    expect(() => ops.captureIdentity()).toThrow('legacy-1.2.27');
-    expect(calls).toBe(0);
+    expect(ops.captureIdentity()).toMatchObject({ generation: 'oc1', profile: 'legacy-1.2.27' });
+    const identityHeaderCalls = headerCalls;
+    const denied = [
+      () => ops.createSession({ directory: 'C:/work' }),
+      () => ops.updateSession({ sessionID: 'ses_1', title: 'blocked' }),
+      () => ops.forkSession({ sessionID: 'ses_1' }),
+      () => ops.removeSession({ sessionID: 'ses_1' }),
+      () => ops.replyPermission({ requestID: 'perm_1', sessionID: 'ses_1' }),
+      () => ops.sendPrompt({ sessionID: 'ses_1', request: { generation: 'oc1', profile: 'legacy-1.2.27',
+        endpoint: 'http://fixture.test', epoch: 1, body: { parts: [] } } }),
+      () => ops.sendCommand({ sessionID: 'ses_1', request: { generation: 'oc1', profile: 'legacy-1.2.27',
+        endpoint: 'http://fixture.test', epoch: 1, body: { command: 'review' } } }),
+      () => ops.interruptSession({ sessionID: 'ses_1' }),
+      () => ops.addSynthetic({ sessionID: 'ses_1', text: 'blocked' }),
+      () => ops.switchSessionSelection({ sessionID: 'ses_1', agent: 'build' }),
+      () => ops.importSession({ chat: {} }),
+      () => ops.getDefaultModel(),
+    ];
+    for (const call of denied) await expect(call()).rejects.toMatchObject({ code: 'unsupported-operation' });
+    expect(headerCalls).toBe(identityHeaderCalls);
+    expect(transportCalls).toBe(0);
+    expect(preparationCalls).toBe(0);
+  });
+
+  it('serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity', async () => {
+    const requests = [];
+    const message = { info: { id: 'msg_1', role: 'assistant', mode: 'build', variant: 'fast' },
+      parts: [{ type: 'text', text: 'legacy ' }, { type: 'text', text: 'history' }] };
+    const child = { ...oc1Session, id: 'ses_child', parentID: 'ses_1' };
+    const endpoint = await serve(({ path: route }) => {
+      if (route === '/session') return { body: [oc1Session] };
+      if (route === '/session/ses_1') return { body: oc1Session };
+      if (route === '/session/ses_1/message') return { body: [message], headers: { 'x-next-cursor': '20' } };
+      if (route === '/session/ses_1/message/msg_1') return { body: message };
+      if (route === '/session/ses_1/children') return { body: [child] };
+      if (route === '/session/status') return { body: { ses_1: { type: 'busy' } } };
+      if (route === '/permission') return { body: [{ id: 'perm_1', sessionID: 'ses_1', permission: 'bash' }] };
+      if (route === '/question') return { body: [{ id: 'question_1', sessionID: 'ses_1', questions: [{ text: 'continue?' }] }] };
+      if (route === '/command') return { body: [{ name: 'review', template: 'review $ARGUMENTS' }] };
+      if (route === '/config/providers') return { body: { providers: [{ id: 'openai', models: { m: { id: 'm' } } }] } };
+      if (route === '/agent') return { body: [{ name: 'build', mode: 'primary' }] };
+      if (route === '/config') return { body: { default_agent: 'build', model: 'openai/m' } };
+      return { status: 404, body: { error: 'missing' } };
+    }, requests);
+    const ops = createKernelOperations({ getRuntime: () => ({ ...runtime('oc1', endpoint),
+      version: '1.2.27', profile: 'legacy-1.2.27' }), getHeaders: () => ({ authorization: 'Basic fixture' }) });
+    const identity = ops.captureIdentity();
+
+    await expect(ops.listSessions({ directory: 'C:/work ü', limit: 25, cursor: 10, search: 'one' }))
+      .resolves.toMatchObject({ profile: 'legacy-1.2.27', data: { items: [{ id: 'ses_1', directory: 'C:/work' }] } });
+    await expect(ops.getSession({ sessionID: 'ses_1', directory: 'C:/work ü' }))
+      .resolves.toMatchObject({ data: { id: 'ses_1', directory: 'C:/work' } });
+    await expect(ops.listMessages({ sessionID: 'ses_1', directory: 'C:/work ü', cursor: 'before_1', limit: 30 }))
+      .resolves.toMatchObject({ data: { items: [{ id: 'msg_1', text: 'legacy history', textParts: ['legacy ', 'history'], agent: 'build', variant: 'fast' }], cursor: { next: '20' } } });
+    await expect(ops.getMessageView({ sessionID: 'ses_1', messageID: 'msg_1', directory: 'C:/work ü' }))
+      .resolves.toMatchObject({ data: { id: 'msg_1', text: 'legacy history', textParts: ['legacy ', 'history'] } });
+    await expect(ops.listChildren({ sessionID: 'ses_1', directory: 'C:/work ü' }))
+      .resolves.toMatchObject({ data: [{ id: 'ses_child', parentID: 'ses_1' }] });
+    await expect(ops.getSessionStatus({ sessionID: 'ses_1', directory: 'C:/work ü' })).resolves.toMatchObject({ data: { type: 'busy' } });
+    await expect(ops.listPendingPermissions({ directory: 'C:/work ü' })).resolves.toMatchObject({ data: [{ id: 'perm_1', sessionID: 'ses_1' }] });
+    await expect(ops.listPendingQuestions({ directory: 'C:/work ü' })).resolves.toMatchObject({ data: [{ id: 'question_1', sessionID: 'ses_1' }] });
+    await expect(ops.listCommands({ directory: 'C:/work ü' })).resolves.toMatchObject({ data: [{ name: 'review' }] });
+    await expect(ops.getSelectionCatalog({ directory: 'C:/work ü' })).resolves.toMatchObject({
+      data: { generation: 'oc1', providers: [{ id: 'openai' }], agents: [{ name: 'build' }], config: { model: 'openai/m' } },
+    });
+
+    expect(identity).toMatchObject({ generation: 'oc1', profile: 'legacy-1.2.27', endpoint, epoch: 1 });
+    expect(requests.every((request) => request.method === 'GET' && request.headers.authorization === 'Basic fixture')).toBe(true);
+    expect(requests.every((request) => request.search.get('directory') === 'C:/work ü')).toBe(true);
+    const listQuery = requests.find((request) => request.path === '/session').search;
+    expect(Object.fromEntries(listQuery)).toMatchObject({ directory: 'C:/work ü', limit: '25', start: '10', search: 'one' });
+    expect(requests.map((request) => request.path)).toEqual([
+      '/session', '/session/ses_1', '/session/ses_1/message', '/session/ses_1/message/msg_1',
+      '/session/ses_1/children', '/session/status', '/permission', '/question', '/command',
+      '/config/providers', '/agent', '/config',
+    ]);
+  });
+
+  it('rejects malformed, failed, canceled and retired Legacy reads', async () => {
+    let state;
+    let status = 200;
+    let body = [];
+    const requests = [];
+    const endpoint = await serve(() => ({ status, body }), requests);
+    state = { ...runtime('oc1', endpoint), version: '1.2.27', profile: 'legacy-1.2.27' };
+    const ops = createKernelOperations({ getRuntime: () => state, getHeaders: () => ({ authorization: 'Basic fixture' }) });
+    await expect(ops.listSessions()).resolves.toMatchObject({ data: { items: [] } });
+    body = [{}];
+    await expect(ops.listSessions()).rejects.toMatchObject({ code: 'invalid-response' });
+    status = 503;
+    await expect(ops.listSessions()).rejects.toBeDefined();
+    status = 200;
+    body = [];
+    await expect(ops.listSessions({ signal: AbortSignal.abort() })).rejects.toBeDefined();
+
+    const changing = createKernelOperations({ getRuntime: () => state, getHeaders: () => ({}), fetchImpl: async (url, init) => {
+      const response = await fetch(url, init);
+      state = { ...state, epoch: state.epoch + 1 };
+      return response;
+    } });
+    await expect(changing.listSessions()).rejects.toMatchObject({ code: 'runtime-changed' });
+    expect(requests).toHaveLength(4);
   });
 
   it('rejects a read completed after a profile-only change at the same endpoint and epoch', async () => {
@@ -694,7 +793,7 @@ describe('pending question and form inspection', () => {
     state = runtime('oc2', endpoint);
     const ops = createKernelOperations({ getRuntime: () => state, getHeaders: () => ({}) });
     await expect(ops.listPendingQuestions()).rejects.toMatchObject({ code: 'runtime-changed' });
-    state = { ...runtime('oc1', endpoint), profile: 'legacy-1.2.27' };
+    state = { ...runtime('oc2', endpoint), profile: 'legacy-1.2.27' };
     await expect(ops.listPendingQuestions()).rejects.toMatchObject({ code: 'unsupported-operation' });
     state = runtime('oc2', endpoint);
     await expect(ops.listPendingQuestions({ signal: AbortSignal.abort() })).rejects.toBeDefined();

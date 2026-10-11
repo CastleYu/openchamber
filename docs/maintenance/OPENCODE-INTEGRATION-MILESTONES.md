@@ -1,6 +1,6 @@
 # Agent integration milestones
 
-Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are accepted on 2026-10-11. The next implementation batch is R2 / INT-03. Evidence and its source/runtime limits are recorded in `artifacts/int02-r1-exit.json`. The [execution checkpoint](CAGENT-EXECUTION.md) records the historical preview release. Current R1 evidence and continuation are in the [acceptance review](R1-ACCEPTANCE.md).
+Status: executing, 2026-10-11. INT-00 and CA-00 passed. The minimum CAgent architecture/kit preview is published; full consumer migration retains its later gates. INT-00L passed; R1 / INT-01 and INT-02 are accepted on 2026-10-11. R2 / INT-03 is in progress. Its host read foundation passed exact 1.2.27 checks in `artifacts/int03-exact-host-read.json`; mutation, metadata, events, shared UI and VS Code integration remain open. Evidence and its source/runtime limits are recorded in `artifacts/int02-r1-exit.json`. The [execution checkpoint](CAGENT-EXECUTION.md) records the historical preview release. Current R1 evidence and continuation are in the [acceptance review](R1-ACCEPTANCE.md).
 R1 clause review and image boundary correction: [acceptance review](R1-ACCEPTANCE.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
 
@@ -26,7 +26,7 @@ This document owns status and acceptance for this integration milestone. PLAN.md
 | INT-00L | Preflight, no version bump | Exact 1.2.27 identity, wire contracts and isolated runtime evidence | INT-00, CA-02 Release | done; [source and executable evidence](OPENCODE-LEGACY-EVIDENCE.md) |
 | INT-01 | 5.3 | Profile-aware facade, descriptor, automatic/manual selection and capability dispatch | INT-00, CA-02 Release | done |
 | INT-02 | 5.4 | Five explicit connection modes, setup/migration and process switching | INT-01, CA-02 Release | done |
-| INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | planned |
+| INT-03 | 5.5 | First usable Legacy conversation: session, history, streaming, decisions and stop | INT-01, INT-00L, CA-02 Release | in progress |
 | INT-04 | 5.6 | Advanced Legacy operations and reconnect recovery | INT-03, CA-02 Release | planned |
 | INT-05 | 5.7 | Legacy settings, credentials, plugins/MCP and unattended operations | INT-04, CA-02 Release | planned |
 | INT-06 | 5.8 | Current OC1/OC2 disposal, config apply and external/managed-server reload | INT-02, CA-02 Release | planned |

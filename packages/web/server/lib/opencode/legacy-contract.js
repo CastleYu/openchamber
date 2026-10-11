@@ -1,0 +1,21 @@
+const LEGACY_OPERATION = Object.freeze({
+  IDENTITY: 'identity',
+  SESSION_LIST: 'session.list',
+  SESSION_GET: 'session.get',
+  SESSION_MESSAGES: 'session.messages',
+  SESSION_MESSAGE: 'session.message',
+  SESSION_CHILDREN: 'session.children',
+  SESSION_STATUS: 'session.status',
+  PERMISSION_LIST: 'permission.list',
+  QUESTION_LIST: 'question.list',
+  COMMAND_LIST: 'command.list',
+  CATALOG_READ: 'catalog.read',
+});
+
+const supportedOperations = new Set(Object.values(LEGACY_OPERATION));
+
+function supportsLegacyOperation(operation) {
+  return supportedOperations.has(operation);
+}
+
+export { LEGACY_OPERATION, supportsLegacyOperation };

@@ -2,6 +2,7 @@ import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
 import { OPENCODE_PROFILE } from './compatibility.js';
+import { LEGACY_OPERATION, supportsLegacyOperation } from './legacy-contract.js';
 
 const GENERATION = Object.freeze({ OC1: 'oc1', OC2: 'oc2' });
 const STATUS = Object.freeze({ BUSY: 'busy', RETRY: 'retry', IDLE: 'idle', RUNNING: 'running' });
@@ -120,10 +121,11 @@ const activeStatus = (value, generation) => {
 
 export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fetch, prepareSession = null }) => {
   const metadataWrites = new Map();
-  const capture = (directory) => {
+  const capture = (directory, operation) => {
     const runtime = getRuntime();
     const generation = runtime?.generation;
-    if (runtime?.profile === OPENCODE_PROFILE.LEGACY) {
+    if (runtime?.profile === OPENCODE_PROFILE.LEGACY
+      && (generation !== GENERATION.OC1 || !supportsLegacyOperation(operation))) {
       throw Object.assign(kernelError(ERROR_CODE.UNSUPPORTED_OPERATION,
         'OpenCode ' + OPENCODE_PROFILE.LEGACY + ' operations are not yet accepted', generation), { profile: runtime.profile });
     }
@@ -157,7 +159,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     return identity;
   };
   const stamped = (context, data) => ({ ...identityOf(context), data });
-  const captureIdentity = () => identityOf(capture());
+  const captureIdentity = () => identityOf(capture(undefined, LEGACY_OPERATION.IDENTITY));
   const requestOptions = (signal) => signal ? { signal } : undefined;
   const prepare = async (context, sessionID) => {
     if (context.generation !== GENERATION.OC2 || !prepareSession) return;
@@ -167,7 +169,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const getSession = async ({ sessionID, directory, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_GET);
     await prepare(context, sessionID);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.get({ sessionID, directory }, requestOptions(signal))
@@ -202,7 +204,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listSessions = async ({ directory, limit, cursor, search, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_LIST);
     if (cursor !== undefined && ((context.generation === GENERATION.OC1 && !z.number().int().nonnegative().safeParse(cursor).success)
       || (context.generation === GENERATION.OC2 && !z.string().min(1).safeParse(cursor).success))) {
       throw kernelError(ERROR_CODE.INVALID_CURSOR, 'Session cursor does not match OpenCode generation', context.generation);
@@ -227,7 +229,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listMessages = async ({ sessionID, directory, limit, cursor, order = 'desc', signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_MESSAGES);
     const response = context.generation === GENERATION.OC1
       ? await context.client.session.messages({ sessionID, directory, limit, before: cursor }, requestOptions(signal))
       : await context.client.message.list({ sessionID, limit, order, cursor }, requestOptions(signal));
@@ -247,7 +249,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listChildren = async ({ sessionID, directory, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_CHILDREN);
     if (context.generation === GENERATION.OC1) {
       const response = await context.client.session.children({ sessionID, directory }, requestOptions(signal));
       check(context);
@@ -267,7 +269,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listActiveStatuses = async ({ directory, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_STATUS);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.status({ directory }, requestOptions(signal))
       : context.client.session.active(requestOptions(signal)));
@@ -283,7 +285,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listPendingPermissions = async ({ directory, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.PERMISSION_LIST);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.permission.list({ directory }, requestOptions(signal))
       : context.client.permission.request.list({ location: directory ? { directory } : undefined }, requestOptions(signal)));
@@ -295,7 +297,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listPendingQuestions = async ({ directory, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.QUESTION_LIST);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.question.list({ directory }, requestOptions(signal))
       : context.client.form.list({ location: directory ? { directory } : undefined }, requestOptions(signal)));
@@ -319,7 +321,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const getMessage = async ({ sessionID, messageID, directory, signal }) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.SESSION_MESSAGE);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.session.message({ sessionID, messageID, directory }, requestOptions(signal))
       : context.client.session.message.get({ sessionID, messageID }, requestOptions(signal)));
@@ -377,7 +379,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const listCommands = async ({ directory, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.COMMAND_LIST);
     const response = await (context.generation === GENERATION.OC1
       ? context.client.command.list({ directory }, requestOptions(signal))
       : context.client.command.list({ location: directory ? { directory } : undefined }, requestOptions(signal)));
@@ -388,7 +390,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   };
 
   const getSelectionCatalog = async ({ directory, signal } = {}) => {
-    const context = capture(directory);
+    const context = capture(directory, LEGACY_OPERATION.CATALOG_READ);
     if (context.generation === GENERATION.OC1) {
       const [providers, agents, config] = await Promise.all([
         context.client.config.providers({ directory }, requestOptions(signal)),

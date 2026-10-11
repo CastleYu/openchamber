@@ -42,8 +42,8 @@ describe('OpenCode network runtime', () => {
     });
     const runtime = createRuntime({ getBackendSelection: () => selected });
     const ready = runtime.waitForReady('http://127.0.0.1:4096');
-    // One detection pass starts both documented generation probes.
-    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+    // Health completes before the info probe so exact Legacy avoids that path.
+    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1));
     selected = { family: AGENT_FAMILY.CAGENT, revision: 2 };
     selected = { family: AGENT_FAMILY.OPENCODE, revision: 3 };
     release();

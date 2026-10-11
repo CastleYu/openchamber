@@ -2,6 +2,14 @@
 
 Reviewed 2026-10-11 against candidate 7be9a791b548f7b89115291abedf94bff79a0a41. R1 remains open. This review supplements the [milestones](OPENCODE-INTEGRATION-MILESTONES.md); it does not change their gates.
 
+## Current clause reconciliation
+
+At candidate `f7d63e7fb`, the expanded host regression initially passed 1,440 tests with two platform skips and failed one readiness test. That test waited for concurrent probes, but identity discovery intentionally reads health before info to avoid sending unknown API paths to exact Legacy. Correcting only its wait point preserves the stale-owner rejection assertion. The same 105-file scope then passes 1,441 tests with two skips. The focused readiness/identity scope passes 62 tests. Changed-test oxlint and diff checks pass. Evidence: `artifacts/int02-r1-clause-reconciliation.json`. The initial table below retains its historical candidate scope.
+
+The current browser-closed queue and pending-activity evidence covers the earlier missing journeys. Image grants, plugin/agent-tool entry, event admission, worktree eviction, search indexing and provider snapshots now have reviewed boundaries. Full neutral CAgent consumer migration stays at R6.
+
+One retained consumer still needs closure. `session-runtime.js` stores status, attention, pending requests and activity by session ID without a connection owner. Production composition creates it once; the kernel change hook retires streams and search, but does not retire these snapshots. The managed-restart callback clears pending requests and marks busy work interrupted, which does not establish isolation for every external/profile/backend switch. Notification/status routes read these snapshots. This is a source-level gap, not a completed live reproduction. Next: exercise a switch with colliding session IDs and verify stale activity, attention and pending requests cannot appear under the replacement. Preserve same-owner reconnect and explicit managed-restart behavior. R1 stays open for this check and the final clause audit.
+
 | Requirement | Evidence inspected | Assessment |
 | --- | --- | --- |
 | Identity, selection and profile retirement | compatibility, kernel operation and SDK retirement contracts; int02-r1-sdk-evidence.json | Contract evidence exists. Latest host run passes 366 tests with one skip across 12 files. |

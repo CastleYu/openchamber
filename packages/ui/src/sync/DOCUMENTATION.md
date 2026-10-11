@@ -26,7 +26,7 @@ An archive removes the session's live status and marks its status snapshot inval
 
 For OC2 prompts, client-minted synthetic context IDs precede the prompt ID and are forwarded to OpenCode. The optimistic records share a timestamp and reconcile or roll back as one send. Equal-time synthetic records sort before the user prompt, even when the server's IDs sort differently. OC1 send parts retain their original path.
 
-Chat and BTW read tagged pending requests through `useScopedPendingPermissions` and `useScopedPendingInputs`. OC1 still renders `QuestionCard`; OC2 renders typed `FormCard` fields and sends one `FormAnswer` object through `replyToForm`. A failed reply leaves the request pending so the user can try again. Sidebar badges count OC2 forms alongside OC1 questions.
+Chat and BTW read tagged pending requests through `useScopedPendingPermissions` and `useScopedPendingInputs`. OC1 still renders `QuestionCard`; OC2 renders typed `FormCard` fields and sends one `FormAnswer` object through `replyToForm`. A failed reply leaves the request pending so the user can try again. OC1 reconnect/materialization recovery uses the same directory snapshot owner as bootstrap. Permission/question events arriving during the HTTP read, including VS Code auto-accept, override the fetched list. A stale nonempty response cannot resurrect an answered request; a failed directory read preserves its existing requests. Sidebar badges count OC2 forms alongside OC1 questions.
 
 An OC2 answer fork cuts before the next user prompt. `/fork` selects the last
 completed assistant turn and excludes the source's running turn. Before the

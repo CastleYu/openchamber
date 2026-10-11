@@ -214,3 +214,37 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
 
 - Sandbox CIM inventory returned access denied. Repeat the same scoped inventory with escalation; never interpret a failed inventory as an empty process list. Exclude the inventory process itself because its command contains fixture paths.
 - Cleanup stopped on Bun cache links before deleting fixtures. Inventory links without traversal, unlink each link itself, then remove only checked task-owned roots. The final receipt records six removed fixture homes and all link-only actions.
+
+### 2026-10-12: R3 recovery inspection and test environment
+
+- An inspection guessed a nonexistent `packages/ui/src/lib/opencode/v1/operations.ts`; actual files are `sessions.ts` and `projection.ts`. Discover paths with `rg --files` before reading.
+- The first blocking-resync test lacked browser `requestAnimationFrame`, used by toast dismissal. Added a test-local animation-frame implementation, restored after the suite, then reproduced the actual two stale-nonempty failures. Logs: `artifacts/int04-blocking-resync-before.log` and `artifacts/int04-blocking-resync-red.log`.
+- Initial Node Vitest path `node_modules/vitest/vitest.mjs` was absent in this checkout; Node exited 1 with MODULE_NOT_FOUND. The original output is preserved in `artifacts/int04-web-initial-runner-path-failure.log`. Correct installed entrypoint: `packages/web/node_modules/vitest/vitest.mjs`.
+- Reading the anti-slop log before its sequential job started returned path-not-found. Wait for the active validation runner before reading generated logs.
+- Initial source read used the cdee checkout for `artifacts/legacy-1.2.27`; the fixture is in dijiang-next. Future reads use the actual repo path.
+- Initial probe SDK resolution from the helper directory failed because the helper checkout has no installed SDK. A CommonJS `createRequire` attempt failed because the SDK exports only ESM. The helper now imports the installed SDK entry directly from the actual repo.
+- First live wire attempt used a non-existent `probe` command and OC1 returned `UnknownError` because `Command.get()` returned undefined. The probe now enumerates `command.list` and invokes a command returned by the exact server.
+- The first anti-slop baseline was placed under ignored `artifacts`, so its zero diagnostics were not a measurement. Repeated the check using a temporary sibling TSX in the same owning directory; removed it in `finally`.
+- A second exact-source inspection requested absent `permission/next.ts` and `question/index.ts` after listing showed only selective routes/tool files. The snapshot omits these internals; use the existing route files and executable evidence, and retain that source limitation.
+- Recovery closeout: sandboxed `Get-CimInstance Win32_Process` returned access denied. Process-use verification for task-owned fixture cleanup requires the same narrowly elevated read; do not interpret denied inventory as no running process. A guessed package UI README path was also absent; subsequent discovery confirmed the package has no root README.
+- Probe review found continuation checks could match a previous completed assistant. The final successful run captures message IDs before each prompt, requires a new completed assistant, and verifies the original pending tool part completed after reply. The explicit post-restart turn also records exclusion of every prior message ID. Earlier weaker assertions are not final acceptance evidence.
+
+- 2026-10-12T01:33:10.5866814+08:00: Initial source listing used the current cdee worktree-relative path; the legacy source tree exists only under the specified dijiang-next target. No target files were modified by the failed read.
+- 2026-10-12T01:33:27.0261863+08:00: OpenCode 1.2.27 sources place permission state under permission/next.ts, not permission/; initial lookup used stale directory name. No source writes.
+- 2026-10-12T01:33:36.7924241+08:00: PermissionNext and Question module imports exist in the source snapshot but their expected source files are omitted; inspected routes/tool only. Need locate companion files or declare source coverage limitation.
+- 2026-10-12T01:34:46.0331794+08:00: Attempt to append the required failed-patch note was denied by sandbox; retrying exact approved target write with elevation. Driver file remains unchanged.
+
+- 2026-10-11T17:35:38.265Z: TypeError: Cannot read properties of undefined (reading 'address')
+    at newClient (file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:52:67)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async startOpenCode (file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:64:12)
+    at async file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:128:18; checks=; fixture=C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-host-recovery-AJhbTb
+
+- 2026-10-11T17:38:55.461Z: AssertionError [ERR_ASSERTION]: permission model tool did not expose a pending/running message part
+    at file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:169:12
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5); checks=exact 1.2.27 plus production proxy/session owners and isolated auth gate; fixture=C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-host-recovery-h2CUMd
+
+- 2026-10-11T17:39:32.009Z: AssertionError [ERR_ASSERTION]: permission model tool did not expose a pending/running message part; observed=[{"id":"prt_12c0c6252001JODqNMBkN9WOZW","type":"text"}]
+    at file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:171:12
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5); checks=exact 1.2.27 plus production proxy/session owners and isolated auth gate; fixture=C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-host-recovery-sFVliR
+- Recovery checkpoint commit preflight rejected an extra blank line at EOF in this failure log after merging the probe notes. Normalized the final newline, preserved the failure, and reran diff validation before staging. No commit was created by the failed attempt.

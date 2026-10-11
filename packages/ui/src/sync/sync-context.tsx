@@ -42,7 +42,7 @@ import { retry } from "./retry"
 import { touchStreamingSession, updateChangedStreamingSessions, updateStreamingState } from "./streaming"
 import { countSyncPerformance } from "./performance-diagnostics"
 import { runBackgroundNetworkTask } from "@/lib/background-network"
-import { recordDirectoryRecoveryEvent, recordDomainRecoveryEvent } from "./directory-recovery-snapshots"
+import { readDirectoryPermissionSnapshot, readDirectoryQuestionSnapshot, recordDirectoryRecoveryEvent, recordDomainRecoveryEvent } from "./directory-recovery-snapshots"
 import { setActionRefs } from "./session-actions"
 import { setSyncRefs, getAllSyncSessions, getDirectoryState } from "./sync-refs"
 import { useSessionUIStore } from "./session-ui-store"
@@ -349,15 +349,6 @@ const CHILD_SESSION_DISCOVERY_INTERVAL_MS = 15_000
 // session) behind them on the browser's ~6 sockets per origin. Later ticks
 // still cover every directory via the per-directory timestamps.
 
-const requestSignature = (items: Array<{ id: string }> | undefined): string => {
-  if (!items || items.length === 0) return ""
-  return items
-    .map((item) => item.id)
-    .sort(cmp)
-    .join("|")
-}
-
-const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 
 const syncSnapshotSignature = (value: unknown): string => JSON.stringify(value)
 
@@ -1433,21 +1424,12 @@ export async function resyncBlockingRequestsForDirectory(
   // Re-fetch pending questions that may have been asked during an SSE gap,
   // reconnect window, or directory materialization gap.
   try {
-    const beforeSignatures = new Map(
-      candidates.map((sessionId) => [sessionId, requestSignature(before.question[sessionId])]),
+    const snapshot = await readDirectoryQuestionSnapshot(store, () =>
+      opencodeClient.listPendingQuestions({ directories: [directory] }),
     )
-    const pendingQuestions = await opencodeClient.listPendingQuestions({ directories: [directory] })
-    const grouped: Record<string, QuestionRequest[]> = {}
-    for (const question of pendingQuestions) {
-      if (!question?.id || !question.sessionID) continue
-      if (!candidateIds.has(question.sessionID)) continue
-      const list = grouped[question.sessionID]
-      if (list) list.push(question)
-      else grouped[question.sessionID] = [question]
-    }
-    for (const sessionId of Object.keys(grouped)) {
-      grouped[sessionId].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    }
+    const grouped = Object.fromEntries(
+      Object.entries(snapshot).filter(([sessionId]) => candidateIds.has(sessionId)),
+    )
 
     for (const [sessionId, questions] of Object.entries(grouped)) {
       const knownIds = new Set((before.question[sessionId] ?? []).map((item) => item.id))
@@ -1474,15 +1456,9 @@ export async function resyncBlockingRequestsForDirectory(
 
     store.setState((state: DirectoryStore) => {
       const merged = { ...state.question }
-      for (const [sessionId, questions] of Object.entries(grouped)) {
-        merged[sessionId] = questions
-      }
       for (const sessionId of candidates) {
-        if (grouped[sessionId]) continue
-        const beforeSignature = beforeSignatures.get(sessionId) ?? ""
-        const currentSignature = requestSignature(state.question[sessionId])
-        if (currentSignature !== beforeSignature) continue
-        delete merged[sessionId]
+        if (grouped[sessionId]) merged[sessionId] = grouped[sessionId]
+        else delete merged[sessionId]
       }
       return { question: merged }
     })
@@ -1494,41 +1470,18 @@ export async function resyncBlockingRequestsForDirectory(
 
   // Re-fetch pending permissions — same rationale as questions.
   try {
-    const beforeSignatures = new Map(
-      candidates.map((sessionId) => [sessionId, requestSignature(before.permission[sessionId])]),
+    const snapshot = await readDirectoryPermissionSnapshot(store, async () => {
+      const pending = await opencodeClient.listPendingPermissions({ directories: [directory] })
+      if (!isVSCodeRuntime()) return pending
+      const accepted = new Set<string>()
+      await Promise.all(pending.filter((permission) => candidateIds.has(permission.sessionID)).map(async (permission) => {
+        if (await processVSCodeReconciledPermissionAutoAccept(permission, directory)) accepted.add(permission.id)
+      }))
+      return pending.filter((permission) => !accepted.has(permission.id))
+    })
+    const grouped = Object.fromEntries(
+      Object.entries(snapshot).filter(([sessionId]) => candidateIds.has(sessionId)),
     )
-    const pendingPermissions = await opencodeClient.listPendingPermissions({ directories: [directory] })
-    const grouped: Record<string, PermissionRequest[]> = {}
-    for (const permission of pendingPermissions) {
-      if (!permission?.id || !permission.sessionID) continue
-      if (!candidateIds.has(permission.sessionID)) continue
-      const list = grouped[permission.sessionID]
-      if (list) list.push(permission)
-      else grouped[permission.sessionID] = [permission]
-    }
-    for (const sessionId of Object.keys(grouped)) {
-      grouped[sessionId].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    }
-
-    if (isVSCodeRuntime()) {
-      const acceptedIdsBySession = new Map<string, Set<string>>()
-      await Promise.all(Object.entries(grouped).flatMap(([sessionId, permissions]) =>
-        permissions.map(async (permission) => {
-          if (!(await processVSCodeReconciledPermissionAutoAccept(permission, directory))) return
-          const accepted = acceptedIdsBySession.get(sessionId) ?? new Set<string>()
-          accepted.add(permission.id)
-          acceptedIdsBySession.set(sessionId, accepted)
-        }),
-      ))
-
-      for (const sessionId of Object.keys(grouped)) {
-        const acceptedIds = acceptedIdsBySession.get(sessionId)
-        if (!acceptedIds) continue
-        const remaining = (grouped[sessionId] ?? []).filter((permission) => !acceptedIds.has(permission.id))
-        if (remaining.length > 0) grouped[sessionId] = remaining
-        else delete grouped[sessionId]
-      }
-    }
 
     for (const [sessionId, permissions] of Object.entries(grouped)) {
       const knownIds = new Set((before.permission[sessionId] ?? []).map((item) => item.id))
@@ -1549,15 +1502,9 @@ export async function resyncBlockingRequestsForDirectory(
 
     store.setState((state: DirectoryStore) => {
       const merged = { ...state.permission }
-      for (const [sessionId, permissions] of Object.entries(grouped)) {
-        merged[sessionId] = permissions
-      }
       for (const sessionId of candidates) {
-        if (grouped[sessionId]) continue
-        const beforeSignature = beforeSignatures.get(sessionId) ?? ""
-        const currentSignature = requestSignature(state.permission[sessionId])
-        if (currentSignature !== beforeSignature) continue
-        delete merged[sessionId]
+        if (grouped[sessionId]) merged[sessionId] = grouped[sessionId]
+        else delete merged[sessionId]
       }
       return { permission: merged }
     })

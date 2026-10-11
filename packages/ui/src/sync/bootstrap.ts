@@ -201,31 +201,34 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
   // config/MCP cannot suppress pending questions or permission recovery.
   const critical = Promise.allSettled([
     read(async () => {
-      const session_status = source
+      const session_status = source?.generation === "oc2"
         ? await readDomainStatusSnapshot(store, () => source.status(directory))
         : await readDirectoryStatusSnapshot(store, async () => (
-          sessionStatusSnapshotSchema.parse(unwrap(await legacyClient().session.status({ directory }), "session.status"))
+          source ? await source.status(directory)
+            : sessionStatusSnapshotSchema.parse(unwrap(await legacyClient().session.status({ directory }), "session.status"))
         ))
       commit({ session_status, sessionStatusReady: true })
     }),
     read(async () => {
-      if (source) {
+      if (source?.generation === "oc2") {
         const pendingInput = await readDomainInputSnapshot(store, () => source.inputs(directory))
         commit({ pendingInput })
       } else {
         const question = await readDirectoryQuestionSnapshot(store, async () => (
-          unwrap(await legacyClient().question.list({ directory }), "question.list")
+          source ? (await source.inputs(directory)).flatMap((request) => request.generation === "oc1" ? [request.value] : [])
+            : unwrap(await legacyClient().question.list({ directory }), "question.list")
         ))
         commit({ question })
       }
     }),
     read(async () => {
-      if (source) {
+      if (source?.generation === "oc2") {
         const pendingPermission = await readDomainPermissionSnapshot(store, () => source.permissions(directory))
         commit({ pendingPermission })
       } else {
         const permission = await readDirectoryPermissionSnapshot(store, async () => (
-          unwrap(await legacyClient().permission.list({ directory }), "permission.list")
+          source ? (await source.permissions(directory)).flatMap((request) => request.generation === "oc1" ? [request.value] : [])
+            : unwrap(await legacyClient().permission.list({ directory }), "permission.list")
         ))
         commit({ permission })
       }

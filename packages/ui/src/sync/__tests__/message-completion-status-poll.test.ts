@@ -193,6 +193,34 @@ describe("maybePollStatusAfterMessageCompletion (issue OPE-193)", () => {
     if (part?.type === "tool") expect(part.state.status).toBe("error")
   })
 
+  for (const first of ["status", "decisions"] as const) {
+    test(`bootstrap empty status and decisions settle in either order: ${first}`, async () => {
+      const permission = { id: "permission", sessionID: "ses_1", permission: "bash", patterns: ["*"], metadata: {}, always: [] }
+      const store = createStore({ type: "busy" })
+      store.setState({
+        message: { ses_1: [unfinishedAssistant] },
+        part: { msg_1: [runningTool] },
+        permission: { ses_1: [permission] },
+      })
+      const status = () => store.setState({ session_status: {}, sessionStatusReady: true })
+      const decisions = () => store.setState({ permission: {} })
+      if (first === "status") status()
+      else decisions()
+      await recoverInterruptedTurnAfterMessageLoad("/test/project", store, "ses_1")
+      expect(store.getState().message.ses_1[0]).toBe(unfinishedAssistant)
+      if (first === "status") decisions()
+      else status()
+      await recoverInterruptedTurnAfterMessageLoad("/test/project", store, "ses_1")
+      expect(statusSnapshotCalls).toEqual([])
+      const message = store.getState().message.ses_1[0]
+      if (message.role !== "assistant") throw new Error("Expected assistant")
+      expect(message.time.completed).toBeDefined()
+      const tool = store.getState().part.msg_1[0]
+      if (tool.type !== "tool") throw new Error("Expected tool")
+      expect(tool.state.status).toBe("error")
+    })
+  }
+
   for (const change of ["runtime", "sdk", "request"] as const) {
     test(`discards delayed recovery after ${change} ownership changes`, async () => {
       const store = createStore()

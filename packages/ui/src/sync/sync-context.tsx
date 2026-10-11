@@ -1537,6 +1537,10 @@ async function resyncDirectoryAfterReconnect(
   await resyncDirectorySessionStatuses(directory, store, candidateSessionIds, "authoritative", isStale)
   if (isStale()) return
 
+  // Retired pending decisions must clear before an idle interrupted turn can settle.
+  await resyncBlockingRequestsForDirectory(directory, store, candidateSessionIds)
+  if (isStale()) return
+
   const source = opencodeClient.getSyncSource()
   await Promise.all(candidateSessionIds.map(async (sessionId) => {
     syncDebug.recovery.materializing({ reason, directory, sessionID: sessionId })
@@ -1569,9 +1573,6 @@ async function resyncDirectoryAfterReconnect(
     setIndexedSessionDirectory(routingIndex, nextSession.id, directory)
     setIndexedSessionMessages(routingIndex, sessionId, directory, store.getState().message[sessionId] ?? [])
   }))
-
-  if (isStale()) return
-  await resyncBlockingRequestsForDirectory(directory, store, candidateSessionIds)
 
   if (isStale()) return
   ingestDirectoryStateIntoRoutingIndex(routingIndex, directory, store.getState())
@@ -2300,10 +2301,10 @@ export function interruptedTurnToolParts(
   if ((state.permission?.[sessionID] ?? []).length > 0) return null
 
   const status = state.session_status?.[sessionID]
-  if (!status || status.type !== "idle") {
-    // Absent status is "unknown", not settled (the reducer maps both
-    // session.idle and session.error to {type:"idle"}): never judge an
-    // interrupted turn without an authoritative settle signal.
+  const snapshotIdle = !status && state.sessionStatusReady === true && !state.sessionStatusInvalidated?.[sessionID]
+  if (status?.type !== "idle" && !snapshotIdle) {
+    // Missing status grants idle authority only after a successful snapshot
+    // covering this session. Live busy/retry and invalidated coverage win.
     return null
   }
 
@@ -2415,7 +2416,8 @@ export async function recoverInterruptedTurnAfterMessageLoad(
   if ((initial.question?.[sessionID] ?? []).length > 0) return
   if ((initial.permission?.[sessionID] ?? []).length > 0) return
 
-  if (!initial.session_status?.[sessionID]) {
+  const snapshotReady = initial.sessionStatusReady === true && !initial.sessionStatusInvalidated?.[sessionID]
+  if (!initial.session_status?.[sessionID] && !snapshotReady) {
     const snapshot = await opencodeClient.getSessionStatusForDirectory(directory)
     if (snapshot === null || isStale?.()
       || getRuntimeKey() !== runtimeKey || opencodeClient.getSdkClient() !== sdk) return
@@ -2606,6 +2608,12 @@ function BoundSyncProvider(props: {
               }
               if (patch.session || patch.message) {
                 ingestDirectoryStateIntoRoutingIndex(routingIndex, directory, store.getState())
+              }
+              if (props.source.generation === "oc1" && (patch.session_status || patch.question || patch.permission)) {
+                // Bootstrap recovery reads finish independently, including on server.connected.
+                for (const sessionID of getActiveSessionCandidateIds(directory, store.getState())) {
+                  applyInterruptedTurnReconciliation(store, sessionID)
+                }
               }
             },
             isStale: () => !isCurrent() || currentAttempt !== initializationAttempt,

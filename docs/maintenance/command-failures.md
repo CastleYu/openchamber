@@ -248,3 +248,33 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
     at file:///C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r3-host-recovery.mjs:171:12
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5); checks=exact 1.2.27 plus production proxy/session owners and isolated auth gate; fixture=C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-host-recovery-sFVliR
 - Recovery checkpoint commit preflight rejected an extra blank line at EOF in this failure log after merging the probe notes. Normalized the final newline, preserved the failure, and reran diff validation before staging. No commit was created by the failed attempt.
+
+
+## 2026-10-12 R3 recovery investigation
+
+- 2026-10-12: Reading `packages/ui/src/sync/interrupted-turn-tools.test.js` failed because the guessed path does not exist. Discover the actual test path with `rg --files` before the next read. No product behavior was exercised by this failure.
+- The same read batch also referenced nonexistent `reconnect-session-status.test.js`; the discovered owner is `reconnect-recovery.test.ts`. Use only the discovered test paths below.
+- A later transport search referenced nonexistent `sync/pipeline.ts` and `vscode/src/opencodeManager.ts`. Use the discovered `sync/event-pipeline.ts` and `vscode/src/opencode.ts` owners instead of guessed filenames.
+- Further guessed paths `vscode/src/bridge/`, `lib/opencode/sync-source.ts` and `sync/reducers.ts` were absent; discovered owners are `bridge.ts`, `sync/source.ts` and `sync/event-reducer.ts`. Discover before reading.
+- Read of `int04-bootstrap-vscode-build.log` before its build phase started failed. Check file existence or the live build handle before reading phase output. A later suppressed lookup of the not-yet-created build receipt returned exit 1; this was not a build failure.
+- R3 Web build failed in esbuild: VirtualAlloc errno=1455, fatal out of memory; VS Code build completed independently. Retry Web alone with process-local GOMEMLIMIT=512MiB and GOMAXPROCS=2. No dependencies, paging configuration or toolchain installation changed. Default-sandbox CIM process query was denied; the same read-only query succeeded with narrow escalation.
+- Native recovery fixture submitted before configured model hydration, selecting the default free provider; no restart acceptance was exercised. Restrict enabled_providers to the controlled loopback provider and wait for its composer model label. Probe review also corrected API snapshot prefixes, retained-ID subset assertions, and a false requirement that persisted upstream running tools must be rewritten by local UI reconciliation.
+
+## 2026-10-12 R3 native recovery probe notes
+
+- A guessed `ChatInputControls.tsx` selector path was absent; the inventory identified `ModelControls.tsx`. The build-log readiness read also preceded the VS Code build phase. These were inspection/probe setup issues.
+- The first Web build hit Windows `VirtualAlloc` errno 1455 and ran out of memory. The isolated constrained retry passed; the VS Code build completed. No native UI recovery conclusion follows from those builds.
+- Early native recovery probes stopped on editor selection, composer controls, restart acknowledgement, and controlled-model hydration checks. The latest recorded probe still did not establish model hydration, so native restart recovery and production UI acceptance remain open.
+- 2026-10-12 Astra readonly recovery consultation: rg with Windows path globs failed with os error 123. Directory search with -g succeeded; no source was modified by the consultation.
+
+- A targeted rg read guessed `ChatInputControls.tsx`, which does not exist. The preceding file inventory identifies `ModelControls.tsx`; use inventoried paths for follow-up reads. No product failure or source change resulted.
+
+- Subsequent searches guessed a top-level `interrupted-turn-tools.ts` and a `__tests__/blocking-request-resync.test.ts` path. The implementation is in `sync-context.tsx`; the interruption test is `__tests__/interrupted-turn-tools.test.ts`. Use `rg --files` across the sync directory before narrowing test paths.
+
+- Cleanup initially retained all directories because their isolated Bun caches contain junctions. Inspection confirmed internal junction destinations. The first boundary validation retry indexed a scalar Target string as a character and stopped before deletion. Normalize Target to an array before indexing, verify all destinations remain within each fixture, then unlink each junction non-recursively.
+
+- Native fixture gwOKAo exited before producing evidence.json: actual VS Code ide.log reports renderer process gone reason=oom, code=-536870904 while Web build was concurrent. Missing evidence is an environment failure, not a product verdict. Wait for build completion and verify available memory before rerunning the native probe serially; fixture finally stopped its owned upstream/model processes.
+
+- A targeted read guessed packages/vscode/webview/VSCodeApp.tsx and failed because that path does not exist. Discover the owning app with rg --files before reading; no source changed.
+
+- R3 native recovery FCun7x still failed after reconnect ordering was corrected. Astra consultation and source inspection identified server.connected bootstrap replacing busy with an empty status map without interruption reconciliation. The final correction reuses successful status coverage and reconciles on each OC1 recovery commit. Two newly added ordering regressions failed before the correction and passed after it. Final actual-host evidence: artifacts/int04-bootstrap-settle-native-evidence.json.

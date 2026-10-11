@@ -6,6 +6,8 @@ import { bootstrapDirectory, bootstrapGlobal } from "./bootstrap"
 import { INITIAL_STATE, type GlobalState, type State } from "./types"
 import { getBackgroundNetworkState, runBackgroundNetworkTask } from "../lib/background-network"
 import type { SyncSource } from "./source"
+import { sourceFromSdk } from "./__tests__/source-fixture"
+import { recordDirectoryRecoveryEvent } from "./directory-recovery-snapshots"
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void
@@ -57,6 +59,81 @@ describe("bootstrapGlobal", () => {
 })
 
 describe("bootstrapDirectory", () => {
+  for (const populated of [false, true]) {
+    test(`OC1 bound source replaces visible decisions with its authoritative ${populated ? "pending" : "empty"} snapshot`, async () => {
+      const question = { id: "question", sessionID: "session", questions: [] }
+      const permission = { id: "permission", sessionID: "session", permission: "read", patterns: ["*"], metadata: {}, always: [] }
+      const sdk = createSdk((url) => {
+        if (url.pathname === "/question") return Response.json(populated ? [question] : [])
+        if (url.pathname === "/permission") return Response.json(populated ? [permission] : [])
+      })
+      const input = inputFor(sourceFromSdk(sdk), {
+        question: { session: [{ ...question, id: "old-question" }] },
+        permission: { session: [{ ...permission, id: "old-permission" }] },
+      })
+      const bootstrap = bootstrapDirectory(input)
+      expect(await bootstrap.environment).toBe("complete")
+      expect(input.store.getState().question).toEqual(populated ? { session: [question] } : {})
+      expect(input.store.getState().permission).toEqual(populated ? { session: [permission] } : {})
+    })
+  }
+
+  for (const kind of ["question", "permission"] as const) {
+    test(`OC1 bound-source bootstrap cannot resurrect an answered ${kind}`, async () => {
+      const question = { id: "request", sessionID: "session", questions: [] }
+      const permission = { id: "request", sessionID: "session", permission: "read", patterns: ["*"], metadata: {}, always: [] }
+      const started = deferred<void>()
+      const response = deferred<Response>()
+      const sdk = createSdk((url) => {
+        if (url.pathname !== "/" + kind) return undefined
+        started.resolve()
+        return response.promise
+      })
+      const input = inputFor(sourceFromSdk(sdk), { question: { session: [question] }, permission: { session: [permission] } })
+      const bootstrap = bootstrapDirectory(input)
+      await started.promise
+      if (kind === "question") {
+        input.store.setState({ question: {} })
+        recordDirectoryRecoveryEvent(input.store, { id: "event-question-replied", type: "question.replied", properties: { sessionID: "session", requestID: "request", answers: [] } })
+      } else {
+        input.store.setState({ permission: {} })
+        recordDirectoryRecoveryEvent(input.store, { id: "event-permission-replied", type: "permission.replied", properties: { sessionID: "session", requestID: "request", reply: "once" } })
+      }
+      response.resolve(Response.json([kind === "question" ? question : permission]))
+      expect(await bootstrap.environment).toBe("complete")
+      expect(input.store.getState()[kind]).toEqual({})
+    })
+  }
+
+  test("OC1 bound-source bootstrap preserves a live busy event over an older idle snapshot", async () => {
+    const started = deferred<void>()
+    const response = deferred<Response>()
+    const sdk = createSdk((url) => {
+      if (url.pathname !== "/session/status") return undefined
+      started.resolve()
+      return response.promise
+    })
+    const input = inputFor(sourceFromSdk(sdk))
+    const bootstrap = bootstrapDirectory(input)
+    await started.promise
+    input.store.setState({ session_status: { session: { type: "busy" } } })
+    recordDirectoryRecoveryEvent(input.store, { id: "event-status", type: "session.status", properties: { sessionID: "session", status: { type: "busy" } } })
+    response.resolve(Response.json({}))
+    expect(await bootstrap.environment).toBe("complete")
+    expect(input.store.getState().session_status.session).toEqual({ type: "busy" })
+  })
+
+  test("failed OC1 bound-source decisions preserve visible requests", async () => {
+    const question = { id: "question", sessionID: "session", questions: [] }
+    const permission = { id: "permission", sessionID: "session", permission: "read", patterns: ["*"], metadata: {}, always: [] }
+    const sdk = createSdk((url) => url.pathname === "/question" || url.pathname === "/permission"
+      ? Response.json({ message: "unavailable" }, { status: 400 }) : undefined)
+    const input = inputFor(sourceFromSdk(sdk), { question: { session: [question] }, permission: { session: [permission] } })
+    expect(await bootstrapDirectory(input).environment).toBe("failed")
+    expect(input.store.getState().question).toEqual({ session: [question] })
+    expect(input.store.getState().permission).toEqual({ session: [permission] })
+  })
+
   test("OC2 cold bootstrap publishes its VCS branch to the tray state", async () => {
     const unused = (): never => { throw new Error("Unexpected sync operation") }
     const source: SyncSource = {

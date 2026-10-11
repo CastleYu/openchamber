@@ -85,6 +85,17 @@ describe("interruptedTurnToolParts (#2577)", () => {
     })
   })
 
+  test("an empty authoritative snapshot settles historical tools but invalidated coverage does not", () => {
+    const store = state({
+      sessionStatusReady: true,
+      message: { ses_1: [unfinishedAssistantMessage("msg_1")] },
+      part: { msg_1: [runningTool("tool_1", "msg_1")] },
+    })
+    expect(interruptedTurnToolParts(store, "ses_1", 5000)?.parts?.[0]?.type).toBe("tool")
+    expect(interruptedTurnToolParts({ ...store, sessionStatusInvalidated: { ses_1: true } }, "ses_1", 5000)).toBeNull()
+    expect(interruptedTurnToolParts({ ...store, session_status: { ses_1: { type: "busy" } } }, "ses_1", 5000)).toBeNull()
+  })
+
   test("busy session is never marked (live work)", () => {
     const store = state({
       session_status: { ses_1: { type: "busy" } },

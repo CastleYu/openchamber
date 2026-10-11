@@ -86,7 +86,7 @@ export interface OpenCodeManager {
   getOpenCodeAuthHeaders(): Record<string, string>;
   /** Environment passed to the current managed OpenCode process; absent for external kernels. */
   getManagedLaunchEnvironment(): NodeJS.ProcessEnv | null;
-  getNativeConfigContext(): { env: NodeJS.ProcessEnv; cwd: string } | null;
+  getNativeConfigContext(): { id: symbol; env: NodeJS.ProcessEnv; cwd: string } | null;
   getWorkingDirectory(): string;
   isCliAvailable(): boolean;
   getDebugInfo(): OpenCodeDebugInfo;
@@ -698,7 +698,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
   let server: ReturnType<typeof spawnManagedOpenCodeServer> | null = null;
   let serverEnv: NodeJS.ProcessEnv | null = null;
   type ManagedServer = ReturnType<typeof spawnManagedOpenCodeServer>;
-  let nativeConfigContext: { env: NodeJS.ProcessEnv; cwd: string; server: ManagedServer; revision: number; prepared: PreparedConnection } | null = null;
+  let nativeConfigContext: { id: symbol; env: NodeJS.ProcessEnv; cwd: string; server: ManagedServer; revision: number; prepared: PreparedConnection } | null = null;
   let startupAbort: AbortController | null = null;
   let lifecycleRevision = 0;
   let reapedOrphansOnce = false;
@@ -976,7 +976,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
           setStatus('connected');
           await kernelRuntime.refresh();
           if (server && !server.closed && lifecycleRevision === startRevision && prepared.mode !== CONNECTION_MODE.COMMAND && serverEnv) {
-            nativeConfigContext = { env: serverEnv, cwd: serverCwd, server, revision: startRevision, prepared };
+            nativeConfigContext = { id: Symbol(), env: serverEnv, cwd: serverCwd, server, revision: startRevision, prepared };
           }
         } else {
           throw new Error('Server started but health check failed');
@@ -1138,7 +1138,7 @@ export function createOpenCodeManager(context: vscode.ExtensionContext): OpenCod
     getNativeConfigContext: () => {
       const current = nativeConfigContext;
       if (!current || status !== 'connected' || transitionActive || current.server !== server || current.revision !== lifecycleRevision || current.server.closed || selectedConnection !== current.prepared) return null;
-      return { env: { ...current.env }, cwd: current.cwd };
+      return { id: current.id, env: { ...current.env }, cwd: current.cwd };
     },
     getWorkingDirectory: () => workingDirectory,
     isCliAvailable: () => !cliMissing || Boolean(cliPath || resolveOpencodeCliPath()),

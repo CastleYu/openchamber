@@ -254,12 +254,20 @@ describe('native configuration launch ownership', () => {
       expect(runtime.getNativeConfigContext()).toBeNull();
       server = await runtime.startOpenCode();
       const context = runtime.getNativeConfigContext();
+      expect(context.id).toEqual(expect.any(Symbol));
+      expect(runtime.getNativeConfigContext().id).toBe(context.id);
       expect(context.cwd).toBe(root);
       expect(context.env.XDG_CONFIG_HOME).toBe(env.XDG_CONFIG_HOME);
       expect(context.env.OPENCODE_CONFIG).toBe('custom.json');
       context.env.XDG_CONFIG_HOME = 'caller-mutation';
       env.XDG_CONFIG_HOME = 'provider-mutation';
       expect(runtime.getNativeConfigContext().env.XDG_CONFIG_HOME).toBe(path.join(root, 'child-xdg'));
+      if (mode === 'path') {
+        await runtime.restartOpenCode();
+        const restarted = runtime.getNativeConfigContext();
+        expect(restarted.id).toEqual(expect.any(Symbol));
+        expect(restarted.id).not.toBe(context.id);
+      }
       revision = 2;
       expect(runtime.getNativeConfigContext()).toBeNull();
       revision = 1;
@@ -267,7 +275,7 @@ describe('native configuration launch ownership', () => {
       expect(runtime.getNativeConfigContext()).toBeNull();
       state.isRestartingOpenCode = false;
       if (mode === 'path') {
-        process.kill(server.pid);
+        process.kill(state.openCodeProcess.pid);
         await expect.poll(() => runtime.getNativeConfigContext()).toBeNull();
       } else {
         const closing = server.close();
@@ -275,10 +283,11 @@ describe('native configuration launch ownership', () => {
         await closing;
       }
     } finally {
+      await state.openCodeProcess?.close();
       await server?.close();
       if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
       else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
       await fs.rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     }
-  }, 15000);
+  }, 35000);
 });

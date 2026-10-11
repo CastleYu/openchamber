@@ -191,7 +191,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       || state.isRestartingOpenCode || state.currentRestartPromise || connectionTransitions > 0
       || context.process.exitCode != null || context.process.signalCode != null) return null;
     try { requireSelection(context.selection); } catch { return null; }
-    return { env: { ...context.env }, cwd: context.cwd };
+    return { id: context.id, env: { ...context.env }, cwd: context.cwd };
   };
 
   const killProcessOnPortWin32 = (port) => {
@@ -930,7 +930,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         });
 
         if ([CONNECTION_MODE.PATH, CONNECTION_MODE.CONFIGURED, CONNECTION_MODE.BUNDLED].includes(connection?.mode)) {
-          nativeConfigContext = { process: serverInstance, env: { ...processEnv }, cwd, selection };
+          nativeConfigContext = { id: Symbol(), process: serverInstance, env: { ...processEnv }, cwd, selection };
         }
         return serverInstance;
       }

@@ -152,6 +152,8 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 
 进展，2026-10-12：精确 Legacy 的 GET `/mcp` 及 POST `/mcp/:name/connect`、`/disconnect` 已通过现有 SDK 和共享 HTTP 契约开放。真实 1.2.27 生产代理通过九项检查，包含两轮 stdio MCP 连接／发现／断开，以及所属子进程退出。UI／当前 OC1 和 VS Code 路由回归通过 148 项专项测试。所有工作区类型检查通过；并行 lint 出现内存不足后，单独重跑 VS Code，所有包的 lint 均通过。认证／创建／配置操作仍保持拒绝，等待各自契约实现。此结果不代表 INT-05 或 R3 验收。证据与下一批交接见 artifacts/int05-mcp-checkpoint.json。
 
+配置检查点，2026-10-12：已实现精确实体解析器，以及显式选择 Legacy 时使用的 Web MCP 文件写入器。在启动环境所有权和 VS Code 对齐得到验证前，运行时入口继续关闭。隔离的精确二进制探测显示，项目 PATCH 响应回显请求，空对象／省略条目在释放缓存后仍保留原有命令，全局 PATCH 合并条目；用 null 删除实体返回 400。PATCH 成功响应本身不能证明替换、删除或应用成功。Astra 确认，受管理的 Command 模式不能证明文件系统属于本机。证据与下一批交接见 artifacts/int05-config-checkpoint.json。
+
 下一批：复用 Web 和 VS Code 现有配置模块，在任何文件写入前按精确 schema 验证最终状态。保留 agent／command 扩展属性、MCP 仅含 enabled 的条目、本地 timeout 和 `oauth: false`；拒绝不支持的远程 environment 与 OAuth redirectUri 字段。明确本地／远程配置所有权。随后验收凭据、生成插件及无人值守分派；配置应用／重载仍留在 R4。Astra 已复核此复用与写入前验证方案。
 
 负责 L07、L08、L11、L13 和 L15 中的能力核查。配置／提供商／认证／MCP／skills／生成插件和所有无人值守调用者均经过兼容配置分派。验证旧版本的元数据持久化，不假定现代 SDK 字段会被保存。仅较新内核原生支持的功能在服务层给出明确能力结果。

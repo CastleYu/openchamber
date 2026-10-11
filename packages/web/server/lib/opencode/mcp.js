@@ -9,6 +9,8 @@ import {
   getJsonWriteTarget,
   writeConfig,
 } from './shared.js';
+import { OPENCODE_PROFILE } from './compatibility.js';
+import { LEGACY_CONFIG_KIND, mergeLegacyConfig, parseLegacyConfig } from './legacy-config.js';
 
 // ============== MCP CONFIG HELPERS ==============
 
@@ -40,7 +42,7 @@ function ensureProjectMcpConfigPath(workingDirectory) {
   return path.join(configDir, 'opencode.json');
 }
 
-function listMcpConfigs(workingDirectory) {
+function listMcpConfigs(workingDirectory, profile) {
   const layers = readConfigLayers(workingDirectory);
   const mcp = layers?.mergedConfig?.mcp || {};
 
@@ -50,7 +52,7 @@ function listMcpConfigs(workingDirectory) {
       const source = getJsonEntrySource(layers, 'mcp', name);
       return {
         name,
-        ...buildMcpEntry(entry),
+        ...(profile === OPENCODE_PROFILE.LEGACY ? parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, entry) : buildMcpEntry(entry)),
         scope: resolveMcpScopeFromPath(layers, source.path),
       };
     });
@@ -59,7 +61,7 @@ function listMcpConfigs(workingDirectory) {
 /**
  * Get a single MCP server config by name
  */
-function getMcpConfig(name, workingDirectory) {
+function getMcpConfig(name, workingDirectory, profile) {
   const layers = readConfigLayers(workingDirectory);
   const entry = layers?.mergedConfig?.mcp?.[name];
 
@@ -69,7 +71,7 @@ function getMcpConfig(name, workingDirectory) {
   const source = getJsonEntrySource(layers, 'mcp', name);
   return {
     name,
-    ...buildMcpEntry(entry),
+    ...(profile === OPENCODE_PROFILE.LEGACY ? parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, entry) : buildMcpEntry(entry)),
     scope: resolveMcpScopeFromPath(layers, source.path),
   };
 }
@@ -77,8 +79,11 @@ function getMcpConfig(name, workingDirectory) {
 /**
  * Create a new MCP server config entry
  */
-function createMcpConfig(name, mcpConfig, workingDirectory, scope) {
+function createMcpConfig(name, mcpConfig, workingDirectory, scope, profile) {
   validateMcpName(name);
+  const legacyEntry = profile === OPENCODE_PROFILE.LEGACY
+    ? parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, mcpConfig)
+    : null;
 
   const layers = readConfigLayers(workingDirectory);
   const source = getJsonEntrySource(layers, 'mcp', name);
@@ -105,8 +110,12 @@ function createMcpConfig(name, mcpConfig, workingDirectory, scope) {
     config.mcp = {};
   }
 
-  const { name: _ignoredName, ...entryData } = mcpConfig;
-  config.mcp[name] = buildMcpEntry(entryData);
+  if (profile === OPENCODE_PROFILE.LEGACY) {
+    config.mcp[name] = legacyEntry;
+  } else {
+    const { name: _ignoredName, ...entryData } = mcpConfig;
+    config.mcp[name] = buildMcpEntry(entryData);
+  }
 
   writeConfig(config, targetPath);
   console.log(`Created MCP server config: ${name}`);
@@ -115,7 +124,7 @@ function createMcpConfig(name, mcpConfig, workingDirectory, scope) {
 /**
  * Update an existing MCP server config entry
  */
-function updateMcpConfig(name, updates, workingDirectory) {
+function updateMcpConfig(name, updates, workingDirectory, profile) {
   const layers = readConfigLayers(workingDirectory);
   const source = getJsonEntrySource(layers, 'mcp', name);
 
@@ -131,9 +140,12 @@ function updateMcpConfig(name, updates, workingDirectory) {
   }
 
   const existing = config.mcp[name];
-  const { name: _ignoredName, ...updateData } = updates;
-
-  config.mcp[name] = buildMcpEntry({ ...existing, ...updateData });
+  if (profile === OPENCODE_PROFILE.LEGACY) {
+    config.mcp[name] = mergeLegacyConfig(LEGACY_CONFIG_KIND.MCP, existing, updates);
+  } else {
+    const { name: _ignoredName, ...updateData } = updates;
+    config.mcp[name] = buildMcpEntry({ ...existing, ...updateData });
+  }
 
   writeConfig(config, targetPath);
   console.log(`Updated MCP server config: ${name}`);

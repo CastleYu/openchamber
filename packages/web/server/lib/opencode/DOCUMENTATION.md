@@ -195,6 +195,7 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/opencode/proxy.js`: OpenCode API/SSE forwarding and readiness-gate route registration.
 - `packages/web/server/lib/opencode/session-runtime.js`: session status/attention/activity runtime for OpenCode SSE events.
 - `packages/web/server/lib/opencode/watcher.js`: global SSE watcher runtime for push/session event fanout.
+- `packages/web/server/lib/opencode/legacy-config.js`: exact 1.2.27 agent, command and MCP entity parsing and final-state merge validation. The opt-in Legacy branch in `mcp.js` retains exact supported fields and rejects invalid writes before creating project directories. This writer does not establish server filesystem ownership. Config route admission stays closed until launch-environment ownership and runtime parity are implemented.
 - `packages/web/server/lib/opencode/shared.js`: shared utilities for config, markdown, skills, and git helpers.
 - `packages/web/server/lib/ui-auth/ui-auth.js`: UI session authentication runtime (outside OpenCode module).
 - `packages/web/server/lib/ui-auth/ui-passkeys.js`: UI passkey storage and WebAuthn registration/authentication helpers (outside OpenCode module).

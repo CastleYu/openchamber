@@ -301,3 +301,12 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
 - 2026-10-12: Bun focused tests from the actual checkout failed before collection with EPERM reading both test files and package tsconfigs. This is a sandbox access issue; rerun the same command with narrowly scoped elevated access.
 - 2026-10-12: First elevated focused test run collected 106 tests and found two assertion failures: the operation list expectation omitted the three new MCP constants, and the binding still allowed MCP operations outside the Legacy profile. Both are in-scope implementation/test issues and are being corrected.
 - 2026-10-12: A follow-up PowerShell replacement found the operation-list change but its multiline runtime guard anchor did not match the file's line endings. The test-list write completed before the guard check; inspect the runtime lines and apply the guard separately.
+
+### 2026-10-12 INT-05 configuration checkpoint
+
+- The exact-binary config probe hit spawn EPERM in the default sandbox. The same isolated probe passed with narrowly scoped escalation. Both owned server processes exited and fixtures were removed.
+- Ignored retained schemas require rg --files --hidden --no-ignore. PowerShell does not expand Bash brace paths or literal rg wildcard paths; use explicit paths and rg -g.
+- The parser child initially ran lint from the helper checkout; use the product checkout for its config.
+- The first probe fixture was nested under the helper repository and discovered ancestor command metadata. Its mutations stayed in the isolated fixture. The corrected probe used system TEMP and returned only controlled command entries.
+- Baseline oxlint inside ignored artifacts reported no files, including with --no-ignore. A temporary baseline copy beside the owning module allowed a valid comparison and was immediately removed. A missing helper failure-log read was corrected by locating the child's mistakenly named helper artifacts directory, moving its only file to the helper checkout, and deleting the empty directory.
+- A child ran bunx without --no-install once and received "Resolved, downloaded and extracted [2]" and "Saved lockfile" without package names. The project bun.lock was unchanged. All later tool invocations use installed packages with --no-install.

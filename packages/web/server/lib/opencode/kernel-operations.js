@@ -514,7 +514,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     }
     const mcp = Object.fromEntries(Object.entries(configResult.data.mcp)
       .map(([name, entry]) => [name, parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, entry)]));
-    return stamped(context, { paths: pathResult.data, mcp });
+    return { ...stamped(context, { paths: pathResult.data, mcp }), version: context.version };
   };
 
   const getDefaultModel = async ({ directory, signal } = {}) => {

@@ -27,7 +27,7 @@ import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
 import { useI18n } from '@/lib/i18n';
 import { rankByQuery } from '@/lib/search/fuzzySearch';
 import { cn } from '@/lib/utils';
-import { isMcpConfigEnabled, selectMcpServersForDirectory, useMcpConfigStore, type McpDraft } from '@/stores/useMcpConfigStore';
+import { isMcpConfigEnabled, isMcpEnabledOnlyConfig, selectMcpServersForDirectory, useMcpConfigStore, type McpDraft } from '@/stores/useMcpConfigStore';
 import { useMcpStore } from '@/stores/useMcpStore';
 import type { McpServerStatus } from '@/lib/opencode/model';
 
@@ -188,19 +188,26 @@ export const McpGrid: React.FC = () => {
         )}
         {filtered.map((server) => {
           const enabled = isMcpConfigEnabled(server);
-          const target = server.type === 'local' ? server.command?.join(' ') : server.url;
+          const enabledOnly = isMcpEnabledOnlyConfig(server);
+          const target = enabledOnly
+            ? t('settings.mcp.page.enabledOnly.description')
+            : server.type === 'local' ? server.command?.join(' ') : server.url;
           return (
             <SettingsCard
               key={server.name}
-              icon={<SettingsCardIcon name={server.type === 'local' ? 'server' : 'global'} />}
+              icon={<SettingsCardIcon name={enabledOnly ? 'plug' : server.type === 'local' ? 'server' : 'global'} />}
               title={server.name}
               subtitle={target || undefined}
-              badges={<StatusPill status={mcpStatus[server.name]?.status} enabled={enabled} />}
+              badges={enabledOnly
+                ? <SettingsCardPill tone="neutral">{t(enabled ? 'settings.mcp.grid.status.enabled' : 'settings.mcp.grid.status.disabled')}</SettingsCardPill>
+                : <StatusPill status={mcpStatus[server.name]?.status} enabled={enabled} />}
               muted={!enabled}
               footer={(
                 <>
                   <span>
-                    {server.type === 'local'
+                    {enabledOnly
+                      ? t('settings.mcp.page.enabledOnly.title')
+                      : server.type === 'local'
                       ? t('settings.mcp.sidebar.serverType.localTitle')
                       : t('settings.mcp.sidebar.serverType.remoteTitle')}
                   </span>
@@ -212,7 +219,7 @@ export const McpGrid: React.FC = () => {
                 setSelectedMcp(server.name);
               }}
               actionsLabel={t('settings.mcp.grid.actionsAria', { name: server.name })}
-              actions={[{
+              actions={enabledOnly || server.readOnly ? [] : [{
                 label: t('settings.common.actions.delete'),
                 icon: 'delete-bin',
                 destructive: true,

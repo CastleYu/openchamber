@@ -5,7 +5,7 @@ import { applyPendingOpenCodeRestart } from '@/lib/opencode/deferredRestart';
 import { getRuntimeApiBaseUrl, getRuntimeKey } from '@/lib/runtime-switch';
 import { openExternalUrl } from '@/lib/url';
 import { focusDesktopWindow, isDesktopShell, isVSCodeRuntime } from '@/lib/desktop';
-import { useMcpConfigStore } from '@/stores/useMcpConfigStore';
+import { isMcpEnabledOnlyConfig, useMcpConfigStore, type McpServerWithScope } from '@/stores/useMcpConfigStore';
 import { useMcpStore } from '@/stores/useMcpStore';
 import { MCP_OAUTH_CALLBACK_PATH, parseMcpOAuthCallbackStateKey } from './mcpOAuth';
 
@@ -52,6 +52,12 @@ type McpAuthorizationStart = {
 };
 
 class McpAuthorizationError extends Error {}
+
+export const assertMcpCanAuthorize = (server: McpServerWithScope | undefined): void => {
+  if (server && isMcpEnabledOnlyConfig(server)) {
+    throw new McpAuthorizationError('This MCP server has no connection configuration and cannot be authorized.');
+  }
+};
 
 /**
  * The callback lands in the system browser, which is a different surface from
@@ -137,6 +143,7 @@ const clearCustomRedirectUriForNativeFlow = async (name: string): Promise<void> 
   }
   const configStore = useMcpConfigStore.getState();
   const existing = configStore.getMcpByName(name);
+  assertMcpCanAuthorize(existing);
   const currentOAuth = existing?.generation === 'oc1' && existing.type === 'remote' && existing.oauth ? existing.oauth : null;
   if (!existing || !currentOAuth?.redirectUri) return;
 
@@ -226,6 +233,7 @@ export const startMcpAuthorization = async (input: {
 
       const configStore = useMcpConfigStore.getState();
       const existing = configStore.getMcpByName(name);
+      assertMcpCanAuthorize(existing);
       // `oauth: false` means the user disabled it explicitly.
       const currentOAuth = existing?.generation === 'oc1' && existing.type === 'remote' && existing.oauth
         ? existing.oauth

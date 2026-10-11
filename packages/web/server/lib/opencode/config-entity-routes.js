@@ -1,5 +1,7 @@
 import { buildAppliedResponse, buildDeferredRestartResponse } from './config-mutation-response.js';
 import { createOpenCodeFamilyGuard } from './family-guard.js';
+import { AGENT_FAMILY } from '../agent/constants.js';
+import { supportsLegacyStream } from './legacy-contract.js';
 import { OPENCODE_GENERATION } from './compatibility.js';
 
 export const registerConfigEntityRoutes = (app, dependencies) => {
@@ -7,6 +9,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
     getGeneration = () => 'oc1',
     getBackendSelection,
     getKernelRuntime,
+    legacyMcpConfig,
     resolveProjectDirectory,
     resolveOptionalProjectDirectory,
     getAgentSources,
@@ -35,9 +38,18 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
 
   const requests = new WeakMap();
 
+  const familyGuard = createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime);
   app.use(
     ['/api/config/agents', '/api/config/commands', '/api/config/mcp'],
-    createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime),
+    (req, res, next) => {
+      if (getBackendSelection?.().family === AGENT_FAMILY.OPENCODE
+        && supportsLegacyStream(getKernelRuntime?.()) && legacyMcpConfig?.list
+        && /^\/api\/config\/mcp(?:\/[^/]+)?\/?$/.test(`${req.baseUrl}${req.path}`)) {
+        res.set('Cache-Control', 'no-store');
+        return next();
+      }
+      return familyGuard(req, res, next);
+    },
     (req, res, next) => {
       const generation = getGeneration();
       if (generation !== OPENCODE_GENERATION.OC1 && generation !== OPENCODE_GENERATION.OC2) {
@@ -62,6 +74,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       || selected.runtime.profile !== runtime?.profile
       || selected.runtime.endpoint !== runtime?.endpoint
       || selected.runtime.epoch !== runtime?.epoch
+      || selected.runtime.version !== runtime?.version
       || selected.backend.family !== backend?.family
       || selected.backend.revision !== backend?.revision) {
       throw Object.assign(new Error('OpenCode changed during configuration request'), { statusCode: 409 });
@@ -76,12 +89,16 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
   // Persist to disk immediately; OpenCode restart is deferred to an explicit
   // Apply & Restart so settings edits do not interrupt live sessions.
   const completeMcpMutation = async (res, action, name, applyChange) => {
-    const result = applyChange();
+    const generation = getGeneration();
+    const exactLegacy = supportsLegacyStream(getKernelRuntime?.());
+    const result = await applyChange();
     const past = action === 'delete' ? 'deleted' : `${action}d`;
-    return res.json(complete(
-      `MCP server "${name}" ${past}. Restart OpenCode to apply.`,
-      result,
-    ));
+    const message = result?.revealed
+      ? `MCP server "${name}" definition deleted. A lower-priority definition remains. Restart OpenCode to apply.`
+      : `MCP server "${name}" ${past}. Restart OpenCode to apply.`;
+    return res.json(generation === OPENCODE_GENERATION.OC2
+      ? buildAppliedResponse(message.replace(/\. Restart OpenCode to apply\.?$/, '.'), result)
+      : exactLegacy ? { ...buildDeferredRestartResponse(message), ...result } : buildDeferredRestartResponse(message));
   };
 
   app.get('/api/config/agents/:name', async (req, res) => {
@@ -213,7 +230,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       if (error) {
         return res.status(400).json({ error });
       }
-      const configs = listMcpConfigs(directory);
+      const configs = await listMcpConfigs(directory);
       res.json(configs);
     } catch (error) {
       console.error('[API:GET /api/config/mcp] Failed:', error);
@@ -228,7 +245,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       if (error) {
         return res.status(400).json({ error });
       }
-      const config = getMcpConfig(name, directory);
+      const config = await getMcpConfig(name, directory);
       if (!config) {
         return res.status(404).json({ error: `MCP server "${name}" not found` });
       }
@@ -250,7 +267,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log(`[API:POST /api/config/mcp] Creating MCP server: ${name}`);
 
       await completeMcpMutation(res, 'create', name, () => {
-        createMcpConfig(name, config, directory, scope);
+        return createMcpConfig(name, config, directory, scope);
       });
     } catch (error) {
       console.error('[API:POST /api/config/mcp/:name] Failed:', error);
@@ -269,7 +286,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log(`[API:PATCH /api/config/mcp] Updating MCP server: ${name}`);
 
       await completeMcpMutation(res, 'update', name, () => {
-        updateMcpConfig(name, updates, directory);
+        return updateMcpConfig(name, updates, directory);
       });
     } catch (error) {
       console.error('[API:PATCH /api/config/mcp/:name] Failed:', error);
@@ -290,7 +307,7 @@ export const registerConfigEntityRoutes = (app, dependencies) => {
       console.log(`[API:DELETE /api/config/mcp] Deleting MCP server: ${name}`);
 
       await completeMcpMutation(res, 'delete', name, () => {
-        deleteMcpConfig(name, directory);
+        return deleteMcpConfig(name, directory);
       });
     } catch (error) {
       console.error('[API:DELETE /api/config/mcp/:name] Failed:', error);

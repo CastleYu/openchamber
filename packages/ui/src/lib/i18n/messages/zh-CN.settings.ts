@@ -2552,6 +2552,7 @@ export const settingsDict = {
   'settings.providers.page.actions.reconnect': '重新连接',
   'settings.providers.page.actions.disconnecting': '断开连接中...',
   'settings.mcp.page.empty.selectServer': '请从侧边栏选择一个 MCP 服务器',
+  'settings.mcp.grid.status.enabled': '已启用',
   'settings.mcp.page.empty.addNewOne': '或添加一个新的',
   'settings.mcp.page.status.label.awaitingRestart': '等待重启',
   'settings.mcp.page.status.description.awaitingRestart': '该服务器已保存但尚未生效。使用 Apply & Restart 让 OpenCode 加载它——之后即可进行连接和授权。',

@@ -11,6 +11,7 @@ import {
   useMcpConfigStore,
   envRecordToArray,
   isMcpConfigEnabled,
+  isMcpEnabledOnlyConfig,
   MCP_PROTOCOLS,
   MCP_CODEMODE_CHOICES,
   codemodeChoiceOf,
@@ -630,6 +631,8 @@ export const McpPage: React.FC = () => {
 
   const mcpServers = useMcpConfigStore((state) => selectMcpServersForDirectory(state, currentDirectory));
   const selectedServer = selectedMcpName ? getMcpByName(selectedMcpName, currentDirectory) : null;
+  const selectedEnabledOnly = selectedServer ? isMcpEnabledOnlyConfig(selectedServer) : false;
+  const selectedReadOnly = Boolean(selectedServer && 'readOnly' in selectedServer && selectedServer.readOnly === true);
   const isNewServer = Boolean(mcpDraft && mcpDraft.name === selectedMcpName && !selectedServer);
 
   // ── form state ──
@@ -813,6 +816,10 @@ export const McpPage: React.FC = () => {
   // Populate form when selection changes
   React.useEffect(() => {
     importedOAuthRef.current = undefined;
+    if (selectedEnabledOnly) {
+      initialRef.current = null;
+      return;
+    }
     if (isNewServer && mcpDraft) {
       setDraftName(mcpDraft.name);
       setDraftScope(mcpDraft.scope || 'user');
@@ -854,7 +861,7 @@ export const McpPage: React.FC = () => {
       };
       return;
     }
-    if (selectedServer) {
+    if (selectedServer && !isMcpEnabledOnlyConfig(selectedServer)) {
       setDraftScope(selectedServer.scope === 'project' ? 'project' : 'user');
       const envArr = envRecordToArray(selectedServer.type === 'local' ? selectedServer.environment : selectedServer.generation === 'oc1' ? selectedServer.environment : undefined);
       const remoteServer = selectedServer.type === 'remote' ? selectedServer : null;
@@ -910,7 +917,7 @@ export const McpPage: React.FC = () => {
         enabled: isMcpConfigEnabled(selectedServer),
       };
     }
-  }, [selectedServer, isNewServer, mcpDraft]);
+  }, [selectedServer, selectedEnabledOnly, isNewServer, mcpDraft]);
 
   const isDirty = React.useMemo(() => {
     const init = initialRef.current;
@@ -1104,6 +1111,7 @@ export const McpPage: React.FC = () => {
   };
 
   const requireSavedConfig = React.useCallback((): boolean => {
+    if (selectedEnabledOnly) return false;
     if (isNewServer) {
       toast.error(t('settings.mcp.page.toast.createServerBeforeLiveActions'));
       return false;
@@ -1113,7 +1121,7 @@ export const McpPage: React.FC = () => {
       return false;
     }
     return true;
-  }, [isDirty, isNewServer, t]);
+  }, [isDirty, isNewServer, selectedEnabledOnly, t]);
 
   const handleRefreshRuntimeStatus = React.useCallback(async (silent = false) => {
     try {
@@ -1126,8 +1134,8 @@ export const McpPage: React.FC = () => {
   }, [currentDirectory, refreshStatus, t]);
 
   React.useEffect(() => {
-    void handleRefreshRuntimeStatus(true);
-  }, [handleRefreshRuntimeStatus]);
+    if (!selectedEnabledOnly) void handleRefreshRuntimeStatus(true);
+  }, [handleRefreshRuntimeStatus, selectedEnabledOnly]);
 
   React.useEffect(() => {
     runtimeActionKeyRef.current = runtimeActionKey;
@@ -1343,7 +1351,7 @@ export const McpPage: React.FC = () => {
   }, [currentDirectory, enabled, requireSavedConfig, selectedMcpName, t, testConnectionMcp]);
 
   React.useEffect(() => {
-    if (!isAuthPolling || !selectedMcpName) {
+    if (!isAuthPolling || !selectedMcpName || selectedEnabledOnly) {
       return;
     }
 
@@ -1393,11 +1401,35 @@ export const McpPage: React.FC = () => {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [currentDirectory, isAuthPolling, refreshStatus, selectedMcpName, t]);
+  }, [currentDirectory, isAuthPolling, refreshStatus, selectedEnabledOnly, selectedMcpName, t]);
 
   // ── Browse ──
   if (!selectedMcpName) {
     return <McpGrid />;
+  }
+
+  if (selectedEnabledOnly && selectedServer) {
+    return (
+      <SettingsPageLayout
+        title={selectedServer.name}
+        titleLeading={(
+          <SettingsBackButton
+            label={t('settings.mcp.page.back')}
+            onClick={() => setSelectedMcp(null)}
+          />
+        )}
+      >
+        <SettingsSection>
+          <SettingsGroupTitle>{t('settings.mcp.page.enabledOnly.title')}</SettingsGroupTitle>
+          <p className="typography-meta text-muted-foreground">
+            {t('settings.mcp.page.enabledOnly.description')}
+          </p>
+          <p className="typography-ui-label text-foreground">
+            {t(isMcpConfigEnabled(selectedServer) ? 'settings.mcp.grid.status.enabled' : 'settings.mcp.grid.status.disabled')}
+          </p>
+        </SettingsSection>
+      </SettingsPageLayout>
+    );
   }
 
   const runtimeStatus = mcpStatus[selectedMcpName];
@@ -2062,7 +2094,7 @@ export const McpPage: React.FC = () => {
         <div className="flex items-center gap-2 pb-8">
           <Button
             onClick={handleSave}
-            disabled={isSaving || (!isDirty && !isNewServer)}
+            disabled={isSaving || selectedReadOnly || (!isDirty && !isNewServer)}
             size="xs"
             className="!font-normal"
           >
@@ -2074,6 +2106,7 @@ export const McpPage: React.FC = () => {
               size="xs"
               className="!font-normal"
               onClick={() => setShowDeleteConfirm(true)}
+              disabled={selectedReadOnly}
             >
               {t('settings.common.actions.delete')}
             </Button>
@@ -2181,7 +2214,7 @@ export const McpPage: React.FC = () => {
             >
               {t('settings.common.actions.cancel')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting}>
+            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting || selectedReadOnly}>
               {isDeleting ? t('settings.mcp.page.actions.deleting') : t('settings.common.actions.delete')}
             </Button>
           </DialogFooter>

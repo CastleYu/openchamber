@@ -740,3 +740,38 @@ describe('VS Code asynchronous configuration owner', () => {
     });
   }
 });
+
+describe('exact Legacy MCP file owner in VS Code', () => {
+  test('uses the SDK path and raw config across consecutive bridge saves', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'openchamber-legacy-bridge-'));
+    tempRoots.push(root);
+    const paths = { home: path.join(root, 'home'), config: path.join(root, 'config'), directory: path.join(root, 'project'), worktree: path.join(root, 'project') };
+    fs.mkdirSync(paths.config, { recursive: true });
+    fs.mkdirSync(paths.directory, { recursive: true });
+    const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch(req) {
+      return Response.json(new URL(req.url).pathname === '/path' ? paths : { mcp: {} });
+    } });
+    try {
+      const runtime = { generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27', endpoint: server.url.origin, epoch: 1 };
+      const native = { id: Symbol('native'), env: {}, cwd: paths.directory };
+      const ctx = createCtx(paths.directory);
+      ctx.manager.getKernelRuntime = () => runtime;
+      ctx.manager.getNativeConfigContext = () => native;
+      ctx.manager.getOpenCodeAuthHeaders = () => ({});
+      const send = payload => handleConfigBridgeMessage({ id: 'legacy-mcp', type: 'api:config/mcp', payload }, ctx, deps);
+      const body = { type: 'local', command: ['fixture'], enabled: false, environment: { TOKEN: '{env:TOKEN}' } };
+      const created = await send({ method: 'POST', name: 'example', body: { ...body, scope: 'user' } });
+      expect(created).toMatchObject({ success: true, data: { saved: true, restartDeferred: true } });
+      expect(created.data).not.toHaveProperty('environment');
+      for (const timeout of [1500, 2500]) expect(await send({ method: 'PATCH', name: 'example', body: { ...body, timeout } })).toMatchObject({ success: true });
+      expect(await send({ method: 'GET', name: 'example' })).toMatchObject({ success: true, data: { timeout: 2500, environment: { TOKEN: '{env:TOKEN}' }, readOnly: false } });
+      expect(fs.readFileSync(path.join(paths.config, 'opencode.jsonc'), 'utf8')).toContain('{env:TOKEN}');
+      expect(await send({ method: 'DELETE', name: 'example' })).toMatchObject({ success: true, data: { revealed: false } });
+      expect(await send({ method: 'GET', name: 'example' })).toMatchObject({ success: false });
+      native.id = undefined;
+      expect(await send({ method: 'POST', name: 'example', body: { ...body, scope: 'user' } })).toMatchObject({ success: false, error: 'Legacy MCP definition is read-only' });
+    } finally {
+      server.stop(true);
+    }
+  });
+});

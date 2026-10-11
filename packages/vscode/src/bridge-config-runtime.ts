@@ -1,3 +1,7 @@
+import { z } from 'zod';
+import { createLegacyMcpConfig } from '../../web/server/lib/opencode/legacy-mcp-config.js';
+import { createKernelOperations } from '../../web/server/lib/opencode/kernel-operations.js';
+import { supportsLegacyStream } from '../../web/server/lib/opencode/legacy-contract.js';
 import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../../web/server/lib/opencode/compatibility.js';
 import { OPENCODE_CONFIG_DIR } from './opencodeConfigPaths';
 import * as vscode from 'vscode';
@@ -88,6 +92,14 @@ const KERNEL_CONFIG_TYPES = new Set([
   'api:config/skills:catalog', 'api:config/skills:scan', 'api:config/skills:install',
 ]);
 
+const LEGACY_MCP = 'api:config/mcp';
+const legacyMcpScope = z.enum(['user', 'project']);
+const legacyMcpRequest = z.object({
+  method: z.enum(['GET', 'POST', 'PATCH', 'DELETE']).default('GET'),
+  name: z.string().optional(), body: z.record(z.string(), z.json()).optional(),
+  directory: z.string().optional(),
+});
+
 const AGENTS_MD_PATH = path.join(OPENCODE_CONFIG_DIR, 'AGENTS.md');
 const BEHAVIOR_TMP_PREFIX = '.openchamber-agents-';
 const MAX_BEHAVIOR_PROMPT_SIZE = 1024 * 1024;
@@ -159,6 +171,44 @@ export async function handleConfigBridgeMessage(
         || current?.endpoint !== selected?.endpoint || current?.epoch !== selected?.epoch
         || current?.generation !== selected?.generation || current?.profile !== selected?.profile) {
         return { id, type, success: false, error: 'OpenCode runtime changed during config discovery' };
+      }
+    }
+    if (selected && supportsLegacyStream(selected) && type === LEGACY_MCP && ctx?.manager) {
+      const manager = ctx.manager;
+      const parsed = legacyMcpRequest.safeParse(payload ?? {});
+      if (!parsed.success) return { id, type, success: false, error: 'Invalid MCP configuration request' };
+      const input = parsed.data;
+      const directory = resolveWorkingDirectory(ctx, input.directory);
+      const owner = createLegacyMcpConfig({
+        getNativeConfigContext: () => manager.getNativeConfigContext(),
+        getRuntime: () => manager.getKernelRuntime(),
+        operations: createKernelOperations({
+          getRuntime: () => manager.getKernelRuntime(), getHeaders: () => manager.getOpenCodeAuthHeaders(),
+        }),
+      });
+      try {
+        if (input.method === 'GET') {
+          const data = input.name ? await owner.get(input.name, directory) : await owner.list(directory);
+          if (data === null) return { id, type, success: false, error: 'MCP server not found' };
+          return { id, type, success: true, data };
+        }
+        if (!input.name) return { id, type, success: false, error: 'MCP server name is required' };
+        let result: { saved?: boolean; revealed?: boolean };
+        if (input.method === 'POST') {
+          const scope = legacyMcpScope.safeParse(input.body?.scope);
+          if (!scope.success) return { id, type, success: false, error: 'Invalid MCP configuration scope' };
+          result = await owner.create(input.name, input.body ?? {}, directory, scope.data);
+        } else if (input.method === 'PATCH') {
+          result = await owner.update(input.name, input.body ?? {}, directory);
+        } else {
+          result = await owner.remove(input.name, directory);
+        }
+        const message = result?.revealed
+          ? 'MCP definition deleted. A lower-priority definition remains. Restart OpenCode to apply.'
+          : 'MCP configuration saved. Restart OpenCode to apply.';
+        return { id, type, success: true, data: { ...buildDeferredRestartResponse(message), ...result } };
+      } catch (error) {
+        return { id, type, success: false, error: error instanceof Error ? error.message : 'MCP configuration failed' };
       }
     }
     if (selected?.profile === OPENCODE_PROFILE.LEGACY) {

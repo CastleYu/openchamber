@@ -1354,6 +1354,7 @@ const clientPairingRuntime = createClientPairingRuntime({
   remoteClientAuthRuntime,
 });
 const featureRoutesRuntime = createFeatureRoutesRuntime({
+  getNativeConfigContext: () => openCodeLifecycleRuntime.getNativeConfigContext(),
   clientReloadDelayMs: CLIENT_RELOAD_DELAY_MS,
 });
 const bootstrapRuntime = createBootstrapRuntime({

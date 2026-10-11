@@ -113,10 +113,17 @@ function mergeMcp(layers) {
   return layers.reduce((result, layer) => merge(result, layer.config[MCP] ?? {}), {});
 }
 
-export async function readLegacyConfigLayers(input) {
+export async function readLegacyConfigLayers(input, options = {}) {
   const { paths, env, cwd, nativeHome } = validateInputs(input);
+  const replacement = options?.replacement;
   const layers = [];
   const load = async (file, scope) => {
+    if (replacement?.path === file) {
+      const expanded = await substitute(replacement.raw, path.dirname(file), env, nativeHome);
+      const config = parseConfig(expanded, replacement.raw === '');
+      layers.push({ path: file, scope, writable: scope === SCOPE.USER || scope === SCOPE.PROJECT, raw: replacement.raw, config });
+      return;
+    }
     const result = await readFile(file, scope, env, nativeHome);
     if (result) layers.push(result);
   };

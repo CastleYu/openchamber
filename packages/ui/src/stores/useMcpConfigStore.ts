@@ -9,6 +9,7 @@ import { runtimeFetch } from '@/lib/runtime-fetch';
 import { noteDeferredRestartFromPayload } from '@/lib/opencode/deferredRestart';
 import { z } from 'zod';
 import type { JsonValue } from '@opencode/client';
+import { OPEN_CODE_GENERATION, OPEN_CODE_PROFILE } from '@/lib/opencode/runtime';
 
 export type McpScope = 'user' | 'project';
 export type McpProtocol = 'legacy' | 'auto' | '2026-07-28';
@@ -65,6 +66,8 @@ interface McpLocalConfig {
   command: string[];
   environment?: Record<string, string>;
   enabled: boolean;
+  timeout?: number;
+  readOnly?: boolean;
 }
 
 interface McpOAuthConfig {
@@ -82,6 +85,7 @@ interface McpRemoteConfig {
   oauth?: McpOAuthConfig | false;
   timeout?: number;
   enabled: boolean;
+  readOnly?: boolean;
 }
 
 const timeoutV2Schema = z.object({
@@ -106,26 +110,55 @@ const commonV2 = {
   protocol: z.enum(['legacy', 'auto', '2026-07-28']).optional(),
   sectionKey: z.string().optional(),
   legacy: z.boolean().optional(),
+  readOnly: z.boolean().optional(),
 };
 const v2Schema = z.discriminatedUnion('type', [
   z.object({ ...commonV2, type: z.literal('local'), command: z.array(z.string()), environment: z.record(z.string(), z.string()).optional(), cwd: z.string().optional() }),
   z.object({ ...commonV2, type: z.literal('remote'), url: z.string(), headers: z.record(z.string(), z.string()).optional(), oauth: oauthV2Schema }),
 ]);
 const v1Schema = z.discriminatedUnion('type', [
-  z.object({ name: z.string(), type: z.literal('local'), command: z.array(z.string()), environment: z.record(z.string(), z.string()).optional(), enabled: z.boolean().optional(), scope: z.enum(['user', 'project']).nullable().optional() }),
-  z.object({ name: z.string(), type: z.literal('remote'), url: z.string(), environment: z.record(z.string(), z.string()).optional(), headers: z.record(z.string(), z.string()).optional(), oauth: z.union([z.literal(false), z.object({ clientId: z.string().optional(), clientSecret: z.string().optional(), scope: z.string().optional(), redirectUri: z.string().optional() })]).optional(), timeout: z.number().optional(), enabled: z.boolean().optional(), scope: z.enum(['user', 'project']).nullable().optional() }),
+  z.object({ name: z.string(), type: z.literal('local'), command: z.array(z.string()), environment: z.record(z.string(), z.string()).optional(), enabled: z.boolean().optional(), timeout: z.number().optional(), readOnly: z.boolean().optional(), scope: z.enum(['user', 'project']).nullable().optional() }),
+  z.object({ name: z.string(), type: z.literal('remote'), url: z.string(), environment: z.record(z.string(), z.string()).optional(), headers: z.record(z.string(), z.string()).optional(), oauth: z.union([z.literal(false), z.object({ clientId: z.string().optional(), clientSecret: z.string().optional(), scope: z.string().optional(), redirectUri: z.string().optional() })]).optional(), timeout: z.number().optional(), enabled: z.boolean().optional(), readOnly: z.boolean().optional(), scope: z.enum(['user', 'project']).nullable().optional() }),
+]);
+const v1EnabledOnlySchema = z.object({
+  name: z.string(),
+  enabled: z.boolean(),
+  scope: z.enum(['user', 'project']).nullable().optional(),
+  readOnly: z.boolean().optional(),
+}).strict();
+const v1ConfigSchema = z.union([
+  v1Schema,
+  v1EnabledOnlySchema.transform((server) => ({ ...server, connection: 'enabled-only' as const })),
 ]);
 
 export type McpServerConfig = (McpLocalConfig | McpRemoteConfig) & { name: string };
+type McpEnabledOnlyConfig = {
+  name: string;
+  enabled: boolean;
+  generation: 'oc1';
+  connection: 'enabled-only';
+  type?: never;
+  scope?: 'user' | 'project' | null;
+  command?: never;
+  url?: never;
+  environment?: never;
+  headers?: never;
+  oauth?: never;
+  timeout?: never;
+  readOnly?: boolean;
+};
 export type McpServerWithScope =
   | (z.infer<typeof v1Schema> & { generation: 'oc1' })
+  | McpEnabledOnlyConfig
   | (z.infer<typeof v2Schema> & { generation: 'oc2' });
+export const isMcpEnabledOnlyConfig = (server: McpServerWithScope): server is McpEnabledOnlyConfig =>
+  server.generation === 'oc1' && 'connection' in server && server.connection === 'enabled-only';
 export const isMcpConfigEnabled = (server: McpServerWithScope): boolean =>
   server.generation === 'oc1' ? server.enabled !== false : server.disabled !== true;
 
 export const parseMcpConfigs = (payload: JsonValue, generation: 'oc1' | 'oc2'): McpServerWithScope[] =>
   generation === 'oc1'
-    ? z.array(v1Schema).parse(payload).map((server) => ({ ...server, generation: 'oc1' as const }))
+    ? z.array(v1ConfigSchema).parse(payload).map((server) => ({ ...server, generation: 'oc1' as const }))
     : z.array(v2Schema).parse(payload).map((server) => ({ ...server, generation: 'oc2' as const }));
 
 export interface McpDraft {
@@ -310,9 +343,10 @@ export const useMcpConfigStore = create<McpConfigStore>()(
 
         createMcp: async (config: McpDraft, directory?: string | null) => {
           try {
-            const body = opencodeClient.getBoundRuntime()?.generation === 'oc2'
+            const runtime = opencodeClient.getBoundRuntime();
+            const body = runtime?.generation === 'oc2'
               ? buildMcpBodyV2(config)
-              : buildMcpBody(config);
+              : isLegacyRuntime(runtime) ? buildLegacyMcpBody(config) : buildMcpBody(config);
             const configDirectory = resolveDirectory(directory);
             const queryParams = configDirectory ? `?directory=${encodeURIComponent(configDirectory)}` : '';
             const response = await runtimeFetch(`/api/config/mcp/${encodeURIComponent(config.name)}${queryParams}`, {
@@ -386,9 +420,12 @@ export const useMcpConfigStore = create<McpConfigStore>()(
           try {
             const configDirectory = resolveDirectory(directory);
             const existing = get().getMcpByName(name, configDirectory);
-            const body = opencodeClient.getBoundRuntime()?.generation === 'oc2'
+            if (existing && isMcpEnabledOnlyConfig(existing)) return { ok: false, message: ENABLED_ONLY_MCP_ERROR };
+            if (existing?.readOnly) return { ok: false, message: READ_ONLY_MCP_ERROR };
+            const runtime = opencodeClient.getBoundRuntime();
+            const body = runtime?.generation === 'oc2'
               ? buildMcpBodyV2(config, existing?.generation === 'oc2' ? existing : undefined)
-              : buildMcpBody(config);
+              : isLegacyRuntime(runtime) ? buildLegacyMcpBody(config, existing) : buildMcpBody(config);
             const queryParams = configDirectory ? `?directory=${encodeURIComponent(configDirectory)}` : '';
             const response = await runtimeFetch(`/api/config/mcp/${encodeURIComponent(name)}${queryParams}`, {
               method: 'PATCH',
@@ -460,6 +497,9 @@ export const useMcpConfigStore = create<McpConfigStore>()(
         deleteMcp: async (name: string, directory?: string | null) => {
           try {
             const configDirectory = resolveDirectory(directory);
+            const existing = get().getMcpByName(name, configDirectory);
+            if (existing && isMcpEnabledOnlyConfig(existing)) return { ok: false, message: ENABLED_ONLY_MCP_ERROR };
+            if (existing?.readOnly) return { ok: false, message: READ_ONLY_MCP_ERROR };
             const queryParams = configDirectory ? `?directory=${encodeURIComponent(configDirectory)}` : '';
             const response = await runtimeFetch(`/api/config/mcp/${encodeURIComponent(name)}${queryParams}`, {
               method: 'DELETE',
@@ -605,6 +645,60 @@ function buildMcpBody(config: Partial<McpDraft>): Record<string, unknown> {
     body.enabled = config.enabled;
   }
 
+  return body;
+}
+
+type McpV1Config = z.infer<typeof v1Schema>;
+type LegacyMcpWriteBody = {
+  type?: McpV1Config['type'];
+  command?: string[];
+  url?: string;
+  environment?: NonNullable<McpV1Config['environment']>;
+  headers?: NonNullable<Extract<McpV1Config, { type: 'remote' }>['headers']>;
+  oauth?: NonNullable<Extract<McpV1Config, { type: 'remote' }>['oauth']>;
+  enabled?: boolean;
+  timeout?: number;
+};
+
+const READ_ONLY_MCP_ERROR = 'This MCP server is inherited and cannot be changed here.';
+const ENABLED_ONLY_MCP_ERROR = 'This MCP server has no connection configuration and cannot be changed here.';
+
+const isLegacyRuntime = (runtime: ReturnType<typeof opencodeClient.getBoundRuntime>): boolean =>
+  runtime?.generation === OPEN_CODE_GENERATION.OC1
+  && runtime.profile === OPEN_CODE_PROFILE.LEGACY
+  && runtime.version === '1.2.27';
+
+function buildLegacyMcpBody(config: Partial<McpDraft>, previous?: McpServerWithScope): LegacyMcpWriteBody {
+  const body: LegacyMcpWriteBody = {};
+  const type = config.type ?? previous?.type ?? (config.url !== undefined || config.headers !== undefined
+    || config.oauthRaw !== undefined || config.oauthEnabled !== undefined || config.oauthClientId !== undefined
+    || config.oauthClientSecret !== undefined || config.oauthScope !== undefined || config.oauthRedirectUri !== undefined
+    ? 'remote'
+    : config.command !== undefined || config.environment !== undefined ? 'local' : undefined);
+  if (config.type !== undefined) body.type = config.type;
+  if (type === 'local') {
+    if (config.command !== undefined || config.type !== undefined) body.command = (config.command ?? []).filter((part) => part.trim());
+    if (config.environment !== undefined || config.type !== undefined) body.environment = envArrayToRecord(config.environment ?? []) ?? {};
+  } else if (type === 'remote') {
+    if (config.url !== undefined || config.type !== undefined) body.url = config.url?.trim() ?? '';
+    if (config.headers !== undefined || config.type !== undefined) body.headers = envArrayToRecord(config.headers ?? []) ?? {};
+    if (config.oauthRaw !== undefined) body.oauth = config.oauthRaw;
+    else if (config.oauthEnabled !== undefined || config.oauthClientId !== undefined || config.oauthClientSecret !== undefined || config.oauthScope !== undefined || config.oauthRedirectUri !== undefined) {
+      const oauth = {
+        clientId: trimOptionalString(config.oauthClientId),
+        clientSecret: trimOptionalString(config.oauthClientSecret),
+        scope: trimOptionalString(config.oauthScope),
+      };
+      if (config.oauthEnabled === false) body.oauth = false;
+      else if (oauth.clientId || oauth.clientSecret || oauth.scope) body.oauth = { clientId: oauth.clientId, clientSecret: oauth.clientSecret, scope: oauth.scope };
+      else if (config.oauthEnabled) body.oauth = {};
+    }
+  }
+  if (config.enabled !== undefined) body.enabled = config.enabled;
+  if (config.timeout !== undefined) {
+    const timeout = positiveTimeout(config.timeout);
+    if (timeout !== undefined) body.timeout = timeout;
+  }
   return body;
 }
 

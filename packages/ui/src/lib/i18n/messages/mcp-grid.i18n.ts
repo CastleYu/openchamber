@@ -1,6 +1,15 @@
 /** MCP settings card grid strings — merged into each locale's main dictionary. */
+const enabledOnlyFallback = {
+  'settings.mcp.grid.status.enabled': 'Enabled',
+  'settings.mcp.page.enabledOnly.title': 'Enable setting only',
+  'settings.mcp.page.enabledOnly.description': 'Only the enabled setting is defined. No connection is configured.',
+  'settings.mcp.page.enabledOnly.sidebarEnabled': 'Enable setting only · Enabled; no connection defined',
+  'settings.mcp.page.enabledOnly.sidebarDisabled': 'Enable setting only · Disabled; no connection defined',
+} as const;
+
 export const mcpGridI18n = {
   en: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Actions for {name}',
     'settings.mcp.grid.description': 'Tool servers your agents can call. Open one to see its status and settings.',
     'settings.mcp.grid.searchPlaceholder': 'Search servers',
@@ -13,6 +22,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'All servers',
   },
   nl: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Acties voor {name}',
     'settings.mcp.grid.description': 'Toolservers die uw agents kunnen aanroepen. Open er een om de status en instellingen te zien.',
     'settings.mcp.grid.searchPlaceholder': 'Servers zoeken',
@@ -25,6 +35,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Alle servers',
   },
   uk: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Дії для {name}',
     'settings.mcp.grid.description': 'Сервери інструментів, які можуть викликати ваші агенти. Відкрийте сервер, щоб побачити його стан і налаштування.',
     'settings.mcp.grid.searchPlaceholder': 'Пошук серверів',
@@ -37,6 +48,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Усі сервери',
   },
   de: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Aktionen für {name}',
     'settings.mcp.grid.description': 'Tool-Server, die deine Agenten aufrufen können. Öffne einen, um Status und Einstellungen zu sehen.',
     'settings.mcp.grid.searchPlaceholder': 'Server suchen',
@@ -49,6 +61,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Alle Server',
   },
   es: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Acciones de {name}',
     'settings.mcp.grid.description': 'Servidores de herramientas que tus agentes pueden usar. Abre uno para ver su estado y ajustes.',
     'settings.mcp.grid.searchPlaceholder': 'Buscar servidores',
@@ -61,6 +74,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Todos los servidores',
   },
   fr: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Actions pour {name}',
     'settings.mcp.grid.description': 'Les serveurs d’outils que vos agents peuvent appeler. Ouvrez-en un pour voir son état et ses réglages.',
     'settings.mcp.grid.searchPlaceholder': 'Rechercher des serveurs',
@@ -73,6 +87,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Tous les serveurs',
   },
   ja: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': '{name} の操作',
     'settings.mcp.grid.description': 'エージェントが呼び出せるツールサーバーです。開くと状態と設定を確認できます。',
     'settings.mcp.grid.searchPlaceholder': 'サーバーを検索',
@@ -85,6 +100,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'すべてのサーバー',
   },
   ko: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': '{name} 작업',
     'settings.mcp.grid.description': '에이전트가 호출할 수 있는 도구 서버입니다. 열어서 상태와 설정을 확인하세요.',
     'settings.mcp.grid.searchPlaceholder': '서버 검색',
@@ -97,6 +113,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': '모든 서버',
   },
   pl: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Działania dla {name}',
     'settings.mcp.grid.description': 'Serwery narzędzi, z których mogą korzystać agenci. Otwórz serwer, aby zobaczyć jego stan i ustawienia.',
     'settings.mcp.grid.searchPlaceholder': 'Szukaj serwerów',
@@ -109,6 +126,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Wszystkie serwery',
   },
   'pt-BR': {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': 'Ações para {name}',
     'settings.mcp.grid.description': 'Servidores de ferramentas que seus agentes podem chamar. Abra um para ver o status e as configurações.',
     'settings.mcp.grid.searchPlaceholder': 'Buscar servidores',
@@ -121,6 +139,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Todos os servidores',
   },
   tr: {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': '{name} için işlemler',
     'settings.mcp.grid.description': 'Ajanlarınızın çağırabileceği araç sunucuları. Durumunu ve ayarlarını görmek için birini açın.',
     'settings.mcp.grid.searchPlaceholder': 'Sunucu ara',
@@ -133,6 +152,11 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': 'Tüm sunucular',
   },
   'zh-CN': {
+    'settings.mcp.grid.status.enabled': '已启用',
+    'settings.mcp.page.enabledOnly.title': '仅有启用配置',
+    'settings.mcp.page.enabledOnly.description': '仅定义了启用状态，未配置连接。',
+    'settings.mcp.page.enabledOnly.sidebarEnabled': '仅有启用配置 · 已启用，未定义连接',
+    'settings.mcp.page.enabledOnly.sidebarDisabled': '仅有启用配置 · 已停用，未定义连接',
     'settings.mcp.grid.actionsAria': '{name} 的操作',
     'settings.mcp.grid.description': '智能体可以调用的工具服务器。打开一个即可查看状态和设置。',
     'settings.mcp.grid.searchPlaceholder': '搜索服务器',
@@ -145,6 +169,7 @@ export const mcpGridI18n = {
     'settings.mcp.page.back': '所有服务器',
   },
   'zh-TW': {
+    ...enabledOnlyFallback,
     'settings.mcp.grid.actionsAria': '{name} 的操作',
     'settings.mcp.grid.description': '代理可以呼叫的工具伺服器。開啟一個即可查看狀態和設定。',
     'settings.mcp.grid.searchPlaceholder': '搜尋伺服器',

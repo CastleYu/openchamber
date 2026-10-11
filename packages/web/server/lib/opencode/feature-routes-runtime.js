@@ -1,3 +1,5 @@
+import { createLegacyMcpConfig } from './legacy-mcp-config.js';
+import { supportsLegacyStream } from './legacy-contract.js';
 import { registerFsRoutes } from '../fs/routes.js';
 import { registerPerformanceRoutes } from '../performance/collector.js';
 import { registerResourceModeRoutes } from '../mcp-reconnect/resource-modes.js';
@@ -273,6 +275,10 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       getKernelRuntime: () => kernelRuntime.get(),
     });
 
+    const legacyMcpConfig = createLegacyMcpConfig({
+      getNativeConfigContext: dependencies.getNativeConfigContext,
+      getRuntime: () => kernelRuntime.get(), operations: kernelOperations, getBackendSelection,
+    });
     const generation = () => kernelRuntime.get().generation;
     const choose = (legacy, current) => (...args) => {
       const active = generation();
@@ -280,7 +286,10 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       if (active === 'oc2') return current(...args);
       throw new Error('OpenCode generation is not ready for configuration access');
     };
+    const chooseMcp = (legacy, current, exact) => (...args) => supportsLegacyStream(kernelRuntime.get())
+      ? exact(...args) : choose(legacy, current)(...args);
     registerConfigEntityRoutes(app, {
+      legacyMcpConfig,
       getGeneration: generation,
       getKernelRuntime: kernelRuntime.get,
       getBackendSelection,
@@ -299,11 +308,11 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       createCommand: choose(createCommand, commandsV2.createCommand),
       updateCommand: choose(updateCommand, commandsV2.updateCommand),
       deleteCommand: choose(deleteCommand, commandsV2.deleteCommand),
-      listMcpConfigs: choose(listMcpConfigs, mcpV2.listMcpConfigs),
-      getMcpConfig: choose(getMcpConfig, mcpV2.getMcpConfig),
-      createMcpConfig: choose(createMcpConfig, mcpV2.createMcpConfig),
-      updateMcpConfig: choose(updateMcpConfig, mcpV2.updateMcpConfig),
-      deleteMcpConfig: choose(deleteMcpConfig, mcpV2.deleteMcpConfig),
+      listMcpConfigs: chooseMcp(listMcpConfigs, mcpV2.listMcpConfigs, legacyMcpConfig.list),
+      getMcpConfig: chooseMcp(getMcpConfig, mcpV2.getMcpConfig, legacyMcpConfig.get),
+      createMcpConfig: chooseMcp(createMcpConfig, mcpV2.createMcpConfig, legacyMcpConfig.create),
+      updateMcpConfig: chooseMcp(updateMcpConfig, mcpV2.updateMcpConfig, legacyMcpConfig.update),
+      deleteMcpConfig: chooseMcp(deleteMcpConfig, mcpV2.deleteMcpConfig, legacyMcpConfig.remove),
       listSnippets,
       getSnippet,
       createSnippet,

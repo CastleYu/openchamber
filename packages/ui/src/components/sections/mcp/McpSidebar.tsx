@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { selectMcpServersForDirectory, useMcpConfigStore, isMcpConfigEnabled, type McpDraft, type McpServerWithScope } from '@/stores/useMcpConfigStore';
+import { selectMcpServersForDirectory, useMcpConfigStore, isMcpConfigEnabled, isMcpEnabledOnlyConfig, type McpDraft, type McpServerWithScope } from '@/stores/useMcpConfigStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useMcpStore } from '@/stores/useMcpStore';
 import { useSettingsDirectory } from '@/hooks/useSettingsDirectory';
@@ -176,6 +176,7 @@ export const McpSidebar: React.FC<McpSidebarProps> = ({ onItemSelect }) => {
   };
 
   const renderMcpMenuItems = (server: McpServerWithScope, Item: React.ElementType) => (
+    isMcpEnabledOnlyConfig(server) ? null :
     <Item
       onClick={(e: React.MouseEvent) => {
         e.stopPropagation();
@@ -254,13 +255,17 @@ export const McpSidebar: React.FC<McpSidebarProps> = ({ onItemSelect }) => {
                         className="flex min-w-0 flex-1 flex-col gap-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <div className="flex items-center gap-2">
-                          <StatusDot tone={tone} enabled={isMcpConfigEnabled(server)} />
+                          <StatusDot tone={tone} enabled={isMcpConfigEnabled(server) && !isMcpEnabledOnlyConfig(server)} />
                           <span className="typography-ui-label font-normal truncate text-foreground">{server.name}</span>
-                          <span title={server.type === 'local'
+                          <span title={isMcpEnabledOnlyConfig(server)
+                            ? t('settings.mcp.page.enabledOnly.description')
+                            : server.type === 'local'
                             ? t('settings.mcp.sidebar.serverType.localTitle')
                             : t('settings.mcp.sidebar.serverType.remoteTitle')}
                           >
-                            {server.type === 'local' ? (
+                            {isMcpEnabledOnlyConfig(server) ? (
+                              <Icon name="plug" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
+                            ) : server.type === 'local' ? (
                               <Icon name="server" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
                             ) : (
                               <Icon name="global" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
@@ -268,7 +273,9 @@ export const McpSidebar: React.FC<McpSidebarProps> = ({ onItemSelect }) => {
                           </span>
                         </div>
                         <div className="typography-micro text-muted-foreground/60 truncate leading-tight pl-4">
-                          {server.type === 'local'
+                          {isMcpEnabledOnlyConfig(server)
+                            ? t(isMcpConfigEnabled(server) ? 'settings.mcp.page.enabledOnly.sidebarEnabled' : 'settings.mcp.page.enabledOnly.sidebarDisabled')
+                            : server.type === 'local'
                             ? server.command.join(' ')
                             : server.url}
                         </div>
@@ -317,13 +324,17 @@ export const McpSidebar: React.FC<McpSidebarProps> = ({ onItemSelect }) => {
                         className="flex min-w-0 flex-1 flex-col gap-0 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <div className="flex items-center gap-2">
-                          <StatusDot tone={tone} enabled={isMcpConfigEnabled(server)} />
+                          <StatusDot tone={tone} enabled={isMcpConfigEnabled(server) && !isMcpEnabledOnlyConfig(server)} />
                           <span className="typography-ui-label font-normal truncate text-foreground">{server.name}</span>
-                          <span title={server.type === 'local'
+                          <span title={isMcpEnabledOnlyConfig(server)
+                            ? t('settings.mcp.page.enabledOnly.description')
+                            : server.type === 'local'
                             ? t('settings.mcp.sidebar.serverType.localTitle')
                             : t('settings.mcp.sidebar.serverType.remoteTitle')}
                           >
-                            {server.type === 'local' ? (
+                            {isMcpEnabledOnlyConfig(server) ? (
+                              <Icon name="plug" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
+                            ) : server.type === 'local' ? (
                               <Icon name="server" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
                             ) : (
                               <Icon name="global" className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" />
@@ -331,7 +342,9 @@ export const McpSidebar: React.FC<McpSidebarProps> = ({ onItemSelect }) => {
                           </span>
                         </div>
                         <div className="typography-micro text-muted-foreground/60 truncate leading-tight pl-4">
-                          {server.type === 'local'
+                          {isMcpEnabledOnlyConfig(server)
+                            ? t(isMcpConfigEnabled(server) ? 'settings.mcp.page.enabledOnly.sidebarEnabled' : 'settings.mcp.page.enabledOnly.sidebarDisabled')
+                            : server.type === 'local'
                             ? server.command.join(' ')
                             : server.url}
                         </div>

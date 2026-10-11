@@ -872,6 +872,7 @@ describe('exact Legacy configuration snapshot', () => {
     const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : { mcp, model: 'fixture/model' } }), requests);
     const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({ Authorization: 'Basic fixture' }) });
     const result = await ops.getLegacyConfiguration({ directory: paths.directory });
+    expect(result.version).toBe('1.2.27');
     expect(result.data).toEqual({ paths, mcp });
     expect(requests.map(record => record.path).sort()).toEqual(['/config', '/path']);
     for (const request of requests) {

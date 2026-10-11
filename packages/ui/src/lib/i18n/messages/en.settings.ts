@@ -2542,6 +2542,7 @@ export const settingsDict = {
   'settings.providers.page.actions.reconnect': 'Reconnect',
   'settings.providers.page.actions.disconnecting': 'Disconnecting...',
   'settings.mcp.page.empty.selectServer': 'Select an MCP server from the sidebar',
+  'settings.mcp.grid.status.enabled': 'Enabled',
   'settings.mcp.page.empty.addNewOne': 'or add a new one',
   'settings.mcp.page.status.label.awaitingRestart': 'Awaiting restart',
   'settings.mcp.page.status.description.awaitingRestart': 'This server is saved but not applied yet. Use Apply & Restart to load it into OpenCode — connect and authorization become available after that.',

@@ -90,7 +90,7 @@ export function createKernelOperations(dependencies: {
   prepareSession?: (input: { sessionID: string; directory?: string; identity: KernelIdentity }) => Promise<void>;
 }): {
   captureIdentity(): KernelIdentity;
-  getLegacyConfiguration(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ paths: Pick<LegacyPath, 'home' | 'config' | 'directory' | 'worktree'>; mcp: NonNullable<LegacyConfig['mcp']> }>>;
+  getLegacyConfiguration(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ paths: Pick<LegacyPath, 'home' | 'config' | 'directory' | 'worktree'>; mcp: NonNullable<LegacyConfig['mcp']> }> & { version: string }>;
   getSession(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<SessionView>>;
   createSession(input: { directory: string; title?: string; parentID?: string; agent?: string; model?: SessionInfo['model']; metadata?: LegacySession['metadata']; permission?: NonNullable<SessionCreateData['body']>['permission']; workspaceID?: NonNullable<SessionCreateData['body']>['workspaceID']; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionView>>;
   listSessions(input?: { directory?: string; limit?: number; cursor?: string | number; search?: string; signal?: AbortSignal }): Promise<KernelResult<SessionPage>>;

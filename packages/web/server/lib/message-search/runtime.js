@@ -3,6 +3,8 @@ import fsPromises from 'node:fs/promises';
 import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
 
+import { AGENT_FAMILY } from '../agent/constants.js';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../opencode/compatibility.js';
 import { createMessageSearchIndexer } from './indexer.js';
 import { loadSqliteOpener } from './sqlite.js';
 import { buildSnippet, openMessageSearchStore, toMatchExpression, toSearchTerms } from './store.js';
@@ -17,6 +19,23 @@ const MAX_LIMIT = 200;
 // The hub's envelope: `directory` is 'global' for events with no location.
 const envelopeSchema = z.object({ directory: z.string().nullish() });
 const payloadDirectorySchema = z.object({ properties: z.object({ directory: z.string() }) });
+const runtimeOwner = (runtime) => ({
+  generation: runtime.generation,
+  profile: runtime.profile,
+  endpoint: runtime.endpoint,
+  epoch: runtime.epoch,
+  family: runtime.family,
+  revision: runtime.revision,
+});
+const sameOwner = (left, right) => left?.generation === right?.generation
+  && left?.profile === right?.profile
+  && left?.endpoint === right?.endpoint
+  && left?.epoch === right?.epoch
+  && left?.family === right?.family
+  && left?.revision === right?.revision;
+const canIndex = (owner) => owner?.generation === OPENCODE_GENERATION.OC2
+  && owner.profile !== OPENCODE_PROFILE.LEGACY
+  && owner.family !== AGENT_FAMILY.CAGENT;
 
 /**
  * Owns the search index for this server's OpenCode. Search is opt-in
@@ -82,11 +101,13 @@ export const createMessageSearchRuntime = ({
     return false;
   };
 
-  const startEngine = () => {
+  const startEngine = (identity) => {
     const store = openMessageSearchStore(open(indexPath));
     reconcileReasoning(store);
-    const indexer = createMessageSearchIndexer({ store, createClient, includeReasoning: () => reasoning, logger });
+    const isCurrent = () => sameOwner(identity, runtimeOwner(getRuntime())) && canIndex(identity);
+    const indexer = createMessageSearchIndexer({ store, createClient, isCurrent, includeReasoning: () => reasoning, logger });
     const unsubscribeEvents = globalEventHub.subscribeEvent((event) => {
+      if (!isCurrent()) return;
       const envelope = envelopeSchema.safeParse(event);
       const directory = envelope.success && envelope.data.directory !== 'global' ? envelope.data.directory ?? '' : '';
       for (const payload of event?.translated?.() ?? []) {
@@ -95,7 +116,7 @@ export const createMessageSearchRuntime = ({
       }
     });
     const unsubscribeStatus = globalEventHub.subscribeStatus((status) => {
-      if (status?.type === 'connect') indexer.onConnected();
+      if (status?.type === 'connect' && isCurrent()) indexer.onConnected();
     });
     if (globalEventHub.isConnected?.()) indexer.onConnected();
     return {
@@ -113,16 +134,17 @@ export const createMessageSearchRuntime = ({
   };
 
   const apply = async () => {
-    if (enabled && getRuntime().generation === 'oc2' && !engine && open) {
+    const current = runtimeOwner(getRuntime());
+    if (enabled && canIndex(current) && !engine && open) {
       try {
-        engine = startEngine();
-        engineIdentity = getRuntime();
+        engineIdentity = current;
+        engine = startEngine(current);
         failed = false;
       } catch (error) {
         failed = true;
         logger.warn?.('[message-search] index unavailable:', error?.message ?? error);
       }
-    } else if (!enabled && engine) {
+    } else if ((!enabled || !canIndex(current)) && engine) {
       const running = engine;
       engine = null;
       engineIdentity = null;
@@ -160,7 +182,8 @@ export const createMessageSearchRuntime = ({
     /** Follows `messageSearchReasoningEnabled`; applied to the file only while search runs. */
     setReasoningEnabled: (next) => enqueue(async () => {
       reasoning = next === true;
-      if (engine && reconcileReasoning(engine.store) && globalEventHub.isConnected?.()) engine.indexer.onConnected();
+      if (engine && sameOwner(runtimeOwner(getRuntime()), engineIdentity)
+        && reconcileReasoning(engine.store) && globalEventHub.isConnected?.()) engine.indexer.onConnected();
     }),
 
     /**
@@ -186,7 +209,9 @@ export const createMessageSearchRuntime = ({
      */
     search: ({ query, sessionId, directories, role, includeReasoning, before, limit, order }) => {
       const current = getRuntime();
-      if (!engine || current.generation !== 'oc2' || current.endpoint !== engineIdentity?.endpoint || current.epoch !== engineIdentity?.epoch) return null;
+      const identity = runtimeOwner(current);
+      if (!engine) return null;
+      if (!canIndex(identity) || !sameOwner(identity, engineIdentity)) return null;
       const match = toMatchExpression(query);
       if (!match) return { status: 'query-too-short', hits: [] };
       const size = Math.min(Math.max(1, limit), MAX_LIMIT);
@@ -224,11 +249,10 @@ export const createMessageSearchRuntime = ({
     /** What the Settings page shows; the counts exist only while the index is open. */
     status: async () => {
       if (!open) return { state: 'unsupported', sizeBytes: 0, index: null };
-      // A switch or delete already asked for is reported as done.
       await transition;
       const sizeBytes = await indexSize();
       const current = getRuntime();
-      if (engine && current.generation === 'oc2' && current.endpoint === engineIdentity?.endpoint && current.epoch === engineIdentity?.epoch) {
+      if (engine && canIndex(runtimeOwner(current)) && sameOwner(runtimeOwner(current), engineIdentity)) {
         return { state: 'on', sizeBytes, index: engine.indexer.status() };
       }
       return { state: enabled && failed ? 'failed' : 'off', sizeBytes, index: null };

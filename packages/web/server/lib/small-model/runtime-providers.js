@@ -25,6 +25,7 @@
 // what it knows and leaves the verdict to the call itself.
 
 import { z } from 'zod';
+import { OPENCODE_GENERATION, OPENCODE_PROFILE } from '../opencode/compatibility.js';
 
 const SNAPSHOT_TTL_MS = 30_000;
 const SNAPSHOT_TIMEOUT_MS = 5_000;
@@ -40,17 +41,42 @@ let connection = null;
 let snapshot = null;
 let snapshotAt = 0;
 let inflight = null;
+let lease = 0;
+let snapshotOwner = null;
 
 /** The bound kernel generation; OC1 is the conservative default before wiring. */
-export const getRuntimeGeneration = () => connection?.getGeneration?.() ?? 'oc1';
+const readOwner = () => {
+  if (!connection) return null;
+  if (connection.getRuntimeDescriptor) {
+    const runtime = connection.getRuntimeDescriptor();
+    if (!runtime || ![OPENCODE_GENERATION.OC1, OPENCODE_GENERATION.OC2].includes(runtime.generation)) return null;
+    if (runtime.profile && runtime.profile !== OPENCODE_PROFILE.OC1 && runtime.profile !== OPENCODE_PROFILE.OC2) return null;
+    if (runtime.profile && runtime.profile !== runtime.generation) return null;
+    return { generation: runtime.generation, profile: runtime.profile ?? runtime.generation, endpoint: runtime.endpoint, epoch: runtime.epoch, lease };
+  }
+  const generation = connection.getGeneration?.() ?? OPENCODE_GENERATION.OC1;
+  if (![OPENCODE_GENERATION.OC1, OPENCODE_GENERATION.OC2].includes(generation)) return null;
+  return { generation, profile: generation, endpoint: null, epoch: null, lease };
+};
+const sameOwner = (left, right) => Boolean(left && right
+  && left.generation === right.generation && left.profile === right.profile
+  && left.endpoint === right.endpoint && left.epoch === right.epoch && left.lease === right.lease);
+export const getRuntimeGeneration = () => {
+  if (!connection) return OPENCODE_GENERATION.OC1;
+  if (connection.getRuntimeDescriptor) return connection.getRuntimeDescriptor()?.generation ?? OPENCODE_GENERATION.OC1;
+  return connection.getGeneration?.() ?? OPENCODE_GENERATION.OC1;
+};
 
 const defaultModelSchema = z.object({ providerID: z.string().min(1), id: z.string().min(1) });
 
 /** The OC2 default model is an explicit runtime selection, not an auth-order guess. */
 export const getRuntimeDefaultModel = async (directory) => {
-  if (getRuntimeGeneration() !== 'oc2' || !connection?.getDefaultModel) return null;
-  const result = await connection.getDefaultModel(directory);
-  if (result?.generation !== 'oc2') throw new Error('Default model came from another OpenCode generation');
+  const owner = readOwner();
+  if (owner?.generation !== OPENCODE_GENERATION.OC2 || !connection?.getDefaultModel) return null;
+  const selectedConnection = connection;
+  const result = await selectedConnection.getDefaultModel(directory);
+  if (!sameOwner(owner, readOwner()) || selectedConnection !== connection) return null;
+  if (result?.generation !== OPENCODE_GENERATION.OC2) throw new Error('Default model came from another OpenCode generation');
   if (result.data === null) return null;
   const parsed = defaultModelSchema.safeParse(result.data);
   if (!parsed.success) throw new Error('OpenCode returned an invalid default model');
@@ -72,7 +98,9 @@ export function configureOpenCodeRuntimeProviders(next) {
  * change ports, keys and the provider list itself.
  */
 export function resetOpenCodeRuntimeProviders() {
+  lease += 1;
   snapshot = null;
+  snapshotOwner = null;
   snapshotAt = 0;
   inflight = null;
 }
@@ -133,15 +161,16 @@ function parseProviderListing(payload) {
   return { providers, connected };
 }
 
-const fetchSnapshot = async () => {
-  const response = await fetch(connection.buildOpenCodeUrl('/provider', ''), {
-    headers: { Accept: 'application/json', ...connection.getOpenCodeAuthHeaders() },
+const fetchSnapshot = async (boundConnection, owner) => {
+  const response = await fetch(boundConnection.buildOpenCodeUrl('/provider', ''), {
+    headers: { Accept: 'application/json', ...boundConnection.getOpenCodeAuthHeaders() },
     signal: AbortSignal.timeout(SNAPSHOT_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`OpenCode provider listing failed with ${response.status}`);
   }
-  return parseProviderListing(await response.json());
+  const parsed = parseProviderListing(await response.json());
+  return sameOwner(owner, readOwner()) && boundConnection === connection ? parsed : null;
 };
 
 /**
@@ -153,22 +182,33 @@ const fetchSnapshot = async () => {
  * empty provider list.
  */
 export async function getRuntimeProviderSnapshot() {
-  if (!connection) return null;
-  if (snapshot && Date.now() - snapshotAt < SNAPSHOT_TTL_MS) return snapshot;
-  if (!inflight) {
-    inflight = fetchSnapshot().finally(() => {
-      inflight = null;
-    });
+  const owner = readOwner();
+  if (!owner) return null;
+  if (snapshot && sameOwner(snapshotOwner, owner) && Date.now() - snapshotAt < SNAPSHOT_TTL_MS) return snapshot;
+  if (inflight && sameOwner(inflight.owner, owner)) {
+    try {
+      return await inflight.promise;
+    } catch {
+      return snapshot && sameOwner(snapshotOwner, owner) && sameOwner(owner, readOwner()) ? snapshot : null;
+    }
   }
-  try {
-    snapshot = await inflight;
+  const boundConnection = connection;
+  const request = { owner, promise: null };
+  request.promise = fetchSnapshot(boundConnection, owner).then((result) => {
+    if (!result || !sameOwner(owner, readOwner()) || boundConnection !== connection) return null;
+    snapshot = result;
+    snapshotOwner = owner;
     snapshotAt = Date.now();
-    return snapshot;
+    return result;
+  }).finally(() => {
+    if (inflight === request) inflight = null;
+  });
+  inflight = request;
+  try {
+    return await request.promise;
   } catch {
-    // Keep serving the previous snapshot when there is one: a momentarily
-    // unreachable OpenCode should not retract providers that were resolving a
-    // second ago.
-    return snapshot;
+    // A cached answer is valid only for the owner that produced it.
+    return snapshot && sameOwner(snapshotOwner, readOwner()) && sameOwner(snapshotOwner, owner) ? snapshot : null;
   }
 }
 

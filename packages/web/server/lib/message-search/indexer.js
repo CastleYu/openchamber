@@ -91,6 +91,8 @@ export const createMessageSearchIndexer = ({
   // (directory) => OpenCode client, built at call time so a restarted or
   // re-pointed OpenCode is used as soon as it exists.
   createClient,
+  // Captured runtime ownership is checked at every asynchronous boundary.
+  isCurrent = () => true,
   pageSize = PAGE_SIZE,
   liveDebounceMs = LIVE_DEBOUNCE_MS,
   backfillPauseMs = BACKFILL_PAUSE_MS,
@@ -106,12 +108,17 @@ export const createMessageSearchIndexer = ({
   let backfillRun = 0;
   let stopped = false;
 
+  const active = () => !stopped && isCurrent();
+
   const syncSession = async (sessionId, directoryHint, { retried = false } = {}) => {
+    if (!active()) return;
     const client = createClient(directoryHint);
     let session;
     try {
       session = sessionSchema.parse(await client.session.get({ sessionID: sessionId }));
+      if (!active()) return;
     } catch (error) {
+      if (!active()) return;
       if (isTag(error, 'SessionNotFoundError')) {
         store.deleteSession(sessionId);
         return;
@@ -136,6 +143,7 @@ export const createMessageSearchIndexer = ({
       const reverted = createdSchema.safeParse(
         await client.session.message.get({ sessionID: sessionId, messageID: revertId }).catch(() => null),
       );
+      if (!active()) return;
       cutoff = reverted.success ? reverted.data.time.created : Number.NEGATIVE_INFINITY;
     }
 
@@ -153,7 +161,9 @@ export const createMessageSearchIndexer = ({
             type: role,
             ...(cursor ? { cursor } : { order: 'asc' }),
           }));
+          if (!active()) return;
         } catch (error) {
+          if (!active()) return;
           // The message the cursor names is gone (deleted, reverted and
           // replaced): read the session again from the start, once.
           if (cursor && !retried && (isTag(error, 'InvalidCursorError') || isTag(error, 'MessageNotFoundError') || isTag(error, 'InvalidRequestError'))) {
@@ -192,6 +202,7 @@ export const createMessageSearchIndexer = ({
         cursor = next;
       }
     }
+    if (!active()) return;
     store.markSynced(sessionId, session.time?.updated ?? null);
   };
 
@@ -247,6 +258,7 @@ export const createMessageSearchIndexer = ({
    * empty list.
    */
   const startBackfill = async () => {
+    if (!active()) return;
     const run = ++backfillRun;
     const client = createClient('');
     const listed = new Map();
@@ -254,6 +266,7 @@ export const createMessageSearchIndexer = ({
     try {
       for (;;) {
         const page = sessionPageSchema.parse(await client.session.list({ parentID: null, limit: SESSION_PAGE_SIZE, ...(cursor ? { cursor } : { order: 'desc' }) }));
+        if (!active()) return;
         for (const record of page.data) {
           const session = sessionSchema.safeParse(record);
           if (session.success && !session.data.parentID) listed.set(session.data.id, session.data);
@@ -263,10 +276,11 @@ export const createMessageSearchIndexer = ({
         cursor = next;
       }
     } catch (error) {
+      if (!active()) return;
       logger.warn?.('[message-search] could not list sessions:', error?.message ?? error);
       return;
     }
-    if (run !== backfillRun || stopped) return;
+    if (run !== backfillRun || !active()) return;
     for (const id of store.sessionIds()) {
       if (!listed.has(id)) store.deleteSession(id);
     }
@@ -285,7 +299,7 @@ export const createMessageSearchIndexer = ({
   return {
     /** Translated OpenCode events (event-stream/translate-v2.js vocabulary). */
     processPayload(payload, directory = '') {
-      if (stopped) return;
+      if (!active()) return;
       const event = eventSchema.safeParse(payload);
       if (!event.success) return;
       const { type, properties: { sessionID: sessionId, info } } = event.data;
@@ -314,7 +328,7 @@ export const createMessageSearchIndexer = ({
 
     /** OpenCode (re)connected: catch up on whatever changed while it was not watched. */
     onConnected() {
-      if (stopped) return;
+      if (!active()) return;
       void startBackfill();
     },
 

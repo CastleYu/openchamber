@@ -30,9 +30,16 @@ the UI shows no message search (no Cmd+P group, Cmd+F left alone).
 
 This new index uses OC2 message cursors and stays off on OC1 even if the saved
 setting is true. OC1's existing title and in-session search remain available.
-When the OpenCode endpoint or epoch changes, the server stops the index, drops
-the derived file, and rebuilds it only if the new runtime is OC2 and search is
-enabled. Search and status cannot expose an index from the previous runtime.
+The index lease includes generation, profile, endpoint, epoch, and the backend
+family/revision when supplied. The kernel runtime folds backend selection
+changes into its epoch. Search/status and the indexer refuse a stale lease
+immediately; the existing kernel identity-change transition stops the indexer,
+drops the derived file, and rebuilds only for an admitted OC2 runtime with
+search enabled. CAgent and Legacy never start OpenCode requests. Every awaited
+session, message, and list read checks its captured lease before committing,
+and event handlers reject retired leases. Disabling and re-enabling search for
+the unchanged identity reuses its file; the production kernel identity-change
+transition clears the file before enabling the replacement owner.
 
 The runtime reads the setting at startup; `persistSettings` calls
 `setEnabled` when the key changes. Switching off stops the indexer (after the

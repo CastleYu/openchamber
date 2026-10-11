@@ -1,3 +1,4 @@
+import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -9,6 +10,8 @@ import {
   getRuntimeProviderSnapshot,
   resetOpenCodeRuntimeProviders,
 } from './runtime-providers.js';
+
+const nativeFetch = globalThis.fetch;
 
 const providerPayload = (overrides = {}) => ({
   all: [
@@ -38,6 +41,13 @@ const providerPayload = (overrides = {}) => ({
   connected: ['llmapi', 'opencode', 'zai-coding-plan'],
   ...overrides,
 });
+
+const startProviderServer = async (handler) => {
+  const server = createServer(handler);
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const endpoint = `http://127.0.0.1:${server.address().port}`;
+  return { endpoint, close: () => new Promise((resolve) => server.close(resolve)) };
+};
 
 describe('OpenCode runtime provider snapshot', () => {
   let fetchMock;
@@ -77,6 +87,20 @@ describe('OpenCode runtime provider snapshot', () => {
     expect(getRuntimeGeneration()).toBe('oc2');
     configureOpenCodeRuntimeProviders(null);
     expect(getRuntimeGeneration()).toBe('oc1');
+  });
+
+  it('retires a late OC2 default model when its runtime owner changes', async () => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://127.0.0.1:1', epoch: 1 };
+    let release;
+    configureOpenCodeRuntimeProviders({
+      getRuntimeDescriptor: () => runtime,
+      getDefaultModel: () => new Promise((resolve) => { release = resolve; }),
+    });
+    const pending = getRuntimeDefaultModel('/project');
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    runtime = { ...runtime, epoch: 2 };
+    release({ generation: 'oc2', data: { providerID: 'old-owner', id: 'model' } });
+    expect(await pending).toBeNull();
   });
 
   it('accepts a stamped OC2 default model and rejects malformed data', async () => {
@@ -130,6 +154,120 @@ describe('OpenCode runtime provider snapshot', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(refreshed.providers.has('llmapi')).toBe(true);
+  });
+
+  it('retires cached credentials when the runtime descriptor changes', async () => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://127.0.0.1:1', epoch: 1 };
+    configureOpenCodeRuntimeProviders({ getRuntimeDescriptor: () => runtime, buildOpenCodeUrl: (path) => `${runtime.endpoint}${path}`, getOpenCodeAuthHeaders: () => ({}) });
+    await getRuntimeProviderSnapshot();
+    runtime = { ...runtime, epoch: 2 };
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(providerPayload({ all: [] })), { status: 200 }));
+    expect((await getRuntimeProviderSnapshot()).providers.size).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let a retired in-flight fetch repopulate the next owner cache', async () => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://127.0.0.1:1', epoch: 1 };
+    let release;
+    fetchMock.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+    configureOpenCodeRuntimeProviders({ getRuntimeDescriptor: () => runtime, buildOpenCodeUrl: (path) => `${runtime.endpoint}${path}`, getOpenCodeAuthHeaders: () => ({}) });
+    const retired = getRuntimeProviderSnapshot();
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    runtime = { ...runtime, epoch: 2 };
+    const current = getRuntimeProviderSnapshot();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    release(new Response(JSON.stringify(providerPayload()), { status: 200 }));
+    expect(await retired).toBeNull();
+    expect((await current).providers.size).toBe(3);
+    expect((await getRuntimeProvider('llmapi')).apiKey).toBe('plugin-key');
+  });
+
+  it.each([
+    ['CAgent', { generation: 'unsupported', endpoint: null, epoch: 2, version: null }],
+    ['Legacy', { generation: 'oc1', profile: 'legacy-1.2.27', endpoint: 'http://127.0.0.1:1', epoch: 1 }],
+    ['unresolved generation', { generation: 'unknown', profile: 'oc2', endpoint: 'http://127.0.0.1:1', epoch: 1 }],
+  ])('does not dispatch or read auth headers for %s', async (_label, runtime) => {
+    const headers = vi.fn(() => ({}));
+    configureOpenCodeRuntimeProviders({ getRuntimeDescriptor: () => runtime, buildOpenCodeUrl: () => 'http://127.0.0.1:1/provider', getOpenCodeAuthHeaders: headers });
+    expect(await getRuntimeProviderSnapshot()).toBeNull();
+    expect(getRuntimeGeneration()).toBe(runtime.generation);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(headers).not.toHaveBeenCalled();
+  });
+
+  it('does not serve an old same-owner fallback to a concurrent caller after identity changes', async () => {
+    let runtime = { generation: 'oc2', profile: 'oc2', endpoint: 'http://127.0.0.1:1', epoch: 1 };
+    configureOpenCodeRuntimeProviders({ getRuntimeDescriptor: () => runtime, buildOpenCodeUrl: (path) => `${runtime.endpoint}${path}`, getOpenCodeAuthHeaders: () => ({}) });
+    await getRuntimeProviderSnapshot();
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 60_000);
+    let reject;
+    fetchMock.mockImplementationOnce(() => new Promise((_resolve, rejectRequest) => { reject = rejectRequest; }));
+    const first = getRuntimeProviderSnapshot();
+    await vi.waitFor(() => expect(reject).toBeTypeOf('function'));
+    const second = getRuntimeProviderSnapshot();
+    runtime = { ...runtime, epoch: 2 };
+    reject(new Error('temporary outage'));
+    expect(await first).toBeNull();
+    expect(await second).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('discards a real loopback response after the endpoint owner changes', async () => {
+    vi.stubGlobal('fetch', nativeFetch);
+    let oldResponse;
+    let newRequests = 0;
+    const oldServer = await startProviderServer((_request, response) => { oldResponse = response; });
+    const newServer = await startProviderServer((_request, response) => {
+      newRequests += 1;
+      response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(providerPayload({ all: [] })));
+    });
+    let runtime = { generation: 'oc1', profile: 'oc1', endpoint: oldServer.endpoint, epoch: 1 };
+    try {
+      configureOpenCodeRuntimeProviders({
+        getRuntimeDescriptor: () => runtime,
+        buildOpenCodeUrl: (path) => `${runtime.endpoint}${path}`,
+        getOpenCodeAuthHeaders: () => ({}),
+      });
+      const retired = getRuntimeProviderSnapshot();
+      await vi.waitFor(() => expect(oldResponse).toBeTruthy());
+      runtime = { ...runtime, endpoint: newServer.endpoint, epoch: 2 };
+      const current = await getRuntimeProviderSnapshot();
+      oldResponse.writeHead(200, { 'content-type': 'application/json' });
+      oldResponse.end(JSON.stringify(providerPayload()));
+      expect(current.providers.size).toBe(0);
+      expect(await retired).toBeNull();
+      expect(newRequests).toBe(1);
+    } finally {
+      await Promise.all([oldServer.close(), newServer.close()]);
+    }
+  });
+
+  it('uses a real loopback provider response and retires it after reset during the read', async () => {
+    vi.stubGlobal('fetch', nativeFetch);
+    let answer;
+    let requests = 0;
+    const loopback = await startProviderServer((_request, response) => {
+      requests += 1;
+      if (requests === 1) answer = response;
+      else response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(providerPayload()));
+    });
+    try {
+      configureOpenCodeRuntimeProviders({
+        getRuntimeDescriptor: () => ({ generation: 'oc1', profile: 'oc1', endpoint: loopback.endpoint, epoch: 1 }),
+        buildOpenCodeUrl: (path) => `${loopback.endpoint}${path}`,
+        getOpenCodeAuthHeaders: () => ({}),
+      });
+      const pending = getRuntimeProviderSnapshot();
+      await vi.waitFor(() => expect(answer).toBeTruthy());
+      resetOpenCodeRuntimeProviders();
+      answer.writeHead(200, { 'content-type': 'application/json' });
+      answer.end(JSON.stringify(providerPayload()));
+      expect(await pending).toBeNull();
+      expect(await getRuntimeProviderSnapshot()).not.toBeNull();
+    } finally {
+      await loopback.close();
+    }
   });
 
   it('stays on file-based resolution until it is configured', async () => {

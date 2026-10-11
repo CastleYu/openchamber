@@ -27,15 +27,18 @@ describe('message search runtime', () => {
   let dataDir;
   let hub;
   const indexFile = () => path.join(dataDir, 'message-search.sqlite');
-  const create = (enabled, reasoning = false, getRuntime) => createMessageSearchRuntime({
-    dataDir,
-    buildOpenCodeUrl: () => 'http://127.0.0.1:1/',
-    getOpenCodeAuthHeaders: () => ({}),
-    globalEventHub: hub,
-    ...(getRuntime ? { getRuntime } : {}),
-    readSettings: async () => ({ enabled, reasoning }),
-    logger: { warn: () => {} },
-  });
+  const create = (enabled, reasoning = false, getRuntime) => {
+    const options = {
+      dataDir,
+      buildOpenCodeUrl: () => 'http://127.0.0.1:1/',
+      getOpenCodeAuthHeaders: () => ({}),
+      globalEventHub: hub,
+      readSettings: async () => ({ enabled, reasoning }),
+      logger: { warn: () => {} },
+    };
+    if (getRuntime) options.getRuntime = getRuntime;
+    return createMessageSearchRuntime(options);
+  };
 
   beforeEach(() => {
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'message-search-runtime-'));
@@ -67,6 +70,38 @@ describe('message search runtime', () => {
     identity = { generation: 'oc2', endpoint: 'http://another', epoch: 3 };
     expect(runtime.search({ query: 'anything', limit: 5 })).toBeNull();
     expect((await runtime.status()).state).toBe('off');
+    await runtime.stop();
+    await runtime.deleteIndex();
+    await runtime.setEnabled(true);
+    expect((await runtime.status()).state).toBe('on');
+    await runtime.stop();
+  });
+
+  it('retires profile and backend changes, then admits indexing when OpenCode returns', async () => {
+    let identity = { generation: 'oc2', profile: 'oc2', endpoint: 'http://local', epoch: 1, family: 'opencode', revision: 1 };
+    const runtime = create(true, false, () => identity);
+    expect((await runtime.status()).state).toBe('on');
+
+    identity = { ...identity, profile: 'legacy-1.2.27' };
+    expect(identity.endpoint).toBe('http://local');
+    expect(identity.epoch).toBe(1);
+    expect((await runtime.status()).state).toBe('off');
+    expect(runtime.search({ query: 'anything', limit: 5 })).toBeNull();
+    expect(fs.existsSync(indexFile())).toBe(true);
+    expect(hub.listeners).toEqual({ event: 1, status: 1 });
+    await runtime.stop();
+    await runtime.deleteIndex();
+    expect(fs.existsSync(indexFile())).toBe(false);
+    expect(hub.listeners).toEqual({ event: 0, status: 0 });
+
+    identity = { ...identity, profile: 'oc2', family: 'cagent', revision: 2, epoch: 3 };
+    expect((await runtime.status()).state).toBe('off');
+    expect(hub.listeners).toEqual({ event: 0, status: 0 });
+
+    identity = { ...identity, family: 'opencode', revision: 3, epoch: 4 };
+    await runtime.setEnabled(true);
+    expect((await runtime.status()).state).toBe('on');
+    expect(hub.listeners).toEqual({ event: 1, status: 1 });
     await runtime.stop();
   });
 

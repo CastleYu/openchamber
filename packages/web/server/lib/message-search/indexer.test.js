@@ -85,6 +85,11 @@ const createFakeOpenCode = () => {
 };
 
 const open = loadSqliteOpener();
+const deferred = () => {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return { promise, resolve };
+};
 
 describe.skipIf(!open)('message search index', () => {
   let fake;
@@ -291,6 +296,52 @@ describe.skipIf(!open)('message search index', () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     await indexer.idle();
     expect(search('live')).toHaveLength(1);
+  });
+
+  it('discards a delayed session read after its runtime owner retires', async () => {
+    const pending = deferred();
+    let current = true;
+    const client = { session: { get: () => pending.promise } };
+    indexer = createMessageSearchIndexer({ store, createClient: () => client, isCurrent: () => current, logger: { warn: () => {} } });
+    const syncing = indexer.syncSession('a', '');
+    current = false;
+    pending.resolve({ id: 'a', title: 'old', location: { directory: '/old' }, time: { created: 1, updated: 1 } });
+    await syncing;
+    expect(store.counts()).toEqual({ sessions: 0, messages: 0 });
+  });
+
+  it('does not commit a delayed message page or finish marker after retirement', async () => {
+    const pending = deferred();
+    let current = true;
+    const client = {
+      session: { get: async () => ({ id: 'a', title: 'old', location: { directory: '/old' }, time: { created: 1, updated: 1 } }) },
+      message: { list: () => pending.promise },
+    };
+    indexer = createMessageSearchIndexer({ store, createClient: () => client, isCurrent: () => current, logger: { warn: () => {} } });
+    const syncing = indexer.syncSession('a', '');
+    await Promise.resolve();
+    await Promise.resolve();
+    current = false;
+    pending.resolve({ data: [{ id: 'u1', type: 'user', text: 'old owner text', time: { created: 2 } }], cursor: {} });
+    await syncing;
+    expect(store.search({ match: '"owner"', limit: 10 })).toEqual([]);
+    expect(store.readSession('a').synced_updated_at).toBeNull();
+  });
+
+  it('ignores old backfill completions and events after retirement', async () => {
+    const pending = deferred();
+    let current = true;
+    const client = { session: { list: () => pending.promise } };
+    indexer = createMessageSearchIndexer({ store, createClient: () => client, isCurrent: () => current, logger: { warn: () => {} } });
+    store.upsertSession({ id: 'a', directory: '/old', title: 'keep', createdAt: 1 });
+    indexer.onConnected();
+    await Promise.resolve();
+    current = false;
+    pending.resolve({ data: [], cursor: {} });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    indexer.processPayload({ type: 'session.deleted', properties: { sessionID: 'a' } });
+    expect(store.readSession('a')).toMatchObject({ id: 'a', title: 'keep' });
+    expect(indexer.status().backfill.state).toBe('idle');
   });
 
   it('filters by session, directory and author, and pages without repeats', async () => {

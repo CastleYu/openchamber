@@ -840,7 +840,7 @@ const kernelOperations = createKernelOperations({
 // stay on the file-based resolution and plugin models remain unreachable.
 configureOpenCodeRuntimeProviders({
   buildOpenCodeUrl, getOpenCodeAuthHeaders,
-  getGeneration: () => kernelRuntime.get().generation,
+  getRuntimeDescriptor: kernelRuntime.get,
   getDefaultModel: (directory) => kernelOperations.getDefaultModel({ directory }),
 });
 

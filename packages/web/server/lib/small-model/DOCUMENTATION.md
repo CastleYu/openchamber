@@ -19,11 +19,15 @@ other runtime API.
   OpenCode process. A plugin registers its provider from the `config` hook and
   supplies the credential from its `auth` loader, so neither reaches
   `opencode.json` nor `auth.json`; `GET /provider` is the only place they
-  become visible. The module caches one snapshot (30s TTL, shared in-flight
-  request) and answers `null` — never an empty provider list — when OpenCode is
-  unreachable, so a momentary outage cannot retract providers. It is wired once
-  from `server/index.js` and reset on OpenCode restart, which reloads plugins
-  and can move their ports and keys.
+  become visible. The module caches one snapshot for 30 seconds and shares
+  in-flight reads only within the captured generation, profile, endpoint, epoch
+  and reset lease. A temporary outage can reuse a snapshot from the same owner.
+  Changed owners and late results return `null`, never an authoritative empty
+  provider list. OC2 default-model reads use the same retirement check.
+  `server/index.js` supplies the kernel descriptor; restart resets the lease.
+  Legacy, CAgent and unresolved descriptors cannot read auth headers or dispatch
+  provider reads. An already-started external model generation call is outside
+  this module's retirement boundary.
 - `resolve.js` — model selection, mirroring OpenCode's `getSmallModel` chain:
   0. OpenChamber's own settings override (Settings → Sessions → Small Model):
      when `smallModelUseDefault` is `false`, `smallModelOverride`

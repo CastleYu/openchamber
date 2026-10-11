@@ -331,3 +331,30 @@ describe('raw SDK completion ownership', () => {
     } finally { fetch.mockRestore(); }
   });
 });
+
+describe('Legacy and current OC1 MCP transport', () => {
+  for (const [profile, version] of [['legacy-1.2.27', '1.2.27'], ['oc1', '1.18.33']] as const) {
+    test(profile + ' keeps MCP status, mutation method and directory scope', async () => {
+      opencodeClient.bindRuntime({ generation: 'oc1', profile, version, endpoint: 'http://kernel.test', epoch: 1 });
+      const fetch = spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ probe: { status: 'connected' } }));
+      try {
+        expect(await opencodeClient.listMcpServers('/repo')).toEqual({ probe: { status: 'connected' } });
+        expect(await opencodeClient.getMcpCatalog('/repo')).toEqual({ generation: 'oc1', value: { probe: { status: 'connected' } } });
+        await opencodeClient.connectMcpServer('probe', '/repo');
+        await opencodeClient.disconnectMcpServer('probe', '/repo');
+        const expected = [['GET', '/mcp'], ['GET', '/mcp'], ['POST', '/mcp/probe/connect'], ['POST', '/mcp/probe/disconnect']];
+        expect(fetch.mock.calls.length).toBe(expected.length);
+        for (const [index, [method, path]] of expected.entries()) {
+          const [input, init] = fetch.mock.calls[index];
+          const request = new Request(input, init);
+          const url = new URL(request.url);
+          expect(request.method).toBe(method);
+          expect(url.origin).toBe('https://protocol.test');
+          expect(url.pathname).toBe('/api' + path);
+          if (method === 'GET') expect(url.searchParams.get('directory')).toBe('/repo');
+          else expect(request.headers.get('x-opencode-directory')).toBe(encodeURIComponent('/repo'));
+        }
+      } finally { fetch.mockRestore(); }
+    });
+  }
+});

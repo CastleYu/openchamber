@@ -103,3 +103,20 @@ describe('VS Code kernel forwarding', () => {
     await assert.rejects(resolveKernelRequest(manager, '/session'), /not ready/);
   });
 });
+
+describe('VS Code Legacy MCP forwarding', () => {
+  test('forwards finite MCP paths and retires a captured request on epoch change', async () => {
+    const { manager, setProfile, setVersion, rebind } = fixture('oc1');
+    setProfile(OPENCODE_PROFILE.LEGACY); setVersion('1.2.27');
+    for (const [route, method] of [['/mcp?directory=%2Frepo', 'GET'], ['/mcp/probe/connect', 'POST'], ['/mcp/probe/disconnect', 'POST']]) {
+      const request = await resolveKernelRequest(manager, '/api' + route, method);
+      assert.equal(request.url, 'http://localhost:4096' + route);
+      request.assertCurrent();
+    }
+    const captured = await resolveKernelRequest(manager, '/mcp');
+    rebind(); assert.throws(captured.assertCurrent, /connection changed/);
+    for (const [route, method] of [['/mcp', 'POST'], ['/mcp/probe/auth', 'POST'], ['/mcp/probe/connect', 'GET']]) {
+      await assert.rejects(resolveKernelRequest(manager, route, method), /request is not supported/);
+    }
+  });
+});

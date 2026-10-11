@@ -2,7 +2,7 @@
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
-状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已通过精确 Legacy Web、实际 VS Code 对话、经本地 broker 的生产 E2EE Relay，以及当前 OC1 1.18.33／OC2 2.0.20 真实核心回归验收。OC2 验证发现分类器端点访问方法缺失；修复复用现有来源策略，并拒绝已退役的运行时身份。最终专项检查通过 81 项测试、Web 类型／lint、语法和新增代码 anti-slop；死代码基线不变。证据、源码指纹及清理见 artifacts/int03-r2-exit.json。Legacy 在 R3/R4 和最终宿主验收前仍为实验支持。本地 Relay 结果不覆盖公网 Relay／WAN、打包后的原生宿主及真机移动端。R3 正在进行。INT-04 的 Legacy 高级操作和恢复已验收，证据及边界见 artifacts/int04-acceptance.json。下一项为 INT-05 配置／凭据、插件／MCP 和无人值守任务；依赖重载的配置验收留到 R4，打包宿主、公网 Relay 和移动真机留到 R7。 [执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
+状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已通过精确 Legacy Web、实际 VS Code 对话、经本地 broker 的生产 E2EE Relay，以及当前 OC1 1.18.33／OC2 2.0.20 真实核心回归验收。OC2 验证发现分类器端点访问方法缺失；修复复用现有来源策略，并拒绝已退役的运行时身份。最终专项检查通过 81 项测试、Web 类型／lint、语法和新增代码 anti-slop；死代码基线不变。证据、源码指纹及清理见 artifacts/int03-r2-exit.json。Legacy 在 R3/R4 和最终宿主验收前仍为实验支持。本地 Relay 结果不覆盖公网 Relay／WAN、打包后的原生宿主及真机移动端。R3 正在进行。INT-04 的 Legacy 高级操作和恢复已验收，证据及边界见 artifacts/int04-acceptance.json。INT-05 已开始，有限的 MCP 状态／连接／断开协议已验证，配置／凭据、插件和无人值守验收仍未完成；依赖重载的配置验收留到 R4，打包宿主、公网 Relay 和移动真机留到 R7。 [执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
 R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
@@ -30,7 +30,7 @@ R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 | INT-02 | 5.4 | 五种显式连接模式、设置／迁移与进程切换 | INT-01, CA-02 Release | done |
 | INT-03 | 5.5 | 首个可用 Legacy 对话：会话、历史、流、决策及停止 | INT-01, INT-00L, CA-02 Release | done |
 | INT-04 | 5.6 | Legacy 高级操作与重连恢复 | INT-03, CA-02 Release | 已验收；证据见 artifacts/int04-acceptance.json |
-| INT-05 | 5.7 | Legacy 设置、凭据、插件／MCP 与无人值守操作 | INT-04, CA-02 Release | planned |
+| INT-05 | 5.7 | Legacy 设置、凭据、插件／MCP 与无人值守操作 | INT-04, CA-02 Release | 进行中；MCP 协议已验证，其余门槛未完成 |
 | INT-06 | 5.8 | 当前 OC1/OC2 释放实例、应用配置及外部／托管服务器重载 | INT-02, CA-02 Release | planned |
 | INT-07 | 5.9 | 原生菜单本地化 | INT-00, CA-02 Release | planned |
 | INT-08 | 5.10 | 持续显示分支上下文及显式刷新草稿分支 | INT-00, CA-02 Release | planned |
@@ -149,6 +149,10 @@ CA-01 至 CA-03 还须满足[工作流验收契约](CAGENT-WORKFLOW-ACCEPTANCE.m
 验收记录：精确 1.2.27 高级操作、恢复契约和双目录隔离通过。实际 VS Code 恢复在 Legacy 和当前 OC1 各通过 59 项检查；当前 OC2 生产宿主恢复通过 13 项检查，另有 12 项同步契约测试通过。全部证据、源码指纹、测试边界及临时文件清理见 artifacts/int04-acceptance.json。
 
 ### INT-05：Legacy 设置与自主任务
+
+进展，2026-10-12：精确 Legacy 的 GET `/mcp` 及 POST `/mcp/:name/connect`、`/disconnect` 已通过现有 SDK 和共享 HTTP 契约开放。真实 1.2.27 生产代理通过九项检查，包含两轮 stdio MCP 连接／发现／断开，以及所属子进程退出。UI／当前 OC1 和 VS Code 路由回归通过 148 项专项测试。所有工作区类型检查通过；并行 lint 出现内存不足后，单独重跑 VS Code，所有包的 lint 均通过。认证／创建／配置操作仍保持拒绝，等待各自契约实现。此结果不代表 INT-05 或 R3 验收。证据与下一批交接见 artifacts/int05-mcp-checkpoint.json。
+
+下一批：复用 Web 和 VS Code 现有配置模块，在任何文件写入前按精确 schema 验证最终状态。保留 agent／command 扩展属性、MCP 仅含 enabled 的条目、本地 timeout 和 `oauth: false`；拒绝不支持的远程 environment 与 OAuth redirectUri 字段。明确本地／远程配置所有权。随后验收凭据、生成插件及无人值守分派；配置应用／重载仍留在 R4。Astra 已复核此复用与写入前验证方案。
 
 负责 L07、L08、L11、L13 和 L15 中的能力核查。配置／提供商／认证／MCP／skills／生成插件和所有无人值守调用者均经过兼容配置分派。验证旧版本的元数据持久化，不假定现代 SDK 字段会被保存。仅较新内核原生支持的功能在服务层给出明确能力结果。
 

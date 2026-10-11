@@ -287,3 +287,17 @@ A guessed managed-config-v2.js path did not exist; use enumerated managed-config
 - Test runs exited 1 for all four files: Bun reported EPERM reading the actual repo at C:\Users\74756\.codex\worktrees\dijiang-next\openchamber (test file, repo root, and tsconfig paths). This is an environment sandbox access failure; no tests could execute. Results/logs were saved, and tests were not retried.
 
 - 2026-10-12: Two evidence/log reads used the wrong worktree-relative artifacts directory. Product evidence belongs to dijiang-next; driver logs belong to cdee. Use explicit absolute roots for mixed-worktree reads. No test or product source was affected.
+
+### 2026-10-12 INT-05 MCP tranche
+
+- Read-only research guessed missing legacy-request.js, runtime-client.ts, retained config/config.ts, client.oc1.test.ts and UI README/DOCUMENTATION paths; literal Windows wildcard paths also failed. No source changed. Use rg --files and rg -g against existing directories. Mixed-worktree test reads must use the actual product root.
+- Main review removed a child-agent guard that wrongly refused current OC1 MCP operations and removed unused facade declarations. Regression tests now retain current OC1 and reject wrong generations.
+- New UI transport tests initially reused a consumed Response and assumed one directory carrier for every method. Fresh responses and actual SDK GET query / POST encoded-header assertions pass.
+- Parallel workspace lint exhausted memory in VS Code with exit 134. Other packages passed; isolated VS Code lint then passed. Full workspace type checking passed.
+
+# INT05 MCP edit failures
+
+- 2026-10-12: PowerShell parser rejected an edit script because a here-string header was followed by literal escape text on the same line. No file writes from that command occurred; split future edits into simpler PowerShell literals or use the patch tool.
+- 2026-10-12: Bun focused tests from the actual checkout failed before collection with EPERM reading both test files and package tsconfigs. This is a sandbox access issue; rerun the same command with narrowly scoped elevated access.
+- 2026-10-12: First elevated focused test run collected 106 tests and found two assertion failures: the operation list expectation omitted the three new MCP constants, and the binding still allowed MCP operations outside the Legacy profile. Both are in-scope implementation/test issues and are being corrected.
+- 2026-10-12: A follow-up PowerShell replacement found the operation-list change but its multiline runtime guard anchor did not match the file's line endings. The test-list write completed before the guard check; inspect the runtime lines and apply the guard separately.

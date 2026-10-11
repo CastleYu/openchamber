@@ -8,7 +8,7 @@ const LEGACY_HTTP_ROUTE = Object.freeze({
     '/event', '/global/event', '/path', '/project', '/project/current', '/vcs', '/lsp',
     '/global/config', '/config', '/config/providers', '/provider', '/agent', '/command',
     '/permission', '/question', '/session', '/session/status', '/experimental/session',
-    '/file', '/file/content', '/file/status', '/find/file', '/find', '/find/symbol',
+    '/file', '/file/content', '/file/status', '/find/file', '/find', '/find/symbol', '/mcp',
   ]),
   POST: Object.freeze([
     /^\/session\/[^/]+\/prompt_async$/,
@@ -17,6 +17,7 @@ const LEGACY_HTTP_ROUTE = Object.freeze({
     /^\/permission\/[^/]+\/reply$/,
     /^\/question\/[^/]+\/reply$/,
     /^\/question\/[^/]+\/reject$/,
+    /^\/mcp\/[^/]+\/(connect|disconnect)$/,
   ]),
   GET_PATTERN: Object.freeze([
     /^\/session\/[^/]+$/,

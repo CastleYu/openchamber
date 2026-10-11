@@ -32,6 +32,7 @@ const LEGACY_CLIENT_OPERATION = Object.freeze({
   SYNC_LIST: 'sync.session.list', SYNC_GET: 'sync.session.get', SYNC_MESSAGES: 'sync.message.page',
   SYNC_MESSAGE: 'sync.message.get', SYNC_STATUS: 'sync.status', SYNC_PERMISSIONS: 'sync.permission.list',
   SYNC_QUESTIONS: 'sync.question.list',
+  MCP_STATUS: 'mcp.status', MCP_CONNECT: 'mcp.connect', MCP_DISCONNECT: 'mcp.disconnect',
 });
 const legacyOperations = new Set<string>(Object.values(LEGACY_CLIENT_OPERATION));
 

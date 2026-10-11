@@ -2483,6 +2483,7 @@ async function main(options = {}) {
     getOpenCodeAuthHeaders,
     getOpenCodePort: () => openCodePort,
     kernelRuntime,
+    kernelOperations,
     getBackendSelection: agentHost.getSelection,
     // Dev-server discovery must not offer OpenChamber's own listeners back to
     // the user as something to preview.

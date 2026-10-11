@@ -12,8 +12,9 @@ different machine.
   icon and filename, while the gallery only reads finalized Markdown to collect
   image candidates.
 - `POST /api/openchamber/sessions/:sessionId/markdown-image-grants` prepares up to 12
-  local images in one message-level request. The server fetches the assistant
-  message once and verifies every exact image source before reading files.
+  local images in one message-level request. The server reads the assistant
+  message once through the generation-bound kernel owner and verifies every
+  exact image source in its projected text parts before reading files.
 - Authorization recognizes the same common inline and reference-style image
   destinations collected by the UI, including balanced parentheses, while
   excluding fenced and inline code.
@@ -35,6 +36,8 @@ those use its local filesystem bridge. If called, the grant route returns an
 explicit unsupported response because OpenCode temporary images are not
 supported there.
 
-Requests to OpenCode carry the directory in a percent-encoded
-`x-opencode-directory` header, matching the SDK wire format; OpenCode rejects
-raw non-ASCII header values.
+The route refuses CAgent and unaccepted Legacy before directory validation or
+filesystem work. A connection or host-family change during directory validation,
+message reading, or file inspection fails the entire preparation without
+returning grants from the retired owner. The kernel owner preserves each SDK's
+directory and authentication wire format.

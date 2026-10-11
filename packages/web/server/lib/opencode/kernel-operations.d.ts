@@ -98,6 +98,7 @@ export function createKernelOperations(dependencies: {
   listPendingQuestions(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<{ id: string; sessionID: string }>>>;
   replyPermission(input: { requestID: string; sessionID: string; directory?: string; decision?: 'once' | 'always' | 'reject'; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean | void>>;
   getMessage(input: { sessionID: string; messageID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<LegacyMessageRecord | SessionMessageInfo>>;
+  getMessageView(input: { sessionID: string; messageID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<MessageView>>;
   addSynthetic(input: { sessionID: string; directory?: string; text: string; resume?: boolean; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionMessageInfo>>;
   switchSessionSelection(input: { sessionID: string; directory?: string; model?: SessionSwitchModelInput['model']; agent?: string; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<boolean>>;
   listCommands(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<Array<LegacyCommand | CommandInfo>>>;

@@ -14,14 +14,16 @@ const ERROR_CODE = Object.freeze({
   INVALID_DIRECTORY: 'invalid-directory',
   UNSUPPORTED_OPERATION: 'unsupported-operation',
   INVALID_CURSOR: 'invalid-cursor',
+  NOT_FOUND: 'not-found',
 });
 const sessionSchema = z.object({ id: z.string().min(1) }).passthrough();
 const legacyMessagesSchema = z.array(z.object({
   info: z.object({ id: z.string().min(1), role: z.string() }).passthrough(),
   parts: z.array(z.object({ type: z.string() }).passthrough()),
 }).passthrough());
+const currentMessageSchema = z.object({ id: z.string().min(1), type: z.string() }).passthrough();
 const currentMessagesSchema = z.object({
-  data: z.array(z.object({ id: z.string().min(1), type: z.string() }).passthrough()),
+  data: z.array(currentMessageSchema),
   cursor: z.object({ previous: z.string().nullish(), next: z.string().nullish() }),
 });
 const currentSessionsSchema = z.object({
@@ -327,6 +329,26 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     return stamped(context, data);
   };
 
+  const getMessageView = async (input) => {
+    let result;
+    try {
+      result = await getMessage(input);
+    } catch (error) {
+      if (error?.status === 404 || error?.cause?.status === 404
+        || error?._tag === 'MessageNotFoundError' || error?._tag === 'SessionNotFoundError') {
+        throw Object.assign(kernelError(ERROR_CODE.NOT_FOUND, 'Message not found'), { status: 404 });
+      }
+      throw error;
+    }
+    const schema = result.generation === GENERATION.OC1
+      ? legacyMessagesSchema.element
+      : currentMessageSchema;
+    if (!schema.safeParse(result.data).success) {
+      throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Message get returned an invalid response', result.generation);
+    }
+    return { ...result, data: messageView(result.data, result.generation) };
+  };
+
   const addSynthetic = async ({ sessionID, directory, text, resume = false, signal, expectedIdentity }) => {
     const context = capture(directory);
     if (context.generation !== GENERATION.OC2) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Synthetic message operation is OC2 only', context.generation);
@@ -560,6 +582,6 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
     listCommands, getSelectionCatalog, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
-    listPendingPermissions, listPendingQuestions, replyPermission, getMessage, addSynthetic, switchSessionSelection,
+    listPendingPermissions, listPendingQuestions, replyPermission, getMessage, getMessageView, addSynthetic, switchSessionSelection,
   };
 };

@@ -1,6 +1,6 @@
 # Agent 集成优化：中文审阅与归档
 
-更新于 2026-10-09。当前状态：已归档；下一阶段使用英文交接源。下表列出本次新增和调整的文档；链接引用的其他历史资料保留原文。
+更新于 2026-10-11。当前状态：已归档；下一阶段使用英文交接源。下表列出本次新增和调整的文档；链接引用的其他历史资料保留原文。
 
 ## 文档入口
 
@@ -18,6 +18,7 @@
 | 集成需求与架构 | [集成 SPEC](OPENCODE-INTEGRATION-SPEC.md) | [英文](../OPENCODE-INTEGRATION-SPEC.md) |
 | Legacy 1.2.27 适配 | [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md) | [英文](../OPENCODE-LEGACY-1.2.27-SPEC.md) |
 | 子版本与验收门槛 | [里程碑](OPENCODE-INTEGRATION-MILESTONES.md) | [英文](../OPENCODE-INTEGRATION-MILESTONES.md) |
+| R1 验收复核 | [验收记录](R1-ACCEPTANCE.md) | [英文](../R1-ACCEPTANCE.md) |
 | 当前实现核查 | [核查记录](OPENCODE-INTEGRATION-AUDIT.md) | [英文](../OPENCODE-INTEGRATION-AUDIT.md) |
 | 后续大版本总览 | [DEV-PLAN](DEV-PLAN.md) | [英文](../DEV-PLAN.md) |
 | 维护执行队列 | [PLAN](PLAN.md) | [英文](../PLAN.md) |

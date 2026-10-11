@@ -3,6 +3,7 @@
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
 状态：执行中，2026-10-11。INT-00 和 CA-00 已通过。最小 CAgent 架构／工具包预览已发布；完整消费者迁移仍保留后续门槛。INT-00L 已通过；R1 / INT-01 和 INT-02 正在进行。当前证据与交接见[执行检查点](CAGENT-EXECUTION.md)。
+R1 条款复核及图片边界修正见[验收复核](R1-ACCEPTANCE.md)。
 契约依据：[集成 SPEC](OPENCODE-INTEGRATION-SPEC.md)、[Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md)、[CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) 和 [CAgent 适配工作手册](CAGENT-ADAPTER-WORKBOOK.md)。
 
 ## 版本边界

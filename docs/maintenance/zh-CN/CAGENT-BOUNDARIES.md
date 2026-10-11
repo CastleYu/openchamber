@@ -55,6 +55,7 @@
 | `session-goal/runtime.js` 的 `openCodeFetch` 包装器和 `item.raw` 消息重建 | 将 Goal 的协议形状读取器替换为领域操作。不得在 CAgent 上伪造 OpenCode HTTP 响应来保留此包装器。 |
 | UI `/api/opencode/runtime`、`/api/sessions/status`、`/api/session-activity` | 将按后端类型区分的身份与代际分开；宿主状态/活动聚合需要中立的后端观察能力。 |
 | UI `/api/openchamber/sessions/.../metadata`、归档和取消归档 | 保留宿主存储；将 ID 和元数据绑定到后端/工作区所有权，并单独守卫后端写入。 |
+| Markdown 图片授权在主机文件授权前依赖权威助手消息 | 通过带守卫的 kernel 归属读取消息投影。拒绝 CAgent/未验收 Legacy；kernel 或 family/revision 改变时退役本次准备。Web/Electron/移动端使用所选主机；VS Code 返回 501。CAgent 支持需要已验收的中立消息读取与主机授权，不能回退到 OpenCode 地址。 |
 | UI `/api/agent` 回退路径和配置/代理写入方 | 在后端中立的目录/写入处理器存在前，继续仅供 OpenCode 使用。CAgent 不得访问 OpenCode 设置文件。 |
 | UI `/opencode/directory` 和后端文件搜索 | 将本地目录创建与后端工作区创建/绑定、后端搜索拆分。`/api/fs/directory-stat` 和 `/fs/*` 按当前访问检查继续由宿主负责。 |
 | 队列、计划任务、assist、目标、路由、通知、控制、上下文、知识、session-work 和 session-metadata store 中的 `kernelOperations` 消费方 | 向每个消费方注入受守卫的分发器。缺少可选操作时应阻止相应操作，不得回退到 HTTP、返回空成功或切换到其他后端。后代活动和 PWA 读取也遵循同一规则。 |

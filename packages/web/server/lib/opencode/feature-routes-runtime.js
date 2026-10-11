@@ -146,6 +146,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       getOpenCodeAuthHeaders,
       getOpenCodePort,
       kernelRuntime,
+      kernelOperations,
       getBackendSelection,
       getOwnPorts,
       devServerScanner,
@@ -267,8 +268,9 @@ export const createFeatureRoutesRuntime = (dependencies) => {
       os,
       crypto,
       validateDirectoryPath,
-      buildOpenCodeUrl,
-      getOpenCodeAuthHeaders,
+      kernelOperations,
+      getBackendSelection,
+      getKernelRuntime: () => kernelRuntime.get(),
     });
 
     const generation = () => kernelRuntime.get().generation;

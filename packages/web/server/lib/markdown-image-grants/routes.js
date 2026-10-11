@@ -1,6 +1,7 @@
 import express from 'express';
 import { constants as fsConstants } from 'node:fs';
 import { mintOutsideFileGrant } from '../fs/routes.js';
+import { createOpenCodeFamilyGuard } from '../opencode/family-guard.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_IMAGE_SOURCES = 12;
@@ -130,10 +131,9 @@ const parseDefinitionDestination = (value) => {
 
 const collectMarkdownLinesOutsideCode = (message) => {
   const lines = [];
-  for (const part of Array.isArray(message?.parts) ? message.parts : []) {
-    if (part?.type !== 'text' || typeof part.text !== 'string') continue;
+  for (const text of Array.isArray(message?.textParts) ? message.textParts : []) {
     let fence = null;
-    for (const line of part.text.split('\n')) {
+    for (const line of text.split('\n')) {
       const fenceMatch = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
       if (fenceMatch) {
         const marker = fenceMatch[1];
@@ -191,28 +191,6 @@ const markdownImageSources = (message) => {
   return sources;
 };
 
-const fetchMessage = async ({ sessionId, messageId, directory, buildOpenCodeUrl, getOpenCodeAuthHeaders }) => {
-  const url = new URL(buildOpenCodeUrl(
-    `/session/${encodeURIComponent(sessionId)}/message/${encodeURIComponent(messageId)}`,
-    '',
-  ));
-  url.searchParams.set('directory', directory);
-  const response = await fetch(url, {
-    headers: {
-      accept: 'application/json',
-      // Percent-encoded to match the SDK wire format; raw non-ASCII values
-      // are rejected by OpenCode.
-      'x-opencode-directory': encodeURIComponent(directory),
-      ...getOpenCodeAuthHeaders(),
-    },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`OpenCode returned ${response.status}`);
-  const message = await response.json().catch(() => null);
-  return message?.info && Array.isArray(message.parts) ? message : null;
-};
-
 const inspectImage = async ({ source, directory, approvedTempRoot, fsPromises, path }) => {
   const parsed = parseFileSource(source);
   if (!parsed) return { status: 'error' };
@@ -259,14 +237,26 @@ export const registerMarkdownImageGrantRoutes = (app, dependencies) => {
     os,
     crypto,
     validateDirectoryPath,
-    buildOpenCodeUrl,
-    getOpenCodeAuthHeaders,
+    kernelOperations,
+    getBackendSelection,
+    getKernelRuntime,
     approvedTempRoot = path.join(os.tmpdir(), 'opencode'),
   } = dependencies;
+
+  const assertIdentity = (expected, selected) => {
+    const current = kernelOperations.captureIdentity();
+    const active = getBackendSelection();
+    if (current.generation !== expected.generation || current.profile !== expected.profile
+      || current.endpoint !== expected.endpoint || current.epoch !== expected.epoch
+      || active.family !== selected.family || active.revision !== selected.revision) {
+      throw new Error('OpenCode runtime changed during image preparation');
+    }
+  };
 
   app.post(
     '/api/openchamber/sessions/:sessionId/markdown-image-grants',
     express.json({ limit: '32kb' }),
+    createOpenCodeFamilyGuard(getBackendSelection, getKernelRuntime),
     async (req, res) => {
       const sessionId = asString(req.params.sessionId);
       const messageId = asString(req.body?.messageId);
@@ -276,20 +266,31 @@ export const registerMarkdownImageGrantRoutes = (app, dependencies) => {
       if (!sessionId || !messageId || sources.length === 0 || sources.length > MAX_IMAGE_SOURCES) {
         return res.status(400).json({ error: 'sessionId, messageId, and 1-12 sources are required' });
       }
-      const validatedDirectory = await validateDirectoryPath(asString(req.body?.directory));
-      if (!validatedDirectory.ok) {
-        return res.status(400).json({ error: validatedDirectory.error || 'Invalid directory' });
-      }
-
       try {
-        const message = await fetchMessage({
-          sessionId,
-          messageId,
-          directory: validatedDirectory.directory,
-          buildOpenCodeUrl,
-          getOpenCodeAuthHeaders,
-        });
-        if (!message || message.info?.id !== messageId || message.info?.role !== 'assistant') {
+        const identity = kernelOperations.captureIdentity();
+        const selected = getBackendSelection();
+        const validatedDirectory = await validateDirectoryPath(asString(req.body?.directory));
+        assertIdentity(identity, selected);
+        if (!validatedDirectory.ok) {
+          return res.status(400).json({ error: validatedDirectory.error || 'Invalid directory' });
+        }
+        let message;
+        try {
+          message = (await kernelOperations.getMessageView({
+            sessionID: sessionId,
+            messageID: messageId,
+            directory: validatedDirectory.directory,
+            signal: AbortSignal.timeout(10_000),
+          })).data;
+        } catch (error) {
+          assertIdentity(identity, selected);
+          if (error?.status === 404) {
+            return res.status(404).json({ error: 'Assistant message not found' });
+          }
+          throw error;
+        }
+        assertIdentity(identity, selected);
+        if (!message || message.id !== messageId || message.role !== 'assistant') {
           return res.status(404).json({ error: 'Assistant message not found' });
         }
         // Assistant text is authoritative: a remote client cannot mint grants for unreferenced paths.
@@ -308,6 +309,7 @@ export const registerMarkdownImageGrantRoutes = (app, dependencies) => {
               fsPromises,
               path,
             });
+            assertIdentity(identity, selected);
             if (inspected.status !== 'ready') {
               results.push({ source, status: inspected.status });
               continue;
@@ -321,6 +323,7 @@ export const registerMarkdownImageGrantRoutes = (app, dependencies) => {
                 crypto,
               })
               : null;
+            assertIdentity(identity, selected);
             results.push({
               source,
               status: 'ready',
@@ -329,9 +332,11 @@ export const registerMarkdownImageGrantRoutes = (app, dependencies) => {
               expiresAt: grant?.expiresAt,
             });
           } catch {
+            assertIdentity(identity, selected);
             results.push({ source, status: 'error' });
           }
         }
+        assertIdentity(identity, selected);
         return res.json({ results });
       } catch (error) {
         console.warn('[MarkdownImageGrants] failed to prepare images:', error?.message || error);

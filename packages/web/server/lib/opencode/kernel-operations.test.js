@@ -89,10 +89,28 @@ describe('server kernel operations', () => {
       const ops = createKernelOperations({ getRuntime: () => runtime(generation, endpoint), getHeaders: () => ({}) });
       expect((await ops.listPendingPermissions({ directory: 'C:/work' })).data).toHaveLength(1);
       await ops.replyPermission({ requestID: 'perm_1', sessionID: 'ses_1', directory: 'C:/work', expectedIdentity: ops.captureIdentity() });
-      expect((await ops.getMessage({ sessionID: 'ses_1', messageID: 'msg_1', directory: 'C:/work' })).data).toBeTruthy();
+      expect((await ops.getMessage({ sessionID: 'ses_1', messageID: 'msg_1', directory: 'C:/work' })).data).toEqual(generation === 'oc1'
+        ? { info: { id: 'msg_1', role: 'user' }, parts: [{ type: 'text', text: 'hi' }] }
+        : { id: 'msg_1', type: 'user', text: 'hi' });
       if (generation === 'oc2') await ops.addSynthetic({ sessionID: 'ses_1', directory: 'C:/work', text: 'restored', expectedIdentity: ops.captureIdentity() });
       expect(requests.some((item) => item.path.startsWith(generation === 'oc1' ? '/api/' : '/session/'))).toBe(false);
       if (generation === 'oc2') expect(requests.find((item) => item.path.endsWith('/reply')).body).toEqual({ decision: 'once' });
+    }
+  });
+  it('projects single assistant messages with ordered text parts through both SDK routes', async () => {
+    for (const generation of ['oc1', 'oc2']) {
+      const requests = [];
+      const record = generation === 'oc1'
+        ? { info: { id: 'msg_1', role: 'assistant' }, parts: [{ type: 'text', text: '![one](one.png)' }, { type: 'text', text: '![two](two.png)' }] }
+        : { id: 'msg_1', type: 'assistant', content: [{ type: 'text', text: '![one](one.png)' }, { type: 'text', text: '![two](two.png)' }] };
+      const endpoint = await serve(() => ({ body: generation === 'oc1' ? record : { data: record } }), requests);
+      const ops = createKernelOperations({ getRuntime: () => runtime(generation, endpoint), getHeaders: () => ({}) });
+      const result = await ops.getMessageView({ sessionID: 'ses_1', messageID: 'msg_1', directory: 'C:/work' });
+      expect(result.data).toMatchObject({ id: 'msg_1', role: 'assistant', textParts: ['![one](one.png)', '![two](two.png)'] });
+      expect(requests).toHaveLength(1);
+      expect(requests[0].path).toBe(generation === 'oc1' ? '/session/ses_1/message/msg_1' : '/api/session/ses_1/message/msg_1');
+      if (generation === 'oc1') expect(requests[0].search.get('directory')).toBe('C:/work');
+      else expect(requests[0].headers['x-opencode-directory']).toBe(encodeURIComponent('C:/work'));
     }
   });
   it('prepares legacy OC2 metadata once before concurrent autonomous read and delete patch', async () => {

@@ -24,3 +24,13 @@
 已完成的边界复核覆盖 HTTP 路由入口、异步退役、事件投递和托管插件准备。本次复核的插件与 agent-tool 入口拒绝非 OpenCode family 和未验收的 Legacy profile。插件路由会在目录解析期间及变更前保存并复核 family/revision 与 kernel 身份。全局事件 hub 在提交事件时负责 kernel/epoch 拒绝；watcher 检查当前 family/revision 和 Legacy 准入，独立 reader 还会检查所附 kernel。Git 工作树清理在等待前捕获 family/revision 与 kernel 身份，并在清理前复核。生产组合将所选 host 传给这些守卫，并把共享 hub 接入 watcher。agent-tool 回调在 family/profile 准入后按 OC1/OC2 分发；托管准备使用 family/revision lease，但代际探测本身不会禁用所有 Legacy 插件准备。
 
 VS Code agent proxy 仍会在转发前返回 501。适配器绑定仍是计划项，`packages/vscode/src/bridge-proxy-runtime.ts` 及其测试验证了这一点。当前复核记录和指纹见 `artifacts/int02-r1-boundary-evidence.json`；保留既有证据计数及其原始范围。R1 仍未完成，剩余事项包括队列、浏览器关闭和连接切换验收旅程。精确 Legacy 对话属于 R2，消费方迁移属于 R6，打包验收属于 R7。浏览器关闭旅程必须确认自有待处理活动和队列意图在关闭后仍保留，不能声称进行中的请求已恢复。最终边界测试通过 14 个文件、171 项测试，包括同目标 watcher 重启和八项真实 Git/回环 HTTP 清理测试。这些契约不能证明真实 CAgent 或打包宿主行为。
+
+## 当前工作流证据，2026-10-11
+
+候选 `42c6f7396` 通过真实 Windows OC2 2.0.20 主机的 24 项检查。实际 React 设置组件完成确认、重试、外部替换失败和复核后恢复之前的托管目标。生产检查验证旧 PID 退出、唯一替换进程、设置持久化、确认票据拒绝重放、同目标重启后队列归属保留，以及显式编辑/取回。证据见 `artifacts/int02-r1-workflow-managed-current-evidence.json`。这是会话及控件验收，未调用模型对话。日志保留客户端尚未绑定时被捕获的冷启动 `session.list` 拒绝；最终绑定、连接状态和恢复断言均通过，不能声称控制台无错误。
+
+真实 Chrome 页面在合成 OC1 上游报告忙碌时通过生产队列 API 入队。测试页关闭后，持久化意图仍保留原配置目标指纹，且尚未发送提示词。独立上游空闲事件随后触发唯一一次发送，文本和模型与捕获值一致，队列变为空。主机关闭保留外部服务，托管注册表为空。证据见 `artifacts/int02-r1-browser-queue-evidence.json`。这证明队列可独立于浏览器投递，不代表输入框控件、真实上游/模型或进行中请求恢复验收。稀疏夹具导致无关启动 API 报错，不能据此声称完整页面回归通过。
+
+当前队列/切换专项回归通过两个文件的 68 项测试。检查进程、注册表和路径后已清理两个夹具目录及一次性脚本，保留具名证据和清理记录。本检查点未修改生产代码、依赖、远端分支或 Release。
+
+R1 继续保持未完成，需做最终条款核对，包括浏览器关闭时的待处理活动，以及仍缺少准入或退役证据的保留消费方。已覆盖条款采用当前证据，历史证据保留原源码范围。打包验收仍属 R7，精确 Legacy 对话仍属 R2。

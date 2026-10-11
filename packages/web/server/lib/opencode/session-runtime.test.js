@@ -10,6 +10,7 @@ describe('session runtime', () => {
       runtime.dispose();
     }
     runtimes.length = 0;
+    vi.useRealTimers();
   });
 
   it('keeps pending permission and question requests until they are answered', () => {
@@ -55,6 +56,80 @@ describe('session runtime', () => {
     expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({});
   });
 
+  it('clears all cached state on owner change', () => {
+    let owner = 'target-a/profile-a/backend-a';
+    const runtime = createSessionRuntime({ writeSseEvent() {}, getNotificationClients: () => new Set(), broadcastEvent() {}, getOwner: () => owner });
+    runtimes.push(runtime);
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'same', status: { type: 'busy' } } });
+    runtime.markUserMessageSent('same');
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'same', status: { type: 'idle' } } });
+    runtime.markSessionViewed('same', 'client');
+    runtime.processOpenCodeSsePayload({ type: 'permission.asked', properties: { id: 'p', sessionID: 'same', permission: 'edit', patterns: [], metadata: {}, always: [] } });
+    runtime.processOpenCodeSsePayload({ type: 'question.asked', properties: { id: 'q', sessionID: 'same', questions: [{ header: 'Pick', question: 'Which?', options: [] }] } });
+    owner = 'target-b/profile-b/backend-b';
+    expect(runtime.getSessionActivitySnapshot()).toEqual({});
+    expect(runtime.getActiveSessionCount()).toBe(0);
+    expect(runtime.getSessionStateSnapshot()).toEqual({});
+    expect(runtime.getSessionAttentionSnapshot()).toEqual({});
+    expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({});
+    expect(runtime.getSessionState('same')).toBeNull();
+    expect(runtime.getSessionAttentionState('same')).toBeNull();
+  });
+
+  it.each([
+    ['configured target', 'target-a', 'target-b'],
+    ['profile', 'profile-a', 'profile-b'],
+    ['backend revision', 'backend-a', 'backend-b'],
+  ])('starts a fresh session for the same ID after changing %s', (_label, before, after) => {
+    let owner = before;
+    const runtime = createSessionRuntime({ writeSseEvent() {}, getNotificationClients: () => new Set(), broadcastEvent() {}, getOwner: () => owner });
+    runtimes.push(runtime);
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'same', status: { type: 'busy', message: 'old' } } });
+    runtime.markUserMessageSent('same');
+    runtime.processOpenCodeSsePayload({ type: 'permission.asked', properties: { id: 'p', sessionID: 'same', permission: 'edit', patterns: [], metadata: {}, always: [] } });
+    owner = after;
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'same', status: { type: 'busy', message: 'new' } } });
+    expect(runtime.getSessionState('same')).toEqual(expect.objectContaining({ status: 'busy', metadata: expect.objectContaining({ message: 'new' }) }));
+    expect(runtime.getSessionAttentionState('same')).toEqual(expect.objectContaining({ lastUserMessageAt: null, needsAttention: false, isViewed: false }));
+    expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({});
+    expect(runtime.getActiveSessionCount()).toBe(1);
+  });
+
+  it('cancels an old cooldown before the new owner becomes busy', () => {
+    vi.useFakeTimers();
+    let owner = 'a';
+    const events = [];
+    const runtime = createSessionRuntime({ writeSseEvent() {}, getNotificationClients: () => new Set(), broadcastEvent: (event) => events.push(event), getOwner: () => owner });
+    runtimes.push(runtime);
+    const status = (type) => runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'same', status: { type } } });
+    status('busy');
+    status('idle');
+    owner = 'b';
+    vi.advanceTimersByTime(2000);
+    expect(runtime.getSessionActivitySnapshot()).toEqual({});
+    expect(runtime.getActiveSessionCount()).toBe(0);
+    expect(events.filter((event) => event.type === 'openchamber:session-activity' && event.properties.phase === 'idle')).toHaveLength(0);
+  });
+
+  it('preserves same-owner state and interrupts it only once after restart', () => {
+    const events = [];
+    const runtime = createSessionRuntime({ writeSseEvent() {}, getNotificationClients: () => new Set(), broadcastEvent: (event) => events.push(event), getOwner: () => 'same' });
+    runtimes.push(runtime);
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'busy', status: { type: 'busy' } } });
+    runtime.processOpenCodeSsePayload({ type: 'permission.asked', properties: { id: 'p', sessionID: 'busy', permission: 'edit', patterns: [], metadata: {}, always: [] } });
+    runtime.getSessionActivitySnapshot();
+    runtime.getSessionStateSnapshot();
+    runtime.getPendingBlockingRequestsSnapshot();
+    runtime.processOpenCodeSsePayload({ type: 'session.status', properties: { sessionID: 'other', status: { type: 'idle' } } });
+    expect(runtime.getActiveSessionCount()).toBe(1);
+    expect(runtime.getPendingBlockingRequestsSnapshot()).toHaveProperty('busy');
+    events.length = 0;
+    expect(runtime.interruptBusySessionsAfterRestart()).toEqual({ sessionIds: ['busy'] });
+    expect(runtime.getPendingBlockingRequestsSnapshot()).toEqual({});
+    expect(events.filter((event) => event.type === 'openchamber:session-status' || event.type === 'session.error')).toHaveLength(2);
+    expect(runtime.interruptBusySessionsAfterRestart()).toEqual({ sessionIds: [] });
+    expect(events.filter((event) => event.type === 'openchamber:session-status' || event.type === 'session.error')).toHaveLength(2);
+  });
   it('broadcasts attention clears through the shared broadcaster', () => {
     const events = [];
     const runtime = createSessionRuntime({

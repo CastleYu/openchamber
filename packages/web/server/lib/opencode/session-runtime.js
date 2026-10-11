@@ -40,7 +40,7 @@ const extractSessionStatusUpdate = (payload) => {
 
 const readRequestId = (value) => (typeof value === 'string' && value.trim() ? value.trim() : '');
 
-export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, broadcastEvent }) => {
+export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, broadcastEvent, getOwner = () => null }) => {
   const sessionActivityPhases = new Map();
   const sessionActivityCooldowns = new Map();
   const sessionStates = new Map();
@@ -52,6 +52,24 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   // deletion, or an OpenCode restart, which drops every pending request.
   const pendingRequestsBySession = new Map();
   let activeSessionCount = 0;
+  let owner;
+
+  const clearState = () => {
+    for (const timer of sessionActivityCooldowns.values()) clearTimeout(timer);
+    sessionActivityCooldowns.clear();
+    sessionActivityPhases.clear();
+    sessionStates.clear();
+    sessionAttentionStates.clear();
+    pendingRequestsBySession.clear();
+    activeSessionCount = 0;
+  };
+
+  const ensureOwner = () => {
+    const current = getOwner();
+    if (current === owner) return;
+    clearState();
+    owner = current;
+  };
 
   const getOrCreatePendingRequests = (sessionId) => {
     let entry = pendingRequestsBySession.get(sessionId);
@@ -98,6 +116,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const getPendingBlockingRequestsSnapshot = () => {
+    ensureOwner();
     const result = {};
     for (const [sessionId, entry] of pendingRequestsBySession) {
       result[sessionId] = {
@@ -149,6 +168,8 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
 
     if (phase === 'cooldown') {
       const timer = setTimeout(() => {
+        ensureOwner();
+        if (sessionActivityCooldowns.get(sessionId) !== timer) return;
         const now = sessionActivityPhases.get(sessionId);
         if (now?.phase === 'cooldown') {
           setSessionActivityPhase(sessionId, 'idle');
@@ -241,6 +262,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const getSessionStateSnapshot = () => {
+    ensureOwner();
     const result = {};
     const now = Date.now();
     for (const [sessionId, data] of sessionStates) {
@@ -255,11 +277,13 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const getSessionState = (sessionId) => {
+    ensureOwner();
     if (!sessionId) return null;
     return sessionStates.get(sessionId) || null;
   };
 
   const markSessionViewed = (sessionId, clientId) => {
+    ensureOwner();
     const state = getOrCreateAttentionState(sessionId);
     if (!state) return;
 
@@ -295,18 +319,21 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const markSessionUnviewed = (sessionId, clientId) => {
+    ensureOwner();
     const state = sessionAttentionStates.get(sessionId);
     if (!state) return;
     state.viewedByClients.delete(clientId);
   };
 
   const markUserMessageSent = (sessionId) => {
+    ensureOwner();
     const state = getOrCreateAttentionState(sessionId);
     if (!state) return;
     state.lastUserMessageAt = Date.now();
   };
 
   const getSessionAttentionSnapshot = () => {
+    ensureOwner();
     const result = {};
     const now = Date.now();
     for (const [sessionId, state] of sessionAttentionStates) {
@@ -323,6 +350,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const getSessionAttentionState = (sessionId) => {
+    ensureOwner();
     if (!sessionId) return null;
     const state = sessionAttentionStates.get(sessionId);
     if (!state) return null;
@@ -336,6 +364,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const getSessionActivitySnapshot = () => {
+    ensureOwner();
     const result = {};
     for (const [sessionId, data] of sessionActivityPhases) {
       result[sessionId] = { type: data.phase };
@@ -343,9 +372,13 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
     return result;
   };
 
-  const getActiveSessionCount = () => activeSessionCount;
+  const getActiveSessionCount = () => {
+    ensureOwner();
+    return activeSessionCount;
+  };
 
   const resetAllSessionActivityToIdle = () => {
+    ensureOwner();
     for (const timer of sessionActivityCooldowns.values()) {
       clearTimeout(timer);
     }
@@ -358,6 +391,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   };
 
   const interruptBusySessionsAfterRestart = () => {
+    ensureOwner();
     const interruptedSessionIds = new Set();
     for (const [sessionId, state] of sessionStates) {
       if (state.status === 'busy' || state.status === 'retry') {
@@ -419,6 +453,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
   const cleanupInterval = setInterval(cleanupOldSessionStates, SESSION_STATE_CLEANUP_INTERVAL_MS);
 
   const processOpenCodeSsePayload = (payload) => {
+    ensureOwner();
     processBlockingRequestPayload(payload);
     const update = extractSessionStatusUpdate(payload);
     if (!update) return;
@@ -438,15 +473,7 @@ export const createSessionRuntime = ({ writeSseEvent, getNotificationClients, br
 
   const dispose = () => {
     clearInterval(cleanupInterval);
-    for (const timer of sessionActivityCooldowns.values()) {
-      clearTimeout(timer);
-    }
-    sessionActivityCooldowns.clear();
-    sessionActivityPhases.clear();
-    sessionStates.clear();
-    sessionAttentionStates.clear();
-    pendingRequestsBySession.clear();
-    activeSessionCount = 0;
+    clearState();
   };
 
   return {

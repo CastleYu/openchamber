@@ -300,12 +300,13 @@ the completion stamp against v2.0.16:
 - Keeps route behavior independent from composition root; `index.js` now supplies dependencies only.
 
 ## Public exports (session-runtime.js)
-- `createSessionRuntime({ writeSseEvent, getNotificationClients, broadcastEvent? })`: creates runtime-owned state machine and APIs for session status.
+- `createSessionRuntime({ writeSseEvent, getNotificationClients, broadcastEvent?, getOwner? })`: creates runtime-owned state machine and APIs for session status.
 - Returned API:
   - `processOpenCodeSsePayload(payload)`
   - `getSessionActivitySnapshot()`
   - `getActiveSessionCount()`
   - `getSessionStateSnapshot()`
+  - `getPendingBlockingRequestsSnapshot()`
   - `getSessionAttentionSnapshot()`
   - `getSessionState(sessionId)`
   - `getSessionAttentionState(sessionId)`
@@ -315,6 +316,8 @@ the completion stamp against v2.0.16:
   - `resetAllSessionActivityToIdle()`
   - `interruptBusySessionsAfterRestart()`: settles every session whose authoritative status is `busy`/`retry` or whose activity phase is still busy, broadcasts `openchamber:session-status` idle plus an OpenCode-shaped `session.error`, resets leftover activity/cooldowns, and returns the interrupted session IDs in stable order.
   - `dispose()`
+
+The optional `getOwner` callback returns a stable opaque snapshot-owner key. Public state reads and writes retire all snapshots and cooldown timers when that key changes. Production composition includes the configured connection revision, backend family/revision, requested selection and last resolved generation/profile. Request epoch changes alone preserve same-owner state so managed restart can report interruption explicitly. A stale cooldown callback cannot emit activity for a replacement owner. Callers without `getOwner` retain a single unscoped owner.
 
 The runtime maintains active-session count incrementally from idempotent activity phase transitions. Upstream stall-timeout and lifecycle health checks read it in O(1); the hourly cleanup removes activity phases older than 24 hours without broadcasting synthetic state transitions. Snapshot generation remains reserved for the session-activity API.
 

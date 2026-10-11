@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
 import { createKernelOperations } from './kernel-operations.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
+import { createSessionRuntime } from './session-runtime.js';
 
 const ready = (endpoint, epoch, version = '1.18.32') => ({
   generation: 'oc1', endpoint, epoch, version,
@@ -411,4 +412,52 @@ describe('requested OpenCode selection binding', () => {
     expect(runtime.getAdmission().status).toBe(status);
   });
 
+});
+
+
+describe('session snapshot protocol ownership', () => {
+  it('preserves same-profile request retirement and clears snapshots on an Auto protocol change', async () => {
+    let generation = 'oc1';
+    let profileOwner = null;
+    const kernel = createKernelRuntime({
+      getEndpoint: () => 'http://kernel.test', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => ({ generation, endpoint, epoch,
+        version: generation === 'oc1' ? '1.18.32' : '2.0.20', profile: generation }),
+      onChange: descriptor => {
+        if (descriptor.generation === 'oc1' || descriptor.generation === 'oc2') {
+          profileOwner = JSON.stringify([descriptor.generation, descriptor.profile]);
+        }
+      },
+    });
+    const events = [];
+    const sessions = createSessionRuntime({
+      writeSseEvent() {}, getNotificationClients: () => new Set(),
+      broadcastEvent: event => events.push(event), getOwner: () => profileOwner,
+    });
+    try {
+      await kernel.refresh();
+      sessions.processOpenCodeSsePayload({ type: 'session.status',
+        properties: { sessionID: 'collision', status: { type: 'busy' } } });
+      sessions.processOpenCodeSsePayload({ type: 'permission.asked',
+        properties: { id: 'old-permission', sessionID: 'collision' } });
+      kernel.invalidate();
+      expect(sessions.getActiveSessionCount()).toBe(1);
+      await kernel.refresh();
+      expect(sessions.getPendingBlockingRequestsSnapshot().collision.permissions).toHaveLength(1);
+      expect(sessions.interruptBusySessionsAfterRestart()).toEqual({ sessionIds: ['collision'] });
+      expect(events.filter(event => event.type === 'session.error')).toHaveLength(1);
+
+      sessions.processOpenCodeSsePayload({ type: 'session.status',
+        properties: { sessionID: 'collision', status: { type: 'busy' } } });
+      generation = 'oc2';
+      await kernel.reprobe();
+      expect(sessions.getSessionStateSnapshot()).toEqual({});
+      expect(sessions.getSessionAttentionSnapshot()).toEqual({});
+      expect(sessions.getSessionActivitySnapshot()).toEqual({});
+      expect(sessions.getActiveSessionCount()).toBe(0);
+      expect(events.filter(event => event.type === 'session.error')).toHaveLength(1);
+    } finally {
+      sessions.dispose();
+    }
+  });
 });

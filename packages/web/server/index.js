@@ -56,7 +56,7 @@ import { OPENCODE_CONNECTION, OpenCodeConnectionError, prepareOpenCodeConnection
 import { createOpenCodeLifecycleRuntime } from './lib/opencode/lifecycle.js';
 import { createManagedOpenCodeEnv } from './lib/opencode/managed-env-runtime.js';
 import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
-import { parseOpenCodeSelection, OPENCODE_SELECTION } from './lib/opencode/compatibility.js';
+import { parseOpenCodeSelection, OPENCODE_SELECTION, OPENCODE_GENERATION } from './lib/opencode/compatibility.js';
 import { createConnectionActivity } from './lib/opencode/connection-activity.js';
 import { createConnectionSwitch } from './lib/opencode/connection-switch.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
@@ -563,6 +563,13 @@ const sessionRuntime = createSessionRuntime({
   writeSseEvent,
   getNotificationClients: () => uiNotificationClients,
   broadcastEvent: broadcastGlobalUiEvent,
+  getOwner: () => {
+    const selection = agentHost.getSelection();
+    // Request epochs also change during same-target restart. Snapshot ownership
+    // follows the configured connection and last resolved protocol instead.
+    return JSON.stringify([selection.family, selection.revision,
+      openCodeConnectionRevision, requestedOpenCodeSelection, sessionProfileOwner]);
+  },
 });
 
 const getActiveSessionCount = () => sessionRuntime.getActiveSessionCount();
@@ -747,6 +754,7 @@ const ENV_DESKTOP_NOTIFY = (() => {
 let kernelRuntime = null;
 let requestedOpenCodeSelection = OPENCODE_SELECTION.AUTO;
 let openCodeConnectionRevision = 0;
+let sessionProfileOwner = null;
 let messageSearchRuntime = null;
 const agentApprovals = createAgentApprovals({ directory: path.join(OPENCHAMBER_DATA_DIR, AGENT_APPROVAL.DIRECTORY) });
 const agentHost = createAgentHost({
@@ -810,6 +818,9 @@ kernelRuntime = createKernelRuntime({
   getHeaders: getOpenCodeAuthHeaders,
   headersForGeneration: getOpenCodeAuthHeaders,
   onChange: (descriptor) => {
+    if (descriptor.generation === OPENCODE_GENERATION.OC1 || descriptor.generation === OPENCODE_GENERATION.OC2) {
+      sessionProfileOwner = JSON.stringify([descriptor.generation, descriptor.profile]);
+    }
     retireOpenCodeDirectSseStreams();
     if (messageSearchRuntime) {
       void messageSearchRuntime.stop()

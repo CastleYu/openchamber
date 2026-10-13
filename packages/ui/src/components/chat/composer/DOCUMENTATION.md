@@ -7,6 +7,11 @@ everything between typing and sending.
 own state and wires these modules together; it should not grow logic that
 belongs to one of them.
 
+For an ACP binding, the agent owns model selection and permission policy. The
+composer can submit without an OpenCode provider/model, hides those model
+controls and disables OpenCode auto-accept. ACP permission cards send the exact
+agent option ID. Saved read-only sessions keep their transcript and disable send.
+
 `ChatContainer.tsx` keeps one `ChatInput` mounted while a new-session draft
 becomes its first session. Draft-only UI first fades for 120ms while the editor
 stays in place. The parent then moves the editor to its final session position

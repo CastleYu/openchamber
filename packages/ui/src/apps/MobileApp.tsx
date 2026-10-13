@@ -1,4 +1,5 @@
 import React from 'react';
+import { AgentConnectionGate } from '@/components/sections/openchamber/AgentConnectionSettings';
 import { UPDATE_HISTORY_PAGE } from '@/lib/settings/updateHistory';
 
 import { AboutSettings } from '@/components/sections/openchamber/AboutSettings';
@@ -1293,6 +1294,7 @@ export function MobileApp({ apis }: MobileAppProps) {
     // show a loader while it re-bootstraps instead of flashing the onboarding screen.
     if (hasRuntimeEndpoint) {
       return (
+        <AgentConnectionGate>
         <main className="flex min-h-dvh items-center justify-center bg-[var(--splash-background,var(--surface-background))] px-6 text-center text-foreground">
           <div className="flex max-w-sm flex-col items-center gap-4">
             <OpenChamberLogo width={120} height={120} isAnimated={!showConnectionRecovery} variant="splash" />
@@ -1318,6 +1320,7 @@ export function MobileApp({ apis }: MobileAppProps) {
             ) : null}
           </div>
         </main>
+        </AgentConnectionGate>
       );
     }
     // Cold-launch auto-connect is still resolving — hold the splash instead of
@@ -1373,6 +1376,7 @@ export function MobileApp({ apis }: MobileAppProps) {
   }
 
   return (
+    <AgentConnectionGate>
     <ErrorBoundary>
       <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
@@ -1401,5 +1405,6 @@ export function MobileApp({ apis }: MobileAppProps) {
         </RuntimeAPIProvider>
       </SyncProvider>
     </ErrorBoundary>
+    </AgentConnectionGate>
   );
 }

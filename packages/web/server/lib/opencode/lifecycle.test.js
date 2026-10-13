@@ -489,6 +489,28 @@ describe('OpenCode lifecycle', () => {
     expect(terminalEvents).toHaveLength(1);
   });
 
+  it('restores a selected endpoint after a transient health failure without restarting', async () => {
+    let healthy = false;
+    let checkedAt = 1;
+    globalThis.fetch = async () => ({ ok: healthy, json: async () => ({ healthy }) });
+    const close = vi.fn(async () => {});
+    const runtime = createRuntime({ getConnection: () => ({ mode: 'path' }), now: () => checkedAt }, {
+      openCodePort: 45678,
+      openCodeProcess: { pid: null, exitCode: null, signalCode: null, close },
+      isOpenCodeReady: true,
+    });
+    await runtime.triggerHealthCheck();
+    expect(runtime.testState.isOpenCodeReady).toBe(false);
+    expect(runtime.testState.lastOpenCodeError).toBeTruthy();
+    healthy = true;
+    checkedAt += 15_000;
+    await runtime.triggerHealthCheck();
+    expect(runtime.testState.isOpenCodeReady).toBe(true);
+    expect(runtime.testState.lastOpenCodeError).toBeNull();
+    expect(close).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
   it('does not count rapid transport-triggered checks as independent health failures', async () => {
     const close = vi.fn(async () => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

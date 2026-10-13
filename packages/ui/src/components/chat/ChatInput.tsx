@@ -208,7 +208,7 @@ import {
     mapInputHistoryEntriesToValues,
     mergeSessionInputHistory,
 } from './inputHistory';
-import { useUserMessageHistory } from '@/sync/sync-context';
+import { useUserMessageHistory, useSession } from '@/sync/sync-context';
 
 // Lazy like in ChatMessage: a static import would pull the @pierre/diffs and
 // Shiki stacks into the eager startup graph for a dialog opened on demand.
@@ -452,6 +452,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     const liveSessionId = useSessionUIStore((s) => s.currentSessionId);
     const chatColumnSession = useChatColumnSession();
     const currentSessionId = chatColumnSession ? chatColumnSession.sessionId : liveSessionId;
+    const currentSession = useSession(currentSessionId ?? undefined);
     React.useEffect(() => {
         if (inputModeParentRef.current !== null && inputModeParentRef.current !== currentSessionId) {
             setInputMode('normal');
@@ -790,6 +791,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         () => undefined,
     );
     const knownSlashNames = React.useMemo(() => {
+        if (kernelGeneration === 'acp') return new Set<string>();
         const names = new Set<string>([
             'init', 'review', 'undo', 'redo', 'timeline', 'compact', 'btw', 'summary', 'workspace-review', 'plan-feature', 'craft-goal', 'schedule-task', 'catch-up', 'debug', 'weigh', 'explore',
         ]);
@@ -1254,7 +1256,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     const hasContent = hasComposerContent({ text: message, attachmentCount: attachedFiles.length, hasDrafts, hasLinkedReferences, isBtwActive });
     const hasQueuedMessages = !isBtwActive && queuedMessages.length > 0;
     const preparingBtwSend = useBtwStore((state) => Boolean(currentSessionId && state.byParent[currentSessionId]?.pendingSend));
-    const canSend = (hasContent || hasQueuedMessages) && !(isBtwActive && (btwPanel.creating || preparingBtwSend));
+    const canSend = !currentSession?.readOnly && (kernelGeneration !== 'acp' || sessionPhase === 'idle') && (hasContent || hasQueuedMessages) && !(isBtwActive && (btwPanel.creating || preparingBtwSend));
 
     const canAbort = sessionPhase !== 'idle';
 
@@ -1280,6 +1282,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
 
     // Add message to queue instead of sending
     const handleQueueMessage = React.useCallback(async () => {
+        if (opencodeClient.isAcp()) return;
         // The comment's exit paths are attach/cancel; queueing a real prompt
         // underneath comment mode must never fire.
         if (isMobileCommentOpen()) return;
@@ -1520,6 +1523,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     };
 
     const handleSubmit = async (options?: SubmitOptions) => {
+        if (opencodeClient.isAcp() && (currentSession?.readOnly || sessionPhase !== 'idle')) return;
         // Comment mode's only submit is attach; every other send path must be
         // inert while it is open.
         if (isMobileCommentOpen()) return;
@@ -1572,6 +1576,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         }
         if (commandPlan?.command.name === 'handoff-review' && (isMobile || isVSCodeRuntime())) commandPlan = null;
         if (commandPlan?.command.name === 'fork' && kernelGeneration !== 'oc2') commandPlan = null;
+        if (kernelGeneration === 'acp') commandPlan = null;
 
         // Enter BTW before sending so the question uses its isolated selections.
         // A bare command waits for input; an argument requests one immediate send.
@@ -1645,8 +1650,9 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
             ? queuedMessages.filter((message) => message.id === queuedMessageId)
             : queuedMessages;
         const capturedSendConfig = queuedOnly ? queuedProjection[0]?.sendConfig : undefined;
-        const providerIdToSend = capturedSendConfig?.providerID ?? (isBtwActive ? effectiveBtwSelection.model?.providerId : currentProviderId);
-        const modelIdToSend = capturedSendConfig?.modelID ?? (isBtwActive ? effectiveBtwSelection.model?.modelId : currentModelId);
+        if (currentSession?.readOnly) return;
+        const providerIdToSend = kernelGeneration === 'acp' ? 'acp' : capturedSendConfig?.providerID ?? (isBtwActive ? effectiveBtwSelection.model?.providerId : currentProviderId);
+        const modelIdToSend = kernelGeneration === 'acp' ? 'agent' : capturedSendConfig?.modelID ?? (isBtwActive ? effectiveBtwSelection.model?.modelId : currentModelId);
         const agentNameToSend = capturedSendConfig?.agent ?? (isBtwActive ? effectiveBtwSelection.agent : currentAgentName);
         const variantToSend = capturedSendConfig?.variant ?? (isBtwActive ? effectiveBtwSelection.variant : currentVariant);
 
@@ -1665,7 +1671,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         // btw mode: the child fork's blocking prompts are answered inside the
         // panel; the composer send goes straight to the fork (routeMessage
         // queues if the fork's own turn is busy).
-        if (currentSessionId && !queuedOnly && !isBtwActive && !commandPlan) {
+        if (kernelGeneration !== 'acp' && currentSessionId && !queuedOnly && !isBtwActive && !commandPlan) {
             // Supersede blocking prompts throughout the session subtree before
             // delivering the follow-up. Dismissal clears the cards immediately
             // and rejects the requests on the backend.
@@ -2172,7 +2178,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         // Comment mode owns the composer; its only primary action is attach.
         if (isMobileCommentOpen()) return;
         const inputSnapshot = getCurrentInputSnapshot();
-        const canQueue = !isBtwActive && inputMode === 'normal' && inputSnapshot.hasContent && currentSessionId && (currentSessionPhase !== 'idle' || autoReviewRunning);
+        const canQueue = !opencodeClient.isAcp() && !isBtwActive && inputMode === 'normal' && inputSnapshot.hasContent && currentSessionId && (currentSessionPhase !== 'idle' || autoReviewRunning);
         if (followUpBehavior === 'queue' && canQueue) {
             void handleQueueMessage();
         } else if (followUpBehavior === 'steer' && canQueue) {
@@ -2393,7 +2399,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
 
             // Queueing / steering only works when there's an existing busy
             // session (or an active auto-review run).
-            const canQueue = !isBtwActive && inputMode === 'normal' && hasContent && currentSessionId && (currentSessionPhase !== 'idle' || autoReviewRunning);
+            const canQueue = !opencodeClient.isAcp() && !isBtwActive && inputMode === 'normal' && hasContent && currentSessionId && (currentSessionPhase !== 'idle' || autoReviewRunning);
 
             if (followUpBehavior === 'queue') {
                 if (isCtrlEnter || !canQueue) {
@@ -3561,8 +3567,8 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     const doneHintRow = !isBtwActive && !newSessionDraftOpen ? (
         <SessionDoneHintRow sessionId={currentSessionId} directory={currentSessionDirectoryForSync ?? currentDirectory} />
     ) : null;
-    const composerTopRows = doneHintRow || suggestionRow ? <>{doneHintRow}{suggestionRow}</> : null;
-    const mobileModelAgentRow = isMobile && !isBtwActive ? (
+    const composerTopRows = currentSession?.readOnly ? <p role="status" className="px-3 py-2 typography-meta text-muted-foreground">{t('chat.acp.readOnly')}</p> : doneHintRow || suggestionRow ? <>{doneHintRow}{suggestionRow}</> : null;
+    const mobileModelAgentRow = isMobile && kernelGeneration === 'acp' ? <p className="px-3.5 pb-2 typography-meta text-muted-foreground">{t('chat.acp.agentManaged')}</p> : isMobile && !isBtwActive ? (
         // px-3.5 lines the model logo and the agent label up with the attach
         // and mic icons above them; the buttons drop their own padding so the
         // row alone owns the inset.
@@ -3851,7 +3857,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                     />
                 ) : (
                 <>
-                {!isBtwActive ? <SessionGoalRow
+                {!isBtwActive && kernelGeneration !== 'acp' ? <SessionGoalRow
                     sessionId={currentSessionId}
                     directory={currentSessionDirectoryForSync ?? currentDirectory}
                     className="mb-1.5"
@@ -3981,7 +3987,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                                             ? t('chat.chatInput.placeholder.shell')
                                             : t(useCompactChatPlaceholder ? 'chat.chatInput.placeholder.chatCompact' : 'chat.chatInput.placeholder.chat')
                                         : t('chat.chatInput.placeholder.selectSession')}
-                                editable={Boolean(currentSessionId || newSessionDraftOpen)}
+                                editable={!currentSession?.readOnly && Boolean(currentSessionId || newSessionDraftOpen)}
                                 autoCorrect={composerAutoCorrect({ isMobile })}
                                 autoCapitalize={isMobile ? 'sentences' : 'none'}
                                 preserveDeferredEnterShift={!enterToSendConfigured || !isMobile}
@@ -4085,7 +4091,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                 {/* Hidden host for the model/agent/variant bottom sheets. Kept
                     outside the pill conditional so an open panel survives (and
                     stays visible over) the collapsed composer. */}
-                {isMobile && !isBtwActive ? (
+                {isMobile && !isBtwActive && kernelGeneration !== 'acp' ? (
                     <MemoModelControls
                         className="hidden"
                         mobilePanel={mobileControlsPanel}

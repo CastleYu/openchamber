@@ -240,7 +240,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
           extensionName: entry.guestName,
         }));
         const allCommands = [
-          ...mergeCommandAutocompleteItems(builtInCommands, customCommands, skillCommands),
+          ...mergeCommandAutocompleteItems(kernelGeneration === 'acp' ? [] : builtInCommands, customCommands, skillCommands),
           ...extensionCommands,
         ];
 
@@ -256,7 +256,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
           return a.name.localeCompare(b.name);
         });
 
-        setCommands(filtered);
+        setCommands(kernelGeneration === 'acp' ? [] : filtered);
       } catch {
 
         const builtInCommands: CommandInfo[] = [

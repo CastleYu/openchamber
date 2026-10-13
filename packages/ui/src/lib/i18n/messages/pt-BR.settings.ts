@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "Conexão do agente",
+  'settings.agentConnection.external': "Servidor OpenCode externo",
+  'settings.agentConnection.command': "Comando OpenCode",
+  'settings.agentConnection.path': "OpenCode do PATH do sistema",
+  'settings.agentConnection.bundled': "OpenCode incluído",
+  'settings.agentConnection.acp': "Agente ACP via stdio",
+  'settings.agentConnection.url': "URL do servidor",
+  'settings.agentConnection.executable': "Executável",
+  'settings.agentConnection.args': "Argumentos (matriz JSON)",
+  'settings.agentConnection.cwd': "Diretório de trabalho (opcional)",
+  'settings.agentConnection.connecting': "Conectando…",
+  'settings.agentConnection.apply': "Aplicar e conectar",
   'settings.themeImport.selectAll': 'Selecionar tudo',
   'settings.themeImport.deselectAll': 'Desmarcar tudo',
   'settings.themeImport.complete': 'Importação concluída',

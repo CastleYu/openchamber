@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "에이전트 연결",
+  'settings.agentConnection.external': "외부 OpenCode 서버",
+  'settings.agentConnection.command': "OpenCode 명령",
+  'settings.agentConnection.path': "시스템 PATH의 OpenCode",
+  'settings.agentConnection.bundled': "번들 OpenCode",
+  'settings.agentConnection.acp': "stdio를 통한 ACP 에이전트",
+  'settings.agentConnection.url': "서버 URL",
+  'settings.agentConnection.executable': "실행 파일",
+  'settings.agentConnection.args': "인수 (JSON 배열)",
+  'settings.agentConnection.cwd': "작업 디렉터리 (선택 사항)",
+  'settings.agentConnection.connecting': "연결 중…",
+  'settings.agentConnection.apply': "적용 및 연결",
   'settings.themeImport.selectAll': '모두 선택',
   'settings.themeImport.deselectAll': '모두 선택 해제',
   'settings.themeImport.complete': '가져오기 완료',

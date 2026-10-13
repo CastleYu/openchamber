@@ -4,6 +4,25 @@ import { configureRuntimeUrlResolver, getRuntimeUrlResolver, setRuntimeUrlResolv
 
 const previous = getRuntimeUrlResolver();
 
+test('ACP lists saved sessions and sends without an OpenCode model catalog', async () => {
+  configureRuntimeUrlResolver({ apiBaseUrl: 'https://facade.test' });
+  opencodeClient.reconnectToRuntimeBaseUrl();
+  opencodeClient.bindRuntime({ generation: 'acp', endpoint: 'acp:stdio', epoch: 2, version: null });
+  const requests: string[] = [];
+  const fetch = spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const path = new URL(String(input)).pathname;
+    requests.push(path);
+    if (path === '/api/acp/sessions') return Response.json([{ id: 'saved', projectID: '/repo', directory: '/repo', title: 'Saved', time: { created: 1, updated: 2 } }]);
+    if (path === '/api/acp/prompt') return Response.json({ messageID: 'user' });
+    throw new Error(`Unexpected ${path}`);
+  });
+  try {
+    expect((await opencodeClient.listSessionsPage({ global: true })).sessions[0]?.id).toBe('saved');
+    expect(await opencodeClient.sendMessage({ id: 'saved', providerID: '', modelID: '', text: 'Hello', messageId: 'user' })).toBe('user');
+    expect(requests).toEqual(['/api/acp/sessions', '/api/acp/prompt']);
+  } finally { fetch.mockRestore(); }
+});
+
 beforeEach(() => {
   configureRuntimeUrlResolver({ apiBaseUrl: 'https://facade.test' });
   opencodeClient.reconnectToRuntimeBaseUrl();

@@ -1,6 +1,7 @@
 export const OPEN_CODE_GENERATION = {
   OC1: 'oc1',
   OC2: 'oc2',
+  ACP: 'acp',
   UNSUPPORTED: 'unsupported',
   UNREACHABLE: 'unreachable',
   UNKNOWN: 'unknown',

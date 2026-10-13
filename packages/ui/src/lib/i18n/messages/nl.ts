@@ -13,6 +13,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'chat.acp.readOnly': 'Dit opgeslagen gesprek is alleen-lezen. De ACP-agent kan het niet hervatten.',
+  'chat.acp.agentManaged': 'Model en machtigingen worden beheerd door de ACP-agent',
   "opencodeCompatibility.bundled": "OpenCode is inbegrepen bij OpenChamber. Werk OpenChamber bij om OpenCode v2 te krijgen.",
   "opencodeCompatibility.title": "OpenCode v2 vereist",
   "opencodeCompatibility.outdatedTitle": "OpenCode bijwerken",

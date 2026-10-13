@@ -1980,14 +1980,15 @@ export async function optimisticSend(input: {
   const messageID = ascendingId("msg")
   input.onMessageID?.(messageID)
   const optimisticIDs = [...context.map((item) => item.id), messageID]
-  const textPartId = ascendingId("prt")
+  const acp = opencodeClient.getBoundRuntime()?.generation === "acp"
+  const textPartId = acp ? `${messageID}:text:0` : ascendingId("prt")
 
   const optimisticParts: Part[] = [
-    { id: textPartId, type: "text", text: input.content } as Part,
+    { id: textPartId, sessionID: input.sessionId, messageID, type: "text", text: input.content },
   ]
   if (input.files) {
-    for (const f of input.files) {
-      optimisticParts.push({ id: ascendingId("prt"), type: "file", mime: f.mime, url: f.url, filename: f.filename } as Part)
+    for (const [index, f] of input.files.entries()) {
+      optimisticParts.push({ id: acp ? `${messageID}:file:${index}` : ascendingId("prt"), sessionID: input.sessionId, messageID, type: "file", mime: f.mime, url: f.url, filename: f.filename })
     }
   }
 

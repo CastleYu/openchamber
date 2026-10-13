@@ -1,4 +1,5 @@
 import React from 'react';
+import { AgentConnectionGate } from '@/components/sections/openchamber/AgentConnectionSettings';
 import { AppStartupOverlay } from '@/components/ui/AppStartupOverlay';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatView } from '@/components/views/ChatView';
@@ -1002,11 +1003,13 @@ function App({ apis }: AppProps) {
   if (initRetryExhausted && !isInitialized && !isVSCodeRuntime && !embeddedSessionChat) {
     return (
       <ErrorBoundary>
+        <AgentConnectionGate>
         <StartupInitializationRecovery
           key={runtimeEndpointEpoch}
           onRetry={() => { void handleManualInitRetry(); }}
           isRetrying={manualInitRetrying}
         />
+        </AgentConnectionGate>
       </ErrorBoundary>
     );
   }
@@ -1017,6 +1020,7 @@ function App({ apis }: AppProps) {
   const isBootShell = !isInitialized && !isDesktopRuntime;
 
   return (
+    <AgentConnectionGate disabled={isVSCodeRuntime}>
     <ErrorBoundary>
       <SyncProvider key={runtimeEndpointEpoch} source={syncSource} directory={currentDirectory || ''}>
         <RuntimeAPIProvider apis={apis}>
@@ -1045,6 +1049,7 @@ function App({ apis }: AppProps) {
         </RuntimeAPIProvider>
       </SyncProvider>
     </ErrorBoundary>
+    </AgentConnectionGate>
   );
 }
 

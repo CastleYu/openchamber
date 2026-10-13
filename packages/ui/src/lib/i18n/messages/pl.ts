@@ -14,6 +14,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'chat.acp.readOnly': 'Ta zapisana rozmowa jest tylko do odczytu. Agent ACP nie może jej wznowić.',
+  'chat.acp.agentManaged': 'Modelem i uprawnieniami zarządza agent ACP',
   "opencodeCompatibility.bundled": "OpenCode jest dołączony do OpenChamber. Zaktualizuj OpenChamber, aby uzyskać OpenCode v2.",
   "opencodeCompatibility.title": "Wymagany OpenCode v2",
   "opencodeCompatibility.outdatedTitle": "Zaktualizuj OpenCode",

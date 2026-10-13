@@ -14,6 +14,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'chat.acp.readOnly': 'Ця збережена розмова доступна лише для читання. Агент ACP не може її продовжити.',
+  'chat.acp.agentManaged': 'Моделлю та дозволами керує агент ACP',
   "opencodeCompatibility.bundled": "OpenCode входить до складу OpenChamber. Оновіть OpenChamber, щоб отримати OpenCode v2.",
   "opencodeCompatibility.title": "Потрібен OpenCode v2",
   "opencodeCompatibility.outdatedTitle": "Оновіть OpenCode",

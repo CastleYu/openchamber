@@ -2487,6 +2487,10 @@ export const useConfigStore = create<ConfigStore>()(
                 },
 
                 loadAgents: async (options) => {
+                    if (opencodeClient.getBoundRuntime()?.generation === 'acp') {
+                        set({ agents: [], agentsLoaded: true });
+                        return true;
+                    }
                     const runtimeContext = captureConfigRuntimeContext();
                     const requestedDirectory = options?.directory ?? fromDirectoryKey(get().activeDirectoryKey);
                     // Agents are project-scoped: resolve a worktree to its project

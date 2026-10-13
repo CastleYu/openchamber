@@ -13,6 +13,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'chat.acp.readOnly': 'This saved conversation is read-only. The ACP agent cannot resume it.',
+  'chat.acp.agentManaged': 'Model and permissions managed by the ACP agent',
   "opencodeCompatibility.bundled": "OpenCode is bundled with OpenChamber. Update OpenChamber to get OpenCode v2.",
   "opencodeCompatibility.title": "OpenCode v2 required",
   "opencodeCompatibility.outdatedTitle": "Update OpenCode",

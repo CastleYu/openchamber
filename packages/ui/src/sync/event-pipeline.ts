@@ -903,6 +903,7 @@ export function createEventPipeline(input: EventPipelineInput): EventPipeline {
   }
 
   const resolveTransport = (): "ws" | "sse" => {
+    if (source?.generation === 'acp') return 'sse'
     if (typeof WebSocket !== "function") {
       return "sse"
     }

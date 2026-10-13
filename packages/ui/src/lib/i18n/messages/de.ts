@@ -13,6 +13,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'chat.acp.readOnly': 'Diese gespeicherte Unterhaltung ist schreibgeschützt. Der ACP-Agent kann sie nicht fortsetzen.',
+  'chat.acp.agentManaged': 'Modell und Berechtigungen werden vom ACP-Agenten verwaltet',
   "opencodeCompatibility.bundled": "OpenCode ist in OpenChamber enthalten. Aktualisieren Sie OpenChamber, um OpenCode v2 zu erhalten.",
   "opencodeCompatibility.title": "OpenCode v2 erforderlich",
   "opencodeCompatibility.outdatedTitle": "OpenCode aktualisieren",

@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "智慧體連線",
+  'settings.agentConnection.external': "外部 OpenCode 伺服器",
+  'settings.agentConnection.command': "OpenCode 指令",
+  'settings.agentConnection.path': "系統 PATH 中的 OpenCode",
+  'settings.agentConnection.bundled': "隨附的 OpenCode",
+  'settings.agentConnection.acp': "透過 stdio 連線 ACP 智慧體",
+  'settings.agentConnection.url': "伺服器 URL",
+  'settings.agentConnection.executable': "執行檔",
+  'settings.agentConnection.args': "參數（JSON 陣列）",
+  'settings.agentConnection.cwd': "工作目錄（選填）",
+  'settings.agentConnection.connecting': "正在連線…",
+  'settings.agentConnection.apply': "套用並連線",
   'settings.themeImport.selectAll': '全選',
   'settings.themeImport.deselectAll': '取消全選',
   'settings.themeImport.complete': '匯入完成',

@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "智能体连接",
+  'settings.agentConnection.external': "外部 OpenCode 服务器",
+  'settings.agentConnection.command': "OpenCode 命令",
+  'settings.agentConnection.path': "系统 PATH 中的 OpenCode",
+  'settings.agentConnection.bundled': "捆绑的 OpenCode",
+  'settings.agentConnection.acp': "通过 stdio 连接 ACP 智能体",
+  'settings.agentConnection.url': "服务器 URL",
+  'settings.agentConnection.executable': "可执行文件",
+  'settings.agentConnection.args': "参数（JSON 数组）",
+  'settings.agentConnection.cwd': "工作目录（可选）",
+  'settings.agentConnection.connecting': "正在连接…",
+  'settings.agentConnection.apply': "应用并连接",
   'settings.themeImport.selectAll': '全选',
   'settings.themeImport.deselectAll': '取消全选',
   'settings.themeImport.complete': '导入完成',

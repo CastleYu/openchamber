@@ -13,6 +13,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict = {
+  'chat.acp.readOnly': 'Kaydedilen bu konuşma salt okunurdur. ACP aracısı konuşmayı sürdüremiyor.',
+  'chat.acp.agentManaged': 'Model ve izinler ACP aracısı tarafından yönetilir',
   "opencodeCompatibility.bundled": "OpenCode, OpenChamber ile birlikte gelir. OpenCode v2 için OpenChamber’ı güncelleyin.",
   "opencodeCompatibility.title": "OpenCode v2 gerekli",
   "opencodeCompatibility.outdatedTitle": "OpenCode’u güncelleyin",

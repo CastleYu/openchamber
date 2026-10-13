@@ -10,6 +10,12 @@ This document covers the current client-side session/data architecture in `packa
 
 The source projects both OpenCode generations into the shared `Session`, `Message`, and `Part` model before data reaches a child store. OC1 events retain their complete event vocabulary in the existing reducer. OC2 events pass the pinned event schema at WebSocket ingress, then become `DomainEvent` records. Permission requests and user input remain tagged by generation. OC2 forms do not become OC1 questions.
 
+ACP uses `lib/opencode/acp.ts` as its generation-bound source. The selected backend
+process publishes domain records over authenticated SSE; reconnect snapshots
+carry unique fact IDs. ACP permissions preserve the agent's option IDs, and saved
+sessions without negotiated `loadSession` stay read-only. Protocol ownership and
+capabilities live in `packages/web/server/lib/acp/DOCUMENTATION.md`.
+
 Both generations publish directory VCS snapshots to the child store's `vcs` field, which the tray reads. OC2 `vcs.branch.updated` updates that field for the event's directory; its optional branch can clear the current branch. The runtime binding and directory route reject stale or unrelated updates.
 
 The message loader accepts pages from either source and sorts each page by message time before reconciliation. The OC1 and OC2 wire page orders differ; cursors stay with their own source. Failed status, permission, form, or catalog requests leave the previous data intact rather than publishing an empty result.

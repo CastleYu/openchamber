@@ -19,6 +19,7 @@ import { Icon } from '@/components/icon/Icon';
 import type { GuestAttachItem } from '@/hooks/useGuestSurfaces';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { opencodeClient } from '@/lib/opencode/client';
 import { ModelControls } from '../../ModelControls';
 import { ComposerActionButtons } from './ComposerActionButtons';
 import { ComposerAttachmentControls } from './ComposerAttachmentControls';
@@ -165,23 +166,23 @@ export function ComposerFooter(props: ComposerFooterProps) {
                                 onOpenGuestAttach={onOpenGuestAttach}
                                 filesOnly={isBtw}
                             />
-                            <PermissionAutoAcceptButton
+                            {!opencodeClient.isAcp() ? <PermissionAutoAcceptButton
                                 footerIconButtonClass={footerIconButtonClass}
                                 iconSizeClass={iconSizeClass}
-                                isInteractive={isPermissionAutoAcceptInteractive}
+                                isInteractive={!opencodeClient.isAcp() && isPermissionAutoAcceptInteractive}
                                 permissionAutoAcceptEnabled={permissionAutoAcceptEnabled}
                                 handlePermissionAutoAcceptToggle={onTogglePermissionAutoAccept}
                                 permissionMode={permissionMode}
                                 handlePermissionModeCycle={onCyclePermissionMode}
-                            />
-                            {!isBtw ? <SessionGoalButton
+                            /> : null}
+                            {!isBtw && !opencodeClient.isAcp() ? <SessionGoalButton
                                 sessionId={currentSessionId}
                                 directory={directory}
                                 draftOpen={newSessionDraftOpen}
                                 footerIconButtonClass={footerIconButtonClass}
                                 iconSizeClass={iconSizeClass}
                             /> : null}
-                            {!isBtw ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
+                            {!isBtw && !opencodeClient.isAcp() ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
                         </div>
                         <div className="flex items-center min-w-0 gap-x-1 justify-end">
                             <div className="flex items-center gap-x-1 flex-shrink-0">
@@ -246,17 +247,17 @@ export function ComposerFooter(props: ComposerFooterProps) {
                             isExpandedInput={isExpandedInput}
                             onToggle={onToggleExpandedInput}
                         /> : null}
-                        <PermissionAutoAcceptButton
+                        {!opencodeClient.isAcp() ? <PermissionAutoAcceptButton
                             footerIconButtonClass={footerIconButtonClass}
                             iconSizeClass={iconSizeClass}
-                            isInteractive={isPermissionAutoAcceptInteractive}
+                            isInteractive={!opencodeClient.isAcp() && isPermissionAutoAcceptInteractive}
                             permissionAutoAcceptEnabled={permissionAutoAcceptEnabled}
                             handlePermissionAutoAcceptToggle={onTogglePermissionAutoAccept}
                             permissionMode={permissionMode}
                             handlePermissionModeCycle={onCyclePermissionMode}
                             withTooltip
-                        />
-                        {!isBtw ? <SessionGoalButton
+                        /> : null}
+                        {!isBtw && !opencodeClient.isAcp() ? <SessionGoalButton
                             sessionId={currentSessionId}
                             directory={directory}
                             draftOpen={newSessionDraftOpen}
@@ -264,10 +265,10 @@ export function ComposerFooter(props: ComposerFooterProps) {
                             iconSizeClass={iconSizeClass}
                             withTooltip
                         /> : null}
-                        {!isBtw ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
+                        {!isBtw && !opencodeClient.isAcp() ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
                     </div>
                     <div className={cn('flex items-center flex-1 justify-end', footerGapClass, 'md:gap-x-3')}>
-                        {parallelRun ? <div className="flex-1" /> : isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} onRunInParallel={onRunInParallel} />}
+                        {opencodeClient.isAcp() ? <span className="flex-1 typography-meta text-muted-foreground">{t('chat.acp.agentManaged')}</span> : parallelRun ? <div className="flex-1" /> : isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} onRunInParallel={onRunInParallel} />}
                         {!isBtw ? <MemoComposerDictation
                             radius={chatInputRadius}
                             isMobile={isMobile}

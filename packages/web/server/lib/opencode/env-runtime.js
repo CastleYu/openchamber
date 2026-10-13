@@ -1242,6 +1242,19 @@ export const createOpenCodeEnvRuntime = (deps) => {
   };
 
   return {
+    resolveSelectedBinary: (config) => {
+      const binary = config.mode === 'bundled' ? resolveBundledOpenCodeCliPath()
+        : config.mode === 'path' ? searchPathFor('opencode', process.env.PATH || '')
+          : (path.isAbsolute(config.command) || config.command.includes('/') || config.command.includes('\\'))
+            ? config.command : searchPathFor(config.command, process.env.PATH || '');
+      if (!binary || !isExecutable(binary) || isWindowsOpenCodeDesktopAppPath(binary)) {
+        throw new Error(`Selected OpenCode executable is unavailable (${config.mode})`);
+      }
+      clearWslOpencodeResolution();
+      state.resolvedOpencodeBinary = binary;
+      state.resolvedOpencodeBinarySource = config.mode;
+      return binary;
+    },
     applyLoginShellEnvSnapshot,
     ensureOpencodeCliEnv,
     applyOpencodeBinaryFromSettings,

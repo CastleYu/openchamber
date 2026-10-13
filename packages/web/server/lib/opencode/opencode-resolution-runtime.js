@@ -7,18 +7,21 @@ export const createOpenCodeResolutionRuntime = (dependencies) => {
     resolveManagedOpenCodeLaunchSpec,
     getResolvedState,
     setResolvedOpencodeBinarySource,
+    getConnection = null,
   } = dependencies;
 
   const getOpenCodeResolutionSnapshot = async (settings) => {
     const configured = typeof settings?.opencodeBinary === 'string' ? settings.opencodeBinary : null;
 
     const { resolvedOpencodeBinarySource: previousSource } = getResolvedState();
-    const detectedNow = resolveOpencodeCliPath();
+    const detectedNow = getConnection ? null : resolveOpencodeCliPath();
     const { resolvedOpencodeBinarySource: rawDetectedSourceNow } = getResolvedState();
     setResolvedOpencodeBinarySource(previousSource);
 
-    await applyOpencodeBinaryFromSettings();
-    ensureOpencodeCliEnv();
+    if (!getConnection) {
+      await applyOpencodeBinaryFromSettings();
+      ensureOpencodeCliEnv();
+    }
 
     const {
       resolvedOpencodeBinary,

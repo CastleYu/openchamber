@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "Agentverbinding",
+  'settings.agentConnection.external': "Externe OpenCode-server",
+  'settings.agentConnection.command': "OpenCode-opdracht",
+  'settings.agentConnection.path': "OpenCode uit systeem-PATH",
+  'settings.agentConnection.bundled': "Meegeleverde OpenCode",
+  'settings.agentConnection.acp': "ACP-agent via stdio",
+  'settings.agentConnection.url': "Server-URL",
+  'settings.agentConnection.executable': "Uitvoerbaar bestand",
+  'settings.agentConnection.args': "Argumenten (JSON-array)",
+  'settings.agentConnection.cwd': "Werkmap (optioneel)",
+  'settings.agentConnection.connecting': "Verbinden…",
+  'settings.agentConnection.apply': "Toepassen en verbinden",
   'settings.openchamber.tunnel.enterpriseMode': 'Externe tunnels zijn niet beschikbaar in enterprise-modus, omdat de tunneldienst het verkeer zou kunnen lezen. Koppel andere apparaten via uw netwerk of de relay van uw organisatie om deze server te bereiken.',
   'settings.voice.page.enterpriseMode': 'In enterprise-modus blijft voorlezen op deze computer. Gebruik een lokale stem of een aangepaste server die hier draait.',
   'settings.themeImport.selectAll': 'Alles selecteren',

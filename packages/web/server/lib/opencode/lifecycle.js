@@ -142,6 +142,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     managedStartupTimeoutMs = 30_000,
     now = Date.now,
     topUpV1SessionMigration = topUpV1Migration,
+    getConnection = null,
+    resolveSelectedBinary,
   } = deps;
 
   const resolveReadyKernel = async () => {
@@ -760,11 +762,16 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         : `Starting OpenCode on allocated port ${spawnPort}...`
     );
 
-    await applyOpencodeBinaryFromSettings({ strict: true });
-    const resolvedBinary = ensureOpencodeCliEnv();
+    const selection = getConnection?.();
+    if (selection && !['command', 'path', 'bundled'].includes(selection.mode)) throw new Error('Select a managed OpenCode connection before starting it');
+    if (!getConnection) await applyOpencodeBinaryFromSettings({ strict: true });
+    const resolvedBinary = getConnection ? resolveSelectedBinary(selection) : ensureOpencodeCliEnv();
     const selectedKernel = await probeManagedOpenCodeGeneration({
-      resolvedBinary: resolvedBinary || process.env.OPENCODE_BINARY || 'opencode',
-      resolveManagedOpenCodeLaunchSpec,
+      resolvedBinary: getConnection ? resolvedBinary : resolvedBinary || process.env.OPENCODE_BINARY || 'opencode',
+      resolveManagedOpenCodeLaunchSpec: selection ? (binary) => {
+        const spec = resolveManagedOpenCodeLaunchSpec(binary);
+        return { ...spec, args: [...(spec.args || []), ...(selection.args || [])] };
+      } : resolveManagedOpenCodeLaunchSpec,
       useWslForOpencode: state.useWslForOpencode,
     });
     recordStartupPerformance('opencode.binary.ready', {
@@ -884,12 +891,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   const startOpenCode = async () => {
     let lastError = null;
-    for (let attempt = 1; attempt <= START_OPEN_CODE_MAX_ATTEMPTS; attempt += 1) {
+    for (let attempt = 1; attempt <= (getConnection ? 1 : START_OPEN_CODE_MAX_ATTEMPTS); attempt += 1) {
       try {
         return await startOpenCodeOnce(attempt);
       } catch (error) {
         lastError = error;
-        if (state.isShuttingDown || error?.code === 'OPENCODE_BINARY_INVALID') {
+        if (getConnection || state.isShuttingDown || error?.code === 'OPENCODE_BINARY_INVALID') {
           break;
         }
         if (attempt >= START_OPEN_CODE_MAX_ATTEMPTS) {
@@ -910,6 +917,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   const restartOpenCode = async (reason = 'managed-restart') => {
+    if (getConnection && !getConnection()) throw new Error('Choose an agent connection first');
+    if (getConnection?.()?.mode === 'acp') throw new Error('Apply the ACP connection to restart its agent');
     if (state.isShuttingDown) return;
     if (state.currentRestartPromise) {
       await state.currentRestartPromise;
@@ -1373,6 +1382,19 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   const runHealthCheckCycle = async (source) => {
+    if (getConnection) {
+      if (!state.openCodeProcess || state.isShuttingDown || state.isRestartingOpenCode) return;
+      const result = await probeOpenCodeHealth();
+      if (!result.healthy) {
+        state.isOpenCodeReady = false;
+        state.lastOpenCodeError = result.failure?.detail || 'Selected OpenCode server is unavailable. Apply the connection to retry.';
+      } else {
+        state.isOpenCodeReady = true;
+        state.lastOpenCodeError = null;
+      }
+      syncToHmrState();
+      return;
+    }
     if (!state.openCodeProcess || state.isShuttingDown || state.isRestartingOpenCode) return;
     if (healthCheckCyclePromise) return healthCheckCyclePromise;
 
@@ -1452,6 +1474,36 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   };
 
   return {
+    stopSelectedConnection: async () => {
+      if (state.currentRestartPromise) await state.currentRestartPromise.catch(() => {});
+      if (state.healthCheckInterval) clearInterval(state.healthCheckInterval);
+      state.healthCheckInterval = null;
+      if (state.openCodeProcess) await state.openCodeProcess.close();
+      state.openCodeProcess = null;
+      state.openCodePort = null;
+      state.openCodeBaseUrl = null;
+      state.isOpenCodeReady = false;
+      state.isExternalOpenCode = false;
+      kernelRuntime?.invalidate();
+      syncToHmrState();
+    },
+    startSelectedConnection: async (config) => {
+      state.lastOpenCodeError = null;
+      state.openCodeApiPrefix = '';
+      state.openCodeApiPrefixDetected = true;
+      if (config.mode === 'external') {
+        const url = new URL(config.url);
+        state.isExternalOpenCode = true;
+        state.openCodeBaseUrl = url.origin;
+        setOpenCodePort(Number(url.port || (url.protocol === 'https:' ? 443 : 80)));
+        if (!await probeExternalOpenCode(state.openCodePort, url.origin)) throw new Error(`Selected OpenCode server is unavailable: ${url.origin}`);
+      } else {
+        state.isExternalOpenCode = false;
+        state.openCodeProcess = await startOpenCode();
+      }
+      await waitForOpenCodeReady();
+      syncToHmrState();
+    },
     getManagedOpenCodeProcessEnv: () => (state.isExternalOpenCode ? null : managedProcessEnv),
     killProcessOnPort,
     startOpenCode,

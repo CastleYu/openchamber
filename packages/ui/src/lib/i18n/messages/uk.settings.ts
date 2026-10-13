@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "Підключення агента",
+  'settings.agentConnection.external': "Зовнішній сервер OpenCode",
+  'settings.agentConnection.command': "Команда OpenCode",
+  'settings.agentConnection.path': "OpenCode із системного PATH",
+  'settings.agentConnection.bundled': "Вбудований OpenCode",
+  'settings.agentConnection.acp': "Агент ACP через stdio",
+  'settings.agentConnection.url': "URL сервера",
+  'settings.agentConnection.executable': "Виконуваний файл",
+  'settings.agentConnection.args': "Аргументи (масив JSON)",
+  'settings.agentConnection.cwd': "Робочий каталог (необов’язково)",
+  'settings.agentConnection.connecting': "Підключення…",
+  'settings.agentConnection.apply': "Застосувати й підключити",
   'settings.themeImport.selectAll': 'Вибрати всі',
   'settings.themeImport.deselectAll': 'Зняти вибір',
   'settings.themeImport.complete': 'Імпорт завершено',

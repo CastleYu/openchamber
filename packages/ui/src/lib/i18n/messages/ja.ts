@@ -14,6 +14,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'chat.acp.readOnly': 'この保存済みの会話は読み取り専用です。ACP エージェントは再開できません。',
+  'chat.acp.agentManaged': 'モデルと権限は ACP エージェントが管理します',
   "opencodeCompatibility.bundled": "OpenCode は OpenChamber に同梱されています。OpenCode v2 を利用するには OpenChamber を更新してください。",
   "opencodeCompatibility.title": "OpenCode v2 が必要です",
   "opencodeCompatibility.outdatedTitle": "OpenCode を更新してください",

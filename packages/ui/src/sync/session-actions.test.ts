@@ -171,7 +171,7 @@ const mockSdk = {
 // Mock opencodeClient singleton
 // SAFETY: the actions under test touch only the SDK surface mocked above.
 const actionSdk = mockSdk as unknown as OpencodeClient
-let mockBoundRuntime: { generation: 'oc1' | 'oc2' } = { generation: 'oc1' }
+let mockBoundRuntime: { generation: 'oc1' | 'oc2' | 'acp' } = { generation: 'oc1' }
 const forkSessionReads = new Map<string, Session>()
 
 mock.module("@/lib/opencode/client", () => ({
@@ -1667,6 +1667,29 @@ describe("optimisticSend target directory", () => {
     replyCalls.length = 0
     scopedClientDirectories.length = 0
     sessionMessagesResult = { data: [] }
+  })
+
+  test("ACP authoritative parts replace optimistic text and attachments in place", async () => {
+    mockBoundRuntime = { generation: "acp" }
+    const store = createStore({})
+    const { optimisticSend, setActionRefs, setOptimisticRefs } = await import("./session-actions")
+    const { applyDomainEvent } = await import("./event-reducer")
+    setActionRefs(mockSdk as unknown as OpencodeClient, createChildStores([["/target/project", store]]), () => "/target/project")
+    setOptimisticRefs((input) => store.setState({ part: { [input.message.id]: input.parts } }), () => {})
+    try {
+      await optimisticSend({
+        sessionId: "session-acp", directory: "/target/project", content: "hello", providerID: "acp", modelID: "agent",
+        files: [{ type: "file", mime: "text/plain", url: "file:///file.txt", filename: "file.txt" }],
+        send: async (messageID) => {
+          const parts: Part[] = [
+            { id: `${messageID}:text:0`, sessionID: "session-acp", messageID, type: "text", text: "hello" },
+            { id: `${messageID}:file:0`, sessionID: "session-acp", messageID, type: "file", mime: "application/octet-stream", url: "file:///file.txt", filename: "file.txt" },
+          ]
+          for (const part of parts) applyDomainEvent(store.getState(), { type: "part-upsert", part, eventID: part.id })
+          expect(store.getState().part[messageID]).toEqual(parts)
+        },
+      })
+    } finally { mockBoundRuntime = { generation: "oc1" } }
   })
 
   test("OC2 admits context before the prompt with stable ids and rolls both back on failure", async () => {

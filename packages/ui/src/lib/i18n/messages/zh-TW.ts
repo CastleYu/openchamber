@@ -14,6 +14,8 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 
 export const dict: Record<I18nKey, string> = {
+  'chat.acp.readOnly': '此已儲存的對話為唯讀。ACP 智慧體無法恢復它。',
+  'chat.acp.agentManaged': '模型和權限由 ACP 智慧體管理',
   "opencodeCompatibility.bundled": "OpenCode 隨 OpenChamber 一起提供。請更新 OpenChamber 以取得 OpenCode v2。",
   "opencodeCompatibility.title": "需要 OpenCode v2",
   "opencodeCompatibility.outdatedTitle": "請更新 OpenCode",

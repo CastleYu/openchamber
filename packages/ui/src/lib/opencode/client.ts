@@ -30,6 +30,7 @@ import { FilesystemError, parseFilesystemErrorReason } from "@/lib/api/files-err
 import type { PermissionRequest } from "@/types/permission";
 import type { QuestionRequest } from "@/types/question";
 import { runningShellFromWire, shellCancellationNote, type RunningShell } from './background-shell';
+import { AcpClient } from './acp';
 
 /**
  * Tagged result of `OpencodeService.fetchPermission()`. The caller can
@@ -291,6 +292,7 @@ const runtimeDescriptorSchema = z.object({
 });
 
 class OpencodeService {
+  private readonly acp = new AcpClient();
   private readonly runtimeBinding = new OpenCodeRuntimeBinding();
   private connectionRevision = 0;
   private discovery: Promise<OpenCodeRuntime> | null = null;
@@ -373,7 +375,7 @@ class OpencodeService {
         if (revision !== this.connectionRevision || runtimeKey !== getRuntimeKey()) {
           throw new OpenCodeRuntimeChangedError();
         }
-        if (runtime.endpoint && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2)) {
+        if (runtime.endpoint && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2 || runtime.generation === OPEN_CODE_GENERATION.ACP)) {
           this.bindRuntime(runtime);
         } else {
           this.runtimeBinding.clear();
@@ -403,6 +405,13 @@ class OpencodeService {
     return this.runtimeBinding.get()?.generation === 'oc2';
   }
 
+  isAcp(): boolean { return this.runtimeBinding.get()?.generation === 'acp'; }
+
+  replyToAcpPermission(id: string, optionID: string): Promise<boolean> {
+    if (!this.isAcp()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'ACP permission');
+    return this.acp.reply(id, optionID);
+  }
+
   private scope(directory?: string | null, signal?: AbortSignal) {
     return { directory: directory === null ? null : this.normalizeCandidatePath(directory) ?? this.currentDirectory, signal };
   }
@@ -421,7 +430,9 @@ class OpencodeService {
       getProviderCatalog: (directory?: string | null, signal?: AbortSignal) => this.getProviderCatalog(directory, signal),
       listTaggedAgents: (directory?: string | null) => this.listTaggedAgents(directory),
     };
-    if (runtime?.generation === 'oc1') {
+    if (runtime?.generation === 'acp') {
+      this.syncSource = this.acp.source(this.runtimeBinding, bootstrap);
+    } else if (runtime?.generation === 'oc1') {
       this.syncSource = createV1SyncSource(this.client, this.runtimeBinding, bootstrap);
     } else if (runtime?.generation === 'oc2') {
       const client = this.v2Client;
@@ -730,6 +741,7 @@ class OpencodeService {
 
   // Session Management
   async listSessions(): Promise<DomainSession[]> {
+    if (this.isAcp()) return this.acp.sessions(this.currentDirectory);
     if (this.isV2()) return this.listSyncSessions(this.currentDirectory, { archived: true, pageSize: 100 });
     return this.runtimeBinding.run('oc1', 'session.list', () => this.sessions.list({ directory: this.currentDirectory }));
   }
@@ -751,6 +763,11 @@ class OpencodeService {
   }
 
   async createSession(params?: { id?: string; parentID?: string; title?: string; metadata?: Metadata; agent?: string; model?: ModelRef }, directory?: string | null): Promise<DomainSession> {
+    if (this.isAcp()) {
+      if (params?.parentID) throw new OpenCodeRuntimeError('acp', 'session.fork');
+      const target = this.scope(directory).directory ?? (await this.acp.path()).directory;
+      return this.acp.create(target, params?.title);
+    }
     if (this.isV2()) return this.v2Sessions.create(params, this.scope(directory));
     if (params?.id !== undefined || params?.agent !== undefined || params?.model !== undefined) {
       throw new OpenCodeRuntimeError('oc1', 'OC2 session creation options');
@@ -760,6 +777,7 @@ class OpencodeService {
   }
 
   async getSession(id: string, directory?: string | null): Promise<DomainSession> {
+    if (this.isAcp()) return this.acp.session(id);
     if (this.isV2()) return this.v2Sessions.get(id, this.scope(directory));
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     return this.runtimeBinding.run('oc1', 'session.get', () => this.sessions.get(id, { directory: requestDirectory }));
@@ -812,6 +830,7 @@ class OpencodeService {
   }
 
   async getSessionMessages(id: string, limit?: number, directory?: string | null): Promise<{ info: DomainMessage; parts: DomainPart[] }[]> {
+    if (this.isAcp()) return this.acp.messages(id);
     if (this.isV2()) return (await this.v2Sessions.messages(id, { limit }, this.scope(directory))).items;
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     return this.runtimeBinding.run('oc1', 'session.messages', () => this.sessions.messages(id, limit, { directory: requestDirectory }));
@@ -828,6 +847,7 @@ class OpencodeService {
     limit?: number; cursor?: string; order?: 'asc' | 'desc'; search?: string; parentID?: string | null; signal?: AbortSignal;
   } = {}): Promise<{ sessions: DomainSession[]; cursor: { next?: string }; spaces?: SpaceMark[] }> {
     const directory = options.global ? null : this.normalizeCandidatePath(options.directory) ?? this.currentDirectory;
+    if (this.isAcp()) return { sessions: await this.acp.sessions(directory, options.signal), cursor: {} };
     if (this.isV2()) {
       const page = await this.v2Sessions.listPage({
         limit: options.limit, cursor: options.cursor, order: options.order, search: options.search,
@@ -864,6 +884,7 @@ class OpencodeService {
     directory: string | null | undefined,
     options: { archived: boolean; roots?: boolean; pageSize: number; signal?: AbortSignal },
   ): Promise<DomainSession[]> {
+    if (this.isAcp()) return this.acp.sessions(directory, options.signal);
     const all: DomainSession[] = [];
     const seen = new Set<string>();
     const target = this.normalizeCandidatePath(directory);
@@ -979,6 +1000,7 @@ class OpencodeService {
   }
 
   async getBootstrapPath(directory?: string | null, signal?: AbortSignal): Promise<BootstrapPath> {
+    if (this.isAcp()) return this.acp.path(directory, signal);
     if (this.isV2()) {
       const location = await this.v2Catalog.location(this.scope(directory, signal));
       return { directory: location.directory, projectID: location.project.id, worktree: location.project.canonical };
@@ -995,11 +1017,16 @@ class OpencodeService {
   }
 
   async listProjects(): Promise<DomainProject[]> {
+    if (this.isAcp()) return [];
     if (this.isV2()) return this.v2Catalog.projects();
     return this.runtimeBinding.run('oc1', 'project.list', async () => unwrapSdkData(await this.client.project.list(), 'project.list'));
   }
 
   async getCurrentProject(directory?: string | null, signal?: AbortSignal): Promise<DomainProject> {
+    if (this.isAcp()) {
+      const path = await this.acp.path(directory, signal);
+      return { id: path.directory, worktree: path.directory, time: { created: 0, updated: 0 }, sandboxes: [] };
+    }
     if (this.isV2()) {
       const location = await this.v2Catalog.location(this.scope(directory, signal));
       const projects = await this.v2Catalog.projects(this.scope(directory, signal));
@@ -1012,6 +1039,7 @@ class OpencodeService {
   }
 
   async getVcs(directory?: string | null, signal?: AbortSignal): Promise<DomainVcs> {
+    if (this.isAcp()) return {};
     if (this.isV2()) return this.v2Catalog.vcs(this.scope(directory, signal));
     return this.runtimeBinding.run('oc1', 'vcs.get', async () => {
       const value = unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').vcs.get(undefined, { signal }), 'vcs.get');
@@ -1020,12 +1048,14 @@ class OpencodeService {
   }
 
   async getLspStatus(directory?: string | null, signal?: AbortSignal) {
+    if (this.isAcp()) throw new OpenCodeRuntimeError('acp', 'LSP status');
     if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'LSP status');
     return this.runtimeBinding.run('oc1', 'lsp.status', async () =>
       unwrapSdkData(await this.getScopedApiClient(this.scope(directory).directory ?? '').lsp.status(undefined, { signal }), 'lsp.status'));
   }
 
   async getTaggedConfig(directory?: string | null, signal?: AbortSignal): Promise<TaggedConfig> {
+    if (this.isAcp()) return { generation: 'acp', value: {} };
     if (this.isV2()) return { generation: 'oc2', value: await this.v2Catalog.config(this.scope(directory, signal)) };
     if (directory === null) {
       const value = await this.runtimeBinding.run('oc1', 'global.config.get', async () =>
@@ -1046,6 +1076,7 @@ class OpencodeService {
   }
 
   async getProviderCatalog(directory?: string | null, signal?: AbortSignal): Promise<ProviderCatalog> {
+    if (this.isAcp()) return { generation: 'acp', providers: [], models: [] };
     if (this.isV2()) return this.v2Catalog.catalog(this.scope(directory, signal));
     const value = await this.getProvidersForConfig(directory);
     return { generation: 'oc1', ...value };
@@ -1271,6 +1302,16 @@ class OpencodeService {
     directory?: string | null;
   }): Promise<string> {
     this.assertRuntimeUnchanged(params.runtimeKey);
+
+    if (this.isAcp()) {
+      if (params.format || params.delivery) throw new Error('The selected ACP agent does not support this prompt operation');
+      const messageID = params.messageId ?? ascendingId('msg');
+      const text = [params.prefaceText, params.text, ...(params.additionalParts ?? []).map((part) => part.text)].filter(Boolean).join('\n\n');
+      const files = [...(params.files ?? []), ...(params.additionalParts ?? []).flatMap((part) => part.files ?? [])];
+      await this.acp.prompt(params.id, messageID, text, files);
+      this.assertRuntimeUnchanged(params.runtimeKey);
+      return messageID;
+    }
 
     if (this.isV2()) {
       if (params.format) throw new OpenCodeRuntimeError('oc2', 'prompt JSON schema');
@@ -1512,6 +1553,7 @@ class OpencodeService {
   }
 
   async abortSession(id: string, directory?: string | null): Promise<boolean> {
+    if (this.isAcp()) return this.acp.cancel(id);
     if (this.isV2()) return (await this.v2Sessions.interrupt(id, this.scope(directory))).interrupted;
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     const response = await this.client.session.abort(
@@ -1715,6 +1757,9 @@ class OpencodeService {
   async getSessionStatusForDirectory(
     directory: string | null | undefined
   ): Promise<Record<string, { type: "idle" | "busy" | "retry"; attempt?: number; message?: string; next?: number }> | null> {
+    if (this.isAcp()) {
+      try { return await this.acp.statuses(directory); } catch { return null; }
+    }
     if (this.isV2()) {
       try {
         const scoped = isSpaceDirectory(directory) ? this.v2ClientFor(directory) : this.v2Client;
@@ -1970,6 +2015,7 @@ class OpencodeService {
    * "server returned no pending permissions".
    */
   async listPendingPermissions(options?: { directories?: Array<string | null | undefined> }): Promise<PermissionRequest[]> {
+    if (this.isAcp()) return [];
     if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy permission list');
     const fetches: Array<Promise<PermissionRequest[]>> = [];
 
@@ -2016,6 +2062,7 @@ class OpencodeService {
   }
 
   async listTaggedPermissions(options?: { directories?: Array<string | null | undefined> }): Promise<PendingPermission[]> {
+    if (this.isAcp()) return this.acp.permissions(options?.directories?.[0] ?? this.currentDirectory);
     if (!this.isV2()) return (await this.listPendingPermissions(options)).map((value) => ({ generation: 'oc1', value }));
     const directories = [null, ...new Set((options?.directories ?? []).map((value) => this.normalizeCandidatePath(value)).filter((value): value is string => !!value))];
     const lists = await Promise.all(directories.map(async (directory) =>
@@ -2067,6 +2114,7 @@ class OpencodeService {
    * instead of conflating failure with an empty server response.
    */
   async listPendingQuestions(options?: { directories?: Array<string | null | undefined> }): Promise<QuestionRequest[]> {
+    if (this.isAcp()) return [];
     if (this.isV2()) throw new OpenCodeRuntimeError('oc2', 'legacy question list');
     const fetches: Array<Promise<QuestionRequest[]>> = [];
 
@@ -2113,6 +2161,7 @@ class OpencodeService {
   }
 
   async listTaggedInputs(options?: { directories?: Array<string | null | undefined> }): Promise<PendingInput[]> {
+    if (this.isAcp()) return [];
     if (!this.isV2()) return (await this.listPendingQuestions(options)).map((value) => ({ generation: 'oc1', kind: 'question', value }));
     const directories = [null, ...new Set((options?.directories ?? []).map((value) => this.normalizeCandidatePath(value)).filter((value): value is string => !!value))];
     const lists = await Promise.all(directories.map(async (directory) =>
@@ -2329,6 +2378,7 @@ class OpencodeService {
   }
 
   async listTaggedAgents(directory?: string | null) {
+    if (this.isAcp()) return { generation: 'acp' as const, value: [] };
     if (this.isV2()) return { generation: 'oc2' as const, value: await this.v2Catalog.agents(this.scope(directory)) };
     return { generation: 'oc1' as const, value: await this.listAgents(directory) };
   }
@@ -2338,6 +2388,7 @@ class OpencodeService {
 
   // Command Management
   async listCommandsWithDetails(directory?: string | null, signal?: AbortSignal): Promise<Array<{ name: string; description?: string; agent?: string; model?: string; source?: string; template?: string }>> {
+    if (this.isAcp()) return [];
     if (this.isV2()) return this.v2Catalog.commands(this.scope(directory, signal));
     const requestDirectory = this.normalizeCandidatePath(directory ?? null) ?? this.currentDirectory;
     const response = await this.client.command.list(
@@ -2446,7 +2497,7 @@ class OpencodeService {
   async checkHealth(): Promise<boolean> {
     try {
       const runtime = await this.discoverRuntime();
-      return Boolean(runtime.endpoint) && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2);
+      return Boolean(runtime.endpoint) && (runtime.generation === OPEN_CODE_GENERATION.OC1 || runtime.generation === OPEN_CODE_GENERATION.OC2 || runtime.generation === OPEN_CODE_GENERATION.ACP);
     } catch {
       return false;
     }

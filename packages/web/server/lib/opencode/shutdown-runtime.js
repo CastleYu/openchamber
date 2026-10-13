@@ -43,6 +43,7 @@ export const createGracefulShutdownRuntime = (dependencies) => {
     getRelayService,
     getRelayReconcileTimer,
     getSpacesHost = () => null,
+    stopAgentConnection = null,
   } = dependencies;
 
   let shutdownPromise = null;
@@ -74,6 +75,7 @@ export const createGracefulShutdownRuntime = (dependencies) => {
     // Both embedded stop() and daemon exits use this sequence. Close admission
     // synchronously above, then stop viewers before draining their services.
     const cleanupOperations = [
+      () => stopAgentConnection?.(),
       () => clearInterval(getRelayReconcileTimer()),
       () => getGuestSurfaceRuntime()?.stop(),
       () => getRealtimeProxyRuntime()?.stop(),

@@ -24,11 +24,13 @@ export type OperationScope = {
 /** Catalog values stay complete; the two default-model contracts differ. */
 export type ProviderCatalog =
   | { generation: 'oc1'; providers: LegacyProvider[]; default: Record<string, string> }
-  | { generation: 'oc2'; providers: V2Provider[]; models: Model[]; default?: ModelRef };
+  | { generation: 'oc2'; providers: V2Provider[]; models: Model[]; default?: ModelRef }
+  | { generation: 'acp'; providers: []; models: []; default?: never };
 
 export type TaggedConfig =
   | { generation: 'oc1'; value: LegacyConfig }
-  | { generation: 'oc2'; value: V2Config };
+  | { generation: 'oc2'; value: V2Config }
+  | { generation: 'acp'; value: V2Config };
 
 export type McpCatalog =
   | { generation: 'oc1'; value: Record<string, LegacyMcpStatus> }
@@ -45,7 +47,15 @@ export type BootstrapPath = {
 
 export type PendingPermission =
   | { generation: 'oc1'; value: LegacyPermissionRequest }
-  | { generation: 'oc2'; value: V2PermissionRequest };
+  | { generation: 'oc2'; value: V2PermissionRequest }
+  | { generation: 'acp'; value: AcpPermission };
+
+export type AcpPermission = {
+  id: string;
+  sessionID: string;
+  title: string;
+  options: Array<{ optionId: string; name: string; kind: 'allow_once' | 'allow_always' | 'reject_once' | 'reject_always' }>;
+};
 
 export type PendingInput =
   | { generation: 'oc1'; kind: 'question'; value: QuestionRequest }

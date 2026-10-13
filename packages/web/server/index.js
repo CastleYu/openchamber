@@ -56,13 +56,15 @@ import { createKernelRuntime } from './lib/opencode/kernel-runtime.js';
 import { createKernelOperations } from './lib/opencode/kernel-operations.js';
 import { createOpenCodeEnvRuntime } from './lib/opencode/env-runtime.js';
 import { providedLoginShellEnvSnapshot } from './lib/opencode/login-shell-env.js';
-import { resolveOpenCodeEnvConfig } from './lib/opencode/env-config.js';
 import { createHmrStateRuntime } from './lib/opencode/hmr-state-runtime.js';
 import { createOpenCodeNetworkRuntime } from './lib/opencode/network-runtime.js';
 import { createOpenCodeAuthStateRuntime } from './lib/opencode/auth-state-runtime.js';
 import { createProjectDirectoryRuntime } from './lib/opencode/project-directory-runtime.js';
 import { createSettingsNormalizationRuntime } from './lib/opencode/settings-normalization-runtime.js';
 import { createSettingsHelpers } from './lib/opencode/settings-helpers.js';
+import { createAgentConnection, registerAgentConnectionRoutes } from './lib/opencode/agent-connection.js';
+import { createAcpRuntime } from './lib/acp/runtime.js';
+import { registerAcpRoutes } from './lib/acp/routes.js';
 import { createThemeRuntime } from './lib/opencode/theme-runtime.js';
 import { createFeatureRoutesRuntime } from './lib/opencode/feature-routes-runtime.js';
 import { createRuntimeLog, installConsoleTee } from './lib/logs/runtime-log.js';
@@ -693,13 +695,11 @@ const {
   configuredOpenCodeHost: ENV_CONFIGURED_OPENCODE_HOST,
   effectivePort: ENV_EFFECTIVE_PORT,
   configuredOpenCodeHostname: ENV_CONFIGURED_OPENCODE_HOSTNAME,
-} = resolveOpenCodeEnvConfig({
-  env: process.env,
-  logger: console,
-});
+} = { configuredOpenCodePort: null, configuredOpenCodeHost: null, effectivePort: null, configuredOpenCodeHostname: '127.0.0.1' };
 
-const ENV_SKIP_OPENCODE_START = process.env.OPENCODE_SKIP_START === 'true' ||
-                                    process.env.OPENCHAMBER_SKIP_OPENCODE_START === 'true';
+const ENV_SKIP_OPENCODE_START = false;
+const acpRuntime = createAcpRuntime({ storagePath: path.join(OPENCHAMBER_DATA_DIR, 'acp-sessions.json') });
+let agentConnection = null;
 const ENV_DESKTOP_NOTIFY = (() => {
   if (process.env.OPENCHAMBER_DESKTOP_NOTIFY === 'true') {
     return true;
@@ -849,6 +849,7 @@ const resolveGitBinaryForSpawn = (...args) => openCodeEnvRuntime.resolveGitBinar
 const resolveManagedOpenCodeLaunchSpec = (...args) => openCodeEnvRuntime.resolveManagedOpenCodeLaunchSpec(...args);
 const clearResolvedOpenCodeBinary = (...args) => openCodeEnvRuntime.clearResolvedOpenCodeBinary(...args);
 const openCodeResolutionRuntime = createOpenCodeResolutionRuntime({
+  getConnection: () => agentConnection?.selected(),
   path,
   resolveOpencodeCliPath,
   applyOpencodeBinaryFromSettings,
@@ -1347,6 +1348,8 @@ Object.defineProperties(openCodeLifecycleState, {
 });
 
 const openCodeLifecycleRuntime = createOpenCodeLifecycleRuntime({
+  getConnection: () => agentConnection?.selected(),
+  resolveSelectedBinary: (config) => openCodeEnvRuntime.resolveSelectedBinary(config),
   kernelRuntime,
   state: openCodeLifecycleState,
   env: {
@@ -1704,19 +1707,28 @@ const ensureGlobalWatcherStarted = async () => {
 
   return globalWatcherStartPromise;
 };
-const bootstrapOpenCodeAtStartup = async (...args) => {
-  await openCodeLifecycleRuntime.bootstrapOpenCodeAtStartup(...args);
-  scheduleOpenCodeApiDetection();
-  if (openCodeLifecycleState.openCodeProcess && !openCodeLifecycleState.isExternalOpenCode) {
-    startHealthMonitoring();
-  }
-  // The global watcher used to start only for desktop notifications; the
-  // session-assist runtime also rides its event hub, so it now starts
-  // unconditionally once OpenCode is up.
-  void ensureGlobalWatcherStarted().catch((error) => {
-    console.warn(`Global event watcher startup failed: ${error?.message || error}`);
-  });
-};
+const bootstrapOpenCodeAtStartup = () => agentConnection.bootstrap();
+agentConnection = createAgentConnection({
+  filePath: path.join(OPENCHAMBER_DATA_DIR, 'agent-connection.json'),
+  acpRuntime,
+  prefill: {
+    url: process.env.OPENCODE_HOST || (process.env.OPENCODE_PORT ? `http://127.0.0.1:${process.env.OPENCODE_PORT}` : ''),
+    command: process.env.OPENCODE_BINARY || '',
+  },
+  openCodeStatus: () => lastOpenCodeError,
+  stopOpenCode: async () => {
+    await openCodeWatcherRuntime.stop();
+    globalWatcherStartPromise = null;
+    retireOpenCodeDirectSseStreams();
+    await openCodeLifecycleRuntime.stopSelectedConnection();
+  },
+  startOpenCode: async (config) => {
+    await openCodeLifecycleRuntime.startSelectedConnection(config);
+    scheduleOpenCodeApiDetection();
+    if (openCodeProcess && !isExternalOpenCode) startHealthMonitoring();
+    void ensureGlobalWatcherStarted().catch((error) => console.warn('Global event watcher startup failed:', error.message));
+  },
+});
 const killProcessOnPort = (...args) => openCodeLifecycleRuntime.killProcessOnPort(...args);
 const waitForPortRelease = (...args) => openCodeLifecycleRuntime.waitForPortRelease(...args);
 
@@ -1725,6 +1737,7 @@ const fetchProvidersSnapshot = (...args) => serverUtilsRuntime.fetchProvidersSna
 const fetchModelsSnapshot = (...args) => serverUtilsRuntime.fetchModelsSnapshot(...args);
 const setupProxy = (...args) => serverUtilsRuntime.setupProxy(...args);
 const gracefulShutdownRuntime = createGracefulShutdownRuntime({
+  stopAgentConnection: () => acpRuntime.stop(),
   process,
   shutdownTimeoutMs: SHUTDOWN_TIMEOUT,
   getExitOnShutdown: () => exitOnShutdown,
@@ -2210,6 +2223,13 @@ async function main(options = {}) {
     skipBodyParsing: (req) => spacesHost?.skipsBodyParsing(req) === true,
   });
   uiAuthController = bootstrapResult.uiAuthController;
+  registerAgentConnectionRoutes(app, { express, connection: agentConnection });
+  registerAcpRoutes(app, { express, runtime: acpRuntime });
+  app.get('/api/opencode/runtime', (_req, res, next) => {
+    if (agentConnection.selected()?.mode !== 'acp') return next();
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(acpRuntime.descriptor());
+  });
   // After the API auth gate, before every route that reads a directory, before the OpenCode proxy.
   // The slot is mounted once and reads the host at call time, so the switch can turn the feature
   // on and off live: with no host it passes every request on and no upgrade is taken.
@@ -2517,7 +2537,7 @@ async function main(options = {}) {
       },
       scheduledTasks: scheduledTasksRuntime.getStatus(),
     }),
-    isReady: () => isOpenCodeReady,
+    isReady: () => !agentConnection.selected() || agentConnection.snapshot().status === 'ready',
     restartOpenCode: () => restartOpenCode(),
     getOpenCodeProcessInfo: () => {
       const managed = Boolean((openCodeProcess || openCodePort) && !ENV_SKIP_OPENCODE_START && !isExternalOpenCode);

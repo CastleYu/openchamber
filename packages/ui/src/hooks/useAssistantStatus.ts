@@ -304,7 +304,7 @@ const readUserMessageModel = (message: Message): { providerId: string; modelId: 
 const completedTimeSchema = z.object({ time: z.object({ completed: z.number() }) });
 
 export const getActiveAssistantContext = (
-    messages: Message[], generation: 'oc1' | 'oc2' = 'oc1', sessionModel?: Session['model'],
+    messages: Message[], generation: 'oc1' | 'oc2' | 'acp' = 'oc1', sessionModel?: Session['model'],
 ): ActiveAssistantContext => {
     if (generation === 'oc2') {
         for (let index = messages.length - 1; index >= 0; index -= 1) {

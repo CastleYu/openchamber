@@ -12,6 +12,7 @@ import { Icon } from '@/components/icon/Icon';
 import { StopIcon } from '@/components/icons/StopIcon';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { opencodeClient } from '@/lib/opencode/client';
 
 type ComposerActionButtonsProps = {
     isMobile: boolean;
@@ -77,7 +78,7 @@ export const ComposerActionButtons = React.memo(function ComposerActionButtons(p
 
     return (
         <div className="relative">
-            {hasContent ? (
+            {hasContent && !opencodeClient.isAcp() ? (
                 <button
                     type="button"
                     disabled={!currentSessionId}

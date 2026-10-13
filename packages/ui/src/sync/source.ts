@@ -18,8 +18,8 @@ export type SyncMessagePage = {
 };
 
 type LegacyEnvelope = Awaited<ReturnType<OpencodeClient['global']['event']>>['stream'] extends AsyncIterable<infer T> ? T : never;
-export type SyncEvent = { generation: 'oc1'; value: LegacyEnvelope } | { generation: 'oc2'; value: DomainEvent } | { generation: 'openchamber'; value: SpaceAnnouncement; eventID: string };
-export type TaggedAgents = { generation: 'oc1'; value: LegacyAgent[] } | { generation: 'oc2'; value: Agent[] };
+export type SyncEvent = { generation: 'oc1'; value: LegacyEnvelope } | { generation: 'oc2' | 'acp'; value: DomainEvent } | { generation: 'openchamber'; value: SpaceAnnouncement; eventID: string };
+export type TaggedAgents = { generation: 'oc1'; value: LegacyAgent[] } | { generation: 'oc2' | 'acp'; value: Agent[] };
 
 export type SyncBootstrapOperations = {
   listSyncSessions(directory: string, input: { archived: boolean; roots?: boolean; pageSize: number; signal?: AbortSignal }): Promise<Session[]>;
@@ -35,7 +35,7 @@ export type SyncBootstrapOperations = {
 
 /** Required by sync; no SDK client or generation-specific wire record reaches a store. */
 export type SyncSource = {
-  readonly generation: 'oc1' | 'oc2';
+  readonly generation: 'oc1' | 'oc2' | 'acp';
   readonly identity: object;
   readonly bootstrap: SyncBootstrapOperations;
   listSessions(directory: string, signal?: AbortSignal): Promise<Session[]>;

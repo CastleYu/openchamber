@@ -43,6 +43,8 @@ import { PermissionCard } from './PermissionCard';
 import { QuestionCard } from './QuestionCard';
 import { FormCard } from './FormCard';
 import { V2PermissionCard } from './V2PermissionCard';
+import { AcpPermissionCard } from './AcpPermissionCard';
+import type { AcpPermission } from '@/lib/opencode/operations';
 import { hasActiveQuestionToolInCurrentTurn, recoverPendingQuestionWithRetry } from '@/sync/question-recovery';
 // Mirrors the oc-chat-hydration-reveal duration in index.css.
 const TIMELINE_REVEAL_FADE_MS = 100;
@@ -225,6 +227,7 @@ type ChatViewportProps = {
     sessionQuestions: QuestionRequest[];
     sessionPermissions: PermissionRequest[];
     v2Permissions: V2PermissionRequest[];
+    acpPermissions: AcpPermission[];
     sessionForms: FormInfo[];
     isProgrammaticFollowActive: boolean;
     showLoadOlderButton: boolean;
@@ -264,6 +267,7 @@ const ChatViewport = React.memo(({
     sessionQuestions,
     sessionPermissions,
     v2Permissions,
+    acpPermissions,
     sessionForms,
     isProgrammaticFollowActive,
     showLoadOlderButton,
@@ -399,7 +403,7 @@ const ChatViewport = React.memo(({
 
     const listFooter = React.useMemo(() => (
         <>
-            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || sessionForms.length > 0) && (
+            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || acpPermissions.length > 0 || sessionForms.length > 0) && (
                 <div>
                     {sessionQuestions.map((question) => (
                         <QuestionCard key={question.id} question={question} />
@@ -409,6 +413,7 @@ const ChatViewport = React.memo(({
                     ))}
                     {sessionForms.map((form) => <FormCard key={form.id} form={form} />)}
                     {v2Permissions.map((permission) => <V2PermissionCard key={permission.id} permission={permission} />)}
+                    {acpPermissions.map((permission) => <AcpPermissionCard key={permission.id} permission={permission} />)}
                 </div>
             )}
 
@@ -432,7 +437,7 @@ const ChatViewport = React.memo(({
                 aria-hidden="true"
             />
         </>
-    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions]);
+    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions, acpPermissions]);
 
     // Opening a session paints the timeline as one finished picture: the root
     // stays invisible while any renderer holds a provisional first paint, then
@@ -621,6 +626,7 @@ const ChatViewport = React.memo(({
         && prev.sessionQuestions === next.sessionQuestions
         && prev.sessionPermissions === next.sessionPermissions
         && prev.v2Permissions === next.v2Permissions
+        && prev.acpPermissions === next.acpPermissions
         && prev.sessionForms === next.sessionForms
         && prev.isProgrammaticFollowActive === next.isProgrammaticFollowActive
         && prev.showLoadOlderButton === next.showLoadOlderButton
@@ -909,6 +915,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     const taggedPermissions = useScopedPendingPermissions(currentSessionId, effectiveSessionDirectory);
     const taggedInputs = useScopedPendingInputs(currentSessionId, effectiveSessionDirectory);
     const v2Permissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedPermissions]);
+    const acpPermissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'acp' ? [request.value] : []), [taggedPermissions]);
     const sessionForms = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedInputs]);
 
     const hasUnreconciledQuestionTool = React.useMemo(
@@ -1769,6 +1776,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 sessionQuestions={sessionQuestions}
                 sessionPermissions={sessionPermissions}
                 v2Permissions={v2Permissions}
+                acpPermissions={acpPermissions}
                 sessionForms={sessionForms}
                 isProgrammaticFollowActive={isFollowingProgrammatically}
                 showLoadOlderButton={showLoadOlderButton}

@@ -8,9 +8,11 @@ const root = path.resolve(import.meta.dirname, '..');
 const desktop = path.join(root, 'packages/electron');
 const upstream = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 const debug = process.argv.includes('--debug');
+const acp = process.argv.includes('--acp');
 const target = 'portable';
-const version = personalVersion(upstream, process.env.OPENCHAMBER_BUILD_NUMBER || '') + (debug ? '-DEBUG' : '');
-const output = path.join(desktop, 'dist/personal', version);
+const build = process.env.OPENCHAMBER_BUILD_NUMBER || '';
+const version = personalVersion(upstream, build) + (acp ? `-ACP.${build || 'local'}` : '') + (debug ? '-DEBUG' : '');
+const output = path.join(desktop, acp ? 'dist/acp' : 'dist/personal', version);
 const bun = resolveBunExecutable();
 
 function run(command, args) {
@@ -32,7 +34,7 @@ if (process.argv.includes('--version')) {
     `--config.extraMetadata.version=${version}`, `--config.directories.output=${output}`]);
   const artifacts = fs.readdirSync(output).filter((name) => name.endsWith('.exe'));
   if (artifacts.length !== 1) throw new Error('Expected exactly one desktop executable.');
-  fs.writeFileSync(path.join(output, 'build-info.json'), `${JSON.stringify({
+  const info = {
     upstreamVersion: upstream,
     personalVersion: PERSONAL_BUILD.featureVersion,
     ciBuild: process.env.OPENCHAMBER_BUILD_NUMBER || null,
@@ -43,6 +45,8 @@ if (process.argv.includes('--version')) {
     updatePolicy: PERSONAL_BUILD.updatePolicy,
     sourceCommit: process.env.GITHUB_SHA || null,
     artifacts,
-  }, null, 2)}\n`);
+  };
+  if (acp) info.channel = 'acp';
+  fs.writeFileSync(path.join(output, 'build-info.json'), `${JSON.stringify(info, null, 2)}\n`);
   console.log(`Desktop build: ${path.join(output, artifacts[0])}`);
 }

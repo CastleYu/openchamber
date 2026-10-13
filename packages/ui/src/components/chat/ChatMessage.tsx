@@ -1,4 +1,5 @@
 import React from 'react';
+import { opencodeClient } from '@/lib/opencode/client';
 import { findCatalogModel, readErrorResponseBody, type Message, type Part } from '@/lib/opencode/model';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -923,8 +924,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 copiedMessage={copiedMessage}
                                                 showReasoningTraces={showReasoningTraces}
                                                 agentMention={agentMention}
-                                                onRevert={handleRevert}
-                                                onFork={isUser ? handleFork : undefined}
+                                                onRevert={opencodeClient.isAcp() ? undefined : handleRevert}
+                                                onFork={isUser && !opencodeClient.isAcp() ? handleFork : undefined}
                                                 contextPinned={isPinnedIntoContext}
                                                 contextPinPending={pinPending}
                                                 onToggleContextPin={canPinIntoContext && messageCreatedAt ? handleToggleContextPin : undefined}
@@ -960,8 +961,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                                 copiedMessage={copiedMessage}
                                                 showReasoningTraces={showReasoningTraces}
                                                 agentMention={agentMention}
-                                                onRevert={handleRevert}
-                                                onFork={isUser ? handleFork : undefined}
+                                                onRevert={opencodeClient.isAcp() ? undefined : handleRevert}
+                                                onFork={isUser && !opencodeClient.isAcp() ? handleFork : undefined}
                                                 contextPinned={isPinnedIntoContext}
                                                 contextPinPending={pinPending}
                                                 onToggleContextPin={canPinIntoContext && messageCreatedAt ? handleToggleContextPin : undefined}

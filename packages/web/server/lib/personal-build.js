@@ -2,7 +2,7 @@ import config from '../../personal-build.json' with { type: 'json' };
 
 const DIJIANG_REVISION = /^[1-9]\d*\.(?:0|[1-9]\d*)$/;
 // Read previously installed single-level identities without rewriting them.
-const DIJIANG_IDENTITY = /^(\d+\.\d+\.\d+)(?:-DIJIANG\.[1-9]\d*(?:\.(?:0|[1-9]\d*))?(?:-DEBUG)?)?$/;
+const DIJIANG_IDENTITY = /^(\d+\.\d+\.\d+)(?:-DIJIANG\.[1-9]\d*(?:\.(?:0|[1-9]\d*))?(?:-ACP\.(?:local|[1-9]\d*\.[1-9]\d*))?(?:-DEBUG)?)?$/;
 
 export const PERSONAL_BUILD = Object.freeze({
   ...config,

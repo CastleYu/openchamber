@@ -1068,7 +1068,7 @@ export async function materializeOpenDraftSession(selection: {
   const oc2PermissionMode = opencodeClient.getBoundRuntime()?.generation === "oc2"
     ? draftPermissionMode
     : undefined
-  if (oc2PermissionMode || (draft.permissionAutoAcceptEnabled === true && draftPermissionMode !== "safety")) {
+  if (!opencodeClient.isAcp() && (oc2PermissionMode || (draft.permissionAutoAcceptEnabled === true && draftPermissionMode !== "safety"))) {
     void import("@/stores/permissionStore")
       .then(({ usePermissionStore }) => oc2PermissionMode
         ? usePermissionStore.getState().setSessionMode(created.id, oc2PermissionMode)

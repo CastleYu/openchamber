@@ -270,7 +270,7 @@ async function initializeDirectory(input: DirectoryBootstrapInput): Promise<Boot
     // for every known project directory, so either read launched one full
     // fleet per project at startup. Both surfaces fetch on demand through
     // their own stores (useMcpStore, useCommandsStore) instead.
-    source?.generation === "oc2"
+    source?.generation === "oc2" || source?.generation === "acp"
       ? Promise.resolve(commit({ lspAvailability: "unsupported" }))
       : read(async () => {
         const lsp = source ? await source.bootstrap.getLspStatus(directory) : unwrap(await legacyClient().lsp.status({ directory }), "lsp.status")

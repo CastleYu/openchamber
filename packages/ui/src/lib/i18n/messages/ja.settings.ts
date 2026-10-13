@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "エージェント接続",
+  'settings.agentConnection.external': "外部 OpenCode サーバー",
+  'settings.agentConnection.command': "OpenCode コマンド",
+  'settings.agentConnection.path': "システム PATH の OpenCode",
+  'settings.agentConnection.bundled': "同梱の OpenCode",
+  'settings.agentConnection.acp': "stdio 経由の ACP エージェント",
+  'settings.agentConnection.url': "サーバー URL",
+  'settings.agentConnection.executable': "実行ファイル",
+  'settings.agentConnection.args': "引数（JSON 配列）",
+  'settings.agentConnection.cwd': "作業ディレクトリ（任意）",
+  'settings.agentConnection.connecting': "接続中…",
+  'settings.agentConnection.apply': "適用して接続",
   'settings.themeImport.selectAll': 'すべて選択',
   'settings.themeImport.deselectAll': 'すべて選択解除',
   'settings.themeImport.complete': 'インポート完了',

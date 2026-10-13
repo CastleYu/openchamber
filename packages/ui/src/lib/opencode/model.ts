@@ -135,6 +135,8 @@ export type SessionRevertInfo = {
 }
 
 export type Session = {
+  /** Saved ACP transcripts remain readable when the agent cannot resume them. */
+  readOnly?: boolean
   id: string
   slug?: string
   version?: string

@@ -4,6 +4,18 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.title': "Aracı bağlantısı",
+  'settings.agentConnection.external': "Harici OpenCode sunucusu",
+  'settings.agentConnection.command': "OpenCode komutu",
+  'settings.agentConnection.path': "Sistem PATH içindeki OpenCode",
+  'settings.agentConnection.bundled': "Paketlenmiş OpenCode",
+  'settings.agentConnection.acp': "stdio üzerinden ACP aracısı",
+  'settings.agentConnection.url': "Sunucu URL’si",
+  'settings.agentConnection.executable': "Yürütülebilir dosya",
+  'settings.agentConnection.args': "Bağımsız değişkenler (JSON dizisi)",
+  'settings.agentConnection.cwd': "Çalışma dizini (isteğe bağlı)",
+  'settings.agentConnection.connecting': "Bağlanıyor…",
+  'settings.agentConnection.apply': "Uygula ve bağlan",
   'settings.themeImport.selectAll': 'Tümünü seç',
   'settings.themeImport.deselectAll': 'Tümünün seçimini kaldır',
   'settings.themeImport.complete': 'İçe aktarma tamamlandı',

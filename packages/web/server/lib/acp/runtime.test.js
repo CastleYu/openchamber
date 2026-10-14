@@ -10,9 +10,9 @@ import { registerAcpRoutes } from './routes.js';
 
 const fixture = fileURLToPath(new URL('./fixtures/agent.mjs', import.meta.url));
 const selection = (scenario) => ({ command: process.execPath, args: [fixture, scenario], cwd: process.cwd() });
-const setup = async (t, scenario = 'text', storagePath) => {
+const setup = async (t, scenario = 'text', storagePath, cleanup = () => {}) => {
   const runtime = createAcpRuntime({ storagePath });
-  t.after(() => runtime.stop());
+  t.after(async () => { await runtime.stop(); await cleanup(); });
   await runtime.start(selection(scenario));
   const events = [];
   runtime.subscribe((event) => events.push(event));
@@ -83,10 +83,21 @@ test('invalid command and malformed stdout never fall back to another agent', as
   assert.equal(runtime.descriptor().generation, 'unreachable');
 });
 
+test('stop waits for the agent to exit before its working directory is removed', async (t) => {
+  const folder = await mkdtemp(join(tmpdir(), 'openchamber-acp-stop-'));
+  const runtime = createAcpRuntime();
+  t.after(async () => { await runtime.stop(); await rm(folder, { recursive: true, force: true }); });
+  await runtime.start({ ...selection('lifecycle'), cwd: folder });
+  const pid = Number(runtime.info().agentInfo.version);
+  assert.equal(process.kill(pid, 0), true);
+  await runtime.stop();
+  assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
+  await rm(folder, { recursive: true });
+});
+
 test('saved sessions stay read-only when loadSession is unavailable', async (t) => {
   const folder = await mkdtemp(join(tmpdir(), 'openchamber-acp-'));
-  t.after(() => rm(folder, { recursive: true, force: true }));
-  const { runtime, session } = await setup(t, 'no-load', join(folder, 'sessions.json'));
+  const { runtime, session } = await setup(t, 'no-load', join(folder, 'sessions.json'), () => rm(folder, { recursive: true, force: true }));
   await runtime.stop();
   await runtime.start(selection('no-load'));
   assert.equal(runtime.session(session.id).readOnly, true);
@@ -148,9 +159,8 @@ test('accepted file links are canonical transcript parts', async (t) => {
 
 test('a failed transcript save rolls back the unsent turn and later saves recover', async (t) => {
   const folder = await mkdtemp(join(tmpdir(), 'openchamber-acp-save-'));
-  t.after(() => rm(folder, { recursive: true, force: true }));
   const storagePath = join(folder, 'sessions.json');
-  const { runtime, events, session } = await setup(t, 'text', storagePath);
+  const { runtime, events, session } = await setup(t, 'text', storagePath, () => rm(folder, { recursive: true, force: true }));
   await mkdir(`${storagePath}.tmp`);
   await assert.rejects(runtime.prompt({ sessionID: session.id, messageID: 'unsent', text: 'Fail save' }));
   assert.equal(runtime.statuses()[session.id].type, 'idle');

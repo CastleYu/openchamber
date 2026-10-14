@@ -12,7 +12,7 @@ createInterface({ input: process.stdin }).on('line', (line) => {
     case 'initialize':
       if (Object.keys(request.params.clientCapabilities).length) throw new Error('Unsupported client capabilities advertised');
       if (scenario === 'malformed') { process.stdout.write('not json\n'); break; }
-      reply(request.id, { protocolVersion: 1, agentInfo: { name: 'fixture', version: '1' }, agentCapabilities: { loadSession: scenario !== 'no-load' }, authMethods: [] });
+      reply(request.id, { protocolVersion: 1, agentInfo: { name: 'fixture', version: scenario === 'lifecycle' ? String(process.pid) : '1' }, agentCapabilities: { loadSession: scenario !== 'no-load' }, authMethods: [] });
       break;
     case 'session/new':
       if (!request.params.cwd || request.params.mcpServers.length) throw new Error('Invalid new session');

@@ -38,6 +38,7 @@ const rpcSchema = z.object({ jsonrpc: z.literal('2.0'), id: z.union([z.string(),
 /** One selected stdio agent owns its requests, sessions, transcript and approvals. */
 export const createAcpRuntime = ({ storagePath } = {}) => {
   let child = null;
+  let closed = Promise.resolve();
   let epoch = 0;
   let sequence = 0;
   let identity = null;
@@ -186,6 +187,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
       fail(new Error('ACP connection closed'));
       previous.kill();
     }
+    await closed;
     loaded.clear();
     await persist();
   };
@@ -216,6 +218,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     const currentEpoch = epoch;
     child = spawn(config.command, config.args, { cwd: config.cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: false });
     const process = child;
+    closed = new Promise((resolve) => process.once('close', resolve));
     process.stdin.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
     process.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
     process.on('exit', (code, signal) => { if (child === process) { child = null; fail(new Error(`ACP agent exited (${signal ?? code})`)); } });

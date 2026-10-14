@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "ACP 서버",
+  'settings.agentConnection.transport': "전송 방식",
+  'settings.agentConnection.http': "스트리밍 HTTP (실험적 HTTP/2)",
+  'settings.agentConnection.serverInfo': "실험적 ACP 웹 전송입니다. OpenChamber 백엔드가 에이전트에 연결합니다.",
+  'settings.agentConnection.serverUrlInfo': "경로를 포함한 전체 ACP 엔드포인트 URL입니다. URL 내 인증 정보는 지원하지 않습니다.",
+  'settings.agentConnection.remoteCwd': "원격 작업 디렉터리 (필수)",
+  'settings.agentConnection.remoteCwdInfo': "ACP 서버의 절대 디렉터리입니다. 로컬 프로젝트 파일은 복사되지 않습니다.",
   'settings.agentConnection.title': "에이전트 연결",
   'settings.agentConnection.external': "외부 OpenCode 서버",
   'settings.agentConnection.command': "OpenCode 명령",

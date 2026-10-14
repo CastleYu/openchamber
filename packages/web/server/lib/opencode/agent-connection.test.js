@@ -24,6 +24,29 @@ const fixture = async (run) => {
 };
 
 describe('explicit agent connection', () => {
+  it('validates remote transport, credentials and a required cross-platform absolute cwd', () => {
+    const config = { mode: 'acp-server', transport: 'websocket', url: 'wss://agent.example/acp', cwd: '/workspace/project' };
+    expect(parseAgentConnection(config)).toEqual(config);
+    expect(parseAgentConnection({ ...config, cwd: 'C:\\workspace\\project' }).cwd).toBe('C:\\workspace\\project');
+    for (const changes of [{ cwd: undefined }, { cwd: 'relative' }, { cwd: '\\project' }, { cwd: 'C:project' }, { url: 'https://agent.example/acp' }, { url: 'ws://user:secret@agent.example/acp' }, { url: 'ws://agent.example/acp#secret' }]) {
+      expect(() => parseAgentConnection({ ...config, ...changes })).toThrow();
+    }
+    expect(parseAgentConnection({ ...config, transport: 'http', url: 'https://agent.example/acp' }).transport).toBe('http');
+  });
+  it('starts the remote owner, persists the exact selection and applies ACP route guards', () => fixture(async ({ deps, calls, filePath }) => {
+    const connection = createAgentConnection(deps);
+    const config = { mode: 'acp-server', transport: 'http', url: 'https://agent.example/acp', cwd: '/workspace' };
+    expect((await connection.apply(config)).status).toBe('ready');
+    expect(calls).toEqual([['oc-stop'], ['acp-stop'], ['acp-start', config]]);
+    expect(JSON.parse(await fs.readFile(filePath, 'utf8'))).toEqual(config);
+    let guard;
+    registerAgentConnectionRoutes({ get: () => {}, post: () => {}, use: (value) => { guard = value; } }, { express: { json: () => () => {} }, connection });
+    const res = { status: (code) => { expect(code).toBe(409); return res; }, json: (value) => value };
+    expect(guard({ path: '/api/provider' }, res, () => 'allowed').error).toMatch(/OpenCode/);
+    expect(guard({ path: '/api/acp/sessions' }, res, () => 'allowed')).toBe('allowed');
+    await deps.acpRuntime.stop();
+    expect(connection.snapshot().status).toBe('failed');
+  }));
   it('boots unconfigured without starting either runtime', () => fixture(async ({ deps, calls }) => {
     const connection = createAgentConnection(deps);
     expect((await connection.bootstrap()).status).toBe('unconfigured');

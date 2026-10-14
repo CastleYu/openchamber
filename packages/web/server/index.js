@@ -62,7 +62,7 @@ import { createOpenCodeAuthStateRuntime } from './lib/opencode/auth-state-runtim
 import { createProjectDirectoryRuntime } from './lib/opencode/project-directory-runtime.js';
 import { createSettingsNormalizationRuntime } from './lib/opencode/settings-normalization-runtime.js';
 import { createSettingsHelpers } from './lib/opencode/settings-helpers.js';
-import { createAgentConnection, registerAgentConnectionRoutes } from './lib/opencode/agent-connection.js';
+import { createAgentConnection, registerAgentConnectionRoutes, isAcpConnection } from './lib/opencode/agent-connection.js';
 import { createAcpRuntime } from './lib/acp/runtime.js';
 import { registerAcpRoutes } from './lib/acp/routes.js';
 import { createThemeRuntime } from './lib/opencode/theme-runtime.js';
@@ -2226,7 +2226,7 @@ async function main(options = {}) {
   registerAgentConnectionRoutes(app, { express, connection: agentConnection });
   registerAcpRoutes(app, { express, runtime: acpRuntime });
   app.get('/api/opencode/runtime', (_req, res, next) => {
-    if (agentConnection.selected()?.mode !== 'acp') return next();
+    if (!isAcpConnection(agentConnection.selected())) return next();
     res.setHeader('Cache-Control', 'no-store');
     return res.json(acpRuntime.descriptor());
   });

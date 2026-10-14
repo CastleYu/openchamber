@@ -621,7 +621,7 @@ const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     id: 'sessions.opencode-binary',
     page: 'general',
     titleKey: 'settings.agentConnection.title',
-    keywords: ['agent', 'acp', 'opencode', 'cli', 'binary', 'path', 'external', 'stdio'],
+    keywords: ['agent', 'acp', 'opencode', 'cli', 'binary', 'path', 'external', 'stdio', 'server', 'websocket', 'streamable', 'http', 'remote', 'cwd'],
     isAvailable: (ctx) => !ctx.isVSCode,
   },
   {

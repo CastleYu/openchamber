@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SettingsSection, SettingsFieldRow, SettingsRadioGroup, SettingsRadioOption } from '@/components/sections/shared/SettingsSection';
 import { useI18n } from '@/lib/i18n';
-import { applyAgentConnection, loadAgentConnection, CONNECTION_MODE, type AgentConnection, type ConnectionSnapshot } from '@/lib/agent-connection';
+import { applyAgentConnection, loadAgentConnection, CONNECTION_MODE, ACP_TRANSPORT, type AgentConnection, type ConnectionSnapshot } from '@/lib/agent-connection';
 
 const modeKeys = [
   { mode: CONNECTION_MODE.EXTERNAL, key: 'settings.agentConnection.external' },
@@ -12,6 +12,7 @@ const modeKeys = [
   { mode: CONNECTION_MODE.PATH, key: 'settings.agentConnection.path' },
   { mode: CONNECTION_MODE.BUNDLED, key: 'settings.agentConnection.bundled' },
   { mode: CONNECTION_MODE.ACP, key: 'settings.agentConnection.acp' },
+  { mode: CONNECTION_MODE.ACP_SERVER, key: 'settings.agentConnection.acpServer' },
 ] as const;
 
 export function AgentConnectionSettings({ initial, onReady }: { initial?: ConnectionSnapshot; onReady?: () => void }) {
@@ -21,6 +22,8 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
   const [command, setCommand] = React.useState('');
   const [args, setArgs] = React.useState('[]');
   const [cwd, setCwd] = React.useState('');
+  const [remoteCwd, setRemoteCwd] = React.useState('');
+  const [transport, setTransport] = React.useState<typeof ACP_TRANSPORT[keyof typeof ACP_TRANSPORT] | null>(null);
   const [busy, setBusy] = React.useState(!initial);
   const [error, setError] = React.useState<string | null>(initial?.error || null);
   React.useEffect(() => {
@@ -29,10 +32,12 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
       if (!active) return;
       const config = snapshot.config;
       setMode(config?.mode || null);
-      setUrl(config?.mode === CONNECTION_MODE.EXTERNAL ? config.url : snapshot.prefill.url || '');
+      setUrl(config?.mode === CONNECTION_MODE.EXTERNAL || config?.mode === CONNECTION_MODE.ACP_SERVER ? config.url : snapshot.prefill.url || '');
       setCommand(config && 'command' in config ? config.command : snapshot.prefill.command || '');
       setArgs(config && 'args' in config ? JSON.stringify(config.args) : '[]');
       setCwd(config?.mode === CONNECTION_MODE.ACP ? config.cwd || snapshot.prefill.cwd || '' : snapshot.prefill.cwd || '');
+      setRemoteCwd(config?.mode === CONNECTION_MODE.ACP_SERVER ? config.cwd : '');
+      setTransport(config?.mode === CONNECTION_MODE.ACP_SERVER ? config.transport : null);
       setError(snapshot.error);
       setBusy(false);
     };
@@ -41,11 +46,15 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
     return () => { active = false; };
   }, [initial]);
   const apply = async () => {
-    if (!mode) return;
+    if (!mode || mode === CONNECTION_MODE.ACP_SERVER && !transport) return;
     setBusy(true);
     setError(null);
     try {
-      const config: AgentConnection = mode === CONNECTION_MODE.EXTERNAL ? { mode, url }
+      let config: AgentConnection;
+      if (mode === CONNECTION_MODE.ACP_SERVER) {
+        if (!transport) return;
+        config = { mode, transport, url, cwd: remoteCwd };
+      } else config = mode === CONNECTION_MODE.EXTERNAL ? { mode, url }
         : mode === CONNECTION_MODE.COMMAND || mode === CONNECTION_MODE.ACP
           ? { mode, command, args: z.array(z.string()).parse(JSON.parse(args)) }
           : { mode };
@@ -63,13 +72,23 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
           {modeKeys.map((item) => <SettingsRadioOption key={item.mode} selected={mode === item.mode} onSelect={() => setMode(item.mode)} label={t(item.key)} ariaLabel={t(item.key)} disabled={busy} />)}
         </SettingsRadioGroup>
         {mode === CONNECTION_MODE.EXTERNAL && <SettingsFieldRow label={t('settings.agentConnection.url')}><Input aria-label={t('settings.agentConnection.url')} value={url} onChange={(event) => setUrl(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>}
+        {mode === CONNECTION_MODE.ACP_SERVER && <>
+          <SettingsFieldRow label={t('settings.agentConnection.transport')} info={t('settings.agentConnection.serverInfo')}>
+            <SettingsRadioGroup aria-label={t('settings.agentConnection.transport')}>
+              <SettingsRadioOption selected={transport === ACP_TRANSPORT.WEBSOCKET} onSelect={() => setTransport(ACP_TRANSPORT.WEBSOCKET)} label="WebSocket" ariaLabel="WebSocket" disabled={busy} />
+              <SettingsRadioOption selected={transport === ACP_TRANSPORT.HTTP} onSelect={() => setTransport(ACP_TRANSPORT.HTTP)} label={t('settings.agentConnection.http')} ariaLabel={t('settings.agentConnection.http')} disabled={busy} />
+            </SettingsRadioGroup>
+          </SettingsFieldRow>
+          <SettingsFieldRow label={t('settings.agentConnection.url')} info={t('settings.agentConnection.serverUrlInfo')}><Input aria-label={t('settings.agentConnection.url')} value={url} onChange={(event) => setUrl(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
+          <SettingsFieldRow label={t('settings.agentConnection.remoteCwd')} info={t('settings.agentConnection.remoteCwdInfo')}><Input aria-label={t('settings.agentConnection.remoteCwd')} value={remoteCwd} onChange={(event) => setRemoteCwd(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
+        </>}
         {(mode === CONNECTION_MODE.COMMAND || mode === CONNECTION_MODE.ACP) && <>
           <SettingsFieldRow label={t('settings.agentConnection.executable')}><Input aria-label={t('settings.agentConnection.executable')} value={command} onChange={(event) => setCommand(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
           <SettingsFieldRow label={t('settings.agentConnection.args')}><Input aria-label={t('settings.agentConnection.args')} value={args} onChange={(event) => setArgs(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
         </>}
         {mode === CONNECTION_MODE.ACP && <SettingsFieldRow label={t('settings.agentConnection.cwd')}><Input aria-label={t('settings.agentConnection.cwd')} value={cwd} onChange={(event) => setCwd(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>}
         {error && <p role="alert" className="typography-meta text-[var(--status-error-text)] break-words">{error}</p>}
-        <Button disabled={!mode || busy} size="sm" onClick={() => { void apply(); }} data-settings-item="sessions.opencode-restart">{t(busy ? 'settings.agentConnection.connecting' : 'settings.agentConnection.apply')}</Button>
+        <Button disabled={!mode || busy || mode === CONNECTION_MODE.ACP_SERVER && (!transport || !url.trim() || !remoteCwd.trim())} size="sm" onClick={() => { void apply(); }} data-settings-item="sessions.opencode-restart">{t(busy ? 'settings.agentConnection.connecting' : 'settings.agentConnection.apply')}</Button>
       </div>
     </SettingsSection>
   );

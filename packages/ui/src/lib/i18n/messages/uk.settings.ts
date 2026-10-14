@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "Сервер ACP",
+  'settings.agentConnection.transport': "Транспорт",
+  'settings.agentConnection.http': "Потоковий HTTP (експериментальний HTTP/2)",
+  'settings.agentConnection.serverInfo': "Експериментальний вебтранспорт ACP. Серверна частина OpenChamber підключається до агента.",
+  'settings.agentConnection.serverUrlInfo': "Повна URL-адреса кінцевої точки ACP зі шляхом. Облікові дані в URL не підтримуються.",
+  'settings.agentConnection.remoteCwd': "Віддалений робочий каталог (обов’язковий)",
+  'settings.agentConnection.remoteCwdInfo': "Абсолютний каталог на сервері ACP. Локальні файли проєкту до нього не копіюються.",
   'settings.agentConnection.title': "Підключення агента",
   'settings.agentConnection.external': "Зовнішній сервер OpenCode",
   'settings.agentConnection.command': "Команда OpenCode",

@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "ACP 伺服器",
+  'settings.agentConnection.transport': "傳輸方式",
+  'settings.agentConnection.http': "串流 HTTP（實驗性 HTTP/2）",
+  'settings.agentConnection.serverInfo': "實驗性 ACP 網頁傳輸，由 OpenChamber 後端連線智慧體。",
+  'settings.agentConnection.serverUrlInfo': "完整 ACP 端點 URL，可包含路徑。不支援 URL 內的憑證。",
+  'settings.agentConnection.remoteCwd': "遠端工作目錄（必填）",
+  'settings.agentConnection.remoteCwdInfo': "ACP 伺服器的絕對目錄。本機專案檔案不會複製到該目錄。",
   'settings.agentConnection.title': "智慧體連線",
   'settings.agentConnection.external': "外部 OpenCode 伺服器",
   'settings.agentConnection.command': "OpenCode 指令",

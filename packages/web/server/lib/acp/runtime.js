@@ -5,6 +5,7 @@ import { isAbsolute } from 'node:path';
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { z } from 'zod';
+import { ACP_SERVER_MODE, serverSchema, openServerTransport } from './server-transport.js';
 
 const METHOD = Object.freeze({
   INITIALIZE: 'initialize', NEW: 'session/new', LOAD: 'session/load',
@@ -38,6 +39,9 @@ const rpcSchema = z.object({ jsonrpc: z.literal('2.0'), id: z.union([z.string(),
 /** One selected stdio agent owns its requests, sessions, transcript and approvals. */
 export const createAcpRuntime = ({ storagePath } = {}) => {
   let child = null;
+  let transport = null;
+  let remoteCwd = null;
+  let endpoint = 'acp:stdio';
   let closed = Promise.resolve();
   let epoch = 0;
   let sequence = 0;
@@ -54,7 +58,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
   const loaded = new Set();
   const loading = new Set();
 
-  const descriptor = () => ({ generation: ready ? 'acp' : 'unreachable', endpoint: ready ? 'acp:stdio' : null, epoch, version: info?.agentInfo?.version ?? null });
+  const descriptor = () => ({ generation: ready ? 'acp' : 'unreachable', endpoint: ready ? endpoint : null, epoch, version: info?.agentInfo?.version ?? null });
   const emit = (event) => {
     const value = { ...event, eventID: `acp:${epoch}:${++sequence}` };
     for (const listener of listeners) listener(value);
@@ -70,8 +74,9 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     writes = saved.catch(() => {});
     return saved;
   };
-  const assertReady = () => { if (!ready || !child) throw new Error(failure ?? 'ACP agent is not connected'); };
+  const assertReady = () => { if (!ready || (!child && !transport)) throw new Error(failure ?? 'ACP agent is not connected'); };
   const write = (value) => {
+    if (transport) return transport.send(value);
     if (!child || child.stdin.destroyed) throw new Error('ACP agent is not connected');
     child.stdin.write(`${JSON.stringify(value)}\n`);
   };
@@ -79,7 +84,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     const id = ++sequence;
     const timer = timeout ? setTimeout(() => { requests.delete(id); reject(new Error(`ACP ${method} timed out`)); }, timeout) : null;
     requests.set(id, { resolve, reject, timer });
-    try { write({ jsonrpc: '2.0', id, method, params }); }
+    try { const sent = write({ jsonrpc: '2.0', id, method, params }); if (sent) void sent.catch(fail); }
     catch (error) { requests.delete(id); if (timer) clearTimeout(timer); reject(error); }
   });
   const record = (id) => {
@@ -105,12 +110,18 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     emit({ type: 'status', sessionID: entry.session.id, status: entry.status, outcome, error, directory: entry.session.directory });
   };
   const cancelPermissions = (sessionID) => {
+    const sent = [];
     for (const [id, pending] of permissions) {
       if (sessionID && pending.value.sessionID !== sessionID) continue;
-      if (child && !child.stdin.destroyed) write({ jsonrpc: '2.0', id: pending.rpcID, result: { outcome: { outcome: 'cancelled' } } });
-      permissions.delete(id);
-      emit({ type: 'permission-replied', requestID: id, sessionID: pending.value.sessionID, directory: record(pending.value.sessionID).session.directory });
+      const result = transport || (child && !child.stdin.destroyed) ? write({ jsonrpc: '2.0', id: pending.rpcID, result: { outcome: { outcome: 'cancelled' } } }) : null;
+      const complete = () => {
+        if (!permissions.delete(id)) return;
+        emit({ type: 'permission-replied', requestID: id, sessionID: pending.value.sessionID, directory: record(pending.value.sessionID).session.directory });
+      };
+      if (result) sent.push(result.then(complete));
+      else complete();
     }
+    return Promise.all(sent);
   };
   const fail = (error) => {
     failure = error.message;
@@ -170,7 +181,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
       emit({ type: 'permission-asked', request: { generation: 'acp', value: permission }, directory: entry.session.directory });
       return;
     }
-    if (value.method && value.id !== undefined) { write({ jsonrpc: '2.0', id: value.id, error: { code: -32601, message: `Unsupported client method: ${value.method}` } }); return; }
+    if (value.method && value.id !== undefined) { const sent = write({ jsonrpc: '2.0', id: value.id, error: { code: -32601, message: `Unsupported client method: ${value.method}` } }); if (sent) void sent.catch(fail); return; }
     const pending = requests.get(value.id);
     if (!pending) return;
     requests.delete(value.id);
@@ -180,6 +191,13 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     else pending.reject(new Error('ACP response has no result'));
   };
   const stop = async () => {
+    if (transport) {
+      await cancelPermissions().catch(fail);
+      const previous = transport;
+      transport = null;
+      fail(new Error('ACP connection closed'));
+      await previous.close();
+    }
     if (child) {
       cancelPermissions();
       const previous = child;
@@ -192,13 +210,16 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     await persist();
   };
   const start = async (selection) => {
-    const config = z.object({ command: z.string().min(1), args: z.array(z.string()).default([]), cwd: z.string().refine(isAbsolute, 'ACP cwd must be absolute') }).parse(selection);
+    const remote = selection.mode === ACP_SERVER_MODE;
+    const config = remote ? serverSchema.parse(selection) : z.object({ command: z.string().min(1), args: z.array(z.string()).default([]), cwd: z.string().refine(isAbsolute, 'ACP cwd must be absolute') }).parse(selection);
     await stop();
     epoch += 1;
     info = null;
     failure = null;
-    directory = config.cwd;
-    const nextIdentity = createHash('sha256').update(JSON.stringify([config.command, config.args])).digest('hex');
+    directory = remote ? process.cwd() : config.cwd;
+    remoteCwd = remote ? config.cwd : null;
+    endpoint = remote ? config.url : 'acp:stdio';
+    const nextIdentity = createHash('sha256').update(JSON.stringify(remote ? [config.mode, config.transport, config.url, config.cwd] : [config.command, config.args])).digest('hex');
     if (identity !== nextIdentity) sessions.clear();
     identity = nextIdentity;
     if (storagePath && sessions.size === 0) {
@@ -216,17 +237,23 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
       } catch (error) { if (error.code !== 'ENOENT') throw new Error(`Cannot read ACP transcript: ${error.message}`); }
     }
     const currentEpoch = epoch;
-    child = spawn(config.command, config.args, { cwd: config.cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: false });
-    const process = child;
-    closed = new Promise((resolve) => process.once('close', resolve));
-    process.stdin.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
-    process.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
-    process.on('exit', (code, signal) => { if (child === process) { child = null; fail(new Error(`ACP agent exited (${signal ?? code})`)); } });
-    process.stderr.resume();
-    createInterface({ input: process.stdout }).on('line', (line) => {
-      if (child !== process) return;
-      try { onLine(line); } catch (error) { fail(new Error(`Invalid ACP message: ${error.message}`)); process.kill(); }
-    });
+    if (remote) {
+      try {
+        transport = await openServerTransport(config, (line) => { if (currentEpoch === epoch) onLine(line); }, (error) => { if (currentEpoch === epoch) fail(error); });
+      } catch (error) { fail(error); throw error; }
+    } else {
+      child = spawn(config.command, config.args, { cwd: config.cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: false });
+      const process = child;
+      closed = new Promise((resolve) => process.once('close', resolve));
+      process.stdin.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
+      process.on('error', (error) => { if (currentEpoch === epoch) fail(error); });
+      process.on('exit', (code, signal) => { if (child === process) { child = null; fail(new Error(`ACP agent exited (${signal ?? code})`)); } });
+      process.stderr.resume();
+      createInterface({ input: process.stdout }).on('line', (line) => {
+        if (child !== process) return;
+        try { onLine(line); } catch (error) { fail(new Error(`Invalid ACP message: ${error.message}`)); process.kill(); }
+      });
+    }
     try {
       info = initializeSchema.parse(await rpc(METHOD.INITIALIZE, { protocolVersion: 1, clientCapabilities: {}, clientInfo: { name: 'openchamber', version: '1' } }));
       ready = true;
@@ -235,13 +262,13 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
         emit({ type: 'session-upsert', session: entry.session, directory: entry.session.directory });
       }
       return descriptor();
-    } catch (error) { fail(error); process.kill(); throw error; }
+    } catch (error) { fail(error); if (child) child.kill(); if (transport) { await transport.close(); transport = null; } throw error; }
   };
   const createSession = async ({ directory, title }) => {
     assertReady();
     if (!isAbsolute(directory)) throw new Error('ACP session directory must be absolute');
     const currentEpoch = epoch;
-    const result = sessionResultSchema.parse(await rpc(METHOD.NEW, { cwd: directory, mcpServers: [] }));
+    const result = sessionResultSchema.parse(await rpc(METHOD.NEW, { cwd: remoteCwd ?? directory, mcpServers: [] }));
     if (currentEpoch !== epoch) throw new Error('ACP connection changed');
     if (!result.sessionId) throw new Error('ACP session/new returned no sessionId');
     const now = Date.now();
@@ -260,7 +287,7 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     if (!loaded.has(sessionID)) {
       if (!info.agentCapabilities.loadSession) throw new Error('This ACP agent cannot resume the saved session');
       loading.add(sessionID);
-      try { await rpc(METHOD.LOAD, { sessionId: sessionID, cwd: entry.session.directory, mcpServers: [] }); loaded.add(sessionID); }
+      try { await rpc(METHOD.LOAD, { sessionId: sessionID, cwd: remoteCwd ?? entry.session.directory, mcpServers: [] }); loaded.add(sessionID); }
       finally { loading.delete(sessionID); }
     }
     if (currentEpoch !== epoch) throw new Error('ACP connection changed');
@@ -268,7 +295,8 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     for (const file of files) {
       const match = /^data:([^;]+);base64,(.*)$/s.exec(file.url);
       if (match && match[1].startsWith('image/') && info.agentCapabilities.promptCapabilities?.image) content.push({ type: 'image', mimeType: match[1], data: match[2] });
-      else if (file.url.startsWith('file:')) content.push({ type: 'resource_link', uri: file.url, name: file.filename ?? file.url });
+      else if (file.url.startsWith('file:') && !remoteCwd) content.push({ type: 'resource_link', uri: file.url, name: file.filename ?? file.url });
+      else if (file.url.startsWith('file:')) throw new Error('Local file attachments are unsupported by an ACP server connection');
       else throw new Error('The selected ACP agent does not support this attachment');
     }
     const now = Math.max(Date.now(), (entry.messages.at(-1)?.info.time.created ?? 0) + 1);
@@ -306,12 +334,12 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
       assistant.info.time.completed = Date.now();
       upsertMessage(entry, assistant.info);
       status(entry, 'idle', 'failed', assistant.info.error);
-    }).finally(() => { if (currentEpoch === epoch) { cancelPermissions(sessionID); void persist().catch(fail); } });
+    }).finally(() => { if (currentEpoch === epoch) { void cancelPermissions(sessionID).catch(fail); void persist().catch(fail); } });
     return { messageID };
   };
   const cancel = async (sessionID) => {
-    assertReady(); record(sessionID); cancelPermissions(sessionID);
-    write({ jsonrpc: '2.0', method: METHOD.CANCEL, params: { sessionId: sessionID } });
+    assertReady(); record(sessionID); await cancelPermissions(sessionID);
+    await write({ jsonrpc: '2.0', method: METHOD.CANCEL, params: { sessionId: sessionID } });
     return true;
   };
   const reply = (id, optionID) => {
@@ -319,10 +347,13 @@ export const createAcpRuntime = ({ storagePath } = {}) => {
     const pending = permissions.get(id);
     if (!pending) throw new Error('ACP permission is no longer pending');
     if (!pending.value.options.some((option) => option.optionId === optionID)) throw new Error('Invalid ACP permission option');
-    write({ jsonrpc: '2.0', id: pending.rpcID, result: { outcome: { outcome: 'selected', optionId: optionID } } });
-    permissions.delete(id);
-    emit({ type: 'permission-replied', sessionID: pending.value.sessionID, requestID: id, directory: record(pending.value.sessionID).session.directory });
-    return true;
+    const sent = write({ jsonrpc: '2.0', id: pending.rpcID, result: { outcome: { outcome: 'selected', optionId: optionID } } });
+    const complete = () => {
+      permissions.delete(id);
+      emit({ type: 'permission-replied', sessionID: pending.value.sessionID, requestID: id, directory: record(pending.value.sessionID).session.directory });
+      return true;
+    };
+    return sent ? sent.then(complete) : complete();
   };
   return {
     start, stop, descriptor, createSession, prompt, cancel, reply,

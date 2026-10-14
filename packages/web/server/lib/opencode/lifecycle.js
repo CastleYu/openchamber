@@ -8,6 +8,7 @@ import { recordStartupPerformance } from './startup-performance.js';
 import { OPENCODE_GENERATION } from './compatibility.js';
 import { probeManagedOpenCodeGeneration as probeManagedGeneration } from './managed-generation.js';
 import { topUpV1Migration } from './v1-migration-topup.js';
+import { isAcpConnection } from './agent-connection.js';
 
 const exec = promisify(execFile);
 const killWindowsTree = (pid, force) => exec('taskkill',
@@ -918,7 +919,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   const restartOpenCode = async (reason = 'managed-restart') => {
     if (getConnection && !getConnection()) throw new Error('Choose an agent connection first');
-    if (getConnection?.()?.mode === 'acp') throw new Error('Apply the ACP connection to restart its agent');
+    if (isAcpConnection(getConnection?.())) throw new Error('Apply the ACP connection to restart its agent');
     if (state.isShuttingDown) return;
     if (state.currentRestartPromise) {
       await state.currentRestartPromise;

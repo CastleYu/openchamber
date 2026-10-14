@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "ACP-server",
+  'settings.agentConnection.transport': "Transport",
+  'settings.agentConnection.http': "Streaming HTTP (experimenteel HTTP/2)",
+  'settings.agentConnection.serverInfo': "Experimenteel ACP-webtransport. De OpenChamber-backend maakt verbinding met de agent.",
+  'settings.agentConnection.serverUrlInfo': "Volledige URL van het ACP-eindpunt, inclusief pad. Inloggegevens in URL’s worden niet ondersteund.",
+  'settings.agentConnection.remoteCwd': "Externe werkmap (verplicht)",
+  'settings.agentConnection.remoteCwdInfo': "Absolute map op de ACP-server. Lokale projectbestanden worden er niet naartoe gekopieerd.",
   'settings.agentConnection.title': "Agentverbinding",
   'settings.agentConnection.external': "Externe OpenCode-server",
   'settings.agentConnection.command': "OpenCode-opdracht",

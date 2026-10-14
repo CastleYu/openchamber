@@ -21,6 +21,16 @@ const runtimeCtx = {
 };
 
 describe('settings search', () => {
+  test('finds ACP server connection on backend surfaces and excludes standalone VS Code', () => {
+    for (const context of [runtimeCtx, { ...runtimeCtx, isDesktop: true }, { ...runtimeCtx, isMobile: true }]) {
+      for (const query of ['websocket', 'streamable', 'cwd']) {
+        const results = buildSettingsSearchResults({ query, runtimeCtx: context, t, getPageTitle: page => page });
+        expect(results.some(result => result.id === 'sessions.opencode-binary')).toBe(true);
+      }
+    }
+    const results = buildSettingsSearchResults({ query: 'websocket', runtimeCtx: { ...runtimeCtx, isVSCode: true }, t, getPageTitle: page => page });
+    expect(results.some(result => result.id === 'sessions.opencode-binary')).toBe(false);
+  });
   test('new OC2 settings do not appear while OC1 is bound', () => {
     for (const generation of ['oc1', 'oc2'] as const) {
       opencodeClient.bindRuntime({ generation, endpoint: 'http://settings.test', epoch: generation === 'oc2' ? 2 : 1, version: generation === 'oc2' ? '2.0.18' : '1.18.32' });

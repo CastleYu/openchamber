@@ -44,12 +44,14 @@ jobs:
       - name: Check ACP build and publication contracts
         run: node --test scripts/acp-build.test.mjs scripts/publish-acp.test.mjs scripts/build-personal.test.mjs packages/electron/personal-updates.test.mjs
       - name: Test ACP runtime
-        run: node --test packages/web/server/lib/acp/runtime.test.js
+        run: node --test packages/web/server/lib/acp/runtime.test.js packages/web/server/lib/acp/server-transport.test.js
       - name: Test explicit selection and OpenCode lifecycle
         working-directory: packages/web
         run: bunx vitest run server/lib/opencode/agent-connection.test.js server/lib/opencode/lifecycle.test.js server/lib/opencode/env-runtime.test.js
       - name: Test dual-kernel UI behavior
         run: node scripts/test-dual-kernel.mjs
+      - name: Test ACP connection settings
+        run: bun test packages/ui/src/lib/agent-connection.test.ts
       - name: Type-check workspace
         run: bun run type-check
       - name: Build ACP portable

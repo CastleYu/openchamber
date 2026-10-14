@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
+import { ACP_SERVER_MODE, serverSchema } from '../acp/server-transport.js';
 
 const CONNECTION_MODE = Object.freeze({ EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', BUNDLED: 'bundled', ACP: 'acp' });
 const CONNECTION_STATUS = Object.freeze({ UNCONFIGURED: 'unconfigured', STARTING: 'starting', READY: 'ready', FAILED: 'failed' });
+export const isAcpConnection = (config) => config?.mode === CONNECTION_MODE.ACP || config?.mode === ACP_SERVER_MODE;
 const OPENCODE_CONFIG_ROUTES = Object.freeze([
   '/api/config/agents', '/api/config/commands', '/api/config/mcp',
   '/api/config/snippets', '/api/config/skills', '/api/config/plugins',
@@ -22,6 +24,7 @@ const connectionSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal(CONNECTION_MODE.BUNDLED) }),
   z.object({ mode: z.literal(CONNECTION_MODE.COMMAND), command: commandSchema, args: z.array(z.string()) }),
   z.object({ mode: z.literal(CONNECTION_MODE.ACP), command: commandSchema, args: z.array(z.string()), cwd: z.string().trim().refine(path.isAbsolute, 'ACP working directory must be absolute').optional() }),
+  serverSchema,
 ]);
 export const parseAgentConnection = (value) => connectionSchema.parse(value);
 
@@ -31,11 +34,11 @@ export const createAgentConnection = ({ filePath, startOpenCode, stopOpenCode, a
   let error = null;
   let applying = false;
   const snapshot = () => {
-    if (status === CONNECTION_STATUS.READY && config?.mode === CONNECTION_MODE.ACP && acpRuntime.descriptor().generation !== CONNECTION_MODE.ACP) {
+    if (status === CONNECTION_STATUS.READY && isAcpConnection(config) && acpRuntime.descriptor().generation !== CONNECTION_MODE.ACP) {
       status = CONNECTION_STATUS.FAILED;
       error = 'ACP agent disconnected. Apply the connection to retry.';
     }
-    const failure = status === CONNECTION_STATUS.READY && config?.mode !== CONNECTION_MODE.ACP ? openCodeStatus() : null;
+    const failure = status === CONNECTION_STATUS.READY && !isAcpConnection(config) ? openCodeStatus() : null;
     return { config, status: failure ? CONNECTION_STATUS.FAILED : status, error: failure || error, prefill: { ...prefill, cwd: defaultCwd } };
   };
   const apply = async (next, persist = true) => {
@@ -54,7 +57,7 @@ export const createAgentConnection = ({ filePath, startOpenCode, stopOpenCode, a
       error = null;
       await stopOpenCode();
       await acpRuntime.stop();
-      if (config.mode === CONNECTION_MODE.ACP) await acpRuntime.start(config);
+      if (isAcpConnection(config)) await acpRuntime.start(config);
       else await startOpenCode(config);
       status = CONNECTION_STATUS.READY;
     } catch (cause) {
@@ -100,7 +103,7 @@ export const registerAgentConnectionRoutes = (app, { express, connection }) => {
     catch (error) { res.status(error.statusCode || 502).json({ ...connection.snapshot(), error: error.message }); }
   });
   app.use((req, res, next) => {
-    const acpSelected = connection.selected()?.mode === CONNECTION_MODE.ACP;
+    const acpSelected = isAcpConnection(connection.selected());
     const acpRoute = req.path === '/api/acp' || req.path.startsWith('/api/acp/');
     const openCodeRoute = req.path.startsWith('/api/opencode/') && req.path !== '/api/opencode/runtime';
     const configRoute = OPENCODE_CONFIG_ROUTES.some((route) => req.path === route || req.path.startsWith(`${route}/`));

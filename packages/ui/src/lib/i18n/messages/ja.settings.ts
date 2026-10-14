@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "ACP サーバー",
+  'settings.agentConnection.transport': "トランスポート",
+  'settings.agentConnection.http': "ストリーミング HTTP（実験的 HTTP/2）",
+  'settings.agentConnection.serverInfo': "実験的な ACP Web トランスポートです。OpenChamber バックエンドがエージェントに接続します。",
+  'settings.agentConnection.serverUrlInfo': "パスを含む完全な ACP エンドポイント URL。URL 内の認証情報には対応していません。",
+  'settings.agentConnection.remoteCwd': "リモート作業ディレクトリ（必須）",
+  'settings.agentConnection.remoteCwdInfo': "ACP サーバー上の絶対ディレクトリ。本機のプロジェクトファイルはコピーされません。",
   'settings.agentConnection.title': "エージェント接続",
   'settings.agentConnection.external': "外部 OpenCode サーバー",
   'settings.agentConnection.command': "OpenCode コマンド",

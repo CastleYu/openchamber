@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "ACP sunucusu",
+  'settings.agentConnection.transport': "Aktarım",
+  'settings.agentConnection.http': "Akışlı HTTP (deneysel HTTP/2)",
+  'settings.agentConnection.serverInfo': "Deneysel ACP web aktarımı. OpenChamber arka ucu aracıya bağlanır.",
+  'settings.agentConnection.serverUrlInfo': "Yolu içeren tam ACP uç nokta URL’si. URL içindeki kimlik bilgileri desteklenmez.",
+  'settings.agentConnection.remoteCwd': "Uzak çalışma dizini (zorunlu)",
+  'settings.agentConnection.remoteCwdInfo': "ACP sunucusundaki mutlak dizin. Yerel proje dosyaları buraya kopyalanmaz.",
   'settings.agentConnection.title': "Aracı bağlantısı",
   'settings.agentConnection.external': "Harici OpenCode sunucusu",
   'settings.agentConnection.command': "OpenCode komutu",

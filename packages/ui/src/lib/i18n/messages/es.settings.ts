@@ -4,6 +4,13 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  'settings.agentConnection.acpServer': "Servidor ACP",
+  'settings.agentConnection.transport': "Transporte",
+  'settings.agentConnection.http': "HTTP en streaming (HTTP/2 experimental)",
+  'settings.agentConnection.serverInfo': "Transporte web ACP experimental. El backend de OpenChamber se conecta al agente.",
+  'settings.agentConnection.serverUrlInfo': "URL completa del endpoint ACP, incluida la ruta. No se admiten credenciales en las URL.",
+  'settings.agentConnection.remoteCwd': "Directorio de trabajo remoto (obligatorio)",
+  'settings.agentConnection.remoteCwdInfo': "Directorio absoluto en el servidor ACP. Los archivos del proyecto local no se copian allí.",
   'settings.agentConnection.title': "Conexión del agente",
   'settings.agentConnection.external': "Servidor OpenCode externo",
   'settings.agentConnection.command': "Comando de OpenCode",

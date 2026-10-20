@@ -4,7 +4,7 @@ Review date: 2026-10-21. This is the canonical handoff. The [Chinese copy](ACP-H
 
 ## Current state
 
-The independent ACP route started from the last 4.X baseline, commit `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6` (`2.0.4-DIJIANG.4.0`). This handoff gathers the ACP work after `692c366d5e66e2cc95ebc6bcddae44787b80be44` into the snapshot containing this document on `codex/acp-handoff-20261021`. It is a source checkpoint, not a release.
+The independent ACP route started from the last 4.X baseline, commit `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6` (`2.0.4-DIJIANG.4.0`). This handoff gathers the ACP work after `692c366d5e66e2cc95ebc6bcddae44787b80be44` into the snapshot containing this document on `codex/acp-multi-session-integration`. It is a source checkpoint, not a release.
 
 Existing ACP releases are `ACP.2.1` and `ACP.3.1`. `ACP.3.1` corresponds to `692c366d5`, whose CI passed. This snapshot contains the subsequent Windows BAT/CMD startup and process cleanup, callbacks, elicitation, agent controls, project mappings, session actions, and real Windows scoped-discovery fix. The older local portable package does not contain the last fix.
 

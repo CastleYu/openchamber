@@ -1,6 +1,6 @@
 # OpenChamber ACP handoff branch
 
-`codex/acp-handoff-20261021` freezes the independent ACP development based on DIJIANG 4.0. This is a source handoff, not a new application release.
+`codex/acp-multi-session-integration` freezes the independent ACP development based on DIJIANG 4.0. This is a source handoff, not a new application release.
 
 [中文归档](README-ACP.zh-CN.md) · [Development and Codex conversation handoff](docs/maintenance/ACP-HANDOFF.md) · [38-feature acceptance table](docs/maintenance/ACP-ACCEPTANCE.md)
 

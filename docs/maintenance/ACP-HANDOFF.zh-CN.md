@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-独立 ACP 路线从最后一个 4.X 基线提交 `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`（`2.0.4-DIJIANG.4.0`）开始。本交接将 `692c366d5e66e2cc95ebc6bcddae44787b80be44` 之后的 ACP 工作固化到 `codex/acp-handoff-20261021` 上包含本文的快照提交。这是源码检查点，不是发布版本。
+独立 ACP 路线从最后一个 4.X 基线提交 `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`（`2.0.4-DIJIANG.4.0`）开始。本交接将 `692c366d5e66e2cc95ebc6bcddae44787b80be44` 之后的 ACP 工作固化到 `codex/acp-multi-session-integration` 上包含本文的快照提交。这是源码检查点，不是发布版本。
 
 现有 ACP 发布为 `ACP.2.1` 和 `ACP.3.1`。`ACP.3.1` 对应 CI 通过的 `692c366d5`。本快照包含此后的 Windows BAT/CMD 启动与进程清理、callbacks、elicitation、代理控制项、项目映射、会话操作，以及真实 Windows 按目录发现修复。本地较旧的便携包不含最后这项修复。
 

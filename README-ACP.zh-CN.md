@@ -1,6 +1,6 @@
 # OpenChamber ACP 交接分支
 
-`codex/acp-handoff-20261021` 固化基于 DIJIANG 4.0 的独立 ACP 开发。这是源码交接，不是新发布的应用。
+`codex/acp-multi-session-integration` 固化基于 DIJIANG 4.0 的独立 ACP 开发。这是源码交接，不是新发布的应用。
 
 [英文主文档](README-ACP.md) · [开发与 Codex 对话交接](docs/maintenance/ACP-HANDOFF.zh-CN.md) · [38 项功能验收表](docs/maintenance/ACP-ACCEPTANCE.zh-CN.md)
 

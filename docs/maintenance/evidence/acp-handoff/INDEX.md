@@ -7,7 +7,7 @@ This archive is part of the 2026-10-21 source handoff. [Chinese index](INDEX.zh-
 - `acp-grok-parity.txt` contains the completed Grok review, including its later CLI archive failure. The results file records source/protocol corrections.
 - Workspace type/lint/dead-code and dual-kernel outputs retain earlier validation. Closure-specific outputs record the tests run again for this snapshot.
 - Command notes preserve environment failures and working alternatives. Machine-specific paths in historical evidence identify the original run, not portable setup instructions.
-- `paused-5x-remnants.patch` preserves 12 loose files from the paused route, including edit scripts, notes and unused legacy-provider code. It is archival material, not an ACP implementation or an instruction to run those scripts. Original local files are retained outside this commit.
+- `paused-5x-remnants.patch` preserves 12 loose files from the paused route, including edit scripts, notes and unused legacy-provider code. It is archival material, not an ACP implementation or an instruction to run those scripts. The loose originals were removed after verifying all 12 against the committed patch and verifying the remote commit tree.
 
 The Codex discussion is summarized in [the handoff](../../ACP-HANDOFF.md). Raw conversation dumps, credentials, global user configuration, dependency trees, generated bundles and release executables are excluded.
 

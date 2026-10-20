@@ -1,0 +1,40 @@
+{
+  "diagnostics": [
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/settings/registry.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4909,
+            "length": 7,
+            "line": 113,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `payload` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/settings/registry.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 45495,
+            "length": 7,
+            "line": 687,
+            "column": 48
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 8,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.3404756
+}

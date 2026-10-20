@@ -1,0 +1,77 @@
+{
+  "candidate": "7be9a791b548f7b89115291abedf94bff79a0a41",
+  "weeklyRemaining": 90,
+  "host": {
+    "head": "7be9a791b548f7b89115291abedf94bff79a0a41",
+    "exitCode": 0,
+    "passed": 366,
+    "failed": 0,
+    "skipped": 1,
+    "testFiles": 12,
+    "elapsedSeconds": 69.4,
+    "failureNames": [],
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-close-host.log"
+  },
+  "fingerprints": [
+    {
+      "file": "packages/ui/src/sync/sync-context.tsx",
+      "expected": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+      "actual": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/sync/session-actions.ts",
+      "expected": "8302c67553df2e8da755f54b1aed28991e37615674ef62eb5c4c758fce5e13c4",
+      "actual": "8302c67553df2e8da755f54b1aed28991e37615674ef62eb5c4c758fce5e13c4",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/stores/useMcpStore.ts",
+      "expected": "586999d4596e5f0d491a41ae0b55a76ac49a46965790d0b19da4267316de62a1",
+      "actual": "586999d4596e5f0d491a41ae0b55a76ac49a46965790d0b19da4267316de62a1",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/lib/gitApi.ts",
+      "expected": "fa75b2787f9f10ecec226a9510605874d90b1f02488f442010567a93ffb48f02",
+      "actual": "fa75b2787f9f10ecec226a9510605874d90b1f02488f442010567a93ffb48f02",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/components/sections/providers/ProvidersPage.tsx",
+      "expected": "6ddf41da7297016f2efebb5b19edfe2502e6d66a90ec4252d26dad7e5606996d",
+      "actual": "6ddf41da7297016f2efebb5b19edfe2502e6d66a90ec4252d26dad7e5606996d",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/components/sections/providers/ProviderOAuthMethods.tsx",
+      "expected": "e7eb40b73a5440bb32ca83751042a9165eda2b5f9dd727852a733eaecc580d20",
+      "actual": "e7eb40b73a5440bb32ca83751042a9165eda2b5f9dd727852a733eaecc580d20",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/client.ts",
+      "expected": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491",
+      "actual": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491",
+      "unchanged": true
+    },
+    {
+      "file": "docs/maintenance/CAGENT-BOUNDARIES.md",
+      "expected": "c08204d954f9cad8a36c6b14ebddaf1a722893b5bf4d99b4e79aa7d0797b1e5a",
+      "actual": "c08204d954f9cad8a36c6b14ebddaf1a722893b5bf4d99b4e79aa7d0797b1e5a",
+      "unchanged": true
+    }
+  ],
+  "testMap": {
+    "legacyRefusal": "kernel-operations.test.js:582-595; routes-family.test.js:70-82; config-family.test.js:52-62",
+    "profileRetirement": "kernel-operations.test.js:597-624; message-queue/runtime.test.js:651-687",
+    "cagentRefusal": "routes-family.test.js:91-126; config-family.test.js:80-146",
+    "queueIdentity": "message-queue/runtime.test.js:689-710,819-839,852-858,890-940",
+    "limits": "Static assertion inspection only. proxy-agent-wiring.test.js does not cover profile refusal. No dedicated browser-close lifecycle test found in inspected queue file."
+  },
+  "gap": {
+    "file": "packages/web/server/lib/markdown-image-grants/routes.js",
+    "status": "open",
+    "sourceHash": "2a28bfdb4b07bac2c422567df8050fc8f9b1bd33fd40b1211fbd4d857c0eea4f"
+  }
+}

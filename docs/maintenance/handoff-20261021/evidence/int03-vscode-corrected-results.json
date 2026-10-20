@@ -1,0 +1,22 @@
+[
+  {
+    "file": "packages/vscode/src/kernelRequest.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-bun-kernelRequest.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/src/bridge-proxy-runtime.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-bun-bridge-proxy-runtime.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/src/sseProxy.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-bun-sseProxy.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/webview/api/bridge.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-bun-bridge.test.ts.log"
+  }
+]

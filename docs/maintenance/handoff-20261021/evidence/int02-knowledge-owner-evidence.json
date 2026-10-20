@@ -1,0 +1,25 @@
+{
+  "task": "session-knowledge owner identity guard",
+  "date": "2026-10-11",
+  "changed": [
+    "packages/web/server/lib/session-knowledge/runtime.js",
+    "packages/web/server/lib/session-knowledge/runtime.test.js",
+    "packages/web/server/lib/session-knowledge/DOCUMENTATION.md"
+  ],
+  "behavior": "setPin and recordDelivered capture kernel identity before reading metadata and pass it as expectedIdentity to updateSession.",
+  "regression": {
+    "oldRuntime": "Both retired-owner tests failed because updates proceeded after the owner changed; both current-owner tests failed because expectedIdentity was absent.",
+    "fixedRuntime": "Both retired-owner tests reject before any replacement-owner write; both normal-owner tests observe the captured identity."
+  },
+  "validation": {
+    "bunTest": "24 passed, 0 failed, 39 expectations",
+    "nodeSyntax": "runtime.js and runtime.test.js passed node --check",
+    "oxlint": "Failed on pre-existing findings at runtime.js lines 24, 129, 161, 213, 235 and runtime.test.js lines 30-31; no finding points to added lines.",
+    "vitest": "Not compatible with this file's bun:test import; use Bun test runner."
+  },
+  "notRun": [
+    "web package checks",
+    "host live-job validation"
+  ],
+  "failureLog": "docs/maintenance/command-failures.md"
+}

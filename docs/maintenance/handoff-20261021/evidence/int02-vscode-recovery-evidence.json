@@ -1,0 +1,341 @@
+{
+  "source": "3dface0e922318ac435bf109e341df80eb36fa56",
+  "finalNativeExit": 0,
+  "quotaRemainingPercent": 39,
+  "checks": {
+    "lint": 0,
+    "managedProcess": "8 passed",
+    "types": 0,
+    "extensionBuild": 0,
+    "gitProcess": "3 passed, 1 POSIX-only skipped",
+    "antiSlop": "23 pre-existing diagnostics, zero authored-line findings"
+  },
+  "limits": [
+    "Actual VS Code extension host manager, not full React webview/bridge/editor acceptance",
+    "No model conversation, exact Legacy, real CAgent or packaged shell acceptance"
+  ],
+  "retained": {
+    "purpose": "Reusable native fixture, real OC2 binary and compact evidence support remaining R1 bridge/queue/shim acceptance",
+    "nextCleanup": "R1 closeout"
+  },
+  "finalNativeChecks": 36,
+  "nativeRuns": [
+    {
+      "fixture": "int02-vscode-host-i89zte",
+      "suiteSha256": "A4D2C0E09B0795459563B9F106C65C1F3BC108AACB57194FA1A32FAFA5033DAF",
+      "result": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2",
+          "real external OC2 review succeeds"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-i89zte\\home",
+        "externalPid": 95636,
+        "externalClosed": true,
+        "failure": {
+          "name": "AssertionError",
+          "message": "real external OC2 connects without managed credentials",
+          "stack": "AssertionError [ERR_ASSERTION]: real external OC2 connects without managed credentials\n\tat check (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-i89zte\\suite.cjs:15:43)\n\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-i89zte\\suite.cjs:92:5)"
+        }
+      },
+      "bundleSha256": "B4373FEA042F96A190BF26A834FB9C2859925987D78FEC626CFE1AC7E94EA928"
+    },
+    {
+      "fixture": "int02-vscode-host-jNfOkV",
+      "suiteSha256": "2572E82A874C1938B6242EE77EDC422B268B9D94201F23C6120F1DE7BDA08D36",
+      "result": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2",
+          "real external OC2 review succeeds"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-jNfOkV\\home",
+        "externalPid": 74148,
+        "externalClosed": true,
+        "failure": {
+          "name": "AssertionError",
+          "message": "real external OC2 connects without managed credentials",
+          "stack": "AssertionError [ERR_ASSERTION]: real external OC2 connects without managed credentials\n\tat check (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-jNfOkV\\suite.cjs:16:43)\n\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-jNfOkV\\suite.cjs:100:5)"
+        },
+        "observations": {
+          "externalEndpoint": "http://127.0.0.1:2944",
+          "externalHealthStatus": 200,
+          "externalApply": {
+            "status": 503,
+            "body": {
+              "error": "connection_failed"
+            },
+            "kernel": {
+              "generation": "unknown",
+              "endpoint": null,
+              "epoch": 23,
+              "version": null
+            },
+            "statusAfter": "error",
+            "authPresent": false
+          }
+        }
+      },
+      "bundleSha256": "B4373FEA042F96A190BF26A834FB9C2859925987D78FEC626CFE1AC7E94EA928"
+    },
+    {
+      "fixture": "int02-vscode-host-7gMvVv",
+      "suiteSha256": "0372CB9382F7FE348060E50A72C2ED3F64A29BCAEB8ABB25726FF31E814EE64B",
+      "result": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-7gMvVv\\home",
+        "externalPid": 95816,
+        "externalClosed": true,
+        "failure": {
+          "name": "SyntaxError",
+          "message": "Unexpected token '<', \"<!doctype \"... is not valid JSON",
+          "stack": "SyntaxError: Unexpected token '<', \"<!doctype \"... is not valid JSON\n\tat JSON.parse (<anonymous>)\n\tat parseJSONFromBytes (node:internal/deps/undici/undici:4394:19)\n\tat successSteps (node:internal/deps/undici/undici:7048:27)\n\tat readAllBytes (node:internal/deps/undici/undici:5965:13)\n\tat process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+        },
+        "observations": {
+          "externalEndpoint": "http://127.0.0.1:4370",
+          "externalHealthStatus": 200
+        }
+      },
+      "bundleSha256": "B4373FEA042F96A190BF26A834FB9C2859925987D78FEC626CFE1AC7E94EA928"
+    },
+    {
+      "fixture": "int02-vscode-host-hc1iHV",
+      "suiteSha256": "2B0C49B7AC67197B0B80DB5F44CD2B1A813163EE8581C03286F743616E00AF2E",
+      "result": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "failed stop exposes error and retires resolved kernel",
+          "failed stop retains process ownership",
+          "unresolved cleanup blocks replacement launch",
+          "explicit stop retry clears retained ownership",
+          "saved intent restarts after explicit cleanup",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2",
+          "real external OC2 review succeeds"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-hc1iHV\\home",
+        "externalPid": 94500,
+        "externalClosed": true,
+        "failure": {
+          "name": "AssertionError",
+          "message": "real external OC2 connects without managed credentials",
+          "stack": "AssertionError [ERR_ASSERTION]: real external OC2 connects without managed credentials\n\tat check (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-hc1iHV\\suite.cjs:16:43)\n\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-hc1iHV\\suite.cjs:119:5)\n\tat runNextTicks (node:internal/process/task_queues:65:5)\n\tat process.processTimers (node:internal/timers:538:9)"
+        },
+        "observations": {
+          "externalEndpoint": "http://127.0.0.1:5442",
+          "externalHealthStatus": 200,
+          "externalProbes": [
+            {
+              "suffix": "/global/health",
+              "status": 200,
+              "type": "text/html"
+            },
+            {
+              "suffix": "/api/info",
+              "status": 401,
+              "type": "application/json"
+            }
+          ],
+          "externalApply": {
+            "status": 503,
+            "body": {
+              "error": "connection_failed"
+            },
+            "kernel": {
+              "generation": "unknown",
+              "endpoint": null,
+              "epoch": 30,
+              "version": null
+            },
+            "statusAfter": "error",
+            "authPresent": false,
+            "externalClosed": false,
+            "error": "Failed to start OpenCode: External OpenCode is not ready"
+          }
+        }
+      },
+      "bundleSha256": "D3EB3672C4E1AE8B9925683B7A552795B7D91664600491F11858745B5E13C8EC"
+    },
+    {
+      "fixture": "int02-vscode-host-Om1XGx",
+      "suiteSha256": "C4C3BDC33F36A5B5360AAF45D2E3B1C66D673329EE49F417F8AADFD328902D27",
+      "result": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "failed stop exposes error and retires resolved kernel",
+          "failed stop retains process ownership",
+          "unresolved cleanup blocks replacement launch",
+          "explicit stop retry clears retained ownership",
+          "saved intent restarts after explicit cleanup",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2",
+          "real external OC2 review succeeds",
+          "unauthenticated real OC2 refuses activation without reusing managed password",
+          "fresh host can review previous intent after auth failure",
+          "fresh host explicitly restores configured OC2",
+          "authenticated external review succeeds",
+          "real external OC2 connects with explicit environment credentials",
+          "external return review succeeds",
+          "external stop-and-switch restores managed OC2",
+          "external process remains alive after switch",
+          "external process remains alive after manager shutdown"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-Om1XGx\\home",
+        "externalPid": 92260,
+        "externalClosed": true,
+        "observations": {
+          "externalEndpoint": "http://127.0.0.1:6670",
+          "externalHealthStatus": 200,
+          "externalProbes": [
+            {
+              "suffix": "/global/health",
+              "status": 200,
+              "type": "text/html"
+            },
+            {
+              "suffix": "/api/info",
+              "status": 401,
+              "type": "application/json"
+            }
+          ],
+          "externalApply": {
+            "status": 503,
+            "body": {
+              "error": "connection_failed"
+            },
+            "kernel": {
+              "generation": "unknown",
+              "endpoint": null,
+              "epoch": 30,
+              "version": null
+            },
+            "statusAfter": "error",
+            "authPresent": false,
+            "externalClosed": false,
+            "error": "Failed to start OpenCode: External OpenCode is not ready"
+          }
+        }
+      },
+      "bundleSha256": "E20B90777838B2AC1617666099B2E5D33C6F816CD2C823BEC0CE825D573DB53A"
+    }
+  ],
+  "fingerprints": [
+    {
+      "path": "packages/vscode/src/owned-process.ts",
+      "sha256": "16FED83F9140F65662D9EFE3D09911ECBB7ABD6C4BDEF606A6A4287C17F458BF"
+    },
+    {
+      "path": "packages/vscode/src/managed-opencode-process.ts",
+      "sha256": "0526F659C9D49F8DFA93AEC260B0621AB3448BA7D4202EDCE2C40547F2D2A577"
+    },
+    {
+      "path": "packages/vscode/src/managed-opencode-process.test.ts",
+      "sha256": "4B4567FDDBFA736577E14C9A843BE3B182113D988ABF8E95524EEC254FA0AF86"
+    },
+    {
+      "path": "packages/vscode/src/opencode.ts",
+      "sha256": "95DD50E77EB7E01FA147A50F249B325301F4CB16979F394C380CBFC4150A7694"
+    }
+  ]
+}

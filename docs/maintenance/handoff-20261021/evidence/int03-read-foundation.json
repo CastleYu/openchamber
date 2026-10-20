@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-11T14:09:02.756Z",
+  "round": "R2",
+  "task": "INT-03",
+  "status": "in progress",
+  "baseline": "f5c0fa5c73eb3815ca7dad1285c82bd2578f6f75",
+  "weeklyRemaining": 84,
+  "hostKernelTests": {
+    "passed": 46,
+    "owner": "legacy_kernel_reads_tests",
+    "notes": "artifacts/int03-kernel-test-command-notes.md"
+  },
+  "operationContractTests": {
+    "passed": 13,
+    "owner": "legacy_read_contract",
+    "notes": "artifacts/int03-read-contract-command-notes.md"
+  },
+  "compatibilityRuntimeTests": {
+    "passed": 81,
+    "failed": 0,
+    "report": "artifacts/int03-compatibility-tests.json"
+  },
+  "exactHostRead": {
+    "passed": 17,
+    "report": "artifacts/int03-exact-host-read.json"
+  },
+  "checks": {
+    "webTypeCheck": 0,
+    "webLint": 0,
+    "authoredOxlint": 0,
+    "nodeSyntax": 0,
+    "deadCode": "exit 0; existing repository findings inspected, no legacy-contract/kernel-operations entries"
+  },
+  "runtimeScope": "artifacts/int03-read-foundation-scope.md",
+  "remaining": [
+    "Legacy create/send and owned metadata",
+    "stream/decision/stop and reopen",
+    "shared UI and VS Code integration",
+    "actual UI+host conversation and OC1/OC2 core regression"
+  ],
+  "sourceSha256": {
+    "kernel-operations.js": "e3d7dad4e6334c7b4dbb0ec0771f6731518d16100af3973c25253da6170a1e62",
+    "kernel-operations.test.js": "98267222d42d87bfc5a87438c5f6bffd78876a0fbf2b1a14132905fb326bdd62",
+    "legacy-contract.js": "482514d499841f0533750ce1e5ae8ee2fe830750bc7ff9e698e6e6ccedb8a11f",
+    "legacy-contract.d.ts": "9677ebfe8e74266df1665400e9646f66ff99f306913137a43c72f9be5341b2ee",
+    "legacy-contract.test.js": "54a0df9660bd078a80ab45f59262e3ea92a7279bae41fbcc3f25148e83247f7c"
+  },
+  "commit": "6265a073bbe668fd6242f836f75ddd90751817a3",
+  "nextBatch": "R2: inspect existing app-owned session metadata store; adapt exact Legacy create/send without silently forwarding unsupported metadata, then decisions/stop/events and UI/VS Code integration. Keep R2 open until the full exact-version UI+host journey and core regressions pass."
+}

@@ -43,6 +43,7 @@ export const createGracefulShutdownRuntime = (dependencies) => {
     getRelayService,
     getRelayReconcileTimer,
     getSpacesHost = () => null,
+    getLegacyProviderRuntime = () => null,
   } = dependencies;
 
   let shutdownPromise = null;
@@ -92,6 +93,7 @@ export const createGracefulShutdownRuntime = (dependencies) => {
       () => messageQueueRuntime?.stop?.(),
       () => messageSearchRuntime?.stop?.(),
       () => scheduledTasksRuntime?.stop?.(),
+      () => getLegacyProviderRuntime()?.dispose(),
       stopAllGuestServices,
     ];
     for (const cleanup of cleanupOperations) {

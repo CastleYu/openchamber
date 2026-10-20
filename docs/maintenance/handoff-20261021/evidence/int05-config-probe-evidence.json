@@ -1,0 +1,156 @@
+{
+  "at": "2026-10-11T19:51:06.060Z",
+  "observations": [
+    {
+      "name": "project-initial",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-partial",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "changed"
+        }
+      }
+    },
+    {
+      "name": "project-after-partial",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-omit-delete",
+      "status": 200,
+      "command": {
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-after-omit",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-empty",
+      "status": 200,
+      "command": {}
+    },
+    {
+      "name": "project-after-empty",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-null-delete",
+      "status": 400
+    },
+    {
+      "name": "project-after-null",
+      "status": 200,
+      "command": {
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "global-create",
+      "status": 200,
+      "command": {
+        "global": {
+          "template": "global"
+        }
+      }
+    },
+    {
+      "name": "global-empty",
+      "status": 200,
+      "command": {
+        "global": {
+          "template": "global"
+        }
+      }
+    },
+    {
+      "name": "global-after-empty",
+      "status": 200,
+      "command": {
+        "global": {
+          "template": "global"
+        }
+      }
+    },
+    {
+      "name": "project-after-dispose",
+      "status": 200,
+      "command": {
+        "global": {
+          "template": "global"
+        },
+        "first": {
+          "template": "first"
+        },
+        "second": {
+          "template": "second"
+        }
+      }
+    },
+    {
+      "name": "project-file",
+      "content": {
+        "$schema": "https://opencode.ai/config.json",
+        "command": {
+          "first": {
+            "template": "first"
+          },
+          "second": {
+            "template": "second"
+          }
+        }
+      }
+    },
+    {
+      "name": "project-nested-file",
+      "content": null
+    }
+  ],
+  "cleanup": {
+    "exited": true,
+    "fixtureRemoved": true
+  }
+}

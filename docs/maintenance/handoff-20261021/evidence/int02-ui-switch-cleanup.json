@@ -1,0 +1,152 @@
+{
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-ui-switch-configured-7YQq8y",
+      "bytes": 12840088,
+      "kind": "isolated test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-ui-switch-configured-IKIvZo",
+      "bytes": 12882707,
+      "kind": "isolated test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-ui-switch-configured-OEMDuT",
+      "bytes": 12903078,
+      "kind": "isolated test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-ui-switch-configured-ssuCgj",
+      "bytes": 12914665,
+      "kind": "isolated test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-ui-switch-configured-RoUCoB",
+      "bytes": 12934019,
+      "kind": "isolated test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-edit.mjs",
+      "bytes": 12515,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-locales.mjs",
+      "bytes": 11426,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-tests.mjs",
+      "bytes": 8688,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-fix.mjs",
+      "bytes": 1762,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-dom.mjs",
+      "bytes": 846,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-real.mjs",
+      "bytes": 4597,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-review.mjs",
+      "bytes": 3375,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-docs.mjs",
+      "bytes": 3796,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-final-fix.mjs",
+      "bytes": 1111,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-state.mjs",
+      "bytes": 1353,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-health-fixture.mjs",
+      "bytes": 704,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-scope.mjs",
+      "bytes": 4063,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-finalize.mjs",
+      "bytes": 3420,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-ui-switch-locales-check.mjs",
+      "bytes": 1615,
+      "kind": "one-time helper"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-tests.log",
+      "bytes": 4132,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-types.log",
+      "bytes": 331,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-lint.log",
+      "bytes": 2475,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-dead.log",
+      "bytes": 67980,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-anti.log",
+      "bytes": 0,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-checks.json",
+      "bytes": 62,
+      "kind": "superseded validation log; failure details in managed notes"
+    },
+    {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-ui-switch-web-build.log",
+      "bytes": 136136,
+      "kind": "superseded validation log; failure details in managed notes"
+    }
+  ],
+  "bytesReclaimed": 64744944,
+  "retained": [
+    {
+      "cleanup": "R1 acceptance complete",
+      "reason": "Reusable remaining R1 host and peer acceptance",
+      "path": "int02-ui-switch-live.mjs"
+    },
+    {
+      "cleanup": "End of applicable real-kernel checks",
+      "reason": "Exact binary for remaining R1 verification",
+      "path": "artifacts/int01-real/oc2-2.0.20"
+    },
+    {
+      "cleanup": "Review when milestone handoff is archived",
+      "reason": "Checkpoint reproducibility and failure records",
+      "path": "selected logs and compact evidence"
+    }
+  ]
+}

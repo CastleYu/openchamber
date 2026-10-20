@@ -1,0 +1,16 @@
+{
+  "scope": "R1 configured connection ownership for session snapshots",
+  "surfaces": {
+    "web": "Shared host session runtime",
+    "electron": "Same in-process web host",
+    "vscode": "Independent extension host, unchanged",
+    "hostedMobile": "Selected shared host",
+    "capacitorMobile": "Selected shared host, no local backend"
+  },
+  "authority": "Admitted SSE events; existing hub and watcher reject retired request identities",
+  "owner": "Backend family/revision, configured connection revision, requested selection and last resolved generation/profile",
+  "lifecycle": "Retire five maps and cooldowns on first read/write after owner change. Preserve state across transport reconnect and same-config managed restart; preserve explicit restart interruption events.",
+  "cost": "Constant-size owner comparison per entry; no session scans on active-count reads. Clear existing maps only on owner change.",
+  "validation": "Red/green collision tests; cooldown, attention, pending and same-owner restart; focused kernel/watcher/lifecycle/notification regressions; web package checks; authored oxlint and dead-code inspection",
+  "remaining": "No real model, exact Legacy conversation, real CAgent or packaged acceptance claimed"
+}

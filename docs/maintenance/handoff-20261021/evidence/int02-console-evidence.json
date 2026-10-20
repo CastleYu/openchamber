@@ -1,0 +1,195 @@
+{
+  "cleanup": {
+    "ownedProcesses": 0,
+    "registryFiles": 0,
+    "reparsePoints": 0,
+    "removed": [
+      {
+        "bytes": 35638294,
+        "name": "int02-editor-webview-bcYpBh"
+      },
+      {
+        "bytes": 37832420,
+        "name": "int02-vscode-host-F81HC5"
+      }
+    ],
+    "bytes": 73470714
+  },
+  "limits": "No screen recording or visual inspection, no model call, no real CAgent or exact Legacy conversation",
+  "windowObservation": {
+    "consoleEvents": [],
+    "scope": "Windows current desktop create/destroy/show events; no window titles or command lines collected",
+    "positiveControlShows": 1,
+    "stoppedByMarker": true,
+    "eventCount": 330,
+    "limitation": "Window event evidence, not screen recording or visual observation"
+  },
+  "observationStartUtc": "2026-10-09T23:12:36.2303488Z",
+  "testedCommit": "eec8fe09a",
+  "runs": [
+    {
+      "endUtc": "2026-10-09T23:13:46.0335968Z",
+      "stderrTail": [
+        "[main 2026-10-09T23:13:00.962Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "Unknown channel: agentHostClientByokLm",
+        "(node:82636) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+        "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+        "[SSE] Socket error detected, attempting reconnect...",
+        "[SSE] Reconnect failed Error: OpenCode connection changed during request",
+        "\tat Object.assertCurrent (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-bcYpBh\\extension\\main.cjs:37077:13)",
+        "\tat connect (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-bcYpBh\\extension\\main.cjs:54417:14)",
+        "\tat c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-bcYpBh\\extension\\main.cjs:54463:38"
+      ],
+      "startUtc": "2026-10-09T23:12:57.5457555Z",
+      "name": "int02-editor-webview-bcYpBh",
+      "evidence": {
+        "source": "eec8fe09a",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": true,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session",
+            "real session has identity",
+            "production bridge reads session",
+            "real session appears in editor switcher",
+            "real session opens in editor",
+            "native editor selection becomes composer attachment",
+            "test session removed",
+            "failed-target preparation uses real bridge",
+            "unreachable target fails explicitly",
+            "failed editor exposes previous connection recovery",
+            "runtime bridge responds",
+            "failed runtime stays unavailable",
+            "previous connection requires review",
+            "previous recovery requires acknowledgement",
+            "recovery acknowledgement enables switch",
+            "previous configured connection restores editor",
+            "runtime bridge responds",
+            "recovered real OC2 descriptor admitted"
+          ]
+        },
+        "harnessBaselineLabel": "04c62480e2de7b3d34fd1095fc74fe757f6aa971"
+      }
+    },
+    {
+      "endUtc": "2026-10-09T23:15:25.3931647Z",
+      "stderrTail": [
+        "[main 2026-10-09T23:13:58.885Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "Unknown channel: agentHostClientByokLm",
+        "(node:68408) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+        "(Use `Code --trace-deprecation ...` to show where the warning was created)"
+      ],
+      "startUtc": "2026-10-09T23:13:55.4957824Z",
+      "name": "int02-vscode-host-F81HC5",
+      "evidence": {
+        "checks": [
+          "cold startup requires confirmation",
+          "cold discovery has no saved record",
+          "candidate preparation succeeds",
+          "cold confirmation leaves client queue unknown",
+          "confirmed native OC2 is ready",
+          "actual kernel resolves OC2",
+          "duplicate confirmation is rejected",
+          "SDK activity is available",
+          "active SDK inspection leaves client queue unknown",
+          "active candidate preparation succeeds",
+          "active replacement succeeds",
+          "replacement binds a new server",
+          "previous target is persisted",
+          "confirmed intent is durable in isolated home",
+          "failed stop exposes error and retires resolved kernel",
+          "failed stop retains process ownership",
+          "unresolved cleanup blocks replacement launch",
+          "explicit stop retry clears retained ownership",
+          "saved intent restarts after explicit cleanup",
+          "external failure candidate can be reviewed",
+          "external readiness failure reports 503 and error",
+          "failed endpoint has no resolved active kernel",
+          "failed confirmed intent remains durable",
+          "old managed endpoint is retired without fallback",
+          "generated managed credentials never reach external endpoint",
+          "previous configured intent survives failed readiness",
+          "previous recovery requires fresh review",
+          "explicit previous recovery starts real OC2",
+          "real external OC2 review succeeds",
+          "unauthenticated real OC2 refuses activation without reusing managed password",
+          "fresh host can review previous intent after auth failure",
+          "fresh host explicitly restores configured OC2",
+          "authenticated external review succeeds",
+          "real external OC2 connects with explicit environment credentials",
+          "external return review succeeds",
+          "external stop-and-switch restores managed OC2",
+          "external process remains alive after switch",
+          "external process remains alive after manager shutdown",
+          ".cmd command prepares in actual IDE",
+          ".cmd starts real OC2 in actual IDE",
+          ".cmd invalid argv leaves active target connected",
+          ".cmd shutdown clears resolved target",
+          ".bat command prepares in actual IDE",
+          ".bat starts real OC2 in actual IDE",
+          ".bat invalid argv leaves active target connected",
+          ".bat shutdown clears resolved target"
+        ],
+        "status": "disconnected",
+        "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-F81HC5\\home",
+        "externalPid": 97188,
+        "externalClosed": true,
+        "observations": {
+          "externalEndpoint": "http://127.0.0.1:21490",
+          "externalHealthStatus": 200,
+          "externalProbes": [
+            {
+              "suffix": "/global/health",
+              "status": 200,
+              "type": "text/html"
+            },
+            {
+              "suffix": "/api/info",
+              "status": 401,
+              "type": "application/json"
+            }
+          ],
+          "externalApply": {
+            "status": 503,
+            "body": {
+              "error": "connection_failed"
+            },
+            "kernel": {
+              "generation": "unknown",
+              "endpoint": null,
+              "epoch": 30,
+              "version": null
+            },
+            "statusAfter": "error",
+            "authPresent": false,
+            "externalClosed": false,
+            "error": "Failed to start OpenCode: External OpenCode is not ready"
+          }
+        }
+      }
+    }
+  ],
+  "retained": "Reusable native drivers, real OC2 binary and current consumer build for remaining R1 acceptance; review at R1 closeout",
+  "unexpectedFailure": "Observer Add-Type initially omitted System.Drawing; explicitly reference System.Windows.Forms and System.Drawing. No installation required.",
+  "observationEndUtc": "2026-10-09T23:16:06.4762831Z",
+  "sourceHashes": {
+    "packages/vscode/dist/webview/assets/index.js": "C98D543D80793963EDC67F0CEA58BB92CAFF4DE30C77FF48F2D4EC1523EDEF7C",
+    "packages/vscode/src/owned-process.ts": "74ADDF6F48F1E20C3A836D7C10106E07D544DF735D463A805255854A4DDAB6D2",
+    "packages/vscode/src/opencode.ts": "9BC9EB9B49BE7100CC8EC908B521C98FDBBE700E8318D991F9ACDF7B90E5F5FD",
+    "packages/vscode/src/SessionEditorPanelProvider.ts": "C90913E3382C49FA04E533DB8AC3ED1343FFBA0DF7782234E7F0DA9EB01149B9",
+    "packages/vscode/src/managed-opencode-process.ts": "03253905E5D687E2365A7F4D0BE24A2E0E838646B7C0643720FB9431BE272EE4"
+  }
+}

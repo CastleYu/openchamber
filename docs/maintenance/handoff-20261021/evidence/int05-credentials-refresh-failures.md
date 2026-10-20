@@ -1,0 +1,9 @@
+- Attempt: run focused Vitest through `bun ./node_modules/vitest/vitest.mjs` in the assigned worktree.
+  - Result: environment failure; `./node_modules/vitest/vitest.mjs` is absent. No test command executed and no dependency download was attempted.
+  - Fallback: locate an already installed Vitest executable/runtime and invoke it without installing dependencies.
+- Attempt: focused Vitest run using the existing `packages/web/node_modules/vitest` binary.
+  - Result: 2 suites failed during module loading because the installed `zod` import is unusable (`z.string` is undefined in `opencode/auth-v2.js:77`); unrelated provider-registry suite passed (4 tests). No tests from the changed suites ran.
+  - Fallback: syntax-check changed JavaScript and run available lint tools; do not install or download dependencies.
+- Validation wrapper issue: PowerShell formatting used an unsupported `.Join()` call on an integer array after the syntax checks; all four `node --check` commands ran before the formatting error. The checks are rerun below with `-join`.
+- Oxlint reports pre-existing findings in `small-model/call.js` (legacy `typeof`/conditional spreads) and `small-model/call.test.js` (file-level module mocks at lines 11 and 19). The changed lines introduce no reported Oxlint findings; xai.test.js is clean.
+- Resolved: the known working existing Vitest entry via bun x --no-install vitest run uses Node and passed all 68 tests in 3 files. The Bun-direct Vitest 4 loader failure is a tool/runtime mismatch; no dependency change was needed.

@@ -1,0 +1,21 @@
+{
+  "report": [
+    {
+      "file": "settings.json",
+      "hasConnection": true,
+      "fixture": false,
+      "importedBinary": true,
+      "mode": "configured",
+      "priorConnection": "none",
+      "restored": true
+    },
+    {
+      "file": "preferences.json",
+      "hasConnection": false,
+      "fixture": false,
+      "importedBinary": false,
+      "priorConnection": "none"
+    }
+  ],
+  "scope": "Only task-created confirmed connection field and its null backup removed; legacy binary setting and all unrelated fields preserved"
+}

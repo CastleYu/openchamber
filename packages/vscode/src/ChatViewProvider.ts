@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { LegacyProviderDocument } from './legacyProviderDocument';
 import { scheduleCachedStateRetries } from './webviewCachedStateRetry';
 import { handleBridgeMessage, type BridgeRequest, type BridgeResponse } from './bridge';
 import { getThemeKindName } from './theme';
@@ -103,6 +104,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   ) {
     this._clearPendingMessages();
     this._view = webviewView;
+    const providers = new LegacyProviderDocument(this._openCodeManager, this._context.subscriptions);
 
     const distUri = vscode.Uri.joinPath(this._extensionUri, 'dist');
 
@@ -130,6 +132,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
 
     webviewView.onDidDispose(() => {
+      providers.dispose();
       for (const [streamId, stream] of this._sseStreams) {
         if (stream.view !== webviewView) continue;
         stream.controller.abort();
@@ -151,6 +154,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage(async (message: (BridgeRequest & { _msgId?: string }) | { type: 'bridge:ack'; _msgId: string }) => {
       if (message.type === 'webview:ready') {
+        providers.reset();
         for (const [streamId, stream] of this._sseStreams) {
           if (stream.view !== webviewView) continue;
           stream.controller.abort();
@@ -202,7 +206,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      const response = await handleBridgeMessage(message, {
+      const response = await providers.handle(message) ?? await handleBridgeMessage(message, {
         manager: this._openCodeManager,
         context: this._context,
       });

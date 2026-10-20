@@ -749,7 +749,11 @@ describe('exact Legacy MCP file owner in VS Code', () => {
     fs.mkdirSync(paths.config, { recursive: true });
     fs.mkdirSync(paths.directory, { recursive: true });
     const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch(req) {
-      return Response.json(new URL(req.url).pathname === '/path' ? paths : { mcp: {} });
+      const route = new URL(req.url).pathname;
+      if (route === '/path') return Response.json(paths);
+      if (route === '/config') return Response.json({ mcp: {} });
+      if (route === '/provider') return Response.json({ all: [], default: {}, connected: [] });
+      return new Response(null, { status: 404 });
     } });
     try {
       const runtime = { generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27', endpoint: server.url.origin, epoch: 1 };

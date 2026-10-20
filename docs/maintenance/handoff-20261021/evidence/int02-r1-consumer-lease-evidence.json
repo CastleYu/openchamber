@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-11",
+  "base": "80bc7fd0f5109b4c4d1a60509e44d7af15f92ab3",
+  "files": {
+    "packages/web/server/index.js": "6a531bc11834ab8c5fb5c9362854844ab8dab22c4eb378af9bd43fd7bc7303c8",
+    "packages/web/server/lib/message-search/indexer.js": "b70be7ad58fe8ab75200a52ab78b3b925b2c2f417944a665513cad7b78892c02",
+    "packages/web/server/lib/message-search/indexer.test.js": "14d6b002a5acfd4b7ab62bc2cec048c8108a805e6196576e59d7ebc16bcc04a9",
+    "packages/web/server/lib/message-search/runtime.js": "c968e20610346a3e522b4597f030eb3cfa05c84babeb64eb5d2f212467c6d1bc",
+    "packages/web/server/lib/message-search/runtime.test.js": "84ea42f24b727f08668db7571a18152e1a759ad950c340c7824c73629d54ad86",
+    "packages/web/server/lib/small-model/runtime-providers.js": "c6f27718db211be081d7d1fc0e419ea3a0186e0db7a71817d4d897552303f240",
+    "packages/web/server/lib/small-model/runtime-providers.test.js": "682adc505c207a79052a8d987f57aa142507061c450f35e1f87c403150b8d81a"
+  },
+  "validation": {
+    "nodeTests": "151 passed / 7 files",
+    "uiQueue": "13 passed / 39 assertions",
+    "webTypeCheck": "pass",
+    "webLint": "pass",
+    "hostSyntax": "four changed production JS files pass",
+    "deadCode": {
+      "files": 2,
+      "exports": 319,
+      "types": 231
+    },
+    "oxlint": {
+      "total": 62,
+      "authored": 0,
+      "method": "Compare all diagnostic label lines with added-line ranges from git diff --unified=0",
+      "files": {
+        "packages/web/server/lib/small-model/runtime-providers.js": 3,
+        "packages/web/server/index.js": 59
+      }
+    }
+  },
+  "logs": [
+    "int02-r1-consumer-final-tests.log",
+    "int02-r1-consumer-ui-queue.log",
+    "int02-r1-consumer-types.log",
+    "int02-r1-consumer-lint.log",
+    "int02-r1-consumer-dead-code.log",
+    "int02-r1-provider-baseline-red.log",
+    "int02-r1-search-red.log"
+  ],
+  "weeklyRemainingPercent": 87,
+  "limits": [
+    "Search uses module/SQLite fake-client contracts; provider includes two real HTTP loopback tests.",
+    "No real model, exact Legacy conversation, real CAgent API or packaged-host acceptance.",
+    "R1 remains open for clause reconciliation. No remote or Release mutation."
+  ],
+  "cleanup": {
+    "removed": [
+      "cdee/openchamber/artifacts/r1-consumer-closeout.cjs"
+    ],
+    "retained": "Compact logs and fingerprints retained for R1 closeout. Tests dispose temporary SQLite homes and close loopback servers in their own cleanup. This checkpoint helper is removed after successful execution."
+  }
+}

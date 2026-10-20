@@ -1,0 +1,21 @@
+{
+  "candidate": "f7d63e7fb",
+  "command": "C:\\nvm4w\\nodejs\\node.exe packages/web/node_modules/vitest/vitest.mjs run --config packages/web/vitest.config.ts --reporter dot packages/web/server/lib/opencode packages/web/server/lib/message-queue packages/web/server/lib/event-stream packages/web/server/lib/notifications packages/web/server/lib/openchamber-sessions",
+  "exitCode": 1,
+  "testFiles": {
+    "failed": 1,
+    "passed": 104,
+    "total": 105
+  },
+  "tests": {
+    "failed": 1,
+    "passed": 1440,
+    "skipped": 2,
+    "total": 1443
+  },
+  "failures": [
+    "packages/web/server/lib/opencode/network-runtime.test.js > OpenCode network runtime > rejects a stale ready result after a same-family round trip"
+  ],
+  "skipReasons": "Not emitted by the dot reporter.",
+  "environmentCommandFailures": []
+}

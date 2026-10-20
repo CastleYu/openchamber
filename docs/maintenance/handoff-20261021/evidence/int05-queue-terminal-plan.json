@@ -1,0 +1,32 @@
+{
+  "scope": "Legacy existing queue exact message correlation",
+  "risks": [
+    "persisted optional private messageID",
+    "same-owner read reconciliation",
+    "result write failure",
+    "lost HTTP response"
+  ],
+  "publicContract": "unchanged attempt projection",
+  "evidence": "official executable controlled four cases, five model calls, idle and ID ordering verified",
+  "boundaries": [
+    "no automatic resend",
+    "two-message tail is positive evidence only",
+    "old records without messageID remain unknown",
+    "command synthetic-parent and compaction remain unresolved unless exact match exists"
+  ],
+  "validation": [
+    "queue Node Vitest suites",
+    "Web typecheck",
+    "syntax and ESLint/Oxlint",
+    "cached Knip review"
+  ],
+  "consultation": "Astra reviewed ID ordering, intermediate tool completion and post-completion errors",
+  "runtimes": {
+    "web": "owning queue implementation",
+    "electron": "same in-process Web backend",
+    "hostedMobile": "selected host backend",
+    "capacitor": "selected host backend",
+    "vscode": "separate foreground queue; pending"
+  },
+  "readCost": "Existing idle check, one bounded tail, at most one exact lookup per eligible item; no new polling owner"
+}

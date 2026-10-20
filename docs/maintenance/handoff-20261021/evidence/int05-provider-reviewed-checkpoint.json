@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-12T01:47:53.813Z",
+  "status": "progress; INT-05/R3 open",
+  "tests": {
+    "files": 10,
+    "passed": 200,
+    "runner": "root-installed Vitest 5.0.3 with Web config"
+  },
+  "staticChecks": {
+    "eslint": "passed on ten changed JS files",
+    "oxlint": "zero diagnostics on ten changed JS files",
+    "webTypes": "passed",
+    "deadCode": "completed; existing backlog reviewed; private staged adapter has no production registration"
+  },
+  "weeklyRemainingPercent": 54,
+  "files": {
+    "packages/web/server/lib/opencode/kernel-operations.js": "3661c38855db151b0fedbdf9b93e09ebb3f8e297159f5e6a6b607da98e1c32e4",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "891cda3c1e86239be77558be0ebe35dc37db2095f2936f3d68b193586095bd4f",
+    "packages/web/server/lib/opencode/kernel-operations.test.js": "f34d6bb82673417e6c8971cdd1f81f64e05b18b7d1e2aff13f6f7e75d7ca9e47",
+    "packages/web/server/lib/opencode/legacy-provider-config.js": "3c27293afd76531a8970a844eb446b8b7e5fb88b6b46ad665f12f5f399aa333e",
+    "packages/web/server/lib/opencode/legacy-provider-config.d.ts": "fc7b05f7d18753538b304d92d5a99851215078a7f17b5df7f8f299e114f07d7b",
+    "packages/web/server/lib/opencode/legacy-provider-config.test.js": "80dcf64140cb703c6e9c14b45f550c5a792292d6c73f4b4d10196a783fde8aa2",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.js": "850d3d8b75299c6662d36ff1bb9096146c1fa9194a53c27ae9ba1993667ec9e5",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.d.ts": "d8f7d23b56aa40148d4f5349d6a09edb2f8f9fb5d5925786481c522fbfd314e2",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.test.js": "57022c267bc9c33478cc478b454af153314bf0e2c0897806d6031630126df0da",
+    "packages/web/server/lib/opencode/legacy-provider-owner.test.js": "af539403b96987d2b2cc623fb8caef43beff7124e3eccdd35f0867ff8347dc30",
+    "packages/web/server/lib/opencode/legacy-provider-http.js": "f86a3aa8d7f0a2ca6d24dc45e3f809ea5a38fabc3261c01c9e3b350c4ef04c32",
+    "packages/web/server/lib/opencode/legacy-provider-http.test.js": "396e152eac70483bb6b36c829b1c481c7d282989e48c22ab19e6dece51b96d4f",
+    "packages/web/server/lib/opencode/legacy-provider-http-auth.test.js": "593079d61af121f2fcc4d49ce783bec25623cdaca9ae55df1c7a23392225dd59"
+  },
+  "evidence": [
+    "artifacts/int05-provider-reviewed-tests.log",
+    "artifacts/int05-provider-reviewed-eslint.log",
+    "artifacts/int05-provider-reviewed-oxlint.log",
+    "artifacts/int05-provider-reviewed-types.log",
+    "artifacts/int05-provider-reviewed-dead-code.log",
+    "artifacts/int05-provider-cache-live-evidence.json",
+    "artifacts/int05-provider-http-failures.md",
+    "artifacts/int05-provider-deferred-failures.md"
+  ],
+  "pending": [
+    "production Web/VS Code provider adapters and UI as a complete workflow",
+    "real OAuth provider and native host binding acceptance",
+    "unattended outcome persistence",
+    "R4 application acceptance"
+  ],
+  "limits": [
+    "Synthetic SDK integration is not real provider acceptance",
+    "Exact binary caching experiment does not prove the full production workflow",
+    "Production private provider routes remain unregistered"
+  ],
+  "releaseChanged": false,
+  "dependenciesAdded": false,
+  "downloads": false
+}

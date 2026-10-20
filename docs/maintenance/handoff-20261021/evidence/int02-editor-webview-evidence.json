@@ -1,0 +1,652 @@
+{
+  "baseCommit": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+  "stage": "R1 native editor recovery; R1 remains open",
+  "weeklyRemainingPercent": 36,
+  "accepted": {
+    "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+    "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+    "result": {
+      "type": "test:result",
+      "success": true,
+      "checks": [
+        "production React webview mounted",
+        "cold editor exposes connection candidate",
+        "runtime bridge responds",
+        "cold runtime is not ready",
+        "candidate can be confirmed",
+        "explicit review is shown",
+        "review requires acknowledgement",
+        "review acknowledgement enables switch",
+        "host reports connected",
+        "runtime bridge responds",
+        "real OC2 descriptor admitted",
+        "cold recovery leaves after successful initialization",
+        "production bridge creates session",
+        "real session has identity",
+        "production bridge reads session",
+        "real session appears in editor switcher",
+        "real session opens in editor",
+        "native editor selection becomes composer attachment",
+        "test session removed",
+        "failed-target preparation uses real bridge",
+        "unreachable target fails explicitly",
+        "failed editor exposes previous connection recovery",
+        "runtime bridge responds",
+        "failed runtime stays unavailable",
+        "previous connection requires review",
+        "previous recovery requires acknowledgement",
+        "recovery acknowledgement enables switch",
+        "previous configured connection restores editor",
+        "runtime bridge responds",
+        "recovered real OC2 descriptor admitted"
+      ]
+    }
+  },
+  "sourceFiles": {
+    "packages/ui/src/apps/VSCodeApp.tsx": "1dff6d435d1cd1717be4ff167c3862eb320b816c0062c0f71b53d61f3b6b15f9",
+    "packages/vscode/src/SessionEditorPanelProvider.ts": "c90913e3382c49fa04e533db8ac3ed1343ffba0df7782234e7f0da9eb01149b9",
+    "packages/vscode/dist/webview/assets/index.js": "c98d543d80793963edc67f0cea58bb92caff4de30c77ff48f2d4ec1523edef7c"
+  },
+  "checks": {
+    "uiTypes": "passed",
+    "fileEslint": "passed",
+    "antiSlop": "14 inherited findings across two source files, zero authored findings",
+    "vscodeTypes": "passed",
+    "panelTests": {
+      "pass": 11,
+      "fail": 0
+    },
+    "nativeShutdown": "no disposed-webview replies",
+    "deadCode": "non-blocking inventory inspected; no recovery/source finding",
+    "vscodeBuild": "passed",
+    "componentTests": {
+      "pass": 5,
+      "fail": 0,
+      "assertions": 139
+    }
+  },
+  "runs": [
+    {
+      "name": "int02-editor-webview-RLsXVF",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "error": "Activating extension 'openchamber.editor-journey' failed: Cannot find module './impl/format'\nRequire stack:\n- c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-RLsXVF\\extension\\main.cjs\n- d:\\Code\\ide\\VSCode\\VSCode\\a44adf7f53\\resources\\app\\out\\vs\\workbench\\api\\node\\extensionHostProcess.js."
+      }
+    },
+    {
+      "name": "int02-editor-webview-ybVYLG",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "error": "Activating extension 'openchamber.editor-journey' failed: Cannot find module 'jsonc-parser'\nRequire stack:\n- c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-ybVYLG\\extension\\main.cjs\n- d:\\Code\\ide\\VSCode\\VSCode\\a44adf7f53\\resources\\app\\out\\vs\\workbench\\api\\node\\extensionHostProcess.js."
+      }
+    },
+    {
+      "name": "int02-editor-webview-JH4JVA",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": false,
+          "checks": [],
+          "error": "Error: production React webview mounted",
+          "body": "",
+          "controls": []
+        },
+        "error": "Error: production React webview mounted"
+      }
+    },
+    {
+      "name": "int02-editor-webview-lBOxdG",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": false,
+          "checks": [],
+          "error": "Error: production React webview mounted",
+          "diagnostics": [],
+          "body": "",
+          "controls": []
+        },
+        "error": "Error: production React webview mounted"
+      }
+    },
+    {
+      "name": "int02-editor-webview-AGKgWS",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": false,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session"
+          ],
+          "error": "Error: real session has identity",
+          "diagnostics": [
+            "Error: command 'openchamber.setActiveSession' not found"
+          ],
+          "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nLoading...\nLoading...",
+          "controls": [
+            {
+              "text": "Chat",
+              "aria": "Open session switcher"
+            },
+            {
+              "text": "",
+              "aria": "MCP servers"
+            },
+            {
+              "text": "",
+              "aria": "Rate limits"
+            },
+            {
+              "text": "Explore the codebase",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "Catch me up",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "Weigh my options",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "Start feature planning",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "Debug an issue",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "Review my changes",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "Remove"
+            },
+            {
+              "text": "",
+              "aria": "Add a starter"
+            },
+            {
+              "text": "",
+              "aria": "Attach files"
+            },
+            {
+              "text": "",
+              "aria": "Toggle focus mode"
+            },
+            {
+              "text": "",
+              "aria": "Permissions: ask every time"
+            },
+            {
+              "text": "",
+              "aria": "Send message"
+            }
+          ]
+        },
+        "error": "Error: real session has identity"
+      }
+    },
+    {
+      "name": "int02-editor-webview-TU8kMA",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": false,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session",
+            "real session has identity",
+            "production bridge reads session",
+            "test session removed",
+            "failed-target preparation uses real bridge",
+            "unreachable target fails explicitly",
+            "failed editor exposes previous connection recovery",
+            "runtime bridge responds",
+            "failed runtime stays unavailable"
+          ],
+          "error": "Error: previous connection requires review",
+          "diagnostics": [],
+          "body": "Startup failed\n\nOpenChamber is reachable, but OpenCode is not ready. Check OpenCode on the server, then retry.\n\nOpenCode compatibility\nConnection mode\nauto-detect\noc1\noc2\nlegacy 1.2.27\nOpenCode connection\nConnection source\nexternal server\ncustom command\nserver path\nexecutable path\nbundled cli\nAbsolute executable path\n\nCould not inspect the connection. Current settings were kept.\n\nConfirm and connect\nconfirm and connect\nretry\nreturn to previous connection\nretry",
+          "controls": [
+            {
+              "text": "",
+              "aria": "More information"
+            },
+            {
+              "text": "Auto-detect",
+              "aria": null
+            },
+            {
+              "text": "OC1",
+              "aria": null
+            },
+            {
+              "text": "OC2",
+              "aria": null
+            },
+            {
+              "text": "Legacy 1.2.27",
+              "aria": null
+            },
+            {
+              "text": "",
+              "aria": "More information"
+            },
+            {
+              "text": "External server",
+              "aria": null
+            },
+            {
+              "text": "Custom command",
+              "aria": null
+            },
+            {
+              "text": "Server PATH",
+              "aria": null
+            },
+            {
+              "text": "Executable path",
+              "aria": null
+            },
+            {
+              "text": "Bundled CLI",
+              "aria": null
+            },
+            {
+              "text": "Confirm and connect",
+              "aria": null
+            },
+            {
+              "text": "Retry",
+              "aria": null
+            },
+            {
+              "text": "Return to previous connection",
+              "aria": null
+            },
+            {
+              "text": "Retry",
+              "aria": null
+            }
+          ]
+        },
+        "error": "Error: previous connection requires review"
+      }
+    },
+    {
+      "name": "int02-editor-webview-lEOEg0",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": true,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session",
+            "real session has identity",
+            "production bridge reads session",
+            "test session removed",
+            "failed-target preparation uses real bridge",
+            "unreachable target fails explicitly",
+            "failed editor exposes previous connection recovery",
+            "runtime bridge responds",
+            "failed runtime stays unavailable",
+            "previous connection requires review",
+            "previous recovery requires acknowledgement",
+            "recovery acknowledgement enables switch",
+            "previous configured connection restores editor",
+            "runtime bridge responds",
+            "recovered real OC2 descriptor admitted"
+          ]
+        }
+      }
+    },
+    {
+      "name": "int02-editor-webview-QPIavd",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": true,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session",
+            "real session has identity",
+            "production bridge reads session",
+            "real session appears in editor switcher",
+            "real session opens in editor",
+            "native editor selection becomes composer attachment",
+            "test session removed",
+            "failed-target preparation uses real bridge",
+            "unreachable target fails explicitly",
+            "failed editor exposes previous connection recovery",
+            "runtime bridge responds",
+            "failed runtime stays unavailable",
+            "previous connection requires review",
+            "previous recovery requires acknowledgement",
+            "recovery acknowledgement enables switch",
+            "previous configured connection restores editor",
+            "runtime bridge responds",
+            "recovered real OC2 descriptor admitted"
+          ]
+        }
+      }
+    },
+    {
+      "name": "int02-editor-webview-Sk0eX4",
+      "evidence": {
+        "source": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+        "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+        "result": {
+          "type": "test:result",
+          "success": true,
+          "checks": [
+            "production React webview mounted",
+            "cold editor exposes connection candidate",
+            "runtime bridge responds",
+            "cold runtime is not ready",
+            "candidate can be confirmed",
+            "explicit review is shown",
+            "review requires acknowledgement",
+            "review acknowledgement enables switch",
+            "host reports connected",
+            "runtime bridge responds",
+            "real OC2 descriptor admitted",
+            "cold recovery leaves after successful initialization",
+            "production bridge creates session",
+            "real session has identity",
+            "production bridge reads session",
+            "real session appears in editor switcher",
+            "real session opens in editor",
+            "native editor selection becomes composer attachment",
+            "test session removed",
+            "failed-target preparation uses real bridge",
+            "unreachable target fails explicitly",
+            "failed editor exposes previous connection recovery",
+            "runtime bridge responds",
+            "failed runtime stays unavailable",
+            "previous connection requires review",
+            "previous recovery requires acknowledgement",
+            "recovery acknowledgement enables switch",
+            "previous configured connection restores editor",
+            "runtime bridge responds",
+            "recovered real OC2 descriptor admitted"
+          ]
+        }
+      }
+    }
+  ],
+  "compactRunLogs": [
+    {
+      "stderrTail": [
+        "\tat c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-RLsXVF\\extension\\main.cjs:9623:17",
+        "\tat node_modules/.bun/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/umd/main.js (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-RLsXVF\\extension\\main.cjs:9628:7)",
+        "\tat __require (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-RLsXVF\\extension\\main.cjs:11:50)",
+        "\tat Object.<anonymous> (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-RLsXVF\\extension\\main.cjs:38162:35)",
+        "\tat Module._compile (node:internal/modules/cjs/loader:1879:14)",
+        "\tat Object..js (node:internal/modules/cjs/loader:2012:10)",
+        "\tat Module.load (node:internal/modules/cjs/loader:1601:32)",
+        "\tat node:internal/modules/cjs/loader:1403:12",
+        "\tat Module.<anonymous> (node:electron/js2c/node_init:2:18159)",
+        "\tat i._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:851:6673)",
+        "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:682:29304)",
+        "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:674:26756)",
+        "\tat wrapModuleLoad (node:internal/modules/cjs/loader:262:19)",
+        "\tat Module.require (node:internal/modules/cjs/loader:1624:12)",
+        "\tat require (node:internal/modules/helpers:153:16)",
+        "\tat FR._doLoadModule (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:685:1487)"
+      ],
+      "run": "int02-editor-webview-RLsXVF"
+    },
+    {
+      "stderrTail": [
+        "\tat wrapModuleLoad (node:internal/modules/cjs/loader:262:19)",
+        "\tat Module.require (node:internal/modules/cjs/loader:1624:12)",
+        "\tat require (node:internal/modules/helpers:153:16)",
+        "\tat Object.<anonymous> (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-ybVYLG\\extension\\main.cjs:38014:27)",
+        "\tat Module._compile (node:internal/modules/cjs/loader:1879:14)",
+        "\tat Object..js (node:internal/modules/cjs/loader:2012:10)",
+        "\tat Module.load (node:internal/modules/cjs/loader:1601:32)",
+        "\tat node:internal/modules/cjs/loader:1403:12",
+        "\tat Module.<anonymous> (node:electron/js2c/node_init:2:18159)",
+        "\tat i._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:851:6673)",
+        "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:682:29304)",
+        "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:674:26756)",
+        "\tat wrapModuleLoad (node:internal/modules/cjs/loader:262:19)",
+        "\tat Module.require (node:internal/modules/cjs/loader:1624:12)",
+        "\tat require (node:internal/modules/helpers:153:16)",
+        "\tat FR._doLoadModule (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:685:1487)"
+      ],
+      "run": "int02-editor-webview-ybVYLG"
+    },
+    {
+      "stderrTail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "Unknown channel: agentHostClientByokLm",
+        "[main 2026-10-09T22:52:31.036Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "rejected promise not handled within 1 second: Error: command 'openchamber.internal.inlineCommentsSync' not found",
+        "stack trace: Error: command 'openchamber.internal.inlineCommentsSync' not found",
+        "    at Ggt._tryExecuteCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4832)",
+        "    at Ggt.executeCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4732)",
+        "command 'openchamber.internal.inlineCommentsSync' not found",
+        "rejected promise not handled within 1 second: Error: command 'openchamber.internal.settingsSynced' not found",
+        "stack trace: Error: command 'openchamber.internal.settingsSynced' not found",
+        "    at Ggt._tryExecuteCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4832)",
+        "    at Ggt.executeCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4732)",
+        "command 'openchamber.internal.settingsSynced' not found",
+        "Error: Error: production React webview mounted",
+        "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-JH4JVA\\suite.cjs:1:3658)"
+      ],
+      "run": "int02-editor-webview-JH4JVA"
+    },
+    {
+      "stderrTail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "Unknown channel: agentHostClientByokLm",
+        "[main 2026-10-09T22:53:34.053Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "rejected promise not handled within 1 second: Error: command 'openchamber.internal.inlineCommentsSync' not found",
+        "stack trace: Error: command 'openchamber.internal.inlineCommentsSync' not found",
+        "    at Ggt._tryExecuteCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4832)",
+        "    at Ggt.executeCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4732)",
+        "command 'openchamber.internal.inlineCommentsSync' not found",
+        "rejected promise not handled within 1 second: Error: command 'openchamber.internal.settingsSynced' not found",
+        "stack trace: Error: command 'openchamber.internal.settingsSynced' not found",
+        "    at Ggt._tryExecuteCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4832)",
+        "    at Ggt.executeCommand (vscode-file://vscode-app/d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/workbench.desktop.main.js:2003:4732)",
+        "command 'openchamber.internal.settingsSynced' not found",
+        "Error: Error: production React webview mounted",
+        "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-lBOxdG\\suite.cjs:1:4020)"
+      ],
+      "run": "int02-editor-webview-lBOxdG"
+    },
+    {
+      "stderrTail": [
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-AGKgWS\\extension\\main.cjs:54698:19)",
+        "\tat process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-AGKgWS\\extension\\main.cjs:54698:19)",
+        "An unknown error occurred. Please consult the log for more details.",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-AGKgWS\\extension\\main.cjs:54698:19)",
+        "Error: Error: real session has identity",
+        "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-AGKgWS\\suite.cjs:1:4020)"
+      ],
+      "run": "int02-editor-webview-AGKgWS"
+    },
+    {
+      "stderrTail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "Unknown channel: agentHostClientByokLm",
+        "[main 2026-10-09T22:59:42.934Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "(node:32912) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+        "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+        "[SSE] Socket error detected, attempting reconnect...",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-TU8kMA\\extension\\main.cjs:54698:19)",
+        "An unknown error occurred. Please consult the log for more details.",
+        "Error: Error: previous connection requires review",
+        "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-TU8kMA\\suite.cjs:1:5611)"
+      ],
+      "run": "int02-editor-webview-TU8kMA"
+    },
+    {
+      "stderrTail": [
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-lEOEg0\\extension\\main.cjs:54698:19)",
+        "\tat process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-lEOEg0\\extension\\main.cjs:54698:19)",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-lEOEg0\\extension\\main.cjs:54698:19)"
+      ],
+      "run": "int02-editor-webview-lEOEg0"
+    },
+    {
+      "stderrTail": [
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-QPIavd\\extension\\main.cjs:54698:19)",
+        "\tat process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-QPIavd\\extension\\main.cjs:54698:19)",
+        "rejected promise not handled within 1 second: Error: Webview is disposed",
+        "stack trace: Error: Webview is disposed",
+        "\tat lF.assertNotDisposed (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:115764)",
+        "\tat get webview (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:672:114725)",
+        "\tat Np.value (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-QPIavd\\extension\\main.cjs:54698:19)"
+      ],
+      "run": "int02-editor-webview-QPIavd"
+    },
+    {
+      "stderrTail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "[main 2026-10-09T23:05:49.071Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "Unknown channel: agentHostClientByokLm",
+        "(node:64652) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+        "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+        "[SSE] Socket error detected, attempting reconnect...",
+        "[SSE] Reconnect failed Error: OpenCode connection changed during request",
+        "\tat Object.assertCurrent (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-Sk0eX4\\extension\\main.cjs:37077:13)",
+        "\tat connect (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-Sk0eX4\\extension\\main.cjs:54417:14)",
+        "\tat c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-editor-webview-Sk0eX4\\extension\\main.cjs:54463:38"
+      ],
+      "run": "int02-editor-webview-Sk0eX4"
+    }
+  ],
+  "weeklyRemainingPercentAtCloseout": 35,
+  "checkpointCommit": "eec8fe09a"
+}

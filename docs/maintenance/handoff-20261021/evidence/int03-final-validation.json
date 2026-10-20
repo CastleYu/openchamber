@@ -1,0 +1,54 @@
+{
+  "at": "2026-10-11T16:49:30.489Z",
+  "results": [
+    {
+      "name": "focused",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-focused.log",
+      "summary": [
+        " Test Files  3 passed (3)",
+        "      Tests  81 passed (81)",
+        "   Duration  1.40s (transform 489ms, setup 0ms, import 1.32s, tests 852ms, environment 0ms)"
+      ]
+    },
+    {
+      "name": "web-types",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-web-types.log",
+      "summary": []
+    },
+    {
+      "name": "web-lint",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-web-lint.log",
+      "summary": []
+    },
+    {
+      "name": "dead-code",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-dead-code.log",
+      "summary": [
+        "LinearApiError                             class     packages/web/server/lib/linear/client.js:17:14                     ",
+        "UNANSWERED_RECHECK_DELAYS_MS                         packages/ui/src/components/chat/sessionErrorNoticeState.ts:43:14   ",
+        "ChatErrorBoundaryView                      class     packages/ui/src/components/chat/ChatErrorBoundary.tsx:31:14        ",
+        "structuredErrorText                        function  packages/ui/src/lib/opencode/projection.ts:121:17                  ",
+        "Unused exported types (231)",
+        "LegacyMessageError                       type       packages/ui/src/lib/opencode/model.ts:181:13                        ",
+        "MessageErrorDescription                  type       packages/ui/src/lib/opencode/model.ts:200:13                        ",
+        "ToolStateError                           type       packages/ui/src/lib/opencode/model.ts:429:13                        "
+      ]
+    },
+    {
+      "name": "syntax",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-syntax.log",
+      "summary": []
+    },
+    {
+      "name": "anti-slop",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-final-anti-slop.log",
+      "summary": []
+    }
+  ]
+}

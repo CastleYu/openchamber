@@ -1,0 +1,37 @@
+{
+  "baseline": "f9f4cad2d3547771b5eace3c5f6ed88f7af713b2",
+  "checks": {
+    "React": 0,
+    "Types": 0,
+    "Lint": 0,
+    "Anti": 0,
+    "Dead": 0
+  },
+  "builds": {
+    "Web": 0,
+    "VSCode": 0,
+    "scopeTextPresentInVSCode": true
+  },
+  "react": {
+    "tests": 4,
+    "assertions": 79
+  },
+  "real": {
+    "version": "2.0.20",
+    "hostChecks": 24,
+    "reactTests": 1,
+    "assertions": 37,
+    "sourceFingerprints": "int02-ui-switch-live-evidence.json"
+  },
+  "locales": "int02-ui-switch-locales.json",
+  "cleanup": "int02-ui-switch-cleanup.json",
+  "limits": [
+    "No model conversation",
+    "No native visual or packaged runtime acceptance",
+    "VS Code manager remains unsupported",
+    "No real CAgent environment or Legacy 1.2.27 acceptance",
+    "No remote publication changed"
+  ],
+  "next": "R1 peer coordination and VS Code connection manager adoption",
+  "weeklyRemainingPercent": 40
+}

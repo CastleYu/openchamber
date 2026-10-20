@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-11T14:28:31.943Z",
+  "exeSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "create-owned-metadata",
+    "title-and-merge-patch",
+    "no-unsupported-wire-metadata",
+    "metadata-restart-roundtrip",
+    "conditional-write-serialization",
+    "create-selection-refusal",
+    "async-acceptance-to-completed-history",
+    "permission-once-through-host",
+    "question-reply-through-host",
+    "question-reject-through-host",
+    "stop-and-aborted-history",
+    "upstream-stream-observed-not-host-ui-acceptance"
+  ],
+  "passed": 12,
+  "wireCalls": 72,
+  "modelCalls": 10,
+  "events": 167,
+  "scope": "Production host kernel against exact executable; controlled model. Raw upstream SSE observation and permission fixture setup; no shared UI, proxy or VS Code acceptance.",
+  "cleanup": "isolated process and home removed in finally"
+}

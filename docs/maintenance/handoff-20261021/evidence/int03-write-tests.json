@@ -1,0 +1,1432 @@
+{
+  "numTotalTestSuites": 21,
+  "numPassedTestSuites": 21,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 111,
+  "numPassedTests": 111,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791728901437,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore round trips merged, deleted, and replaced metadata across restarts",
+          "status": "passed",
+          "title": "round trips merged, deleted, and replaced metadata across restarts",
+          "duration": 20.342599999999948,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore isolates scopes and leaves OC2 and root metadata files untouched",
+          "status": "passed",
+          "title": "isolates scopes and leaves OC2 and root metadata files untouched",
+          "duration": 7.8799000000000206,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore preserves both concurrent cold patches",
+          "status": "passed",
+          "title": "preserves both concurrent cold patches",
+          "duration": 6.415399999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore throws on malformed files and read failures instead of returning empty",
+          "status": "passed",
+          "title": "throws on malformed files and read failures instead of returning empty",
+          "duration": 4.700800000000072,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore keeps disk and memory on write or rename failure and cleans temporary files",
+          "status": "passed",
+          "title": "keeps disk and memory on write or rename failure and cleans temporary files",
+          "duration": 10.826999999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createLegacyMetadataStore"
+          ],
+          "fullName": "createLegacyMetadataStore does not rename or update memory after retirement check fails before commit",
+          "status": "passed",
+          "title": "does not rename or update memory after retirement check fails before commit",
+          "duration": 14.094600000000014,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728902578,
+      "endTime": 1791728902642.0945,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/openchamber-sessions/legacy-metadata-store.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "session service project directory resolution"
+          ],
+          "fullName": "session service project directory resolution resolves a registered project and fails closed for unknown or unreadable projects",
+          "status": "passed",
+          "title": "resolves a registered project and fails closed for unknown or unreadable projects",
+          "duration": 6.946800000000167,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts creates and dispatches with oc1 selection and the captured runtime",
+          "status": "passed",
+          "title": "creates and dispatches with oc1 selection and the captured runtime",
+          "duration": 69.7487000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts creates and dispatches with oc2 selection and the captured runtime",
+          "status": "passed",
+          "title": "creates and dispatches with oc2 selection and the captured runtime",
+          "duration": 14.745699999999943,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts keeps OC1 archive response and per-session partial failures",
+          "status": "passed",
+          "title": "keeps OC1 archive response and per-session partial failures",
+          "duration": 13.157600000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts uses OC2 local archive and unarchive response shapes",
+          "status": "passed",
+          "title": "uses OC2 local archive and unarchive response shapes",
+          "duration": 22.28320000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts keeps OC2 metadata route payload and full-state response",
+          "status": "passed",
+          "title": "keeps OC2 metadata route payload and full-state response",
+          "duration": 13.765099999999848,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts keeps new OC2 routes unavailable on OC1",
+          "status": "passed",
+          "title": "keeps new OC2 routes unavailable on OC1",
+          "duration": 27.29950000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts rejects stale OC2 archive before persisting after deferred work",
+          "status": "passed",
+          "title": "rejects stale OC2 archive before persisting after deferred work",
+          "duration": 10.065000000000055,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts rejects invalid selection before creating a worktree or session",
+          "status": "passed",
+          "title": "rejects invalid selection before creating a worktree or session",
+          "duration": 12.051899999999932,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts resolves an OC2 Auto default before goal or prompt mutation",
+          "status": "passed",
+          "title": "resolves an OC2 Auto default before goal or prompt mutation",
+          "duration": 9.940700000000106,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts forks with before-message selection and reports the fork on prompt failure",
+          "status": "passed",
+          "title": "forks with before-message selection and reports the fork on prompt failure",
+          "duration": 10.740199999999959,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts repairs an OC2 fork goal before dispatching the prompt",
+          "status": "passed",
+          "title": "repairs an OC2 fork goal before dispatching the prompt",
+          "duration": 26.16379999999981,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts removes a new OC2 fork when inheritance fails before dispatch",
+          "status": "passed",
+          "title": "removes a new OC2 fork when inheritance fails before dispatch",
+          "duration": 7.858999999999924,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts reports a partial fork when inheritance rollback returns false",
+          "status": "passed",
+          "title": "reports a partial fork when inheritance rollback returns false",
+          "duration": 7.956699999999955,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts reports a partial fork when inheritance rollback returns error",
+          "status": "passed",
+          "title": "reports a partial fork when inheritance rollback returns error",
+          "duration": 8.643199999999979,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts preserves the OC1 fork path without reading OC2 objective files",
+          "status": "passed",
+          "title": "preserves the OC1 fork path without reading OC2 objective files",
+          "duration": 8.885699999999815,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts stops an OC2 fork after a epoch switch during objective read",
+          "status": "passed",
+          "title": "stops an OC2 fork after a epoch switch during objective read",
+          "duration": 7.598299999999881,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts stops an OC2 fork after a profile switch during objective read",
+          "status": "passed",
+          "title": "stops an OC2 fork after a profile switch during objective read",
+          "duration": 8.104199999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenChamber session HTTP contracts"
+          ],
+          "fullName": "OpenChamber session HTTP contracts stops a real goal setup after a late runtime switch before writing session metadata",
+          "status": "passed",
+          "title": "stops a real goal setup after a late runtime switch before writing session metadata",
+          "duration": 11.445799999999963,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728903703,
+      "endTime": 1791728904000.4458,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/openchamber-sessions/routes.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "mergeMetadataPatch"
+          ],
+          "fullName": "mergeMetadataPatch merges nested objects key by key instead of replacing them",
+          "status": "passed",
+          "title": "merges nested objects key by key instead of replacing them",
+          "duration": 12.729600000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "mergeMetadataPatch"
+          ],
+          "fullName": "mergeMetadataPatch deletes a key when its patch value is null",
+          "status": "passed",
+          "title": "deletes a key when its patch value is null",
+          "duration": 1.6946999999999548,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "mergeMetadataPatch"
+          ],
+          "fullName": "mergeMetadataPatch replaces arrays and scalars rather than merging into them",
+          "status": "passed",
+          "title": "replaces arrays and scalars rather than merging into them",
+          "duration": 1.3134000000000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "mergeMetadataPatch"
+          ],
+          "fullName": "mergeMetadataPatch treats a missing or non-object base as empty",
+          "status": "passed",
+          "title": "treats a missing or non-object base as empty",
+          "duration": 1.8712999999999624,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore reads metadata from OpenCode, and a session OpenCode does not know as empty",
+          "status": "passed",
+          "title": "reads metadata from OpenCode, and a session OpenCode does not know as empty",
+          "duration": 11.410300000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore surfaces a failed read instead of answering empty",
+          "status": "passed",
+          "title": "surfaces a failed read instead of answering empty",
+          "duration": 3.060799999999972,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore merges a patch onto the OpenCode record and writes the whole result back",
+          "status": "passed",
+          "title": "merges a patch onto the OpenCode record and writes the whole result back",
+          "duration": 3.765899999999988,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore keeps both of two concurrent patches to the same session",
+          "status": "passed",
+          "title": "keeps both of two concurrent patches to the same session",
+          "duration": 4.058700000000044,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore writes nothing when the current record cannot be read or the session is gone",
+          "status": "passed",
+          "title": "writes nothing when the current record cannot be read or the session is gone",
+          "duration": 4.312799999999925,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore"
+          ],
+          "fullName": "createSessionMetadataStore rejects a missing id or a non-object patch",
+          "status": "passed",
+          "title": "rejects a missing id or a non-object patch",
+          "duration": 2.4230999999999767,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json overlays a legacy entry until first read prepares that session",
+          "status": "passed",
+          "title": "overlays a legacy entry until first read prepares that session",
+          "duration": 4.3740999999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json migrates a legacy entry on its first write, merged with the patch",
+          "status": "passed",
+          "title": "migrates a legacy entry on its first write, merged with the patch",
+          "duration": 6.870800000000031,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json pushes every entry, drops sessions OpenCode no longer has, and retires the file",
+          "status": "passed",
+          "title": "pushes every entry, drops sessions OpenCode no longer has, and retires the file",
+          "duration": 7.372100000000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json keeps an entry OpenCode could not take for the next sweep",
+          "status": "passed",
+          "title": "keeps an entry OpenCode could not take for the next sweep",
+          "duration": 6.28690000000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json blocks only a session whose legacy file could not retire durably",
+          "status": "passed",
+          "title": "blocks only a session whose legacy file could not retire durably",
+          "duration": 9.267399999999952,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json does not treat an unmovable malformed legacy file as empty state",
+          "status": "passed",
+          "title": "does not treat an unmovable malformed legacy file as empty state",
+          "duration": 3.95270000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json lets another legacy session migrate when one OpenCode write fails",
+          "status": "passed",
+          "title": "lets another legacy session migrate when one OpenCode write fails",
+          "duration": 5.952499999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json does not push a legacy entry over a write that migrated it first",
+          "status": "passed",
+          "title": "does not push a legacy entry over a write that migrated it first",
+          "duration": 4.322000000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json moves a malformed file aside and has nothing to migrate",
+          "status": "passed",
+          "title": "moves a malformed file aside and has nothing to migrate",
+          "duration": 4.2912000000000035,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createSessionMetadataStore",
+            "legacy sessions-metadata.json"
+          ],
+          "fullName": "createSessionMetadataStore legacy sessions-metadata.json refuses to write while the file cannot be read, then recovers",
+          "status": "passed",
+          "title": "refuses to write while the file cannot be read, then recovers",
+          "duration": 3.9172999999999547,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728903173,
+      "endTime": 1791728903277.9172,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/openchamber-sessions/session-metadata-store.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "pins existing root OC2 files to the first scope and restores each external scope on switch back",
+          "status": "passed",
+          "title": "pins existing root OC2 files to the first scope and restores each external scope on switch back",
+          "duration": 15.079999999999984,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "keeps managed storage stable when its dynamic server port changes",
+          "status": "passed",
+          "title": "keeps managed storage stable when its dynamic server port changes",
+          "duration": 3.9744999999999777,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728903757,
+      "endTime": 1791728903776.9746,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/openchamber-sessions/storage-scope.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts keeps create metadata off the wire, rejects create-time selection, and isolates persisted metadata by scope",
+          "status": "passed",
+          "title": "keeps create metadata off the wire, rejects create-time selection, and isolates persisted metadata by scope",
+          "duration": 92.33569999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts merges metadata patches and keeps successful title writes visible when metadata storage fails",
+          "status": "passed",
+          "title": "merges metadata patches and keeps successful title writes visible when metadata storage fails",
+          "duration": 37.516999999999825,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts rejects corrupt metadata before an upstream session mutation",
+          "status": "passed",
+          "title": "rejects corrupt metadata before an upstream session mutation",
+          "duration": 15.742399999999861,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts does not write metadata after the captured runtime retires",
+          "status": "passed",
+          "title": "does not write metadata after the captured runtime retires",
+          "duration": 10.665500000000065,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts reports prompt acceptance without completion and preserves control request wire payloads and abort signals",
+          "status": "passed",
+          "title": "reports prompt acceptance without completion and preserves control request wire payloads and abort signals",
+          "duration": 37.22440000000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy profile write contracts"
+          ],
+          "fullName": "Legacy profile write contracts does not retry a failed accepted-send request",
+          "status": "passed",
+          "title": "does not retry a failed accepted-send request",
+          "duration": 7.739000000000033,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy supplementary metadata service"
+          ],
+          "fullName": "Legacy supplementary metadata service uses the Legacy store through HTTP and conditional service writes without claiming OC2 files",
+          "status": "passed",
+          "title": "uses the Legacy store through HTTP and conditional service writes without claiming OC2 files",
+          "duration": 82.81090000000017,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy supplementary metadata service"
+          ],
+          "fullName": "Legacy supplementary metadata service reports create rollback accurately when deletion returns true",
+          "status": "passed",
+          "title": "reports create rollback accurately when deletion returns true",
+          "duration": 16.43029999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy supplementary metadata service"
+          ],
+          "fullName": "Legacy supplementary metadata service reports create rollback accurately when deletion returns false",
+          "status": "passed",
+          "title": "reports create rollback accurately when deletion returns false",
+          "duration": 10.02009999999973,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728903755,
+      "endTime": 1791728904066.02,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/kernel-legacy-writes.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations normalizes ordered message text and optional model and agent fields for both generations",
+          "status": "passed",
+          "title": "normalizes ordered message text and optional model and agent fields for both generations",
+          "duration": 74.0204,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations keeps permission, message and synthetic operations on their generation routes",
+          "status": "passed",
+          "title": "keeps permission, message and synthetic operations on their generation routes",
+          "duration": 59.41650000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations projects single assistant messages with ordered text parts through both SDK routes",
+          "status": "passed",
+          "title": "projects single assistant messages with ordered text parts through both SDK routes",
+          "duration": 15.209100000000035,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations prepares legacy OC2 metadata once before concurrent autonomous read and delete patch",
+          "status": "passed",
+          "title": "prepares legacy OC2 metadata once before concurrent autonomous read and delete patch",
+          "duration": 24.85609999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects a runtime switch during preparation before reading or mutating the new endpoint",
+          "status": "passed",
+          "title": "rejects a runtime switch during preparation before reading or mutating the new endpoint",
+          "duration": 4.72709999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations never prepares OC1 session metadata",
+          "status": "passed",
+          "title": "never prepares OC1 session metadata",
+          "duration": 10.786799999999971,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations loads a tagged OC1 selection catalog through SDK endpoints",
+          "status": "passed",
+          "title": "loads a tagged OC1 selection catalog through SDK endpoints",
+          "duration": 12.919399999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations loads a tagged OC2 flat model catalog and ordered config entries",
+          "status": "passed",
+          "title": "loads a tagged OC2 flat model catalog and ordered config entries",
+          "duration": 15.881799999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations passes OC2 catalog abort signal as SDK request options and rejects malformed config",
+          "status": "passed",
+          "title": "passes OC2 catalog abort signal as SDK request options and rejects malformed config",
+          "duration": 5.197700000000054,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations waits for OC2 plugin activation before reading catalogs and rejects a changed runtime",
+          "status": "passed",
+          "title": "waits for OC2 plugin activation before reading catalogs and rejects a changed runtime",
+          "duration": 0.9605000000000246,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not treat a failed OC2 activation barrier as an empty catalog",
+          "status": "passed",
+          "title": "does not treat a failed OC2 activation barrier as an empty catalog",
+          "duration": 8.022699999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations writes OC1 archived time and rejects that mutation on OC2",
+          "status": "passed",
+          "title": "writes OC1 archived time and rejects that mutation on OC2",
+          "duration": 11.181899999999928,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations lists OC2 child sessions across authoritative pages",
+          "status": "passed",
+          "title": "lists OC2 child sessions across authoritative pages",
+          "duration": 7.7654,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations merges OC2 metadata against a fresh record and applies null deletion",
+          "status": "passed",
+          "title": "merges OC2 metadata against a fresh record and applies null deletion",
+          "duration": 14.35730000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects an old goal metadata write before touching the restarted runtime",
+          "status": "passed",
+          "title": "rejects an old goal metadata write before touching the restarted runtime",
+          "duration": 2.302799999999934,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations decides OC2 work changes in the same queue as a user metadata write",
+          "status": "passed",
+          "title": "decides OC2 work changes in the same queue as a user metadata write",
+          "duration": 11.28069999999991,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations refuses conditional metadata writes on OC1 before fetching",
+          "status": "passed",
+          "title": "refuses conditional metadata writes on OC1 before fetching",
+          "duration": 0.7101999999999862,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC1 SDK routes, directory query and 204 prompt acceptance",
+          "status": "passed",
+          "title": "uses OC1 SDK routes, directory query and 204 prompt acceptance",
+          "duration": 19.387299999999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC2 SDK routes, encoded directory header, cursors and ordered send stages",
+          "status": "passed",
+          "title": "uses OC2 SDK routes, encoded directory header, cursors and ordered send stages",
+          "duration": 19.913999999999987,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations throws on HTTP failure instead of returning authoritative empty data",
+          "status": "passed",
+          "title": "throws on HTTP failure instead of returning authoritative empty data",
+          "duration": 10.567800000000034,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects a 200 response missing required pagination instead of treating it as empty success",
+          "status": "passed",
+          "title": "rejects a 200 response missing required pagination instead of treating it as empty success",
+          "duration": 7.737799999999879,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations maps only a confirmed OC2 running entry to busy",
+          "status": "passed",
+          "title": "maps only a confirmed OC2 running entry to busy",
+          "duration": 9.578499999999849,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations stops an OC2 send before prompt when model selection fails",
+          "status": "passed",
+          "title": "stops an OC2 send before prompt when model selection fails",
+          "duration": 8.497800000000097,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations preserves OC1 control routes and original metadata writes",
+          "status": "passed",
+          "title": "preserves OC1 control routes and original metadata writes",
+          "duration": 19.683099999999968,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations preserves OC2 control routes and metadata writes",
+          "status": "passed",
+          "title": "preserves OC2 control routes and metadata writes",
+          "duration": 19.88330000000019,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations removes only an OC2 fork on the captured runtime for rollback",
+          "status": "passed",
+          "title": "removes only an OC2 fork on the captured runtime for rollback",
+          "duration": 6.59069999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations discards a read whose endpoint epoch changes before it returns",
+          "status": "passed",
+          "title": "discards a read whose endpoint epoch changes before it returns",
+          "duration": 5.567700000000059,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not dispatch sendPrompt after switching during preparation",
+          "status": "passed",
+          "title": "does not dispatch sendPrompt after switching during preparation",
+          "duration": 2.4213999999999487,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not dispatch sendCommand after switching during preparation",
+          "status": "passed",
+          "title": "does not dispatch sendCommand after switching during preparation",
+          "duration": 3.3596000000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects unsupported generation, stale send requests and unknown activity",
+          "status": "passed",
+          "title": "rejects unsupported generation, stale send requests and unknown activity",
+          "duration": 10.468900000000076,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations returns the accepted conditional metadata after OC2 replies with no content",
+          "status": "passed",
+          "title": "returns the accepted conditional metadata after OC2 replies with no content",
+          "duration": 9.586000000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not commit a conditional patch after its fresh read retires the runtime",
+          "status": "passed",
+          "title": "does not commit a conditional patch after its fresh read retires the runtime",
+          "duration": 6.003799999999956,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC2 default model and import routes, and refuses them before dispatch on OC1",
+          "status": "passed",
+          "title": "uses OC2 default model and import routes, and refuses them before dispatch on OC1",
+          "duration": 10.966400000000021,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary refuses unaccepted operations before headers, transport or preparation",
+          "status": "passed",
+          "title": "refuses unaccepted operations before headers, transport or preparation",
+          "duration": 1.3519999999998618,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity",
+          "status": "passed",
+          "title": "serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity",
+          "duration": 35.85109999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary rejects malformed, failed, canceled and retired Legacy reads",
+          "status": "passed",
+          "title": "rejects malformed, failed, canceled and retired Legacy reads",
+          "duration": 19.692800000000034,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary rejects a read completed after a profile-only change at the same endpoint and epoch",
+          "status": "passed",
+          "title": "rejects a read completed after a profile-only change at the same endpoint and epoch",
+          "duration": 6.699299999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "kernel profile identity contract"
+          ],
+          "fullName": "kernel profile identity contract retains profile in captured and returned identities",
+          "status": "passed",
+          "title": "retains profile in captured and returned identities",
+          "duration": 8.310500000000047,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "kernel profile identity contract"
+          ],
+          "fullName": "kernel profile identity contract rejects a request built before the current profile without transport",
+          "status": "passed",
+          "title": "rejects a request built before the current profile without transport",
+          "duration": 0.8143000000000029,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "profile preparation and accepted writes"
+          ],
+          "fullName": "profile preparation and accepted writes carries the OC2 profile into session preparation",
+          "status": "passed",
+          "title": "carries the OC2 profile into session preparation",
+          "duration": 9.440900000000056,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "profile preparation and accepted writes"
+          ],
+          "fullName": "profile preparation and accepted writes accepts a write carrying the current profile",
+          "status": "passed",
+          "title": "accepts a write carrying the current profile",
+          "duration": 8.528500000000122,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection preserves oc1 SDK read, auth and directory fidelity",
+          "status": "passed",
+          "title": "preserves oc1 SDK read, auth and directory fidelity",
+          "duration": 6.968000000000075,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection preserves oc2 SDK read, auth and directory fidelity",
+          "status": "passed",
+          "title": "preserves oc2 SDK read, auth and directory fidelity",
+          "duration": 19.945899999999938,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection distinguishes empty, malformed and failed oc1 reads",
+          "status": "passed",
+          "title": "distinguishes empty, malformed and failed oc1 reads",
+          "duration": 13.868400000000065,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection distinguishes empty, malformed and failed oc2 reads",
+          "status": "passed",
+          "title": "distinguishes empty, malformed and failed oc2 reads",
+          "duration": 13.231600000000071,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection rejects retirement, Legacy and canceled reads",
+          "status": "passed",
+          "title": "rejects retirement, Legacy and canceled reads",
+          "duration": 8.867299999999886,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728902680,
+      "endTime": 1791728903284.8672,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/kernel-operations.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract admits the accepted read and minimum conversation operations",
+          "status": "passed",
+          "title": "admits the accepted read and minimum conversation operations",
+          "duration": 3.699299999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.send\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.send\"",
+          "duration": 0.21680000000003474,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"config.update\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"config.update\"",
+          "duration": 0.19300000000004047,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"auth.login\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"auth.login\"",
+          "duration": 0.136099999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"experimental.session.import\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"experimental.session.import\"",
+          "duration": 0.1631999999999607,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.fork\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.fork\"",
+          "duration": 0.2296999999999798,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.list \"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.list \"",
+          "duration": 0.17720000000002756,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"\"",
+          "duration": 0.18720000000001846,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract exposes frozen operation constants",
+          "status": "passed",
+          "title": "exposes frozen operation constants",
+          "duration": 0.23069999999995616,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791728903754,
+      "endTime": 1791728903760.2307,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-contract.test.js"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# MCP UI implementation command notes
+
+- `Get-Content packages/ui/README.md` failed because the UI package has no README at that path. Use the root guide, `packages/ui/src/stores/DOCUMENTATION.md`, and nearby source/test precedent for this package instead.
+- `bunx --no-install vitest run packages/ui/src/stores/useMcpConfigStore.legacy.test.ts packages/ui/src/stores/useMcpConfigStore.v2.test.ts` failed during suite collection because Vitest cannot resolve the repository tests' `bun:test` imports. Run these suites with Bun's native test runner.
+- First package type-check found three unsupported Bun matcher type declarations in the new test (`toHaveBeenCalledTimes` and `toHaveProperty`); assertions are being changed to supported matchers.
+- `bunx --no-install oxlint` over the three scoped source files exited nonzero on existing findings elsewhere in `useMcpConfigStore.ts` and `McpPage.tsx` (including the pre-existing generic OC1 builder and legacy page parsing helpers). It reported no findings in the new Legacy serializer, read-only guard, or focused test. ESLint and package type-check pass.
+- An initial Legacy partial-update test mock treated a fetch call without an explicit `init.method` as a mutation, so config loading returned an invalid fixture. The mock now treats non-PATCH requests as reads; the serializer also infers remote type from remote-only patch fields when no cached server is available.

@@ -1,0 +1,63 @@
+{
+  "baseHead": "33b063ea3045921f1b6eb4948fa43c19eccfd933",
+  "checks": {
+    "anti": 1,
+    "lint": 0,
+    "dead": 0,
+    "types": 0,
+    "vscode-build": 0,
+    "web-build": 0
+  },
+  "hostTests": 58,
+  "storeTests": 29,
+  "componentTests": 1,
+  "live": {
+    "sourceSha": "33b063ea3045921f1b6eb4948fa43c19eccfd933",
+    "profile": "oc2",
+    "mode": "configured",
+    "version": "2.0.20",
+    "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+    "checks": [
+      "migration discovery requires host authentication",
+      "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+      "activity route authenticates and leaves cold upstream unknown",
+      "unconfirmed cold startup leaves authenticated settings reachable and no process",
+      "invalid candidate does not replace settings",
+      "actual React candidate confirmation starts real OC2 and initializes the shared client",
+      "UI confirmed save is durable with prior settings backup",
+      "UI confirmed saved record suppresses contradictory legacy prefill",
+      "configured binary managed startup and exact profile",
+      "production host activity reads real OC2 status permission and form APIs without settings mutation",
+      "duplicate save is inert and active replacement is rejected durably",
+      "one owned live server registry entry",
+      "active confirmed reload exits old PID before one replacement is ready",
+      "managed host facade session creation and reopened history",
+      "production queue stamps a confirmed configured target and strips it from public snapshots",
+      "same configured target restart keeps queued ownership despite a new managed process and endpoint without a model invocation",
+      "production queue edit returns retained payload and clears only the selected item",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "sourceFiles": {
+      "packages/web/server/index.js": "94d0f380c4eb5565f033fbd697f0c47e01ac6c68549fce5321ecc43907f6ca6f",
+      "packages/web/server/lib/message-queue/runtime.js": "005026132f5373db26fa6916e2623bbace79aa49f0ef05b07eb6bd79b7b2d278",
+      "packages/web/server/lib/opencode/queue-target.js": "93798d10fcec286a12ab0b709aa9dd2638ac7442638437854e27526c75091a92"
+    },
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "anti": {
+    "inherited": 7,
+    "authored": 0
+  },
+  "weeklyRemaining": 42,
+  "round": "R1 in progress",
+  "remaining": [
+    "active switch confirmation and recovery",
+    "peer clients",
+    "VS Code adoption",
+    "applicable real host acceptance"
+  ],
+  "commit": "197983a00701ac407e04c197f5a4425d1997bc29",
+  "liveEvidence": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-queue-target-live-evidence.json"
+}

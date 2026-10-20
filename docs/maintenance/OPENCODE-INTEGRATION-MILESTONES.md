@@ -1,5 +1,7 @@
 # Agent integration milestones
 
+> Current status, 2026-10-21: development paused and preserved on `codex/integration-handoff-20261021`. Read the [handoff](handoff-20261021/README.md) before continuing. The dated execution statuses below are historical; INT-05 and later gates remain incomplete.
+
 Status: executing, 2026-10-12. INT-00, CA-00 and INT-00L passed. The minimum CAgent architecture/offline-kit preview is published; remaining CA-01/CA-02 migration stays at R6 and real CAgent acceptance at environment-local CA-03. R1 / INT-01 and INT-02 are accepted. R2 / INT-03 is accepted with the exact Legacy Web and actual VS Code conversation journeys, production E2EE Relay through a local broker, and real current OC1 1.18.33 / OC2 2.0.20 core regressions. The OC2 run exposed a missing classifier endpoint accessor; the correction reuses existing source policy and rejects retired runtime identities. Final focused checks pass 81 tests, Web types/lint, syntax and authored anti-slop; the dead-code baseline is unchanged. Evidence, source fingerprints and cleanup: artifacts/int03-r2-exit.json. Legacy remains experimental pending R3/R4 and final host acceptance. Public Relay/WAN, packaged native hosts and physical mobile are not covered by the local Relay result. R3 is in progress. INT-04 advanced Legacy operations and recovery are accepted; evidence and limits are in artifacts/int04-acceptance.json. INT-05 is in progress. Its finite MCP status/connect/disconnect protocol is verified; settings/credentials, plugins and unattended acceptance remain open. Reload-dependent configuration stays at R4; packaged hosts, public Relay and physical mobile stay at R7. The [execution checkpoint](CAGENT-EXECUTION.md) owns the historical preview release and the [acceptance review](R1-ACCEPTANCE.md) owns R1 reconciliation.
 R1 clause review and image boundary correction: [acceptance review](R1-ACCEPTANCE.md).
 Contract owners: [integration SPEC](OPENCODE-INTEGRATION-SPEC.md), [Legacy SPEC](OPENCODE-LEGACY-1.2.27-SPEC.md), [CAgent SPEC](CAGENT-INTEGRATION-SPEC.md) and [CAgent adapter workbook](CAGENT-ADAPTER-WORKBOOK.md).
@@ -581,3 +583,172 @@ The isolated exact 1.2.27 executable probe in artifacts/int05-native-path-eviden
 MCP persistence now uses one native file owner shared by Web/Electron and the VS Code extension host. Hosted and Capacitor mobile operate on their connected host. Exact-version SDK path/config reads retain the captured version; owner checks cover process identity, runtime identity and backend revision. Saves preserve JSONC and raw placeholders, leave unchanged inherited relative references in their original layer, and reject deletions that cannot be represented after merging. Removing the highest definition reports a revealed lower definition. Command, external and CAgent connections receive no local write access. Read-only expanded fallback keeps valid configurations visible when raw substitution prevents editing. Astra's review also identified enabled-only definitions: these stay visible without invented endpoints and expose no connect, OAuth or edit controls.
 
 Current evidence: 195 focused backend/configuration tests, 60 VS Code bridge tests, and nine checks against the authenticated pinned 1.2.27 executable. The executable process exited and its isolated fixture was removed. The running configuration remained cached after file saves, as expected for deferred application. VS Code extension bundling passed with its existing credential-db import.meta warning. See artifacts/int05-mcp-regression.log, artifacts/int05-mcp-bridge.log and artifacts/int05-mcp-persistence-live-evidence.json. Shared UI/type/build results are recorded in artifacts/int05-mcp-persistence-checkpoint.json. This does not establish full IDE/native rendering, packaged acceptance or R4 apply/reload. INT-05/R3 remain open for credentials, plugins and unattended behavior; then proceed to R4 application/reload and the remaining ordered milestones. No dependency was added and no Release or remote branch changed in this checkpoint.
+
+### INT-05 credential contract review checkpoint, 2026-10-12
+
+Astra reviewed the next credential batch. The pinned 1.2.27 schema and executable disprove the initial suggestion to use SDK path.data: that field does not exist. The revised plan uses a shared native read-only credential owner with the current process launch context, private process Symbol and runtime/backend revision checks. Command and external connections receive explicit unsupported reads. Secret mutations remain bound official SDK operations. Ordinary OC1/OC2 behavior stays unchanged.
+
+The isolated Windows driver artifacts/int05-credentials-live.mjs passes nine checks in each of five modes, 45 checks total: absolute XDG, absent XDG, relative XDG, empty XDG and conflicting HOME/USERPROFILE. OPENCODE_TEST_HOME is removed. Explicit XDG resolves against child cwd; absent or empty XDG uses USERPROFILE/.local/share/opencode. Each mode verifies api/oauth/wellknown field preservation, SDK deletion, 400/401 byte preservation and auth-method discovery. Every owned process exited and fixture was removed. These results cover direct SDK/binary contracts, not production admission, real OAuth or other platforms.
+
+Next implementation batch: compose the native reader into shared Web/VS Code consumers, preserve missing-versus-corrupt failure behavior and retire results after connection/process changes; bind official SDK mutations and provider OAuth without passing raw secrets to the renderer; verify host/bridge request fidelity and ordinary OC1/OC2 regressions. Real OAuth lifecycle remains separately unverified. Then finish R3 settings, generated plugins and unattended callers before R4 apply/reload. Production credential admission remains closed and R3/INT-05 remain open. Research ends here before the implementation phase. No dependency, toolchain, remote branch or Release changed. Live weekly quota is 66 percent remaining.
+
+Pinned auth/global/provider source retrieval was rejected by automatic approval because of the retained no-download constraint. No retrieval ran or was bypassed. Local schema and executable evidence support the verified Windows branches; unverified platform/path behavior must stay explicit. Failure corrections and the compact handoff are in artifacts/int05-credentials-live-failures.md and artifacts/int05-credentials-contract-checkpoint.json.
+
+### INT-05 native credential read implementation, 2026-10-12
+
+This checkpoint supersedes the previous planned read-only implementation step. Web/Electron and VS Code now compose one private exact 1.2.27 native credential reader. Windows launch-context paths and process/runtime retirement are enforced; missing files return an empty map while corrupt files fail. Command, external, CAgent and unverified platforms remain unsupported. No raw credential bridge was added.
+
+Astra found that xAI quota and small-model OpenAI refresh exchanged tokens before the Legacy persistence gate. Both now refuse before any exchange or joining a pending refresh. Legacy synchronous writes and mutation/OAuth admission remain closed. Focused validation passes 130 tests, including zero-network/zero-write refresh regressions. Five pinned executable modes pass 55 checks; owned processes and fixtures were removed. Ordinary OC1/OC2 regressions pass. Workspace types/lint, affected Web/VS Code builds and reviewed dead-code results are recorded with source fingerprints in artifacts/int05-credentials-reader-checkpoint.json. Existing lint/Oxlint/build warnings remain separately recorded. This is not real OAuth, full IDE UI or packaged acceptance.
+
+Next: bound official credential mutations and OAuth lifecycle, provider source/delete, generated plugins and unattended callers; then R4 apply/reload. INT-05/R3 remain open. English handoff and Chinese archive are synchronized. No dependency, download, Git operation, remote branch or Release changed. Live weekly quota is 65 percent remaining.
+
+### INT-05 OAuth lifecycle prerequisite, 2026-10-12
+
+Astra confirmed that Legacy provider admission must close source reads, official credential saves/OAuth, complete disconnect and persistence feedback together. The bilingual Legacy SPEC now requires actual layer provenance, preflight of read-only targets, explicit partial-delete outcomes and deferred restart until R4. Custom provider creation/editing remains closed until its writer is accepted, including its initial credential write. Native credential reads from the previous checkpoint remain accepted.
+
+The existing OC1 OAuth component now retains one SDK client, runtime binding and directory across authorize/callback. Cancel, unmount and connection changes abort and retire pending work. A directory change detected at completion resets the old flow. The primary review removed an unnecessary exported predicate and its duplicate tests. Nine mounted React/real-SDK controlled cases pass, including late success/failure, code retirement and request fidelity. All eight isolated Provider test files, UI types, changed-file ESLint/Oxlint and Web/VS Code webview builds pass. Reviewed dead-code evidence and source fingerprints are in artifacts/int05-oauth-checkpoint.json. Existing build warnings remain in their logs. These tests do not establish real provider OAuth, packaged operation or Legacy host admission. Shared Web, Electron, VS Code, hosted-mobile and Capacitor OC1 UI use this component; their forwarding behavior was not changed.
+
+Next implementation batch closes native provider provenance and complete deletion, official bound credential operations, persisted-versus-applied UI feedback and Web/VS Code parity before enabling Legacy admission. Then finish generated plugins and unattended callers, followed by R4. The separate OC2 integration-OAuth lifecycle remains a later review target; OC2 helper regressions passed in this batch. INT-05/R3 stay open. Temporary editing scripts were removed. No dependencies, downloads, Git operations, remote branches or Release changed. Live weekly quota remains 64 percent.
+
+
+### INT-05 provider source owner checkpoint, 2026-10-12
+
+Native layers now retain origin and exact load order, including explicit config-directory deduplication. The uncomposed Windows Legacy provider owner reports provenance and credential existence, preflights all definitions, removes hidden lower definitions with JSONC edits and reports partial commits. Environment credentials, wellknown remote configuration, unaccepted plugins and unaccounted effective provider IDs refuse disconnect before writes. Shared kernel metadata contains no new expanded provider values. Effective provider values are compared privately and return equality only. Astra review prompted these restrictions and unknown credential outcomes after retirement.
+
+Focused owner/layer/MCP/kernel regression passes 113 tests. Static validation and source fingerprints are recorded in artifacts/int05-provider-owner-checkpoint.json. This is controlled module evidence, not production admission, real OAuth or host acceptance. Official bound credential removal now has a private SDK implementation; production composition remains pending. Next complete the official credential/OAuth owner, Web/VS Code composition and persisted-versus-applied UI feedback, then generated plugins/unattended callers and R4. INT-05/R3 remain open. No new dependency, download, Git or Release change.
+
+### INT-05 private credential operation checkpoint, 2026-10-12
+
+The new private SDK owner reads the method catalog and saves/removes API credentials only for the selected native Windows 1.2.27 process. It checks full identity/version before dispatch, sanitizes failures, releases subscriptions and keeps interrupted writes unknown. The final module tests and five isolated executable path modes are recorded in artifacts/int05-credential-operations-checkpoint.json. These establish neither host composition nor real OAuth acceptance.
+
+Astra reviewed the Windows termination plan. The first same-turn batching experiment merged only two of twelve requests and was reverted despite a passing test. The retained implementation allows one taskkill invocation at a time and batches requests arriving during it, with queue time inside the unchanged five-second request budget. The same real twelve-process control now uses two deadline batches, plus one deactivation call, versus thirteen calls before; measured maximum concurrency is one. Focused tests pass 18 cases with one platform skip, and the normal four-worker VS Code suite passes 62/62 files. Type-check, changed-file ESLint and Oxlint, and extension build pass. The existing import.meta build warning remains. Evidence is in artifacts/int05-taskkill-{before,after,bounded}.log and artifacts/int05-bounded-*.log. Real VS Code 1.136.1 host acceptance now passes eight lifecycle assertions against exact Legacy 1.2.27 with an already-initialized isolated cache: native context, failed candidate preflight, synchronous stop/restart retirement, SDK-request abort and 409, distinct replacement owner, unsubscribe and unexpected child exit. The driver now reads Request.signal and preserves terminal suite evidence instead of overwriting it with an earlier launcher status. Cold isolated startup remains unaccepted: upstream default-plugin installation made the first /session read take 10215ms, exceeding the unchanged five-second admission deadline and leaving unknown/unverified. Astra confirmed the read-admission classification. No production fallback, schema or deadline was loosened. Evidence is in artifacts/int05-host-{warm,cold}-evidence.json. The two older profiles still have unreadable process ownership and remain retained. Credential production composition remains closed, and the previously rejected bound OAuth interface change still awaits explicit authorization. The existing request-forwarding refresh now passes real-host recovery after one controlled initial /session 503: unknown/unverified becomes ready exact Legacy 1.2.27 without restarting, followed by all eight lifecycle assertions, ten checks in total. This reuses the initialized isolated cache and does not accept fresh-cache cold startup. No production retry, deadline or schema changed. Evidence is in artifacts/int05-host-recovery-evidence.json. Next finish authorized OAuth binding, persistence feedback, plugins/unattended callers and R4. INT-05/R3 remain open. No repository dependency, Git or Release changed. Upstream default-plugin downloads occurred in disposable isolated homes; later host controls reused the existing cache. Cleanup removed 457160710 bytes of unused profiles after process and junction checks. One warm home is retained for subsequent real-host verification. Live weekly quota is 59 percent remaining.
+
+
+### INT-05 Legacy plugin preparation checkpoint, 2026-10-12
+
+Stable exact 1.2.27 now skips generated tool/prompt/MCP preparation before settings reads. Normal OC1/OC2 preparation remains intact, and controlled lifecycle coverage verifies that Legacy still starts with inherited user config path and content preserved. Astra confirmed the narrow version gate; no new profile, dependency or plugin framework was added.
+
+Focused preparation/lifecycle regression passes 126 tests; route/compatibility regression passes 57 Vitest tests and 36 Bun tests. Web types and changed-file ESLint pass. Oxlint reports seven existing lifecycle-test findings outside the authored blocks; dead-code findings remain backlog, with no new helper finding. Evidence and fingerprints are in artifacts/int05-plugin-preparation-checkpoint.json. This closes unverified generated-plugin injection, not full Legacy plugin acceptance or fresh-cache host acceptance. INT-05/R3 remain open.
+
+Next address the separate CLI-version versus responding-endpoint binding gap, then complete authorized credential composition, plugin support and unattended acceptance before R4. English handoff and Chinese archive match. No downloads, dependencies, Git or Release changed in this batch. Live weekly quota is 58 percent remaining.
+
+### INT-05 CLI binding checkpoint, 2026-10-12
+
+Native managed OpenCode binds the probed CLI generation and full version before publishing an endpoint descriptor. Shared refresh and health re-probe retain this binding across invalidation. Version comparison ignores a v prefix and build metadata, but preserves prerelease identity. A mismatched or missing endpoint version cannot retain ready state. Command and external targets remain endpoint-authoritative. Web retires readiness and endpoint before awaiting child closure; failed closure preserves the owned process and blocks a second spawn. VS Code publishes connected only after endpoint admission.
+
+Four focused files pass 123 tests, including failed termination and missing-version re-probe. The normal VS Code suite passes 62/62 files. Web and VS Code type checks, changed-file ESLint and extension build pass. Oxlint reports 38 existing findings outside authored blocks; reviewed dead-code output contains no new binding helper finding. See artifacts/int05-cli-binding-checkpoint.json.
+
+The earlier connected/unverified startup recovery evidence is historical. Current startup requires admission before connected; recovery should be verified after an admitted connection loses verification. The first new host fixture did not isolate the mismatch cause and is not acceptance evidence. The corrected real IDE driver could not start because VS Code held its update mutex. Real-host acceptance of this change remains pending; production deadlines and retries were not loosened. Next rerun that driver after the update, then finish permitted credential composition, plugins and unattended acceptance before R4. INT-05/R3 remain open. No dependencies, downloads, Git or Release changes were made in this batch. Live weekly quota is 57 percent remaining.
+
+### INT-05 unattended review, 2026-10-12
+
+A controlled existing-owner reproduction receives one simulated accepted-but-lost response and automatically sends twice, then removes the item. This proves the queue result contract is incomplete, not a real upstream deduplication result. Scheduled occurrence claims and goal accounting also lack durable dispatch outcomes. Astra confirmed queue-first implementation through existing owners and projections; the Legacy SPEC records the batch order and acceptance gates. Evidence is in artifacts/int05-unattended-review.json. No unattended acceptance is granted. The maintainer has now explicitly authorized the private bound beginOAuth interface change; credential composition still waits for its implementation and validation.
+
+### INT-05 bound OAuth checkpoint, 2026-10-12
+
+The maintainer explicitly authorized the private beginOAuth interface. It now binds authorize/callback/cancel to one SDK client, captured headers, directory and native process owner. Retirement is observed between requests; cancellation and late responses cannot enable callback, and interrupted dispatched mutations remain unknown. Primary review removed redundant dispatch state and added setup/cancellation coverage. Final validation and file hashes are recorded in artifacts/int05-bound-oauth-checkpoint.json. Production credential composition and real provider OAuth remain pending. The confirmed unattended duplicate-send gap follows the queue-first sequence in the bilingual Legacy SPEC. Real IDE binding acceptance remains blocked by the recorded update-lock run. INT-05/R3 remain open; no dependency, Git or Release change was made in this batch. Live weekly quota is 56 percent remaining.
+
+### INT-05 private provider composition checkpoint, 2026-10-12
+
+Following explicit authorization and Astra review, the private host owner now retains OAuth flows behind opaque caller-bound attempt IDs. Begin returns before authorize dispatch. Terminal failures, abort, cancellation, native retirement, expiry and disposal release the flow. Primary review fixed terminal callback cleanup, post-disposal admission and duplicate validation. Five file/SDK integration cases cover source redaction, complete layered removal, lost responses, retirement and unsupported backends. Four focused files pass 62 tests; changed-file ESLint and Oxlint pass. See artifacts/int05-provider-runtime-checkpoint.json for final static-check evidence and fingerprints.
+
+Production Web/VS Code adapters, Legacy UI feedback, stale effective-cache handling and real host/provider acceptance remain pending. Then complete unattended outcome persistence and R4. INT-05/R3 remain open. The existing CAgent preview Release was checked live: published prerelease with eight uploaded assets. No Release, Git, dependency or download change was made. Live weekly quota is 55 percent remaining.
+
+### INT-05 Provider entry checkpoint, 2026-10-13
+
+Web creates one private Provider owner per feature host. VS Code now creates one per manager and disposes it through extension subscriptions. Chat, agent-manager and session documents have separate host-generated caller identities and abort lifetimes. Ready/reset, disposal and request cancellation retire only the original document's OAuth work; sibling documents remain usable. The dedicated entry runs before generic proxy forwarding. OC1/OC2 public interfaces are unchanged.
+
+Both transports reuse a finite request dispatcher with strict bodies, exact native runtime admission, enterprise connection restrictions and sanitized persistence/partial outcomes. Browser-safe route constants contain no server dependencies. The webview preserves RequestInit signal overrides, including null, and forwards cancellation by request ID. The dedicated Legacy page and the previous bounded switch-cleanup behavior remain in place.
+
+This batch passes 58 focused tests: 35 shared HTTP/auth/dispatcher/adoption/runtime cases, 8 private host cases, 6 webview cases and 9 existing proxy/session cases. Workspace type-check and ESLint pass with five existing UI warnings. Changed server/test ESLint and authored-file Oxlint pass without diagnostics. Reviewed cached Knip output retains the existing backlog and reports no new bridge finding. VS Code extension and webview production builds pass; existing import.meta, CSS and chunk-size warnings remain in the logs. Current evidence and source fingerprints are in artifacts/int05-provider-bridge-checkpoint.json. Earlier Web and switch regression counts are historical evidence in artifacts/int05-provider-entry-checkpoint.json, not additional tests from this batch.
+
+Controlled bridge adoption is implemented. Real IDE Provider workflow, real provider OAuth and native application switch acceptance remain open; these tests and builds do not close those gates. Next complete unattended outcome persistence while retaining those acceptance gates, then R4 apply/reload. INT-05/R3 remain open. English handoff and Chinese archive match. This batch adds no dependency, download, Git or Release change. Temporary editing scripts were removed. Live weekly quota is 45 percent remaining.
+
+### INT-05 Legacy queue server checkpoint, 2026-10-13
+
+The existing queue owner now persists a pending attempt before a Legacy prompt or command mutation. Returned requests remain accepted records. Lost responses, result-write failure and restored pending/accepted records become unknown and do not replay automatically. Same-session dispatch, take/edit, batch take and reorder cannot bypass unknown intent. Clear and session deletion retain unresolved attempts. Explicit confirmed resubmission compares the old attempt ID and claims the session before asynchronous idle verification. Ordinary OC1/OC2 behavior remains covered.
+
+Primary review corrected the other-item edit bypass and strengthened actual file-write failure coverage. The focused queue suite passes 68 tests, including preparation retirement and malformed attempt preservation. Static evidence and final file fingerprints are recorded in artifacts/int05-queue-attempt-checkpoint.json. Astra reviewed the accepted/terminal distinction and the queue-first boundary.
+
+This is a server checkpoint. Shared UI projection and confirmed resubmission controls, exact 1.2.27 executable terminal correlation, scheduled task and goal owners, and VS Code local queue outcomes remain pending. Accepted records count toward the existing limit. Real IDE Provider/OAuth and native-switch acceptance also remain open. Complete these gates before R4 and before claiming unattended acceptance. English handoff and Chinese archive are synchronized. This batch adds no dependency, download, Git or Release change.
+
+Final review also preserves malformed payloads with recorded attempts by rejecting loading without overwriting the stored file. Web type-check and changed-file ESLint pass. Oxlint retains three existing typeof-helper diagnostics in runtime.js and no remaining authored-code finding. Reviewed cached Knip reports no new queue finding. Latest live weekly quota is 99 percent remaining.
+
+## INT-05 shared queue controls checkpoint, 2026-10-13
+
+The shared store now retains server attempt records through snapshots and events.
+Pending/unknown entries block ordinary sending, editing and reordering for the
+session and survive remove/clear. Accepted entries stay visible and are skipped
+when selecting the next ordinary item; accepted still does not prove completion.
+Server-owned unknown entries expose a duplicate-effects confirmation, bound to
+the captured target/item/attempt IDs. The store claims the request synchronously,
+checks the active runtime, and rejects stale responses after runtime resets.
+Failures recover authoritative state without inventing success. All 13 primary
+locales include status and confirmation text.
+
+Focused validation: 35 server projection tests, 13 local queue regression tests,
+and two DOM component tests pass in separate processes. DOM tests cover cancel,
+the captured confirmation request, disabled actions and invalidation by a newer
+attempt. Evidence and static-check results are recorded in
+artifacts/int05-queue-ui-checkpoint.json. These are simulated HTTP and DOM checks;
+they do not establish packaged layout or real Legacy delivery acceptance.
+
+R3 remains open. Exact 1.2.27 executable terminal correlation, scheduled task and
+goal owners, VS Code local attempt outcomes, real IDE Provider/OAuth and native
+switch acceptance remain required before R4/unattended acceptance. No dependency,
+download, Git or Release operation is part of this checkpoint.
+
+
+Final static validation: UI, Web, Electron, Mobile and VS Code type-checks and changed-file ESLint pass. Final Oxlint retains four existing persistence/helper diagnostics in messageQueueStore.ts (lines 21, 26, 453 and 454), with no remaining authored-code finding. Cached Knip was reviewed: no new queue finding. Locale validation confirms all 143 status/confirmation keys occur exactly once. Latest live weekly quota is 98 percent remaining. The owning store and composer documentation describe the same attempt and confirmation constraints.
+
+
+## INT-05 queue terminal checkpoint, 2026-10-14
+
+Legacy queue attempts now persist a private caller messageID before sending. Its sortable 48-bit prefix matches the pinned protocol. Public snapshots retain only attempt ID, state and creation time. HTTP acceptance remains accepted; a lost response remains unknown until authoritative evidence resolves it.
+
+At an existing queue wake, the same owner first verifies idle, reads a bounded two-message tail, then re-reads a matching assistant by ID. It requires the captured parent ID, session and current runtime/target, a completed timestamp, and either final stop or a structured error. Tool-call intermediate replies cannot complete an attempt. A failed terminal write retains unknown; no automatic resend is added. Records without the private ID, missing tail matches, command synthetic parents and compaction without an exact match remain inconclusive.
+
+The official 1.2.27 executable passed four direct API cases and the same four cases through production KernelOperations and the queue: normal completion, lost response, tool continuation and abort. Ten controlled model calls occurred, with no extra replay. Each caller message was read by its exact ID; queue result persistence and unchanged public projection were checked. The isolated server, sockets and scratch data were removed. This proves these API and queue paths with a controlled provider; it does not accept real-model behavior or packaged UI.
+
+Reproduce with the existing verified binary, without Git, downloads or real credentials:
+
+`node scripts/legacy-attempt-probe.mjs artifacts/legacy-1.2.27`
+
+Sanitized local evidence is artifacts/int05-legacy-attempt-evidence.json. R3 remains open for scheduled task and goal owners, VS Code local attempts, real IDE Provider/OAuth and native switching. Older evidence about absent idempotency guarantees still applies. Exact terminal correlation proves an observed outcome, never deduplication.
+
+Focused checks and fingerprints: artifacts/int05-queue-terminal-checkpoint.json. Live weekly quota: 81 percent remaining. This checkpoint adds no dependency, download, Git or Release operation.
+
+## INT-05 scheduled watchdog checkpoint, 2026-10-14
+
+Legacy 1.2.27 now retires local preparation when the existing watchdog expires.
+Late session creation cannot continue to dispatch; late knowledge resolution
+cannot send; late send completion cannot record delivered knowledge or replace
+the timeout result. Runtime identity is checked inside the asynchronous dispatch
+helpers. An in-flight remote operation may still execute, so timeout reports an
+unknown remote outcome. The scheduled-task owner documentation defines this boundary.
+
+Five focused watchdog tests and 69 existing scheduled-task tests pass. Web type
+checking and changed-file ESLint pass. Runtime Oxlint retains 22 existing
+diagnostics; the new test is clean. Static checks do not prove packaged behavior
+or unattended recovery. Exact check results and file fingerprints are recorded
+in artifacts/int05-scheduled-watchdog-checkpoint.json.
+
+Astra reviewed the next implementation step. Reuse the project-config write lock
+and conditional state update for one Legacy attempt per task. Claim the occurrence
+and persist the pending attempt together before session creation. Persist the
+returned session ID before later mutations and the submitting phase before send.
+Every completion and retry must compare the attempt ID. Pending, accepted and
+unknown attempts block new automatic or ordinary manual dispatch until exact
+terminal evidence or an explicit confirmed resubmit resolves them. Lost creation
+responses remain unknown without guessing a session. Recovery must preserve a live
+peer's attempt; normalizing every pending read to unknown is insufficient. Mixed
+old schedulers that discard the new state cannot satisfy this guarantee.
+
+These durable attempts, terminal reconciliation and resubmit controls are not
+implemented by this watchdog checkpoint. R3 remains open. Storage cleanup removed
+15 completed CAgent offline test copies, about 480 MB, while retaining delivery
+ZIPs, source and evidence. The detailed deletion record is
+artifacts/int05-storage-cleanup.json. No dependency, download, Git or Release
+operation occurred in this batch.
+
+Live weekly quota at this checkpoint: 78 percent remaining.

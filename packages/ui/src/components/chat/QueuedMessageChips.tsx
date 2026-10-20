@@ -14,29 +14,41 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { QUEUE_DELIVERY, getMessageQueueKey, useMessageQueueStore, type MessageQueueTarget, type QueuedMessage } from '@/stores/messageQueueStore';
+import { QUEUE_ATTEMPT, isQueueUnresolved, isServerOwnedMessageQueue, QUEUE_DELIVERY, getMessageQueueKey, useMessageQueueStore, type MessageQueueTarget, type QueuedMessage } from '@/stores/messageQueueStore';
 import { useInputStore } from '@/sync/input-store';
 import { useUIStore } from '@/stores/useUIStore';
 import { useI18n } from '@/lib/i18n';
 import { Icon } from "@/components/icon/Icon";
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ComposerFloatingPanel } from './composer/ui/ComposerFloatingPanel';
 import { useMobileAutocompleteMaxHeight } from './useMobileAutocompleteMaxHeight';
 import { getQueuedMessagePreview } from '@/lib/messages/queuedMessagePreview';
 
+const ATTEMPT_LABEL = {
+    [QUEUE_ATTEMPT.PENDING]: 'chat.queuedMessage.attemptPending',
+    [QUEUE_ATTEMPT.ACCEPTED]: 'chat.queuedMessage.attemptAccepted',
+    [QUEUE_ATTEMPT.UNKNOWN]: 'chat.queuedMessage.attemptUnknown',
+    [QUEUE_ATTEMPT.COMPLETED]: 'chat.queuedMessage.attemptCompleted',
+    [QUEUE_ATTEMPT.FAILED]: 'chat.queuedMessage.attemptFailed',
+} as const;
+
 interface QueuedMessageChipProps {
+    blocked: boolean;
+    onResubmit: (message: QueuedMessage) => void;
     message: QueuedMessage;
     target: MessageQueueTarget;
     onEdit: (message: QueuedMessage) => void;
     onSend: (message: QueuedMessage) => void;
 }
 
-const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessageChipProps) => {
+const QueuedMessageChip = memo(({ message, target, blocked, onEdit, onSend, onResubmit }: QueuedMessageChipProps) => {
     const { t } = useI18n();
     const removeFromQueue = useMessageQueueStore((state) => state.removeFromQueue);
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: message.id });
+    const sending = useMessageQueueStore(state => state.sendingIds[getMessageQueueKey(target)]?.includes(message.id) ?? false);
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: message.id, disabled: blocked });
 
     const firstLine = getQueuedMessagePreview(message);
     const held = message.delivery !== undefined && message.delivery !== QUEUE_DELIVERY.READY;
@@ -55,6 +67,7 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
                 {...attributes}
                 {...listeners}
                 className="flex flex-shrink-0 cursor-grab touch-none select-none items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                disabled={blocked}
                 aria-label={t('chat.queuedMessage.reorderAria')}
             >
                 <Icon name="draggable" className="h-4 w-4" aria-hidden="true" />
@@ -66,6 +79,7 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
                     <span className="ml-1 text-muted-foreground">{t('chat.queuedMessage.attachments', { count: attachmentCount })}</span>
                 )}
                 </span>
+                {message.attempt && <span className="block text-muted-foreground">{t(ATTEMPT_LABEL[message.attempt.state])}</span>}
                 {held && <span className="block text-muted-foreground">{t(message.delivery === QUEUE_DELIVERY.CHANGED
                     ? 'chat.queuedMessage.targetChanged' : 'chat.queuedMessage.targetUnknown')}</span>}
             </span>
@@ -73,6 +87,7 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
                 type="button"
                 variant="secondary"
                 size="xs"
+                disabled={blocked || !!message.attempt || sending}
                 onClick={() => onEdit(message)}
             >
                 <Icon name="edit" className="h-3 w-3" aria-hidden="true" />
@@ -82,14 +97,20 @@ const QueuedMessageChip = memo(({ message, target, onEdit, onSend }: QueuedMessa
                 type="button"
                 variant="secondary"
                 size="xs"
-                disabled={held}
+                disabled={held || blocked || !!message.attempt || sending}
                 onClick={() => onSend(message)}
             >
                 <Icon name="send-plane" className="h-3 w-3" aria-hidden="true" />
                 {t('chat.queuedMessage.send')}
             </Button>
+            {message.attempt?.state === QUEUE_ATTEMPT.UNKNOWN && isServerOwnedMessageQueue() && (
+                <Button type="button" variant="secondary" size="xs" disabled={held || sending} onClick={() => onResubmit(message)}>
+                    {t('chat.queuedMessage.resubmit')}
+                </Button>
+            )}
             <button
                 type="button"
+                disabled={isQueueUnresolved(message) || sending}
                 onClick={() => removeFromQueue(target, message.id)}
                 className="flex items-center justify-center h-6 w-6 flex-shrink-0 hover:bg-[var(--interactive-hover)] rounded-full transition-colors"
                 aria-label={t('chat.queuedMessage.removeAria')}
@@ -118,6 +139,9 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
     // session switches instead of resetting with the queue key.
     const collapsed = !useUIStore((state) => state.messageQueueExpanded);
     const setMessageQueueExpanded = useUIStore((state) => state.setMessageQueueExpanded);
+    const [confirmation, setConfirmation] = React.useState<{ target: MessageQueueTarget; itemId: string; attemptId: string } | null>(null);
+    const [submitting, setSubmitting] = React.useState(false);
+    const resubmit = useMessageQueueStore(state => state.resubmit);
     const bodyId = React.useId();
     const bodyRef = React.useRef<HTMLDivElement | null>(null);
     const queueKey = target ? getMessageQueueKey(target) : null;
@@ -130,6 +154,7 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
             [queueKey]
         )
     );
+    const blocked = queuedMessages.some(isQueueUnresolved);
     const popToInput = useMessageQueueStore((state) => state.popToInput);
     const reorderQueue = useMessageQueueStore((state) => state.reorderQueue);
     const availableMaxHeight = useMobileAutocompleteMaxHeight(bodyRef, !hidden && !collapsed && queuedMessages.length > 0, 168 + 48);
@@ -143,12 +168,12 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
 
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id || !target) return;
+        if (!over || active.id === over.id || !target || blocked) return;
         reorderQueue(target, String(active.id), String(over.id));
-    }, [target, reorderQueue]);
+    }, [target, reorderQueue, blocked]);
 
     const handleEdit = React.useCallback((message: QueuedMessage) => {
-        if (!target) return;
+        if (!target || blocked || message.attempt) return;
 
         // The full message (attachments included) comes back from the queue's
         // owner; the chip itself only knows the summary.
@@ -163,18 +188,40 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
             console.warn('[queue] failed to take queued message for editing:', error);
             toast.error(t('chat.queuedMessage.toast.takeFailed'));
         });
-    }, [target, popToInput, onEditMessage, t]);
+    }, [target, popToInput, onEditMessage, t, blocked]);
 
     const handleSend = React.useCallback((message: QueuedMessage) => {
-        if (message.delivery !== undefined && message.delivery !== QUEUE_DELIVERY.READY) return;
+        if (blocked || message.attempt || message.delivery !== undefined && message.delivery !== QUEUE_DELIVERY.READY) return;
         onSendMessage(message.id);
-    }, [onSendMessage]);
+    }, [onSendMessage, blocked]);
+
+    const handleResubmit = (message: QueuedMessage) => {
+        if (!target || message.attempt?.state !== QUEUE_ATTEMPT.UNKNOWN) return;
+        setConfirmation({ target, itemId: message.id, attemptId: message.attempt.id });
+    };
+    const confirmedItem = confirmation && queuedMessages.find(message => message.id === confirmation.itemId);
+    const confirmationCurrent = !!confirmation && getMessageQueueKey(confirmation.target) === queueKey
+        && confirmedItem?.attempt?.state === QUEUE_ATTEMPT.UNKNOWN && confirmedItem.attempt.id === confirmation.attemptId;
+    const confirmResubmit = async () => {
+        if (!confirmation || !confirmationCurrent || submitting) return;
+        const captured = confirmation;
+        setSubmitting(true);
+        try {
+            await resubmit(captured.target, captured.itemId, captured.attemptId);
+        } catch {
+            toast.error(t('chat.queuedMessage.resubmitError'));
+        } finally {
+            setSubmitting(false);
+            setConfirmation(current => current === captured ? null : current);
+        }
+    };
 
     if (hidden || queuedMessages.length === 0 || !target) {
         return null;
     }
 
     return (
+        <>
         <ComposerFloatingPanel role="region" ariaLabel={t('chat.queuedMessage.title')} compact={collapsed} header={
                 <Button
                     type="button"
@@ -211,6 +258,8 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
                                     key={message.id}
                                     message={message}
                                     target={target}
+                                    blocked={blocked}
+                                    onResubmit={handleResubmit}
                                     onEdit={handleEdit}
                                     onSend={handleSend}
                                 />
@@ -220,6 +269,19 @@ export const QueuedMessageChips = memo(({ target, hidden = false, onEditMessage,
                 </DndContext>
             )}
         </ComposerFloatingPanel>
+        <Dialog open={confirmationCurrent} onOpenChange={open => { if (!open && !submitting) setConfirmation(null); }}>
+            <DialogContent showCloseButton={false} className="max-w-sm">
+                <DialogHeader>
+                    <DialogTitle>{t('chat.queuedMessage.resubmitTitle')}</DialogTitle>
+                    <DialogDescription>{t('chat.queuedMessage.resubmitDescription')}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button type="button" variant="ghost" disabled={submitting} onClick={() => setConfirmation(null)}>{t('chat.queuedMessage.resubmitCancel')}</Button>
+                    <Button type="button" disabled={submitting} onClick={() => { void confirmResubmit(); }}>{t('chat.queuedMessage.resubmitConfirm')}</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 });
 

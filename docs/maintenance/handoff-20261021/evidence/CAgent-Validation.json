@@ -1,0 +1,16 @@
+{
+  "version": "2.0.4-DIJIANG.5.0-DEBUG",
+  "sourceCommit": "c4b2f1da3f2ae752902355a30bd342e7722efc20",
+  "tests": {
+    "dualKernelUi": 87,
+    "web": 124,
+    "electron": 9,
+    "locales": 4,
+    "offlineKit": 3
+  },
+  "uiTypeCheck": "passed",
+  "packagedConversation": "passed against a synthetic loopback server",
+  "hmrConversation": "passed against a synthetic loopback server",
+  "realCAgentApi": "environment-local; not inspected or claimed",
+  "kitDigest": "352f4228bfee94cff7d3df651d286618a247aababd45bdf14bc422c269930c96"
+}

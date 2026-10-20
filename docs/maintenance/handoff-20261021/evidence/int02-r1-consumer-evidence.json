@@ -1,0 +1,246 @@
+{
+  "schema": "r1-escape-inventory/v1",
+  "source": {
+    "workspace": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+    "revision": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+    "scope": "packages/ui/src non-test shared UI, excluding packages/ui/src/lib/opencode for raw SDK/HTTP escape scan"
+  },
+  "methodConsumers": [
+    {
+      "operations": [
+        "getSdkClient() used as SDK identity/epoch and current-scope guard; operations issued through sync source/loader"
+      ],
+      "file": "packages/ui/src/sync/sync-context.tsx",
+      "guardEvidence": "Each captured consumer checks runtime key and/or SDK object identity for stale async work; no direct operation dispatch at captured sites.",
+      "lines": [
+        487,
+        489,
+        2465,
+        2474,
+        2576,
+        2579,
+        2615,
+        2618
+      ]
+    },
+    {
+      "operations": [
+        "experimental.controlPlane.moveSession"
+      ],
+      "file": "packages/ui/src/sync/session-actions.ts",
+      "guardEvidence": "Parent review: OC2 uses facade moveSession; the else branch uses the OC1 SDK. The SDK guard rejects unknown, Legacy and wrong generation and checks its captured connection revision.",
+      "lines": [
+        385
+      ]
+    },
+    {
+      "operations": [
+        "getApiClient() global legacy MCP client",
+        "getScopedApiClient(directory) scoped legacy MCP client"
+      ],
+      "file": "packages/ui/src/stores/useMcpStore.ts",
+      "guardEvidence": "getLegacyMcpApiClient throws OpenCodeRuntimeError when bound runtime generation is oc2 before choosing global/scoped API client.",
+      "lines": [
+        50,
+        57,
+        59
+      ]
+    },
+    {
+      "operations": [
+        "session.prompt for generated chat text"
+      ],
+      "file": "packages/ui/src/lib/gitApi.ts",
+      "guardEvidence": "Parent review: this is the shared commit/PR session fallback after a small-model-unavailable response. It has no local OC2 implementation; its OC1 SDK guard rejects OC2, unknown and Legacy before dispatch. Neutral backend migration remains CA-01/INT-10 at R6.",
+      "lines": [
+        745,
+        746
+      ]
+    },
+    {
+      "operations": [
+        "provider.auth",
+        "provider.list",
+        "auth.set (2 calls)"
+      ],
+      "file": "packages/ui/src/components/sections/providers/ProvidersPage.tsx",
+      "guardEvidence": "Parent review: ProvidersPage selects the V1 subtree only for bound OC1. OAuth is mounted within that subtree. The raw client also carries the revision/protocol guard. CAgent migration remains R6.",
+      "lines": [
+        227,
+        262,
+        479,
+        514
+      ]
+    },
+    {
+      "operations": [
+        "provider.oauth.callback",
+        "provider.oauth.authorize"
+      ],
+      "file": "packages/ui/src/components/sections/providers/ProviderOAuthMethods.tsx",
+      "guardEvidence": "Parent review: ProvidersPage selects the V1 subtree only for bound OC1. OAuth is mounted within that subtree. The raw client also carries the revision/protocol guard. CAgent migration remains R6.",
+      "lines": [
+        108,
+        148
+      ]
+    }
+  ],
+  "sdkConstructorImports": {
+    "typeOnlyImports": [
+      "packages/ui/src/hooks/useChatSearchDirectory.ts:7",
+      "packages/ui/src/sync/types.ts:1",
+      "packages/ui/src/sync/sync-refs.ts:8",
+      "packages/ui/src/sync/sync-context.tsx:3",
+      "packages/ui/src/stores/useConfigStore.ts:7",
+      "packages/ui/src/sync/source.ts:1,3",
+      "packages/ui/src/components/chat/work-status/WorkStatusTasksSection.tsx:10",
+      "packages/ui/src/stores/useBtwStore.ts:3",
+      "packages/ui/src/stores/useAgentsStore.ts:4",
+      "packages/ui/src/stores/useMcpStore.ts:3",
+      "packages/ui/src/stores/useTodosPersistStore.ts:3",
+      "packages/ui/src/stores/messageQueueStore.ts:4",
+      "packages/ui/src/stores/mcpDiagnostics.ts:1",
+      "packages/ui/src/sync/session-error-log.ts:12",
+      "packages/ui/src/sync/bootstrap.ts:1",
+      "packages/ui/src/sync/directory-recovery-snapshots.ts:1",
+      "packages/ui/src/sync/host-session-status-seed.ts:1",
+      "packages/ui/src/sync/session-cache.ts:1",
+      "packages/ui/src/sync/bulk-archive-echo.ts:1",
+      "packages/ui/src/sync/global-blocking-requests.ts:2",
+      "packages/ui/src/sync/event-pipeline.ts:15",
+      "packages/ui/src/sync/session-event-router.ts:1",
+      "packages/ui/src/sync/event-reducer.ts:1",
+      "packages/ui/src/sync/global-session-status.ts:2",
+      "packages/ui/src/sync/persist-cache.ts:9",
+      "packages/ui/src/sync/session-actions.ts:6",
+      "packages/ui/src/components/session/sidebar/sessions/sessionOwnership.ts:2",
+      "packages/ui/src/lib/guests/tool-presentation.ts:3",
+      "packages/ui/src/lib/agentColors.ts:1",
+      "packages/ui/src/components/chat/ComposerStatusBar.tsx:5",
+      "packages/ui/src/components/chat/MarkdownRendererImpl.tsx:5",
+      "packages/ui/src/components/sections/agents/agentPermissionModel.ts:1"
+    ],
+    "nonTestValueConstructorImportsOutsideLibOpencode": []
+  },
+  "comparison": {
+    "priorInventory": "docs/maintenance/evidence/2026-10-08-cagent-consumers.json",
+    "result": "No mechanically new/unlisted captured method-call sites identified: direct SDK usages correspond to inventory evidence for moveSession, session.prompt, provider auth/list/set, and OAuth; sync getter references are present in the inventory caller-reference records. This is source-text matching only.",
+    "boundaryDoc": "docs/maintenance/CAGENT-BOUNDARIES.md",
+    "references": [
+      "boundary doc lines 53-60 lists SDK access, provider OAuth, useMcpStore, session move, sync and Git generation as explicit targets.",
+      "Prior JSON evidence around lines 249-301 records moveSession, session.prompt and provider/OAuth references; method declaration/reference records include getters."
+    ],
+    "ambiguities": [
+      "The inventory is captured from the supplied workspace path; source revision cc6f2db60 was not checked because git commands were prohibited.",
+      "A source-level caller match does not establish that each current call is represented with identical granularity in the prior reference records."
+    ]
+  },
+  "rawPaths": [
+    {
+      "classification": "OpenChamber host status/activity aggregation, explicitly identified by boundary document.",
+      "file": "packages/ui/src/lib/opencode/client.ts",
+      "paths": [
+        "/api/sessions/status",
+        "/api/session-activity"
+      ],
+      "lines": [
+        1789,
+        1812
+      ]
+    },
+    {
+      "classification": "OpenChamber host metadata/storage endpoints; boundary doc explicitly classifies.",
+      "file": "packages/ui/src/sync/session-archive-batch.ts",
+      "paths": [
+        "/api/openchamber/sessions/archive",
+        "/api/openchamber/sessions/{id}/metadata"
+      ],
+      "lines": [
+        42,
+        94
+      ]
+    },
+    {
+      "classification": "OpenChamber namespace strongly suggests owned; route ownership not verified in this inventory.",
+      "file": "packages/ui/src/components/chat/markdown/markdownImageAssets.ts",
+      "paths": [
+        "/api/openchamber/sessions/{id}/markdown-image-grants"
+      ],
+      "lines": [
+        141
+      ]
+    },
+    {
+      "classification": "OpenChamber-owned event transport by name; UI uses EventSource through runtime URL resolver.",
+      "file": "packages/ui/src/lib/openchamberEvents.ts",
+      "paths": [
+        "/api/openchamber/events"
+      ],
+      "lines": [
+        392,
+        393
+      ]
+    },
+    {
+      "classification": "Likely host-owned notification stream; route ownership not independently traced.",
+      "file": "packages/ui/src/hooks/useWebNotificationStream.ts",
+      "paths": [
+        "/api/notifications/stream"
+      ],
+      "lines": [
+        8,
+        37
+      ]
+    },
+    {
+      "classification": "Host filesystem routes; CAGENT boundary doc explicitly retains /api/fs and /fs host-owned with current access checks.",
+      "files": "packages/ui/src/**",
+      "paths": [
+        "/api/fs/*"
+      ]
+    },
+    {
+      "classification": "Ambiguous mixed config surface: documented OpenCode-only writers/fallbacks coexist with OpenChamber config services; route-by-route ownership not classified here.",
+      "files": "packages/ui/src/**",
+      "paths": [
+        "/api/config/*"
+      ]
+    }
+  ],
+  "officialOpenCodeRawPathsOutsideLibOpencode": {
+    "ambiguous": [
+      "The facade itself calls host aggregation endpoints /api/sessions/status and /api/session-activity, documented as requiring neutral backend observation.",
+      "/api/config/* mixes backend configuration and OpenChamber-owned configuration, so not labeled wholesale as official OpenCode protocol.",
+      "SDK-returned operations such as useMcpStore, session.prompt, provider calls and moveSession remain OpenCode-specific candidates even though transport is hidden by the SDK.",
+      "Search excluded lib/opencode per task; no claim about official raw paths inside that adapter."
+    ],
+    "result": "No obvious direct official OpenCode HTTP/SSE path found in searched shared UI files outside lib/opencode; official calls appear via the facade/SDK. This is lexical search, not proof of absence.",
+    "obviousOfficialDirectCallSites": []
+  },
+  "counts": {
+    "nonTestConstructorImportFiles": 0,
+    "runtimeVerified": false,
+    "rawHostPathGroups": 7,
+    "directSdkCallSiteFiles": 5,
+    "methodConsumerFiles": 6,
+    "capturedMethodLineReferences": 18,
+    "typeOnlySdkImportFiles": 32
+  },
+  "parentReview": {
+    "scope": "SPEC 3.1 explicit disposition of retained OpenCode-specific SDK consumers; static acceptance only",
+    "disposition": "All six retained getter consumers map to the existing CA-00 boundaries. No new SDK constructor was found outside lib/opencode. These retained OpenCode-only paths are not evidence of neutral CAgent support.",
+    "canonicalOwner": "docs/maintenance/CAGENT-BOUNDARIES.md, Protocol leaks and direct paths",
+    "laterGate": "R6 remaining CA-01/CA-02 and INT-10 consumer migration",
+    "runtimeProof": "SDK request/result retirement is covered separately by artifacts/int02-r1-sdk-evidence.json. Native IDE acceptance is separate and still open."
+  },
+  "fingerprints": {
+    "packages/ui/src/sync/sync-context.tsx": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+    "packages/ui/src/sync/session-actions.ts": "8302c67553df2e8da755f54b1aed28991e37615674ef62eb5c4c758fce5e13c4",
+    "packages/ui/src/stores/useMcpStore.ts": "586999d4596e5f0d491a41ae0b55a76ac49a46965790d0b19da4267316de62a1",
+    "packages/ui/src/lib/gitApi.ts": "fa75b2787f9f10ecec226a9510605874d90b1f02488f442010567a93ffb48f02",
+    "packages/ui/src/components/sections/providers/ProvidersPage.tsx": "6ddf41da7297016f2efebb5b19edfe2502e6d66a90ec4252d26dad7e5606996d",
+    "packages/ui/src/components/sections/providers/ProviderOAuthMethods.tsx": "e7eb40b73a5440bb32ca83751042a9165eda2b5f9dd727852a733eaecc580d20",
+    "packages/ui/src/lib/opencode/client.ts": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491",
+    "docs/maintenance/CAGENT-BOUNDARIES.md": "c08204d954f9cad8a36c6b14ebddaf1a722893b5bf4d99b4e79aa7d0797b1e5a"
+  }
+}

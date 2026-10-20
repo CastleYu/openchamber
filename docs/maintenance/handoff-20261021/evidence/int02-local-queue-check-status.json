@@ -1,0 +1,16 @@
+{
+  "host-final": 0,
+  "connection-final": 0,
+  "kernel-final": 0,
+  "store-final": 0,
+  "server-store": 0,
+  "sdk-final": 0,
+  "sdk-facade": 0,
+  "auto-send": 0,
+  "v2-sessions": 0,
+  "fetch": 0,
+  "timeout": 0,
+  "lint": 1,
+  "dead": 0,
+  "types": 0
+}

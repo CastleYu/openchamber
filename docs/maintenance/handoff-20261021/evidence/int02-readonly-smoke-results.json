@@ -1,0 +1,18 @@
+[
+  {
+    "scenario": "configured",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-readonly-smoke-gR1gyb",
+    "checks": [
+      "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+      "non-TTY JSON output is pure and contains no configured password",
+      "authenticated configuration remains reachable",
+      "saved record is sole startup authority and failure does not select a fallback",
+      "production test route requires host authentication",
+      "production managed candidate validates without a launch claim",
+      "production current authenticated OC2 endpoint admits without activation",
+      "test preserves settings bytes runtime descriptor and owned process registry",
+      "CLI authenticated stop completes with JSON output",
+      "owned upstream registry is empty after shutdown"
+    ]
+  }
+]

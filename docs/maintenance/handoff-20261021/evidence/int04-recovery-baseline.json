@@ -1,0 +1,65 @@
+{
+  "checkout": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber",
+  "sourceHead": "92e9fe42e",
+  "tests": [
+    {
+      "file": "src/sync/reconnect-recovery.test.ts",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 11,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync_reconnect-recovery.test.ts.log"
+    },
+    {
+      "file": "src/sync/directory-recovery-snapshots.test.ts",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 10,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync_directory-recovery-snapshots.test.ts.log"
+    },
+    {
+      "file": "src/sync/question-recovery.test.ts",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 4,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync_question-recovery.test.ts.log"
+    },
+    {
+      "file": "src/sync/__tests__/event-pipeline-resume.test.js",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync___tests___event-pipeline-resume.test.js.log"
+    },
+    {
+      "file": "src/sync/__tests__/interrupted-turn-tools.test.ts",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 9,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync___tests___interrupted-turn-tools.test.ts.log"
+    },
+    {
+      "file": "src/sync/__tests__/session-event-freshness.test.ts",
+      "runner": "bun test",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-src_sync___tests___session-event-freshness.test.ts.log"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/restart-session-recovery.test.js",
+      "runner": "node vitest",
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-packages_web_server_lib_opencode_restart-session-recovery.test.js.log"
+    }
+  ],
+  "environmentErrors": [
+    "Initial node Vitest entrypoint path missing; corrected to packages/web/node_modules/vitest/vitest.mjs and rerun."
+  ]
+}

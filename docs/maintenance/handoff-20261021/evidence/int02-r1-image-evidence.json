@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "date": "2026-10-11",
+  "baseline": "7be9a791b548f7b89115291abedf94bff79a0a41",
+  "weeklyRemaining": 89,
+  "scope": "Markdown image grants use the generation-bound message projection; family/profile admission and kernel/family revision retirement protect filesystem preparation.",
+  "tests": {
+    "command": "node packages/web/node_modules/vitest/vitest.mjs run --root packages/web server/lib/markdown-image-grants/routes.test.js server/lib/opencode/kernel-operations.test.js --reporter=dot",
+    "passed": 65,
+    "failed": 0,
+    "files": 2,
+    "log": "artifacts/int02-r1-image-final-tests.log"
+  },
+  "checks": [
+    {
+      "seconds": 158.01,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-types.log",
+      "exitCode": 0,
+      "name": "types"
+    },
+    {
+      "seconds": 57.22,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-lint.log",
+      "exitCode": 0,
+      "name": "lint"
+    },
+    {
+      "seconds": 67.42,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-dead.log",
+      "exitCode": 0,
+      "name": "dead"
+    },
+    {
+      "seconds": 195.14,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-web-build.log",
+      "exitCode": 0,
+      "name": "web-build"
+    },
+    {
+      "seconds": 173.57,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-vscode-build.log",
+      "exitCode": 0,
+      "name": "vscode-build"
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "file": "packages/web/server/lib/markdown-image-grants/routes.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "file": "packages/web/server/lib/markdown-image-grants/routes.test.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/feature-routes-runtime.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/kernel-operations.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/kernel-operations.test.js",
+      "exitCode": 0,
+      "name": "syntax"
+    },
+    {
+      "log": "artifacts/int02-r1-image-oxlint.json",
+      "exitCode": 1,
+      "name": "oxlint"
+    }
+  ],
+  "oxlint": {
+    "diagnostics": 60,
+    "authoredDiagnostics": 0,
+    "basis": "Compared diagnostic label lines with final git diff added-line ranges; inherited findings retained."
+  },
+  "links": {
+    "checked": 100,
+    "broken": []
+  },
+  "fingerprints": {
+    "docs/maintenance/CAGENT-BOUNDARIES.md": "a8a1e995d61391abe04576165251e0ddbddc247dfb1977bce21720ddeaf14fa0",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "aa4e87e2fd87509372140840a9096ee67dbc41ee178bbeb0ac61a76e0d33bbf4",
+    "docs/maintenance/zh-CN/CAGENT-BOUNDARIES.md": "1654e64aa9f23409a16583283842468b80ab4c09deb540ab05720df1796c5aa5",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "8d8e5ac77eec816d2f61472c092812f50189477289384c2803ab714cd4235613",
+    "docs/maintenance/zh-CN/README.md": "e14f782d825cc9b07f3124b9bfef4841727ce480b2c077956bbdb0c0dfe8235c",
+    "packages/web/server/index.js": "2e5d6095c1cb4f54a789d6e2f46aae0110fa8a7e25cd1a2aeaee9b2bc54ee0a0",
+    "packages/web/server/lib/markdown-image-grants/DOCUMENTATION.md": "f441ebc1b17720687e9645356abdc0364135dbe30a11d11ec3ffae423e0afa56",
+    "packages/web/server/lib/markdown-image-grants/routes.js": "0dd69f52b89ba457d7bc468a3a66ff6823c86c476e200dcbe56e9a8d4a7eccc4",
+    "packages/web/server/lib/markdown-image-grants/routes.test.js": "aae958b8e2394d9e05ba74bd6952e9c42f4ce179a509d7542585a4644387b0da",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "2dbc122d6fc6ddb5d1125c50c3f2855dcb1f5722b05b5b762eaa24f28328210c",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "a9fcfef2b43f7172425aa4b2fff18baa2471d0f03c5f35222be76c436bd0319d",
+    "packages/web/server/lib/opencode/kernel-operations.js": "fdc4445037688e24f4b3fb0c0666f7bcaa2c42e709c470e6333f376548e44b46",
+    "packages/web/server/lib/opencode/kernel-operations.test.js": "b6207c27dd9a79b36860d689011ef3b3e2ed32d7a7e8789bbe118a4387e37ad1",
+    "docs/maintenance/R1-ACCEPTANCE.md": "87b9288ee623ab9430f92daff69caadca01d1611a81a89cd0de4a8f4508f0b94",
+    "docs/maintenance/zh-CN/R1-ACCEPTANCE.md": "edcde346a067334948a0d6e20306463f85b8354f878cc6233dc54e8ef41fde6d"
+  },
+  "priorEvidence": {
+    "host": "artifacts/int02-r1-close-host.json",
+    "passed": 366,
+    "skipped": 1,
+    "scope": "Pre-correction baseline 7be9a791b; focused final tests cover this correction."
+  },
+  "nextAudit": [
+    {
+      "file": "packages/web/server/lib/event-stream/global-hub.js",
+      "scope": "Profile admission before global stream startup and buffered Space replay; current family retirement tests do not establish unaccepted Legacy refusal.",
+      "sha256": "11d10a8019cb4d1a0d84136fbbc5d76593697a1ead3252e6fae6da30c4986bb6",
+      "evidence": "Static owner trace only; no new runtime acceptance claimed."
+    },
+    {
+      "file": "packages/web/server/lib/opencode/watcher.js",
+      "scope": "Legacy admission on both hub and standalone watcher paths; family/revision checks exist but require profile-specific review.",
+      "sha256": "3ba9a045bdea86edeeb95e6d047fdec2ea9df6d98592e894ab57e5d67f737dfa",
+      "evidence": "Static owner trace only; no new runtime acceptance claimed."
+    },
+    {
+      "file": "packages/web/server/lib/git/routes.js",
+      "scope": "OC2 worktree instance disposer is a direct SDK consumer; inspect family/revision admission and late completion with host Git semantics.",
+      "sha256": "76d5535f5e9959016f2a0cd3f7252fd3e8c10cb410cc3cf56fb22e0caacffc8e",
+      "evidence": "Static owner trace only; no new runtime acceptance claimed."
+    },
+    {
+      "file": "packages/web/server/lib/opencode/plugin-routes.js",
+      "scope": "Family admission and kernel/profile retirement exist; reconcile generated managed-plugin callers separately.",
+      "sha256": "30e2ebe1288adab52f73fde23a4a029f857b981bbc2a25cdc26cbbe4cfe441e3",
+      "evidence": "Static owner trace only; no new runtime acceptance claimed."
+    }
+  ],
+  "limitations": [
+    "R1 route/plugin/bridge inventory reconciliation remains open.",
+    "No real upstream model conversation, exact Legacy acceptance, real CAgent mapping or packaged shell journey is established by these loopback tests.",
+    "Historical sync retention default-timeout failure is unchanged."
+  ],
+  "cleanup": {
+    "reason": "Minimal failure evidence retained; final success and build evidence are consolidated in target artifacts.",
+    "retained": [
+      "int02-r1-image-red.log",
+      "int02-r1-image-red-kernel.log",
+      "int02-r1-image-404-oc2-inspect.log"
+    ],
+    "removed": [
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-image-validate.ps1",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-image-finalize.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-image-lint-fix.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-image-evidence.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-green-1.log",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-green-2.log",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-green-3.log",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-green-4.log",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-green-5.log",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-r1-image-404-inspect.log"
+    ],
+    "bytes": 30639
+  },
+  "finalValidation": "After final schema reuse and removal of duplicate text narrowing: 65 focused tests, two affected backend syntax checks and full changed-JS oxlint were rerun. Builds/type-check/lint/dead-code completed before this behavior-preserving simplification; no UI, package or export signature changed afterward."
+}

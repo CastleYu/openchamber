@@ -1,0 +1,96 @@
+{
+  "nativeRuns": [
+    {
+      "directory": "int02-vscode-host-oBpJ6y",
+      "checks": [
+        "cold startup requires confirmation",
+        "cold discovery has no saved record",
+        "candidate preparation succeeds"
+      ],
+      "finalStatus": "disconnected",
+      "bundleSHA256": "451580EF84226CD42DA3AAD040902667EF701B5BBE3A5C4F5E447F89A91C557B",
+      "bytes": 25250989
+    },
+    {
+      "directory": "int02-vscode-host-n1xuDL",
+      "checks": [
+        "cold startup requires confirmation",
+        "cold discovery has no saved record",
+        "candidate preparation succeeds",
+        "confirmed native OC2 is ready",
+        "actual kernel resolves OC2",
+        "duplicate confirmation is rejected",
+        "SDK activity is available",
+        "active candidate preparation succeeds",
+        "active replacement succeeds",
+        "replacement binds a new server",
+        "previous target is persisted",
+        "confirmed intent is durable in isolated home"
+      ],
+      "finalStatus": "disconnected",
+      "bundleSHA256": "20998D29D5959D8CB5FFB3D6AEA0B00016FF3A67E19122C432E7ECF1B36B53B7",
+      "bytes": 37714373
+    },
+    {
+      "directory": "int02-vscode-host-Ro7uYF",
+      "checks": [
+        "cold startup requires confirmation",
+        "cold discovery has no saved record",
+        "candidate preparation succeeds",
+        "confirmed native OC2 is ready",
+        "actual kernel resolves OC2",
+        "duplicate confirmation is rejected",
+        "SDK activity is available",
+        "active candidate preparation succeeds",
+        "active replacement succeeds",
+        "replacement binds a new server",
+        "previous target is persisted",
+        "confirmed intent is durable in isolated home"
+      ],
+      "finalStatus": "disconnected",
+      "bundleSHA256": "B4373FEA042F96A190BF26A834FB9C2859925987D78FEC626CFE1AC7E94EA928",
+      "bytes": 37724219
+    }
+  ],
+  "sourceFingerprints": {
+    "packages/vscode/src/managed-opencode-process.test.ts": "899DF94BC60C1C5DA72B5D4B2DB1A3CCAE34EA401893AD96464061076E7BF706",
+    "packages/web/server/lib/opencode/connection.test.js": "E457C64854E1209221BA11BBBCA5D766DBE8CE2E4A1D3D18C5B5C94911CD4158",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "D69BAF109BE5E5C1A7745F00411647731CB0205B99240173B2062F92BC859138",
+    "packages/vscode/src/sseProxy.test.ts": "89132C6C7513FCFCB94886ED98137597B3F54225BC72A3783797C09C1212BCB9",
+    "packages/vscode/src/settings-registry-gate.test.ts": "2E7F0F9A4F7491A92663FAEF751D76F967DCC1A9F925E89B4D7FC00E337FCF55",
+    "packages/vscode/README.md": "3B5D06F15A04F70D3AB0B78FFFD271CC638E8CBC07BEB6F93429CD08FEC6E87E",
+    "packages/web/server/lib/opencode/connection.js": "8877845BB1BAB79C4CEB69E85E503CEE23761DB1BC3C7B6C83F923154E06EC92",
+    "packages/web/server/lib/opencode/connection.d.ts": "C278425BE8E96DFC19F8225CB9CDA2838DBDE27A7DCC5EC874B734FCFAD3616F",
+    "packages/vscode/src/bridge.ts": "A582F969E17A744D0BC89EBC43B8E3E0AF524730274847ED7C03C82B095747DD",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "CD236CDCAA787DBBF1A66D20F39325A338BDCC0FDB0CE107204FF7904F0C634E",
+    "docs/maintenance/OPENCODE-INTEGRATION-SPEC.md": "77348164430F621CA58C6E4BA3E67F7175FA6CB94AF637C1A6C4C5E1B8168316",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-SPEC.md": "0DE9BE3D64C9196DADFFA2ECDD454F215A0E9C5BE7F6EA8C29E62C663B572531",
+    "packages/vscode/src/DOCUMENTATION.md": "1C8C1A34D650ECE8D09705CB0471EC66FE89BA4DD71FC69765CDFE3A728535D6",
+    "packages/vscode/src/managed-opencode-process.ts": "BD3E477E1997B840E8C2F4DBD71C9CEA6718088EE11D347A1ADA0543404A05F4",
+    "packages/vscode/src/settings-registry-gate.ts": "69F62E230F82ECBF65168639A25CBA4118BB2A40161F75D0E260517E36335F21",
+    "packages/vscode/src/connection-settings.ts": "EDA3BA32C9FAD3153FFDC8074CB0429E5548981E7FC32A6AA0738E876E3A6011",
+    "packages/vscode/src/connection-runtime.d.ts": "9960311628EB6F261739A2E8A7095578295E3CAB67D9DC84A77260618AFA024F",
+    "packages/vscode/src/connection-settings.test.ts": "8D2A77F2768E50F7E1E5F3A89C7D48F9647DC81457A22CF162B047CD84B5A9D2",
+    "packages/vscode/webview/main.tsx": "198702B7E90499D6556BE7A851E208529A40AEE75AF1362EACAE1EDBC203309C",
+    "packages/vscode/src/connection-runtime.js": "7A0420ED683978EF4DD5E1C2FB0545B959414693414B371422E5680F0AD30546",
+    "packages/vscode/src/bridge-settings-runtime.ts": "D97104EA29353A74510E7BC22246A9B80B8227B1C4B0D06AD2B512FB7C193A8F",
+    "packages/vscode/src/opencode.ts": "759A195C8712A787ACF22A80786D4818202284EE17BEF2391B069DB0955DEF52"
+  },
+  "failure": "First native run failed to recognize OC2 readiness; parser fixed and final native run passed 12 checks.",
+  "tests": {
+    "connectionBoundary": 34,
+    "managedProcesses": 7,
+    "settingsSseGate": 16
+  },
+  "staticChecks": {
+    "rootLint": "passed with 5 inherited warnings",
+    "webviewBuild": "passed",
+    "vscodeBuild": "passed with inherited credential-db CJS warning",
+    "authoredOxlint": "zero findings",
+    "rootTypes": "passed before final local edits; final VS Code types passed",
+    "vscodeTypes": "passed",
+    "deadCode": "2 files,319 exports,231 types; no new module finding"
+  },
+  "cleanupPlannedBytes": 100689581,
+  "weeklyRemainingPercent": 39
+}

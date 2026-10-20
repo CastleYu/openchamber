@@ -1,0 +1,136 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13333,
+            "length": 12,
+            "line": 341,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 16970,
+            "length": 23,
+            "line": 448,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 23115,
+            "length": 20,
+            "line": 619,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 23673,
+            "length": 14,
+            "line": 637,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30080,
+            "length": 31,
+            "line": 823,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30189,
+            "length": 25,
+            "line": 825,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30298,
+            "length": 41,
+            "line": 828,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/lifecycle.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 57544,
+            "length": 16,
+            "line": 1495,
+            "column": 11
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 3,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.385736
+}

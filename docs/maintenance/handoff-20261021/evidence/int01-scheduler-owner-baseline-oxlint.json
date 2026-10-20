@@ -1,0 +1,360 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 802,
+            "length": 11,
+            "line": 20,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1367,
+            "length": 16,
+            "line": 47,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1526,
+            "length": 21,
+            "line": 52,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1790,
+            "length": 23,
+            "line": 59,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2283,
+            "length": 13,
+            "line": 77,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2789,
+            "length": 15,
+            "line": 100,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 3829,
+            "length": 15,
+            "line": 131,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 3898,
+            "length": 24,
+            "line": 135,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5789,
+            "length": 20,
+            "line": 197,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5826,
+            "length": 20,
+            "line": 197,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6611,
+            "length": 31,
+            "line": 234,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6881,
+            "length": 17,
+            "line": 238,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13747,
+            "length": 58,
+            "line": 467,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14254,
+            "length": 64,
+            "line": 484,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14324,
+            "length": 70,
+            "line": 485,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 19859,
+            "length": 64,
+            "line": 603,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 20002,
+            "length": 70,
+            "line": 605,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 20403,
+            "length": 27,
+            "line": 618,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 21750,
+            "length": 27,
+            "line": 659,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 28072,
+            "length": 54,
+            "line": 822,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 29384,
+            "length": 54,
+            "line": 851,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37564,
+            "length": 35,
+            "line": 1086,
+            "column": 11
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 2,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.3637019
+}

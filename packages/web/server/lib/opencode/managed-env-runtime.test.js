@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
-import { OPENCODE_GENERATION } from './compatibility.js';
+import { isLegacyOpenCodeVersion, OPENCODE_GENERATION } from './compatibility.js';
 import { createManagedOpenCodeEnv } from './managed-env-runtime.js';
 
 const SETTINGS = Object.freeze({
@@ -50,13 +50,37 @@ const untilCalled = async (calls, name) => {
 };
 
 describe('managed OpenCode environment runtime', () => {
+  it.each(['1.2.27', 'v1.2.27+build.4'])('recognizes stable Legacy version %s only', (version) => {
+    expect(isLegacyOpenCodeVersion(version)).toBe(true);
+    expect(isLegacyOpenCodeVersion('1.2.27-rc.1')).toBe(false);
+    expect(isLegacyOpenCodeVersion('1.2.28')).toBe(false);
+    expect(isLegacyOpenCodeVersion('01.02.27')).toBe(false);
+    expect(isLegacyOpenCodeVersion('v1.2.27-rc.1+build.4')).toBe(false);
+  });
+
+  it.each(['1.2.27', 'v1.2.27+build.4'])('skips OC1 preparation for Legacy %s before settings reads', async (version) => {
+    const readSettings = vi.fn(async () => ({
+      [SETTINGS.CONTROL]: true, [SETTINGS.WEB]: true, [SETTINGS.MEMORY]: true, [SETTINGS.OPTIMIZE]: true,
+    }));
+    const prepareTools = vi.fn(async () => ({ [CONFIG.CONTENT]: 'managed-config' }));
+    const preparePrompt = vi.fn(async () => ({ prompt: 'managed-prompt' }));
+    const prepareMcp = vi.fn(async () => ({ mcp: 'managed-mcp' }));
+    const h = createHarness({ readSettings, prepareTools, preparePrompt, prepareMcp });
+    await expect(h.run({ generation: GENERATION.OC1, version })).resolves.toEqual({});
+    expect(readSettings).not.toHaveBeenCalled();
+    expect(prepareTools).not.toHaveBeenCalled();
+    expect(preparePrompt).not.toHaveBeenCalled();
+    expect(prepareMcp).not.toHaveBeenCalled();
+    expect(h.calls).toEqual([]);
+  });
+
   it('refuses CAgent before settings, memory, or preparers', async () => {
     const h = createHarness({
       selection: { family: FAMILY.CAGENT, revision: 1 },
       readSettings: async () => { h.calls.push(['settings']); return {}; },
       isMemoryAvailable: () => { h.calls.push(['memory']); return true; },
     });
-    await expect(h.run({ generation: GENERATION.OC1 })).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
+    await expect(h.run({ generation: GENERATION.OC1, version: '1.2.27' })).rejects.toMatchObject({ code: AGENT_ERROR.CHANGED });
     expect(h.calls).toEqual([]);
   });
 

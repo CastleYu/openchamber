@@ -688,3 +688,19 @@ See the [Chinese archive](../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).
 ### Reconnect admission
 
 `verifyConnection` waits for full runtime discovery before admitting a stream attempt. Unlike the short health probe, it cannot return cached readiness while discovery is pending. It refreshes the generation-owned catalog after a rebind and returns false after retirement or unavailable discovery. Successful discovery alone does not publish stream readiness.
+
+### Legacy queue attempt projection
+
+Server-owned queue snapshots and updates retain the strict optional attempt record
+(ID, state and creation time). A pending or unknown attempt blocks sending,
+editing and reordering across its session. Removing or clearing cannot discard
+that unresolved entry; clearing still asks the server to remove ordinary items.
+Accepted entries are skipped by sendable selection and are not terminal evidence.
+
+Only a ready unknown attempt on the active server-owned runtime can be explicitly
+resubmitted. The request sends its captured attempt ID and confirmed=true; a
+synchronous sending claim prevents duplicate requests. Revision guards and the
+runtime hydration generation reject stale results, including switch-away/back
+races. Failed requests refresh authoritative state and preserve unresolved data
+when recovery fails. VS Code retains its existing local queue owner in this batch.
+

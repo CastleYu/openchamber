@@ -794,7 +794,7 @@ export function MobileApp({ apis }: MobileAppProps) {
       // user restarts the app. Success fires runtime-endpoint-changed, which
       // re-bootstraps everything.
       logMobileConnectEvent('resume:auto-connect', {});
-      void autoConnectLastInstance();
+      void autoConnectLastInstance().catch((error) => console.warn('[mobile-connect] resume auto-connect failed', error));
       return;
     }
     logMobileConnectEvent('resume:reprobe', {});
@@ -811,23 +811,23 @@ export function MobileApp({ apis }: MobileAppProps) {
       if (providersCount === 0) void loadProviders({ source: 'mobileApp:nativeResume' });
       if (agentsCount === 0) void loadAgents({ source: 'mobileApp:nativeResume' });
     };
-    const disconnect = (reason: string) => {
+    const disconnect = async (reason: string): Promise<void> => {
       logMobileConnectEvent('resume:disconnect', { reason });
-      switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
+      await switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
       setConnectionEpoch((value) => value + 1);
     };
 
-    void reprobeActiveConnection().then((outcome) => {
+    void reprobeActiveConnection().then(async (outcome) => {
       if (nativeResumeValidationSeqRef.current !== validationSeq) return;
       if (outcome === 'no-connection') {
-        disconnect('no-connection');
+        await disconnect('no-connection');
         return;
       }
       if (outcome === 'needs-login') {
         // Token explicitly rejected (revoked/expired) — tell the user why they
         // land back on the connect screen instead of silently bouncing them.
         setAutoConnectNotice({ kind: 'auth-expired', label: getAutoConnectTargetLabel() ?? '' });
-        disconnect('needs-login');
+        await disconnect('needs-login');
         return;
       }
       if (outcome === 'unreachable') {
@@ -843,7 +843,7 @@ export function MobileApp({ apis }: MobileAppProps) {
           window.setTimeout(() => {
             if (nativeResumeValidationSeqRef.current !== validationSeq) return;
             const lastAttempt = attempt === retryDelaysMs.length - 1;
-            void reprobeActiveConnection({ fast: !lastAttempt }).then((retry) => {
+            void reprobeActiveConnection({ fast: !lastAttempt }).then(async (retry) => {
               if (nativeResumeValidationSeqRef.current !== validationSeq) return;
               if (retry === 'switched') return;
               if (retry === 'unchanged') {
@@ -852,15 +852,15 @@ export function MobileApp({ apis }: MobileAppProps) {
               }
               if (retry === 'needs-login') {
                 setAutoConnectNotice({ kind: 'auth-expired', label: getAutoConnectTargetLabel() ?? '' });
-                disconnect('retry-needs-login');
+                await disconnect('retry-needs-login');
                 return;
               }
               if (!lastAttempt) {
                 retryAt(attempt + 1);
                 return;
               }
-              disconnect(`retry-${retry}`);
-            });
+              await disconnect(`retry-${retry}`);
+            }).catch((error) => console.warn('[mobile-connect] resume retry failed', error));
           }, retryDelaysMs[attempt]);
         };
         retryAt(0);
@@ -869,7 +869,7 @@ export function MobileApp({ apis }: MobileAppProps) {
       if (outcome === 'switched') return;
 
       refreshInPlace();
-    });
+    }).catch((error) => console.warn('[mobile-connect] resume re-probe failed', error));
 
     const now = Date.now();
     if (now - lastNativeResumeSyncEventAtRef.current >= NATIVE_RESUME_SYNC_EVENT_THROTTLE_MS) {
@@ -1020,10 +1020,10 @@ export function MobileApp({ apis }: MobileAppProps) {
     // exactly when it's needed. Check it at resolution time instead.
     if (!isNativeMobileApp || !getRuntimeApiBaseUrl()) return;
     let cancelled = false;
-    const dropToConnectScreen = (notice: MobileConnectionNotice | null) => {
+    const dropToConnectScreen = async (notice: MobileConnectionNotice | null): Promise<void> => {
       logMobileConnectEvent('cold-launch:drop', { kind: notice?.kind ?? 'unknown' });
       if (notice) setAutoConnectNotice(notice);
-      switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
+      await switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
       setConnectionEpoch((value) => value + 1);
     };
     void reprobeActiveConnection().then(async (outcome) => {
@@ -1032,7 +1032,7 @@ export function MobileApp({ apis }: MobileAppProps) {
       if (outcome === 'switched' || outcome === 'unchanged') return;
       const label = getAutoConnectTargetLabel();
       if (outcome === 'needs-login') {
-        dropToConnectScreen({ kind: 'auth-expired', label: label ?? '' });
+        await dropToConnectScreen({ kind: 'auth-expired', label: label ?? '' });
         return;
       }
       if (outcome === 'unreachable') {
@@ -1042,7 +1042,7 @@ export function MobileApp({ apis }: MobileAppProps) {
         // connect screen on the fast verdict — no splash hostage — and retry
         // once in the background with the full budget; a success reconnects
         // the app from the connect screen on its own.
-        dropToConnectScreen(label ? { kind: 'unreachable', label } : null);
+        await dropToConnectScreen(label ? { kind: 'unreachable', label } : null);
         void autoConnectLastInstance({ fast: false, skipIfConnected: true }).catch(() => null);
         return;
       }
@@ -1052,13 +1052,13 @@ export function MobileApp({ apis }: MobileAppProps) {
       const fallback = await autoConnectLastInstance().catch((): AutoConnectOutcome => ({ status: 'no-candidate' }));
       if (cancelled || fallback.status === 'connected') return;
       if (fallback.status === 'needs-login') {
-        dropToConnectScreen({ kind: 'auth-expired', label: fallback.label });
+        await dropToConnectScreen({ kind: 'auth-expired', label: fallback.label });
       } else if (fallback.status === 'unreachable') {
-        dropToConnectScreen({ kind: 'unreachable', label: fallback.label });
+        await dropToConnectScreen({ kind: 'unreachable', label: fallback.label });
       } else {
-        dropToConnectScreen(null);
+        await dropToConnectScreen(null);
       }
-    });
+    }).catch((error) => console.warn('[mobile-connect] cold-launch re-probe failed', error));
     return () => {
       cancelled = true;
     };
@@ -1330,8 +1330,9 @@ export function MobileApp({ apis }: MobileAppProps) {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
-                    setConnectionEpoch((value) => value + 1);
+                    void switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY })
+                      .then(() => setConnectionEpoch((value) => value + 1))
+                      .catch((error) => console.warn('[mobile-connect] recovery disconnect failed', error));
                   }}
                 >
                   {t('mobile.connect.cancelPassword')}
@@ -1411,8 +1412,9 @@ export function MobileApp({ apis }: MobileAppProps) {
               <ProjectConfigErrorToast />
               <MobileAppUpdateToast />
               <MobileShell onActiveConnectionDeleted={() => {
-                switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY });
-                setConnectionEpoch((value) => value + 1);
+                void switchRuntimeEndpoint({ apiBaseUrl: '', clientToken: null, runtimeKey: MOBILE_DISCONNECTED_RUNTIME_KEY })
+                  .then(() => setConnectionEpoch((value) => value + 1))
+                  .catch((error) => console.warn('[mobile-connect] deleted connection disconnect failed', error));
               }} />
               <AppLinkConfirmDialog />
               <SharedTrustConfirmDialog />

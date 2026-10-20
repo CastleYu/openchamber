@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-10-12T01:14:36.0367906Z",
+  "url": "https://github.com/CastleYu/openchamber/releases/tag/v2.0.4-DIJIANG.5.0-DEBUG",
+  "tag": "v2.0.4-DIJIANG.5.0-DEBUG",
+  "draft": false,
+  "prerelease": true,
+  "publishedAt": "2026-10-09T06:08:50Z",
+  "target": "c4b2f1da3f2ae752902355a30bd342e7722efc20",
+  "assets": [
+    {
+      "name": "build-info.json",
+      "size": 357,
+      "state": "uploaded"
+    },
+    {
+      "name": "CAgent-Adapter-Kit-2.0.4-DIJIANG.5.0-DEBUG.zip",
+      "size": 5627730,
+      "state": "uploaded"
+    },
+    {
+      "name": "CAgent-Kit-Digest.txt",
+      "size": 65,
+      "state": "uploaded"
+    },
+    {
+      "name": "CAgent-Validation.json",
+      "size": 535,
+      "state": "uploaded"
+    },
+    {
+      "name": "OpenChamber-2.0.4-DIJIANG.5.0-DEBUG-win-x64.exe",
+      "size": 171760145,
+      "state": "uploaded"
+    },
+    {
+      "name": "openchamber-2.0.4.vsix",
+      "size": 13947323,
+      "state": "uploaded"
+    },
+    {
+      "name": "openchamber-docs-source-c4b2f1da.tar.gz",
+      "size": 938048,
+      "state": "uploaded"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 309,
+      "state": "uploaded"
+    }
+  ]
+}

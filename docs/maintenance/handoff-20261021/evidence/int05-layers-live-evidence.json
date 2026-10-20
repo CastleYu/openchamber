@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-11T20:39:43.743Z",
+  "binarySha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "pinned binary and authenticated exact-version server",
+    "production SDK configuration snapshot",
+    "seven local configuration layers match running effective MCP",
+    "managed source is read-only and existing JSONC is global write target",
+    "raw placeholders preserved separately from expansion"
+  ],
+  "limitations": [
+    "Read-only production SDK plus local reader; configuration write, route admission, remote organization overlays and UI acceptance remain open."
+  ],
+  "cleanup": {
+    "ownedServerExited": true,
+    "fixtureRemoved": true
+  }
+}

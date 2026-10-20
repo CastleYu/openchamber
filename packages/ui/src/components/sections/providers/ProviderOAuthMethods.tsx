@@ -61,7 +61,7 @@ const IDLE: Flow = { phase: 'idle' };
  * chains straight into `callback` and holds it open until the user finishes in
  * the browser, `code` collects a pasted code first. See `provider-oauth.ts`.
  *
- * Only one method can run at a time, and the in-flight callback is aborted when
+ * Only one method can run at a time. Authorization and callback requests abort when
  * this component unmounts. Mount it with `key={providerId}` so switching
  * providers starts from a clean flow.
  */
@@ -75,9 +75,46 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
   const [flow, setFlow] = React.useState<Flow>(IDLE);
   const [promptValues, setPromptValues] = React.useState<Record<string, string>>({});
   const [codeInput, setCodeInput] = React.useState('');
-  const callbackAbortRef = React.useRef<AbortController | null>(null);
+  type Binding = {
+    client: ReturnType<typeof opencodeClient.getSdkClient>;
+    runtime: ReturnType<typeof opencodeClient.getBoundRuntime>;
+    directory: string | undefined;
+    controller: AbortController;
+  };
+  const bindingRef = React.useRef<Binding | null>(null);
+  const directory = opencodeClient.getDirectory();
 
-  React.useEffect(() => () => callbackAbortRef.current?.abort(), []);
+  const isCurrent = React.useCallback((binding: Binding): boolean => {
+    const tracked = bindingRef.current === binding;
+    const current = tracked && !binding.controller.signal.aborted
+      && binding.client === opencodeClient.getSdkClient()
+      && binding.runtime === opencodeClient.getBoundRuntime()
+      && binding.directory === opencodeClient.getDirectory();
+    if (!current) {
+      binding.controller.abort();
+      if (tracked) {
+        bindingRef.current = null;
+        setFlow(IDLE);
+      }
+    }
+    return current;
+  }, []);
+
+  const invalidate = React.useCallback(() => {
+    const binding = bindingRef.current;
+    if (binding) isCurrent(binding);
+  }, [isCurrent]);
+
+  React.useEffect(() => {
+    const unsubscribe = opencodeClient.subscribeRuntime(invalidate);
+    return () => {
+      unsubscribe();
+      bindingRef.current?.controller.abort();
+      bindingRef.current = null;
+    };
+  }, [invalidate]);
+
+  React.useEffect(() => invalidate(), [directory, invalidate]);
 
   const activeIndex = flow.phase === 'idle' ? null : flow.methodIndex;
   const busy = flow.phase === 'authorizing'
@@ -99,63 +136,66 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
    * handed control to the user, so a failure here is a flow state, not an
    * exception to unwind.
    */
-  const runCallback = async (methodIndex: number, code?: string) => {
-    const controller = new AbortController();
-    callbackAbortRef.current?.abort();
-    callbackAbortRef.current = controller;
-
+  const runCallback = async (binding: Binding, methodIndex: number, code?: string) => {
     try {
-      const result = await opencodeClient.getSdkClient().provider.oauth.callback(
-        {
-          providerID: providerId,
-          method: methodIndex,
-          ...(code ? { code } : {}),
-        },
-        { signal: controller.signal },
-      );
-      if (controller.signal.aborted) {
-        return;
-      }
+      const parameters: Parameters<typeof binding.client.provider.oauth.callback>[0] = {
+        providerID: providerId,
+        method: methodIndex,
+      };
+      if (binding.directory) parameters.directory = binding.directory;
+      if (code) parameters.code = code;
+      const result = await binding.client.provider.oauth.callback(parameters, { signal: binding.controller.signal });
+      if (!isCurrent(binding)) return;
       if (result.error) {
         throw result.error;
       }
 
+      bindingRef.current = null;
       setFlow(IDLE);
       toast.success(t('settings.providers.page.toast.oauthCompleted'));
       await onConnected();
     } catch (error) {
-      if (controller.signal.aborted) {
-        return;
-      }
+      if (!isCurrent(binding)) return;
       console.error('Failed to complete OAuth flow:', error);
+      bindingRef.current = null;
       setFlow({
         phase: 'failed',
         methodIndex,
         message: describeOAuthError(error, t, 'settings.providers.page.toast.oauthCompleteFailed'),
       });
     } finally {
-      if (callbackAbortRef.current === controller) {
-        callbackAbortRef.current = null;
-      }
+      if (bindingRef.current === binding) bindingRef.current = null;
     }
   };
 
   const runAuthorize = async (methodIndex: number, inputs: Record<string, string>) => {
+    bindingRef.current?.controller.abort();
+    const binding: Binding = {
+      client: opencodeClient.getSdkClient(),
+      runtime: opencodeClient.getBoundRuntime(),
+      directory: opencodeClient.getDirectory(),
+      controller: new AbortController(),
+    };
+    bindingRef.current = binding;
     setFlow({ phase: 'authorizing', methodIndex });
 
     let authorization: OAuthAuthorization;
     try {
-      const result = await opencodeClient.getSdkClient().provider.oauth.authorize({
+      const parameters: Parameters<typeof binding.client.provider.oauth.authorize>[0] = {
         providerID: providerId,
         method: methodIndex,
-        ...(Object.keys(inputs).length > 0 ? { inputs } : {}),
-      });
+      };
+      if (binding.directory) parameters.directory = binding.directory;
+      if (Object.keys(inputs).length > 0) parameters.inputs = inputs;
+      const result = await binding.client.provider.oauth.authorize(parameters, { signal: binding.controller.signal });
+      if (!isCurrent(binding)) return;
       if (result.error) {
         throw result.error;
       }
 
       const parsed = parseAuthorization(result.data);
       if (!parsed) {
+        bindingRef.current = null;
         setFlow({
           phase: 'failed',
           methodIndex,
@@ -165,7 +205,9 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
       }
       authorization = parsed;
     } catch (error) {
+      if (!isCurrent(binding)) return;
       console.error('Failed to start OAuth flow:', error);
+      bindingRef.current = null;
       setFlow({
         phase: 'failed',
         methodIndex,
@@ -178,17 +220,20 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
     // plugin URL is informational only; opening it creates a misleading docs
     // tab alongside the real sign-in page.
     if (authorization.url && shouldOpenAuthorizationUrl(providerId, authorization.url)) {
+      if (!isCurrent(binding)) return;
       void openExternalUrl(authorization.url);
     }
 
     if (authorization.method === 'code') {
+      if (!isCurrent(binding)) return;
       setCodeInput('');
       setFlow({ phase: 'awaitingCode', methodIndex, authorization, submitting: false });
       return;
     }
 
+    if (!isCurrent(binding)) return;
     setFlow({ phase: 'waiting', methodIndex, authorization });
-    await runCallback(methodIndex);
+    await runCallback(binding, methodIndex);
   };
 
   const beginConnect = (method: ProviderOAuthMethod) => {
@@ -225,7 +270,8 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
       return;
     }
     setFlow({ ...flow, submitting: true });
-    void runCallback(flow.methodIndex, code);
+    const binding = bindingRef.current;
+    if (binding && isCurrent(binding)) void runCallback(binding, flow.methodIndex, code);
   };
 
   /**
@@ -233,8 +279,8 @@ export const ProviderOAuthMethods: React.FC<ProviderOAuthMethodsProps> = ({
    * a new `authorize` replaces it, so reconnecting is always safe.
    */
   const cancel = () => {
-    callbackAbortRef.current?.abort();
-    callbackAbortRef.current = null;
+    bindingRef.current?.controller.abort();
+    bindingRef.current = null;
     setFlow(IDLE);
   };
 

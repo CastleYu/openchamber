@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-13T16:40:39.713Z",
+  "scope": "Legacy scheduled watchdog lifetime and preparation guards, prerequisite to durable attempts",
+  "surfaces": {
+    "web": "owning scheduled runtime",
+    "electron": "same in-process backend",
+    "vscode": "existing unsupported scheduled task route; unchanged",
+    "hostedMobile": "selected host backend",
+    "capacitor": "selected host backend"
+  },
+  "owners": [
+    "scheduled-tasks/runtime.js",
+    "project-config.js remains persistence owner, not modified in this batch"
+  ],
+  "performance": "No additional network request, polling loop or timer; reuse existing watchdog and preparation checks",
+  "requiredEvidence": [
+    "late create cannot continue to prompt",
+    "late knowledge read cannot send",
+    "late send cannot record delivered or overwrite timeout",
+    "runtime retirement during helper read cannot send",
+    "ordinary OC1/OC2 existing regression"
+  ],
+  "deferred": [
+    "durable attempt CAS at create/preparing/submitting boundaries",
+    "restart and same-task unresolved barriers",
+    "exact terminal reconciliation",
+    "explicit resubmit UI"
+  ]
+}

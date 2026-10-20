@@ -1,0 +1,91 @@
+{
+  "at": "2026-10-11T21:31:03.339Z",
+  "sourceBase": "a151cc68d0d2b7573a63861f6ec8ba37778e9159",
+  "sourceSha256": {
+    "docs/maintenance/DUAL-KERNEL-INTERFACES.md": "d261c5fc212ade68d106bb270a8e49536492ce87301e0ab58331eec9808587d1",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "d08a956e55d1376c3595a8d145de8ca8f85165a39064b5ec8c9e136bdd5dabf4",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "58faa0ab1a42067f66da42f430c3e15e341e35ea91c5e09dfcd9da49f7ce014f",
+    "packages/ui/src/components/sections/mcp/McpGrid.tsx": "9b8d0bd96ca61c09ae5e27fa695b3985a551a1c27598c7c66b03b15b10fcbf62",
+    "packages/ui/src/components/sections/mcp/McpPage.tsx": "83ff4ee4541f32bd6438692fe95171c720f34bf82a55dd0225c4f177b0043184",
+    "packages/ui/src/components/sections/mcp/McpSidebar.tsx": "d3db30dfcfeccc2c2f8725f07e1c48cc5ec630b6bc23a9a005d44db7b251b3b2",
+    "packages/ui/src/components/sections/mcp/startMcpAuthorization.ts": "d2bdd4b2b8bb928c6afc74dd166a070b0d796f658fb29a47b3d5bfb00076bb63",
+    "packages/ui/src/lib/i18n/messages/en.settings.ts": "9feb13d8ab6958b2df6eec69a52b3688c34cd53959e24cdeda278759d930b5ac",
+    "packages/ui/src/lib/i18n/messages/mcp-grid.i18n.ts": "2a892b9305dc32db809fc1f9bde9b006893696a26c05216e799ac607482adb4c",
+    "packages/ui/src/lib/i18n/messages/zh-CN.settings.ts": "e192e43d9dad05e287efabe08d7dc16544ec3c2d9501b74d47776f66d7aa76b1",
+    "packages/ui/src/stores/useMcpConfigStore.ts": "6cdb06505f6a50d2a1180b1a5fbe73a41b729a6c503213f1d05ae6671bc58d2e",
+    "packages/vscode/src/DOCUMENTATION.md": "d8ec557e999fb2a75ee95435a39f137a3dcd8d3e1d0de025ff2e39f32fe5b00e",
+    "packages/vscode/src/bridge-config-runtime.test.js": "3a33b4be116998d358a4a34d2ae442f7d6f6f9be9a7611235e4fe25456cf5ca3",
+    "packages/vscode/src/bridge-config-runtime.ts": "38ebd8050f7c6aa2e329a1c59958733f7595e829f53d9977ad74772a78b44715",
+    "packages/web/server/index.js": "825cc137010b82c06feea21ccd597a399826f71c22f12e157986690b25d21174",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "97e261e8b112260243aa14fd1e74b0a1ca3bb25e09222878a391c611b2740e78",
+    "packages/web/server/lib/opencode/config-entity-routes.js": "3c4086aec2b33d71b4a2ea0336badf8f82e6b275a4327150f04497dde3d062b2",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "13a900287fef1036ff1f5fc91faa8a2fe7e032254cb12f7b6b4b1f88dc5d299e",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "ff78bf2860cd8d612c3d6530dd9e4034f7aeefc527ea50f48bec7c3f81de23ef",
+    "packages/web/server/lib/opencode/kernel-operations.js": "3deed52c9ebddc779e2a1057027f0e1314dc9eea3ae4e3f3e8ef7ff915de9d64",
+    "packages/web/server/lib/opencode/kernel-operations.test.js": "7942ec41270af531ebb7563371a896c9d7865cda7ae1b81b8d965e9dbeb940df",
+    "packages/web/server/lib/opencode/legacy-config-layers.js": "d08de44c885e1fef73975183a3ee31d133e23ed98fb8933d288f05023e657d0a",
+    "packages/web/server/lib/opencode/legacy-contract.d.ts": "b6430c1d28ee8f6867d515ebc0d68130ff116e4bbceec01b1e992341d9f30908",
+    "packages/ui/src/components/sections/mcp/startMcpAuthorization.test.ts": "e349d9e092a506a0c0335031041eee01b90de69d77ee8fedee0d10afd5ac3202",
+    "packages/ui/src/stores/useMcpConfigStore.legacy.test.ts": "ae6147a9d4a9575174ccefde04b4525e42ff17eeec011399a6486cfb65a80259",
+    "packages/web/server/lib/opencode/legacy-mcp-config.d.ts": "f03cea76ed6111f477ad33455b0dc21c73e961cbefbfb9f77c6a13964fcf5d05",
+    "packages/web/server/lib/opencode/legacy-mcp-config.js": "eff700d37d58775cdb92d10597abb42315242f39dc7f7db1b9d8dd032370b4f6",
+    "packages/web/server/lib/opencode/legacy-mcp-config.test.js": "901bf9ce7414a7b9350e1f495137402ee59532b79fb3f77115e0c9cb8f5a613f",
+    "packages/web/server/lib/opencode/legacy-mcp-routes.test.js": "fbac16543bce1af37f9517da028fd2fab9ba0319c63d9502603a5419beb5c278"
+  },
+  "milestone": "INT-05 in progress; R3 open",
+  "scope": "Exact 1.2.27 native MCP persistence shared by Web/Electron and VS Code, with UI enabled-only handling",
+  "validation": {
+    "backend": "195 passed; final route rerun 72 passed",
+    "bridge": "60 passed",
+    "ui": "13 passed",
+    "types": "All workspace packages passed; Web rerun sequentially after parallel root run exhausted heap; final UI and VS Code checks passed",
+    "lint": "Workspace lint passed with 5 existing warnings; final changed-file ESLint passed",
+    "builds": "Web, VS Code webview and extension passed",
+    "antiSlop": {
+      "authored": 0,
+      "existing": 171
+    },
+    "deadCode": "Cached knip report inspected; see int05-mcp-dead-code.log",
+    "exactBinary": {
+      "persistenceChecks": 9,
+      "protocolChecks": 9,
+      "persistence": "int05-mcp-persistence-live-evidence.json",
+      "protocol": "int05-mcp-live-evidence.json"
+    }
+  },
+  "cleanup": {
+    "protocol": {
+      "openCodeExited": true,
+      "fixtureRemoved": true,
+      "removedBytes": 1824086,
+      "removedFiles": 12
+    },
+    "persistence": {
+      "ownedServerExited": true,
+      "fixtureRemoved": true
+    },
+    "oneOffHelpers": {
+      "files": 20,
+      "bytes": 52173,
+      "removed": true,
+      "root": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts"
+    }
+  },
+  "quota": {
+    "source": "live get_usage_limits at batch checkpoint",
+    "weeklyRemainingPercent": 67,
+    "checkedAt": "2026-10-11T21:32:14.2234951Z"
+  },
+  "limitations": [
+    "File writes remain deferred until R4 apply/reload",
+    "No complete IDE/native UI or packaged acceptance",
+    "No organization overlay or real CAgent API acceptance"
+  ],
+  "next": [
+    "R3 credentials, plugins and unattended behavior",
+    "R4 apply/reload",
+    "Remaining ordered milestones through R7"
+  ],
+  "remoteAndReleaseChanged": false,
+  "commit": "cb2285570"
+}

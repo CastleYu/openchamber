@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-12T17:27:25.378Z",
+  "locales": {
+    "en": 61,
+    "nl": 61,
+    "uk": 61,
+    "de": 61,
+    "es": 61,
+    "fr": 61,
+    "ja": 61,
+    "ko": 61,
+    "pl": 61,
+    "pt-BR": 61,
+    "tr": 61,
+    "zh-CN": 61,
+    "zh-TW": 61
+  },
+  "addedKey": "settings.providers.legacy.cleanupUnconfirmed",
+  "translated": true,
+  "placeholderParity": true
+}

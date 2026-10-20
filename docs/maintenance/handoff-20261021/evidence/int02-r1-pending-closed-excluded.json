@@ -1,0 +1,6 @@
+{
+  "reason": "Fixture required password authentication; no authenticated browser session was established, so this run is excluded from browser-closed acceptance.",
+  "out": "artifacts/int02-r1-pending-closed-MyM4m4",
+  "pid": 113776,
+  "excluded": true
+}

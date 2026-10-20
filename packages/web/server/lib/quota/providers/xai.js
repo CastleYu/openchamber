@@ -57,6 +57,8 @@ const tokenNeedsRefresh = (entry) => {
 };
 
 const refreshXaiOauth = async (entry) => {
+  // Fail before either starting or joining a refresh that Legacy cannot persist.
+  getOpenCodeCredentialGeneration();
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshToken = nonEmptyString(entry.refresh);

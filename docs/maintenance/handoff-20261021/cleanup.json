@@ -1,0 +1,48 @@
+{
+  "retained": [
+    "node_modules dependencies",
+    "packages/electron/.cache/opencode-cli verified binaries",
+    "artifacts raw evidence and release bundles",
+    ".env and runtime state"
+  ],
+  "date": "2026-10-21",
+  "note": "Only ignored build outputs and named caches were considered; source and evidence were preserved.",
+  "records": [
+    {
+      "bytes": 965670901.0,
+      "files": 1355,
+      "result": "removed",
+      "path": "packages/electron/dist"
+    },
+    {
+      "bytes": 1682785.0,
+      "files": 3,
+      "result": "removed",
+      "path": "packages/electron/dist-bundle"
+    },
+    {
+      "bytes": 52861291.0,
+      "files": 589,
+      "result": "removed",
+      "path": "packages/vscode/dist"
+    },
+    {
+      "bytes": 55902591.0,
+      "files": 1120,
+      "result": "removed",
+      "path": "packages/web/dist"
+    },
+    {
+      "bytes": 20180.0,
+      "files": 6,
+      "result": "removed",
+      "path": "node_modules/.cache"
+    },
+    {
+      "bytes": 19143.0,
+      "files": 1,
+      "result": "removed",
+      "path": "node_modules/.vite"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "source": "805881f7369227fc23f5263482919945492b8a8d",
+  "checks": 40,
+  "evidence": [
+    {
+      "path": "artifacts/int02-connection-configured-3AS8tm/evidence.json",
+      "sha256": "d0641cbb37d3f715582e80bff6947096afcc432e6d79c9dfcb68ebd1686d91e8",
+      "result": {
+        "sourceSha": "805881f7369227fc23f5263482919945492b8a8d",
+        "profile": "oc2",
+        "mode": "configured",
+        "version": "2.0.20",
+        "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+        "checks": [
+          "migration discovery requires host authentication",
+          "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+          "unconfirmed cold startup leaves authenticated settings reachable and no process",
+          "invalid candidate does not replace settings",
+          "confirmed save is durable with prior settings backup",
+          "confirmed saved record suppresses contradictory legacy prefill",
+          "manual recovery starts the saved connection in the same host",
+          "configured binary managed startup and exact profile",
+          "duplicate save is inert and active replacement is rejected durably",
+          "one owned live server registry entry",
+          "managed host facade session creation and reopened history",
+          "managed session deletion",
+          "owned server exit and registry cleanup"
+        ],
+        "isolated": true,
+        "conversationNotExercised": true
+      }
+    },
+    {
+      "path": "artifacts/int02-connection-command-EZNZea/evidence.json",
+      "sha256": "8da89ba66c418bb89777c2bc818241d11e4ddbc2d4e03f132e95b7386f2d6778",
+      "result": {
+        "sourceSha": "805881f7369227fc23f5263482919945492b8a8d",
+        "profile": "oc2",
+        "mode": "command",
+        "version": "2.0.20",
+        "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+        "checks": [
+          "configured binary managed startup and exact profile",
+          "duplicate save is inert and active replacement is rejected durably",
+          "one owned live server registry entry",
+          "managed host facade session creation and reopened history",
+          "managed session deletion",
+          "owned server exit and registry cleanup"
+        ],
+        "isolated": true,
+        "conversationNotExercised": true
+      }
+    },
+    {
+      "path": "artifacts/int02-connection-path-DBd8tp/evidence.json",
+      "sha256": "527f5cd727dac6fb71dc28fe23db52e4afa60d65406b804b2e5e962233d08ea0",
+      "result": {
+        "sourceSha": "805881f7369227fc23f5263482919945492b8a8d",
+        "profile": "oc2",
+        "mode": "path",
+        "version": "2.0.20",
+        "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+        "checks": [
+          "configured binary managed startup and exact profile",
+          "duplicate save is inert and active replacement is rejected durably",
+          "one owned live server registry entry",
+          "managed host facade session creation and reopened history",
+          "managed session deletion",
+          "owned server exit and registry cleanup"
+        ],
+        "isolated": true,
+        "conversationNotExercised": true
+      }
+    },
+    {
+      "path": "artifacts/int02-connection-bundled-SJnYCZ/evidence.json",
+      "sha256": "9a467e0aaadf47c95c21cb622a8ae1dde9aadf0aa07bdedfc1c0afe891b54065",
+      "result": {
+        "sourceSha": "805881f7369227fc23f5263482919945492b8a8d",
+        "profile": "oc2",
+        "mode": "bundled",
+        "version": "2.0.20",
+        "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+        "checks": [
+          "configured binary managed startup and exact profile",
+          "duplicate save is inert and active replacement is rejected durably",
+          "one owned live server registry entry",
+          "managed host facade session creation and reopened history",
+          "managed session deletion",
+          "owned server exit and registry cleanup"
+        ],
+        "isolated": true,
+        "conversationNotExercised": true
+      }
+    },
+    {
+      "path": "artifacts/int01-real/oc2-RxfWKE/evidence.json",
+      "sha256": "32824173e1b88b5f6bfa81af6fa7ba511e7a719cabfe48782aa55da9fb20be6a",
+      "result": {
+        "sourceSha": "805881f7369227fc23f5263482919945492b8a8d",
+        "workingTreePatch": false,
+        "skipStartFlag": false,
+        "version": "opencode v2.0.20",
+        "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+        "checks": [
+          "real OC2 profile discovery",
+          "real upstream authentication rejection",
+          "cold mismatched mode keeps authenticated configuration reachable",
+          "actual Web host admits real OC2",
+          "host facade session creation and reopened empty history",
+          "durable mismatched mode refuses write",
+          "repeated selection and Auto recovery",
+          "original OC2 facade session delete",
+          "host shutdown preserves external OC2 process"
+        ],
+        "isolated": true,
+        "conversationNotExercised": true
+      }
+    }
+  ],
+  "contractSuite": "int02-r1-current-contracts.log",
+  "contractResult": {
+    "pass": 305,
+    "skip": 2
+  },
+  "conversationNotExercised": true
+}

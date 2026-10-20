@@ -1,0 +1,14 @@
+{
+  "round": "R3",
+  "sourceBase": "bd0c0a3a5ab49f3938ddfff0b571a52d0a0fa2d8",
+  "status": "implementation in progress; no acceptance claim",
+  "surfaces": {
+    "web": "Shared finite Legacy HTTP admission and owned metadata deletion.",
+    "electron": "Same backend admission and metadata owner; packaged validation remains R7.",
+    "vscode": "Imports shared admission, delegates owned DELETE through existing Legacy session API.",
+    "hostedMobile": "Selected host shares backend admission; physical journey remains R7.",
+    "capacitorMobile": "Selected host shares backend admission; physical journey remains R7."
+  },
+  "scope": "Advanced operations first. Configuration, recovery and autonomous dispatch remain required enclosing R3 work.",
+  "temporaryFiles": "r3 implementation/probe helpers and isolated fixtures retained until related integration check then consolidate and remove."
+}

@@ -1,0 +1,54 @@
+{
+  "commit": "52715104425fbe8f662ee3bdcc5161fa6806e2bf",
+  "tests": {
+    "passed": 136,
+    "skipped": 1
+  },
+  "realHost": {
+    "sourceSha": "09d277c7f56f0b74432afad6f4acfdd0737e78f6",
+    "profile": "oc2",
+    "mode": "configured",
+    "version": "2.0.20",
+    "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+    "checks": [
+      "migration discovery requires host authentication",
+      "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+      "unconfirmed cold startup leaves authenticated settings reachable and no process",
+      "invalid candidate does not replace settings",
+      "actual React candidate confirmation starts real OC2 and initializes the shared client",
+      "UI confirmed save is durable with prior settings backup",
+      "UI confirmed saved record suppresses contradictory legacy prefill",
+      "configured binary managed startup and exact profile",
+      "duplicate save is inert and active replacement is rejected durably",
+      "one owned live server registry entry",
+      "active confirmed reload exits old PID before one replacement is ready",
+      "managed host facade session creation and reopened history",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "checks": {
+    "webTypes": "passed",
+    "webLint": "passed",
+    "syntax": "passed",
+    "build": 0,
+    "deadCode": 0,
+    "anti": {
+      "inherited": 8,
+      "authored": 0
+    }
+  },
+  "weeklyRemainingPercent": 45,
+  "fingerprints": {
+    "packages/web/server/lib/opencode/lifecycle.js": "ce17fb25b888c05f0b635fc03048d9e62f4926cc7dbc1e4fb27d7d20313f1273",
+    "packages/web/server/lib/opencode/lifecycle-family.test.js": "f9038e2f79ee4ebcf914ac6b29bbb4385401b6758332e5eb4ef86d48de54ee48",
+    "packages/web/server/lib/opencode/lifecycle-process.test.js": "0dd1ddf8ab748002dc5716014c8512a0216442e05b1aa35c404b32041d59ac23",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "1574b5772d99d70bea76eb17e1dac803ed1fef8d6a13f6c3b70be0cb6a448e9f",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "ffd1917d8c02e27dd87c627828599a3e9c69bc02a5881b97bd5e13779f537f35",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "fb9aea8d21c83c295a7346d5095f86f50edc78eb68181a8c18c9d95420b1f45a"
+  },
+  "activeRecordReplacement": "gated",
+  "release": "unchanged"
+}

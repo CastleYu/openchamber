@@ -1,4 +1,6 @@
 import { createVSCodeAPIs } from './api';
+import { legacyProviderFetch } from './api/legacyProviders';
+import { LEGACY_PROVIDER_ROUTE } from '../../web/server/lib/opencode/legacy-provider-routes.js';
 import { CONNECTION_TEST } from '@openchamber/ui/lib/opencode/connection';
 import { AGENT_ERROR, AGENT_ROUTE } from '../../web/server/lib/agent/constants.js';
 import { createRemovalTombstones } from './inlineCommentRemovals';
@@ -920,6 +922,10 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
         void sendBridgeMessage(HOST_CONNECTION.BRIDGE, { method: 'POST', path: CONNECTION_TEST.CANCEL_ROUTE, body }).catch(() => {});
       } : undefined });
     return new Response(JSON.stringify(result.body), { status: result.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  }
+
+  if (pathname === LEGACY_PROVIDER_ROUTE.BASE || pathname.startsWith(LEGACY_PROVIDER_ROUTE.BASE + '/')) {
+    return legacyProviderFetch(pathname, input, init, method);
   }
 
   if (pathname.startsWith('/api/config/settings')) {

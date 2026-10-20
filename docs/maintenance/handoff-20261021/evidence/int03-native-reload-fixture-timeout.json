@@ -1,0 +1,153 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 1,
+  "evidence": {
+    "error": "Native journey timed out"
+  },
+  "modelCalls": [
+    {
+      "marker": "\"LEGACY_NATIVE_TEXT\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "[{\"type\":\"text\",\"text\":\"LEGACY_NATIVE_ATTACHMENT\"},{\"type\":\"text\",\"text\":\"Called the Read tool with the following input: {\\\"filePath\\\":\\\"fixture.js\\\"}\"},{\"type\":\"text\",\"text\":\"const attached = \\\"LEGACY_NATIVE_ATTACHMENT_CONTENT\\\";\\n\"}]",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_HOLD\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "server.heartbeat",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "permission.asked",
+    "permission.replied",
+    "question.asked",
+    "question.replied",
+    "session.error"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-BqJjDB",
+  "limitations": [
+    "Controlled model does not prove external provider quality",
+    "Reopen and remaining cross-host/current-profile checks must be independently verified"
+  ]
+}

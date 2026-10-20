@@ -1,0 +1,32 @@
+{
+  "baseline": "7b50e499094653c47c5b1dcb8b319a0da6a7e738",
+  "testedSourceFiles": {
+    "packages/vscode/src/settings-registry-gate.test.ts": "a683f7e23aca8997ebfef4e18a06037f02e47f9c4434c859de92144d320a83bf",
+    "packages/vscode/src/settings-registry-gate.ts": "b00e9a9b2f24a417ac4f475fc6b18ae2c0842d94ed17b480cffeb1d5ab7e3282",
+    "packages/vscode/webview/main.tsx": "c705bc064f3b73e195b75fd36b8527c0c9f8a828efee514acb074fea96058fba",
+    "packages/web/server/index.js": "31c0de44eb0ee6dcb2023c9ab1663634163e27e9f43323299f18bc2dda1ee090",
+    "packages/web/server/lib/opencode/compatibility.d.ts": "27350cddba0d9c1c82b508b1d7ec82ec57c560dda7888a88bc8ad39779f81f25",
+    "packages/web/server/lib/opencode/compatibility.js": "2912e948167e44378db51192f600cbe6557a704e686f31276a6241552bf16030",
+    "packages/web/server/lib/opencode/connection.js": "d06fc38c53d5104942e407ed88bc1681cf22b208117b3209d2b210fe49fb9dc8",
+    "packages/web/server/lib/opencode/connection.test.js": "ef9c1dc2b1c7335cd2d082ea02f4e0efca423ad1aba0d23b924addf4d5c988bb",
+    "packages/web/server/lib/opencode/env-runtime.js": "39fa63d74e7f9d1c30acb33f590283eda07ca31e6dede781ef530b3d32b23610",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "0dbec996034c950948a52fd982a98fc55b84042e29ea5866425151e8a87146b5",
+    "packages/web/server/lib/opencode/routes-runtime.test.js": "890c6450d523762fd8e6b1dc3680ade5ee711e702d0e381dd73ea5c36f504325",
+    "packages/web/server/lib/opencode/routes.js": "beb5a5fe489e1f239bcf3fe4a6f9c47967896208aab578dfafb35138fa814de1"
+  },
+  "validation": {
+    "webPassed": 213,
+    "webSkipped": 1,
+    "vscodePassed": 10,
+    "realOC2Checks": 13,
+    "workspaceTypeCheck": 0,
+    "workspaceLint": 0,
+    "deadCode": 0,
+    "vscodeBuild": 0,
+    "finalExtensionBuild": 0,
+    "antiInherited": 283,
+    "antiNewFindings": 0
+  },
+  "weeklyRemainingPercent": 46,
+  "verifiedCommit": "820ff6c05e679a2f6a80754f9e4937a8f3d20c9b"
+}

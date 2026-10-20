@@ -1,7 +1,11 @@
+import { toast } from 'sonner';
+import { formatMessage, useI18nStore } from '@/lib/i18n';
+import type { RelayTunnelClient } from '@/lib/relay/tunnel-client';
 import { refreshRuntimeUrlAuthToken, setRuntimeBearerToken, setRuntimeExtraHeaders } from '@/lib/runtime-auth';
 import { configureRuntimeUrlResolver } from '@/lib/runtime-url';
 import {
   activateRelayTunnel,
+  adoptRelayTunnel,
   deactivateRelayTunnel,
   type RelayRuntimeDescriptor,
 } from '@/lib/relay/runtime-tunnel';
@@ -15,6 +19,46 @@ export type RuntimeEndpointChangedDetail = {
 
 const RUNTIME_ENDPOINT_CHANGED_EVENT = 'openchamber:runtime-endpoint-changed';
 const RUNTIME_ENDPOINT_WILL_CHANGE_EVENT = 'openchamber:runtime-endpoint-will-change';
+
+const OAUTH_CLEANUP_TIMEOUT_MS = 3_000;
+type OAuthCleanup = (signal: AbortSignal) => Promise<void> | void;
+let oauthCleanup: OAuthCleanup | null = null;
+let switching = false;
+export const isRuntimeSwitching = (): boolean => switching;
+
+/** The Legacy provider owner supplies cleanup without coupling transport to its SDK. */
+export const registerRuntimeOAuthCleanup = (cleanup: OAuthCleanup): (() => void) => {
+  if (oauthCleanup) throw new Error('Runtime OAuth cleanup owner already registered');
+  oauthCleanup = cleanup;
+  return () => { if (oauthCleanup === cleanup) oauthCleanup = null; };
+};
+
+const cleanupOAuth = (): Promise<void> | void => {
+  const controller = new AbortController();
+  let pending: Promise<void> | void;
+  try { pending = oauthCleanup?.(controller.signal); }
+  catch { pending = Promise.reject(new Error('OAuth cleanup failed')); }
+  if (!pending) return;
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => { controller.abort(); resolve(false); }, OAUTH_CLEANUP_TIMEOUT_MS);
+  });
+  return Promise.race([pending.then(() => true, () => false), timeout]).then((confirmed) => {
+    clearTimeout(timer);
+    if (!confirmed) {
+      controller.abort();
+      toast.warning(formatMessage(useI18nStore.getState().dictionary, 'settings.providers.legacy.cleanupUnconfirmed'));
+    }
+  });
+};
+
+/** Full-page connection changes need the same cleanup while the old auth is live. */
+export const prepareRuntimeNavigation = async (): Promise<void> => {
+  if (switching) throw new Error('Runtime switch already in progress');
+  switching = true;
+  try { const pending = cleanupOAuth(); if (pending) await pending; }
+  finally { switching = false; }
+};
 
 let activeApiBaseUrl = '';
 let activeRuntimeKey = '';
@@ -152,44 +196,51 @@ export const initializeRuntimeEndpoint = (options: { apiBaseUrl?: string | null;
   activeRuntimeKey = options.runtimeKey?.trim() || (isLocal ? 'local' : normalizeRuntimeUrlKey(apiBaseUrl || sameOriginBaseUrl));
 };
 
-export const switchRuntimeEndpoint = (options: { apiBaseUrl: string; clientToken?: string | null; runtimeKey?: string | null; requestHeaders?: Record<string, string> | null; relay?: RelayRuntimeDescriptor | null }): void => {
-  const apiBaseUrl = options.apiBaseUrl.trim();
-  const previousApiBaseUrl = getRuntimeApiBaseUrl();
-  const previousRuntimeKey = getRuntimeKey();
-  const runtimeKey = options.runtimeKey?.trim() || normalizeRuntimeUrlKey(apiBaseUrl);
-  const detail = { apiBaseUrl, previousApiBaseUrl, runtimeKey, previousRuntimeKey };
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent<RuntimeEndpointChangedDetail>(RUNTIME_ENDPOINT_WILL_CHANGE_EVENT, { detail }));
-  }
-  activeApiBaseUrl = apiBaseUrl;
-  activeRuntimeKey = runtimeKey;
-  if (typeof window !== 'undefined') {
-    const runtimeWindow = window as typeof window & {
-      __OPENCHAMBER_API_BASE_URL__?: string;
-      __OPENCHAMBER_CLIENT_TOKEN__?: string;
-      __OPENCHAMBER_RUNTIME_HEADERS__?: Record<string, string>;
-    };
-    setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_API_BASE_URL__', apiBaseUrl);
-    setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_CLIENT_TOKEN__', options.clientToken || undefined);
-    setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_RUNTIME_HEADERS__', options.requestHeaders || undefined);
-  }
-  configureRuntimeUrlResolver({ apiBaseUrl, realtimeBaseUrl: apiBaseUrl });
-  setRuntimeExtraHeaders(options.requestHeaders || null);
-  setRuntimeBearerToken(options.clientToken || null);
-  // Relay mode routes runtime HTTP/WS through an E2EE tunnel instead of the
-  // network. Activate the tunnel BEFORE minting the url token, since the mint
-  // itself rides the tunnel (runtimeFetch -> tunnel.fetch).
-  if (options.relay) {
-    activateRelayTunnel(options.relay);
-  } else {
-    deactivateRelayTunnel();
-  }
-  void refreshRuntimeUrlAuthToken(apiBaseUrl).catch(() => {});
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent<RuntimeEndpointChangedDetail>(RUNTIME_ENDPOINT_CHANGED_EVENT, {
-      detail,
-    }));
-  }
+export const switchRuntimeEndpoint = async (options: { apiBaseUrl: string; clientToken?: string | null; runtimeKey?: string | null; requestHeaders?: Record<string, string> | null; relay?: RelayRuntimeDescriptor | null; relayTunnel?: RelayTunnelClient }): Promise<void> => {
+  if (switching) { options.relayTunnel?.close(); throw new Error('Runtime switch already in progress'); }
+  switching = true;
+  try {
+    const pending = cleanupOAuth();
+    if (pending) await pending;
+    const apiBaseUrl = options.apiBaseUrl.trim();
+    const previousApiBaseUrl = getRuntimeApiBaseUrl();
+    const previousRuntimeKey = getRuntimeKey();
+    const runtimeKey = options.runtimeKey?.trim() || normalizeRuntimeUrlKey(apiBaseUrl);
+    const detail = { apiBaseUrl, previousApiBaseUrl, runtimeKey, previousRuntimeKey };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent<RuntimeEndpointChangedDetail>(RUNTIME_ENDPOINT_WILL_CHANGE_EVENT, { detail }));
+    }
+    activeApiBaseUrl = apiBaseUrl;
+    activeRuntimeKey = runtimeKey;
+    if (typeof window !== 'undefined') {
+      const runtimeWindow = window as typeof window & {
+        __OPENCHAMBER_API_BASE_URL__?: string;
+        __OPENCHAMBER_CLIENT_TOKEN__?: string;
+        __OPENCHAMBER_RUNTIME_HEADERS__?: Record<string, string>;
+      };
+      setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_API_BASE_URL__', apiBaseUrl);
+      setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_CLIENT_TOKEN__', options.clientToken || undefined);
+      setWindowRuntimeValue(runtimeWindow, '__OPENCHAMBER_RUNTIME_HEADERS__', options.requestHeaders || undefined);
+    }
+    configureRuntimeUrlResolver({ apiBaseUrl, realtimeBaseUrl: apiBaseUrl });
+    setRuntimeExtraHeaders(options.requestHeaders || null);
+    setRuntimeBearerToken(options.clientToken || null);
+    // Relay mode routes runtime HTTP/WS through an E2EE tunnel instead of the
+    // network. Activate the tunnel BEFORE minting the url token, since the mint
+    // itself rides the tunnel (runtimeFetch -> tunnel.fetch).
+    if (options.relay) {
+      if (options.relayTunnel) adoptRelayTunnel(options.relay, options.relayTunnel);
+      else activateRelayTunnel(options.relay);
+    } else {
+      deactivateRelayTunnel();
+    }
+    void refreshRuntimeUrlAuthToken(apiBaseUrl).catch(() => {});
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent<RuntimeEndpointChangedDetail>(RUNTIME_ENDPOINT_CHANGED_EVENT, {
+        detail,
+      }));
+    }
+  } finally { switching = false; }
 };
 
 export const subscribeRuntimeEndpointWillChange = (callback: (detail: RuntimeEndpointChangedDetail) => void): (() => void) => {

@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-12",
+  "status": "R3 INT05 open",
+  "scope": "Exact stable Legacy CLI skips generated plugin preparation; user configuration preserved",
+  "astra": "Confirmed narrow version gate; separate endpoint-version binding gap deferred to next batch",
+  "runtimes": {
+    "web": "shared managed environment owner",
+    "electron": "same in-process backend owner",
+    "hostedMobile": "server owner",
+    "capacitor": "connected server owner",
+    "vscode": "independent path; no generated plugin injection changed"
+  },
+  "evidence": {
+    "focused": "int05-plugin-preparation-final.log: final 4 files, 126 pass",
+    "routes": "int05-plugin-routes.log:57 pass; Bun suite runner mismatch corrected in int05-plugin-routes-bun.log:36 pass",
+    "types": "int05-plugin-types.log:pass",
+    "eslint": "int05-plugin-eslint.log:pass",
+    "oxlint": "int05-plugin-oxlint.log:7 existing lifecycle.test findings outside authored blocks",
+    "deadCode": "int05-plugin-dead-code.log:reviewed; no isLegacyOpenCodeVersion finding"
+  },
+  "acceptance": "Controlled module/lifecycle evidence only. Full Legacy plugin, unattended, fresh-cache host and actual CAgent acceptance remain open.",
+  "next": "Bind selected CLI version to responding endpoint version; then authorized credential composition, full plugin/unattended acceptance, R4",
+  "weeklyRemainingPercent": 58,
+  "fingerprints": {
+    "packages/web/server/lib/opencode/compatibility.js": "c75d6fc04a9290b2c58e37e462265b1f0fffca1097e3a340ff339d1dfa85e626",
+    "packages/web/server/lib/opencode/compatibility.d.ts": "c6e0b536eab64ab3829618e0f746c8b71b8538232be8d2745bd95372ad678d5e",
+    "packages/web/server/lib/opencode/managed-env-runtime.js": "517026ea087fef44adb51affbd90c7eeea090d63a44eecc63d092208658b926a",
+    "packages/web/server/lib/opencode/managed-env-runtime.test.js": "4d3a4dabcaf90b37e29fc462c5eb2a411332f05dc598874325e5fd8fdd1b17a6",
+    "packages/web/server/lib/opencode/managed-generation.test.js": "d0189a228b0133282a7211f83b8e4aeece9667f5b5fbe497fd9c35dd5e16c586",
+    "packages/web/server/lib/opencode/lifecycle.test.js": "d82b3b42f33f494b6d2a6df1f344a5be8a3154a63e700de5cf946388f13895f6",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "73c0a94e75e30d6309846231e5dcff863809faaf59d3306436e44379a477c697",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "0e10ac594b4293eaba2f93f7ef3a6ea67f16cb8284dcd35cb6b412bba939fce4",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "7ad23f3554fe2dca3a90c21b87d891619973315565455f08969976300a4137fc",
+    "packages/web/server/lib/agent-tool/DOCUMENTATION.md": "9785d0ec3bc8308cf9ef914c304c5b2958b7fc3e32fde78fb10afccc3272e01b"
+  }
+}

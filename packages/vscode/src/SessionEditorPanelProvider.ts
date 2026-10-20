@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { LegacyProviderDocument } from './legacyProviderDocument';
 import { scheduleCachedStateRetries } from './webviewCachedStateRetry';
 import { handleBridgeMessage, type BridgeRequest, type BridgeResponse } from './bridge';
 import { getThemeKindName } from './theme';
@@ -171,6 +172,7 @@ export class SessionEditorPanelProvider {
       dark: vscode.Uri.joinPath(this._extensionUri, 'assets', 'icon-titlebar.svg'),
     };
 
+    const providers = new LegacyProviderDocument(this._openCodeManager, this._context.subscriptions);
     const state: SessionPanelState = {
       id: panelId,
       sessionId: initialSessionId,
@@ -192,6 +194,7 @@ export class SessionEditorPanelProvider {
     void this._broadcastActiveEditorFile();
 
     panel.onDidDispose(() => {
+      providers.dispose();
       this._disposePanel(panelId);
     }, null, this._context.subscriptions);
 
@@ -204,6 +207,7 @@ export class SessionEditorPanelProvider {
 
     panel.webview.onDidReceiveMessage(async (message: BridgeRequest) => {
       if (message.type === 'webview:ready') {
+        providers.reset();
         for (const controller of state.sseStreams.values()) {
           controller.abort();
         }
@@ -267,7 +271,7 @@ export class SessionEditorPanelProvider {
         return;
       }
 
-      const response = await handleBridgeMessage(message, {
+      const response = await providers.handle(message) ?? await handleBridgeMessage(message, {
         manager: this._openCodeManager,
         context: this._context,
       });

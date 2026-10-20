@@ -1,0 +1,30 @@
+{
+  "processesAbsent": [
+    121044,
+    134048,
+    132804,
+    132588
+  ],
+  "source": "055c46c8e",
+  "retained": "Exact executable, reusable fixture driver, compact browser evidence and selected logs remain for R2. Earlier exitCode-null field was not authoritative; all four fixture PIDs are absent.",
+  "portsClosed": [
+    32288,
+    32270,
+    32825,
+    32803
+  ],
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\legacy-1.2.27\\conversation-4KIsSI",
+      "junctionsUnlinked": 3,
+      "bytes": 22234803,
+      "removed": true
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\legacy-1.2.27\\conversation-h7lFij",
+      "junctionsUnlinked": 3,
+      "bytes": 23543938,
+      "removed": true
+    }
+  ]
+}

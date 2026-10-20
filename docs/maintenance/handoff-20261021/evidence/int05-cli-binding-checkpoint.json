@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-12",
+  "status": "controlled validation complete; real IDE acceptance pending",
+  "focused": {
+    "files": 4,
+    "passed": 123,
+    "log": "int05-cli-binding-tests-final.log"
+  },
+  "vscodeSuite": {
+    "filesPassed": 62,
+    "filesTotal": 62,
+    "log": "int05-cli-vscode-suite.log"
+  },
+  "validation": [
+    {
+      "name": "web-types",
+      "code": 0
+    },
+    {
+      "name": "vscode-types",
+      "code": 0
+    },
+    {
+      "name": "eslint",
+      "code": 0
+    },
+    {
+      "name": "oxlint",
+      "code": 1
+    },
+    {
+      "name": "vscode-build",
+      "code": 0
+    },
+    {
+      "name": "dead-code",
+      "code": 0
+    }
+  ],
+  "oxlint": "38 existing findings outside authored blocks; not clean",
+  "host": "Corrected driver blocked by VS Code update mutex. No acceptance claimed.",
+  "limitations": [
+    "real host mismatch/recovery pending",
+    "fresh-cache cold startup unaccepted",
+    "credential production composition remains closed",
+    "INT-05/R3 and R4 not accepted"
+  ],
+  "weeklyRemainingPercent": 57,
+  "fingerprints": {
+    "packages/web/server/lib/opencode/compatibility.js": "843d1ec156a7f542ebddb641a53d96152fe079cf1af20b8e12ce55a9f1126273",
+    "packages/web/server/lib/opencode/compatibility.d.ts": "bd356fc732c95fb7b89da0c1ab91c7d3edd8278d3f6ef4b72dcd7b18e79f95c9",
+    "packages/web/server/lib/opencode/kernel-runtime.js": "d3abb36352d9186f9aca88c4eda6f6b05753256442cb4bc443d80280e07cde2a",
+    "packages/web/server/lib/opencode/kernel-runtime.d.ts": "def34ca01d7884a3441d657312547bda99834ff51327b0e6c4d5a67b029fcb88",
+    "packages/web/server/lib/opencode/kernel-runtime.test.js": "051e1c24b975f576ebe26f580b1d3d2adc399212a58db166a6e5c8c7f2f6ab54",
+    "packages/web/server/lib/opencode/lifecycle.js": "821c3b0a98565338de60b14effd8d6c0503604eb5bbf0aa182b5d96e511e62c3",
+    "packages/web/server/lib/opencode/lifecycle.test.js": "b001f38667c9e5efd94478ad049249474b2768d5d9ef9eea7b8150b5bdf9b413",
+    "packages/web/server/lib/opencode/managed-generation.d.ts": "33a8cafde6f1459966465215362fa6bf9a8afa9713a59a48e26c25371ad3232a",
+    "packages/vscode/src/opencode.ts": "4b1ee07d7e5c4b767b0d5198cf0f00cc19420cd2c0bbe32bbd9d240088fad4cd"
+  }
+}

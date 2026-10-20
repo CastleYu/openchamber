@@ -485,3 +485,14 @@ Outside mobile and expanded mode, desktop Enter sends by default, and
 Shift-modified Enter does not send until the Chat setting is changed.
 An explicit choice controls Enter and Shift+Enter there;
 Ctrl/Cmd+Enter sends in either configured mode.
+
+### Legacy attempt controls
+
+Queue chips show the server's attempt state. Unresolved attempts disable ordinary
+send/edit/reorder controls and their own removal. A server-owned unknown attempt
+offers Submit again with a duplicate-effects warning. Confirmation captures the
+queue target, item ID and attempt ID when opened; changing the target or attempt
+invalidates that confirmation. Cancel sends nothing. Confirmation delegates to
+the queue store, which enforces the same constraints independently of the UI.
+These labels and dialog actions are translated in all supported primary locales.
+

@@ -1,0 +1,44 @@
+{
+  "runtime": "VS Code Extension Host + target opencode.ts + exact Legacy 1.2.27 binary",
+  "checks": [
+    "one controlled 503 session probe left initial Legacy admission unverified",
+    "existing request-forwarding refresh recovered exact Legacy admission without restart",
+    "real manager connected to the configured Legacy 1.2.27 executable",
+    "healthy native context carries an absolute cwd and copied launch environment",
+    "failed executable preflight preserved the healthy native owner",
+    "stop synchronously retired the owner before queued process shutdown",
+    "pending Legacy SDK credential request received abort and 409 on owner retirement",
+    "restart retired synchronously and published a distinct owner after readiness",
+    "cancelled credential-owner subscription received no later event",
+    "unexpected owned Legacy process exit retired the native context"
+  ],
+  "notVerified": [],
+  "failures": [],
+  "recovery": {
+    "initial": {
+      "generation": "unknown",
+      "status": "unverified",
+      "version": "1.2.27"
+    },
+    "refusedReads": 1,
+    "final": {
+      "generation": "oc1",
+      "profile": "legacy-1.2.27",
+      "status": "ready",
+      "version": "1.2.27"
+    }
+  },
+  "identity": {
+    "profile": "legacy-1.2.27",
+    "generation": "oc1",
+    "status": "ready",
+    "version": "1.2.27",
+    "readyVersion": "1.2.27"
+  },
+  "legacyVersion": "1.2.27",
+  "processExit": "exact child PID terminated by the driver; manager observed its exit without calling stop",
+  "runner": {
+    "state": "behavior-passed",
+    "at": "2026-10-12T00:21:46.431Z"
+  }
+}

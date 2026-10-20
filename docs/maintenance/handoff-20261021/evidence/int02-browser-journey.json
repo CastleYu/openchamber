@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-09T23:44:19.415Z",
+  "origin": "http://127.0.0.1:26118",
+  "checks": [
+    "Web unbound source renders existing recovery after fix",
+    "old executable candidate remains unconfirmed until explicitly selected",
+    "review requires acknowledgement before switch",
+    "initial unknown activity shown as unknown, queue zero",
+    "real OC2 startup admits chat shell",
+    "idle live activity reports busy sessions permissions questions queues zero",
+    "unreachable replacement retires browser binding",
+    "second real browser shows failure recovery",
+    "first stale previous review refuses and refreshes",
+    "second previous review requires acknowledgement",
+    "peer previous recovery restores chat",
+    "original peer preserves settings context and returns to chat after closing settings",
+    "hosted mobile healthy shell initially renders",
+    "hosted mobile failed cold start initially mislabels OpenCode failure as host unreachable",
+    "final hosted mobile cold failure renders OpenCode recovery rather than host unreachable",
+    "mobile previous-connection review requires acknowledgement",
+    "mobile reviewed recovery launches real OC2 and restores chat shell",
+    "mobile refresh retains admitted configuration",
+    "fresh desktop tab uses the configuration recovered by mobile"
+  ],
+  "notValidated": [
+    "model response quality",
+    "native Capacitor",
+    "packaged Electron"
+  ]
+}

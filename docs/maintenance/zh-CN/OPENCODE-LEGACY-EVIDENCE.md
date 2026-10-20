@@ -48,3 +48,18 @@ Windows 复现需要 Node、Git，以及位于 `<fixture-root>/bin/opencode.exe`
 Web 使用共享探测器；Electron 复用进程内 Web 后端；VS Code 扩展宿主导入同一探测器；托管移动端与 Capacitor 使用所选宿主描述。每种宿主在鉴权后的稳定 1.2.27 健康响应后停止探测。本修正不改变 UI、桥接载荷或持久化 profile；其他版本保留健康／信息响应比较，改为顺序执行。健康探测较慢时，信息探测会额外等待既有五秒超时。本修正不启用专用 Legacy profile。
 
 兼容探测／内核回归测试 38 项通过，包含三种稳定版本写法及预发布矛盾响应。Web 与 VS Code 类型检查通过，修改文件的 oxlint 无诊断。本修正未重新进行打包宿主运行验证。已发布 CAgent 预览仍固定为原发布源码。
+
+
+## INT-05 队列终态检查点，2026-10-14
+
+Legacy 队列在发送前持久化私有 caller messageID，排序前缀遵循固定版本协议的 48 位格式。公开快照仍仅包含 attempt ID、状态和创建时间。HTTP 接受仍为 accepted；响应丢失保持 unknown，直到权威证据解决结果。
+
+现有队列唤醒时，同一所有者先确认空闲，读取最多两条消息的尾部，再按 ID 重新读取匹配的 assistant。必须匹配父消息、会话及当前 runtime/target，具有完成时间，并且为最终 stop 或结构化错误。工具中间回复不能完成 attempt。终态写入失败保留 unknown，不增加自动重发。缺少私有 ID 的旧记录、尾部未命中、命令合成父消息及无法精确关联的压缩均保持不确定。
+
+官方 1.2.27 可执行文件通过四个直接 API 场景，以及经过生产 KernelOperations 和队列的相同四个场景：普通完成、响应丢失、工具后继续执行、主动中止。共发生预期的 10 次受控模型调用，无额外重发。逐个按精确 ID 读取用户消息，并检查队列结果持久化和公开投影不变。隔离服务、连接和临时数据均已清理。此证据覆盖受控 provider 下的 API 与队列路径，不代表真实模型或打包 UI 验收。
+
+使用已有校验通过的二进制复现，无需 Git、下载或真实凭据：
+
+`node scripts/legacy-attempt-probe.mjs artifacts/legacy-1.2.27`
+
+本地脱敏证据为 artifacts/int05-legacy-attempt-evidence.json。R3 仍需计划任务、goal 所有者、VS Code 本地 attempt、真实 IDE Provider/OAuth 及原生切换验收。既有幂等证据限制仍适用；精确终态关联仅证明已观察到的结果，不证明去重。

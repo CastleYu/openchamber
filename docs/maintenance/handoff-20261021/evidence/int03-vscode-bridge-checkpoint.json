@@ -1,0 +1,169 @@
+{
+  "date": "2026-10-12",
+  "sourceBase": "c3f5dbcff2928d9d12e6aecd26be030480ed1ba3",
+  "branch": "codex/cagent-integration",
+  "sourceHashes": {
+    "packages/vscode/src/bridge.ts": "1add51d0a3a381bef3e84fac2634d6a5319f6b0d0cad9998990a5537ada8c967",
+    "packages/vscode/src/bridge-proxy-runtime.ts": "7ac6ebc755d88e90af8afab66e54682a6ab0cce60111384bb61f37003bd7bb8e",
+    "packages/vscode/src/kernelRequest.ts": "f939b5abf3d485e5e7b4243459bd080bbab793773c90407b3e660337a079fa84",
+    "packages/vscode/src/bridge-legacy-session.test.js": "4c3bcd6023701b33cd1dd58d651b75ca1bbe2feb20d2f9937a30ae3471d9519a",
+    "packages/web/server/lib/opencode/legacy-session-api.js": "fe95ca2d6dd64b31e4fe5cea60f3549f102b30db5e3d6839e878e7144b7883d4",
+    "packages/web/server/lib/opencode/legacy-session-api.d.ts": "a4da090cab6a8d93639ff4f54299bd2dfa2d8b16e9132be894a307ced9f10d86",
+    "packages/web/server/lib/opencode/legacy-session-http.js": "e8d42f189bbfd98046fadcbfe18119f4f16b37936997318851f91adf745b1e89"
+  },
+  "milestone": "R2 / INT-03",
+  "accepted": false,
+  "implementation": [
+    "Finite exact Legacy request admission in the VS Code extension host",
+    "Shared Web/VS Code SDK session conversion and isolated supplementary metadata",
+    "Request body/query/auth/abort fidelity and runtime/version/epoch retirement"
+  ],
+  "surfaces": {
+    "web": "Existing HTTP adapter reuses the extracted session API; HTTP regressions and build passed",
+    "electron": "Reuses Web backend; native desktop journey not rerun in this batch",
+    "vscode": "Extension bridge and builds passed; actual IDE journey remains open",
+    "hostedMobile": "Reuses selected Web backend; actual mobile journey not run",
+    "capacitorMobile": "Reuses selected Web backend and dedicated SSE; actual device journey not run"
+  },
+  "validation": {
+    "contracts": [
+      {
+        "name": "kernelRequest.test.ts",
+        "passed": 11,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-kernelRequest.test.ts.log"
+      },
+      {
+        "name": "bridge-proxy-runtime.test.ts",
+        "passed": 5,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-bridge-proxy-runtime.test.ts.log"
+      },
+      {
+        "name": "bridge-proxy-runtime.test.js",
+        "passed": 5,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-bridge-proxy-runtime.test.js.log"
+      },
+      {
+        "name": "sseProxy.test.ts",
+        "passed": 2,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-sseProxy.test.ts.log"
+      },
+      {
+        "name": "sseProxy.test.js",
+        "passed": 4,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-sseProxy.test.js.log"
+      },
+      {
+        "name": "bridge.test.ts",
+        "passed": 1,
+        "failed": 0,
+        "log": "artifacts/int03-vscode-shared-bridge.test.ts.log"
+      }
+    ],
+    "contractPassed": 28,
+    "loopbackAndNativeNode": {
+      "passed": 8,
+      "failed": 0,
+      "log": "artifacts/int03-vscode-legacy-reviewed-tests.log"
+    },
+    "web": {
+      "passed": 121,
+      "failed": 0,
+      "report": "artifacts/int03-vscode-shared-web-tests.json"
+    },
+    "workspaceTypes": "artifacts/int03-vscode-shared-types.log",
+    "workspaceLint": {
+      "log": "artifacts/int03-vscode-shared-lint.log",
+      "errors": 0,
+      "inheritedWarnings": 5
+    },
+    "builds": [
+      "artifacts/int03-vscode-shared-build-web.log",
+      "artifacts/int03-vscode-shared-build-vscode.log",
+      "artifacts/int03-vscode-final-extension.log"
+    ],
+    "finalChecks": "artifacts/int03-vscode-final-checks.json",
+    "authoredAntiSlopFindings": 0,
+    "inheritedProxyAntiSlopFindings": 13,
+    "deadCodeBaseline": {
+      "files": 2,
+      "exports": 319,
+      "exportedTypes": 231,
+      "unchanged": true
+    }
+  },
+  "quota": {
+    "source": "live account API",
+    "weeklyRemainingPercent": 81
+  },
+  "cleanup": {
+    "state": "completed",
+    "removed": [
+      {
+        "bytes": 832,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-abort-observe.cjs"
+      },
+      {
+        "bytes": 2016,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-boundary-fixes.cjs"
+      },
+      {
+        "bytes": 8864,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-checkpoint.cjs"
+      },
+      {
+        "bytes": 2859,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-checks.cjs"
+      },
+      {
+        "bytes": 2219,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-contract-types.cjs"
+      },
+      {
+        "bytes": 3404,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-final.cjs"
+      },
+      {
+        "bytes": 5032,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-native-abort.cjs"
+      },
+      {
+        "bytes": 3577,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-review-fixes.cjs"
+      },
+      {
+        "bytes": 10716,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-shared-api.cjs"
+      },
+      {
+        "bytes": 650,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-vscode-test-fix.cjs"
+      },
+      {
+        "bytes": 1235,
+        "path": "H:\\Documents\\Temp\\int03-vscode-legacy-session-tests.log"
+      }
+    ],
+    "retained": [
+      "Source files, final checks and milestone acceptance evidence",
+      "Reusable exact-version binary and historical native-driver fixtures"
+    ]
+  },
+  "continuation": [
+    "Run the production VS Code webview against the official exact 1.2.27 binary with isolated home/settings and controlled local model",
+    "Verify current OC1/OC2 core journeys and applicable Relay/cross-host R2 paths",
+    "Keep advanced Legacy settings/config/plugins at R3 and reload at R4",
+    "Reconcile English handoff and Chinese archive after actual acceptance; do not close R2 from fixtures or builds alone"
+  ],
+  "limitations": [
+    "Loopback/native Node tests use a controlled synthetic upstream, not the actual IDE or exact executable",
+    "Existing Web exact-binary journey remains evidence at source 055c46c8e",
+    "No real CAgent API, model quality, native desktop, mobile or Relay acceptance is established by this batch"
+  ],
+  "committedSource": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "phase": "implementation complete; native IDE integration next; R2 open"
+}

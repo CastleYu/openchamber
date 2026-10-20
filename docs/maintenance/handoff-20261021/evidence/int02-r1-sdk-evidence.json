@@ -1,0 +1,128 @@
+{
+  "baseline": "805881f7369227fc23f5263482919945492b8a8d",
+  "source": [
+    {
+      "path": "packages/ui/src/lib/opencode/client.ts",
+      "sha256": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491"
+    },
+    {
+      "path": "packages/ui/src/lib/opencode/transport.ts",
+      "sha256": "2f6cc93b0b103cffdfb4727793216b31cca412d34b9b153549f7a52a25205467"
+    },
+    {
+      "path": "packages/ui/src/lib/opencode/runtime.ts",
+      "sha256": "66bdc6640d3f3cae63a338b8391c888305806d09746344dca6bd6ea0b5c9c444"
+    },
+    {
+      "path": "packages/ui/src/lib/opencode/client.protocol.test.ts",
+      "sha256": "09baf0d0ab50d984bd4791e8d8c105d160eaaec8b7d52fcfda618fb460973197"
+    },
+    {
+      "path": "packages/ui/src/lib/opencode/runtime.test.ts",
+      "sha256": "f9eaf78894a58e5c5e06484bff6f61e7d7bc727b5b2c14994b540d70e8cc914c"
+    }
+  ],
+  "reproduced": {
+    "originalPass": 20,
+    "newFailures": 5,
+    "log": "artifacts/int02-r1-sdk-boundary-red.log"
+  },
+  "tests": [
+    {
+      "file": "runtime.test.ts",
+      "log": "artifacts/int02-r1-sdk-runtime.test.ts.log",
+      "pass": 10,
+      "fail": 0
+    },
+    {
+      "file": "client.protocol.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.protocol.test.ts.log",
+      "pass": 25,
+      "fail": 0
+    },
+    {
+      "file": "client.facade.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.facade.test.ts.log",
+      "pass": 14,
+      "fail": 0
+    },
+    {
+      "file": "client.status.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.status.test.ts.log",
+      "pass": 5,
+      "fail": 0
+    },
+    {
+      "file": "client-timeout.test.ts",
+      "log": "artifacts/int02-r1-sdk-client-timeout.test.ts.log",
+      "pass": 6,
+      "fail": 0
+    },
+    {
+      "file": "client.permission.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.permission.test.ts.log",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "file": "client.questions.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.questions.test.ts.log",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "file": "client.test.ts",
+      "log": "artifacts/int02-r1-sdk-client.test.ts.log",
+      "pass": 18,
+      "fail": 0
+    }
+  ],
+  "total": 86,
+  "typeCheck": {
+    "exit": 0,
+    "log": "artifacts/int02-r1-sdk-types.log"
+  },
+  "lint": {
+    "exit": 0,
+    "warnings": 5,
+    "log": "artifacts/int02-r1-sdk-lint.log"
+  },
+  "builds": [
+    "artifacts/int02-r1-sdk-web-build.log",
+    "artifacts/int02-r1-sdk-vscode-build.log"
+  ],
+  "antiSlop": {
+    "total": 102,
+    "authored": 0,
+    "diagnostics": []
+  },
+  "cleanup": "artifacts/int02-r1-sdk-cleanup.json",
+  "scope": "Actual SDK and shared transport against controlled responses; no real IDE control, model conversation, Legacy runtime or CAgent API acceptance",
+  "next": [
+    "Reconcile remaining INT-01/INT-02 clauses with current consumers",
+    "Exercise connection-test and cancel in production VS Code webviews",
+    "Keep packaged distributable acceptance at R7"
+  ],
+  "temporaryHelpers": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-boundary-edit.mjs",
+      "bytes": 11071,
+      "next": "Removed after all owning processes exited"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-boundary-check.mjs",
+      "bytes": 978,
+      "next": "Removed after all owning processes exited"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-boundary-record.mjs",
+      "bytes": 15613,
+      "next": "Removed after all owning processes exited"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r1-sdk-boundary-probe.ts",
+      "bytes": 1908,
+      "next": "Removed after all owning processes exited"
+    }
+  ]
+}

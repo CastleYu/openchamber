@@ -1,0 +1,238 @@
+{
+  "baseline": "820ff6c05e679a2f6a80754f9e4937a8f3d20c9b",
+  "batch": "INT-02 connection editor and cold-start recovery",
+  "focusedTests": {
+    "connectionEditor": 3,
+    "compatibilityRecovery": 1,
+    "settings": 33,
+    "realReact": 1,
+    "realHostChecks": 13
+  },
+  "logs": [
+    "int02-editor-ui-tests.log",
+    "int02-editor-mode-tests.log",
+    "int02-editor-settings-tests.log",
+    "int02-editor-real-ui.log",
+    "int02-editor-final-types.log",
+    "int02-editor-final-lint.log",
+    "int02-editor-web-build.log",
+    "int02-editor-vscode-build.log",
+    "int02-editor-final-dead.log"
+  ],
+  "antiSlop": {
+    "inherited": 16,
+    "authored": 0
+  },
+  "translations": [
+    {
+      "name": "de.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "en.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "es.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "fr.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "ja.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "ko.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "nl.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "pl.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "pt-BR.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "tr.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "uk.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "zh-CN.settings.ts",
+      "keys": 26
+    },
+    {
+      "name": "zh-TW.settings.ts",
+      "keys": 26
+    }
+  ],
+  "realAcceptance": {
+    "sourceSha": "820ff6c05e679a2f6a80754f9e4937a8f3d20c9b",
+    "profile": "oc2",
+    "mode": "configured",
+    "version": "2.0.20",
+    "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+    "checks": [
+      "migration discovery requires host authentication",
+      "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+      "unconfirmed cold startup leaves authenticated settings reachable and no process",
+      "invalid candidate does not replace settings",
+      "actual React candidate confirmation starts real OC2 and initializes the shared client",
+      "UI confirmed save is durable with prior settings backup",
+      "UI confirmed saved record suppresses contradictory legacy prefill",
+      "configured binary managed startup and exact profile",
+      "duplicate save is inert and active replacement is rejected durably",
+      "one owned live server registry entry",
+      "managed host facade session creation and reopened history",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "remainingGates": [
+    "serialized active replacement",
+    "VS Code manager adoption",
+    "real IDE",
+    "packaged desktop/mobile",
+    "managed OC1 plugin startup",
+    "Legacy 1.2.27",
+    "target CAgent",
+    "model conversation and attachments"
+  ],
+  "fingerprints": [
+    {
+      "name": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256LF": "a32c62e305827aaff5b12d92125f112d04a5b13e48c0907d5d74630c79266575"
+    },
+    {
+      "name": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256LF": "3941ddc8d5e6b4ae3688f38374a4fe4247e5a86a550d77e40c1009f2432910b2"
+    },
+    {
+      "name": "packages/ui/src/apps/StartupInitializationRecovery.tsx",
+      "sha256LF": "8b54f64c55632dffe603a69a74dd23dc0b4c71adaca5aaa1cfe26eb937a11a3d"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenChamberPage.tsx",
+      "sha256LF": "35a9b995bb595e1e21a4cdc4ba179bf4df467f0a28819a3ff8f9dded8ad025e5"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenCodeCliSettings.tsx",
+      "sha256LF": "915afcbedd9911b41e7a591c201233b1ad2d657b0297ac93d904c28bd3c5bf81"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenCodeModeSettings.test.tsx",
+      "sha256LF": "011f5afacc17e0db5cb6f05f667a3d35d65bbd826f99c34096a029690b11c322"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/de.settings.ts",
+      "sha256LF": "8ba2b9b033d8db38534573b500463ed8d379633f90a95a9cde8f7b8efda23b9e"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/en.settings.ts",
+      "sha256LF": "99c16af17a7b3dc736f0bd28a868cfb32ecbc89967fdb7c6dc7f6cba9cc8fb3d"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/es.settings.ts",
+      "sha256LF": "10fddf7b43768f14bc8471553e59ace95afbe76540780d8c2ce7f66716750e5f"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/fr.settings.ts",
+      "sha256LF": "380365cf03c1b3d82d9a72f092e324535d13353860e6920d129871e66c69fad1"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/ja.settings.ts",
+      "sha256LF": "addb5c185ef84d645b433f3bce87791a2246f5e78135bd7db40b160bb59541f0"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/ko.settings.ts",
+      "sha256LF": "cc4610e052a3ada82ea013b17e815c0ea442bf62847474925a75bc37adc00695"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/nl.settings.ts",
+      "sha256LF": "fc2bfa3262096cb94ca3ae68922aefb72668267fffd313c4ecba4ce2ed3ec1db"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/pl.settings.ts",
+      "sha256LF": "972af30723bab6ccecbebec03e6224115d1ae8b45f33da00bbe03c29560a6367"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/pt-BR.settings.ts",
+      "sha256LF": "16355c5f08e6a98c8a381ffcf1cb00406f04e0dd7353ec37720a228d0766b069"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/tr.settings.ts",
+      "sha256LF": "ad39e3ebcb643812ef701f77319bf332a60194aca6c0ad0e5c26395eb8e1377b"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/uk.settings.ts",
+      "sha256LF": "1e03b9676c73b0f0c323760cb2f77b43985e61282ce7972ff4c3271eafb809b7"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/zh-CN.settings.ts",
+      "sha256LF": "bee0607d83804f07c202b089a3b5aa242821b0ed55626687d940bb1f942d4b1d"
+    },
+    {
+      "name": "packages/ui/src/lib/i18n/messages/zh-TW.settings.ts",
+      "sha256LF": "62c49caa8e34e467a697415d1f39e1066a33ce9de6037d0db5e0045fb92d8ddf"
+    },
+    {
+      "name": "packages/ui/src/lib/settings/DOCUMENTATION.md",
+      "sha256LF": "7fbb4b7b9efa056d0bcdaf2a91dbdd124700c63168bf9867eb6182c1df08d331"
+    },
+    {
+      "name": "packages/ui/src/lib/settings/registry.test.ts",
+      "sha256LF": "0373a67821e443a8c126a9eea6682845be60f7092d018093ae98981fc942de99"
+    },
+    {
+      "name": "packages/ui/src/lib/settings/registry.ts",
+      "sha256LF": "b95ef97448d489def79ee8a9aa205d554d1bdf25f15d13b17e694521aff2d0a3"
+    },
+    {
+      "name": "packages/ui/src/lib/settings/search.test.ts",
+      "sha256LF": "793d76d8e985dfd8f3fbf80cacf9337a4864b412b225cf7ee7355966b5e72ba5"
+    },
+    {
+      "name": "packages/ui/src/lib/settings/search.ts",
+      "sha256LF": "1afb177f680a04a3a34aca0b30d337646dc83e6ad940533747f753d939562594"
+    },
+    {
+      "name": "packages/ui/src/types/bun-test.d.ts",
+      "sha256LF": "d62cf199cd1db8639798be19fb59216853bcb8a023f9128273cb26c447148ff8"
+    },
+    {
+      "name": "docs/maintenance/zh-CN/UI-SETTINGS-CONNECTION-EDITOR.md",
+      "sha256LF": "9bfe3c727960dfe44e90331ec21d462139cd1530929ba1817814ffbb7e85b3bb"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.real.test.tsx",
+      "sha256LF": "130d52a9eaca89b5df1614f2750c013c1024b57508b0b65c9431c632d6875168"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.test.tsx",
+      "sha256LF": "0b61787a8a4757f0f6ed3a31653c193610cb12cab92ca5f44e44cfc5381c6306"
+    },
+    {
+      "name": "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.tsx",
+      "sha256LF": "579a4beb86a2b2834513413be395a5053deaa8170345fecdcd290640f54cb847"
+    },
+    {
+      "name": "packages/ui/src/lib/opencode/connection.ts",
+      "sha256LF": "5f1f7bfbd692d5aa94c986afdf56cabcc2253b3c47d5eabf78b3778aa9d7e565"
+    }
+  ],
+  "commit": "09d277c7f56f0b74432afad6f4acfdd0737e78f6",
+  "liveWeeklyRemaining": 45
+}

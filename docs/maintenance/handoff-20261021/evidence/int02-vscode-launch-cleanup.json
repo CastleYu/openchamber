@@ -1,0 +1,19 @@
+{
+  "isolatedHomes": "removed after owned close by passing tests",
+  "retained": "compact regression and build evidence; extension build for remaining R1 host check",
+  "reclaimedBytes": 11312,
+  "removed": [
+    {
+      "bytes": 4174,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-launch-edit.mjs"
+    },
+    {
+      "bytes": 1333,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-launch-fix.mjs"
+    },
+    {
+      "bytes": 5805,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-launch-checkpoint.mjs"
+    }
+  ]
+}

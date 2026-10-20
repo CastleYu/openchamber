@@ -1,0 +1,33 @@
+{
+  "reconstructedFromCompletedLogs": true,
+  "tests": [
+    {
+      "name": "domain-recovery-snapshots",
+      "pass": 2,
+      "fail": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-current-sync-domain-recovery-snapshots.log",
+      "sha256": "f9a989b06bf7a5e3fe9e799f75e57debee7e3353eb18528c28c1b4e61df00c7b"
+    },
+    {
+      "name": "form-recovery",
+      "pass": 4,
+      "fail": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-current-sync-form-recovery.log",
+      "sha256": "6ee32f35d46dfe58f6918060418068559f039e512d14ae51e30f32a46fc861ee"
+    },
+    {
+      "name": "question-recovery",
+      "pass": 4,
+      "fail": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-current-sync-question-recovery.log",
+      "sha256": "fec229c706b693048766772b58ad62a5b162e536722c4bd8ce41cbd9c628e86d"
+    },
+    {
+      "name": "source",
+      "pass": 2,
+      "fail": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-current-sync-source.log",
+      "sha256": "857f72abc88c2ef2775aa2901fceb2139180e6587188c1be8c9832d5e4e49bcf"
+    }
+  ]
+}

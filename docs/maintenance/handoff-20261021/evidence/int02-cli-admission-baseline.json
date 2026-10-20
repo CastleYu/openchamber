@@ -1,0 +1,20 @@
+[
+  {
+    "scenario": "setup",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-4fB4OI",
+    "code": 1,
+    "blockedBeforeHost": true
+  },
+  {
+    "scenario": "external",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-W7Q7fh",
+    "code": 1,
+    "blockedBeforeHost": true
+  },
+  {
+    "scenario": "configured",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-ugwRxq",
+    "code": 1,
+    "blockedBeforeHost": true
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "bootstrap.test.ts": 0,
+  "blocking-resync.test.js": 0,
+  "reconnect-recovery.test.ts": 0,
+  "__tests__-interrupted-turn-tools.test.ts": 0,
+  "__tests__-message-completion-status-poll.test.ts": 0,
+  "types": 0,
+  "lint": 0,
+  "anti": 1,
+  "vscode-build": 0,
+  "web-build": 0
+}

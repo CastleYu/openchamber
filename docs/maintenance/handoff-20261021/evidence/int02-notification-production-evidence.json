@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": [
+    "production host authenticates and watches selected external OC1",
+    "old-owner delayed goal/enrichment read cannot emit after confirmed switch",
+    "colliding session ID emits exactly one replacement-owner desktop notification",
+    "host shutdown preserves both external servers"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-notification-host-I9fd9N",
+  "actualProductionHost": true,
+  "syntheticUpstream": true,
+  "realModel": false,
+  "livePush": false,
+  "sourceHashes": {
+    "packages/web/server/index.js": "755c6bf220e5c9abe36727049aa362c4c422cc71891a8ec8e1c2b56f99cbdc09",
+    "packages/web/server/lib/notifications/runtime.js": "6f072e231bada82b97faaf431be36f6edf69fb1fbf692531134c5726d68fc2f6"
+  },
+  "notices": [
+    {
+      "title": "owner-B",
+      "body": "completed",
+      "tag": "ready-ses_owner",
+      "kind": "ready",
+      "sessionId": "ses_owner",
+      "requireHidden": false
+    }
+  ],
+  "closed": true,
+  "cleanup": {
+    "reparsePoints": 0,
+    "processCheck": "no process references fixture; probe exited and both external servers closed",
+    "removed": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-notification-host-I9fd9N",
+    "bytes": 75459
+  }
+}

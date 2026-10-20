@@ -863,18 +863,39 @@ describe('pending question and form inspection', () => {
   });
 });
 
+describe('private exact Legacy provider comparison', () => {
+  it('returns comparison booleans and presence without returning effective values', async () => {
+    const requests = [];
+    const endpoint = await serve(() => ({ body: { provider: { acme: { options: { apiKey: 'private-expanded-key' } } } } }), requests);
+    const selected = { ...runtime('oc1', endpoint), profile: 'legacy-1.2.27', version: '1.2.27' };
+    const ops = createKernelOperations({ getRuntime: () => selected, getHeaders: () => ({ Authorization: 'Basic fixture' }) });
+    const input = { providerID: 'acme', directory: 'C:/fixture/project', expectedIdentity: selected };
+    expect((await ops.compareLegacyProvider({ ...input, value: { options: { apiKey: 'private-expanded-key' } } })).data).toEqual({ matchesPersisted: true, matchesBaseline: false, present: true });
+    expect((await ops.compareLegacyProvider({ ...input, value: undefined, baseline: { value: { options: { apiKey: 'private-expanded-key' } } } })).data)
+      .toEqual({ matchesPersisted: false, matchesBaseline: true, present: true });
+    const different = await ops.compareLegacyProvider({ ...input, value: { options: { apiKey: 'other-key' } } });
+    expect(different.data).toEqual({ matchesPersisted: false, matchesBaseline: false, present: true });
+    expect(JSON.stringify(different)).not.toContain('private-expanded-key');
+    await expect(ops.compareLegacyProvider({ ...input, value: undefined, expectedIdentity: { ...selected, version: '1.2.28' } })).rejects.toMatchObject({ code: 'runtime-changed' });
+    expect(requests).toHaveLength(3);
+    expect(requests.every(request => request.path === '/config' && request.search.get('directory') === input.directory && request.headers.authorization === 'Basic fixture')).toBe(true);
+  });
+});
+
 describe('exact Legacy configuration snapshot', () => {
   const paths = { home: 'C:/fixture/home', config: 'C:/fixture/config', directory: 'C:/fixture/project/sub', worktree: 'C:/fixture/project' };
   const selected = endpoint => ({ ...runtime('oc1', endpoint), profile: 'legacy-1.2.27', version: '1.2.27' });
   it('preserves SDK directory and authentication for path and effective configuration', async () => {
     const requests = [];
     const mcp = { remote: { type: 'remote', url: 'https://mcp.example', oauth: false, timeout: 3500 }, disabled: { enabled: false } };
-    const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : { mcp, model: 'fixture/model' } }), requests);
+    const endpoint = await serve(record => ({ body: record.path === '/path' ? paths : record.path === '/provider' ? { all: [{ id: 'acme', env: ['ACME_KEY'] }] } : { mcp, model: 'fixture/model', provider: { acme: { options: { apiKey: 'private-config-value' } } }, plugin: ['private-plugin-url'] } }), requests);
     const ops = createKernelOperations({ getRuntime: () => selected(endpoint), getHeaders: () => ({ Authorization: 'Basic fixture' }) });
     const result = await ops.getLegacyConfiguration({ directory: paths.directory });
     expect(result.version).toBe('1.2.27');
-    expect(result.data).toEqual({ paths, mcp });
-    expect(requests.map(record => record.path).sort()).toEqual(['/config', '/path']);
+    expect(result.data).toEqual({ paths, mcp, providerIds: ['acme'], hasPlugins: true, providerEnv: { acme: ['ACME_KEY'] } });
+    expect(JSON.stringify(result)).not.toContain('private-config-value');
+    expect(JSON.stringify(result)).not.toContain('private-plugin-url');
+    expect(requests.map(record => record.path).sort()).toEqual(['/config', '/path', '/provider']);
     for (const request of requests) {
       expect(request.method).toBe('GET');
       expect(request.search.get('directory')).toBe(paths.directory);

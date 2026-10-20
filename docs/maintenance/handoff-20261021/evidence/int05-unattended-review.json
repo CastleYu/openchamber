@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-12",
+  "kind": "controlled reproduction plus static review",
+  "reproduction": {
+    "kind": "controlled existing-owner reproduction; no real upstream",
+    "profile": "legacy-1.2.27",
+    "acceptedButResponseLost": 1,
+    "sendAttempts": 2,
+    "remainingItems": 0,
+    "expectedContract": "unknown attempt retained without automatic resubmission",
+    "observedGap": true
+  },
+  "consultation": "Astra confirmed existing-owner queue-first approach; no new dispatch engine",
+  "sequence": [
+    "Legacy server queue and UI projection",
+    "scheduled task attempt before session create",
+    "goal and VS Code local queue attempts"
+  ],
+  "notAccepted": [
+    "Legacy unattended operation",
+    "real upstream idempotency",
+    "real IDE binding"
+  ],
+  "oauthAuthorization": "Explicit user approval received for private beginOAuth binding change; implementation in progress"
+}

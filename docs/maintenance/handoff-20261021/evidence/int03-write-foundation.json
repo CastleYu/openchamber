@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-11T14:29:59.033Z",
+  "round": "R2",
+  "task": "INT-03",
+  "status": "in progress",
+  "baseline": "6265a073bbe668fd6242f836f75ddd90751817a3",
+  "weeklyRemaining": 83,
+  "tests": {
+    "passed": 111,
+    "failed": 0,
+    "report": "artifacts/int03-write-tests.json"
+  },
+  "exact": {
+    "passed": 12,
+    "report": "artifacts/int03-exact-host-write.json",
+    "limit": "Production host kernel against exact executable; controlled model. Raw upstream SSE observation and permission fixture setup; no shared UI, proxy or VS Code acceptance."
+  },
+  "checks": {
+    "webTypeCheck": 0,
+    "webLint": 0,
+    "authoredOxlint": 0,
+    "nodeSyntax": 0,
+    "deadCode": "exit 0; existing findings inspected; no legacy-metadata, legacy-contract or kernel-operations findings"
+  },
+  "runtimeScope": "artifacts/int03-write-scope.md",
+  "sourceSha256": {
+    "packages/web/server/index.js": "299558164a7932c60885a769c535d2028d0a90327ca3cd0d2849a6effdb2b4f7",
+    "packages/web/server/lib/openchamber-sessions/routes.js": "4aea9e4c5a6db9301919700288f66c8fdfd464b6e109221680aee68acc4bc8fb",
+    "packages/web/server/lib/openchamber-sessions/legacy-metadata-store.js": "796c260b6904de6419374b32277665fa8cb6297c55efe181e12ec73bddc8d9cf",
+    "packages/web/server/lib/openchamber-sessions/legacy-metadata-store.d.ts": "c8c19e96707eec0d4eb183b09ecf91410f3ff12d7aa3ba9b742a834f77876cfa",
+    "packages/web/server/lib/openchamber-sessions/legacy-metadata-store.test.js": "924a5d7085ef442f01843751df7eb05d6b4135bddae3b2886d140da18ec1b8dc",
+    "packages/web/server/lib/opencode/kernel-operations.js": "b94a441497e350896755766056a412f202d6026a1176e9b3b0ccf3f945418ace",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "40d208638310c137a45d0e47553bd41116aa5d26185abcecccacac3d43396882",
+    "packages/web/server/lib/opencode/kernel-legacy-writes.test.js": "71170eb571d1a93e96e7a3f18edf59bca143b2e851bbcaac37673508a9d2cd0f",
+    "packages/web/server/lib/opencode/legacy-contract.js": "0daf8b69e5f0727f6326a08305a9394612ce115433bbcd472e30911baaf24a0e",
+    "packages/web/server/lib/opencode/legacy-contract.d.ts": "82db3cdd7d8c2ffff58e908397689be8124e8a988f3dadd685fb31855cf2342a"
+  },
+  "cleanup": {
+    "removed": [
+      {
+        "path": "artifacts/int03-write-base-tests.json",
+        "bytes": 34954,
+        "reason": "superseded by final 111-test report"
+      }
+    ],
+    "isolatedHomes": "All current probe/test processes exited and their created homes removed",
+    "retained": [
+      {
+        "path": "artifacts/int03-exact-write-probe.mjs",
+        "reason": "controlled model and exact host reproduction for upcoming UI/transport integration",
+        "cleanupAt": "R2 integrated acceptance"
+      },
+      {
+        "path": "artifacts/legacy-1.2.27/bin/opencode.exe",
+        "reason": "exact R2/R3/R4 integration acceptance",
+        "cleanupAt": "final release acceptance or retained version fixture decision"
+      }
+    ],
+    "helperScriptsRemoved": {
+      "bytes": 39729,
+      "count": 6,
+      "verified": "removed with apply_patch after use",
+      "purpose": "one-off R2 write editing and evidence scripts",
+      "root": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber"
+    }
+  },
+  "nextBatch": "R2 integration phase: shared OpenCode facade and proxy admission, supplementary metadata projections, event transport, VS Code forwarding, actual UI+host conversation including attachments/tools/decisions/stop/reopen, and OC1/OC2 core regressions. Do not mark R2 complete from host-only evidence.",
+  "commit": "3ea7d2d12a32b9f89fd6d5dff84d1104ced03594"
+}

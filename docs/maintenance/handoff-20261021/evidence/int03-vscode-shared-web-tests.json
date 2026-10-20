@@ -1,0 +1,1519 @@
+{
+  "numTotalTestSuites": 15,
+  "numPassedTestSuites": 15,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 121,
+  "numPassedTests": 121,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791734259485,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding refuses unaccepted Legacy forwarding before prefix, readiness, credentials or transport",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy forwarding before prefix, readiness, credentials or transport",
+          "duration": 126.73309999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding refuses a held readiness request when its profile becomes Legacy",
+          "status": "passed",
+          "title": "refuses a held readiness request when its profile becomes Legacy",
+          "duration": 100.19800000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding refuses unsupported HTTP, mutation and SSE paths before readiness or upstream work",
+          "status": "passed",
+          "title": "refuses unsupported HTTP, mutation and SSE paths before readiness or upstream work",
+          "duration": 22.08789999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding refuses a held readiness request when its descriptor becomes unsupported",
+          "status": "passed",
+          "title": "refuses a held readiness request when its descriptor becomes unsupported",
+          "duration": 101.03689999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding discards an upstream SSE result after a profile-only change",
+          "status": "passed",
+          "title": "discards an upstream SSE result after a profile-only change",
+          "duration": 21.005299999999806,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding forwards event streams with nginx-safe headers",
+          "status": "passed",
+          "title": "forwards event streams with nginx-safe headers",
+          "duration": 35.50279999999975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding closes downstream SSE when the OpenCode upstream stalls despite proxy heartbeats",
+          "status": "passed",
+          "title": "closes downstream SSE when the OpenCode upstream stalls despite proxy heartbeats",
+          "duration": 236.6334999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding holds a request through OpenCode warmup and succeeds once ready (no 503/backoff)",
+          "status": "passed",
+          "title": "holds a request through OpenCode warmup and succeeds once ready (no 503/backoff)",
+          "duration": 271.82429999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding returns 503 fast when OpenCode never becomes ready",
+          "status": "passed",
+          "title": "returns 503 fast when OpenCode never becomes ready",
+          "duration": 12.52559999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding waits for drain when writing to a slow SSE response",
+          "status": "passed",
+          "title": "waits for drain when writing to a slow SSE response",
+          "duration": 3.706499999999778,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding tracks whether a raw SSE stream is between event blocks",
+          "status": "passed",
+          "title": "tracks whether a raw SSE stream is between event blocks",
+          "duration": 0.5229999999996835,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding routes generic API requests through external OpenCode base URL",
+          "status": "passed",
+          "title": "routes generic API requests through external OpenCode base URL",
+          "duration": 16.4688000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding replays parsed urlencoded bodies to generic API proxy requests",
+          "status": "passed",
+          "title": "replays parsed urlencoded bodies to generic API proxy requests",
+          "duration": 44.35590000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding replays parsed JSON bodies to generic API proxy requests",
+          "status": "passed",
+          "title": "replays parsed JSON bodies to generic API proxy requests",
+          "duration": 17.202900000000227,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding sanitizes experimental session list responses and forwards query params",
+          "status": "passed",
+          "title": "sanitizes experimental session list responses and forwards query params",
+          "duration": 18.568899999999758,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding sanitizes session list responses without sanitizing session detail responses",
+          "status": "passed",
+          "title": "sanitizes session list responses without sanitizing session detail responses",
+          "duration": 28.38279999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding merges only the unscoped first OC2 session page with Spaces",
+          "status": "passed",
+          "title": "merges only the unscoped first OC2 session page with Spaces",
+          "duration": 30.23869999999988,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding interleaves Space events into OC2 global SSE after whole host blocks",
+          "status": "passed",
+          "title": "interleaves Space events into OC2 global SSE after whole host blocks",
+          "duration": 3115.5193999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding forwards unparsed SDK JSON bodies to generic API proxy requests",
+          "status": "passed",
+          "title": "forwards unparsed SDK JSON bodies to generic API proxy requests",
+          "duration": 13.97689999999966,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding uses the long proxy timeout budget for slow upstream responses",
+          "status": "passed",
+          "title": "uses the long proxy timeout budget for slow upstream responses",
+          "duration": 80.38869999999952,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding exempts interactive provider OAuth callbacks from the request deadline",
+          "status": "passed",
+          "title": "exempts interactive provider OAuth callbacks from the request deadline",
+          "duration": 282.4366,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode proxy SSE forwarding"
+          ],
+          "fullName": "OpenCode proxy SSE forwarding still applies the request deadline to the OAuth authorize call",
+          "status": "passed",
+          "title": "still applies the request deadline to the OAuth authorize call",
+          "duration": 70.17640000000029,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791734261934,
+      "endTime": 1791734266584.1765,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/opencode-proxy.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations normalizes ordered message text and optional model and agent fields for both generations",
+          "status": "passed",
+          "title": "normalizes ordered message text and optional model and agent fields for both generations",
+          "duration": 98.4094,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations keeps permission, message and synthetic operations on their generation routes",
+          "status": "passed",
+          "title": "keeps permission, message and synthetic operations on their generation routes",
+          "duration": 71.52410000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations projects single assistant messages with ordered text parts through both SDK routes",
+          "status": "passed",
+          "title": "projects single assistant messages with ordered text parts through both SDK routes",
+          "duration": 28.25429999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations prepares legacy OC2 metadata once before concurrent autonomous read and delete patch",
+          "status": "passed",
+          "title": "prepares legacy OC2 metadata once before concurrent autonomous read and delete patch",
+          "duration": 44.20859999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects a runtime switch during preparation before reading or mutating the new endpoint",
+          "status": "passed",
+          "title": "rejects a runtime switch during preparation before reading or mutating the new endpoint",
+          "duration": 6.149699999999939,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations never prepares OC1 session metadata",
+          "status": "passed",
+          "title": "never prepares OC1 session metadata",
+          "duration": 14.740399999999909,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations loads a tagged OC1 selection catalog through SDK endpoints",
+          "status": "passed",
+          "title": "loads a tagged OC1 selection catalog through SDK endpoints",
+          "duration": 17.89409999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations loads a tagged OC2 flat model catalog and ordered config entries",
+          "status": "passed",
+          "title": "loads a tagged OC2 flat model catalog and ordered config entries",
+          "duration": 24.678300000000036,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations passes OC2 catalog abort signal as SDK request options and rejects malformed config",
+          "status": "passed",
+          "title": "passes OC2 catalog abort signal as SDK request options and rejects malformed config",
+          "duration": 8.728399999999965,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations waits for OC2 plugin activation before reading catalogs and rejects a changed runtime",
+          "status": "passed",
+          "title": "waits for OC2 plugin activation before reading catalogs and rejects a changed runtime",
+          "duration": 1.6557999999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not treat a failed OC2 activation barrier as an empty catalog",
+          "status": "passed",
+          "title": "does not treat a failed OC2 activation barrier as an empty catalog",
+          "duration": 2.167500000000018,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations writes OC1 archived time and rejects that mutation on OC2",
+          "status": "passed",
+          "title": "writes OC1 archived time and rejects that mutation on OC2",
+          "duration": 18.674800000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations lists OC2 child sessions across authoritative pages",
+          "status": "passed",
+          "title": "lists OC2 child sessions across authoritative pages",
+          "duration": 17.033600000000206,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations merges OC2 metadata against a fresh record and applies null deletion",
+          "status": "passed",
+          "title": "merges OC2 metadata against a fresh record and applies null deletion",
+          "duration": 17.023800000000165,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects an old goal metadata write before touching the restarted runtime",
+          "status": "passed",
+          "title": "rejects an old goal metadata write before touching the restarted runtime",
+          "duration": 4.108199999999897,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations decides OC2 work changes in the same queue as a user metadata write",
+          "status": "passed",
+          "title": "decides OC2 work changes in the same queue as a user metadata write",
+          "duration": 19.121200000000044,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations refuses conditional metadata writes on OC1 before fetching",
+          "status": "passed",
+          "title": "refuses conditional metadata writes on OC1 before fetching",
+          "duration": 0.8459000000000287,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC1 SDK routes, directory query and 204 prompt acceptance",
+          "status": "passed",
+          "title": "uses OC1 SDK routes, directory query and 204 prompt acceptance",
+          "duration": 26.389499999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC2 SDK routes, encoded directory header, cursors and ordered send stages",
+          "status": "passed",
+          "title": "uses OC2 SDK routes, encoded directory header, cursors and ordered send stages",
+          "duration": 28.715700000000197,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations throws on HTTP failure instead of returning authoritative empty data",
+          "status": "passed",
+          "title": "throws on HTTP failure instead of returning authoritative empty data",
+          "duration": 12.957200000000057,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects a 200 response missing required pagination instead of treating it as empty success",
+          "status": "passed",
+          "title": "rejects a 200 response missing required pagination instead of treating it as empty success",
+          "duration": 7.808100000000195,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations maps only a confirmed OC2 running entry to busy",
+          "status": "passed",
+          "title": "maps only a confirmed OC2 running entry to busy",
+          "duration": 11.342000000000098,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations stops an OC2 send before prompt when model selection fails",
+          "status": "passed",
+          "title": "stops an OC2 send before prompt when model selection fails",
+          "duration": 9.198000000000093,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations preserves OC1 control routes and original metadata writes",
+          "status": "passed",
+          "title": "preserves OC1 control routes and original metadata writes",
+          "duration": 27.16710000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations preserves OC2 control routes and metadata writes",
+          "status": "passed",
+          "title": "preserves OC2 control routes and metadata writes",
+          "duration": 34.27659999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations removes only an OC2 fork on the captured runtime for rollback",
+          "status": "passed",
+          "title": "removes only an OC2 fork on the captured runtime for rollback",
+          "duration": 10.847299999999905,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations discards a read whose endpoint epoch changes before it returns",
+          "status": "passed",
+          "title": "discards a read whose endpoint epoch changes before it returns",
+          "duration": 10.843800000000101,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not dispatch sendPrompt after switching during preparation",
+          "status": "passed",
+          "title": "does not dispatch sendPrompt after switching during preparation",
+          "duration": 4.5094000000001415,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not dispatch sendCommand after switching during preparation",
+          "status": "passed",
+          "title": "does not dispatch sendCommand after switching during preparation",
+          "duration": 3.651399999999967,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations rejects unsupported generation, stale send requests and unknown activity",
+          "status": "passed",
+          "title": "rejects unsupported generation, stale send requests and unknown activity",
+          "duration": 15.036100000000033,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations returns the accepted conditional metadata after OC2 replies with no content",
+          "status": "passed",
+          "title": "returns the accepted conditional metadata after OC2 replies with no content",
+          "duration": 13.958599999999933,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations does not commit a conditional patch after its fresh read retires the runtime",
+          "status": "passed",
+          "title": "does not commit a conditional patch after its fresh read retires the runtime",
+          "duration": 9.091800000000148,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "server kernel operations"
+          ],
+          "fullName": "server kernel operations uses OC2 default model and import routes, and refuses them before dispatch on OC1",
+          "status": "passed",
+          "title": "uses OC2 default model and import routes, and refuses them before dispatch on OC1",
+          "duration": 16.273699999999963,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary refuses unaccepted operations before headers, transport or preparation",
+          "status": "passed",
+          "title": "refuses unaccepted operations before headers, transport or preparation",
+          "duration": 2.231999999999971,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity",
+          "status": "passed",
+          "title": "serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity",
+          "duration": 48.284599999999955,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary rejects malformed, failed, canceled and retired Legacy reads",
+          "status": "passed",
+          "title": "rejects malformed, failed, canceled and retired Legacy reads",
+          "duration": 20.311899999999923,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation acceptance boundary"
+          ],
+          "fullName": "Legacy operation acceptance boundary rejects a read completed after a profile-only change at the same endpoint and epoch",
+          "status": "passed",
+          "title": "rejects a read completed after a profile-only change at the same endpoint and epoch",
+          "duration": 11.834299999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "kernel profile identity contract"
+          ],
+          "fullName": "kernel profile identity contract retains profile in captured and returned identities",
+          "status": "passed",
+          "title": "retains profile in captured and returned identities",
+          "duration": 8.317900000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "kernel profile identity contract"
+          ],
+          "fullName": "kernel profile identity contract rejects a request built before the current profile without transport",
+          "status": "passed",
+          "title": "rejects a request built before the current profile without transport",
+          "duration": 1.4101999999998043,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "profile preparation and accepted writes"
+          ],
+          "fullName": "profile preparation and accepted writes carries the OC2 profile into session preparation",
+          "status": "passed",
+          "title": "carries the OC2 profile into session preparation",
+          "duration": 10.18380000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "profile preparation and accepted writes"
+          ],
+          "fullName": "profile preparation and accepted writes accepts a write carrying the current profile",
+          "status": "passed",
+          "title": "accepts a write carrying the current profile",
+          "duration": 8.51220000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection preserves oc1 SDK read, auth and directory fidelity",
+          "status": "passed",
+          "title": "preserves oc1 SDK read, auth and directory fidelity",
+          "duration": 11.872699999999895,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection preserves oc2 SDK read, auth and directory fidelity",
+          "status": "passed",
+          "title": "preserves oc2 SDK read, auth and directory fidelity",
+          "duration": 10.401299999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection distinguishes empty, malformed and failed oc1 reads",
+          "status": "passed",
+          "title": "distinguishes empty, malformed and failed oc1 reads",
+          "duration": 16.703300000000127,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection distinguishes empty, malformed and failed oc2 reads",
+          "status": "passed",
+          "title": "distinguishes empty, malformed and failed oc2 reads",
+          "duration": 16.541300000000092,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "pending question and form inspection"
+          ],
+          "fullName": "pending question and form inspection rejects retirement, Legacy and canceled reads",
+          "status": "passed",
+          "title": "rejects retirement, Legacy and canceled reads",
+          "duration": 11.124900000000025,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791734261175,
+      "endTime": 1791734261992.125,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/kernel-operations.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract admits the accepted read and minimum conversation operations",
+          "status": "passed",
+          "title": "admits the accepted read and minimum conversation operations",
+          "duration": 5.020200000000045,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.send\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.send\"",
+          "duration": 0.3628999999999678,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"config.update\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"config.update\"",
+          "duration": 0.21040000000004966,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"auth.login\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"auth.login\"",
+          "duration": 0.31769999999994525,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"experimental.session.import\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"experimental.session.import\"",
+          "duration": 0.26149999999995543,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.fork\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.fork\"",
+          "duration": 0.2964999999999236,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.list \"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.list \"",
+          "duration": 0.24099999999998545,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"\"",
+          "duration": 0.18810000000007676,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract exposes frozen operation constants",
+          "status": "passed",
+          "title": "exposes frozen operation constants",
+          "duration": 0.36230000000000473,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy stream descriptor"
+          ],
+          "fullName": "Legacy stream descriptor admits only the exact Legacy OC1 descriptor",
+          "status": "passed",
+          "title": "admits only the exact Legacy OC1 descriptor",
+          "duration": 0.4157000000000153,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /event on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /event on the exact Legacy descriptor",
+          "duration": 0.2520999999999276,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /global/event on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /global/event on the exact Legacy descriptor",
+          "duration": 0.12450000000001182,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /path on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /path on the exact Legacy descriptor",
+          "duration": 0.07420000000001892,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /project on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /project on the exact Legacy descriptor",
+          "duration": 0.09910000000002128,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /project/current on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /project/current on the exact Legacy descriptor",
+          "duration": 0.06920000000002346,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /vcs on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /vcs on the exact Legacy descriptor",
+          "duration": 0.059099999999943975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /lsp on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /lsp on the exact Legacy descriptor",
+          "duration": 0.08959999999990487,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /global/config on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /global/config on the exact Legacy descriptor",
+          "duration": 0.06179999999994834,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /config on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /config on the exact Legacy descriptor",
+          "duration": 0.08900000000005548,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /config/providers on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /config/providers on the exact Legacy descriptor",
+          "duration": 0.11989999999991596,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /provider on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /provider on the exact Legacy descriptor",
+          "duration": 0.1248000000000502,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /agent on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /agent on the exact Legacy descriptor",
+          "duration": 0.11650000000008731,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /command on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /command on the exact Legacy descriptor",
+          "duration": 0.116800000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /permission on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /permission on the exact Legacy descriptor",
+          "duration": 0.16079999999999472,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /question on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /question on the exact Legacy descriptor",
+          "duration": 0.07920000000001437,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session on the exact Legacy descriptor",
+          "duration": 0.07349999999996726,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /experimental/session on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /experimental/session on the exact Legacy descriptor",
+          "duration": 0.12810000000001764,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session/status on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session/status on the exact Legacy descriptor",
+          "duration": 0.10360000000002856,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session/s1 on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session/s1 on the exact Legacy descriptor",
+          "duration": 0.2760000000000673,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session/s1/message on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session/s1/message on the exact Legacy descriptor",
+          "duration": 0.18389999999999418,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session/s1/message/m1 on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session/s1/message/m1 on the exact Legacy descriptor",
+          "duration": 0.16409999999996217,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits GET /session/s1/children on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits GET /session/s1/children on the exact Legacy descriptor",
+          "duration": 0.22120000000006712,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits POST /session/s1/prompt_async on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits POST /session/s1/prompt_async on the exact Legacy descriptor",
+          "duration": 0.1493999999999005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits POST /session/s1/abort on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits POST /session/s1/abort on the exact Legacy descriptor",
+          "duration": 0.2194000000000642,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits POST /permission/p1/reply on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits POST /permission/p1/reply on the exact Legacy descriptor",
+          "duration": 0.1571999999999889,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits POST /question/q1/reply on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits POST /question/q1/reply on the exact Legacy descriptor",
+          "duration": 0.15179999999998017,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract admits POST /question/q1/reject on the exact Legacy descriptor",
+          "status": "passed",
+          "title": "admits POST /question/q1/reject on the exact Legacy descriptor",
+          "duration": 0.19619999999997617,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses POST /session",
+          "status": "passed",
+          "title": "refuses POST /session",
+          "duration": 0.2014000000000351,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses PATCH /session/s1",
+          "status": "passed",
+          "title": "refuses PATCH /session/s1",
+          "duration": 0.1532999999999447,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses DELETE /session/s1",
+          "status": "passed",
+          "title": "refuses DELETE /session/s1",
+          "duration": 0.09780000000000655,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses GET /session/s1/message/",
+          "status": "passed",
+          "title": "refuses GET /session/s1/message/",
+          "duration": 0.1270000000000664,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses GET /session/s1/children/more",
+          "status": "passed",
+          "title": "refuses GET /session/s1/children/more",
+          "duration": 0.14970000000005257,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses POST /session/s1/prompt_async/more",
+          "status": "passed",
+          "title": "refuses POST /session/s1/prompt_async/more",
+          "duration": 0.09239999999999782,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses POST /question/q1/reply/extra",
+          "status": "passed",
+          "title": "refuses POST /question/q1/reply/extra",
+          "duration": 0.12859999999989213,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses GET /event/other",
+          "status": "passed",
+          "title": "refuses GET /event/other",
+          "duration": 0.0905999999999949,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses GET /unknown",
+          "status": "passed",
+          "title": "refuses GET /unknown",
+          "duration": 0.10569999999995616,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract refuses POST /config",
+          "status": "passed",
+          "title": "refuses POST /config",
+          "duration": 0.16640000000006694,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP admission contract"
+          ],
+          "fullName": "Legacy HTTP admission contract requires the exact supported Legacy descriptor",
+          "status": "passed",
+          "title": "requires the exact supported Legacy descriptor",
+          "duration": 0.14429999999993015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791734261082,
+      "endTime": 1791734261096.1665,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-contract.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration creates a session through the kernel, persists metadata off-wire, and overlays all session reads",
+          "status": "passed",
+          "title": "creates a session through the kernel, persists metadata off-wire, and overlays all session reads",
+          "duration": 192.64729999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration updates upstream fields and merges metadata patches across HTTP and persisted reads",
+          "status": "passed",
+          "title": "updates upstream fields and merges metadata patches across HTTP and persisted reads",
+          "duration": 40.04039999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration rejects unknown fields and a non-Legacy descriptor before upstream effects",
+          "status": "passed",
+          "title": "rejects unknown fields and a non-Legacy descriptor before upstream effects",
+          "duration": 22.284000000000106,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration refuses a delayed metadata overlay after the Legacy descriptor retires",
+          "status": "passed",
+          "title": "refuses a delayed metadata overlay after the Legacy descriptor retires",
+          "duration": 20.38720000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy HTTP partial outcomes"
+          ],
+          "fullName": "Legacy HTTP partial outcomes reports the created session when metadata storage and rollback fail without leaking the storage error",
+          "status": "passed",
+          "title": "reports the created session when metadata storage and rollback fail without leaking the storage error",
+          "duration": 26.408500000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791734261920,
+      "endTime": 1791734262222.4084,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-session-http.test.js"
+    }
+  ]
+}

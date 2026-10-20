@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-12T17:27:25.381Z",
+  "status": "progress; INT-05/R3 open; awaited OAuth switch cleanup verified in controlled tests",
+  "previous": "artifacts/int05-provider-adoption-checkpoint.json",
+  "authorization": "[REDACTED]",
+  "changes": [
+    "Web feature host registers finite private provider routes before generic proxy",
+    "One host-owned runtime receives native retirement and credential headers and is disposed on shutdown",
+    "Bilingual SPEC requires bounded awaited OAuth cleanup before endpoint/auth/relay replacement",
+    "Dedicated Legacy page and exact-profile dispatcher preserve OC1/OC2 routing",
+    "Unknown credential outcomes survive source refresh and block writes",
+    "Sixty Legacy messages translated across all thirteen locales without English fallback",
+    "Runtime switching and navigation await original OAuth cleanup for up to three seconds before changing endpoint, auth or relay",
+    "Pending BEGIN is owned and abortable; new BEGIN is rejected during transition; cancel promises and failed outcomes survive until cleanup",
+    "Relay probe tunnel adoption moved to runtime commit; mobile, desktop, navigation and same-host credential callers await switching"
+  ],
+  "tests": {
+    "web": {
+      "passed": 203,
+      "files": 11,
+      "evidence": "artifacts/int05-provider-entry-regression.log"
+    },
+    "ui": {
+      "files": 9,
+      "evidence": "artifacts/int05-provider-ui-regression.log"
+    },
+    "legacyComponent": {
+      "passed": 10,
+      "evidence": "artifacts/int05-provider-ui-tests.log"
+    },
+    "sharedService": {
+      "passed": 19,
+      "evidence": "artifacts/int05-provider-switch-service.log"
+    },
+    "switchRegression": {
+      "passed": 111,
+      "files": 10,
+      "evidence": [
+        "artifacts/int05-provider-switch-regression.log",
+        "artifacts/int05-provider-switch-adoption.log",
+        "artifacts/int05-provider-switch-runtime-config.log"
+      ],
+      "note": "First adoption log contains the obsolete void-stub failure; final runtimeConfig rerun passes five tests"
+    },
+    "switchOrdering": {
+      "passed": 7,
+      "evidence": "artifacts/int05-provider-switch-tests.log",
+      "note": "Includes observable unconfirmed-cleanup warning"
+    }
+  },
+  "staticChecks": {
+    "eslint": "passed on feature routes and new integration test",
+    "oxlint": "zero diagnostics on those two files",
+    "workspaceTypes": "passed; sequential workspace scripts; artifacts/int05-provider-entry-types-sequential.log",
+    "deadCode": "local cached Knip 5.80.0 with script parameters; no added Legacy finding; existing backlog retained",
+    "workspaceLint": "passed; five pre-existing warnings outside batch; artifacts/int05-provider-entry-workspace-lint.log",
+    "uiEslint": "passed on four authored UI files and locale dictionary",
+    "uiOxlint": "new UI files pass; old ProvidersPage backlog outside dispatcher retained",
+    "locales": "actual Bun module import; 13 locales / 60 keys; placeholders and literal parity passed",
+    "finalUiTypes": "passed after final locale merge; artifacts/int05-provider-ui-types-final.log",
+    "webBuild": "passed; artifacts/int05-provider-entry-web-build.log",
+    "switchTypes": "passed sequential workspace type-check; artifacts/int05-provider-switch-types.log",
+    "switchLint": "passed workspace ESLint, five existing warnings; artifacts/int05-provider-switch-lint.log",
+    "switchOxlint": "New service and service tests have no diagnostics; existing-file backlog is retained, no authored new-line finding; artifacts/int05-provider-switch-oxlint.log",
+    "switchDeadCode": "passed cached local Knip 5.80.0; no new Legacy or runtime-switch finding; existing two unused files and 319 exports retained",
+    "switchWebBuild": "passed; artifacts/int05-provider-switch-web-build.log",
+    "switchLocales": "13 locales, 61 Legacy keys, new warning translated, placeholder parity passed"
+  },
+  "evidence": [
+    "artifacts/int05-provider-entry-tests.log",
+    "artifacts/int05-provider-entry-eslint.log",
+    "artifacts/int05-provider-entry-oxlint.log",
+    "artifacts/int05-provider-entry-failures.md",
+    "artifacts/int05-provider-ui-regression.log",
+    "artifacts/int05-provider-ui-tests.log",
+    "artifacts/int05-provider-service-final.log",
+    "artifacts/int05-provider-ui-eslint.log",
+    "artifacts/int05-provider-ui-new-oxlint.log",
+    "artifacts/int05-provider-locales-validation.json",
+    "artifacts/int05-provider-entry-dead-code.log",
+    "artifacts/int05-provider-entry-types-sequential.log",
+    "artifacts/int05-provider-entry-workspace-lint.log",
+    "artifacts/int05-provider-ui-types-final.log",
+    "artifacts/int05-provider-entry-web-build.log",
+    "artifacts/int05-provider-switch-service.log",
+    "artifacts/int05-provider-switch-tests.log",
+    "artifacts/int05-provider-switch-regression.log",
+    "artifacts/int05-provider-switch-adoption.log",
+    "artifacts/int05-provider-switch-runtime-config.log",
+    "artifacts/int05-provider-switch-types.log",
+    "artifacts/int05-provider-switch-lint.log",
+    "artifacts/int05-provider-switch-oxlint.log",
+    "artifacts/int05-provider-switch-dead-code.log",
+    "artifacts/int05-provider-switch-web-build.log",
+    "artifacts/int05-provider-switch-locales.json"
+  ],
+  "limits": [
+    "Controlled switch, Express/SDK and component tests do not establish real provider OAuth acceptance",
+    "VS Code Provider bridge adoption remains unimplemented",
+    "Unattended outcome persistence and R4 remain open",
+    "No real Electron HMR/packaged or native mobile connection-switch acceptance in this batch"
+  ],
+  "zhCN": {
+    "status": "INT-05/R3 继续开放；切换前有界等待 OAuth 清理已通过受控验证",
+    "verified": "十个文件 111 项回归通过；其中共享服务十九项、切换七项、Legacy 组件十项；全工作区类型和 ESLint、Web 生产构建通过",
+    "next": "完成 VS Code Provider 桥接与真实宿主/提供商验收，再推进无人值守持久化及 R4"
+  },
+  "files": {
+    "packages/web/server/index.js": "67cb6aaf56185fdf110557901685188168245d84dbdb35e27246b647635621c4",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "f73a1d12b022c99dcdf95a5cb669f41fc7ce0ab12b918726389a2eb44f64cc94",
+    "packages/web/server/lib/opencode/legacy-provider-adoption.test.js": "55d70fb930d3730d0d56229a794280271ceaaa8d9a2f1ba3966a2f24407a5172",
+    "packages/web/server/lib/opencode/shutdown-runtime.js": "4acb89140860d4b61a3d7902e61cc1c2e57951704cde400a90055253e7ab7c3e",
+    "docs/maintenance/OPENCODE-LEGACY-1.2.27-SPEC.md": "63d3ce410dedc33008c340e8b31ae13b32e12a4342d899ff054fb363210d4711",
+    "docs/maintenance/zh-CN/OPENCODE-LEGACY-1.2.27-SPEC.md": "9a3e7f7ac9d7c5bdbb1da1560aa4831191a3373c3a7d19402e51149d2ef65755",
+    "packages/ui/src/components/sections/providers/LegacyProvidersPage.tsx": "707759517186e47c96d44ec4a99cdf79045061a9697f147eaae902fbca492987",
+    "packages/ui/src/components/sections/providers/LegacyProvidersPage.test.tsx": "f611d04efbdf0ffe8310ecf7691f38584440b48042e0a9b51ac9b46d1f8a7c2f",
+    "packages/ui/src/components/sections/providers/legacy-provider-ui.ts": "06f44410f1e6dc91ce4009b9a9adc486363578480ea5af7cb656d04fcf9cfcb6",
+    "packages/ui/src/components/sections/providers/ProvidersPage.tsx": "5c7d21cec686d4906963503ca9893bcc5967dcf018e562ff1448be48f0e4647f",
+    "packages/ui/src/lib/i18n/messages/providers.i18n.ts": "1ffe481ef51dceb6944c365b6e0be308c55f388d36332487d73c7e5f95f6e2a3",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "3075eb59437aa439c5774be1ce2298de9df46e64d7df360780920dea8d1fc18d",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "2eb0a44e4c35b6027847b13688f9787a5600192f24c3ed189e33fc93888cbed9",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "174a8aa0b603d058224cb4ff1cb83efa85f88e09dde1da09db64b3f02b64abd6",
+    "packages/ui/src/lib/runtime-switch.ts": "a21509688f4b0cc8717a4e5c4d20ad502d1d39cab1beb11bf909aed149b68e53",
+    "packages/ui/src/lib/runtime-switch.test.ts": "268b5ca63964716565176901b626ddcec12cf1ad41e53480c91192fffae12ad9",
+    "packages/ui/src/lib/opencode/legacy-providers.ts": "604f61fe5ee74122edc7f88ccd15720900e868d2ed416e681e1730e106eae2da",
+    "packages/ui/src/lib/opencode/legacy-providers.test.ts": "e26bc2c7b78d9668020e88b014d03b400190cee32642a7ed3fd59d0389d138ae",
+    "packages/ui/src/components/desktop/DesktopHostSwitcher.tsx": "c249edeb69623823904df2cb75fd12018d85cad956125d6dfd12b43e5456881e",
+    "packages/ui/src/apps/mobileConnections.ts": "22ba0ab15fa874958a10f10b737440ca86f1cf43894e3d6f9dcbd582b33bbf79",
+    "packages/ui/src/apps/MobileApp.tsx": "3c1ec1eaf987c3783477653c05df7bc846f5219de41036b3ddb1f7baac13f144",
+    "packages/ui/src/lib/desktopRelayRestore.ts": "306808af5f0bafd836dfc948908515e824d4c12ba48ee2b56198adf2ed957990",
+    "packages/ui/src/components/auth/SessionAuthGate.tsx": "91133e6d372d7a3a01d7c2eb0bfb1636d655a0e542ded77bbc2745afb19304ad",
+    "packages/ui/src/components/sections/remote-instances/RemoteInstancesPage.tsx": "93ae4850c2155d8ec8bb1ad8729b54af268e3c11e5d33681d418b4b20d911356",
+    "packages/web/src/runtimeConfig.ts": "3ee8956980951653f6ea3693f9fcf0c85c7a034970cb31c38bedf3adcf2fef3e",
+    "packages/web/src/runtimeConfig.test.ts": "a56fdd6dbc6bb52d959d0ded100d6b315c4ff660e425aaf05831a25261bfd92b"
+  },
+  "releaseChanged": false,
+  "dependenciesAdded": false,
+  "downloads": false,
+  "gitChanged": false,
+  "weeklyRemainingPercent": 48,
+  "quota": {
+    "source": "live Codex usage limits",
+    "weeklyRemainingPercent": 47,
+    "date": "2026-10-13"
+  }
+}

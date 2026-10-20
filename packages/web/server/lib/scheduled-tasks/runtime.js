@@ -498,13 +498,14 @@ export const createScheduledTasksRuntime = (deps) => {
     ],
   });
 
-  const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, projectPath, task, identity }) => {
+  const runPromptAsync = async ({ baseUrl, authHeaders, sessionID, projectPath, task, identity, checkCurrent }) => {
     // Never allowed to fail the run: a task that executes without its
     // background is a lesser loss than a task that does not execute.
     const knowledge = sessionKnowledgeRuntime
       ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
         .catch(() => ({ text: '', signature: '' }))
       : { text: '', signature: '' };
+    checkCurrent();
 
     if (kernelOperations) {
       const body = buildPromptAsyncPayload(task, projectPath, knowledge.text);
@@ -517,6 +518,7 @@ export const createScheduledTasksRuntime = (deps) => {
       };
       if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
       await kernelOperations.sendPrompt({ sessionID, directory: projectPath, request });
+      checkCurrent();
       if (knowledge.text && sessionKnowledgeRuntime) {
         await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
       }
@@ -534,6 +536,7 @@ export const createScheduledTasksRuntime = (deps) => {
       body: JSON.stringify(buildPromptAsyncPayload(task, projectPath, knowledge.text)),
     });
 
+    checkCurrent();
     if (!response.ok) {
       const body = await response.text().catch(() => '');
       throw new Error(`prompt_async failed (${response.status})${body ? `: ${body}` : ''}`);
@@ -568,12 +571,13 @@ export const createScheduledTasksRuntime = (deps) => {
     return command ? { ...parsed, template: command.template } : null;
   };
 
-  const runScheduledCommand = async ({ client, projectPath, sessionID, task, command, identity }) => {
+  const runScheduledCommand = async ({ client, projectPath, sessionID, task, command, identity, checkCurrent }) => {
     if (kernelOperations) {
       const knowledge = identity.generation === 'oc2' && sessionKnowledgeRuntime
         ? await sessionKnowledgeRuntime.resolvePendingForSession(sessionID, projectPath)
           .catch(() => ({ text: '', signature: '' }))
         : { text: '', signature: '' };
+      checkCurrent();
       const body = {
         command: command.command, arguments: command.arguments,
         model: `${task.execution.providerID}/${task.execution.modelID}`,
@@ -590,6 +594,7 @@ export const createScheduledTasksRuntime = (deps) => {
       if (identity.generation === 'oc2' && task.execution.agent) request.agent = task.execution.agent;
       if (identity.generation === 'oc2' && knowledge.text) request.synthetics = [{ text: knowledge.text, resume: false }];
       await kernelOperations.sendCommand({ sessionID, directory: projectPath, request });
+      checkCurrent();
       if (identity.generation === 'oc2' && knowledge.text && sessionKnowledgeRuntime) {
         await sessionKnowledgeRuntime.recordDelivered(sessionID, projectPath, knowledge.signature).catch(() => undefined);
       }
@@ -607,7 +612,7 @@ export const createScheduledTasksRuntime = (deps) => {
 
   };
 
-  const runTaskWithWatchdog = async (projectID, task, reason) => {
+  const runTaskWithWatchdog = async (projectID, task, reason, lifetime) => {
     const startedAt = Date.now();
     const title = formatScheduledSessionTitle(task, startedAt);
     const projectPath = projectPathByID.get(projectID);
@@ -616,9 +621,13 @@ export const createScheduledTasksRuntime = (deps) => {
     }
 
     const identity = kernelOperations?.captureIdentity();
+    lifetime.legacy = identity?.generation === 'oc1' && identity.profile === 'legacy-1.2.27';
     let sessionID;
     let directory;
     const checkCurrent = () => {
+      if (lifetime.legacy && lifetime.expired) {
+        throw Object.assign(new Error('Scheduled task preparation expired; remote outcome is unknown'), { sessionID, directory: sessionID ? directory : undefined });
+      }
       if (!identity) return;
       const current = kernelOperations.captureIdentity();
       if (current.generation !== identity.generation || current.profile !== identity.profile
@@ -654,6 +663,8 @@ export const createScheduledTasksRuntime = (deps) => {
         : await client.session.create({ directory, title });
       sessionID = sessionResponse?.data?.id;
       if (!sessionID) throw new Error('failed to create session');
+      lifetime.sessionID = sessionID;
+      lifetime.directory = directory;
     } catch (error) {
       if (directory !== projectPath) await chatsScope.discardChatDirectory(directory);
       throw error;
@@ -707,7 +718,7 @@ export const createScheduledTasksRuntime = (deps) => {
 
     checkCurrent();
     if (scheduledCommand) {
-      await runScheduledCommand({ client, projectPath: directory, sessionID, task, command: scheduledCommand, identity });
+      await runScheduledCommand({ client, projectPath: directory, sessionID, task, command: scheduledCommand, identity, checkCurrent });
     } else {
       await runPromptAsync({
         baseUrl,
@@ -716,6 +727,7 @@ export const createScheduledTasksRuntime = (deps) => {
         projectPath: directory,
         task,
         identity,
+        checkCurrent,
       });
     }
 
@@ -954,12 +966,16 @@ export const createScheduledTasksRuntime = (deps) => {
       let durationMs = 0;
       let errorMessage;
 
+      const lifetime = { expired: false, legacy: false, sessionID: undefined, directory: undefined };
       try {
-        const runPromise = runTaskWithWatchdog(projectID, task, reason);
+        const runPromise = runTaskWithWatchdog(projectID, task, reason, lifetime);
         let timeoutID;
         const timeoutPromise = new Promise((_, reject) => {
           timeoutID = setTimeout(() => {
-            reject(new Error('scheduled task run timed out'));
+            lifetime.expired = true;
+            reject(Object.assign(new Error(lifetime.legacy
+              ? 'Scheduled task timed out; remote outcome is unknown'
+              : 'scheduled task run timed out'), { sessionID: lifetime.sessionID, directory: lifetime.directory }));
           }, maxRunDurationMs);
         });
 

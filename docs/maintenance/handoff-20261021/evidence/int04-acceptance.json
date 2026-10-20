@@ -1,0 +1,111 @@
+{
+  "at": "2026-10-11T19:23:46.306Z",
+  "source": "6c050b000be171e0abb34431895c23d3203304b3",
+  "milestone": "INT-04",
+  "status": "accepted",
+  "round": "R3 remains open",
+  "evidence": [
+    {
+      "scope": "advanced operations",
+      "file": "artifacts/int04-advanced-checkpoint.json",
+      "sha256": "487ef47dffc3d299c191ba3329a864dca79ba5e830e91c545550d322e1f91be0"
+    },
+    {
+      "scope": "exact host operations",
+      "file": "artifacts/int04-host-advanced-evidence.json",
+      "sha256": "8d6479570c2c5e01821a158e2d5aef8e5e093b175accf7799389544c4e918fb0"
+    },
+    {
+      "scope": "HTTP races and partial recovery",
+      "file": "artifacts/int04-recovery-checkpoint.json",
+      "sha256": "58ec158580e650ed53375614f9f91ec2ff2b47553853829705042dc36c098999"
+    },
+    {
+      "scope": "exact process pending state",
+      "file": "artifacts/int04-host-recovery-evidence.json",
+      "sha256": "7e6b61deb77dc9f7111cb05968faeced4c11826f2cbe674c0442924db22417d1"
+    },
+    {
+      "scope": "directory isolation",
+      "file": "artifacts/int04-two-directory-evidence.json",
+      "sha256": "438873f681d2595ef8f6bd0fd2f021794cc3fb34a8cdffa946a2544b936329ee"
+    },
+    {
+      "scope": "bootstrap checks and builds",
+      "file": "artifacts/int04-bootstrap-settle-checkpoint.json",
+      "sha256": "b7b29a85d06c3f0a3e945b758b11774e9bbc2ed819a18df8a441a1cb9757f123"
+    },
+    {
+      "scope": "exact Legacy VS Code recovery",
+      "file": "artifacts/int04-bootstrap-settle-native-evidence.json",
+      "sha256": "3f0018028203537d8d367c1a64dfc3b2ce8e66c801c4d1b98deb79d9690b5593"
+    },
+    {
+      "scope": "current OC1 VS Code recovery",
+      "file": "artifacts/int04-current-oc1-native-evidence.json",
+      "sha256": "5662ba3aa6a6fa91cb1911f4111704be5583d4e46d28da41b1b550a0cec55c57"
+    },
+    {
+      "scope": "current OC2 production host recovery",
+      "file": "artifacts/int04-current-oc2-recovery-evidence.json",
+      "sha256": "6c83041084cc07041df7b34d6b120789d4522e1c4b27c43ec8f629243a5b658a"
+    },
+    {
+      "scope": "additional sync contracts",
+      "file": "artifacts/int04-current-sync-results.json",
+      "sha256": "c44831c729b52481dde4609d930c0dfe8e326474c3a5afbd64c74be9d8a536e6"
+    },
+    {
+      "scope": "fixture cleanup",
+      "file": "artifacts/int04-current-recovery-cleanup.json",
+      "sha256": "1263267894fda48322b92e32f45a9323cf4d280a3c3ae5b74966aadaa7b864e2"
+    }
+  ],
+  "currentChecks": {
+    "oc1Native": 59,
+    "oc2ProductionHost": 13,
+    "syncContracts": 12
+  },
+  "limits": [
+    "Controlled loopback model; no external model quality claim.",
+    "OC2 verification covers the production host and sync contracts, not actual OC2 UI.",
+    "Packaged hosts, public Relay and physical mobile remain R7.",
+    "CAgent real-environment acceptance remains environment-local CA-03.",
+    "Inherited anti-slop findings remain recorded in the bootstrap checkpoint."
+  ],
+  "probeCorrection": "OC2 persists idle after completed assistant. The first probe incorrectly required assistant to be the last history entry. Isolated database evidence confirmed completion; corrected probe passed without product changes.",
+  "diagnostic": "artifacts/int04-current-oc2-recovery-diagnostic.json",
+  "failedProbe": "artifacts/int04-current-oc2-recovery-pre-correction.json",
+  "cleanup": {
+    "removed": [
+      {
+        "internalJunctionsUnlinked": 0,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc1-native-ZZ345d",
+        "bytes": 92017463
+      },
+      {
+        "internalJunctionsUnlinked": 0,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc2-recovery-Glfobb",
+        "bytes": 9054790
+      },
+      {
+        "internalJunctionsUnlinked": 0,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc2-recovery-hGDqSm",
+        "bytes": 9002945
+      }
+    ],
+    "archive": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-recovery-archive",
+    "preserved": [
+      "Compact pass/failure reports and OC2 session-only diagnostic",
+      "Pinned binaries",
+      "Current builds",
+      "Reusable native and OC2 recovery probes",
+      "Product source and user data"
+    ],
+    "reclaimedBytes": 110075198,
+    "processInventoryVerified": true,
+    "at": "2026-10-11T19:20:22.9399149Z"
+  },
+  "weeklyRemainingPercent": 73,
+  "next": "INT-05 settings, credentials, plugins/MCP and unattended callers; then R4-R7 in milestone order."
+}

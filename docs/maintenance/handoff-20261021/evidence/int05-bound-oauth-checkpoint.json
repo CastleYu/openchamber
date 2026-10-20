@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-12",
+  "scope": "Explicitly authorized private bound OAuth API; existing OC1/OC2 public interfaces unchanged",
+  "status": "private module verified; production host composition pending",
+  "files": {
+    "packages/web/server/lib/opencode/legacy-credential-operations.js": "46a3aeb41e2ca7262d8b09a4020218f7442deaabf62278bda164962dd9fffd37",
+    "packages/web/server/lib/opencode/legacy-credential-operations.d.ts": "106a62ce6cb1208e0ba3b5fea21ac56491dfa9801d4c5c9cc79fbeb10b84c47b",
+    "packages/web/server/lib/opencode/legacy-credential-operations.test.js": "c4b58d5bc87edb392260309934fb365e426172fd42c6acc55b3c18d7e27f4fb3"
+  },
+  "validation": {
+    "focusedTests": "int05-bound-oauth-final-tests.log",
+    "eslint": "int05-bound-oauth-final-eslint.log",
+    "oxlint": "int05-bound-oauth-final-oxlint.log",
+    "webTypes": "int05-bound-oauth-final-web-types.log",
+    "vscodeTypes": "int05-bound-oauth-vscode-types.log",
+    "deadCode": "int05-bound-oauth-dead-code.log"
+  },
+  "weeklyRemainingPercent": 56,
+  "notAccepted": [
+    "real provider OAuth",
+    "production credential route composition",
+    "real IDE binding acceptance after CLI admission changes",
+    "Legacy unattended dispatch"
+  ],
+  "next": [
+    "Compose credential flow with existing native owner",
+    "Implement persisted Legacy queue attempts and unknown outcome projection per bilingual SPEC",
+    "Complete scheduled/goals/VSCode parity and real IDE acceptance before INT-05 closure"
+  ]
+}

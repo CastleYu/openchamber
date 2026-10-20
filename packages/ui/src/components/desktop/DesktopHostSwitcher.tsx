@@ -47,9 +47,8 @@ import {
   type DesktopHostStatus,
 } from '@/lib/desktopHostStatus';
 import { scheduleDesktopHostCandidateRefresh } from '@/lib/desktopRelayRestore';
-import { adoptRelayTunnel } from '@/lib/relay/runtime-tunnel';
 import { createRelayTunnelClient } from '@/lib/relay/tunnel-client';
-import { subscribeRuntimeEndpointChanged, switchRuntimeEndpoint } from '@/lib/runtime-switch';
+import { prepareRuntimeNavigation, subscribeRuntimeEndpointChanged, switchRuntimeEndpoint } from '@/lib/runtime-switch';
 import {
   desktopSshConnect,
   desktopSshDisconnect,
@@ -415,197 +414,199 @@ export function DesktopHostSwitcherDialog({
   }, [open]);
 
   const handleSwitch = React.useCallback(async (host: DesktopHost) => {
-    // Relay legs ride the E2EE tunnel activated in-renderer via
-    // switchRuntimeEndpoint({ relay }); the runtime fetch/socket layers route
-    // through the tunnel from the singleton registry.
-    const activateRelay = (relay: NonNullable<DesktopHost['relay']>, liveTunnel?: ReturnType<typeof createRelayTunnelClient>) => {
-      // Adopt the probe's live tunnel (when it kept one) BEFORE the switch: the
-      // activate call inside switchRuntimeEndpoint sees an equal descriptor and
-      // reuses it — no second WebSocket connect + E2EE handshake.
-      if (liveTunnel) {
-        adoptRelayTunnel({ relayUrl: relay.relayUrl, serverId: relay.serverId, hostEncPubJwk: relay.hostEncPubJwk }, liveTunnel);
-      }
-      switchRuntimeEndpoint({
-        apiBaseUrl: typeof window !== 'undefined' ? window.location.origin : '',
-        clientToken: host.clientToken || null,
-        runtimeKey: runtimeKeyForDesktopHost(host),
-        relay,
-      });
-      // On the relay: learn the server's current LAN address in the background
-      // and hot-switch back to direct if the stored one merely went stale.
-      scheduleDesktopHostCandidateRefresh(host.id);
-    };
+    try {
+      // Relay legs ride the E2EE tunnel activated in-renderer via
+      // switchRuntimeEndpoint({ relay }); the runtime fetch/socket layers route
+      // through the tunnel from the singleton registry.
+      const activateRelay = async (relay: NonNullable<DesktopHost['relay']>, liveTunnel?: ReturnType<typeof createRelayTunnelClient>) => {
+        await switchRuntimeEndpoint({
+          apiBaseUrl: typeof window !== 'undefined' ? window.location.origin : '',
+          clientToken: host.clientToken || null,
+          runtimeKey: runtimeKeyForDesktopHost(host),
+          relay,
+          relayTunnel: liveTunnel,
+        });
+        // On the relay: learn the server's current LAN address in the background
+        // and hot-switch back to direct if the stored one merely went stale.
+        scheduleDesktopHostCandidateRefresh(host.id);
+      };
 
-    const origin = host.id === LOCAL_HOST_ID ? localOrigin : (normalizeHostUrl(host.url) || '');
-    const apiOrigin = host.id === LOCAL_HOST_ID ? localOrigin : (normalizeHostUrl(getDesktopHostApiUrl(host)) || '');
-    const relayOnly = Boolean(host.relay) && !host.apiUrl && host.id !== LOCAL_HOST_ID;
-    if (!origin && !relayOnly) return;
+      const origin = host.id === LOCAL_HOST_ID ? localOrigin : (normalizeHostUrl(host.url) || '');
+      const apiOrigin = host.id === LOCAL_HOST_ID ? localOrigin : (normalizeHostUrl(getDesktopHostApiUrl(host)) || '');
+      const relayOnly = Boolean(host.relay) && !host.apiUrl && host.id !== LOCAL_HOST_ID;
+      if (!origin && !relayOnly) return;
 
-    if (isElectronShell()) {
-      if (!apiOrigin && !host.relay) return;
-      setSwitchingHostId(host.id);
-      const clientToken = host.id === LOCAL_HOST_ID ? await getLocalClientToken() : (host.clientToken || '');
+      if (isElectronShell()) {
+        if (!apiOrigin && !host.relay) return;
+        setSwitchingHostId(host.id);
+        const clientToken = host.id === LOCAL_HOST_ID ? await getLocalClientToken() : (host.clientToken || '');
 
-      // The dropdown already probed every host when it opened — act on that
-      // result instead of re-probing (re-probes doubled the switch latency and
-      // flashed transient Unreachable states over a known-good host).
-      const cached = statusById[host.id];
-      if (cached?.status === 'ok') {
-        if (cached.via === 'relay' && host.relay) {
-          activateRelay(host.relay);
-        } else if (apiOrigin) {
-          switchRuntimeEndpoint({ apiBaseUrl: apiOrigin, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null, runtimeKey: runtimeKeyForDesktopHost(host) });
-        } else if (host.relay) {
-          activateRelay(host.relay);
-        }
-        onHostSwitched?.();
-        setSwitchingHostId(null);
-        return;
-      }
-
-      // No usable probe result — probe now: direct first, relay fallback.
-      // Statuses are written once, with the final outcome, so the row never
-      // flashes intermediate failures while the fallback is still running.
-      let finalStatus: HostStatus = { status: 'unreachable', latencyMs: 0 };
-      let transport: 'direct' | 'relay' | null = null;
-      if (apiOrigin) {
-        const probe = await desktopHostProbe(apiOrigin, { clientToken: clientToken || null, requestHeaders: host.requestHeaders || null }).catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
-        finalStatus = { status: probe.status, latencyMs: probe.latencyMs };
-        if (!isBlockedHostStatus(probe.status)) transport = 'direct';
-      }
-      let relayProbeTunnel: ReturnType<typeof createRelayTunnelClient> | undefined;
-      if (!transport && host.relay) {
-        const probe = await probeRelayDesktopHost(host.relay, { keepTunnel: true, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null })
-          .catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
-        if (probe.status === 'ok') {
-          finalStatus = { status: probe.status, latencyMs: probe.latencyMs, via: 'relay' };
-          transport = 'relay';
-          relayProbeTunnel = 'tunnel' in probe ? probe.tunnel : undefined;
-        }
-      }
-      setDesktopHostStatus(host.id, finalStatus);
-
-      if (!transport) {
-        toast.error(t('desktopHostSwitcher.toast.instanceUnreachable', { host: redactSensitiveUrl(host.label) }));
-        setSwitchingHostId(null);
-        return;
-      }
-      if (transport === 'relay' && host.relay) {
-        activateRelay(host.relay, relayProbeTunnel);
-      } else {
-        switchRuntimeEndpoint({ apiBaseUrl: apiOrigin, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null, runtimeKey: runtimeKeyForDesktopHost(host) });
-      }
-      onHostSwitched?.();
-      setSwitchingHostId(null);
-      return;
-    }
-
-    const isSshHost = Boolean(sshHostIds[host.id]);
-
-    if (host.id !== LOCAL_HOST_ID && isSshHost && isDesktopShell()) {
-      let existingStatus = sshStatusesById[host.id];
-      const latestStatus = await desktopSshStatus(host.id)
-        .then((items) => items.find((item) => item.id === host.id) || null)
-        .catch(() => null);
-      if (latestStatus) {
-        existingStatus = latestStatus;
-        setSshStatusesById((prev) => ({
-          ...prev,
-          [host.id]: latestStatus,
-        }));
-      }
-
-      const existingUrl = normalizeHostUrl(existingStatus?.localUrl || host.url || '');
-      if (existingStatus?.phase === 'ready' && existingUrl) {
-        const target = toNavigationUrl(existingUrl);
-        onHostSwitched?.();
-        window.location.assign(target);
-        return;
-      }
-
-      setSwitchingHostId(host.id);
-      const switchToken = sshSwitchTokenRef.current + 1;
-      sshSwitchTokenRef.current = switchToken;
-      setSshSwitchModal({
-        open: true,
-        hostId: host.id,
-        hostLabel: redactSensitiveUrl(host.label),
-        phase: 'master_connecting',
-        detail: null,
-        error: null,
-      });
-      try {
-        await desktopSshConnect(host.id);
-        if (switchToken !== sshSwitchTokenRef.current) {
+        // The dropdown already probed every host when it opened — act on that
+        // result instead of re-probing (re-probes doubled the switch latency and
+        // flashed transient Unreachable states over a known-good host).
+        const cached = statusById[host.id];
+        if (cached?.status === 'ok') {
+          if (cached.via === 'relay' && host.relay) {
+            await activateRelay(host.relay);
+          } else if (apiOrigin) {
+            await switchRuntimeEndpoint({ apiBaseUrl: apiOrigin, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null, runtimeKey: runtimeKeyForDesktopHost(host) });
+          } else if (host.relay) {
+            await activateRelay(host.relay);
+          }
+          onHostSwitched?.();
+          setSwitchingHostId(null);
           return;
         }
 
-        const readyStatus = await waitForSshReady(host.id, SSH_CONNECT_TIMEOUT_MS, (status) => {
+        // No usable probe result — probe now: direct first, relay fallback.
+        // Statuses are written once, with the final outcome, so the row never
+        // flashes intermediate failures while the fallback is still running.
+        let finalStatus: HostStatus = { status: 'unreachable', latencyMs: 0 };
+        let transport: 'direct' | 'relay' | null = null;
+        if (apiOrigin) {
+          const probe = await desktopHostProbe(apiOrigin, { clientToken: clientToken || null, requestHeaders: host.requestHeaders || null }).catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
+          finalStatus = { status: probe.status, latencyMs: probe.latencyMs };
+          if (!isBlockedHostStatus(probe.status)) transport = 'direct';
+        }
+        let relayProbeTunnel: ReturnType<typeof createRelayTunnelClient> | undefined;
+        if (!transport && host.relay) {
+          const probe = await probeRelayDesktopHost(host.relay, { keepTunnel: true, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null })
+            .catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
+          if (probe.status === 'ok') {
+            finalStatus = { status: probe.status, latencyMs: probe.latencyMs, via: 'relay' };
+            transport = 'relay';
+            relayProbeTunnel = 'tunnel' in probe ? probe.tunnel : undefined;
+          }
+        }
+        setDesktopHostStatus(host.id, finalStatus);
+
+        if (!transport) {
+          toast.error(t('desktopHostSwitcher.toast.instanceUnreachable', { host: redactSensitiveUrl(host.label) }));
+          setSwitchingHostId(null);
+          return;
+        }
+        if (transport === 'relay' && host.relay) {
+          await activateRelay(host.relay, relayProbeTunnel);
+        } else {
+          await switchRuntimeEndpoint({ apiBaseUrl: apiOrigin, clientToken: clientToken || null, requestHeaders: host.requestHeaders || null, runtimeKey: runtimeKeyForDesktopHost(host) });
+        }
+        onHostSwitched?.();
+        setSwitchingHostId(null);
+        return;
+      }
+
+      const isSshHost = Boolean(sshHostIds[host.id]);
+
+      if (host.id !== LOCAL_HOST_ID && isSshHost && isDesktopShell()) {
+        let existingStatus = sshStatusesById[host.id];
+        const latestStatus = await desktopSshStatus(host.id)
+          .then((items) => items.find((item) => item.id === host.id) || null)
+          .catch(() => null);
+        if (latestStatus) {
+          existingStatus = latestStatus;
           setSshStatusesById((prev) => ({
             ...prev,
-            [status.id]: status,
+            [host.id]: latestStatus,
           }));
+        }
+
+        const existingUrl = normalizeHostUrl(existingStatus?.localUrl || host.url || '');
+        if (existingStatus?.phase === 'ready' && existingUrl) {
+          const target = toNavigationUrl(existingUrl);
+          await prepareRuntimeNavigation();
+          onHostSwitched?.();
+          window.location.assign(target);
+          return;
+        }
+
+        setSwitchingHostId(host.id);
+        const switchToken = sshSwitchTokenRef.current + 1;
+        sshSwitchTokenRef.current = switchToken;
+        setSshSwitchModal({
+          open: true,
+          hostId: host.id,
+          hostLabel: redactSensitiveUrl(host.label),
+          phase: 'master_connecting',
+          detail: null,
+          error: null,
+        });
+        try {
+          await desktopSshConnect(host.id);
+          if (switchToken !== sshSwitchTokenRef.current) {
+            return;
+          }
+
+          const readyStatus = await waitForSshReady(host.id, SSH_CONNECT_TIMEOUT_MS, (status) => {
+            setSshStatusesById((prev) => ({
+              ...prev,
+              [status.id]: status,
+            }));
+            setSshSwitchModal((prev) => ({
+              ...prev,
+              phase: status.phase,
+              detail: status.detail || null,
+            }));
+          }, () => switchToken !== sshSwitchTokenRef.current);
+
+          if (switchToken !== sshSwitchTokenRef.current) {
+            return;
+          }
+
+          const targetOrigin = normalizeHostUrl(readyStatus.localUrl || '') || origin;
+          const target = toNavigationUrl(targetOrigin);
+          await prepareRuntimeNavigation();
+          onHostSwitched?.();
+          window.location.assign(target);
+          return;
+        } catch (err) {
+          if (switchToken !== sshSwitchTokenRef.current) {
+            return;
+          }
+
+          const message = err instanceof Error ? err.message : String(err);
+          if (message === SSH_CONNECT_CANCELLED_ERROR) {
+            return;
+          }
+
           setSshSwitchModal((prev) => ({
             ...prev,
-            phase: status.phase,
-            detail: status.detail || null,
+            error: message,
           }));
-        }, () => switchToken !== sshSwitchTokenRef.current);
-
-        if (switchToken !== sshSwitchTokenRef.current) {
+          toast.error(t('desktopHostSwitcher.toast.sshFailedToConnect', { host: redactSensitiveUrl(host.label) }), {
+            description: message,
+          });
           return;
+        } finally {
+          if (switchToken === sshSwitchTokenRef.current) {
+            setSwitchingHostId(null);
+          }
         }
+      }
 
-        const targetOrigin = normalizeHostUrl(readyStatus.localUrl || '') || origin;
-        const target = toNavigationUrl(targetOrigin);
-        onHostSwitched?.();
-        window.location.assign(target);
-        return;
-      } catch (err) {
-        if (switchToken !== sshSwitchTokenRef.current) {
-          return;
-        }
+      if (host.id !== LOCAL_HOST_ID && isDesktopShell()) {
+        setSwitchingHostId(host.id);
+        const probe = await desktopHostProbe(origin, { clientToken: host.clientToken || null, requestHeaders: host.requestHeaders || null }).catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
+        setDesktopHostStatus(host.id, { status: probe.status, latencyMs: probe.latencyMs });
 
-        const message = err instanceof Error ? err.message : String(err);
-        if (message === SSH_CONNECT_CANCELLED_ERROR) {
-          return;
-        }
-
-        setSshSwitchModal((prev) => ({
-          ...prev,
-          error: message,
-        }));
-        toast.error(t('desktopHostSwitcher.toast.sshFailedToConnect', { host: redactSensitiveUrl(host.label) }), {
-          description: message,
-        });
-        return;
-      } finally {
-        if (switchToken === sshSwitchTokenRef.current) {
+        if (isBlockedHostStatus(probe.status)) {
+          toast.error(t('desktopHostSwitcher.toast.instanceUnreachable', { host: redactSensitiveUrl(host.label) }));
           setSwitchingHostId(null);
+          return;
         }
       }
-    }
 
-    if (host.id !== LOCAL_HOST_ID && isDesktopShell()) {
-      setSwitchingHostId(host.id);
-      const probe = await desktopHostProbe(origin, { clientToken: host.clientToken || null, requestHeaders: host.requestHeaders || null }).catch((): HostProbeResult => ({ status: 'unreachable', latencyMs: 0 }));
-      setDesktopHostStatus(host.id, { status: probe.status, latencyMs: probe.latencyMs });
+      const target = toNavigationUrl(origin);
+      await prepareRuntimeNavigation();
 
-      if (isBlockedHostStatus(probe.status)) {
-        toast.error(t('desktopHostSwitcher.toast.instanceUnreachable', { host: redactSensitiveUrl(host.label) }));
-        setSwitchingHostId(null);
-        return;
+      onHostSwitched?.();
+      try {
+        window.location.assign(target);
+      } catch {
+        window.location.href = target;
       }
-    }
-
-    const target = toNavigationUrl(origin);
-    onHostSwitched?.();
-
-    try {
-      window.location.assign(target);
-    } catch {
-      window.location.href = target;
-    }
+    } catch (error) {
+      console.warn('[desktop-host] runtime switch failed', error);
+    } finally { setSwitchingHostId(null); }
   }, [localOrigin, onHostSwitched, sshHostIds, sshStatusesById, statusById, t]);
 
   const cancelEdit = React.useCallback(() => {
@@ -637,6 +638,7 @@ export function DesktopHostSwitcherDialog({
     await persist(nextHosts, defaultHostId);
     cancelEdit();
     if (resolved.redeemUrl) {
+      await prepareRuntimeNavigation();
       window.location.assign(resolved.redeemUrl);
     }
   }, [cancelEdit, configHosts, defaultHostId, editLabel, editUrl, editingId, persist, t]);
@@ -665,25 +667,28 @@ export function DesktopHostSwitcherDialog({
   }, [localOrigin, t]);
 
   const switchToLocal = React.useCallback(async () => {
-    sshSwitchTokenRef.current += 1;
-    setSwitchingHostId(null);
-    setSshSwitchModal((prev) => ({
-      ...prev,
-      open: false,
-      hostId: null,
-      error: null,
-      detail: null,
-      phase: 'idle',
-    }));
-    const localTarget = toNavigationUrl(localOrigin);
-    if (isElectronShell()) {
-      const clientToken = await getLocalClientToken();
-      switchRuntimeEndpoint({ apiBaseUrl: localOrigin, clientToken: clientToken || null, runtimeKey: 'local' });
+    try {
+      sshSwitchTokenRef.current += 1;
+      setSwitchingHostId(null);
+      setSshSwitchModal((prev) => ({
+        ...prev,
+        open: false,
+        hostId: null,
+        error: null,
+        detail: null,
+        phase: 'idle',
+      }));
+      const localTarget = toNavigationUrl(localOrigin);
+      if (isElectronShell()) {
+        const clientToken = await getLocalClientToken();
+        await switchRuntimeEndpoint({ apiBaseUrl: localOrigin, clientToken: clientToken || null, runtimeKey: 'local' });
+        onHostSwitched?.();
+        return;
+      }
+      await prepareRuntimeNavigation();
       onHostSwitched?.();
-      return;
-    }
-    onHostSwitched?.();
-    window.location.assign(localTarget);
+      window.location.assign(localTarget);
+    } catch (error) { console.warn('[desktop-host] local runtime switch failed', error); }
   }, [localOrigin, onHostSwitched]);
 
   const cancelSshSwitch = React.useCallback(async () => {

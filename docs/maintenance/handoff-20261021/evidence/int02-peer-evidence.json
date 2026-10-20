@@ -1,0 +1,182 @@
+{
+  "commit": "da0725b64a9c5dbcfc7e8155c2ff9a17f42013a0",
+  "status": "",
+  "testedSourceFiles": {
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "3132413c79c6e0b7e9671c931feffaea488aea8ce42537b7c9b4f502f6a8cfa8",
+    "docs/maintenance/OPENCODE-INTEGRATION-SPEC.md": "a91239b784e45211195b930810d5708fd87ae0e3dc8e9ba090c3bb5731c9f739",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "75455e30b95b1dd59708be3a7baf91f7deeca68224a63969414ef2e08371e5ec",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-SPEC.md": "30e589678555cf7e1ad49f74430b1637a6872c89e585efcd6c2d0f1bba829fa1",
+    "packages/ui/src/apps/VSCodeApp.tsx": "3dfc63a5fee099a714456f10376840a950eebcfa3d78ab20b5a4b2674e2483fd",
+    "packages/ui/src/lib/opencode/client.protocol.test.ts": "1e33ed661fa995d8d7f5e44c1d870d528433ae9bef092416d636dff50d4afad0",
+    "packages/ui/src/stores/DOCUMENTATION.md": "9e848f95fcd15d806802d8a0bed78c72bbbe9a9cdefc69cc0845b6f7cf3d09cc",
+    "packages/ui/src/stores/useConfigStore.test.ts": "bb30b87eeee51bbc1386cf11b1154e3593ac43fdb2c08ee4c1975adf245786db",
+    "packages/ui/src/stores/useConfigStore.ts": "a75f12c7dfc0cf8c7dc6179b23d0888401d4e95b0267f0f10ea1358cae2a2dfa",
+    "packages/vscode/src/DOCUMENTATION.md": "0075de36d43587e0e52ef4962ecd5de0cc324fad95e7fc10f9fcf351814acb68"
+  },
+  "checks": {
+    "configuration": 83,
+    "sdkProtocol": 20,
+    "workspaceTypes": "passed",
+    "workspaceLint": "passed with 5 inherited warnings",
+    "vscodeBuild": "passed",
+    "antiSlop": {
+      "diagnostics": 137,
+      "authored": 0,
+      "details": []
+    },
+    "deadCode": "non-blocking inventory inspected"
+  },
+  "logs": [
+    "int02-peer-config-tests.log",
+    "int02-peer-sdk.log",
+    "int02-peer-final-types.log",
+    "int02-peer-final-lint.log",
+    "int02-peer-final-vscode-build.log",
+    "int02-peer-anti-review.json",
+    "int02-peer-anti.json",
+    "int02-peer-dead-code.log",
+    "int02-peer-config-initial-failure.log",
+    "int02-peer-types-initial-failure.log",
+    "int02-managed-notes.md"
+  ],
+  "cleanup": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-activity-fix.mjs",
+      "bytes": 1655,
+      "sha256": "ab2aee5110931a22cf38e2528863026dd62200fe75a2d1ba81480b84e02d464d"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-activity-review.mjs",
+      "bytes": 1098,
+      "sha256": "9625aba33ed378496e7f49f1cfe51a7972ad356c78c8cf8d3c52070af36c0ae9"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-connection-verify-commit.mjs",
+      "bytes": 988,
+      "sha256": "a1dc8b89ba76bb7ca6a9c6a7e017a07b306f6d0bf5d8a9d1b025e57f1f307f9e"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-editor-review.mjs",
+      "bytes": 1061,
+      "sha256": "2e69a744fe6147bbcd7afe98817a7ae6809972872e1db2ee6c405ef36ecad4c7"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-editor-test-fix.mjs",
+      "bytes": 422,
+      "sha256": "0fe3fa9154e85cc906bd648d93582262e5b317f799dfd5a662854f983b8e8e02"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-migration-verify-commit.mjs",
+      "bytes": 989,
+      "sha256": "eaa7641e876c201a5224ecc7b1e17ae95e367565e868380a7839ced71d6f39c2"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-recovery-import-cleanup.mjs",
+      "bytes": 226,
+      "sha256": "2c0cf779ae3d4f79c0148a603672a22951ece87c625220dc143cb24360db4ab2"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-recovery-import.mjs",
+      "bytes": 388,
+      "sha256": "20089b3ddd42e348a5abb39894d6c6ebfad5781939ea5110134977f04655195d"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-edit.mjs",
+      "bytes": 4634,
+      "sha256": "bd5ba50dcf6953aaf89be074c4a082c29260428c57d2a04ef63ad0c3235abbfd"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-refine.mjs",
+      "bytes": 4670,
+      "sha256": "999f5ebc3675cba16e0dd5e7dca79d5d0017b0198e95e1b72e238c056d449934"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-catalog-fix.mjs",
+      "bytes": 946,
+      "sha256": "d78f2902891355a36f76c7b2eeae714430f802d13e4ee25a178e198f1c0b096e"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-finalize-edit.mjs",
+      "bytes": 5267,
+      "sha256": "a61c9505b62c0c8efff761234a576295f4006ebc0714710c0450e87870bb79f9"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-checks.mjs",
+      "bytes": 1928,
+      "sha256": "eacb6698b92151f2bb9e2a9b5f8b4002123c9ca961b5f905879dad6c4ea3aa1f"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-init-fix.mjs",
+      "bytes": 925,
+      "sha256": "49345c8314848fbde048ed974f0dfefe1153808553e277902c2963581dded99c"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-audit.mjs",
+      "bytes": 1105,
+      "sha256": "17d4f048119642252bdd31ab383936f7cc98b9bc6a6dcf6cc93e98ce5bdd1bb3"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-types.log",
+      "bytes": 331,
+      "sha256": "8712104691dbb2b872440e05ea10e87dd2aca6c5e03bbcaba90c7d01ca653e78"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-lint.log",
+      "bytes": 2049,
+      "sha256": "a7c17cf6f3af688f1f23c4d2802461c9fe140250e48d699d6ecc53457a25b79e"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-vscode-build.log",
+      "bytes": 152548,
+      "sha256": "260dceaabc85675f4a4d0656388dcb02ff305fb6f54fa752339974d14184e46c"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-sdk-initial-failure.log",
+      "bytes": 2487,
+      "sha256": "f45e254a4051a18c4f19bd91aa7d7c687aab3da4586b706bb4b878e96c96d2e3"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-anti.log",
+      "bytes": 32226,
+      "sha256": "4fa87e0f8374cc410757f9cbc505c7e578e9cebe510e03e0e6def8158f59c671"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-peer-checkpoint.mjs",
+      "bytes": 9479,
+      "sha256": "bc998ff1918410938b97d9424e10e4fb3a6e9e9cb23f3438ed1f46d2610b2876"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\spec-cleanup-command-note.md",
+      "bytes": 305,
+      "sha256": "e173844cadbe6807bb5bd72e8c7f998ecb78ae61dff552397768a8fd779217c4"
+    }
+  ],
+  "reclaimedBytes": 225727,
+  "retained": [
+    {
+      "item": "selected peer logs and failure summaries",
+      "reason": "checkpoint reproducibility",
+      "nextCleanup": "R1 closeout after compact evidence is consolidated"
+    },
+    {
+      "item": "current VS Code build, real OC2 binary and reusable native/live fixtures",
+      "reason": "remaining full R1 journey",
+      "nextCleanup": "R1 acceptance closeout"
+    },
+    {
+      "item": "other historical helper candidates",
+      "reason": "not yet individually reviewed for ownership/use",
+      "nextCleanup": "next R1 round before handoff"
+    }
+  ],
+  "remaining": [
+    "peer-wide coordination",
+    "full shared webview/bridge/editor journey",
+    "console-flash observation",
+    "remaining INT and Legacy milestones"
+  ],
+  "nativeUiAcceptance": false,
+  "realCAgentAcceptance": false,
+  "exactLegacyAcceptance": false,
+  "remoteChanged": false
+}

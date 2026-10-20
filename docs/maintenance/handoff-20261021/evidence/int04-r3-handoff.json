@@ -1,0 +1,51 @@
+{
+  "at": "2026-10-11T19:23:46.311Z",
+  "round": "R3 / INT-04 and INT-05",
+  "status": "INT-04 accepted; enclosing R3 remains open",
+  "sourceBase": "bd0c0a3a5ab49f3938ddfff0b571a52d0a0fa2d8",
+  "authoritativeScope": [
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-04-advanced-legacy-operations-and-recovery",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md#int-05-legacy-settings-and-autonomous-work",
+    "docs/maintenance/OPENCODE-LEGACY-1.2.27-SPEC.md"
+  ],
+  "completedRound": "artifacts/int03-r2-exit.json",
+  "firstAction": "Implement INT-05 exact Legacy configuration/credentials, plugins/MCP and browser-closed callers. Audit every consumed operation before extending the finite contract. Verify supported workflows and unknown dispatch outcomes against exact 1.2.27, then current OC1/OC2 regressions. Keep R3 open until INT-05 passes.",
+  "implementationOwners": [
+    "packages/web/server/lib/opencode/legacy-contract.js",
+    "packages/web/server/lib/opencode/kernel-operations.js",
+    "packages/web/server/lib/opencode/legacy-session-api.js",
+    "packages/web/server/lib/opencode/legacy-session-http.js",
+    "packages/ui/src/lib/opencode/runtime.ts"
+  ],
+  "workflows": [
+    "L04/L05 command/shell, fork/compact/diff/revert and supported file/todo operations, with exact-version evidence.",
+    "L06/L09/L10 reconnect, restart and pending decisions; preserve message identity and directory isolation on partial failure.",
+    "L07/L08/L13 settings, credentials, generated plugin loading, MCP lifecycle and callbacks; no modern credential schema/plugin injected into Legacy.",
+    "L11 browser-closed queue, scheduled tasks, assist and goals; normal dispatch, lost acknowledgement, crash/restart and duplicate triggers. Unknown outcomes retain intent without blind resubmission.",
+    "L15 every advanced consumed operation receives an evidence-backed disposition; missing core behavior prevents acceptance."
+  ],
+  "gates": "Real exact 1.2.27 journeys plus failure/ordering contracts and current OC1/OC2 regressions. Reload-dependent config application belongs to R4; final packaged/public Relay/mobile acceptance belongs to R7. Legacy remains experimental.",
+  "constraints": [
+    "No new dependencies/toolchain downloads.",
+    "Preserve codex/personal and parallel DIJIANG4.1 worktree.",
+    "English handoff and synchronized Chinese archive.",
+    "Check live weekly quota before starting; stop under 10% or if projected batch exceeds available quota.",
+    "Track and clean obsolete task files before advancing."
+  ],
+  "retainedDrivers": {
+    "paths": [
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc1-live.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc2.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-driver.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-journey.js",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-suite.cjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-relay-prepare.mjs",
+      "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-final-checks.mjs"
+    ],
+    "reason": "Reusable R3/R4 real-runtime regression drivers. Reassess and remove superseded drivers at R3/R4 acceptance."
+  },
+  "weeklyRemainingPercent": 73,
+  "checkpoint": "artifacts/int04-acceptance.json",
+  "committedSource": "6c050b000be171e0abb34431895c23d3203304b3",
+  "recoveryObservation": "Actual Legacy and current OC1 VS Code recovery, current OC2 production-host recovery and additional sync contracts pass. Packaged/public Relay/physical mobile remain R7."
+}

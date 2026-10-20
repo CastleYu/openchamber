@@ -1,0 +1,113 @@
+{
+  "at": "2026-10-11T17:16:02.265Z",
+  "results": [
+    {
+      "name": "web-tests",
+      "code": 1,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-web-tests.log",
+      "summary": [
+        " ❯ packages/web/server/lib/opencode/kernel-operations.test.js (52 tests | 1 failed) 1192ms",
+        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+        " FAIL  packages/web/server/lib/opencode/kernel-operations.test.js > Legacy operation acceptance boundary > serves allowlisted Legacy reads through OC1 routes with projected data and request fidelity",
+        "AssertionError: expected [ '/session', '/session/ses_1', …(10) ] to deeply equal [ '/session', '/session/ses_1', …(10) ]",
+        " Test Files  1 failed | 4 passed (5)",
+        "      Tests  1 failed | 159 passed (160)",
+        "   Duration  4.16s (transform 1.08s, setup 0ms, import 7.22s, tests 2.84s, environment 1ms)"
+      ]
+    },
+    {
+      "name": "ui-runtime",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-ui-runtime.log",
+      "summary": [
+        "(pass) OpenCode runtime binding > does not invalidate a request for a duplicate descriptor [0.33ms]",
+        "(pass) OpenCode runtime binding > requires a new descriptor after reconnect [0.14ms]",
+        "(pass) OpenCode profile identity > rejects a stale result when only the resolved profile changes [0.43ms]",
+        "(pass) OpenCode profile identity > keeps a current request when the resolved profile is unchanged [0.65ms]",
+        "(pass) host and UI admission status constants agree [77.88ms]",
+        "(pass) failed completion ownership > failed request with replacement false [0.65ms]",
+        "(pass) failed completion ownership > failed request with replacement true [21.96ms]",
+        "(pass) exact Legacy conversation admission > admits conversation, bootstrap, and owned metadata operations [0.77ms]",
+        "(pass) exact Legacy conversation admission > refuses the same operation when exact version identity is absent or mismatched [0.32ms]",
+        " 12 pass",
+        " 0 fail",
+        "Ran 12 tests across 1 file. [1422.00ms]"
+      ]
+    },
+    {
+      "name": "ui-host",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-ui-host.log",
+      "summary": [
+        "(pass) Legacy 1.2.27 shared UI to host contract > uses the bound SDK through the loopback host for sessions, sync, prompts, and replies [2036.46ms]",
+        "(pass) Legacy 1.2.27 shared UI to host contract > deletes through the owned host and refuses a mismatched Legacy profile [162.80ms]",
+        " 2 pass",
+        " 0 fail",
+        "Ran 2 tests across 1 file. [5.57s]"
+      ]
+    },
+    {
+      "name": "vscode-request",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-vscode-request.log",
+      "summary": [
+        "(pass) VS Code kernel forwarding > rejects wrong methods and advanced Legacy routes [3.06ms]",
+        "(pass) VS Code kernel forwarding > admits only the exact Legacy GET event streams [0.58ms]",
+        "(pass) VS Code kernel forwarding > rejects unverified Legacy versions and disconnected status [0.70ms]",
+        "(pass) VS Code kernel forwarding > rejects completion when only the profile changes [0.34ms]",
+        "(pass) VS Code kernel forwarding > keeps OC1 paths and mounted base paths [0.20ms]",
+        "(pass) VS Code kernel forwarding > adds exactly one OC2 API prefix and maps its event endpoint [0.25ms]",
+        "(pass) VS Code kernel forwarding > rejects late results after same-generation restart [0.22ms]",
+        "(pass) VS Code kernel forwarding > rejects late results after verified version identity changes [0.17ms]",
+        "(pass) VS Code kernel forwarding > does not forward through an unknown kernel [0.42ms]",
+        " 11 pass",
+        " 0 fail",
+        "Ran 11 tests across 1 file. [1494.00ms]"
+      ]
+    },
+    {
+      "name": "types",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-types.log",
+      "summary": []
+    },
+    {
+      "name": "lint",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-lint.log",
+      "summary": [
+        "@openchamber/ui lint:   1250:8  warning  React Hook React.useCallback has a missing dependency: 'parallel'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "@openchamber/ui lint:   627:11  warning  The 'availableVariants' conditional could make the dependencies of useEffect Hook (at line 1272) change on every render. To fix this, wrap the initialization of 'availableVariants' in its own useMemo() Hook  react-hooks/exhaustive-deps",
+        "@openchamber/ui lint:   274:6  warning  React Hook React.useEffect has a missing dependency: 'settingsDirectory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "@openchamber/ui lint:   320:6  warning  React Hook React.useEffect has a missing dependency: 'settingsDirectory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "@openchamber/ui lint:   2925:6  warning  React Hook useEffect has a missing dependency: 'messageLoader'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "@openchamber/ui lint: ✖ 5 problems (0 errors, 5 warnings)"
+      ]
+    },
+    {
+      "name": "dead-code",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-dead-code.log",
+      "summary": [
+        "LinearApiError                             class     packages/web/server/lib/linear/client.js:17:14                     ",
+        "UNANSWERED_RECHECK_DELAYS_MS                         packages/ui/src/components/chat/sessionErrorNoticeState.ts:43:14   ",
+        "ChatErrorBoundaryView                      class     packages/ui/src/components/chat/ChatErrorBoundary.tsx:31:14        ",
+        "structuredErrorText                        function  packages/ui/src/lib/opencode/projection.ts:121:17                  ",
+        "Unused exported types (231)",
+        "LegacyMessageError                       type       packages/ui/src/lib/opencode/model.ts:181:13                        ",
+        "MessageErrorDescription                  type       packages/ui/src/lib/opencode/model.ts:200:13                        ",
+        "ToolStateError                           type       packages/ui/src/lib/opencode/model.ts:429:13                        ",
+        "McpFailureSource                         type       packages/ui/src/stores/useMcpStore.ts:17:15                         ",
+        "ContextFileOpenFailureReason             type       packages/ui/src/lib/contextFileOpenGuard.ts:11:13                   ",
+        "McpFailureClass                          type       packages/ui/src/components/sections/mcp/mcpFailureHints.ts:1:13     ",
+        "McpFailureHint                           interface  packages/ui/src/components/sections/mcp/mcpFailureHints.ts:16:18    "
+      ]
+    },
+    {
+      "name": "anti-slop",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-anti-slop.log",
+      "summary": []
+    }
+  ]
+}

@@ -1,0 +1,1056 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 0,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": true,
+      "checks": [
+        "production manager connected",
+        "GET /api/opencode/runtime succeeds",
+        "Auto admits exact Legacy",
+        "GET /api/opencode/runtime succeeds",
+        "exact upstream version",
+        "dedicated production SSE bridge admitted",
+        "POST /api/session succeeds",
+        "native bridge creates real session",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy succeeds",
+        "isolated metadata round trip",
+        "editor session switcher reachable",
+        "created session appears in production switcher",
+        "created session opens in production editor",
+        "composer is reachable",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "composer text completes in authoritative history",
+        "assistant response rendered by production UI",
+        "native selection appears as composer attachment",
+        "composer is reachable",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "attachment turn persisted",
+        "attachment turn settles",
+        "composer is reachable",
+        "real tool permission appears in production UI",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "approved real bash tool output persists",
+        "tool turn settles",
+        "composer is reachable",
+        "real tool question appears",
+        "question submit appears",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "question response completes in history",
+        "question turn settles",
+        "composer is reachable",
+        "held model exposes Stop generating",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "stop persists authoritative abort",
+        "stop restores idle composer",
+        "PATCH /api/config/settings succeeds",
+        "GET /api/opencode/runtime succeeds",
+        "manual Legacy selection rebinds",
+        "unsupported advanced operation refused",
+        "reloaded editor reconnects",
+        "reloaded session switcher reachable",
+        "reloaded switcher retains real session",
+        "reloaded production UI restores text and tool history",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "reload retains attachment history",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "reload retains authoritative abort",
+        "GET /api/config/settings succeeds",
+        "manual selection persisted",
+        "composer is reachable",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds",
+        "reloaded editor sends another turn",
+        "GET /api/session/ses_ed4312024ffeiUijCfLlIqFvzy/message succeeds"
+      ],
+      "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+      "history": [
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736341847
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bcee4c8001vihDnbHa2jz6VZ",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_NATIVE_TEXT",
+              "id": "prt_12bcee558001lllH25BwMwmhLo",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcee4c8001vihDnbHa2jz6VZ"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736341876,
+              "completed": 1791736343653
+            },
+            "parentID": "msg_12bcee4c8001vihDnbHa2jz6VZ",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_12bcee573001tMCpoQwfHbctui",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bceea22001vAQiwniMoEs5m2",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcee573001tMCpoQwfHbctui"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791736343082,
+                "end": 1791736343082
+              },
+              "id": "prt_12bceea23001TA52hUYKfBQnD5",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcee573001tMCpoQwfHbctui"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bceea2e001PhVQSVpUSJUFmq",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcee573001tMCpoQwfHbctui"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736344379
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bceef0000195IiORllZq4nHN",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_NATIVE_ATTACHMENT",
+              "id": "prt_12bceef3b001NuHRvFTKMl0dy1",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef0000195IiORllZq4nHN"
+            },
+            {
+              "type": "text",
+              "text": "Called the Read tool with the following input: {\"filePath\":\"fixture.js\"}",
+              "synthetic": true,
+              "id": "prt_12bceef3b0024n6HxHmdwLmXW7",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef0000195IiORllZq4nHN"
+            },
+            {
+              "type": "text",
+              "text": "const attached = \"LEGACY_NATIVE_ATTACHMENT_CONTENT\";\n",
+              "synthetic": true,
+              "id": "prt_12bceef3b003ZN2wCES1qPknIo",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef0000195IiORllZq4nHN"
+            },
+            {
+              "type": "file",
+              "mime": "text/plain",
+              "filename": "fixture.js",
+              "url": "data:text/plain;base64,Y29uc3QgYXR0YWNoZWQgPSAiTEVHQUNZX05BVElWRV9BVFRBQ0hNRU5UX0NPTlRFTlQiOwo=",
+              "id": "prt_12bceef3b004bO5FTFS21Z3gzy",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef0000195IiORllZq4nHN"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736344389,
+              "completed": 1791736345308
+            },
+            "parentID": "msg_12bceef0000195IiORllZq4nHN",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_12bceef450015KiQd22NyTf72m",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcef0a2001fJg2tj84lRznV0",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef450015KiQd22NyTf72m"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791736344742,
+                "end": 1791736344742
+              },
+              "id": "prt_12bcef0a3001IWeXBU62ZEs0sY",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef450015KiQd22NyTf72m"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcef0a70019lgTMp6srFA4h8",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bceef450015KiQd22NyTf72m"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736345765
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bcef46f001mfwB3rJqaOgZET",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_PERMISSION",
+              "id": "prt_12bcef4a5001wHdZ1aEDNCnrfm",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcef46f001mfwB3rJqaOgZET"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736345772,
+              "completed": 1791736347229
+            },
+            "parentID": "msg_12bcef46f001mfwB3rJqaOgZET",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "tool-calls",
+            "id": "msg_12bcef4ac001InaYNd9adlYmtG",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcef5f5001xIRzO1Yt2EjNfa",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcef4ac001InaYNd9adlYmtG"
+            },
+            {
+              "type": "text",
+              "text": "Preparing controlled tool.",
+              "time": {
+                "start": 1791736346278,
+                "end": 1791736346278
+              },
+              "id": "prt_12bcef5f6001QFczjsQuSOHnwk",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcef4ac001InaYNd9adlYmtG"
+            },
+            {
+              "type": "tool",
+              "callID": "call_3",
+              "tool": "bash",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "command": "echo LEGACY_APPROVED",
+                  "description": "Echo native probe"
+                },
+                "output": "LEGACY_APPROVED\n",
+                "title": "Echo native probe",
+                "metadata": {
+                  "output": "LEGACY_APPROVED\n",
+                  "exit": 0,
+                  "description": "Echo native probe",
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1791736346275,
+                  "end": 1791736346603
+                }
+              },
+              "id": "prt_12bcef66a001gXdKUb7JgoLXCl",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcef4ac001InaYNd9adlYmtG"
+            },
+            {
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcef7ef0017MlpwbePRKW5Ti",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcef4ac001InaYNd9adlYmtG"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736347232,
+              "completed": 1791736348110
+            },
+            "parentID": "msg_12bcef46f001mfwB3rJqaOgZET",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_12bcefa60001sVv4cakCj9AEHD",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcefb950013TkDpZjbmSjHLV",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefa60001sVv4cakCj9AEHD"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791736347545,
+                "end": 1791736347545
+              },
+              "id": "prt_12bcefb96001mCg1j0rIcaGd8s",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefa60001sVv4cakCj9AEHD"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcefb9a001v6Zt99Rl8Zef2e",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefa60001sVv4cakCj9AEHD"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736348337
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bcefe64001IDy8nETEPghicN",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_QUESTION",
+              "id": "prt_12bcefeb1001OPemHuZQloBrEI",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefe64001IDy8nETEPghicN"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736348345,
+              "completed": 1791736349658
+            },
+            "parentID": "msg_12bcefe64001IDy8nETEPghicN",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "tool-calls",
+            "id": "msg_12bcefeb90012opl7lat1HcOGK",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcf002d001DIktTGXhGOrHm7",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefeb90012opl7lat1HcOGK"
+            },
+            {
+              "type": "text",
+              "text": "Preparing controlled tool.",
+              "time": {
+                "start": 1791736348825,
+                "end": 1791736348825
+              },
+              "id": "prt_12bcf002e001eFSHYVOHgQIPes",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefeb90012opl7lat1HcOGK"
+            },
+            {
+              "type": "tool",
+              "callID": "call_5",
+              "tool": "question",
+              "state": {
+                "status": "completed",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Choose probe answer",
+                      "header": "Probe",
+                      "options": [
+                        {
+                          "label": "Yes",
+                          "description": "Continue probe"
+                        },
+                        {
+                          "label": "No",
+                          "description": "Stop probe"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "output": "User has answered your questions: \"Choose probe answer\"=\"Yes\". You can now continue with the user's answers in mind.",
+                "title": "Asked 1 question",
+                "metadata": {
+                  "answers": [
+                    [
+                      "Yes"
+                    ]
+                  ],
+                  "truncated": false
+                },
+                "time": {
+                  "start": 1791736348823,
+                  "end": 1791736349093
+                }
+              },
+              "id": "prt_12bcf0091001WkULg3XX93zags",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefeb90012opl7lat1HcOGK"
+            },
+            {
+              "type": "step-finish",
+              "reason": "tool-calls",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcf01a8001nvucWqLZuDcjv1",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcefeb90012opl7lat1HcOGK"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736349687,
+              "completed": 1791736350554
+            },
+            "parentID": "msg_12bcefe64001IDy8nETEPghicN",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_12bcf03f700153EsQZ9pa7uWQi",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcf054a0013klFJs6BgWzKpT",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf03f700153EsQZ9pa7uWQi"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791736350030,
+                "end": 1791736350030
+              },
+              "id": "prt_12bcf054b001BXTWt3Tb2ACKf5",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf03f700153EsQZ9pa7uWQi"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcf054f001m3j3fLo41mWlgb",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf03f700153EsQZ9pa7uWQi"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736350993
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bcf08d5001o0oLsjqWlWoj7P",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_HOLD",
+              "id": "prt_12bcf0911001WxKEJ0F3jqGQOf",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf08d5001o0oLsjqWlWoj7P"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736350999,
+              "completed": 1791736351570
+            },
+            "error": {
+              "name": "MessageAbortedError",
+              "data": {
+                "message": "The operation was aborted."
+              }
+            },
+            "parentID": "msg_12bcf08d5001o0oLsjqWlWoj7P",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "msg_12bcf0917001B7ML5OBQVsE61T",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcf0a51001lBjji1If847wNP",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf0917001B7ML5OBQVsE61T"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "user",
+            "time": {
+              "created": 1791736355074
+            },
+            "summary": {
+              "diffs": []
+            },
+            "agent": "build",
+            "model": {
+              "providerID": "legacy-probe",
+              "modelID": "probe"
+            },
+            "id": "msg_12bcf18cd001lnq3RTXr7ANidL",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_NATIVE_AFTER_REOPEN",
+              "id": "prt_12bcf1902001ZCn2Zi0x2solAO",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf18cd001lnq3RTXr7ANidL"
+            }
+          ]
+        },
+        {
+          "info": {
+            "role": "assistant",
+            "time": {
+              "created": 1791736355087,
+              "completed": 1791736355983
+            },
+            "parentID": "msg_12bcf18cd001lnq3RTXr7ANidL",
+            "modelID": "probe",
+            "providerID": "legacy-probe",
+            "mode": "build",
+            "agent": "build",
+            "path": {
+              "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET\\workspace",
+              "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+            },
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "finish": "stop",
+            "id": "msg_12bcf190f001YD8ho5EBOPM6AH",
+            "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy"
+          },
+          "parts": [
+            {
+              "type": "step-start",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "id": "prt_12bcf1a44001AfqB4TJZRl2ngo",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf190f001YD8ho5EBOPM6AH"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED",
+              "time": {
+                "start": 1791736355401,
+                "end": 1791736355401
+              },
+              "id": "prt_12bcf1a45001WQBuGcJeGlNau5",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf190f001YD8ho5EBOPM6AH"
+            },
+            {
+              "type": "step-finish",
+              "reason": "stop",
+              "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "id": "prt_12bcf1a4a0010aLZv3RUE9tqiF",
+              "sessionID": "ses_ed4312024ffeiUijCfLlIqFvzy",
+              "messageID": "msg_12bcf190f001YD8ho5EBOPM6AH"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": [
+    {
+      "marker": "\"LEGACY_NATIVE_TEXT\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "[{\"type\":\"text\",\"text\":\"LEGACY_NATIVE_ATTACHMENT\"},{\"type\":\"text\",\"text\":\"Called the Read tool with the following input: {\\\"filePath\\\":\\\"fixture.js\\\"}\"},{\"type\":\"text\",\"text\":\"const attached = \\\"LEGACY_NATIVE_ATTACHMENT_CONTENT\\\";\\n\"}]",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_HOLD\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_NATIVE_AFTER_REOPEN\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "server.heartbeat",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "permission.asked",
+    "permission.replied",
+    "question.asked",
+    "question.replied",
+    "session.error"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET",
+  "limitations": [
+    "Controlled local model does not prove external provider quality",
+    "Public Relay service, WAN and physical mobile devices are outside this native journey"
+  ],
+  "verifiedDetails": {
+    "attachmentContentsReachedModel": true,
+    "panelDisposedAndRecreated": true,
+    "manualSelectionPersisted": true,
+    "reopenedPanelSubmittedNewTurn": true
+  },
+  "sourceHashes": {
+    "packages/vscode/src/bridge.ts": "1add51d0a3a381bef3e84fac2634d6a5319f6b0d0cad9998990a5537ada8c967",
+    "packages/vscode/src/bridge-proxy-runtime.ts": "7ac6ebc755d88e90af8afab66e54682a6ab0cce60111384bb61f37003bd7bb8e",
+    "packages/vscode/src/kernelRequest.ts": "f939b5abf3d485e5e7b4243459bd080bbab793773c90407b3e660337a079fa84",
+    "packages/vscode/dist/webview/assets/index.js": "19ef142d1a620989d3089aed4fd4573624b9b515f19fa6bdf33ca4b0f5be5643",
+    "packages/web/server/lib/opencode/legacy-session-api.js": "fe95ca2d6dd64b31e4fe5cea60f3549f102b30db5e3d6839e878e7144b7883d4"
+  }
+}

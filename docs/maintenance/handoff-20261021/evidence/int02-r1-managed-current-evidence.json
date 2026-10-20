@@ -1,0 +1,73 @@
+{
+  "sourceSha": "383f687a6f5c98b31f680a3e4786bfd434d9a00c",
+  "sourceHashes": {
+    "packages/web/server/lib/opencode/managed-env-runtime.js": "D1D9357FDF1F3985A28520D21B689BDDE24B7AA9B750C10BFB2E94CD01E0BC59",
+    "packages/web/server/lib/opencode/kernel-operations.js": "6AB175E83CF704A3DA1FB10BD6019164ADDA4AFC199D9D878D486570570402B2",
+    "packages/web/server/lib/mcp-reconnect/runtime.js": "87C2E0ED9CE6E36019957FB627BF604033AA58EF51F6202012C6EC43FB08D3B9"
+  },
+  "managed": {
+    "sourceSha": "383f687a6f5c98b31f680a3e4786bfd434d9a00c",
+    "profile": "oc1",
+    "version": "1.18.33",
+    "binarySha256": "52f60248a576b34c9a6dcaa27e0a7f08089af35bcdc0dfb10c04d3e00a98314c",
+    "checks": [
+      "configured binary managed startup and exact profile",
+      "one owned live server registry entry",
+      "managed host facade session creation and reopened history",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "pluginProbe": [
+    {
+      "injected": false,
+      "status": 200,
+      "sessionCreated": true,
+      "elapsedMs": 2324,
+      "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-plugin-isolate-lMgJLG"
+    },
+    {
+      "injected": true,
+      "status": 200,
+      "sessionCreated": true,
+      "elapsedMs": 20981,
+      "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-plugin-isolate-C9L3ju"
+    }
+  ],
+  "contracts": {
+    "skipped": 2,
+    "passed": 374,
+    "log": "int02-r1-contract-current.log",
+    "files": 11
+  },
+  "fixtureCorrection": "Initial host probe incorrectly called the OC2-only fork rollback removeSession operation. Current OC1 acceptance uses its production DELETE /api/session route. Initial failure log retained as int02-r1-managed-oc1-current.log.",
+  "limits": [
+    "No model request or streamed conversation exercised",
+    "Current plugin initialization completed; earlier timeout cause remains unproven",
+    "R1 clause audit is not complete"
+  ],
+  "cleanup": {
+    "removed": true,
+    "retained": "Older plugin fixture z6FOJ0 remains referenced by the reusable A/B driver. Replace that input at R1 closeout before removing it. Production binaries/builds and compact logs remain for remaining acceptance.",
+    "targets": [
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-plugin-isolate-lMgJLG",
+        "bytes": 534874
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-plugin-isolate-C9L3ju",
+        "bytes": 153926649
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-managed-oc1-K14xFt",
+        "bytes": 153962920
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-managed-oc1-PR02a1",
+        "bytes": 153963645
+      }
+    ]
+  }
+}

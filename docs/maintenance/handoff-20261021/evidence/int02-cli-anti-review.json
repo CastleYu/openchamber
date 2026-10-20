@@ -1,0 +1,245 @@
+{
+  "findings": [
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 14,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 18,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 21,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 26,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 37,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 41,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 44,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 50,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 127,
+      "rule": "anti-slop(no-conditional-empty-object-spread): This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 196,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 200,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 207,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 215,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 230,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "line": 243,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.js",
+      "line": 93,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.js",
+      "line": 122,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.js",
+      "line": 125,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.js",
+      "line": 137,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.js",
+      "line": 338,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 37,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 37,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 283,
+      "rule": "anti-slop(no-conditional-empty-object-spread): This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 284,
+      "rule": "anti-slop(no-conditional-empty-object-spread): This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 285,
+      "rule": "anti-slop(no-conditional-empty-object-spread): This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 304,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 331,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "line": 378,
+      "rule": "anti-slop(no-conditional-empty-object-spread): This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 59,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 80,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 81,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 124,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 151,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 693,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 711,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 746,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "line": 760,
+      "rule": "anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "baselineLine": true
+    }
+  ],
+  "authoredFindings": 0,
+  "fingerprints": [
+    {
+      "file": "packages/web/bin/cli.js",
+      "sha256": "c6b4ea57411e18b32bd66928043799079522998063f3d6044b9b06529d7a147c"
+    },
+    {
+      "file": "packages/web/bin/cli.test.js",
+      "sha256": "c19ac20814f621f8014445c15a8b548f5f6db6927764058d7c9809c67cd7e440"
+    },
+    {
+      "file": "packages/web/bin/lib/commands-serve.js",
+      "sha256": "38470ec60ac693538a4b056e3552e09d889f63db94b02fded218a951e72c873b"
+    },
+    {
+      "file": "packages/web/bin/lib/cli-http.js",
+      "sha256": "559bb6c00735419deda9d74ed0764a9a27a416b54f41b973f4135041686dfd7b"
+    }
+  ]
+}

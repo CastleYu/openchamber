@@ -1,0 +1,43 @@
+{
+  "values": [
+    "serve",
+    "space value",
+    "",
+    "quote\"value",
+    "trailing\\",
+    "%OC_TEST%",
+    "!OC_TEST!",
+    "& echo injected",
+    "a|b",
+    "(x)",
+    "^caret",
+    "semi;comma,"
+  ],
+  "baseline": {
+    "code": 0,
+    "actual": null,
+    "equal": false,
+    "stderr": "'\"C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-shim-probe-ebVtZb\\launcher space & (test) expanded-sentinel !OC_TEST!.cmd\"' �����ڲ����ⲿ���Ҳ���ǿ����еĳ���\r\n���������ļ���\r\n",
+    "stdout": "injected\" a|b (x) ^caret semi;comma,\r\n"
+  },
+  "escaped": {
+    "code": 0,
+    "actual": [
+      "serve",
+      "space value",
+      "",
+      "quote\"value",
+      "trailing\\",
+      "%OC_TEST%",
+      "!OC_TEST!",
+      "& echo injected",
+      "a|b",
+      "(x)",
+      "^caret",
+      "semi;comma,"
+    ],
+    "equal": true,
+    "stderr": ""
+  },
+  "scope": "Real Windows cmd shim argv probe only; no production change or console visibility acceptance"
+}

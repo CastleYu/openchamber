@@ -1,0 +1,56 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/event-stream/runtime.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1361,
+            "length": 24,
+            "line": 43,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/event-stream/runtime.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1480,
+            "length": 22,
+            "line": 44,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/event-stream/runtime.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2910,
+            "length": 15,
+            "line": 97,
+            "column": 20
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 3,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.2072718
+}

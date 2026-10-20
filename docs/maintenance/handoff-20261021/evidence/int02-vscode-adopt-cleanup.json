@@ -1,0 +1,39 @@
+{
+  "removed": [
+    "int02-vscode-host-oBpJ6y",
+    "int02-vscode-host-n1xuDL",
+    "int02-vscode-host-Ro7uYF"
+  ],
+  "bytesReclaimed": 100689581,
+  "retained": [
+    "Compact acceptance logs and evidence: retain through R1 closeout",
+    "Current VS Code build: retain for remaining bridge/recovery checks",
+    "Real OC2 binary and reusable native fixture: retain for remaining R1 acceptance"
+  ],
+  "helperCleanup": {
+    "removed": [
+      "int02-vscode-settings-tests.mjs",
+      "connection-settings.test.ts",
+      "int02-vscode-discovery-tests.mjs",
+      "int02-vscode-trim.mjs",
+      "int02-vscode-boundary.mjs",
+      "int02-vscode-ready.mjs",
+      "int02-vscode-final-fixes.mjs",
+      "int02-vscode-payload.mjs",
+      "int02-vscode-docs.mjs",
+      "int02-vscode-checkpoint.mjs",
+      "int02-vscode-cleanup.ps1",
+      "int02-vscode-adopt.mjs",
+      "int02-vscode-bridge-edit.mjs"
+    ],
+    "bytesReclaimed": 41448,
+    "retained": [
+      "int02-vscode-native.mjs",
+      "int02-vscode-native-run.ps1",
+      "int02-vscode-anti-review.mjs"
+    ],
+    "reason": "Reuse for remaining R1 native bridge, external recovery and final code checks; remove at R1 closeout"
+  },
+  "obsoleteStageRemovedBytes": 9514,
+  "sourceCommit": "3dface0e922318ac435bf109e341df80eb36fa56"
+}

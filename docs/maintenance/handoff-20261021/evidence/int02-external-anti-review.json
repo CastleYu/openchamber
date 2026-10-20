@@ -1,0 +1,46 @@
+{
+  "diagnostics": [
+    {
+      "line": 337,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 441,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 609,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 627,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 811,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 813,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 816,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "line": 1387,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    }
+  ],
+  "newFindings": 0,
+  "method": "Owning source line exists at previous HEAD; test file has no diagnostics"
+}

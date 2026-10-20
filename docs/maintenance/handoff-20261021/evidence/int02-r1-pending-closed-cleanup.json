@@ -1,0 +1,18 @@
+{
+  "noActiveFixtureProcesses": true,
+  "removed": [
+    {
+      "entries": 15,
+      "bytes": 3841,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-pending-closed-MyM4m4"
+    },
+    {
+      "entries": 21,
+      "bytes": 9099,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-pending-closed-YZ2Nzd"
+    }
+  ],
+  "retained": "accepted evidence, excluded-run explanation and logs",
+  "reparsePoints": 0,
+  "registryEmpty": true
+}

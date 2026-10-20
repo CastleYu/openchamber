@@ -1,0 +1,276 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "version": "1.2.27",
+  "binarySha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-relay-legacy-N5KgPn",
+  "checks": [
+    "production client and host complete E2EE handshake",
+    "actual host refuses unauthenticated mutation",
+    "production host discovers exact Legacy",
+    "production facade creates real session",
+    "real model stream completes and normalizes history",
+    "reopened session retains completed history",
+    "real interrupted generation returns idle",
+    "real upstream SSE message stream crosses encrypted relay",
+    "Legacy advanced operation refusal remains enforced over relay",
+    "relay forwards encrypted application frames only",
+    "host shutdown preserves external Legacy process"
+  ],
+  "calls": [
+    {
+      "marker": "\"R2_TEXT\"",
+      "path": "/v1/chat/completions"
+    },
+    {
+      "marker": "\"<system-reminder>\\nThe user sent the following message:\\nR2_HOLD\\n\\nPlease address this message and continue with your tasks.\\n</system-reminder>\"",
+      "path": "/v1/chat/completions"
+    }
+  ],
+  "limitations": [
+    "Production E2EE host/client and authenticated Web server; local Layer-1 broker; controlled model. Public relay service, WAN and physical devices not exercised"
+  ],
+  "upstreamPid": 140184,
+  "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+  "history": [
+    {
+      "id": "msg_12bdbd4e4001lfWoJiCJiOezdq",
+      "role": "user",
+      "textParts": [
+        "R2_TEXT"
+      ],
+      "tools": [],
+      "raw": {
+        "info": {
+          "role": "user",
+          "time": {
+            "created": 1791737189604
+          },
+          "summary": {
+            "diffs": []
+          },
+          "agent": "build",
+          "model": {
+            "providerID": "regression",
+            "modelID": "probe"
+          },
+          "id": "msg_12bdbd4e4001lfWoJiCJiOezdq",
+          "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "R2_TEXT",
+            "id": "prt_12bdbd4e5001Z99tOMAesGtVC1",
+            "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+            "messageID": "msg_12bdbd4e4001lfWoJiCJiOezdq"
+          }
+        ]
+      },
+      "agent": "build",
+      "text": "R2_TEXT",
+      "created": 1791737189604,
+      "summary": {
+        "diffs": []
+      }
+    },
+    {
+      "id": "msg_12bdbd583001aeh7Mdyh0bd7hK",
+      "role": "assistant",
+      "textParts": [
+        "R2_COMPLETED"
+      ],
+      "tools": [],
+      "raw": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791737189763,
+            "completed": 1791737191191
+          },
+          "parentID": "msg_12bdbd4e4001lfWoJiCJiOezdq",
+          "modelID": "probe",
+          "providerID": "regression",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-N5KgPn",
+            "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "finish": "stop",
+          "id": "msg_12bdbd583001aeh7Mdyh0bd7hK",
+          "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9"
+        },
+        "parts": [
+          {
+            "type": "step-start",
+            "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+            "id": "prt_12bdbd8dc001jwnRvrCyPQcaU2",
+            "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+            "messageID": "msg_12bdbd583001aeh7Mdyh0bd7hK"
+          },
+          {
+            "type": "text",
+            "text": "R2_COMPLETED",
+            "time": {
+              "start": 1791737190626,
+              "end": 1791737190626
+            },
+            "id": "prt_12bdbd8de0017ikxAFH9RPVerw",
+            "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+            "messageID": "msg_12bdbd583001aeh7Mdyh0bd7hK"
+          },
+          {
+            "type": "step-finish",
+            "reason": "stop",
+            "snapshot": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+            "cost": 0,
+            "tokens": {
+              "input": 0,
+              "output": 0,
+              "reasoning": 0,
+              "cache": {
+                "read": 0,
+                "write": 0
+              }
+            },
+            "id": "prt_12bdbd8e6001wj0IEQsj12Njeh",
+            "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+            "messageID": "msg_12bdbd583001aeh7Mdyh0bd7hK"
+          }
+        ]
+      },
+      "agent": "build",
+      "text": "R2_COMPLETED",
+      "created": 1791737189763,
+      "completed": 1791737191191,
+      "finish": "stop",
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "reasoning": 0,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      },
+      "parentID": "msg_12bdbd4e4001lfWoJiCJiOezdq",
+      "model": {
+        "providerID": "regression",
+        "modelID": "probe"
+      }
+    },
+    {
+      "id": "msg_12bdbd90f001Ur4rCf7yj94cDm",
+      "role": "user",
+      "textParts": [
+        "R2_HOLD"
+      ],
+      "tools": [],
+      "raw": {
+        "info": {
+          "role": "user",
+          "time": {
+            "created": 1791737190671
+          },
+          "agent": "build",
+          "model": {
+            "providerID": "regression",
+            "modelID": "probe"
+          },
+          "id": "msg_12bdbd90f001Ur4rCf7yj94cDm",
+          "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9"
+        },
+        "parts": [
+          {
+            "type": "text",
+            "text": "R2_HOLD",
+            "id": "prt_12bdbd90f0029Y23xnDRVrhwuw",
+            "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9",
+            "messageID": "msg_12bdbd90f001Ur4rCf7yj94cDm"
+          }
+        ]
+      },
+      "agent": "build",
+      "text": "R2_HOLD",
+      "created": 1791737190671
+    },
+    {
+      "id": "msg_12bdbdb1b001s2CiIucXXqbpvX",
+      "role": "assistant",
+      "textParts": [],
+      "tools": [],
+      "raw": {
+        "info": {
+          "role": "assistant",
+          "time": {
+            "created": 1791737191195
+          },
+          "parentID": "msg_12bdbd90f001Ur4rCf7yj94cDm",
+          "modelID": "probe",
+          "providerID": "regression",
+          "mode": "build",
+          "agent": "build",
+          "path": {
+            "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-N5KgPn",
+            "root": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber"
+          },
+          "cost": 0,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "id": "msg_12bdbdb1b001s2CiIucXXqbpvX",
+          "sessionID": "ses_ed4242b53ffejnEsYHb39d6TK9"
+        },
+        "parts": []
+      },
+      "agent": "build",
+      "created": 1791737191195,
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "reasoning": 0,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      },
+      "parentID": "msg_12bdbd90f001Ur4rCf7yj94cDm",
+      "model": {
+        "providerID": "regression",
+        "modelID": "probe"
+      }
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "message.updated",
+    "message.part.updated",
+    "session.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle"
+  ],
+  "relayFrames": {
+    "binary": 128,
+    "plaintext": 2
+  },
+  "success": true,
+  "ownedProcessStopped": true
+}

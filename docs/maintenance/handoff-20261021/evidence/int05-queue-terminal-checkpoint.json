@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-13T16:32:52.811Z",
+  "milestone": "R3 / INT-05 remains open",
+  "scope": "Legacy server queue verified terminal correlation",
+  "files": [
+    {
+      "file": "packages/web/server/lib/message-queue/runtime.js",
+      "sha256": "816d7a63b8e9cbc699c3c48d3623e358b3a31d33c7b067eee7efd2e82f001c40"
+    },
+    {
+      "file": "packages/web/server/lib/message-queue/attempts.test.js",
+      "sha256": "a1f096387eae065aff6ee250c264227283c410cadb11a678fd5488d879700c4f"
+    },
+    {
+      "file": "scripts/legacy-attempt-probe.mjs",
+      "sha256": "4bf9b55cc14d654ab0f668b07ebbe3c50a36d9eabdaea5f43bc0f318608e1757"
+    },
+    {
+      "file": "packages/web/server/lib/message-queue/DOCUMENTATION.md",
+      "sha256": "43d6f44c4b079abd3bef3ad467492b97006b013ec72452240a64aa1a4531ea3d"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-LEGACY-EVIDENCE.md",
+      "sha256": "7203afa0e438b790e1ad31f329b97db3045836d7039a71bd161ea12224455dfa"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-LEGACY-EVIDENCE.md",
+      "sha256": "7975588142f53df823b5677fb7eabf193c3ce219e4e2ea5d5c3b76cb26baabc0"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "e99b45ef8f62fd27de9a81e8d4a70b1c9439dbbfe8826e2d366885435f18bc86"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "c133695f13099f0e23f1b56d270d60684a2d64175b833c2061f6875ae21dab61"
+    }
+  ],
+  "validation": {
+    "runtimeTests": 55,
+    "finalAttemptTests": 24,
+    "totalAcrossSuites": 79,
+    "directOfficialCases": 4,
+    "productionQueueOfficialCases": 4,
+    "controlledModelCalls": 10,
+    "webTypecheck": "pass",
+    "changedESLint": "pass",
+    "oxlint": "three pre-existing runtime boundary typeof findings at 74-76; authored code and final tests clean",
+    "cachedKnip": "completed; no new queue or probe finding"
+  },
+  "runtimes": {
+    "web": "owning queue implementation",
+    "electron": "same in-process Web backend",
+    "hostedMobile": "selected host backend",
+    "capacitor": "selected host backend",
+    "vscode": "separate foreground queue; pending"
+  },
+  "limits": [
+    "No automatic resend or idempotency claim",
+    "Two-message tail cannot prove non-acceptance",
+    "Command synthetic parents and compaction remain inconclusive without exact correlation",
+    "No packaged UI or real model acceptance"
+  ],
+  "next": [
+    "Scheduled task durable attempts inside existing project lock",
+    "Goal continuation durable outcome metadata",
+    "VS Code local attempt outcomes",
+    "Real IDE Provider/OAuth and native switching acceptance"
+  ],
+  "liveWeeklyRemainingPercent": 81,
+  "cleanup": {
+    "probeScratchRemoved": true,
+    "helpersRemovedAfterCheckpoint": true
+  }
+}

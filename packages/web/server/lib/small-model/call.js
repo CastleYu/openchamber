@@ -122,6 +122,8 @@ const extractChatgptAccountId = (accessToken) => {
 };
 
 const refreshOpenaiOauth = async (entry) => {
+  // Fail before either starting or joining a refresh that Legacy cannot persist.
+  getOpenCodeCredentialGeneration();
   if (!openaiRefreshPromise) {
     openaiRefreshPromise = (async () => {
       const response = await fetch(CODEX_TOKEN_URL, {

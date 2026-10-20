@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-11T16:43:42.923Z",
+  "source": {
+    "head": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+    "expectedHead": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+    "matchesExpected": true,
+    "sha256": {
+      "packages/web/server/index.js": "6bf37fc362d6edad89190589e62ca79591025beab6126998a0b0c71f3858859f",
+      "packages/web/server/lib/opencode/kernel-runtime.js": "e9785b822cc7c633c31859b5c81105f681e8d862c10f0bac2c7e03eb8fd7785b",
+      "packages/web/server/lib/opencode/kernel-operations.js": "4b4d3c7c290136d34f6b79ba9a6770491bf02792b4f865330d3e39a00360e14f",
+      "packages/web/server/lib/opencode/legacy-session-http.js": "e8d42f189bbfd98046fadcbfe18119f4f16b37936997318851f91adf745b1e89",
+      "packages/ui/src/lib/opencode/client.legacy-host.test.js": "1cf47ede9a4f5cf029be9e1b0143baac6904e2be504910190cab165eab30490a"
+    }
+  },
+  "executable": {
+    "path": "C:/nvm4w/nodejs/node_modules/opencode-ai/bin/opencode.exe",
+    "version": "1.18.33",
+    "sha256": "52f60248a576b34c9a6dcaa27e0a7f08089af35bcdc0dfb10c04d3e00a98314c"
+  },
+  "commands": [
+    "node artifacts/r2-current-oc1-live.mjs",
+    "opencode.exe --version",
+    "git rev-parse HEAD"
+  ],
+  "checks": [
+    "exact OC1 executable is serving on isolated loopback",
+    "production kernelRuntime admits current OC1 profile",
+    "authenticated production Web host admits real OC1",
+    "unauthenticated runtime request is refused",
+    "production kernelOperations created a real session",
+    "authenticated host reopened the created session",
+    "production kernelOperations accepted SDK-shaped text prompt",
+    "loopback SSE model response completed in authenticated message history",
+    "production kernelOperations stopped an active model stream",
+    "authenticated reopened history preserves stopped turn",
+    "OpenChamber host shutdown leaves external OC1 process serving"
+  ],
+  "fixture": {
+    "isolation": "fresh OpenCode home/XDG/AppData/TEMP and OpenChamber data; all network services bound to 127.0.0.1",
+    "model": "loopback OpenAI-compatible SSE model; synthetic deterministic completion and held-stream abort; no external provider credentials",
+    "modelRequests": 2,
+    "outputDir": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc1-pqdZRg"
+  },
+  "limits": [
+    "Controlled model verifies transport and lifecycle only; it does not evaluate an external provider response.",
+    "Kernel runtime/operations are production modules composed against the exact OC1 endpoint; session reopen/history/runtime authentication and shutdown are through the production Web host.",
+    "No browser rendering, VS Code, permission/question UI, file attachment, or provider-quality acceptance was exercised."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "task": "int02-r1-provider-lease",
+  "scope": [
+    "packages/web/server/lib/small-model/runtime-providers.js",
+    "packages/web/server/lib/small-model/runtime-providers.test.js",
+    "packages/web/server/lib/small-model/DOCUMENTATION.md",
+    "packages/web/server/index.js"
+  ],
+  "implementation": [
+    "Provider snapshots are keyed to generation/profile/endpoint/epoch and local reset lease.",
+    "Stale fetch results and prior-owner failure fallbacks are rejected; only admitted OC1/OC2 profiles dispatch.",
+    "OC2 default-model results are rejected after descriptor change/reset.",
+    "Production wiring now passes kernelRuntime.get as the runtime descriptor.",
+    "CAgent is tested using the actual unsupported-generation descriptor shape."
+  ],
+  "red_green": [
+    {
+      "red": "Original HEAD source with new tests: 9 failed, 9 passed; source restored in finally. See int02-r1-provider-baseline-red.log.",
+      "green": "Final native Node combined suite: 151 passed in seven files, including all 18 provider tests. See int02-r1-consumer-final-tests.log."
+    }
+  ],
+  "validation": [
+    {
+      "result": "PASS: 18 tests",
+      "command": "bun run --cwd packages/web vitest run server/lib/small-model/runtime-providers.test.js"
+    },
+    {
+      "result": "PASS",
+      "command": "bunx oxlint packages/web/server/lib/small-model/runtime-providers.test.js"
+    },
+    {
+      "result": "PASS",
+      "command": "node --check packages/web/server/lib/small-model/runtime-providers.js; node --check packages/web/server/index.js"
+    },
+    {
+      "result": "Reports pre-existing no-runtime-typeof findings in runtime-providers.js parser and many existing findings throughout unchanged index.js; no auto-fixes applied.",
+      "command": "bunx oxlint packages/web/server/lib/small-model/runtime-providers.js packages/web/server/lib/small-model/runtime-providers.test.js packages/web/server/index.js"
+    }
+  ],
+  "failed_commands": [
+    {
+      "result": "RED: loopback request was intercepted by stubbed global fetch; resolved by using captured native fetch for that test.",
+      "command": "bun run --cwd packages/web vitest run server/lib/small-model/runtime-providers.test.js"
+    },
+    {
+      "result": "Environment invocation error: ran from helper cwd, where package script was unavailable; subsequent runs used target execution root.",
+      "command": "bun run --cwd packages/web vitest run server/lib/small-model/runtime-providers.test.js"
+    }
+  ],
+  "remaining_limits": [
+    "No full package build or cross-runtime invocation test was run.",
+    "Does not retire an already-started provider generation request outside this module.",
+    "VS Code does not compose this module; shared web/Electron/hosted-mobile/Capacitor paths use it."
+  ],
+  "main_review": "Removed the fetchImpl production seam. Real-loopback tests stub the captured native fetch locally. Prior harness failures remain recorded below."
+}

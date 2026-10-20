@@ -1,0 +1,19 @@
+[
+  {
+    "path": "/session/ses_browser_queue/prompt_async",
+    "body": {
+      "model": {
+        "providerID": "fixture",
+        "modelID": "fixture"
+      },
+      "agent": "build",
+      "parts": [
+        {
+          "type": "text",
+          "text": "browser closure follow up"
+        }
+      ]
+    },
+    "at": "2026-10-11T11:59:36.513Z"
+  }
+]

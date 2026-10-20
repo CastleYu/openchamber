@@ -21,5 +21,7 @@ export function createKernelRuntime(dependencies: {
     generation: OpenCodeGenerationDescriptor['generation'];
     preserved: boolean;
   }>;
+  setManagedKernel(kernel: { generation: 'oc1' | 'oc2'; version: string } | null): void;
   invalidate(): void;
+  subscribe(listener: (descriptor: Readonly<OpenCodeGenerationDescriptor>) => void): () => void;
 };

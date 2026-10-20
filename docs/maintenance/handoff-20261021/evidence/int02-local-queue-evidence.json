@@ -1,0 +1,311 @@
+{
+  "date": "2026-10-10",
+  "parent": "e82368a4bbafe3ffc3938f7cda21267d29173a1d",
+  "tests": [
+    {
+      "name": "host-final",
+      "file": "artifacts/int02-local-queue-host-final.log",
+      "pass": 9,
+      "sha256": "0a363c89186bd83905d297f8c2e247c04915c582104cff22442869ce2e1d9836"
+    },
+    {
+      "name": "connection-final",
+      "file": "artifacts/int02-local-queue-connection-final.log",
+      "pass": 5,
+      "sha256": "a04a846103072570aa7d3de05fee916d6af8b1261633700706726644bf6ec715"
+    },
+    {
+      "name": "kernel-final",
+      "file": "artifacts/int02-local-queue-kernel-final.log",
+      "pass": 6,
+      "sha256": "906fcd5ef7f7775e79d93f2af3ad8c889bfb54c82e4849a2b09836980777e095"
+    },
+    {
+      "name": "store-reviewed",
+      "file": "artifacts/int02-local-queue-store-reviewed.log",
+      "pass": 13,
+      "sha256": "4ee47cf07d05d3042fa1ba4c07516fd608af3b2bae1c0dca8e9cb18b7a7691ea"
+    },
+    {
+      "name": "server-store",
+      "file": "artifacts/int02-local-queue-server-store.log",
+      "pass": 29,
+      "sha256": "92e43f7e29ce9c74e431d307e4d825ed714b5abb9e0f1ea37616208cb6feca7e"
+    },
+    {
+      "name": "sdk-reviewed",
+      "file": "artifacts/int02-local-queue-sdk-reviewed.log",
+      "pass": 19,
+      "sha256": "3dd4c61ffa5a01d4902ac1211569d79175d474398ed99547530c993bd6f0b93c"
+    },
+    {
+      "name": "sdk-facade",
+      "file": "artifacts/int02-local-queue-sdk-facade.log",
+      "pass": 14,
+      "sha256": "e3e3d694ae79580ffdd7b3337dbbe262a6d5731a64ebc5d1a9e1f0a5d9f8694e"
+    },
+    {
+      "name": "auto-send",
+      "file": "artifacts/int02-local-queue-auto-send.log",
+      "pass": 16,
+      "sha256": "e3fa991be7f647e47a07fb208a57a839a1d422d40ee0e7cb4826d475f9dac6a2"
+    },
+    {
+      "name": "v2-sessions",
+      "file": "artifacts/int02-local-queue-v2-sessions.log",
+      "pass": 4,
+      "sha256": "b8a3d749b389895b454aace52b841560574d98b2529b7ed5953f749001d0af85"
+    },
+    {
+      "name": "fetch",
+      "file": "artifacts/int02-local-queue-fetch.log",
+      "pass": 29,
+      "sha256": "fb9cc676b5a00fdddd21464986bf613027a792742d816a65c22c14adf0f67934"
+    },
+    {
+      "name": "timeout",
+      "file": "artifacts/int02-local-queue-timeout.log",
+      "pass": 6,
+      "sha256": "b0594ca868690b6b659702a6fbf0e3e89e8f0ba87b0a4523c7e221f15e7b1061"
+    }
+  ],
+  "total": 150,
+  "checks": {
+    "host-final": 0,
+    "connection-final": 0,
+    "kernel-final": 0,
+    "store-final": 0,
+    "server-store": 0,
+    "sdk-final": 0,
+    "sdk-facade": 0,
+    "auto-send": 0,
+    "v2-sessions": 0,
+    "fetch": 0,
+    "timeout": 0,
+    "lint": 1,
+    "dead": 0,
+    "types": 0
+  },
+  "build": {
+    "anti": 1,
+    "lint-final": 0,
+    "types-final": 0,
+    "build-vscode": 0,
+    "build-web": 0
+  },
+  "review": {
+    "findings": 194,
+    "authored": [],
+    "tests": [
+      {
+        "name": "store-reviewed",
+        "code": 0
+      },
+      {
+        "name": "sdk-reviewed",
+        "code": 0
+      }
+    ]
+  },
+  "quotaRemainingPercent": 37,
+  "sourceFingerprints": [
+    {
+      "file": "docs/maintenance/zh-CN/QUEUE-TARGET.md",
+      "sha256": "bda5614750c4ebc2d062ebac79c490d1388274a275890700276db233ecbf978e"
+    },
+    {
+      "file": "packages/ui/src/components/chat/ChatInput.tsx",
+      "sha256": "182e87286d87ef29200ecd705450a51a35064eee9dccc75cba9b283bb1cff31e"
+    },
+    {
+      "file": "packages/ui/src/hooks/useQueuedMessageAutoSend.test.ts",
+      "sha256": "a8fb7e6c46ebaad7e2fdd22846967f87e0ff5486389b455e681fbafc126d3da7"
+    },
+    {
+      "file": "packages/ui/src/hooks/useQueuedMessageAutoSend.ts",
+      "sha256": "47bd8b3dfc26a4079315aadf329d06a3a3a9147db72c6f5449ceaa237c3986f5"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/client.protocol.test.ts",
+      "sha256": "77376c617704e7aad39f73add71b4d33f5950c159260000252f8e21b2a2bd7c4"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/client.ts",
+      "sha256": "b7de79ad219ed7958b50c0731081985d5db44d44012264c475e1f2ea328333b2"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/connection.ts",
+      "sha256": "72c7c5e769520d6900bdc934dfea8cad17321906367368447a1624eaa0e9c33b"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/operations.ts",
+      "sha256": "9f82e4765cdd6254a85ada1306df8b7e58e1d603780dbd3b66437cc52932bab3"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/transport.ts",
+      "sha256": "5c02a161ddd8c7a2fb20105a3531e79a05e385c36aafdd87af5f2bc9b242ac4e"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/v2/client.ts",
+      "sha256": "682caa8b8c9d446d2768627e4702b079fb78c2baf8cd9a449c12060cfc341fc7"
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/v2/sessions.ts",
+      "sha256": "7094fc4964b3cd0706e5c46d94889a403da1b7bf92b4a84a09d8012665c595c6"
+    },
+    {
+      "file": "packages/ui/src/stores/DOCUMENTATION.md",
+      "sha256": "c9eb42c71d78ac7c1a18d712a74e2fc5c259afbd342f8af4042fa57712b2de6d"
+    },
+    {
+      "file": "packages/ui/src/stores/messageQueueStore.test.ts",
+      "sha256": "3cab1200b564d61447b76cd78ac1ab62e72e042106a124d232dce4dfc35236ca"
+    },
+    {
+      "file": "packages/ui/src/stores/messageQueueStore.ts",
+      "sha256": "2bde4abccb580e33109056e76e6b7a05a09819ed40b7178934131596642af8bb"
+    },
+    {
+      "file": "packages/ui/src/sync/session-ui-store.ts",
+      "sha256": "628b03e757daa75fa9df241c7b714ef29dd0267948bba032da3156c411c1c0a5"
+    },
+    {
+      "file": "packages/vscode/src/DOCUMENTATION.md",
+      "sha256": "3476471715e0b68b0ab8fb7c6573db2157bc750d768a2f191bd2190753eed9c5"
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "sha256": "4f1a9a4b184fae29d346e5d01ec8883dd8e82fbd4dde18598530d93a3bde2324"
+    },
+    {
+      "file": "packages/vscode/src/connection-runtime.d.ts",
+      "sha256": "8f6f388130bf12eb4ce0862b26870b89280321010a00b6b9abf5c7d41a798bd1"
+    },
+    {
+      "file": "packages/vscode/src/connection-runtime.js",
+      "sha256": "1aada61da3ed08247492339bd0c302c30d732811a880a9e3156692bdbcf4187f"
+    },
+    {
+      "file": "packages/vscode/src/connection-settings.test.ts",
+      "sha256": "843665d67f3efdf55e57ffe1dc2c684dc3d3c9310b75541e0e84a6b7a7c2a042"
+    },
+    {
+      "file": "packages/vscode/src/opencode.ts",
+      "sha256": "9bc9eb9b49be7100cc8ec908b521c98fdbbe700e8318d991f9acdf7b90e5f5fd"
+    },
+    {
+      "file": "packages/web/server/lib/message-queue/DOCUMENTATION.md",
+      "sha256": "5ef372e8fcd60012caa80794fe3923953ab999f715770679ba7816a9a6019a49"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/queue-target.js",
+      "sha256": "61f39d2fcf4e631eb4b3cf34cf55f0fb499d05c1aa2299f34dbc8b601f326ee9"
+    },
+    {
+      "file": "packages/vscode/src/queue-target-forwarding.test.js",
+      "sha256": "ee41b6cb6627f4f2e466153dc49030ef0e864fe31c955433184ed208b655131f"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/queue-target.d.ts",
+      "sha256": "bc72b902200f2ab9c5acd26ae6c16c6a4fcbb1d35c9b49c8fe6f1c1e1f5b852d"
+    }
+  ],
+  "limits": [
+    "No full shared webview/bridge/editor acceptance",
+    "No new native manager, model conversation, CAgent or exact Legacy acceptance",
+    "Peer coordination and console-flash observation remain R1 gates",
+    "Configured intent cannot prove an external instance at an unchanged URL"
+  ],
+  "cleanup": {
+    "helpersStatus": "removed and verified",
+    "helpers": [
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-queue-guard-edit.mjs",
+        "bytes": 6216,
+        "sha256": "8c69370945becce258e973606b37aa3fad88e23cae9c29afe26bfd02e56e28e9"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-edit.mjs",
+        "bytes": 15731,
+        "sha256": "c0db02e567d9d6dd7dc65a5efefe5f484d399118f32d1dd854009a838ee8e486"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-tests-edit.mjs",
+        "bytes": 11410,
+        "sha256": "6d1f4cee8ceffa866d5ba42c0a5e8f41c4675ae470c424faf9f87d37eeef4228"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-refine.mjs",
+        "bytes": 5620,
+        "sha256": "da59344eebb14dc666515934bb4b4e8ff9fb7204920aac304ecd59db48667a8b"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-checks.mjs",
+        "bytes": 2092,
+        "sha256": "e945b97c93d4fd3d9123477b778d0cd387ce92adf8eb1c326cc1873cbb5e51cc"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-finish.mjs",
+        "bytes": 2087,
+        "sha256": "582794c29171266e3150068f8024e9ecf2fa758600bc958d1825b127ccd3e929"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-build.mjs",
+        "bytes": 2109,
+        "sha256": "7a8aa8b7149228e8a9de7359a8ba6a926d1830f1215e05be8608f2ae79a7986b"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-docs.mjs",
+        "bytes": 5562,
+        "sha256": "4881b682dde8d8c7e69c95b1c90c8375f81ed3643e070a3103a1bddf5372ffd5"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-review.mjs",
+        "bytes": 2279,
+        "sha256": "e4f85bac4b579c159ec8ce4abd6cef482c71460ec406c8c6b5eeeeaa26189fa9"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-sdk-fix.mjs",
+        "bytes": 960,
+        "sha256": "da023afa050923a842ceb360b1409e5bbb362329653b768e8aad9c51edf6d95c"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-local-queue-closeout.mjs",
+        "bytes": 8177,
+        "sha256": "3a63d549d14ec6e227e4615c2ca9f1bbc436fd65f15efe9487ebfaea1c16a0e2"
+      }
+    ],
+    "removedLogs": [
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-local-queue-store-tests.log",
+        "bytes": 1577,
+        "sha256": "180914c7acdaf0649489c72e07280fdeba755cf63c34ff1ce0d012f70657c981",
+        "reason": "Superseded by selected reviewed evidence; failure details retained in task notes"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-local-queue-store-final.log",
+        "bytes": 1569,
+        "sha256": "7ca4ebf93feaa3c20f22ff3a8b8f9c5984778e769d75470e3a067742c756c718",
+        "reason": "Superseded by selected reviewed evidence; failure details retained in task notes"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-local-queue-sdk-final.log",
+        "bytes": 2342,
+        "sha256": "6a369989d82084dd918e81e3cbba2e01eef0aaaf2805ea4bb8a909969907d22d",
+        "reason": "Superseded by selected reviewed evidence; failure details retained in task notes"
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-local-queue-anti.log",
+        "bytes": 47767,
+        "sha256": "52def9baf4046cd2f404620fab76aa5b20cd49fa6b4ca4ec3ed5886a5deef2bb",
+        "reason": "Superseded by selected reviewed evidence; failure details retained in task notes"
+      }
+    ],
+    "retained": [
+      "Selected regression and build logs, initial host/SDK failures and task failure notes for R1 review",
+      "Current Web/VS Code bundles, real OC2 binary and reusable native fixtures for remaining R1 acceptance; review at R1 closeout"
+    ],
+    "bytesReclaimed": 115498
+  },
+  "commit": "f6d11ff57808630a6255ee78d4b21039f407cd5d"
+}

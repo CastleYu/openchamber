@@ -27,6 +27,7 @@ UI-side queue and foreground auto-send hook.
 
 - `runtime.js` — `createMessageQueueRuntime(...)` (state, persistence,
   dispatch loop, event handling) and `registerMessageQueueRoutes(app, runtime)`.
+- `attempts.test.js` — Legacy durable attempts, lost responses, recovery, explicit resubmission, file failures and ordinary-generation regression.
 - `runtime.test.js` — delivery, idleness gates, retries, holds, persistence,
   concurrency with in-flight sends, slash commands, and project knowledge.
 
@@ -95,9 +96,8 @@ the next write cannot overwrite the user's data. A failed read leaves writes
 disabled until a later load succeeds. `revision` is a global monotonic counter
 bumped on every mutation; clients use it to reject stale snapshots.
 
-In-memory only, deliberately: the in-flight item (`sendingId`), retry
-backoff, abort timestamps, and holds. A restart has no in-flight sends; a
-persisted "sending" flag would strand a message forever.
+The in-flight UI marker `sendingId`, retry backoff, abort timestamps and holds
+remain in memory. Legacy dispatch outcomes use the durable attempt contract below.
 
 ## Delivery loop
 
@@ -107,7 +107,7 @@ persisted "sending" flag would strand a message forever.
    (500 ms, coalescing the burst around a turn boundary), `busy`/`retry`
    clears it. A `message.updated` for a completed assistant reply arms as
    well, so a missed idle event cannot strand the queue. `session.deleted`
-   drops the session's queue. An assistant `MessageAbortedError` records an
+   drops the session's queue except unresolved Legacy attempts. An assistant `MessageAbortedError` records an
    abort.
 3. `tick(sessionId)` bails when the queue is empty, an item is in flight, or
    the session is held. It re-arms after a 2 s post-abort hold (the UI's
@@ -143,10 +143,44 @@ persisted "sending" flag would strand a message forever.
      invocation when there is one, pending project knowledge
      (`sessionKnowledgeRuntime.resolvePendingForSession`, synthetic, recorded
      as delivered only after the prompt is accepted), then the agent mention.
-   Success removes the item, persists, broadcasts, and marks the user
+   Ordinary OC1/OC2 success removes the item, persists, broadcasts, and marks the user
    message sent for notifications. Failure keeps the item, backs off
    2 s → 60 s (doubling per consecutive failure of that item), and re-arms.
 6. The next item goes out after the next busy → idle cycle.
+
+## Legacy attempts
+
+Only the admitted legacy-1.2.27 profile uses durable dispatch attempts.
+After read-only command, context and model preparation, the existing queue owner
+writes attempt { id, state: 'pending', createdAt } atomically before entering
+the prompt or command mutation. A failed pending write prevents that mutation.
+Ordinary OC1/OC2 retry and removal behavior stays unchanged.
+
+A returned mutation records accepted and retains the item. Accepted items are
+skipped when choosing the next unsent item, whose existing idle gate still applies.
+Accepted means request acceptance. This batch does not correlate terminal messages
+or produce completed or failed outcomes. Exact 1.2.27 executable evidence is
+required before enabling that correlation.
+
+After a durable pending write, retirement, a lost response or failed result write
+leaves unknown and prevents automatic replay. Loading stored pending or accepted
+attempts converts them to unknown. A malformed attempt or its recorded payload rejects loading and keeps
+the stored file intact. Public snapshots include the attempt metadata.
+
+An unresolved attempt blocks dispatch, take, edit, batch take and reorder for its
+session. Ordinary removal and clear cannot discard that attempt. Other sessions
+continue. Explicit POST
+/api/message-queue/sessions/:sessionId/items/:itemId/resubmit requires
+{ attemptId, confirmed: true }. It compares the current unknown attempt ID,
+claims the session before awaiting idle verification, rechecks native admission
+and persists a new attempt before mutation. Confirmation acknowledges possible
+duplicate upstream effects; the ID provides local admission control, not upstream
+deduplication. Pause waits for this work through the existing dispatch owner.
+
+The shared UI still needs attempt projection and confirmation controls. Until
+then this server contract is an implementation checkpoint, not unattended or
+release acceptance. Accepted records count toward the existing queue limit and
+can be removed explicitly. Unknown records remain protected.
 
 ## Holds
 
@@ -230,3 +264,12 @@ see its [store contract](../../../../ui/src/stores/DOCUMENTATION.md#configured-q
 Peer coordination and full webview acceptance remain R1 gates.
 
 Chinese archive: [configured queue target](../../../../../docs/maintenance/zh-CN/QUEUE-TARGET.md).
+
+
+## Legacy terminal reconciliation
+
+The queue owns its private persisted messageID and supplies it only to the Legacy mutation body. Public attempt projection is unchanged. On existing wakes, accepted/unknown attempts with that ID may resolve from authoritative idle and exact assistant reads. Require matching session, parent, current target/epoch and completed time; final stop becomes completed, structured errors become failed. Skip tool-call/unknown intermediate messages. A failed terminal write keeps the send barrier unknown.
+
+The additional read cost is one bounded tail plus at most one exact message lookup per eligible item after the existing idle check. No new poller, cache or dispatch owner exists. Missing tail matches and old records are inconclusive. Sending claims and post-await owner/attempt checks reject late results. Web owns this behavior; Electron shares its in-process backend, hosted/Capacitor mobile use their server, and VS Code's separate local owner retains its pending milestone.
+
+See the [English evidence](../../../../../docs/maintenance/OPENCODE-LEGACY-EVIDENCE.md#int-05-queue-terminal-checkpoint-2026-10-14) and [Chinese archive](../../../../../docs/maintenance/zh-CN/OPENCODE-LEGACY-EVIDENCE.md).

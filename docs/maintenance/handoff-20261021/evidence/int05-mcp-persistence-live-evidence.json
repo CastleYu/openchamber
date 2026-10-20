@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-11T21:04:27.054Z",
+  "binarySha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "pinned binary and authenticated exact-version server",
+    "production SDK configuration snapshot",
+    "seven local configuration layers match running effective MCP",
+    "managed source is read-only and existing JSONC is global write target",
+    "raw placeholders preserved separately from expansion",
+    "exact binary production SDK with consecutive raw file saves",
+    "save is explicitly deferred; running configuration remains cached until R4 apply",
+    "managed effective definition remains read-only",
+    "delete and recreate reflect disk immediately"
+  ],
+  "limitations": [
+    "Production owner plus exact binary; HTTP and VS Code bridge use separate local transport tests. R4 application/restart, organization overlays and native visual acceptance remain open."
+  ],
+  "cleanup": {
+    "ownedServerExited": true,
+    "fixtureRemoved": true
+  }
+}

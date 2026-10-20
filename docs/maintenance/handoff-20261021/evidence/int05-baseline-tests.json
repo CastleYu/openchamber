@@ -1,0 +1,712 @@
+{
+  "numTotalTestSuites": 10,
+  "numPassedTestSuites": 10,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 53,
+  "numPassedTests": 53,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791741957912,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner keeps the pre-2.0.20 read-only database owner, then uses the official API",
+          "status": "passed",
+          "title": "keeps the pre-2.0.20 read-only database owner, then uses the official API",
+          "duration": 30.339200000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner does not fall back to the old database after an official API failure or an unknown version",
+          "status": "passed",
+          "title": "does not fall back to the old database after an official API failure or an unknown version",
+          "duration": 14.624300000000062,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner rejects a response completed after the runtime epoch moved",
+          "status": "passed",
+          "title": "rejects a response completed after the runtime epoch moved",
+          "duration": 13.524000000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner refuses Legacy oc1 credentials before filesystem or API access",
+          "status": "passed",
+          "title": "refuses Legacy oc1 credentials before filesystem or API access",
+          "duration": 16.228899999999953,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner refuses Legacy oc2 credentials before filesystem or API access",
+          "status": "passed",
+          "title": "refuses Legacy oc2 credentials before filesystem or API access",
+          "duration": 12.598600000000033,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner rejects late all credentials after a profile-only change",
+          "status": "passed",
+          "title": "rejects late all credentials after a profile-only change",
+          "duration": 15.453800000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner rejects late provider credentials after a profile-only change",
+          "status": "passed",
+          "title": "rejects late provider credentials after a profile-only change",
+          "duration": 13.772600000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner does not coalesce a new profile onto an old credential request",
+          "status": "passed",
+          "title": "does not coalesce a new profile onto an old credential request",
+          "duration": 14.960999999999899,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "dual OC2 credential owner"
+          ],
+          "fullName": "dual OC2 credential owner preserves ordinary OC1 file credential reads",
+          "status": "passed",
+          "title": "preserves ordinary OC1 file credential reads",
+          "duration": 13.67719999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791741958783,
+      "endTime": 1791741958928.6772,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/auth-dual.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 70.00839999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 13.339500000000044,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 10.135700000000043,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 9.316100000000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 10.057999999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 8.617300000000114,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 9.249000000000024,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 7.045499999999947,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 9.898899999999912,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 12.444200000000137,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 10.017799999999852,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses unaccepted Legacy configuration before route dependencies",
+          "status": "passed",
+          "title": "refuses unaccepted Legacy configuration before route dependencies",
+          "duration": 9.988200000000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary reads profile on every configuration request while keeping snippets independent",
+          "status": "passed",
+          "title": "reads profile on every configuration request while keeping snippets independent",
+          "duration": 34.00410000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary agent reads and mutations refuse CAgent before dependencies",
+          "status": "passed",
+          "title": "agent reads and mutations refuse CAgent before dependencies",
+          "duration": 17.119399999999814,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary command reads and mutations refuse CAgent before dependencies",
+          "status": "passed",
+          "title": "command reads and mutations refuse CAgent before dependencies",
+          "duration": 16.98310000000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary MCP reads and mutations refuse CAgent before dependencies",
+          "status": "passed",
+          "title": "MCP reads and mutations refuse CAgent before dependencies",
+          "duration": 14.048700000000053,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary keeps snippet routes available under CAgent",
+          "status": "passed",
+          "title": "keeps snippet routes available under CAgent",
+          "duration": 7.402899999999818,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses plugin reads, mutations, and npm metadata before dependencies",
+          "status": "passed",
+          "title": "refuses plugin reads, mutations, and npm metadata before dependencies",
+          "duration": 20.4692,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary refuses skill reads, scan, and install before dependencies",
+          "status": "passed",
+          "title": "refuses skill reads, scan, and install before dependencies",
+          "duration": 22.80100000000016,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary reads the selected backend family for each request",
+          "status": "passed",
+          "title": "reads the selected backend family for each request",
+          "duration": 22.555999999999813,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary preserves OpenCode behavior when no backend selection getter is supplied",
+          "status": "passed",
+          "title": "preserves OpenCode behavior when no backend selection getter is supplied",
+          "duration": 14.829799999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode configuration family boundary"
+          ],
+          "fullName": "OpenCode configuration family boundary retains the generation readiness gate for an unresolved OpenCode backend",
+          "status": "passed",
+          "title": "retains the generation readiness gate for an unresolved OpenCode backend",
+          "duration": 7.760299999999916,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791741959772,
+      "endTime": 1791741960130.7603,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/config-family.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime refuses CAgent before settings, memory, or preparers",
+          "status": "passed",
+          "title": "refuses CAgent before settings, memory, or preparers",
+          "duration": 6.039300000000026,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime rejects unknown generation without starting any preparation",
+          "status": "passed",
+          "title": "rejects unknown generation without starting any preparation",
+          "duration": 0.7767999999999802,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime uses only OC2 preparation and rejects a retired result",
+          "status": "passed",
+          "title": "uses only OC2 preparation and rejects a retired result",
+          "duration": 0.8261999999999716,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime returns the current OC2 environment without reading OC1 settings",
+          "status": "passed",
+          "title": "returns the current OC2 environment without reading OC1 settings",
+          "duration": 0.8812000000000353,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime skips tools when their switches are off and memory is unavailable",
+          "status": "passed",
+          "title": "skips tools when their switches are off and memory is unavailable",
+          "duration": 0.44219999999995707,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime keeps OC1 switches, config merge order, and prompt config content",
+          "status": "passed",
+          "title": "keeps OC1 switches, config merge order, and prompt config content",
+          "duration": 0.473700000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime uses config content fallback when preparation supplies none",
+          "status": "passed",
+          "title": "uses config content fallback when preparation supplies none",
+          "duration": 0.3307999999999538,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime retains default tool behavior when settings cannot be read",
+          "status": "passed",
+          "title": "retains default tool behavior when settings cannot be read",
+          "duration": 0.38200000000006185,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime stops subsequent side effects after selection changes during settings await",
+          "status": "passed",
+          "title": "stops subsequent side effects after selection changes during settings await",
+          "duration": 0.9472999999999274,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime stops subsequent side effects after selection changes during tools await",
+          "status": "passed",
+          "title": "stops subsequent side effects after selection changes during tools await",
+          "duration": 0.586400000000026,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime stops subsequent side effects after selection changes during prompt await",
+          "status": "passed",
+          "title": "stops subsequent side effects after selection changes during prompt await",
+          "duration": 0.47199999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed OpenCode environment runtime"
+          ],
+          "fullName": "managed OpenCode environment runtime refuses an MCP result completed after the selected family changes",
+          "status": "passed",
+          "title": "refuses an MCP result completed after the selected family changes",
+          "duration": 0.5951999999999771,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791741958740,
+      "endTime": 1791741958753.5952,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/managed-env-runtime.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "managed CLI generation probe"
+          ],
+          "fullName": "managed CLI generation probe uses the resolved launch spec, not the shim filename",
+          "status": "passed",
+          "title": "uses the resolved launch spec, not the shim filename",
+          "duration": 7.873499999999922,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed CLI generation probe"
+          ],
+          "fullName": "managed CLI generation probe accepts the selected OC1 generation without a minor-version guess",
+          "status": "passed",
+          "title": "accepts the selected OC1 generation without a minor-version guess",
+          "duration": 0.7881999999999607,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed CLI generation probe"
+          ],
+          "fullName": "managed CLI generation probe rejects prerelease, unsupported, and ambiguous output before writes",
+          "status": "passed",
+          "title": "rejects prerelease, unsupported, and ambiguous output before writes",
+          "duration": 2.660400000000095,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed CLI generation probe"
+          ],
+          "fullName": "managed CLI generation probe rejects WSL before probing a wrapper",
+          "status": "passed",
+          "title": "rejects WSL before probing a wrapper",
+          "duration": 0.8532000000000153,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "managed CLI generation probe"
+          ],
+          "fullName": "managed CLI generation probe does not expose failed command output",
+          "status": "passed",
+          "title": "does not expose failed command output",
+          "duration": 0.5068999999999733,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791741958733,
+      "endTime": 1791741958745.5068,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/managed-generation.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "MCP OAuth browser callback route"
+          ],
+          "fullName": "MCP OAuth browser callback route completes authorization server-side for a parked state and clears it",
+          "status": "passed",
+          "title": "completes authorization server-side for a parked state and clears it",
+          "duration": 89.53800000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "MCP OAuth browser callback route"
+          ],
+          "fullName": "MCP OAuth browser callback route never forwards a code whose state is unknown",
+          "status": "passed",
+          "title": "never forwards a code whose state is unknown",
+          "duration": 7.729000000000042,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "MCP OAuth browser callback route"
+          ],
+          "fullName": "MCP OAuth browser callback route omits the desktop deep link for flows started outside the desktop shell",
+          "status": "passed",
+          "title": "omits the desktop deep link for flows started outside the desktop shell",
+          "duration": 13.515699999999924,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "MCP OAuth browser callback route"
+          ],
+          "fullName": "MCP OAuth browser callback route reports a provider error without contacting OpenCode",
+          "status": "passed",
+          "title": "reports a provider error without contacting OpenCode",
+          "duration": 19.271400000000085,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "MCP OAuth browser callback route"
+          ],
+          "fullName": "MCP OAuth browser callback route surfaces an OpenCode rejection as a failed page",
+          "status": "passed",
+          "title": "surfaces an OpenCode rejection as a failed page",
+          "duration": 17.865999999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791741960272,
+      "endTime": 1791741960419.866,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/mcp-oauth-callback.test.js"
+    }
+  ]
+}

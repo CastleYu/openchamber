@@ -1,0 +1,227 @@
+{
+  "recordedAt": "2026-10-11T11:50:08.399Z",
+  "baseline": "29c43b4d53da9127c3d27d01761a415f47c0a292",
+  "milestone": "R1 remains open",
+  "scope": [
+    "Legacy upstream stream admission and profile-only retirement",
+    "OC2 worktree SDK eviction wiring and family/profile retirement",
+    "Plugin configuration directory/mutation retirement",
+    "Generated agent-tool callback family/profile admission",
+    "VS Code current 501 refusal versus planned CAgent binding"
+  ],
+  "verification": {
+    "checks": [
+      {
+        "exitCode": 0,
+        "log": "artifacts/int02-r1-boundary-types.log",
+        "name": "types"
+      },
+      {
+        "exitCode": 0,
+        "log": "artifacts/int02-r1-boundary-lint.log",
+        "name": "lint"
+      },
+      {
+        "exitCode": 0,
+        "log": "artifacts/int02-r1-boundary-dead-code.log",
+        "name": "dead-code"
+      },
+      {
+        "exitCode": 0,
+        "log": "artifacts/int02-r1-boundary-build.log",
+        "name": "build"
+      }
+    ],
+    "focused": {
+      "files": 14,
+      "passed": 171,
+      "failed": 0,
+      "log": "artifacts/int02-r1-boundary-final-tests.log",
+      "disposalCases": 8,
+      "transport": "Real local Git worktrees and loopback HTTP SDK fixtures; synthetic backend events"
+    },
+    "priorUnchangedRegression": {
+      "passed": 128,
+      "files": 5,
+      "log": "cdee/artifacts/int02-r1-tool-green.log",
+      "scope": "Generated dispatch, managed preparation/generation, VS Code bridge refusal"
+    },
+    "syntax": [
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/index.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/agent-tool/dual-routes.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/agent-tool/dual-routes.test.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/event-stream/family-retirement.test.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/event-stream/global-hub.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/git/routes.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/git/worktree-disposal.test.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/opencode/feature-routes-runtime.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/opencode/plugin-routes.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/opencode/plugin-routes.test.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "packages/web/server/lib/opencode/watcher.js"
+      }
+    ],
+    "oxlint": {
+      "exitCode": 1,
+      "method": "Diagnostic locations compared with added lines in git diff --unified=0. Untracked new test has no diagnostics.",
+      "inheritedDiagnostics": 106,
+      "authoredDiagnostics": [],
+      "log": "artifacts/int02-r1-boundary-oxlint.log"
+    },
+    "deadCode": "Non-blocking report inspected; changed modules absent from findings. Existing unused exports/types remain.",
+    "buildLimits": "Root build compiles UI/Web/SDK/VS Code and mobile web assets. Electron build script is a no-op; this is not desktop/mobile packaging or startup acceptance. Server JS is validated separately by syntax/tests.",
+    "warnings": [
+      "Existing CSS highlight pseudo-element warnings",
+      "Existing dynamic/static import and large-chunk warnings"
+    ]
+  },
+  "boundaries": [
+    "No new dependencies, caches, retries, polls, processes or adapter framework",
+    "Shared Web/Electron backend; hosted/Capacitor mobile use selected host; no live platform journeys in this batch",
+    "Existing managed preparation gates family/revision, not all exact Legacy preparation; callback refusal does not prove Legacy plugin acceptance",
+    "Local Git removal remains best effort when optional OpenCode eviction retires or fails"
+  ],
+  "limitations": [
+    "Real CAgent CA-03 unavailable",
+    "Exact Legacy conversation remains R2",
+    "Neutral consumer migration remains R6",
+    "Packaged runtime acceptance remains R7",
+    "Prior UI sync default-timeout failure is not resolved by this host boundary run"
+  ],
+  "next": [
+    "R1 queue/persistence/browser-closed acceptance journey",
+    "Explicit switch confirmation, repeated switch and previous-configuration recovery clause evidence",
+    "Review cross-host parity against final candidate before advancing R1"
+  ],
+  "cleanup": {
+    "temporaryGitFixtures": "8 cases clean their own temporary repositories and close their loopback HTTP servers in afterEach",
+    "retained": "Compact final logs, source fingerprints and red regression evidence retained for audit; build assets retained for subsequent runtime verification",
+    "removed": "One-off cdee validation/evidence helper scripts removed after completion; no unrelated temporary directories removed",
+    "removedBytes": 10664,
+    "cleanupRecord": "C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/r1-boundary-cleanup.json"
+  },
+  "quota": {
+    "weeklyUsedPercent": 12,
+    "weeklyRemainingPercent": 88,
+    "source": "Live Codex usage tool, 2026-10-11"
+  },
+  "files": [
+    {
+      "path": "docs/maintenance/CAGENT-BOUNDARIES.md",
+      "sha256": "a85cafd16653a99de190c0f17f95bca91ebc0f21ef757203026e9f600bbc4bf8"
+    },
+    {
+      "path": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "2c2aad4d4486856a8cbafa1e222e4235c9d745240604fdb948e9e04800c5a35c"
+    },
+    {
+      "path": "docs/maintenance/R1-ACCEPTANCE.md",
+      "sha256": "ab2fe00a739ddb863ff753ffd7744bd1aa1b673994d0054562816f85e784f1ae"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/CAGENT-BOUNDARIES.md",
+      "sha256": "5c7f42acc1b025a0e03fd96a0003b0c22d5f2d46a0dc72a23b8b22505a40934f"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "66d9867cc4cbf0adee7d3841cf8413deed96a60ede2851b257a915f2418d963e"
+    },
+    {
+      "path": "docs/maintenance/zh-CN/R1-ACCEPTANCE.md",
+      "sha256": "faf012bf792e36637ead4b31ea86eacf314ee6936be0890953464b655bb17b11"
+    },
+    {
+      "path": "packages/web/server/index.js",
+      "sha256": "9df39ee020a4670f966fb1983530790ac927c31a1d1bfa69aee98988df663b1c"
+    },
+    {
+      "path": "packages/web/server/lib/agent-tool/DOCUMENTATION.md",
+      "sha256": "0d68bf5694dc90283487d2ddf16a3d2387fea771c371561c1ba6b9c20347cb77"
+    },
+    {
+      "path": "packages/web/server/lib/agent-tool/dual-routes.js",
+      "sha256": "2902a8eb57360a7d2854046dce062430b285499a96beaa04f435ff1f4d2f53a9"
+    },
+    {
+      "path": "packages/web/server/lib/agent-tool/dual-routes.test.js",
+      "sha256": "5ed0794d9d96bca957d3abac059d6c4903b73e795832ec8fa9629970c6c0be93"
+    },
+    {
+      "path": "packages/web/server/lib/event-stream/DOCUMENTATION.md",
+      "sha256": "2872a5e9f8808a8a109809f59bc771f792b44824994462713aaa63d247609b53"
+    },
+    {
+      "path": "packages/web/server/lib/event-stream/family-retirement.test.js",
+      "sha256": "3cf694ea31e6ab7c47bcd309dc35e3823f868393aa7b000154b57b7f7d762d05"
+    },
+    {
+      "path": "packages/web/server/lib/event-stream/global-hub.js",
+      "sha256": "37266a8534cf639266c17313f27fd60467cd025196dca77e3c65e7facf5cd65a"
+    },
+    {
+      "path": "packages/web/server/lib/git/DOCUMENTATION.md",
+      "sha256": "40f61911c4b3b89ef6301677b267f0baf7c5bb7b3752f33029df121c5fd96388"
+    },
+    {
+      "path": "packages/web/server/lib/git/routes.js",
+      "sha256": "9be5985e02d072f48a88611dea85eea445259b427f64df03f092c226d50e1971"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/DOCUMENTATION.md",
+      "sha256": "a16e32fa9a0facadfc62ae936f55bd65b31c4f41233092144333da9c7cdab7df"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/feature-routes-runtime.js",
+      "sha256": "8ad591338c5a516fb71bda49380d445f62a830abdcdaeaa98b26a64d2b7067ea"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/plugin-routes.js",
+      "sha256": "ac393a76750e8ffce4af1aea8c8c9e06a87c2a2d52a5ce348acb4c43fe3268ff"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/plugin-routes.test.js",
+      "sha256": "0c71da2c3e92531ab9a5444764338d902736ec222efeaf644a39040b35dfe1f1"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/watcher.js",
+      "sha256": "3205731d39b6913d7ff21572edef247e3165261916ebd0bd0e0adc5a3482326e"
+    },
+    {
+      "path": "packages/web/server/lib/git/worktree-disposal.test.js",
+      "sha256": "09d04d2ec8fb3d3742f9433b13acfc1fcfc8f5770a2f331988b77a5eb7e76234"
+    }
+  ],
+  "commit": "42c6f73960130bbf9a87a8ae86b3fe3a47bff237",
+  "fingerprintFormat": "SHA256 of checked working-tree bytes, verified again after commit."
+}

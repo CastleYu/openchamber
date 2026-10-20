@@ -1,0 +1,44 @@
+[
+  {
+    "file": "packages/web/server/lib/message-queue/runtime.js",
+    "line": 61,
+    "rule": "anti-slop(no-runtime-typeof)",
+    "inherited": true
+  },
+  {
+    "file": "packages/web/server/lib/message-queue/runtime.js",
+    "line": 62,
+    "rule": "anti-slop(no-runtime-typeof)",
+    "inherited": true
+  },
+  {
+    "file": "packages/web/server/lib/message-queue/runtime.js",
+    "line": 63,
+    "rule": "anti-slop(no-runtime-typeof)",
+    "inherited": true
+  },
+  {
+    "file": "packages/ui/src/stores/messageQueueStore.ts",
+    "line": 20,
+    "rule": "anti-slop(no-unknown-parameters)",
+    "inherited": true
+  },
+  {
+    "file": "packages/ui/src/stores/messageQueueStore.ts",
+    "line": 25,
+    "rule": "anti-slop(no-unknown-parameters)",
+    "inherited": true
+  },
+  {
+    "file": "packages/ui/src/stores/messageQueueStore.ts",
+    "line": 431,
+    "rule": "anti-slop(no-unknown-parameters)",
+    "inherited": true
+  },
+  {
+    "file": "packages/ui/src/stores/messageQueueStore.ts",
+    "line": 432,
+    "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+    "inherited": true
+  }
+]

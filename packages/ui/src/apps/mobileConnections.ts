@@ -21,7 +21,7 @@ import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import type { PairingConnectionPayload, PairingEndpointCandidate } from '@/lib/connectionPayload';
 import { isCapacitorApp } from '@/lib/platform';
-import { adoptRelayTunnel, isRelayModeActive } from '@/lib/relay/runtime-tunnel';
+import { isRelayModeActive } from '@/lib/relay/runtime-tunnel';
 import { createRelayTunnelClient } from '@/lib/relay/tunnel-client';
 import { addRuntimeProxyHeaders, runtimeFetch } from '@/lib/runtime-fetch';
 import { getRuntimeApiBaseUrl, getRuntimeKey, switchRuntimeEndpoint } from '@/lib/runtime-switch';
@@ -490,7 +490,7 @@ const switchToRelayRuntime = (
   grant?: string,
   runtimeKey?: string,
   liveTunnel?: ReturnType<typeof createRelayTunnelClient>,
-): void => {
+): Promise<void> => {
   // Relay mode has no network base URL: runtimeFetch intercepts runtime paths on
   // the current window origin and rides the E2EE tunnel, so the window origin is
   // the correct virtual API base. The runtime key carries the real device
@@ -503,17 +503,12 @@ const switchToRelayRuntime = (
     hostEncPubJwk: relay.hostEncPubJwk,
     ...(grant ? { grant } : {}),
   };
-  // Adopt the probe/redeem tunnel as the runtime tunnel BEFORE the switch: the
-  // activate call inside switchRuntimeEndpoint sees an equal descriptor and
-  // reuses it, skipping a second WebSocket connect + E2EE handshake.
-  if (liveTunnel) {
-    adoptRelayTunnel(descriptor, liveTunnel);
-  }
-  switchRuntimeEndpoint({
+  return switchRuntimeEndpoint({
     apiBaseUrl,
     clientToken,
     runtimeKey: runtimeKey ?? relayConnectionRuntimeKey(relay),
     relay: descriptor,
+    relayTunnel: liveTunnel,
   });
 };
 
@@ -969,15 +964,15 @@ const probeConnectionCandidates = async (
 // identity — passing the same key for a device's LAN and relay transports makes a
 // LAN⇄relay swap a transport-only change (not an instance switch), so the app can
 // keep the user's session instead of tearing everything down.
-const switchToTransport = (
+const switchToTransport = async (
   transport: ChosenTransport,
   token: string | null,
   options?: { runtimeKey?: string; grant?: string },
-): void => {
+): Promise<void> => {
   if (transport.kind === 'relay') {
-    switchToRelayRuntime(transport.relay, token, options?.grant, options?.runtimeKey, transport.tunnel);
+    await switchToRelayRuntime(transport.relay, token, options?.grant, options?.runtimeKey, transport.tunnel);
   } else {
-    switchRuntimeEndpoint({ apiBaseUrl: transport.url, clientToken: token, runtimeKey: options?.runtimeKey });
+    await switchRuntimeEndpoint({ apiBaseUrl: transport.url, clientToken: token, runtimeKey: options?.runtimeKey });
   }
   // Every live connection is an opportunity to learn the server's CURRENT LAN
   // addresses (pairing-payload candidates go stale when DHCP reassigns the
@@ -1050,7 +1045,7 @@ export const autoConnectLastInstance = async (options?: { fast?: boolean; skipIf
     return { status: 'no-candidate' };
   }
   await upsertMobileConnection({ id: candidate.id, label: candidate.label, candidates: candidate.candidates }); // bump lastUsedAt (keeps token)
-  switchToTransport(result.transport, token ?? null, { runtimeKey: secureTokenKeyOf(candidate) });
+  await switchToTransport(result.transport, token ?? null, { runtimeKey: secureTokenKeyOf(candidate) });
   return { status: 'connected' };
 };
 
@@ -1229,7 +1224,7 @@ export const reprobeActiveConnection = async (options?: { fast?: boolean }): Pro
   logConnect('reprobe:better', { status: better.status, probed: higher.length });
   if (better.status === 'ok') {
     await upsertMobileConnection({ id: active.id, label: active.label, candidates: active.candidates });
-    switchToTransport(better.transport, token ?? null, { runtimeKey: secureTokenKeyOf(active) });
+    await switchToTransport(better.transport, token ?? null, { runtimeKey: secureTokenKeyOf(active) });
     return 'switched';
   }
   // The shared token was explicitly rejected — no transport will accept it.
@@ -1255,7 +1250,7 @@ export const reprobeActiveConnection = async (options?: { fast?: boolean }): Pro
   logConnect('reprobe:fallback', { status: fallback.status, probed: lower.length });
   if (fallback.status === 'ok') {
     await upsertMobileConnection({ id: active.id, label: active.label, candidates: active.candidates });
-    switchToTransport(fallback.transport, token ?? null, { runtimeKey: secureTokenKeyOf(active) });
+    await switchToTransport(fallback.transport, token ?? null, { runtimeKey: secureTokenKeyOf(active) });
     return 'switched';
   }
   if (fallback.status === 'needs-login') return 'needs-login';
@@ -1487,7 +1482,7 @@ export const useMobileConnection = (onConnected: () => void): UseMobileConnectio
         await writeSecureToken(secureTokenKeyOf({ candidates }), token);
       }
       persistMetadata({ id: saved?.id, label, candidates, clientToken: token });
-      switchToTransport(result.transport, token ?? null, { runtimeKey: secureTokenKeyOf({ candidates }), grant });
+      await switchToTransport(result.transport, token ?? null, { runtimeKey: secureTokenKeyOf({ candidates }), grant });
       onConnected();
     } catch (error) {
       console.warn('[mobile-connect] connect threw', error);
@@ -1564,7 +1559,7 @@ export const useMobileConnection = (onConnected: () => void): UseMobileConnectio
       persistMetadata({ label, candidates: deviceCandidates, clientToken: issuedToken });
       // A relay transport hands its live redeem tunnel to the runtime (adopted
       // inside switchToTransport) — closing it here would tear down the runtime.
-      switchToTransport(
+      await switchToTransport(
         chosen.kind === 'relay' ? { kind: 'relay', relay: chosen.relay, tunnel: chosen.tunnel } : { kind: 'direct', url: chosen.url },
         issuedToken,
         { runtimeKey: secureTokenKeyOf({ candidates: deviceCandidates }) },
@@ -1631,7 +1626,7 @@ export const useMobileConnection = (onConnected: () => void): UseMobileConnectio
         if (chosen.kind === 'direct' && !isCapacitorApp()) {
           persistMetadata({ id, label, candidates });
           setPendingConnection(null);
-          switchToTransport({ kind: 'direct', url: chosen.url }, null, { runtimeKey: secureTokenKeyOf({ candidates }) });
+          await switchToTransport({ kind: 'direct', url: chosen.url }, null, { runtimeKey: secureTokenKeyOf({ candidates }) });
           onConnected();
           return;
         }
@@ -1650,7 +1645,7 @@ export const useMobileConnection = (onConnected: () => void): UseMobileConnectio
       setPendingConnection(null);
       // A relay transport hands its live login tunnel to the runtime (adopted
       // inside switchToTransport) — closing it here would tear down the runtime.
-      switchToTransport(
+      await switchToTransport(
         chosen.kind === 'relay' ? { kind: 'relay', relay: chosen.relay, tunnel: chosen.tunnel } : { kind: 'direct', url: chosen.url },
         issuedToken,
         { runtimeKey: secureTokenKeyOf({ candidates }) },

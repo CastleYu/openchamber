@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-21",
+  "scope": "Handoff packaging checks only; no product tests rerun",
+  "stagedFiles": 558,
+  "archivedEvidence": 425,
+  "evidenceHashes": "verified",
+  "localLinksChecked": 18,
+  "conversationEntries": 280,
+  "removedBytes": 1076156891,
+  "unexpectedPathsOrLinks": [],
+  "credentialSuspectFiles": [],
+  "whitespace": {
+    "status": "existing development snapshot formatting findings; source preserved",
+    "findings": [
+      "packages/ui/src/components/chat/composer/DOCUMENTATION.md:498: new blank line at EOF.",
+      "packages/ui/src/components/sections/providers/legacy-provider-ui.ts:17: new blank line at EOF.",
+      "packages/ui/src/stores/DOCUMENTATION.md:706: new blank line at EOF.",
+      "packages/web/server/lib/opencode/legacy-credential-operations.d.ts:25: new blank line at EOF.",
+      "packages/web/server/lib/opencode/legacy-provider-http.js:66: new blank line at EOF.",
+      "packages/web/server/lib/opencode/legacy-provider-request.d.ts:6: new blank line at EOF."
+    ]
+  },
+  "sourceTests": "not rerun; unfinished development snapshot"
+}

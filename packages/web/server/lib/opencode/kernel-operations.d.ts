@@ -90,7 +90,8 @@ export function createKernelOperations(dependencies: {
   prepareSession?: (input: { sessionID: string; directory?: string; identity: KernelIdentity }) => Promise<void>;
 }): {
   captureIdentity(): KernelIdentity;
-  getLegacyConfiguration(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ paths: Pick<LegacyPath, 'home' | 'config' | 'directory' | 'worktree'>; mcp: NonNullable<LegacyConfig['mcp']> }> & { version: string }>;
+  compareLegacyProvider(input: { providerID: string; value: import('@opencode/client').JsonValue | undefined; baseline?: { value: import('@opencode/client').JsonValue | undefined }; directory?: string; signal?: AbortSignal; expectedIdentity: KernelIdentity & { version: string } }): Promise<KernelResult<{ matchesPersisted: boolean; matchesBaseline: boolean; present: boolean }>>;
+  getLegacyConfiguration(input?: { directory?: string; signal?: AbortSignal }): Promise<KernelResult<{ paths: Pick<LegacyPath, 'home' | 'config' | 'directory' | 'worktree'>; mcp: NonNullable<LegacyConfig['mcp']>; providerIds: string[]; hasPlugins: boolean; providerEnv: Record<string, string[]> }> & { version: string }>;
   getSession(input: { sessionID: string; directory?: string; signal?: AbortSignal }): Promise<KernelResult<SessionView>>;
   createSession(input: { directory: string; title?: string; parentID?: string; agent?: string; model?: SessionInfo['model']; metadata?: LegacySession['metadata']; permission?: NonNullable<SessionCreateData['body']>['permission']; workspaceID?: NonNullable<SessionCreateData['body']>['workspaceID']; signal?: AbortSignal; expectedIdentity?: KernelIdentity }): Promise<KernelResult<SessionView>>;
   listSessions(input?: { directory?: string; limit?: number; cursor?: string | number; search?: string; signal?: AbortSignal }): Promise<KernelResult<SessionPage>>;

@@ -1,0 +1,52 @@
+{
+  "baseline": "b290fe1d1",
+  "checks": {
+    "anti": 1,
+    "regression": 0,
+    "lint": 0,
+    "dead": 0,
+    "types": 0,
+    "vscode-build": 0,
+    "web-build": 0
+  },
+  "authoredAnti": {
+    "authored": [],
+    "inheritedCount": 311,
+    "inheritedByFile": {
+      "packages/web/server/lib/opencode/routes.js": 19,
+      "packages/web/server/lib/opencode/settings-runtime.js": 69,
+      "packages/web/server/lib/opencode/lifecycle.js": 8,
+      "packages/vscode/webview/main.tsx": 156,
+      "packages/web/server/index.js": 59
+    }
+  },
+  "focused": {
+    "passed": 231,
+    "skipped": 1
+  },
+  "actualChild": {
+    "passed": 7
+  },
+  "finalOwner": {
+    "passed": 29
+  },
+  "realHost": "artifacts/int02-host-switch-live-evidence.json",
+  "cleanup": "artifacts/int02-host-switch-cleanup.json",
+  "commands": [
+    "vitest run connection-switch connection-activity lifecycle-family settings-runtime routes-runtime connection kernel-runtime queue-target message-queue/runtime --reporter=dot",
+    "vitest run lifecycle-process.test.js --reporter=dot",
+    "bun run type-check",
+    "bun run lint",
+    "bun run dead-code",
+    "bun run --cwd packages/web build",
+    "bun run --cwd packages/vscode build",
+    "node cdee/artifacts/int02-host-switch-live.mjs configured"
+  ],
+  "limitations": [
+    "R1 incomplete: active confirmation and recovery UI pending",
+    "VS Code explicit unsupported, manager adoption pending",
+    "Peer identity and coordination pending; clients remain unknown",
+    "No real CAgent, Legacy, IDE, packaged native/mobile acceptance or model conversation"
+  ],
+  "next": "Implement shared editor confirmation and explicit previous-target recovery; use authenticated host API and preserve drafts/original queue identity."
+}

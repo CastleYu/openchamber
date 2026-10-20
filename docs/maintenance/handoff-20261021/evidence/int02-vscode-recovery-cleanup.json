@@ -1,0 +1,81 @@
+{
+  "evidence": "artifacts/int02-vscode-recovery-evidence.json",
+  "retained": {
+    "purpose": "Reusable native fixture, real OC2 binary and compact evidence support remaining R1 bridge/queue/shim acceptance",
+    "nextCleanup": "R1 closeout"
+  },
+  "bytes": 188977077,
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-i89zte",
+      "reason": "terminal isolated IDE fixture; compact evidence and hashes retained",
+      "bytes": 37799581
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-jNfOkV",
+      "reason": "terminal isolated IDE fixture; compact evidence and hashes retained",
+      "bytes": 37800731
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-7gMvVv",
+      "reason": "terminal isolated IDE fixture; compact evidence and hashes retained",
+      "bytes": 37743850
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-hc1iHV",
+      "reason": "terminal isolated IDE fixture; compact evidence and hashes retained",
+      "bytes": 37805172
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-Om1XGx",
+      "reason": "terminal isolated IDE fixture; compact evidence and hashes retained",
+      "bytes": 37827743
+    },
+    {
+      "path": "H:\\Documents\\Temp\\oc-vscode-close-retry-LfkT0t",
+      "reason": "failed-run directory; recorded processes absent",
+      "registry": [],
+      "bytes": null,
+      "markerPids": []
+    },
+    {
+      "path": "H:\\Documents\\Temp\\oc-vscode-close-retry-HRoOy9",
+      "reason": "failed-run directory; recorded processes absent",
+      "registry": [],
+      "bytes": null,
+      "markerPids": []
+    },
+    {
+      "path": "H:\\Documents\\Temp\\oc-vscode-deadlines-1zEyDp",
+      "reason": "failed-run directory; recorded processes absent",
+      "registry": [],
+      "bytes": null,
+      "markerPids": []
+    }
+  ],
+  "helperCleanup": {
+    "removed": [
+      {
+        "bytes": 1902,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-close-test.txt"
+      },
+      {
+        "bytes": 1789,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-close-fix.mjs"
+      },
+      {
+        "bytes": 1841,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-recovery-docs.mjs"
+      },
+      {
+        "bytes": 5365,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-recovery-checkpoint.mjs"
+      },
+      {
+        "bytes": 5464,
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-vscode-recovery-cleanup.ps1"
+      }
+    ],
+    "bytes": 16361
+  }
+}

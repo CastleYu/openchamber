@@ -1,0 +1,1432 @@
+{
+  "diagnostics": [
+    {
+      "message": "Replace module mocking with dependency injection through a real interface, service layer, or faithful test implementation.",
+      "code": "anti-slop(no-module-mocking)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 367,
+            "length": 164,
+            "line": 8,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "message": "Replace module mocking with dependency injection through a real interface, service layer, or faithful test implementation.",
+      "code": "anti-slop(no-module-mocking)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 635,
+            "length": 234,
+            "line": 12,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 699,
+            "length": 12,
+            "line": 19,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1953,
+            "length": 16,
+            "line": 48,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4053,
+            "length": 33,
+            "line": 95,
+            "column": 54
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4317,
+            "length": 33,
+            "line": 99,
+            "column": 78
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4549,
+            "length": 33,
+            "line": 104,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4621,
+            "length": 33,
+            "line": 106,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5567,
+            "length": 71,
+            "line": 129,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5646,
+            "length": 77,
+            "line": 130,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5731,
+            "length": 53,
+            "line": 131,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5792,
+            "length": 61,
+            "line": 132,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 7240,
+            "length": 27,
+            "line": 177,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 9539,
+            "length": 15,
+            "line": 229,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 11182,
+            "length": 44,
+            "line": 258,
+            "column": 74
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14907,
+            "length": 35,
+            "line": 332,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14950,
+            "length": 83,
+            "line": 333,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15041,
+            "length": 71,
+            "line": 334,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15120,
+            "length": 74,
+            "line": 335,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15202,
+            "length": 71,
+            "line": 336,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15281,
+            "length": 71,
+            "line": 337,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15360,
+            "length": 77,
+            "line": 338,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15445,
+            "length": 46,
+            "line": 339,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15499,
+            "length": 90,
+            "line": 340,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15597,
+            "length": 283,
+            "line": 341,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15695,
+            "length": 78,
+            "line": 343,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15783,
+            "length": 80,
+            "line": 344,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15888,
+            "length": 85,
+            "line": 346,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15892,
+            "length": 24,
+            "line": 346,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15981,
+            "length": 83,
+            "line": 347,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 20486,
+            "length": 18,
+            "line": 462,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 22516,
+            "length": 13,
+            "line": 503,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-control/service.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 27203,
+            "length": 21,
+            "line": 599,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1061,
+            "length": 12,
+            "line": 16,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2968,
+            "length": 22,
+            "line": 70,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 10649,
+            "length": 45,
+            "line": 251,
+            "column": 54
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13458,
+            "length": 23,
+            "line": 314,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13765,
+            "length": 37,
+            "line": 322,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13808,
+            "length": 33,
+            "line": 323,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13847,
+            "length": 89,
+            "line": 324,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13851,
+            "length": 26,
+            "line": 324,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 25041,
+            "length": 12,
+            "line": 594,
+            "column": 41
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 25881,
+            "length": 27,
+            "line": 614,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 25969,
+            "length": 31,
+            "line": 615,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 26182,
+            "length": 31,
+            "line": 617,
+            "column": 71
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 26901,
+            "length": 27,
+            "line": 631,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 26938,
+            "length": 31,
+            "line": 632,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 27747,
+            "length": 31,
+            "line": 647,
+            "column": 71
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30858,
+            "length": 27,
+            "line": 722,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 32481,
+            "length": 12,
+            "line": 761,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 35093,
+            "length": 27,
+            "line": 825,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 35867,
+            "length": 27,
+            "line": 846,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36493,
+            "length": 82,
+            "line": 868,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36583,
+            "length": 27,
+            "line": 869,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36618,
+            "length": 33,
+            "line": 870,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36659,
+            "length": 62,
+            "line": 871,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36729,
+            "length": 62,
+            "line": 872,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36799,
+            "length": 68,
+            "line": 873,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36926,
+            "length": 70,
+            "line": 875,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37061,
+            "length": 51,
+            "line": 877,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37120,
+            "length": 76,
+            "line": 878,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37314,
+            "length": 82,
+            "line": 885,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37406,
+            "length": 27,
+            "line": 886,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37443,
+            "length": 33,
+            "line": 887,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37486,
+            "length": 62,
+            "line": 888,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37558,
+            "length": 62,
+            "line": 889,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37630,
+            "length": 68,
+            "line": 890,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37820,
+            "length": 51,
+            "line": 893,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37881,
+            "length": 76,
+            "line": 894,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 39157,
+            "length": 27,
+            "line": 927,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42247,
+            "length": 66,
+            "line": 1004,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42323,
+            "length": 63,
+            "line": 1005,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42396,
+            "length": 69,
+            "line": 1006,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42506,
+            "length": 52,
+            "line": 1008,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42568,
+            "length": 58,
+            "line": 1009,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42689,
+            "length": 70,
+            "line": 1011,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42828,
+            "length": 51,
+            "line": 1013,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 42889,
+            "length": 76,
+            "line": 1014,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43164,
+            "length": 63,
+            "line": 1023,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43276,
+            "length": 52,
+            "line": 1025,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43342,
+            "length": 58,
+            "line": 1026,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43534,
+            "length": 51,
+            "line": 1029,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43599,
+            "length": 76,
+            "line": 1030,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 44168,
+            "length": 242,
+            "line": 1045,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 45394,
+            "length": 201,
+            "line": 1090,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 45936,
+            "length": 15,
+            "line": 1104,
+            "column": 56
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 46337,
+            "length": 15,
+            "line": 1113,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 46746,
+            "length": 15,
+            "line": 1122,
+            "column": 59
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/openchamber-sessions/routes.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 47609,
+            "length": 15,
+            "line": 1141,
+            "column": 21
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 5,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.3823139
+}

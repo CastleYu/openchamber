@@ -1,0 +1,43 @@
+{
+  "baseline": "89a01dc8c2e2a511c9d73acc828bcaaabd38f1cc",
+  "createdAt": "2026-10-11T13:25:13.649Z",
+  "scope": "R1 notification owner retirement and context refresh",
+  "sourceHashes": {
+    "packages/web/server/index.js": "755c6bf220e5c9abe36727049aa362c4c422cc71891a8ec8e1c2b56f99cbdc09",
+    "packages/web/server/lib/notifications/runtime.js": "6f072e231bada82b97faaf431be36f6edf69fb1fbf692531134c5726d68fc2f6",
+    "packages/web/server/lib/notifications/trigger-runtime.test.js": "f63171180d23b42d25c05c6222f80f5dbf303076d6d55689cf4718e27901acfc"
+  },
+  "checks": {
+    "focused": {
+      "passed": 16,
+      "files": 1,
+      "originalRed": {
+        "failed": 9,
+        "passed": 4
+      }
+    },
+    "host": {
+      "status": "interrupted",
+      "accepted": false,
+      "lastLogProgress": "2026-10-11 21:20:52 near unrelated TTS fixture",
+      "log": "artifacts/int02-notification-host-regression.log"
+    },
+    "packageChecks": {
+      "lint": 0,
+      "typeCheck": 0
+    },
+    "syntax": 0,
+    "oxlint": {
+      "exit": 1,
+      "baselineFindings": 96,
+      "addedLineFindings": 0
+    }
+  },
+  "weeklyRemainingPercent": 85,
+  "limits": [
+    "production notification owner composition verification remains open",
+    "no live push/APNs, model conversation, real CAgent or packaged acceptance",
+    "R1 remains open; no remote push or new Release in this checkpoint"
+  ],
+  "cleanup": "Three task-owned patch helpers removed after closeout; compact evidence and test logs retained. No adaptation fixture/service created by this checkpoint."
+}

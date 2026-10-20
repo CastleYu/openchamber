@@ -1,0 +1,35 @@
+{
+  "candidate": "f7d63e7fbb380fe78ac7f46143a43893240c6aa1",
+  "sourceHashes": {
+    "packages/web/server/lib/opencode/network-runtime.test.js": "33a57eba8f13af07a0c9aa0a2e07317cf38232558c181ba8d1200c7dfdd73ad7",
+    "packages/web/server/lib/opencode/network-runtime.js": "a167b2d5637b5ee0834ccf7c5e2cf2db498b2ea856aec58f8f9d7d1c4535f79d",
+    "packages/web/server/lib/opencode/compatibility.js": "2912e948167e44378db51192f600cbe6557a704e686f31276a6241552bf16030",
+    "packages/web/server/lib/opencode/session-runtime.js": "8078b0b61ab17d7114d8125df86b4c86be2f9e3c8e0fbc3e35ad895e014f490c",
+    "packages/web/server/lib/notifications/routes.js": "76efc3fdabaa2457e2e493dd8b7e41164334af173d9ff4ad4760308cbc5db45a",
+    "packages/web/server/index.js": "6a531bc11834ab8c5fb5c9362854844ab8dab22c4eb378af9bd43fd7bc7303c8"
+  },
+  "initial": "int02-r1-final-host-regression.json",
+  "final": {
+    "log": "int02-r1-final-host-regression-green.log",
+    "files": 105,
+    "passed": 1441,
+    "skipped": 2,
+    "failed": 0
+  },
+  "focused": {
+    "log": "int02-r1-probe-sequence-tests.log",
+    "files": 2,
+    "passed": 62
+  },
+  "skipReasons": [
+    "macOS bundle-path rejection on Windows",
+    "POSIX restrictive file/directory permission assertion on Windows"
+  ],
+  "testFix": "Wait for the first sequential health probe before switching family/revision; keep final two-probe count and stale-result false assertion. No production behavior changed.",
+  "next": {
+    "owner": "packages/web/server/lib/opencode/session-runtime.js",
+    "status": "source-level isolation gap; runtime reproduction pending",
+    "scenario": "Colliding session IDs after external/profile/backend switch; stale status/attention/pending/activity must not seed replacement. Preserve reconnect and managed-restart behavior."
+  },
+  "cleanup": "No new fixture homes or background processes created for this checkpoint helper. Existing test suites own their fixture disposal. Helper deleted after use; compact failed and passing logs retained for R1 closure."
+}

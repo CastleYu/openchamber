@@ -1,0 +1,79 @@
+{
+  "at": "2026-10-11T23:23:04.138Z",
+  "status": "R3 INT-05 open; native retirement prerequisite only",
+  "astra": "Reviewed exit versus delayed pipe close; accepted once-only whenExited and guarded host retirement without polling.",
+  "implemented": [
+    "Web combines kernel and native retirement, cancels on exit/close/restart preflight, preserves healthy context after failed preflight.",
+    "VS Code combines kernel/native notifications, retires queued stop/restart and observes process exit independently of descendant pipe close.",
+    "Root removed three duplicate VS Code retirement notifications."
+  ],
+  "validation": {
+    "webRegression": "109/109, four files, int05-native-retirement-web-tests.log",
+    "webOwner": "4/4 final focused ownership cases, int05-native-retirement-web-owner-tests.log",
+    "vscodeChild": "Subagent verified 14/14 real managed-process cases and 2/2 SSE cases.",
+    "types": "Web and VS Code passed; final logs retained.",
+    "extensionBuild": "Passed; existing import.meta warning.",
+    "eslint": "Passed six changed JS/TS files.",
+    "oxlint": "8 existing Web typeof findings; 25 existing VS Code findings. No authored findings. Full-file anti-slop is not clean.",
+    "vscodeWholeSuite": "Subagent reported 58/61 files; advanced Legacy routes, Git process timeout/taskkill and MCP assertion failed. Baseline attribution not independently established; whole suite is not accepted.",
+    "deadCode": "Report inspected; private subscription is not wired to production credentials yet."
+  },
+  "notValidated": [
+    "Actual VS Code manager notification journey in extension host",
+    "Production credential routes and persistence feedback",
+    "Real provider OAuth",
+    "Packaged hosts, public Relay and physical mobile"
+  ],
+  "next": [
+    "Complete actual manager acceptance and credential host composition",
+    "Resolve pending explicit OAuth bound-attempt authorization",
+    "Persistence feedback, plugins and unattended operations, then R4"
+  ],
+  "weeklyQuota": {
+    "source": "live Codex tool",
+    "remainingPercent": 62
+  },
+  "cleanup": "Tests own and remove isolated child fixtures; retain focused evidence logs/checkpoint. Delete root one-off edit helpers after writing this checkpoint. No dependency, download, Git or Release action.",
+  "source": [
+    {
+      "file": "packages/web/server/lib/opencode/lifecycle.js",
+      "sha256": "72120e54da09c13a02a1b8d9fa9dba55e89411adf835f927194d7cd303d2cd33"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/lifecycle-process.test.js",
+      "sha256": "c15c367891d8f1d61c9fe3b0a46dee6d7907d096a33bde6c0190ad5b48861d07"
+    },
+    {
+      "file": "packages/vscode/src/opencode.ts",
+      "sha256": "ba7fd6cdaa39738a89f41d4bb25d12fb90da1ec12b7b882300aede3906cd336c"
+    },
+    {
+      "file": "packages/vscode/src/managed-opencode-process.ts",
+      "sha256": "38bee0f9ff24ec53f1a1b5182a32c95d97bd95da2d18faf105d012e8a203d70d"
+    },
+    {
+      "file": "packages/vscode/src/managed-opencode-process.test.ts",
+      "sha256": "eb83bdc8ccdef19689d1685ef3f3de421ae4b7029274366003f6fe75fbe70a0e"
+    },
+    {
+      "file": "packages/vscode/src/sseProxy.test.ts",
+      "sha256": "9adf94c73ee68fa559601691f703c5b7ebf0e28fc8292794633f70443469706c"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/DOCUMENTATION.md",
+      "sha256": "4db46c4772d928115a90f5ede6bdf9c4c46a534c69bdbefb5b8d54f92950a878"
+    },
+    {
+      "file": "packages/vscode/src/DOCUMENTATION.md",
+      "sha256": "6103dbbdf248c12dec3fbdd367fe78c7db255e32df8e24561dfec43bd5b6dd4c"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "906ca1212e277800f247bf9cd3aebc79718fd31a0d4da1434528c5013b41dd62"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "b2606e1942edb9b58c0c07bfaca70701f596a184ab392895397952ef7753a6bd"
+    }
+  ]
+}

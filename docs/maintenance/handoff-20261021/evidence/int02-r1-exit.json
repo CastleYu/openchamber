@@ -1,0 +1,97 @@
+{
+  "at": "2026-10-11T13:52:17.125Z",
+  "baseline": "f943e955151029e613ac8b2185a6fdec6e428de1",
+  "workingTree": true,
+  "round": "R1",
+  "status": "accepted",
+  "weeklyRemaining": 84,
+  "host": {
+    "files": 105,
+    "passed": 1461,
+    "skipped": 2,
+    "failed": 0,
+    "report": "artifacts/int02-notification-host-scoped.json"
+  },
+  "knowledge": {
+    "passed": 24,
+    "report": "artifacts/int02-knowledge-owner-evidence.json",
+    "packageChecks": {
+      "lint": 0,
+      "typeCheck": 0
+    }
+  },
+  "autonomous": {
+    "passed": 41,
+    "report": "artifacts/int02-autonomous-owner-current.json"
+  },
+  "productionNotification": {
+    "passed": true,
+    "report": "artifacts/int02-notification-production-evidence.json"
+  },
+  "nativeReconciliation": {
+    "uiAndExtensionUnchangedSince": "42c6f7396",
+    "extensionUnchangedSince": "cc6f2db60",
+    "nativeFingerprints": [
+      {
+        "file": "packages/vscode/dist/webview/assets/index.js",
+        "expected": "C98D543D80793963EDC67F0CEA58BB92CAFF4DE30C77FF48F2D4EC1523EDEF7C",
+        "current": "ef4df7b537cbb524e09a6794836583dccdf24a916023a5df7296e6d71150ca87",
+        "same": false
+      },
+      {
+        "file": "packages/vscode/src/owned-process.ts",
+        "expected": "74ADDF6F48F1E20C3A836D7C10106E07D544DF735D463A805255854A4DDAB6D2",
+        "current": "74addf6f48f1e20c3a836d7c10106e07d544df735d463a805255854a4ddab6d2",
+        "same": true
+      },
+      {
+        "file": "packages/vscode/src/opencode.ts",
+        "expected": "9BC9EB9B49BE7100CC8EC908B521C98FDBBE700E8318D991F9ACDF7B90E5F5FD",
+        "current": "9bc9eb9b49be7100cc8ec908b521c98fdbbe700e8318d991f9acdf7b90e5f5fd",
+        "same": true
+      },
+      {
+        "file": "packages/vscode/src/SessionEditorPanelProvider.ts",
+        "expected": "C90913E3382C49FA04E533DB8AC3ED1343FFBA0DF7782234E7F0DA9EB01149B9",
+        "current": "c90913e3382c49fa04e533db8ac3ed1343ffba0df7782234e7f0da9eb01149b9",
+        "same": true
+      },
+      {
+        "file": "packages/vscode/src/managed-opencode-process.ts",
+        "expected": "03253905E5D687E2365A7F4D0BE24A2E0E838646B7C0643720FB9431BE272EE4",
+        "current": "03253905e5d687e2365a7f4d0be24a2e0e838646b7c0643720fb9431be272ee4",
+        "same": true
+      }
+    ],
+    "limits": "Historical runtime journeys retain their recorded source and artifact scope. Changed generated UI bundle is not accepted as a new console-window or packaged-runtime observation."
+  },
+  "fingerprints": [
+    {
+      "file": "packages/web/server/lib/session-knowledge/runtime.js",
+      "sha256": "9d5e125abaf7b4c3231b93a512470afc828b8525ca8469655234a9206db52950"
+    },
+    {
+      "file": "packages/web/server/lib/session-knowledge/runtime.test.js",
+      "sha256": "d816e92890d26d78fcb1e57a73ae921c46ddc9deadab86507318cdf5d4a51aa5"
+    },
+    {
+      "file": "packages/web/server/lib/notifications/runtime.js",
+      "sha256": "6f072e231bada82b97faaf431be36f6edf69fb1fbf692531134c5726d68fc2f6"
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "sha256": "755c6bf220e5c9abe36727049aa362c4c422cc71891a8ec8e1c2b56f99cbdc09"
+    }
+  ],
+  "cleanup": "artifacts/int02-r1-owner-cleanup.json",
+  "excluded": [
+    "Interrupted mixed-framework 353-file Vitest invocation",
+    "First notification probe missing native-notification setting",
+    "Real model conversation",
+    "Exact Legacy conversation before R2",
+    "Real CAgent API mapping",
+    "New packaged desktop/mobile acceptance before R7"
+  ],
+  "next": "R2 / INT-03 exact OpenCode 1.2.27 conversation",
+  "acceptedCommit": "f5c0fa5c73eb3815ca7dad1285c82bd2578f6f75"
+}

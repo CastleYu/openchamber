@@ -80,7 +80,7 @@ const refreshDesktopHostCandidates = async (hostId: string): Promise<void> => {
     }).catch(() => ({ status: 'unreachable' as const, latencyMs: 0 }));
     if (probe.status === 'unreachable' || probe.status === 'wrong-service' || probe.status === 'incompatible') return;
     if (getRuntimeKey() !== runtimeKey) return; // user switched away meanwhile
-    switchRuntimeEndpoint({
+    await switchRuntimeEndpoint({
       apiBaseUrl: nextApiUrl,
       clientToken: host.clientToken || null,
       requestHeaders: host.requestHeaders || null,
@@ -125,16 +125,16 @@ export const restoreDesktopRelayRuntime = async (targetHostId?: string): Promise
   const runtimeKey = `host:${host.id}`;
   if (getRuntimeKey() === runtimeKey) return;
 
-  const switchToDirect = (url: string) => {
-    switchRuntimeEndpoint({
+  const switchToDirect = async (url: string): Promise<void> => {
+    await switchRuntimeEndpoint({
       apiBaseUrl: url,
       clientToken: host.clientToken || null,
       requestHeaders: host.requestHeaders || null,
       runtimeKey,
     });
   };
-  const switchToRelay = () => {
-    switchRuntimeEndpoint({
+  const switchToRelay = async (): Promise<void> => {
+    await switchRuntimeEndpoint({
       apiBaseUrl: typeof window !== 'undefined' ? window.location.origin : '',
       clientToken: host.clientToken || null,
       runtimeKey,
@@ -148,7 +148,7 @@ export const restoreDesktopRelayRuntime = async (targetHostId?: string): Promise
 
   const directUrl = host.apiUrl ? normalizeHostUrl(getDesktopHostApiUrl(host)) : null;
   if (!directUrl) {
-    switchToRelay();
+    await switchToRelay();
     return;
   }
 
@@ -173,19 +173,19 @@ export const restoreDesktopRelayRuntime = async (targetHostId?: string): Promise
   ]);
   if (winner) {
     if (probeOk(winner)) {
-      switchToDirect(directUrl);
+      await switchToDirect(directUrl);
       return;
     }
-    switchToRelay();
+    await switchToRelay();
     return;
   }
 
   // Headstart expired: connect via relay now; adopt the direct transport if the
   // still-running probe succeeds a moment later.
-  switchToRelay();
-  void probePromise.then((probe) => {
+  await switchToRelay();
+  void probePromise.then(async (probe) => {
     if (!probeOk(probe)) return;
     if (getRuntimeKey() !== runtimeKey) return; // user switched away meanwhile
-    switchToDirect(directUrl);
-  });
+    await switchToDirect(directUrl);
+  }).catch(() => undefined);
 };

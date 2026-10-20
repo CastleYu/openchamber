@@ -1,0 +1,53 @@
+{
+  "at": "2026-10-11T19:41:39.388Z",
+  "milestone": "INT-05 in progress; R3 open",
+  "scope": "Finite Legacy MCP status/connect/disconnect protocol admission only",
+  "sourceSha256": {
+    "packages/ui/src/lib/opencode/runtime.ts": "257069d2a11d7252819e434d215e5fd38b35648a8ce7e939c9485afedf523f44",
+    "packages/ui/src/lib/opencode/runtime.test.ts": "1b7ab94d69fc7d94e065357180529cdd64d9d3542f5fc101874b88575da74196",
+    "packages/ui/src/lib/opencode/client.protocol.test.ts": "da42c23d49b13fb60e1ca70afdd721166288eb98c408d2e0a7deef83148f1ea4",
+    "packages/web/server/lib/opencode/legacy-contract.js": "057a7befbcfbf2473ecdc21c9f2a52dd5aa42cfc5fdb83fc9ffc17dba9456f6b",
+    "packages/web/server/lib/opencode/legacy-contract.test.js": "8ab8f43a48d158c8dfd26af124d0be3508d23e069b170c8454aafbe41673e958",
+    "packages/vscode/src/kernelRequest.test.ts": "ce6cefd25a4cce7dcbe38ff1cba386e288d1651540f1f11a72e41bb876b93e9e"
+  },
+  "liveEvidence": "artifacts/int05-mcp-live-evidence.json",
+  "focusedTests": {
+    "passed": 148,
+    "failed": 0,
+    "log": "artifacts/int05-mcp-tests.log"
+  },
+  "validation": {
+    "typeCheck": "all workspace packages passed",
+    "lint": "all packages passed; VS Code isolated retry after parallel OOM",
+    "authoredAntiSlop": "passed; local installed binary only"
+  },
+  "runtimeDecisions": {
+    "web": "existing shared proxy; real isolated exact upstream verified",
+    "electron": "reuses Web backend and shared UI; packaged runtime not retested",
+    "vscode": "same HTTP contract via kernelRequest; routing tests passed, native UI not rerun",
+    "hostedMobile": "shared Web client/proxy; physical browser not rerun",
+    "capacitorMobile": "shared Web client/proxy; physical device not rerun"
+  },
+  "astraDecision": "Reuse Web and VS Code config owners, validate final merged/deleted state before writes; keep exact schema permissiveness and source ownership",
+  "nextBatch": [
+    "Exact Legacy config validator and all-writes preflight for existing Web/VS Code agent/command/MCP owners",
+    "Credential/auth endpoint owner and managed/external storage distinction",
+    "Exact-version generated plugin compatibility",
+    "Unattended queue/schedule/assist/goal outcomes including lost ack and duplicate submission"
+  ],
+  "remaining": [
+    "Settings persistence, credentials and MCP OAuth/create are unaccepted",
+    "Generated plugin and unattended acceptance remain open",
+    "Config apply/reload is R4",
+    "Real CAgent environment is CA-03; packaged hosts/public Relay/mobile remain R7"
+  ],
+  "weeklyRemainingPercent": 72,
+  "cleanup": {
+    "openCodeExited": true,
+    "fixtureRemoved": true,
+    "removedBytes": 1824093,
+    "removedFiles": 12,
+    "linksUnlinkedWithoutTraversal": 0
+  },
+  "sourceCommit": "e0dc2a5b754fdb7128632de3f2e2fbb63bba6094"
+}

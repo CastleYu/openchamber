@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-11T19:07:45.512Z",
+  "status": "R3 recovery checkpoint verified; enclosing R3 remains open",
+  "hashes": {
+    "packages/ui/src/sync/bootstrap.ts": "0857cdc6cf75117f93ad81c24dc653d2253fc3f96d4abfcaa7784d127d550fe7",
+    "packages/ui/src/sync/sync-context.tsx": "18c46278b4865e36163fb1b9957bfd4213f34f7a14cbc6cc667d3b561602f964",
+    "packages/ui/src/sync/__tests__/message-completion-status-poll.test.ts": "3162ea50eb9d1e1188eeb9a1c2fdd4fe5fded946c232dff6501f0aa41a0667bf",
+    "packages/ui/src/sync/__tests__/interrupted-turn-tools.test.ts": "c2f5a2568073a8f8b8ffb57738d91b5e5c38e4741c99e35dcbb256ab2b0fa8f7",
+    "packages/ui/src/sync/DOCUMENTATION.md": "0b0e8e7b58d1bf13a989e4e67dddcdcc02e592a130ef027154c0fcd83b52f385"
+  },
+  "tests": {
+    "pass": 78,
+    "fail": 0,
+    "files": 7,
+    "red": {
+      "pass": 11,
+      "fail": 2,
+      "evidence": "int04-bootstrap-settle-red.log"
+    }
+  },
+  "checks": {
+    "bootstrap.test.ts": 0,
+    "blocking-resync.test.js": 0,
+    "reconnect-recovery.test.ts": 0,
+    "__tests__-interrupted-turn-tools.test.ts": 0,
+    "__tests__-message-completion-status-poll.test.ts": 0,
+    "types": 0,
+    "lint": 0,
+    "anti": 1,
+    "vscode-build": 0,
+    "web-build": 0
+  },
+  "lint": {
+    "inheritedWarnings": 1
+  },
+  "antiSlop": {
+    "inherited": 120,
+    "authored": 0,
+    "wholeCheckPass": false
+  },
+  "native": {
+    "success": true,
+    "checks": 59,
+    "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-YMZ5Tl",
+    "evidence": "int04-bootstrap-settle-native-evidence.json",
+    "scope": "actual VS Code production webview/extension host, exact Legacy1.2.27, controlled loopback model"
+  },
+  "twoDirectoryApi": {
+    "checks": 11,
+    "evidence": "int04-two-directory-evidence.json"
+  },
+  "cleanup": {
+    "prior": "int04-recovery-cleanup.json",
+    "current": "int04-bootstrap-settle-cleanup.json",
+    "removed": 4,
+    "reclaimedBytes": 211941688,
+    "retained": [],
+    "helpers": "Three reusable native probes retained for remaining current-profile and host gates; one-off edit, verification and cleanup drivers removed at handoff."
+  },
+  "weeklyRemainingPercent": 74,
+  "remaining": [
+    "INT-04 enclosing OC1/OC2 and applicable host recovery gates",
+    "INT-05 settings/auth/plugins/MCP and unattended callers",
+    "R4 configuration apply/reload",
+    "R5 UI requirements",
+    "R6 remaining CAgent migration",
+    "R7 integrated release acceptance"
+  ]
+}

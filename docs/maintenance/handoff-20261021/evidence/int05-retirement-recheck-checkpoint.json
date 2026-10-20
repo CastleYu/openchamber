@@ -1,0 +1,58 @@
+{
+  "at": "2026-10-11T23:37:37.865Z",
+  "status": "R3 INT-05 open",
+  "source": [
+    {
+      "file": "packages/vscode/src/bridge-legacy-session.test.js",
+      "sha256": "998e088e749516dcb6fabc6562557a3b4b9e3491a35335f35582e9a40e01a578"
+    },
+    {
+      "file": "packages/vscode/src/bridge-config-runtime.test.js",
+      "sha256": "1a921946cb5be76d08d8711371c931902e55645a2f14ada687496885aa602f7e"
+    },
+    {
+      "file": "packages/vscode/src/bridge-git-process-runtime.test.ts",
+      "sha256": "e1ed12481a3f24b31140e0eefaafed76e1bb8db54033a8b0e878803d58e95cb5"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "3933e6679366670c443b86c49cf9a45dd8e91cd4636456f8b4bfc5bf04e50eb2"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "36644c59c0d98ea48796cc9e2aa030e9a78a9d51e3e733362005a911353f4609"
+    }
+  ],
+  "astra": [
+    "Legacy test contract review",
+    "Process test exception and cleanup review"
+  ],
+  "focused": {
+    "session": "9/9",
+    "configuration": "60/60",
+    "process": "3 passed, 1 platform skip",
+    "eslint": "pass",
+    "oxlint": "zero diagnostics",
+    "vscodeTypes": "pass"
+  },
+  "wholeSuite": "59/61 files; process deadline and managed process failures; not accepted",
+  "nativeHost": {
+    "accepted": false,
+    "reason": "No runner evidence within four minutes",
+    "residualPid": 172948,
+    "termination": "Access denied",
+    "retainedProfile": "C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/int05-manager-owner-run-2860d0453e",
+    "driver": "C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/int05-manager-owner-driver",
+    "failureLog": "C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts/int05-native-retirement-failures.md"
+  },
+  "limitations": [
+    "No production credential admission",
+    "OAuth bound attempt still awaiting prior authorization",
+    "No real provider OAuth or CAgent acceptance"
+  ],
+  "quota": {
+    "source": "live Codex tool",
+    "remainingPercent": 61
+  },
+  "cleanup": "One-off root edit helpers removed after checkpoint. Reusable host driver retained. Failed owned test directories cleaned only after checking PID/path boundaries; locked host residual is explicit."
+}

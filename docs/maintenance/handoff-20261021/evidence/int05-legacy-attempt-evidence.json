@@ -1,0 +1,427 @@
+{
+  "date": "2026-10-13T16:30:13.291Z",
+  "executableSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "version": "1.2.27",
+  "kind": "official executable with controlled loopback model and production queue/kernel operations",
+  "results": [
+    {
+      "mode": "TEXT",
+      "user": {
+        "id": "msg_136197d0c001d1946f82c99ba8",
+        "sessionID": "ses_ec9e682f9ffexAGtC0hPYngjMj",
+        "role": "user",
+        "time": {
+          "created": 1791909002530
+        }
+      },
+      "final": {
+        "id": "msg_136197da7001mD7FGxrg1biyoa",
+        "sessionID": "ses_ec9e682f9ffexAGtC0hPYngjMj",
+        "role": "assistant",
+        "parentID": "msg_136197d0c001d1946f82c99ba8",
+        "finish": "stop",
+        "time": {
+          "created": 1791909002663,
+          "completed": 1791909003937
+        }
+      },
+      "idleVerified": true,
+      "correlatedEvents": [
+        {
+          "ordinal": 1,
+          "info": {
+            "id": "msg_136197da7001mD7FGxrg1biyoa",
+            "sessionID": "ses_ec9e682f9ffexAGtC0hPYngjMj",
+            "role": "assistant",
+            "parentID": "msg_136197d0c001d1946f82c99ba8",
+            "time": {
+              "created": 1791909002663
+            }
+          }
+        },
+        {
+          "ordinal": 3,
+          "info": {
+            "id": "msg_136197da7001mD7FGxrg1biyoa",
+            "sessionID": "ses_ec9e682f9ffexAGtC0hPYngjMj",
+            "role": "assistant",
+            "parentID": "msg_136197d0c001d1946f82c99ba8",
+            "finish": "stop",
+            "time": {
+              "created": 1791909002663
+            }
+          }
+        },
+        {
+          "ordinal": 4,
+          "info": {
+            "id": "msg_136197da7001mD7FGxrg1biyoa",
+            "sessionID": "ses_ec9e682f9ffexAGtC0hPYngjMj",
+            "role": "assistant",
+            "parentID": "msg_136197d0c001d1946f82c99ba8",
+            "finish": "stop",
+            "time": {
+              "created": 1791909002663,
+              "completed": 1791909003937
+            }
+          }
+        }
+      ]
+    },
+    {
+      "mode": "LOST",
+      "user": {
+        "id": "msg_13619830c0013c1e0043991891",
+        "sessionID": "ses_ec9e67cf7ffeBM3ILBO849TNVA",
+        "role": "user",
+        "time": {
+          "created": 1791909004051
+        },
+        "summary": {
+          "diffs": []
+        }
+      },
+      "final": {
+        "id": "msg_13619831a001PRWLJcyFJXZJU8",
+        "sessionID": "ses_ec9e67cf7ffeBM3ILBO849TNVA",
+        "role": "assistant",
+        "parentID": "msg_13619830c0013c1e0043991891",
+        "finish": "stop",
+        "time": {
+          "created": 1791909004058,
+          "completed": 1791909004868
+        }
+      },
+      "lostResponse": "AbortError",
+      "idleVerified": true,
+      "correlatedEvents": [
+        {
+          "ordinal": 6,
+          "info": {
+            "id": "msg_13619831a001PRWLJcyFJXZJU8",
+            "sessionID": "ses_ec9e67cf7ffeBM3ILBO849TNVA",
+            "role": "assistant",
+            "parentID": "msg_13619830c0013c1e0043991891",
+            "time": {
+              "created": 1791909004058
+            }
+          }
+        },
+        {
+          "ordinal": 9,
+          "info": {
+            "id": "msg_13619831a001PRWLJcyFJXZJU8",
+            "sessionID": "ses_ec9e67cf7ffeBM3ILBO849TNVA",
+            "role": "assistant",
+            "parentID": "msg_13619830c0013c1e0043991891",
+            "finish": "stop",
+            "time": {
+              "created": 1791909004058
+            }
+          }
+        },
+        {
+          "ordinal": 10,
+          "info": {
+            "id": "msg_13619831a001PRWLJcyFJXZJU8",
+            "sessionID": "ses_ec9e67cf7ffeBM3ILBO849TNVA",
+            "role": "assistant",
+            "parentID": "msg_13619830c0013c1e0043991891",
+            "finish": "stop",
+            "time": {
+              "created": 1791909004058,
+              "completed": 1791909004868
+            }
+          }
+        }
+      ]
+    },
+    {
+      "mode": "TOOL",
+      "user": {
+        "id": "msg_136198659001a7e25c599be597",
+        "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+        "role": "user",
+        "time": {
+          "created": 1791909004894
+        },
+        "summary": {
+          "diffs": []
+        }
+      },
+      "final": {
+        "id": "msg_1361989cd001Vmn7C96vT64FMh",
+        "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+        "role": "assistant",
+        "parentID": "msg_136198659001a7e25c599be597",
+        "finish": "stop",
+        "time": {
+          "created": 1791909005773,
+          "completed": 1791909006683
+        }
+      },
+      "intermediate": [
+        {
+          "id": "msg_136198663001uFRuAKoKCu855n",
+          "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+          "role": "assistant",
+          "parentID": "msg_136198659001a7e25c599be597",
+          "finish": "tool-calls",
+          "time": {
+            "created": 1791909004899,
+            "completed": 1791909005771
+          }
+        },
+        {
+          "id": "msg_1361989cd001Vmn7C96vT64FMh",
+          "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+          "role": "assistant",
+          "parentID": "msg_136198659001a7e25c599be597",
+          "time": {
+            "created": 1791909005773
+          }
+        }
+      ],
+      "idleVerified": true,
+      "correlatedEvents": [
+        {
+          "ordinal": 12,
+          "info": {
+            "id": "msg_136198663001uFRuAKoKCu855n",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "time": {
+              "created": 1791909004899
+            }
+          }
+        },
+        {
+          "ordinal": 15,
+          "info": {
+            "id": "msg_136198663001uFRuAKoKCu855n",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "finish": "tool-calls",
+            "time": {
+              "created": 1791909004899
+            }
+          }
+        },
+        {
+          "ordinal": 16,
+          "info": {
+            "id": "msg_136198663001uFRuAKoKCu855n",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "finish": "tool-calls",
+            "time": {
+              "created": 1791909004899,
+              "completed": 1791909005771
+            }
+          }
+        },
+        {
+          "ordinal": 17,
+          "info": {
+            "id": "msg_1361989cd001Vmn7C96vT64FMh",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "time": {
+              "created": 1791909005773
+            }
+          }
+        },
+        {
+          "ordinal": 19,
+          "info": {
+            "id": "msg_1361989cd001Vmn7C96vT64FMh",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "finish": "stop",
+            "time": {
+              "created": 1791909005773
+            }
+          }
+        },
+        {
+          "ordinal": 20,
+          "info": {
+            "id": "msg_1361989cd001Vmn7C96vT64FMh",
+            "sessionID": "ses_ec9e679a9ffeK4i5laJM7hnmG2",
+            "role": "assistant",
+            "parentID": "msg_136198659001a7e25c599be597",
+            "finish": "stop",
+            "time": {
+              "created": 1791909005773,
+              "completed": 1791909006683
+            }
+          }
+        }
+      ]
+    },
+    {
+      "mode": "ABORT",
+      "user": {
+        "id": "msg_136198dcd001850d593d9cd5f6",
+        "sessionID": "ses_ec9e67238ffe0Jze7wMv8WHZwP",
+        "role": "user",
+        "time": {
+          "created": 1791909006801
+        },
+        "summary": {
+          "diffs": []
+        }
+      },
+      "final": {
+        "id": "msg_136198dd7001iPWrVbXdZgvSld",
+        "sessionID": "ses_ec9e67238ffe0Jze7wMv8WHZwP",
+        "role": "assistant",
+        "parentID": "msg_136198dcd001850d593d9cd5f6",
+        "time": {
+          "created": 1791909006807,
+          "completed": 1791909007369
+        },
+        "error": "MessageAbortedError"
+      },
+      "idleVerified": true,
+      "correlatedEvents": [
+        {
+          "ordinal": 22,
+          "info": {
+            "id": "msg_136198dd7001iPWrVbXdZgvSld",
+            "sessionID": "ses_ec9e67238ffe0Jze7wMv8WHZwP",
+            "role": "assistant",
+            "parentID": "msg_136198dcd001850d593d9cd5f6",
+            "time": {
+              "created": 1791909006807
+            }
+          }
+        },
+        {
+          "ordinal": 25,
+          "info": {
+            "id": "msg_136198dd7001iPWrVbXdZgvSld",
+            "sessionID": "ses_ec9e67238ffe0Jze7wMv8WHZwP",
+            "role": "assistant",
+            "parentID": "msg_136198dcd001850d593d9cd5f6",
+            "time": {
+              "created": 1791909006807,
+              "completed": 1791909007369
+            },
+            "error": "MessageAbortedError"
+          }
+        }
+      ]
+    }
+  ],
+  "queueResults": [
+    {
+      "mode": "TEXT",
+      "attempt": {
+        "id": "d4d66409-13ef-433f-a37a-47a0fa9d8ac3",
+        "state": "completed",
+        "createdAt": 1791909007485,
+        "messageID": "msg_13619907d001cccad1ac777eac"
+      },
+      "publicAttempt": {
+        "id": "d4d66409-13ef-433f-a37a-47a0fa9d8ac3",
+        "state": "completed",
+        "createdAt": 1791909007485
+      },
+      "persisted": true
+    },
+    {
+      "mode": "LOST",
+      "attempt": {
+        "id": "46695a9d-43d2-405f-80e6-968faa313ac3",
+        "state": "completed",
+        "createdAt": 1791909008765,
+        "messageID": "msg_13619957d001938d3c57cdc491"
+      },
+      "publicAttempt": {
+        "id": "46695a9d-43d2-405f-80e6-968faa313ac3",
+        "state": "completed",
+        "createdAt": 1791909008765
+      },
+      "persisted": true
+    },
+    {
+      "mode": "TOOL",
+      "attempt": {
+        "id": "64ad00b0-f54c-4fb0-ba10-cb962c34e6dc",
+        "state": "completed",
+        "createdAt": 1791909010287,
+        "messageID": "msg_136199b6f0011b2a1337f9bc22"
+      },
+      "publicAttempt": {
+        "id": "64ad00b0-f54c-4fb0-ba10-cb962c34e6dc",
+        "state": "completed",
+        "createdAt": 1791909010287
+      },
+      "persisted": true
+    },
+    {
+      "mode": "ABORT",
+      "attempt": {
+        "id": "06f3bb83-c953-4f9c-a63f-d3ae2041e6cb",
+        "state": "failed",
+        "createdAt": 1791909012051,
+        "messageID": "msg_13619a25300153c6fda2519fbc"
+      },
+      "publicAttempt": {
+        "id": "06f3bb83-c953-4f9c-a63f-d3ae2041e6cb",
+        "state": "failed",
+        "createdAt": 1791909012051
+      },
+      "persisted": true
+    }
+  ],
+  "calls": [
+    {
+      "mode": "TEXT",
+      "afterTool": false
+    },
+    {
+      "mode": "LOST",
+      "afterTool": false
+    },
+    {
+      "mode": "TOOL",
+      "afterTool": false
+    },
+    {
+      "mode": "TOOL",
+      "afterTool": true
+    },
+    {
+      "mode": "ABORT",
+      "afterTool": false
+    },
+    {
+      "mode": "TEXT",
+      "afterTool": false
+    },
+    {
+      "mode": "LOST",
+      "afterTool": false
+    },
+    {
+      "mode": "TOOL",
+      "afterTool": false
+    },
+    {
+      "mode": "TOOL",
+      "afterTool": true
+    },
+    {
+      "mode": "ABORT",
+      "afterTool": false
+    }
+  ],
+  "scratchRemoved": true
+}

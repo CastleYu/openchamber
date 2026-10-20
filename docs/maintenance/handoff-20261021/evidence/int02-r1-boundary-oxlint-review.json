@@ -1,0 +1,5 @@
+{
+  "method": "Diagnostic locations compared with added lines in git diff --unified=0. Untracked new test has no diagnostics.",
+  "inheritedDiagnostics": 106,
+  "authoredDiagnostics": []
+}

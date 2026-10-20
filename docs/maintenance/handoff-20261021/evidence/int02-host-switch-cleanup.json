@@ -1,0 +1,93 @@
+{
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-host-switch-configured-0FFXJu",
+      "registryEmpty": true,
+      "bytes": 12885585,
+      "processAbsent": true
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-host-switch-configured-HoVBJ0",
+      "registryEmpty": true,
+      "bytes": 12890922,
+      "processAbsent": true
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-host-switch-configured-kDyKdB",
+      "registryEmpty": true,
+      "bytes": 12849760,
+      "processAbsent": true
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-host-switch-configured-wclch0",
+      "registryEmpty": true,
+      "bytes": 12877465,
+      "processAbsent": true
+    }
+  ],
+  "retained": [
+    "int02-host-switch-live-evidence.json: selected real-host summary and source fingerprints",
+    "int02-host-switch-*.log: checkpoint acceptance and relevant first failures",
+    "int01-real/oc2-2.0.20: remaining R1 integration acceptance; reassess at R1 completion",
+    "cdee/artifacts/int02-host-switch-live.mjs: reusable real-host fixture for shared confirmation UI acceptance; review at R1 completion",
+    "packages/web/dist and packages/vscode/dist: selected verified builds for remaining R1 runtime checks; replace on subsequent builds"
+  ],
+  "helpers": [
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\connection-switch.js",
+      "bytes": 4468
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\connection-switch.test.js",
+      "bytes": 8294
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\wire-connection-switch.cjs",
+      "bytes": 9036
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\install-switch-tests.cjs",
+      "bytes": 2013
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\make-host-switch-live.cjs",
+      "bytes": 4892
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\fix-switch-wiring.cjs",
+      "bytes": 1054
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\finish-host-switch.cjs",
+      "bytes": 1986
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\add-host-switch-tests.cjs",
+      "bytes": 3472
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\audit-host-switch.cjs",
+      "bytes": 1459
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\guard-external-owner.cjs",
+      "bytes": 898
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\host-switch-checks.mjs",
+      "bytes": 1860
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\cleanup-host-switch.ps1",
+      "bytes": 2055
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\document-host-switch.cjs",
+      "bytes": 11470
+    },
+    {
+      "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\finalize-host-switch.cjs",
+      "bytes": 3778
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "numTotalTestSuites": 2,
+  "numPassedTestSuites": 2,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 4,
+  "numPassedTests": 4,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791731232446,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration creates a session through the kernel, persists metadata off-wire, and overlays all session reads",
+          "status": "passed",
+          "title": "creates a session through the kernel, persists metadata off-wire, and overlays all session reads",
+          "duration": 143.70939999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration updates upstream fields and merges metadata patches across HTTP and persisted reads",
+          "status": "passed",
+          "title": "updates upstream fields and merges metadata patches across HTTP and persisted reads",
+          "duration": 38.931699999999864,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration rejects unknown fields and a non-Legacy descriptor before upstream effects",
+          "status": "passed",
+          "title": "rejects unknown fields and a non-Legacy descriptor before upstream effects",
+          "duration": 16.03599999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy session HTTP integration"
+          ],
+          "fullName": "Legacy session HTTP integration refuses a delayed metadata overlay after the Legacy descriptor retires",
+          "status": "passed",
+          "title": "refuses a delayed metadata overlay after the Legacy descriptor retires",
+          "duration": 14.872600000000148,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791731233772,
+      "endTime": 1791731233985.8726,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-session-http.test.js"
+    }
+  ]
+}

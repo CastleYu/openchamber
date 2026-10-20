@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-11T17:35:50.4021994Z",
+  "retained": "R3 direct/proxy/recovery drivers and validation runners remain needed for enclosing R3 acceptance.",
+  "reclaimedBytes": 64123,
+  "items": [
+    {
+      "bytes": 7449,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-implement.mjs"
+    },
+    {
+      "bytes": 3096,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-admission-tests.mjs"
+    },
+    {
+      "bytes": 5676,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-kernel-tests.mjs"
+    },
+    {
+      "bytes": 6821,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-delete-tests.mjs"
+    },
+    {
+      "bytes": 10668,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-delete-test-input.js"
+    },
+    {
+      "bytes": 1454,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-ui-delete.mjs"
+    },
+    {
+      "bytes": 787,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-order-test.mjs"
+    },
+    {
+      "bytes": 6433,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-host-prepare.mjs"
+    },
+    {
+      "bytes": 4509,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-docs.mjs"
+    },
+    {
+      "bytes": 2544,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-cleanup.mjs"
+    },
+    {
+      "bytes": 5650,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-closeout.mjs"
+    },
+    {
+      "bytes": 957,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-command-notes.md"
+    },
+    {
+      "bytes": 682,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-advanced-probe-failures.md"
+    },
+    {
+      "bytes": 2767,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-commit-checkpoint.mjs"
+    },
+    {
+      "bytes": 4630,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-fix.mjs"
+    }
+  ]
+}

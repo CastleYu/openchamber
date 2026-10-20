@@ -1,0 +1,324 @@
+{
+  "removed": [
+    {
+      "bytes": 59256153,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "e91f3728e680ca9548f46f5e502f466752170224fbfe2f19b9a20b2fb648fcf1"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "49ee5e577ab8acfa0d2a01dd5f34579a8a86d40e28bb9457b4cf52155e3fe341"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-4L7mhq"
+    },
+    {
+      "bytes": 56496894,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "a57758c5dd59136d7c8a89fd166108777b264d1324ba1a0fb03cdbb77af24c02"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "46dfb16fba31d2aa0726926c795bd002ca0daaa38555ad2c3016dcacd233992c"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "621ca540c979301c823463224db61f8d1d08e0147c754d2bdd0ce610abe8b26a"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-5WWr5B"
+    },
+    {
+      "bytes": 56549243,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "52ec500b6d561dd09fc30bc270f850dd6850faeb150ee5c6a592144f53a91405"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "f347516f965a33db42afc78a8c6a47904213f145485a7e0318c9cd16ca559458"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "707f9c90fe71cb32357ab2450ed96c71d4d6ac773bf8750254fff26c41bee35d"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-cQiCpT"
+    },
+    {
+      "bytes": 61048527,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "51ad7b42a70300c34ff0f992c32e272dca17b6550333660ef68b27d186cb924f"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "e4d4474e49bc490255403136c55fdcd32a2a5b20e35d42950e2cdda5173234af"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "05e24ffb317ca29fb2bfe3efae15387850de316cb02dd0b3e4fcb5c139ceddbd"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-EIp5V4"
+    },
+    {
+      "bytes": 59334268,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "c6f6c9b60ba51888c69fa3aeb52fdd811e91388d74ef106fd62735925dc9ee2d"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "1a0d846fd1c7e9cd4d761a23c71061f968386d5205d5b4e76be57ad28ce80218"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "05e24ffb317ca29fb2bfe3efae15387850de316cb02dd0b3e4fcb5c139ceddbd"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-iPgq4x"
+    },
+    {
+      "bytes": 56486990,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "66388ecb04579961594ca1e0d7990e19cc9d108af3313346385c59f7ab0d52bc"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "098908ca9bdb764a2789ad62674bfc80a643b3aa39abbc79f19eac05cdb9319d"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-KZTr4d"
+    },
+    {
+      "bytes": 56745367,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "2c16653c58913aad1d14e6eb2a2e644f12a05403956811508d1468ecab423ea9"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "8def9b96dd4f7fc9688c2ebab86cf4191544fb7259ee1cc315b498ab3f2c2db6"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "621ca540c979301c823463224db61f8d1d08e0147c754d2bdd0ce610abe8b26a"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-OXDDOA"
+    },
+    {
+      "bytes": 56507581,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "667b3eae6d4da26b4951d9e85cbf2d41835382514c79b2db512b1c1da80d8d96"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "937497c78cbf74060253fa47d9279ad279789bee35bc22e8bb6c82b3b33d070b"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "621ca540c979301c823463224db61f8d1d08e0147c754d2bdd0ce610abe8b26a"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-qeyR0Y"
+    },
+    {
+      "bytes": 56482058,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "438011c16bba2931302e3132c46a4346b1fd42a36d946427d76c94289943d313"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "be1ccf5bbcbfa9e8ae022efe416b10d9eba95a0a53fc5cf1591dc78682854c15"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "d6c9c200863c7668e9ca93895e9675ec73445ffbef9019c8397e054987cbe6b7"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-Reo4kM"
+    },
+    {
+      "bytes": 59354433,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "0b0a9ddef612517beadf631ee6e241bfa3c2a89668060e7ee82119115ce1adac"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "b580c505c845d9e506f152867fdc668cca60543fe78135fc97cdf6647eca7025"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "707f9c90fe71cb32357ab2450ed96c71d4d6ac773bf8750254fff26c41bee35d"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-smpWAG"
+    },
+    {
+      "bytes": 59347508,
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "7d12270c7e71160acdc55827df414a19b43afe8812bc3e1d9558dbb361651812"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "476cfd1f2d31aea15a6189eb1762ee84eaab2aecbc7784d75d9452fe5b31550b"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "707f9c90fe71cb32357ab2450ed96c71d4d6ac773bf8750254fff26c41bee35d"
+        }
+      ],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-XG6VDo"
+    },
+    {
+      "bytes": 24906853,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-2xM3GW"
+    },
+    {
+      "bytes": 22312748,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-ClREfg"
+    },
+    {
+      "bytes": 22314361,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-DE5aLR"
+    },
+    {
+      "bytes": 22189052,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-IVSCA0"
+    },
+    {
+      "bytes": 22444065,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-k9gkj0"
+    },
+    {
+      "bytes": 22307834,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-PqsdjJ"
+    },
+    {
+      "bytes": 22378215,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-pufDi7"
+    },
+    {
+      "bytes": 24947314,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-qjCfC4"
+    },
+    {
+      "bytes": 24932671,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-QLmMbT"
+    },
+    {
+      "bytes": 24927255,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE"
+    },
+    {
+      "bytes": 22306281,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-WaZqP2"
+    },
+    {
+      "bytes": 22312427,
+      "hashes": [],
+      "reason": "Superseded isolated recovery run; compact evidence retained",
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-xHLnNV"
+    }
+  ],
+  "retained": [],
+  "reclaimedBytes": 915888098,
+  "archive": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-evidence-archive",
+  "currentNativeFixture": {
+    "next": "After corrected recovery journey passes",
+    "reason": "Latest real UI failure diagnosis",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-IBEUzY"
+  },
+  "authoritativeApiEvidence": "int04-two-directory-evidence.json",
+  "at": "2026-10-11T18:46:20.6944464Z",
+  "preserved": [
+    "Exact Legacy binary/source",
+    "Current builds",
+    "Reusable test helpers",
+    "Product source and user data"
+  ]
+}

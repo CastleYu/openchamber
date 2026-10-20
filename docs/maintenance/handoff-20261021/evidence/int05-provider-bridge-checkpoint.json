@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-13T04:52:19.348Z",
+  "status": "progress; INT-05/R3 open; controlled VS Code Provider bridge adoption verified",
+  "previous": "artifacts/int05-provider-entry-checkpoint.json",
+  "scope": "Private bound Legacy Provider/OAuth bridge; OC1/OC2 public interfaces unchanged",
+  "changes": [
+    "One native Provider owner per VS Code manager with extension-shutdown disposal",
+    "Per-document host caller, ready/dispose abort lifetime and request-ID-scoped cancellation across three panel types",
+    "Shared finite request dispatcher with strict admission and enterprise connection restrictions",
+    "Browser-safe route constants; Web authentication and HTTP cancellation retained",
+    "Fetch RequestInit signal override/null behavior preserved",
+    "English checkpoint and Chinese archive synchronized"
+  ],
+  "tests": {
+    "passed": 58,
+    "sharedVitest": 35,
+    "nativeOwnerBridge": 8,
+    "webview": 6,
+    "existingProxySession": 9,
+    "evidence": {
+      "http": "artifacts/int05-provider-bridge-http.log",
+      "host": "artifacts/int05-provider-bridge-host.log",
+      "webview": "artifacts/int05-provider-bridge-webview.log",
+      "existing": "artifacts/int05-provider-bridge-existing.log",
+      "types": "artifacts/int05-provider-bridge-workspace-types.log",
+      "finalTypes": "artifacts/int05-provider-bridge-types-final.log",
+      "lint": "artifacts/int05-provider-bridge-workspace-lint.log",
+      "eslint": "artifacts/int05-provider-bridge-eslint.log",
+      "oxlint": "artifacts/int05-provider-bridge-oxlint.log",
+      "deadCode": "artifacts/int05-provider-bridge-dead-code.log",
+      "build": "artifacts/int05-provider-bridge-build.log",
+      "finalWebviewBuild": "artifacts/int05-provider-bridge-webview-build-final.log"
+    }
+  },
+  "validation": {
+    "workspaceTypes": "passed sequential package scripts",
+    "finalVsCodeTypes": "passed after final signal changes",
+    "workspaceLint": "passed; five existing UI warnings",
+    "changedFileEslint": "passed without diagnostics",
+    "authoredFileOxlint": "passed without diagnostics",
+    "deadCode": "reviewed cached Knip 5.80.0 using repository script parameters; existing backlog retained, no new Legacy bridge finding",
+    "vscodeBuild": "extension and webview passed; final webview rebuilt after signal change",
+    "buildWarnings": "Existing credential-db import.meta CJS warning, generated CSS warnings and chunk-size warnings retained",
+    "runner": "Shared HTTP tests executed by Node/Vitest, host and webview tests by Bun; earlier wrong-runner failure is superseded, not hidden"
+  },
+  "openGates": [
+    "Real IDE Provider workflow",
+    "Real provider OAuth",
+    "Native application switch acceptance",
+    "Unattended outcome persistence",
+    "R4 apply/reload"
+  ],
+  "next": "Implement durable unattended dispatch outcomes within INT-05 while retaining real host/provider acceptance gates; R4 follows R3 acceptance",
+  "quota": {
+    "source": "live",
+    "weeklyRemainingPercent": 45,
+    "stopBelowPercent": 10
+  },
+  "cleanup": "Owned temporary editing scripts removed from helper workspace; test fixtures and servers cleaned by test teardown; evidence logs retained",
+  "externalChanges": "No dependency, download, Git, remote branch or Release changes in this batch",
+  "failures": "artifacts/int05-provider-bridge-failures.md",
+  "sources": {
+    "packages/web/server/lib/opencode/legacy-provider-http.js": "c51badf62ddeafa796d7cb2e4a7626342109802565afd91a6caf4a948863e68e",
+    "packages/web/server/lib/opencode/legacy-provider-request.js": "d90a65c40cb1531908b31cfca8c255cd4ffaaeca7dc4f8409d0d88247821cae6",
+    "packages/web/server/lib/opencode/legacy-provider-request.d.ts": "ad46f95c86250a70351fc59531194a6fdff3eb814043f06ce896353d49cc149a",
+    "packages/web/server/lib/opencode/legacy-provider-request.test.js": "acd356943d37fff6fffc92e4c77bf889e1bd3d2a2e5053f6ec1b16f4f9d3c67b",
+    "packages/web/server/lib/opencode/legacy-provider-routes.js": "44d0733d5db88c24a5d4df3861cf1ef645509d0a2b65f362a22513953d7f9fe0",
+    "packages/web/server/lib/opencode/legacy-provider-routes.d.ts": "a9eba5a4ce6dec74f6fc9d3b174c45c35ac7b9b6d59f1a7ffd89568d8db3dd5f",
+    "packages/vscode/legacyProviderBridge.ts": "acf21aede349419e49127ad0844095ba3f2fce20ee1b6b0e185fba8304080e9a",
+    "packages/vscode/src/legacyProviderDocument.ts": "ebd340a3a820183d8b20d5785324086cbee1cf24fc70a274b11c51d3f2167cae",
+    "packages/vscode/src/legacyProviderDocument.test.js": "36168664afaa9612d471d5057def5045aff72e3080535f3b96528610a23c48a8",
+    "packages/vscode/src/ChatViewProvider.ts": "966f6e976eec74620a4ce8795e3e9bc3fa121ef80c26244e177ec52df0687e7c",
+    "packages/vscode/src/AgentManagerPanelProvider.ts": "a60c9428bef5784724a8c587657bdf160755c0e038daa7fcdd0663eb5eb8fe03",
+    "packages/vscode/src/SessionEditorPanelProvider.ts": "d4a8e2aed39ad2f70900a54213d13cc70d3ea47434cf85b36feac2f7f5b0c9ca",
+    "packages/vscode/webview/main.tsx": "d1af3be66eb7b001d3f563ee4d6708951db1eb308e810112683a214a8b6e4ade",
+    "packages/vscode/webview/api/legacyProviders.ts": "7ff270387a2f671f0f0043a5e27d5ef212e93ca2b6990cb741fda1540670b73d",
+    "packages/vscode/webview/api/legacyProviders.test.js": "be3c0b030c825299bd77a2e750d42289be7da2a71c4c906568dde790fc1f445e",
+    "packages/vscode/src/DOCUMENTATION.md": "e3d5c6a9fda02dd636f10d093b5c00f2e3cbd0b417f7718cd2971f9917e399ff",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "f7bb182e9c1daf10b6660ac8f8ebc0eadaa5864c2916f04ac35ccca36e5ef5c8",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "1aadd6db715337a9bfd069b3b6cc05316d0b9de5bab901f668e9115445ec7559",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "e61b611fab4c37c5ab440b1e6dc477ddcd7badc54f024b45335020714475f4f2"
+  }
+}

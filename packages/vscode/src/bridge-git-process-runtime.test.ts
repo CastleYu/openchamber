@@ -33,26 +33,44 @@ test('a Git process terminated by a signal is never reported as successful', { s
     const result = await execGit(['-c', 'alias.oc-interrupt=!kill -TERM "$PPID"', 'oc-interrupt'], cwd);
     assert.notEqual(result.exitCode, 0);
   } finally {
-    await fs.rm(cwd, { recursive: true, force: true });
+    await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
-test('repeated read deadlines terminate the processes, not just the waiters', async () => {
+test('repeated read deadlines terminate the processes, not just the waiters', { timeout: 20_000 }, async () => {
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-deadlines-'));
   const marker = path.join(cwd, 'pids');
+  const requests = Array.from({ length: 12 }, () => execGit(['-e', holdingCommand(marker)], cwd, {
+    binary: process.execPath, timeoutMs: 1500,
+  }));
+  const settled = Promise.allSettled(requests);
+  let failure: AggregateError | undefined;
   try {
-    const requests = Array.from({ length: 12 }, () => execGit(['-e', holdingCommand(marker)], cwd, {
-      binary: process.execPath, timeoutMs: 1500,
-    }));
     const pids = await waitForPids(marker, 12);
     assert.ok(pids.every(alive), 'all twelve commands must actually run');
-    const results = await Promise.all(requests);
-    assert.ok(results.every((result) => result.exitCode !== 0 && result.stderr.includes('timed out')));
+    const results = await settled;
+    const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : []);
+    if (errors.length) throw new AggregateError(errors, 'Owned command termination failed');
+    assert.ok(results.every(result => result.status === 'fulfilled'
+      && result.value.exitCode !== 0 && result.value.stderr.includes('timed out')));
     assert.deepEqual(pids.filter(alive), []);
+  } catch (error) {
+    failure = new AggregateError([error], 'Owned command test failed');
   } finally {
-    for (const pid of await readPids(marker)) if (alive(pid)) process.kill(pid, 'SIGKILL');
-    await fs.rm(cwd, { recursive: true, force: true });
+    await settled;
+    try {
+      const pids = await readPids(marker);
+      for (const pid of pids) if (alive(pid)) process.kill(pid, 'SIGKILL');
+      for (let attempt = 0; attempt < 200 && pids.some(alive); attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      assert.deepEqual(pids.filter(alive), [], 'fixture cleanup must finish before removing its directory');
+      await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (error) {
+      failure = new AggregateError(failure === undefined ? [error] : [failure, error], 'Owned command test cleanup failed');
+    }
   }
+  if (failure !== undefined) throw failure;
 });
 
 test('drains verbose stderr and sends EOF to non-interactive command stdin', async () => {
@@ -81,6 +99,6 @@ test('deactivation terminates outstanding Git work and rejects new launches', as
     assert.equal((await readPids(marker)).length, 1);
   } finally {
     for (const pid of await readPids(marker)) if (alive(pid)) process.kill(pid, 'SIGKILL');
-    await fs.rm(cwd, { recursive: true, force: true });
+    await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });

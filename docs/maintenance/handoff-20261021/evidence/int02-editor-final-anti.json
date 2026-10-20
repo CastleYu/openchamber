@@ -1,0 +1,264 @@
+{
+  "diagnostics": [
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/settings/registry.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4909,
+            "length": 7,
+            "line": 113,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `payload` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/settings/registry.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 45495,
+            "length": 7,
+            "line": 687,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 479,
+            "length": 7,
+            "line": 11,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 514,
+            "length": 7,
+            "line": 12,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This function exposes `unknown` to its caller. Parse the value at its boundary and return a named domain type.",
+      "code": "anti-slop(no-unknown-returns)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 667,
+            "length": 7,
+            "line": 16,
+            "column": 69
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 708,
+            "length": 7,
+            "line": 17,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 804,
+            "length": 7,
+            "line": 20,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This function exposes `unknown` to its caller. Parse the value at its boundary and return a named domain type.",
+      "code": "anti-slop(no-unknown-returns)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 905,
+            "length": 7,
+            "line": 22,
+            "column": 71
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1197,
+            "length": 7,
+            "line": 29,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1248,
+            "length": 7,
+            "line": 31,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1285,
+            "length": 7,
+            "line": 32,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `expected` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1327,
+            "length": 7,
+            "line": 33,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1410,
+            "length": 7,
+            "line": 37,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "This function exposes `unknown` to its caller. Parse the value at its boundary and return a named domain type.",
+      "code": "anti-slop(no-unknown-returns)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1912,
+            "length": 7,
+            "line": 44,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "This function exposes `unknown` to its caller. Parse the value at its boundary and return a named domain type.",
+      "code": "anti-slop(no-unknown-returns)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 2646,
+            "length": 7,
+            "line": 60,
+            "column": 56
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/ui/src/types/bun-test.d.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 2754,
+            "length": 23,
+            "line": 62,
+            "column": 56
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 7,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.6597363
+}

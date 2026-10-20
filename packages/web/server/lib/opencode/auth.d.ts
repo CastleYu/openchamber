@@ -1,7 +1,9 @@
+import type { LegacyCredentials } from './legacy-credentials.js';
 import type { CredentialEntry, IntegrationInfo, JsonValue } from '@opencode/client';
 
 export type LegacyAuthEntry =
   | { type: 'api'; key: string; metadata?: { [key: string]: JsonValue } }
+  | { type: 'wellknown'; key: string; token: string }
   | { type: 'oauth'; access: string; refresh: string; expires: number; accountId?: string; enterpriseUrl?: string };
 export type LegacyAuthFile = Record<string, LegacyAuthEntry>;
 
@@ -16,6 +18,7 @@ export type CredentialSource = {
 export function configureOpenCodeCredentials(
   getRuntime: () => { generation: string; endpoint?: string | null; epoch?: string | number; version?: string | null },
   source: CredentialSource | null,
+  legacy?: LegacyCredentials | null,
 ): void;
 export function openCodeCredentialSource(connection: {
   buildOpenCodeUrl: (path: string, prefix?: string) => string;

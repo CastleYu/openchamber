@@ -1,0 +1,49 @@
+{
+  "processCheck": {
+    "at": 1791712913643,
+    "active": 0
+  },
+  "checkedPorts": [
+    10969,
+    11071,
+    11144,
+    11238,
+    11360,
+    11325
+  ],
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-configured-3AS8tm",
+      "bytes": 7339741
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-command-EZNZea",
+      "bytes": 7308165
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-path-DBd8tp",
+      "bytes": 7335280
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-bundled-SJnYCZ",
+      "bytes": 7338675
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int01-real\\oc2-RxfWKE",
+      "bytes": 7380317
+    }
+  ],
+  "bytes": 36702178,
+  "retained": [
+    {
+      "path": "artifacts/int01-real/oc2-2.0.20/package/bin/opencode.exe",
+      "reason": "Real OC2 fixture needed for remaining R1 IDE acceptance and R2 core regression",
+      "nextCleanup": "R1 closeout; retain for R2 if still required"
+    },
+    {
+      "path": "Current Web and VS Code consumer builds and reusable native/CLI drivers",
+      "reason": "Remaining R1 real-host checks",
+      "nextCleanup": "R1 closeout"
+    }
+  ]
+}

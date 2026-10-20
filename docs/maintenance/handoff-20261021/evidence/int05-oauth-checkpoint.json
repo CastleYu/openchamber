@@ -1,0 +1,72 @@
+{
+  "at": "2026-10-11T22:28:16.9459819Z",
+  "phase": "INT-05 OC1 OAuth lifecycle prerequisite",
+  "status": "R3 INT-05 remains open",
+  "source": [
+    {
+      "sha256": "9a09f1274f9475ff1ffd009b76698be018a6d585087bfa325eef2da5450ca42b",
+      "file": "packages/ui/src/components/sections/providers/ProviderOAuthMethods.tsx"
+    },
+    {
+      "sha256": "d0b01112385f25a2068e3f6aebcd6270ebd43a562db87c734b106fbd91a0bb5e",
+      "file": "packages/ui/src/components/sections/providers/ProviderOAuthMethods.behavior.test.js"
+    },
+    {
+      "sha256": "5348c2accc2096412552f04358b3e9d09131e211c2417c1902ec01dd8b8ea1b9",
+      "file": "docs/maintenance/OPENCODE-LEGACY-1.2.27-SPEC.md"
+    },
+    {
+      "sha256": "1ec03bf38eff91287509bc83da174d2cbd71c5b4fabfd95d7070e3ebcf45fb7d",
+      "file": "docs/maintenance/zh-CN/OPENCODE-LEGACY-1.2.27-SPEC.md"
+    },
+    {
+      "sha256": "54e5516c5b45bcb94fbec999eea4c3a48b3ed2d5956da32affbeb3733890d56b",
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md"
+    },
+    {
+      "sha256": "54ef3d24ff512e960a1a6920f4a7c71986e04d5a016e55adda17e0b0d3d9cc64",
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md"
+    }
+  ],
+  "validation": {
+    "isolatedProviderFiles": "8/8",
+    "mountedComponentTests": 9,
+    "behavior": "artifacts/int05-oauth-behavior.log",
+    "webBuild": "artifacts/int05-oauth-build-web.log",
+    "eslint": "artifacts/int05-oauth-eslint.log",
+    "tests": "artifacts/int05-oauth-provider-regression.log",
+    "vscodeWebviewBuild": "artifacts/int05-oauth-build-vscode.log",
+    "deadCode": "artifacts/int05-oauth-dead-code.log",
+    "oxlint": "artifacts/int05-oauth-oxlint.json",
+    "types": "artifacts/int05-oauth-types.log",
+    "deadCodeCounts": {
+      "duplicateExports": 1,
+      "unusedFiles": 2,
+      "unusedExports": 319,
+      "unusedTypes": 231
+    }
+  },
+  "astra": "Reviewed credential workflow admission and confirmed the original-client OAuth binding fix; no blanket Legacy activation.",
+  "next": [
+    "Native provider source provenance plus complete scope=all deletion with preflight and partial outcomes",
+    "Official bound credential operations, deferred restart UI, Web/VS Code parity; admit only the complete accepted workflow",
+    "Generated plugins and unattended callers; then R4 apply/reload"
+  ],
+  "limits": [
+    "Controlled React/SDK tests, not real provider OAuth or packaged host acceptance",
+    "Legacy credential mutation/OAuth admission remains closed",
+    "Separate OC2 integration-OAuth lifecycle is a later review target",
+    "No new dependency, download, Git operation, remote branch or Release change"
+  ],
+  "weeklyQuotaRemainingPercent": 64,
+  "cleanup": {
+    "fixtures": "Mounted DOM instances closed by test finally; no real Provider or binary fixture started",
+    "retained": "Current consumer builds and bounded test/check evidence for R3/R7",
+    "temporaryHelpersRemoved": [
+      "sync-int05-oauth-spec.ps1",
+      "oauth-behavior.test.jsx",
+      "finalize-oauth.ps1",
+      "checkpoint-oauth.ps1"
+    ]
+  }
+}

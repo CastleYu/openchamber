@@ -37,6 +37,8 @@ import { registerPluginRoutes } from './plugin-routes.js';
 import { getNpmInfo, clearCache as clearNpmCache } from './npm-registry.js';
 import { parseNpmSpec, parsePathSpec, isExactSemver } from './plugin-spec.js';
 import { registerOpenCodeRoutes } from './routes.js';
+import { createLegacyProviderRuntime } from './legacy-provider-runtime.js';
+import { createLegacyProviderCaller, createLegacyProviderHttp } from './legacy-provider-http.js';
 import { getProviderSources, removeProviderConfig, upsertProviderConfig } from './providers.js';
 import * as providersV2 from './providers-v2.js';
 import { getAgentSources, getAgentConfig, createAgent, updateAgent, deleteAgent } from './agents.js';
@@ -74,6 +76,7 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     clientReloadDelayMs,
   } = dependencies;
 
+  let legacyProviderRuntime = null;
   let quotaProviders = null;
   const getQuotaProviders = async () => {
     if (!quotaProviders) {
@@ -185,6 +188,20 @@ export const createFeatureRoutesRuntime = (dependencies) => {
     registerRoutingRoutes(app, routingRuntime);
     // Before the generic OpenCode proxy: turns `openchamber/auto` into a real model.
     registerRoutingPromptRewrite(app, routingRuntime);
+
+    legacyProviderRuntime ??= createLegacyProviderRuntime({
+      getRuntime: kernelRuntime.get,
+      getBackendSelection,
+      getHeaders: getOpenCodeAuthHeaders,
+      kernelOperations,
+      getNativeConfigContext: dependencies.getNativeConfigContext,
+      subscribeCredentialOwner: dependencies.subscribeCredentialOwner,
+    });
+    createLegacyProviderHttp({
+      api: legacyProviderRuntime,
+      getRuntime: kernelRuntime.get,
+      resolveCaller: createLegacyProviderCaller({ getUiAuth: dependencies.getUiAuth }),
+    }).register(app);
 
     registerOpenCodeRoutes(app, {
       kernelRuntime,
@@ -456,5 +473,6 @@ export const createFeatureRoutesRuntime = (dependencies) => {
 
   return {
     registerRoutes,
+    getLegacyProviderRuntime: () => legacyProviderRuntime,
   };
 };

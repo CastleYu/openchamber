@@ -1,0 +1,46 @@
+[
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/index.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/agent-tool/dual-routes.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/agent-tool/dual-routes.test.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/event-stream/family-retirement.test.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/event-stream/global-hub.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/git/routes.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/git/worktree-disposal.test.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/opencode/feature-routes-runtime.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/opencode/plugin-routes.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/opencode/plugin-routes.test.js"
+  },
+  {
+    "exitCode": 0,
+    "path": "packages/web/server/lib/opencode/watcher.js"
+  }
+]

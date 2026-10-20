@@ -20,6 +20,10 @@ describe('managed CLI generation probe', () => {
       ['C:/bin/opencode-cli.mjs', '--version'], expect.objectContaining({ timeout: 5000, windowsHide: true }));
   });
 
+  it('normalizes the probed Legacy CLI version while preserving build metadata', () => {
+    expect(probe('opencode v1.2.27+build.4\n').result).toMatchObject({ generation: 'oc1', version: '1.2.27+build.4' });
+  });
+
   it('accepts the selected OC1 generation without a minor-version guess', () => {
     expect(probe('1.18.32').result).toMatchObject({ generation: 'oc1', version: '1.18.32' });
   });

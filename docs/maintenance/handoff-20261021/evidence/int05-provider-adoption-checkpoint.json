@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-12T02:10:30.416Z",
+  "status": "progress; INT-05/R3 open",
+  "files": {
+    "packages/web/server/lib/opencode/legacy-provider-runtime.js": "3e3613b690fbb6b6b1068c340a1d0a6a684de5243d5854fc1e28e3fb2e047ce2",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.test.js": "c4fcca62a03c8178993d5942aa5f464938d63d7e800ee4dae5a5016053d54279",
+    "packages/ui/src/lib/opencode/legacy-providers.ts": "bbdc15b24fbdc226bb7fe469b4604b035d423b000529abdd220c78bc3fc2809f",
+    "packages/ui/src/lib/opencode/legacy-providers.test.ts": "415730bea07242538b31eca8be6999464493805464cd8e3b120f633b01c983ff",
+    "docs/maintenance/OPENCODE-LEGACY-1.2.27-SPEC.md": "00ef86419f3af794cbea5515b47613328ae6bb0aee6b2c337a7abac0bfe2099e",
+    "docs/maintenance/zh-CN/OPENCODE-LEGACY-1.2.27-SPEC.md": "e8d5850ef6abf7f67d3fe10ecc3e53d6411cb81df924a307f2ddbe753bcf3840"
+  },
+  "tests": {
+    "web": {
+      "passed": 201,
+      "files": 10
+    },
+    "ui": {
+      "passed": 10,
+      "files": 1
+    }
+  },
+  "staticChecks": {
+    "eslint": "passed on four changed source/test files",
+    "oxlint": "zero diagnostics on four changed files",
+    "webTypes": "passed",
+    "uiTypes": "passed",
+    "deadCode": "completed; staged service exports have no production consumers"
+  },
+  "changes": [
+    "Private owner supports construction before readiness; operations retain exact native/runtime admission",
+    "Shared Legacy provider service staged with parsed responses and bound OAuth lifecycle",
+    "Bilingual SPEC records one owner per host/manager and one caller lifetime per VS Code document"
+  ],
+  "evidence": [
+    "artifacts/int05-provider-adoption-tests.log",
+    "artifacts/int05-provider-adoption-eslint.log",
+    "artifacts/int05-provider-adoption-oxlint.log",
+    "artifacts/int05-provider-adoption-web-types.log",
+    "artifacts/int05-provider-adoption-dead-code.log",
+    "artifacts/int05-provider-adoption-failures.md",
+    "artifacts/int05-provider-service-tests.log",
+    "artifacts/int05-provider-service-eslint.log",
+    "artifacts/int05-provider-service-oxlint.log",
+    "artifacts/int05-provider-service-types.log",
+    "artifacts/int05-provider-service-failures.md"
+  ],
+  "next": [
+    "Use the staged service in a dedicated Legacy provider UI; close custom provider initial writes and report ordered source layers/partial/deferred results",
+    "Web/Electron reuse lifecycle subscribeCredentialOwner and existing verified HTTP caller; dispose owner on shutdown",
+    "VS Code manager shares owner; three view providers rotate trusted document caller/lifetime on ready and dispose; explicit bridge routes retain status/body and remote cancel",
+    "Enable production only with the complete source/save/OAuth/disconnect workflow and cross-runtime regressions",
+    "Real OAuth/native host acceptance, unattended outcome persistence, then R4"
+  ],
+  "limits": [
+    "Production private provider routes remain unregistered",
+    "Controlled tests do not establish real provider OAuth acceptance",
+    "Cross-host switching needs cancellation before transport selection changes; a stale begin rejects and does not send its attempt to the replacement host"
+  ],
+  "releaseChanged": false,
+  "dependenciesAdded": false,
+  "downloads": false
+}

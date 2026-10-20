@@ -1,0 +1,11 @@
+{
+  "head": "7be9a791b548f7b89115291abedf94bff79a0a41",
+  "exitCode": 0,
+  "passed": 366,
+  "failed": 0,
+  "skipped": 1,
+  "testFiles": 12,
+  "elapsedSeconds": 69.4,
+  "failureNames": [],
+  "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-close-host.log"
+}

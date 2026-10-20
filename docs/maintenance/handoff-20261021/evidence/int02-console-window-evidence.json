@@ -1,0 +1,8 @@
+{
+  "consoleEvents": [],
+  "scope": "Windows current desktop create/destroy/show events; no window titles or command lines collected",
+  "positiveControlShows": 1,
+  "stoppedByMarker": true,
+  "eventCount": 330,
+  "limitation": "Window event evidence, not screen recording or visual observation"
+}

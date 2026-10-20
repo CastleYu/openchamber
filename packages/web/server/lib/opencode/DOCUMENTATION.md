@@ -12,8 +12,11 @@ This module provides OpenCode server integration utilities for the web server ru
   tool/prompt/MCP phases and rejects the result; it cannot undo writes already
   performed by an entered preparer. OC1 retains the tool/prompt/MCP merge order
   and switches; OC2 uses only its managed configuration builder. Unknown
-  generations refuse before configuration work. Lifecycle still checks its
-  original selection before spawning. This gate does not activate CAgent.
+  generations refuse before configuration work. Stable exact 1.2.27, including
+  normalized v/build metadata, returns an empty environment before settings or
+  generated tool/prompt/MCP preparation. Inherited user configuration remains
+  untouched. Legacy generated plugins remain unaccepted. Lifecycle still checks
+  its original selection before spawning. This gate does not activate CAgent.
 - `managed-generation.js` probes the selected CLI through its resolved launch
   specification before managed configuration or plugin writes. Lifecycle spawning
   reuses that specification. An unknown generation stops startup before writing.
@@ -27,8 +30,9 @@ This module provides OpenCode server integration utilities for the web server ru
   agent host into the callback router, event hub, watcher and Git routes.
   `feature-routes-runtime.js` registers plugin routes with generation-specific
   operations. The managed environment lease checks family/revision at entry and
-  after each awaited preparation phase. Generation probing identifies OC1/OC2;
-  it does not classify or disable the Legacy profile for all plugin preparation.
+  after each awaited preparation phase. CLI version probing identifies the
+  exact Legacy preparation exception described above; it does not grant plugin
+  or callback admission.
 - The shared event hub owns upstream kernel identity and epoch checks when it
   commits events. The watcher checks current family/revision and refuses Legacy
   events; its standalone reader also checks the attached kernel descriptor.
@@ -201,11 +205,24 @@ This module provides OpenCode server integration utilities for the web server ru
 - `packages/web/server/lib/ui-auth/ui-passkeys.js`: UI passkey storage and WebAuthn registration/authentication helpers (outside OpenCode module).
 
 ## Public exports (auth.js)
-- `configureOpenCodeCredentials(getRuntime, source)`: Binds the current kernel
-  descriptor and OC2 API reader. The reader coalesces by endpoint and epoch.
+- `configureOpenCodeCredentials(getRuntime, source, legacy)`: Binds the current kernel
+  descriptor, OC2 API reader and optional native Legacy reader. The OC2 reader
+  coalesces by endpoint and epoch.
 - `readOpenCodeCredentials()`: Reads the OC1 file, the retained pre-2.0.20 OC2
   database owner, or the 2.0.20+ OC2 API according to the known version. A
   failed read throws; the descriptor is checked again before returning.
+Exact 1.2.27 reads use `legacy-credentials.js` privately in Web/Electron and
+VS Code. On Windows, the current managed process supplies its environment and
+cwd: nonempty XDG_DATA_HOME resolves against that cwd, otherwise USERPROFILE
+supplies `.local/share/opencode`. The owner checks the process Symbol, runtime
+identity and, on Web, backend revision before returning either success or
+failure. Missing files return an empty map; malformed files fail. Command,
+external, CAgent and unverified platform reads return unsupported. Hosted and
+Capacitor mobile use their connected host. No raw credential bridge was added.
+Legacy synchronous file writes and the generation getter remain refused, so
+xAI refresh cannot reach its old fixed-path writer. Official mutation/OAuth
+admission and apply/reload remain separate unfinished work.
+
 - `readAuthFile()`: Reads and parses `~/.local/share/opencode/auth.json`.
 - `writeAuthFile(auth)`: Writes auth file with automatic backup.
 - `removeProviderAuth(providerId)`: Removes a provider's auth entry.
@@ -883,6 +900,22 @@ The shared client admits the exact 1.2.27 conversation set and owned session del
 
 The private getNativeConfigContext getter returns an opaque per-process Symbol identity, a copied launch environment and cwd only while the ready native managed process still owns the current connection. It returns null during transitions, after retirement or process exit, and for Command/external connections. Null must never fall back to the host user's configuration. This getter does not itself admit Legacy file operations.
 
-`kernel-operations.getLegacyConfiguration` reads authenticated SDK path/config endpoints only for exact Legacy 1.2.27 and retires results on identity/version changes. It grants no filesystem ownership. `legacy-config-layers.js` reads the ordered local configuration layers using a supplied child environment, cwd and native home. It retains raw JSONC separately from expanded values and reports the highest local entry source. Remote organization/account overlays are absent from this local definition view. A reported writable source still requires a current native ownership check at the eventual mutation boundary. Settings persistence is distinct from cached runtime configuration and deferred application. The exact Legacy MCP routes now compose legacy-mcp-config.js with that private native owner. Web and Electron share it; hosted and Capacitor mobile operate on their connected host. VS Code composes the same file owner in its extension host. Other Legacy configuration routes remain closed. Command, external and CAgent connections receive no local write access.
+`kernel-operations.getLegacyConfiguration` reads authenticated SDK path/config/provider endpoints only for exact Legacy 1.2.27 and retires results on identity/version changes. Its added provenance contains provider IDs, environment-variable names and plugin presence, without expanded provider values or plugin URLs. `compareLegacyProvider` compares persisted and optional baseline values against the same SDK response, returning booleans and provider presence only. The `legacy-provider-config.js` owner checks these results plus native credential and layer provenance before complete disconnect; the private legacy-credential-operations.js module now supplies official SDK credential save/removal and the provider-auth catalog, and Web now composes them through one host-owned private Provider runtime. Its private beginOAuth flow captures one SDK client, headers, directory and native owner for authorize/callback/cancel, retains retirement observation between steps, and refuses repeated calls. Interrupted dispatched mutations remain unknown. Controlled module tests do not establish production host composition or real provider OAuth acceptance. kernel-runtime.subscribe emits descriptor retirement; lifecycle.subscribeCredentialOwner combines kernel retirement with native process exit, close and transition entry. It notifies queued restart before connection resolution while preserving the original native context when preflight fails. Finite credential routes are registered by the Web feature host before generic proxy forwarding. Partial outcomes identify committed and remaining paths, unknown credential outcomes and deferred restart. The bilingual Legacy SPEC owns these admission rules. It grants no filesystem ownership. `legacy-config-layers.js` reads the ordered local configuration layers using a supplied child environment, cwd and native home. It retains raw JSONC separately from expanded values and reports the highest local entry source. Remote organization/account overlays are absent from this local definition view. A reported writable source still requires a current native ownership check at the eventual mutation boundary. Settings persistence is distinct from cached runtime configuration and deferred application. The exact Legacy MCP routes now compose legacy-mcp-config.js with that private native owner. Web and Electron share it; hosted and Capacitor mobile operate on their connected host. VS Code composes the same file owner in its extension host. Other Legacy configuration routes remain closed. Command, external and CAgent connections receive no local write access.
 
 The persisted MCP view preserves raw placeholders and writes only changed fields into the highest local source. JSONC comments and unchanged inherited relative references stay in place. Inline, managed and structurally expanded definitions are read-only; raw text that cannot be parsed after a successful expanded read yields an expanded read-only view. Missing file references and invalid expanded configuration still fail. Every asynchronous read and the final synchronous commit recheck native process identity, generation/profile/version, endpoint/epoch and backend family/revision. Before rename the owner checks the target bytes and existence; this narrows external-writer races rather than providing filesystem CAS. Temporary sibling files are removed. Deleting a definition reports whether a lower layer remains. Saving returns deferred restart and does not claim runtime application; R4 owns apply/reload acceptance.
+
+### Managed CLI and endpoint binding
+
+Native managed OpenCode binds the probed CLI generation and full version before publishing an endpoint descriptor. Shared refresh and health re-probe retain this binding across invalidation. Version comparison ignores a v prefix and build metadata, but preserves prerelease identity. A mismatched or missing endpoint version cannot retain ready state. Command and external targets remain endpoint-authoritative. Web retires readiness and endpoint before awaiting child closure; failed closure preserves the owned process and blocks a second spawn. VS Code publishes connected only after endpoint admission.
+
+### Private Legacy provider composition
+
+The private Provider owner can be constructed before native readiness and rejects operations until the native context is verified. Reuse one owner per host or manager to preserve cross-directory disconnect locks and unknown credential outcomes. Do not create owners per HTTP request or webview.
+
+`legacy-provider-runtime.js` composes the existing credential, SDK operation and provider-file owners. It returns an opaque attempt ID before OAuth authorization dispatch. A trusted host caller must retain that ID across authorize/callback/cancel; the registry retains the original private flow, SDK client, directory and native owner. Wrong callers cannot consume an attempt. Completion, cancellation, request abort, owner retirement, expiry and runtime disposal release OAuth resources. Disposal rejects new operations; it is not a claim that all already-running non-OAuth operations are canceled. Those operations retain their supplied request signal and native-owner checks.
+
+`packages/ui/src/lib/opencode/legacy-providers.ts` supplies the shared schema-parsed service over those explicit routes. Its OAuth flow retains runtime/directory and cancellation lifetime, returns persistence separately from application, and discards late canceled results. The dedicated Legacy page uses this service, shows ordered source layers and partial outcomes, blocks unknown credential writes, and cancels retained manual OAuth on unmount. Controlled React tests cover StrictMode and scope retirement. Switch and navigation callers now await bounded original-connection OAuth cleanup before endpoint, auth or relay replacement. The service rejects begins throughout transition, owns pending-begin abort, shares cancel Promises and retains failed cancellation until cleanup reports it. A three-second deadline invalidates locally, warns about unconfirmed remote cancellation and allows switching without replay. Probe tunnel adoption happens at commit. Controlled service, switch, mobile and Web bootstrap tests cover this ordering. These tests do not establish complete workflow acceptance. VS Code now composes the private Provider bridge with controlled document isolation, native-owner retirement and cancellation tests; real IDE Provider workflow, real OAuth and native application switch acceptance remain open. The latest bridge evidence is in `artifacts/int05-provider-bridge-checkpoint.json`; the preceding switch evidence remains in `artifacts/int05-provider-entry-checkpoint.json`.
+
+`feature-routes-runtime.js` creates one private Provider owner per Web host, passes native ownership and credential-owner retirement from lifecycle, and registers `legacy-provider-http.js` before the generic OpenCode proxy. Graceful shutdown disposes that owner. Its caller resolver uses the existing UI authentication admission, verified client/session identity and the existing unrestricted local-session policy. Strict request bodies cannot supply caller identity. OAuth follow-up interruption cancels the retained original flow; normal begin completion preserves it. Tests combine actual UI authentication and the private runtime with controlled SDK transport. `legacy-provider-adoption.test.js` also registers the complete feature host in Express and verifies methods, credential headers and subscription cleanup against a loopback SDK fixture. These controlled tests do not establish full application, VS Code or real provider OAuth acceptance. Generic Legacy auth forwarding stays closed. `legacy-provider-routes.js` holds browser-safe finite paths; `legacy-provider-request.js` owns strict request parsing, exact identity admission, trusted caller binding, enterprise connection restrictions and sanitized outcomes for both HTTP and VS Code. The HTTP wrapper owns authentication and transport cancellation; the extension host supplies document identity and lifetime. Neither transport creates a Provider owner per request.
+
+The file owner retains scoped in-memory deletion evidence and distinguishes persisted configuration, known pending application and unknown effective differences. Credential unknown protection and conflicting disconnects share the native credential owner/provider across directories. Runtime-only retirement preserves that protection; a fresh native owner clears it. The bilingual Legacy SPEC owns the contract. A pinned exact 1.2.27 experiment confirmed that the same process retains the old effective provider after its project definition is deleted. It used an isolated synthetic provider, not a real OAuth journey. See `artifacts/int05-provider-cache-live-evidence.json` and `artifacts/int05-provider-reviewed-checkpoint.json` for evidence and remaining gates.

@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-11T17:23:31.105Z",
+  "round": "R3 / INT-04 and INT-05",
+  "status": "advanced-operation implementation checkpoint; R3 remains open",
+  "sourceBase": "bd0c0a3a5ab49f3938ddfff0b571a52d0a0fa2d8",
+  "sourceFiles": {
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "37890b38fcd5a40b0b7cff3536aacfdc9e92d23ef8b884db2b938571f7b9c1cb",
+    "docs/maintenance/command-failures.md": "23983a2a40317d05b674be9c3bf4cfca7a4fad3c3ded45011afb9577a00b01d8",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "23d15177f492d80aa3cea238b8500b167389c52954a56e3dcbf5d32d252982a3",
+    "packages/ui/src/lib/opencode/client.legacy-host.test.js": "bdddf0a3427084cc94da4cdd7e3b217cdc3352b32ee047112b810750a1c32574",
+    "packages/ui/src/lib/opencode/runtime.test.ts": "be9955b628665cc330217d24b87d0aeb0e8f1ab57a833a5a0cc1a03fc640ecff",
+    "packages/ui/src/lib/opencode/runtime.ts": "bffccf9cb897ef9d095ddd07584d6683494527f1ef57990387fae75d7b3dac5e",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "4330f0689b5eedebdac21d4e07c78ed7e5b84f165ef943fb0720b77f115c84b7",
+    "packages/web/server/lib/opencode/kernel-operations.js": "100075b4048fcd5d946c4562981b48c7f3976ca40ebd0e6f930f29259e0b10de",
+    "packages/web/server/lib/opencode/kernel-operations.test.js": "3edeb188e8999f9b3c0ee415d809cb42b0d455ab90c8d1677832b2fbc39ac0a2",
+    "packages/web/server/lib/opencode/legacy-contract.d.ts": "a67c7dcd8198695b4d6d99d82e3eb3220cad4cc8298047418a40873311412246",
+    "packages/web/server/lib/opencode/legacy-contract.js": "11960ac8470b97ad703e40b05ca80bc71eed9d8cea257582c39a460efec52abe",
+    "packages/web/server/lib/opencode/legacy-contract.test.js": "711462d14cb223158ec83e45cdb056898054eec5b660fb952b8b76f4ca48a817",
+    "packages/web/server/lib/opencode/legacy-session-api.d.ts": "ee93b00ebeb2632b24f7ec5c7a90cd6d67d876cb1b0ac7008867dace9bae5030",
+    "packages/web/server/lib/opencode/legacy-session-api.js": "afdb2ddddfcf38a2f1b95f7c9fbcf38dc511c839754cd9938e8219f7b7cfaf37",
+    "packages/web/server/lib/opencode/legacy-session-http.js": "9a4b5c39cf8d069787d0908f116bd2c95678471609590b01079b06b5136b37b6",
+    "packages/web/server/lib/opencode/legacy-session-http.test.js": "2be49a241f12996cd4345b19c8e6eb9f963ed2139af69736d5d9879159389da9",
+    "docs/maintenance/OPENCODE-INTEGRATION-SPEC.md": "ec39f1cecfa339b4c8798012301b4f726ac65575b0f335bf827db83a6d563b73",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-SPEC.md": "c40e942d489135f05618c063957d1bfbebfeb60b37b29d6352870193997a7413"
+  },
+  "evidenceFiles": {
+    "artifacts/int04-advanced-evidence.json": "e1e9f5097fdbcb364deb8bd82acb6cc9ec938d5c539124212d1f0ff7da764d5c",
+    "artifacts/int04-host-advanced-evidence.json": "8d6479570c2c5e01821a158e2d5aef8e5e093b175accf7799389544c4e918fb0",
+    "artifacts/int04-advanced-validation.json": "88ec14e1131bb024a833e6c42ca8e4b14a73a41cf3a1c28feda93b64aae20bce",
+    "artifacts/int04-advanced-validation-rerun.json": "34b479e212bb552b9dc35884192eff1dfc699dc1985e87934cd551233677b80a",
+    "artifacts/int04-advanced-cleanup.json": "93d9b0ee531c3ecbaee56a59cede26f034d746c57bc6bf45922aef55215c0205",
+    "artifacts/int04-advanced-web-tests.log": "780d55f749036733bc26305e2986227a9cc5b4324299d9110cd04b95e9eee3ed",
+    "artifacts/int04-advanced-ui-runtime.log": "054275963891667f2303a28e9f5bc96327ec16237e056d4bf8237d0ebddccd75",
+    "artifacts/int04-advanced-ui-host.log": "852a6761f43002e8a11af947a1b152b40c34615b358b5586a96e57ded35ea3d7",
+    "artifacts/int04-advanced-vscode-request.log": "bf11eef21e8999d47156d3accb951a33e7bc5fa6c20648981d5019ddce95e5c7",
+    "artifacts/int04-advanced-web-build.log": "154d4274b79b2865c80c7d0098da0142a4025edf695820adc42b961785c4b8a1",
+    "artifacts/int04-advanced-vscode-build.log": "22c5b700fd203f0dbcc21f7d2f1c210fdc4c0ac70a2b3297fa337426885d838f"
+  },
+  "validation": {
+    "focusedTests": 185,
+    "exactHostChecks": 13,
+    "workspaceTypes": "pass",
+    "workspaceLint": "pass; five existing warnings",
+    "antiSlop": "pass; zero diagnostics",
+    "syntax": "all changed JS pass",
+    "builds": "Web and VS Code pass; existing build warnings retained in logs",
+    "deadCode": "unchanged: 2 files, 319 exports, 231 types",
+    "documentLinks": 70,
+    "firstRunFailure": "pre-existing concurrent catalog request-order assertion; corrected final five-file suite 160 pass"
+  },
+  "cleanup": {
+    "items": 6,
+    "reclaimedBytes": 93717288
+  },
+  "weeklyRemainingPercent": 78,
+  "remaining": [
+    "INT-04 reconnect/server restart and pending decisions; late/out-of-order/partial events and two-directory isolation",
+    "INT-05 configuration/providers/credentials, generated plugins, MCP lifecycle and every autonomous caller",
+    "Uncertain dispatch outcomes retain intent without blind resubmit; current OC1/OC2 regressions at enclosing R3 acceptance",
+    "Reload-dependent configuration stays R4; native packaged/public Relay/physical mobile acceptance stays R7"
+  ],
+  "limitations": [
+    "Controlled loopback model verifies wire behavior and lifecycle, not a real provider.",
+    "Command/shell tests use isolated workspace and controlled inputs.",
+    "Production proxy/session owners composed with isolated test auth gate; full app/native UI acceptance is separate."
+  ],
+  "remoteRelease": "unchanged; no full Legacy acceptance claim",
+  "committedSource": "92e9fe42ec46b2531e8933396ed7f4dfa193e47b",
+  "finalVerification": {
+    "at": "2026-10-11T17:27:41.583Z",
+    "cleanWorktree": true,
+    "evidenceHashesVerified": true
+  }
+}

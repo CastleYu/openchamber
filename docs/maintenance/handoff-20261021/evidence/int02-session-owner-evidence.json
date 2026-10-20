@@ -1,0 +1,69 @@
+{
+  "baseline": "19eda519ad31158bd8af80fe278da2ffa8e4b89d",
+  "createdAt": "2026-10-11T12:52:54.285Z",
+  "scope": "R1 retained session snapshot owner isolation",
+  "sourceHashes": {
+    "packages/web/server/index.js": "3cd3037f7292bf2b8fcc2933349f703fb54cd2dc38f75c4fc79ff41f7ef66413",
+    "packages/web/server/lib/opencode/session-runtime.js": "f0efdcd0bd3420a7caa39eaa07537bfa07801cdecc82e544bd46f965d1b2dd21",
+    "packages/web/server/lib/opencode/session-runtime.test.js": "4cf96d0b85a2632fc0cc75f43b843d324c8075662d5963b965795896fd300664",
+    "packages/web/server/lib/opencode/kernel-runtime.test.js": "94d4867ff86a7b0891dd680a6b33d099de9ceccbb3ed3e34ff1b7bca8868e49c"
+  },
+  "checks": {
+    "hostRegression": {
+      "files": 105,
+      "passed": 1448,
+      "skipped": 2
+    },
+    "kernelWatcherLifecycle": {
+      "files": 3,
+      "passed": 80
+    },
+    "sessionRuntime": {
+      "passed": 15
+    },
+    "package": {
+      "types": 0,
+      "lint": 0,
+      "deadCode": 0,
+      "oxlint": 1
+    },
+    "lintReview": {
+      "baselineFindings": 82,
+      "newFindings": 0,
+      "method": "Every diagnostic source line occurs unchanged at baseline HEAD; changed tests have no findings."
+    },
+    "productionHost": {
+      "checks": [
+        "actual host snapshots contain the original external owner activity, attention and pending decisions",
+        "confirmed external A to B switch removes all old-owner snapshot categories",
+        "same session ID receives only replacement metadata and no old pending requests",
+        "durable replacement and shutdown preserve both external servers without managed process ownership"
+      ],
+      "dir": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-session-owner-host-ka4bF5",
+      "syntheticUpstream": true,
+      "actualProductionHost": true,
+      "realModel": false,
+      "sourceHashes": {
+        "packages/web/server/index.js": "3cd3037f7292bf2b8fcc2933349f703fb54cd2dc38f75c4fc79ff41f7ef66413",
+        "packages/web/server/lib/opencode/session-runtime.js": "f0efdcd0bd3420a7caa39eaa07537bfa07801cdecc82e544bd46f965d1b2dd21"
+      },
+      "cleanup": {
+        "removed": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-session-owner-host-ka4bF5",
+        "bytes": 5209,
+        "reason": "Probe completed with exit 0 after closing both external HTTP servers and stopping the production host; compact evidence retained."
+      }
+    }
+  },
+  "initialRed": "Four genuine owner-isolation failures and one fixture event-count failure; the latter was corrected before final verification. The cooldown test was strengthened to fire before a new-owner read/event.",
+  "limits": [
+    "synthetic upstreams, no model conversation",
+    "no new browser, VS Code, packaged, Legacy or real CAgent acceptance",
+    "R1 final clause audit remains open"
+  ],
+  "weeklyRemainingPercent": 86,
+  "temporaryFiles": {
+    "removedFixtureBytes": 5209,
+    "helperScripts": "session-owner-edit.cjs, session-owner-host.mjs and this closeout script removed after successful execution",
+    "retained": "Compact evidence and verification logs; historical artifacts outside this batch are untouched."
+  }
+}

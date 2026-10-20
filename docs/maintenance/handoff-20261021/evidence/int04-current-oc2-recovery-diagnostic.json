@@ -1,0 +1,133 @@
+{
+  "tables": [
+    "account_state",
+    "account",
+    "control_account",
+    "credential",
+    "event_sequence",
+    "event",
+    "kv",
+    "permission",
+    "project_directory",
+    "project",
+    "instruction_blob",
+    "instruction_entry",
+    "instruction_state",
+    "session_inbox",
+    "session_message",
+    "session_pending",
+    "session_v2",
+    "workspace",
+    "worktree",
+    "migration"
+  ],
+  "session_inbox": {
+    "columns": [
+      "id",
+      "session_id",
+      "type",
+      "payload",
+      "delivery",
+      "enqueued_seq",
+      "time_created"
+    ],
+    "rows": []
+  },
+  "session_message": {
+    "columns": [
+      "id",
+      "session_id",
+      "type",
+      "seq",
+      "time_created",
+      "time_updated",
+      "data"
+    ],
+    "rows": [
+      {
+        "id": "msg_12c644a43001UmwFDyfUHslr1M",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "idle",
+        "seq": 34,
+        "time_created": 1791746132547,
+        "time_updated": 1791746132548,
+        "data": "{\"time\":{\"created\":1791746132547},\"outcome\":\"succeeded\"}"
+      },
+      {
+        "id": "msg_12c64482c001aQjjG1CXuleYe2",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "assistant",
+        "seq": 29,
+        "time_created": 1791746132345,
+        "time_updated": 1791746132544,
+        "data": "{\"time\":{\"created\":1791746132345,\"streamed\":1791746132371,\"completed\":1791746132542},\"agent\":\"build\",\"model\":{\"id\":\"probe\",\"providerID\":\"regression\",\"variant\":\"default\"},\"content\":[{\"type\":\"text\",\"text\":\"R2_COMPLETED\"}],\"snapshot\":{\"start\":\"f5bc35d96cc1396b7b276dbe95f1e00b354f5885\",\"end\":\"f5bc35d96cc1396b7b276dbe95f1e00b354f5885\",\"files\":[]},\"finish\":\"stop\",\"rawFinish\":\"stop\",\"cost\":0,\"tokens\":{\"input\":0,\"output\":0,\"reasoning\":0,\"cache\":{\"read\":0,\"write\":0}}}"
+      },
+      {
+        "id": "msg_12c6447f9001vrJ1Lm9msIS70J",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "user",
+        "seq": 28,
+        "time_created": 1791746132000,
+        "time_updated": 1791746132001,
+        "data": "{\"time\":{\"created\":1791746132000},\"text\":\"R3_AFTER_RESTART\"}"
+      },
+      {
+        "id": "msg_12c643fe5001g15qrvJvTDqtZR",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "assistant",
+        "seq": 24,
+        "time_created": 1791746130085,
+        "time_updated": 1791746132358,
+        "data": "{\"time\":{\"created\":1791746130085,\"completed\":1791746132355},\"agent\":\"build\",\"model\":{\"id\":\"probe\",\"providerID\":\"regression\",\"variant\":\"default\"},\"content\":[{\"type\":\"text\",\"text\":\"\"}],\"snapshot\":{\"start\":\"f5bc35d96cc1396b7b276dbe95f1e00b354f5885\"}}"
+      },
+      {
+        "id": "msg_12c643fcf001IkVZZfcwzfUQpA",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "user",
+        "seq": 23,
+        "time_created": 1791746129886,
+        "time_updated": 1791746129887,
+        "data": "{\"time\":{\"created\":1791746129886},\"text\":\"R2_HOLD_RESTART\"}"
+      },
+      {
+        "id": "msg_12c643fab001k4ihVqXL0b99ii",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "idle",
+        "seq": 20,
+        "time_created": 1791746129835,
+        "time_updated": 1791746129836,
+        "data": "{\"time\":{\"created\":1791746129835},\"outcome\":\"interrupted\"}"
+      },
+      {
+        "id": "msg_12c643ddb001uNa0bFdRIr9grj",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "assistant",
+        "seq": 15,
+        "time_created": 1791746129571,
+        "time_updated": 1791746129834,
+        "data": "{\"time\":{\"created\":1791746129571,\"streamed\":1791746129668,\"completed\":1791746129832},\"agent\":\"build\",\"model\":{\"id\":\"probe\",\"providerID\":\"regression\",\"variant\":\"default\"},\"content\":[{\"type\":\"text\",\"text\":\"R2_WAIT\"}],\"snapshot\":{\"start\":\"f5bc35d96cc1396b7b276dbe95f1e00b354f5885\",\"end\":\"f5bc35d96cc1396b7b276dbe95f1e00b354f5885\",\"files\":[]},\"finish\":\"error\",\"error\":{\"type\":\"aborted\",\"message\":\"Step interrupted\"}}"
+      },
+      {
+        "id": "msg_12c643dc1001o2FKPT5xOFzDC3",
+        "session_id": "ses_ed39bc92effeqWQy7cLfBvs0qV",
+        "type": "user",
+        "seq": 14,
+        "time_created": 1791746129360,
+        "time_updated": 1791746129361,
+        "data": "{\"time\":{\"created\":1791746129360},\"text\":\"R2_HOLD\"}"
+      }
+    ]
+  },
+  "session_pending": {
+    "columns": [
+      "id",
+      "session_id",
+      "type",
+      "data",
+      "delivery",
+      "admitted_seq",
+      "time_created"
+    ],
+    "rows": []
+  }
+}

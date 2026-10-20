@@ -12,7 +12,7 @@ const readPids = async (marker: string) => (await fs.readFile(marker, 'utf8').ca
   .trim().split('\n').filter(Boolean).map(Number);
 
 for (const mode of ['timeout', 'malformed', 'abort', 'ready', 'oc2-ready']) {
-  test(`managed ${mode} reaps parent and SIGTERM-resistant descendant`, async () => {
+  test(`managed ${mode} reaps parent and SIGTERM-resistant descendant`, { timeout: 20_000 }, async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-managed-'));
     const marker = path.join(cwd, 'pids');
     const registry = path.join(cwd, 'registry');
@@ -123,7 +123,7 @@ test('managed process reports a natural exit after readiness', async () => {
   try {
     await server.ready;
     assert.equal(server.closed, false, 'readiness does not imply process exit');
-    for (let attempt = 0; attempt < 100 && !server.closed; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+    await server.whenExited;
     assert.equal(server.closed, true, 'the handle follows the actual child close event');
     assert.equal(server.url, 'http://127.0.0.1:45678');
   } finally {
@@ -131,6 +131,47 @@ test('managed process reports a natural exit after readiness', async () => {
     if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
     else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
     await fs.rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('managed process reports exit before inherited descendant stdio closes', async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-exit-event-'));
+  const registry = path.join(cwd, 'registry');
+  const marker = path.join(cwd, 'descendant-pid');
+  const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+  process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = registry;
+  const descendant = `require('node:fs').writeFileSync(${JSON.stringify(marker)}, String(process.pid)); process.stdout.write('descendant-ready'); setInterval(() => {}, 1000);`;
+  const script = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(descendant)}], { stdio: ['ignore', 'pipe', 'inherit'] }); child.stdout.once('data', () => { process.stdout.write('server listening on http://127.0.0.1:45678\\n'); setTimeout(() => process.exit(0), 30); });`;
+  const server = spawnManagedOpenCodeProcess(process.execPath, ['-e', script], {
+    cwd, env: process.env, port: 45678, timeoutMs: 3000,
+    signal: new AbortController().signal, sourceBinary: process.execPath, appBundleHint: '',
+  });
+  try {
+    await server.ready;
+    await server.whenExited;
+    assert.equal(server.closed, true);
+    assert.ok(Number(await fs.readFile(marker, 'utf8')) > 0, 'descendant keeps inherited stdio open');
+  } finally {
+    await server.close().catch(() => {});
+    if (previous === undefined) delete process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
+    else process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY = previous;
+    await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  }
+});
+
+test('managed process resolves exit notification after a spawn failure', async () => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-vscode-spawn-failure-'));
+  const server = spawnManagedOpenCodeProcess(path.join(cwd, 'missing-opencode'), [], {
+    cwd, env: process.env, port: 45678, timeoutMs: 1000,
+    signal: new AbortController().signal, sourceBinary: 'missing-opencode', appBundleHint: '',
+  });
+  try {
+    await assert.rejects(server.ready);
+    await server.whenExited;
+    assert.equal(server.closed, true);
+  } finally {
+    await server.close().catch(() => {});
+    await fs.rm(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 

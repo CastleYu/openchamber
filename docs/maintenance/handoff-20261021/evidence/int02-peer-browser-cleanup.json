@@ -1,0 +1,287 @@
+{
+  "at": "2026-10-09T23:46:00.8541588Z",
+  "removed": [
+    {
+      "registryEmpty": true,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-native-JjDzUu",
+      "bytes": 42825529,
+      "noProcessUse": true,
+      "noReparsePoints": true
+    },
+    {
+      "registryEmpty": true,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-native-4RiPHm",
+      "bytes": 43688816,
+      "noProcessUse": true,
+      "noReparsePoints": true
+    },
+    {
+      "registryEmpty": true,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-browser-native-AsnGaG",
+      "bytes": 7882283,
+      "noProcessUse": true,
+      "noReparsePoints": true
+    }
+  ],
+  "retained": [
+    "real OC2 binary and current production bundles remain required by R1"
+  ],
+  "evidence": [
+    {
+      "sha256": "DD67D9927202E11529A810CA84B62EF6F01E57A24D3ED96B09FE887A6E000471",
+      "data": {
+        "source": "a932f91fea6f8b29a5f250547b6eba6361764af6",
+        "runtime": "Actual installed VS Code, production React assets, real OC2, chat and Agent Manager peer webviews",
+        "checks": [],
+        "snapshots": [],
+        "failure": {
+          "message": "chat cold candidate visible",
+          "stack": "Error: chat cold candidate visible\n\tat check (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-native-JjDzUu\\suite.cjs:6:45)\n\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-native-JjDzUu\\suite.cjs:16:124)"
+        }
+      },
+      "file": "evidence.json",
+      "run": "int02-peer-native-JjDzUu"
+    },
+    {
+      "sha256": "D8EFB72277441268CBD407AD090067284E46F692A333FB4FEE9BF4BA8BBAD93D",
+      "tail": [
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "Settings Sync: Account status changed from uninitialized to unavailable",
+        "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/MWMxYjA3MWQtZjNkMC00ZTNlLWJjZDctOWI4NWZjZmM1NTcz\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+        "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/MWMxYjA3MWQtZjNkMC00ZTNlLWJjZDctOWI4NWZjZmM1NTcz\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+        "[main 2026-10-09T23:20:54.487Z] Extension host with pid 95080 exited with code: 0, signal: unknown."
+      ],
+      "file": "stdout.log",
+      "run": "int02-peer-native-JjDzUu"
+    },
+    {
+      "sha256": "DF2DDEC0E4924B6D92CE715815BD26E3620852FF6675191454C5459CD7FB0FE1",
+      "tail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "Unknown channel: agentHostClientByokLm",
+        "[main 2026-10-09T23:20:49.882Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "Error: chat cold candidate visible",
+        "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-peer-native-JjDzUu\\suite.cjs:28:444)"
+      ],
+      "file": "stderr.log",
+      "run": "int02-peer-native-JjDzUu"
+    },
+    {
+      "sha256": "48C7E3D5175F4ED7160E8D2DAE9E5AEDBCC3E12E19E43F40EF37312928D81751",
+      "data": {
+        "source": "a932f91fea6f8b29a5f250547b6eba6361764af6",
+        "runtime": "Actual installed VS Code, production React assets, real OC2, chat and Agent Manager peer webviews",
+        "checks": [
+          "chat cold candidate visible",
+          "Agent Manager cold candidate visible",
+          "both native panels admit same initial epoch",
+          "chat queue captures original configured target",
+          "agent queue captures original configured target",
+          "chat switches real manager to distinct configured target",
+          "peer panels rebind to same replacement epoch",
+          "chat mismatched queue is held with content and attachments",
+          "agent mismatched queue is held with content and attachments",
+          "Agent Manager failure switch is explicit",
+          "chat retires binding and keeps recovery plus queue",
+          "agent retires binding and keeps recovery plus queue",
+          "Agent Manager UI recovery restores both panel bindings",
+          "chat held queue supports edit restore and cancel",
+          "agent held queue supports edit restore and cancel"
+        ],
+        "snapshots": [
+          {
+            "phase": "cold",
+            "panels": [
+              {
+                "candidate": true,
+                "bound": null,
+                "panel": "chat"
+              },
+              {
+                "candidate": true,
+                "bound": null,
+                "panel": "agentManager"
+              }
+            ]
+          },
+          {
+            "phase": "first",
+            "panels": [
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25258",
+                  "epoch": 5,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              },
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25258",
+                  "epoch": 5,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              }
+            ]
+          },
+          {
+            "phase": "replacement",
+            "panels": [
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25382",
+                  "epoch": 12,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              },
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25382",
+                  "epoch": 12,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              }
+            ]
+          },
+          {
+            "phase": "recovered",
+            "panels": [
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25458",
+                  "epoch": 20,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              },
+              {
+                "runtime": {
+                  "status": "ready",
+                  "profile": "oc2",
+                  "generation": "oc2",
+                  "endpoint": "http://127.0.0.1:25458",
+                  "epoch": 20,
+                  "version": "2.0.20"
+                },
+                "status": "connected"
+              }
+            ]
+          }
+        ]
+      },
+      "file": "evidence.json",
+      "run": "int02-peer-native-4RiPHm"
+    },
+    {
+      "sha256": "18319C523F433C867A14EF9C202188F634EFC61B97D8931C8345588880A52974",
+      "tail": [
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+        "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZTE3MjNiYzMtZDMyNy00NjgwLWI5NWQtMDczYjBhNGQ1N2Y5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[SSE] Connecting to /event (attempt 1/4)",
+        "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZTE3MjNiYzMtZDMyNy00NjgwLWI5NWQtMDczYjBhNGQ1N2Y5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+        "[main 2026-10-09T23:21:46.737Z] Extension host with pid 31804 exited with code: 0, signal: unknown."
+      ],
+      "file": "stdout.log",
+      "run": "int02-peer-native-4RiPHm"
+    },
+    {
+      "sha256": "CAF16BF27013C5211E8C6BBE310B12585E2902053C8BA735F100B31FF15BF63C",
+      "tail": [
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "libpng warning: iCCP: known incorrect sRGB profile",
+        "[main 2026-10-09T23:21:29.022Z] updateWindowsJumpList#setJumpList unexpected result: error",
+        "Unknown channel: agentHostClientByokLm",
+        "(node:31804) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+        "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+        "[SSE] Socket error detected, attempting reconnect...",
+        "[SSE] Socket error detected, attempting reconnect..."
+      ],
+      "file": "stderr.log",
+      "run": "int02-peer-native-4RiPHm"
+    },
+    {
+      "sha256": "CD6B746B550E592126DC1F46FDAA38E3E49CEC8E6C6895744F6FDCA60F3FF176",
+      "data": {
+        "stopped": true,
+        "registry": []
+      },
+      "file": "terminal.json",
+      "run": "int02-browser-native-AsnGaG"
+    }
+  ],
+  "obsoleteFiles": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-baseline-App.tsx",
+      "bytes": 38114
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-baseline-MobileApp.tsx",
+      "bytes": 67456
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-browser-native-location.json",
+      "bytes": 315
+    }
+  ],
+  "helperCleanup": [
+    {
+      "bytes": 3079,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-fix-browser-recovery.mjs"
+    },
+    {
+      "bytes": 843,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-fix-mobile-recovery-order.mjs"
+    },
+    {
+      "bytes": 7630,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-finalize-browser.ps1"
+    },
+    {
+      "bytes": 2870,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-clean-peer-browser.ps1"
+    }
+  ]
+}

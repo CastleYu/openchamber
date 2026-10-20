@@ -1,0 +1,11 @@
+{
+  "authored": [],
+  "inheritedCount": 311,
+  "inheritedByFile": {
+    "packages/web/server/lib/opencode/routes.js": 19,
+    "packages/web/server/lib/opencode/settings-runtime.js": 69,
+    "packages/web/server/lib/opencode/lifecycle.js": 8,
+    "packages/vscode/webview/main.tsx": 156,
+    "packages/web/server/index.js": 59
+  }
+}

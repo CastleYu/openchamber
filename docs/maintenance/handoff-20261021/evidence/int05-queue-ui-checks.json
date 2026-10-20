@@ -1,0 +1,47 @@
+[
+  {
+    "name": "local-tests",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-local-tests.log"
+  },
+  {
+    "name": "type-check-ui",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-type-check-ui.log"
+  },
+  {
+    "name": "type-check-web",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-type-check-web.log"
+  },
+  {
+    "name": "type-check-electron",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-type-check-electron.log"
+  },
+  {
+    "name": "type-check-mobile",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-type-check-mobile.log"
+  },
+  {
+    "name": "vscode-type-check",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-vscode-type-check.log"
+  },
+  {
+    "name": "eslint",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-eslint.log"
+  },
+  {
+    "name": "oxlint",
+    "code": 1,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-oxlint.log"
+  },
+  {
+    "name": "dead-code",
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-queue-ui-dead-code.log"
+  }
+]

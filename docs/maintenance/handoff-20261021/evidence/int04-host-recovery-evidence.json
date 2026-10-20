@@ -1,0 +1,254 @@
+{
+  "observedPendingParts": {
+    "permission": [
+      {
+        "id": "prt_12c0f919a00104IompQ8X8uJ7B",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0f95f2001OFfZpcWfo6JOWC",
+        "type": "step-start"
+      },
+      {
+        "id": "prt_12c0f95f4001GHg6vIzYQv1frN",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0f95f6001nXzKovFoLbtJyo",
+        "type": "tool",
+        "tool": "bash",
+        "status": "running"
+      }
+    ],
+    "question": [
+      {
+        "id": "prt_12c0f919a00104IompQ8X8uJ7B",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0f95f2001OFfZpcWfo6JOWC",
+        "type": "step-start"
+      },
+      {
+        "id": "prt_12c0f95f4001GHg6vIzYQv1frN",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0f95f6001nXzKovFoLbtJyo",
+        "type": "tool",
+        "tool": "bash",
+        "status": "completed"
+      },
+      {
+        "id": "prt_12c0f96c9001QVZtPbCM7ijzBf",
+        "type": "step-finish"
+      },
+      {
+        "id": "prt_12c0f9a71001gBiWYw1VM75P99",
+        "type": "step-start"
+      },
+      {
+        "id": "prt_12c0f9a73001lltNFuw0bwMDx9",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0f9a76001hRTJ5xTz4Y5EyZ",
+        "type": "step-finish"
+      },
+      {
+        "id": "prt_12c0f99d0001WuzCgGR7Rs3hCK",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0fa587001q7FtijQnmh6Pi3",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0fa810001jeF3xR35oa2g4U",
+        "type": "step-start"
+      },
+      {
+        "id": "prt_12c0fa812001Gt6pbLN1HA0sdc",
+        "type": "text"
+      },
+      {
+        "id": "prt_12c0fa815001UxhautsgHEqirN",
+        "type": "tool",
+        "tool": "question",
+        "status": "running"
+      }
+    ]
+  },
+  "replyContinuation": {
+    "permission": {
+      "assistantMessageID": "msg_12c0f9241001RhP0R5Wv0gqRnO",
+      "toolPartID": "prt_12c0f95f6001nXzKovFoLbtJyo",
+      "pendingToolStatus": "running",
+      "completedToolStatus": "completed"
+    },
+    "question": {
+      "assistantMessageID": "msg_12c0fa63a001yPrGz3kl0zu6Hx",
+      "toolPartID": "prt_12c0fa815001UxhautsgHEqirN",
+      "pendingToolStatus": "running",
+      "completedToolStatus": "completed"
+    }
+  },
+  "historyAfterRestart": {
+    "permission": {
+      "messageIds": [
+        "msg_12c0f9199001yLqn9QYbTU8hd8",
+        "msg_12c0f9241001RhP0R5Wv0gqRnO",
+        "msg_12c0f99380017F3Vt7C20MKyVk",
+        "msg_12c0f99cf001QmgSpjeohU1GEM",
+        "msg_12c0f9cbb001whBuTcB7BqmmA2"
+      ],
+      "partIds": [
+        "prt_12c0f919a00104IompQ8X8uJ7B",
+        "prt_12c0f95f2001OFfZpcWfo6JOWC",
+        "prt_12c0f95f4001GHg6vIzYQv1frN",
+        "prt_12c0f95f6001nXzKovFoLbtJyo",
+        "prt_12c0f96c9001QVZtPbCM7ijzBf",
+        "prt_12c0f9a71001gBiWYw1VM75P99",
+        "prt_12c0f9a73001lltNFuw0bwMDx9",
+        "prt_12c0f9a76001hRTJ5xTz4Y5EyZ",
+        "prt_12c0f99d0001WuzCgGR7Rs3hCK"
+      ],
+      "messageIdsPreserved": true,
+      "partIdsPreserved": true
+    },
+    "question": {
+      "messageIds": [
+        "msg_12c0f9199001yLqn9QYbTU8hd8",
+        "msg_12c0f9241001RhP0R5Wv0gqRnO",
+        "msg_12c0f99380017F3Vt7C20MKyVk",
+        "msg_12c0f99cf001QmgSpjeohU1GEM",
+        "msg_12c0f9cbb001whBuTcB7BqmmA2",
+        "msg_12c0fa586001d5pFWr9TUgqp0Z",
+        "msg_12c0fa63a001yPrGz3kl0zu6Hx",
+        "msg_12c0faacd001ETEPq3puZb83a3",
+        "msg_12c0fab140014NFcBpUXqOYpFX",
+        "msg_12c0faec8001GjMPK87DwxSgMF"
+      ],
+      "partIds": [
+        "prt_12c0f919a00104IompQ8X8uJ7B",
+        "prt_12c0f95f2001OFfZpcWfo6JOWC",
+        "prt_12c0f95f4001GHg6vIzYQv1frN",
+        "prt_12c0f95f6001nXzKovFoLbtJyo",
+        "prt_12c0f96c9001QVZtPbCM7ijzBf",
+        "prt_12c0f9a71001gBiWYw1VM75P99",
+        "prt_12c0f9a73001lltNFuw0bwMDx9",
+        "prt_12c0f9a76001hRTJ5xTz4Y5EyZ",
+        "prt_12c0f99d0001WuzCgGR7Rs3hCK",
+        "prt_12c0fa587001q7FtijQnmh6Pi3",
+        "prt_12c0fa810001jeF3xR35oa2g4U",
+        "prt_12c0fa812001Gt6pbLN1HA0sdc",
+        "prt_12c0fa815001UxhautsgHEqirN",
+        "prt_12c0fa849001O528lg4AR28Nn5",
+        "prt_12c0fac4d001k3p50myocItnQt",
+        "prt_12c0fac4e0010D0ywO1HwSRmX2",
+        "prt_12c0fac51001UJ4mpdoputeey7",
+        "prt_12c0fab14002liECAxFCpkNkfk"
+      ],
+      "messageIdsPreserved": true,
+      "partIdsPreserved": true
+    }
+  },
+  "pendingAfterRestart": {
+    "permission": {
+      "count": 0,
+      "sameRequestVisible": false,
+      "oldRequestId": "per_12c0f9cd10017MlkgGCsP6sC39"
+    },
+    "question": {
+      "count": 0,
+      "sameRequestVisible": false,
+      "oldRequestId": "que_12c0faedb001P5l0VUw43Li0C9"
+    }
+  },
+  "repliesAfterRestart": {
+    "permission": "not attempted: pending request identity is absent; no blind auto-resend",
+    "question": "not attempted: pending request identity is absent; no blind auto-resend"
+  },
+  "explicitNewTurn": {
+    "priorMessageIds": [
+      "msg_12c0f9199001yLqn9QYbTU8hd8",
+      "msg_12c0f9241001RhP0R5Wv0gqRnO",
+      "msg_12c0f99380017F3Vt7C20MKyVk",
+      "msg_12c0f99cf001QmgSpjeohU1GEM",
+      "msg_12c0f9cbb001whBuTcB7BqmmA2",
+      "msg_12c0fa586001d5pFWr9TUgqp0Z",
+      "msg_12c0fa63a001yPrGz3kl0zu6Hx",
+      "msg_12c0faacd001ETEPq3puZb83a3",
+      "msg_12c0fab140014NFcBpUXqOYpFX",
+      "msg_12c0faec8001GjMPK87DwxSgMF"
+    ],
+    "newAssistantMessageID": "msg_12c0fb8e2001RK5zBgZ6YK6S2Z",
+    "priorIdsExcluded": true,
+    "matchedOnlyNewCompletedAssistant": true
+  },
+  "at": "2026-10-11T17:43:11.672Z",
+  "sourcebase": {
+    "head": "92e9fe42e (provided; git intentionally not invoked)",
+    "binary": {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/bin/opencode.exe",
+      "version": "1.2.27",
+      "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4"
+    },
+    "availableSourceFiles": [
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/permission.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/question.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/session.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/session/prompt.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/session/index.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/tool/question.ts"
+    ],
+    "sourceGaps": [
+      "permission/next.ts and question module implementation are absent from the provided source snapshot"
+    ]
+  },
+  "checks": [
+    "exact 1.2.27 plus production proxy/session owners and isolated auth gate",
+    "permission pending survives SDK client recreation; a new assistant message completes the same tool part",
+    "permission pending request disappears after restart; persisted message/part ids remain stable",
+    "question pending survives SDK client recreation; a new assistant message completes the same tool part",
+    "question pending request disappears after restart; persisted message/part ids remain stable",
+    "explicit new user turn continues the existing session after restart"
+  ],
+  "ownedProcessPids": [
+    23940,
+    140624,
+    139904
+  ],
+  "modelCalls": 7,
+  "controlledModelToolNames": [
+    "question",
+    "bash",
+    "read",
+    "glob",
+    "grep",
+    "edit",
+    "write",
+    "task",
+    "webfetch",
+    "todowrite",
+    "skill"
+  ],
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-host-recovery-eUFI6g",
+  "isolation": {
+    "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-eUFI6g\\home",
+    "workingDirectory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-eUFI6g\\workspace",
+    "sameHomeAndWorkingDirectoryReusedAfterRestart": true
+  },
+  "directoryCoverage": {
+    "isolatedHomeAndWorkingDirectory": true,
+    "multipleWorkingDirectoriesInOneRun": false
+  },
+  "processStopped": true,
+  "limitations": [
+    "Controlled loopback model validates request/event mechanics, not provider quality.",
+    "No full OpenChamber UI acceptance was performed.",
+    "Source snapshot omits PermissionNext/Question implementation internals.",
+    "Only one isolated working directory was exercised; two separate working directories were not compared in the same run.",
+    "A pending native permission/question request was observed missing after restart while its persisted message and part ids remained; no interrupted model request was reissued."
+  ]
+}

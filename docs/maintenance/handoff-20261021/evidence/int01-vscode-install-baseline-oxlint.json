@@ -1,0 +1,5576 @@
+{
+  "diagnostics": [
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1807,
+            "length": 23,
+            "line": 78,
+            "column": 42
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1861,
+            "length": 23,
+            "line": 79,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1918,
+            "length": 23,
+            "line": 79,
+            "column": 87
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 2759,
+            "length": 16,
+            "line": 92,
+            "column": 4
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3070,
+            "length": 23,
+            "line": 101,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3152,
+            "length": 39,
+            "line": 102,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3328,
+            "length": 12,
+            "line": 109,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3392,
+            "length": 32,
+            "line": 110,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3401,
+            "length": 23,
+            "line": 110,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3443,
+            "length": 19,
+            "line": 111,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3524,
+            "length": 22,
+            "line": 112,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3612,
+            "length": 23,
+            "line": 113,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3703,
+            "length": 24,
+            "line": 114,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3957,
+            "length": 47,
+            "line": 121,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4908,
+            "length": 30,
+            "line": 148,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5267,
+            "length": 34,
+            "line": 155,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6160,
+            "length": 34,
+            "line": 188,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6171,
+            "length": 23,
+            "line": 188,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6596,
+            "length": 30,
+            "line": 198,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6866,
+            "length": 40,
+            "line": 206,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6930,
+            "length": 22,
+            "line": 207,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7643,
+            "length": 49,
+            "line": 226,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7717,
+            "length": 17,
+            "line": 227,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7885,
+            "length": 19,
+            "line": 231,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8202,
+            "length": 34,
+            "line": 239,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8261,
+            "length": 17,
+            "line": 240,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8934,
+            "length": 243,
+            "line": 259,
+            "column": 59
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9018,
+            "length": 23,
+            "line": 262,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9203,
+            "length": 11,
+            "line": 267,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9462,
+            "length": 13,
+            "line": 273,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10486,
+            "length": 33,
+            "line": 297,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10717,
+            "length": 39,
+            "line": 299,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10733,
+            "length": 23,
+            "line": 299,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11056,
+            "length": 39,
+            "line": 309,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11072,
+            "length": 23,
+            "line": 309,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11369,
+            "length": 33,
+            "line": 319,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11976,
+            "length": 225,
+            "line": 334,
+            "column": 59
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12060,
+            "length": 23,
+            "line": 337,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12229,
+            "length": 11,
+            "line": 342,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12492,
+            "length": 13,
+            "line": 348,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13240,
+            "length": 33,
+            "line": 367,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13465,
+            "length": 39,
+            "line": 369,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13481,
+            "length": 23,
+            "line": 369,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13787,
+            "length": 39,
+            "line": 379,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13803,
+            "length": 23,
+            "line": 379,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15516,
+            "length": 44,
+            "line": 421,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15582,
+            "length": 14,
+            "line": 422,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15928,
+            "length": 144,
+            "line": 430,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16012,
+            "length": 23,
+            "line": 433,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16105,
+            "length": 13,
+            "line": 436,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16210,
+            "length": 11,
+            "line": 437,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16978,
+            "length": 45,
+            "line": 458,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17074,
+            "length": 39,
+            "line": 459,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17090,
+            "length": 23,
+            "line": 459,
+            "column": 66
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17407,
+            "length": 39,
+            "line": 469,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17423,
+            "length": 23,
+            "line": 469,
+            "column": 66
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18137,
+            "length": 258,
+            "line": 492,
+            "column": 77
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18282,
+            "length": 23,
+            "line": 496,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18428,
+            "length": 13,
+            "line": 501,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22026,
+            "length": 144,
+            "line": 582,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22110,
+            "length": 23,
+            "line": 585,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22203,
+            "length": 13,
+            "line": 588,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22312,
+            "length": 11,
+            "line": 589,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22705,
+            "length": 17,
+            "line": 597,
+            "column": 72
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23344,
+            "length": 39,
+            "line": 612,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23360,
+            "length": 23,
+            "line": 612,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23403,
+            "length": 21,
+            "line": 612,
+            "column": 111
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23607,
+            "length": 39,
+            "line": 617,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23623,
+            "length": 23,
+            "line": 617,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24098,
+            "length": 85,
+            "line": 630,
+            "column": 38
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24158,
+            "length": 23,
+            "line": 630,
+            "column": 98
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24338,
+            "length": 13,
+            "line": 632,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24921,
+            "length": 71,
+            "line": 644,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25330,
+            "length": 11,
+            "line": 657,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26026,
+            "length": 33,
+            "line": 675,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26089,
+            "length": 34,
+            "line": 676,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on assertion discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26388,
+            "length": 45,
+            "line": 679,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26388,
+            "length": 72,
+            "line": 679,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26437,
+            "length": 23,
+            "line": 679,
+            "column": 81
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26716,
+            "length": 21,
+            "line": 689,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27314,
+            "length": 39,
+            "line": 707,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27330,
+            "length": 23,
+            "line": 707,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27986,
+            "length": 44,
+            "line": 730,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 28588,
+            "length": 80,
+            "line": 740,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 28923,
+            "length": 341,
+            "line": 749,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 30642,
+            "length": 129,
+            "line": 799,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 30920,
+            "length": 11,
+            "line": 807,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 31103,
+            "length": 15,
+            "line": 812,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime-v2.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 31699,
+            "length": 13,
+            "line": 825,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1801,
+            "length": 23,
+            "line": 73,
+            "column": 42
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1855,
+            "length": 23,
+            "line": 74,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1912,
+            "length": 23,
+            "line": 74,
+            "column": 87
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3152,
+            "length": 16,
+            "line": 95,
+            "column": 4
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3498,
+            "length": 23,
+            "line": 104,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3580,
+            "length": 39,
+            "line": 105,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3756,
+            "length": 12,
+            "line": 112,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3820,
+            "length": 32,
+            "line": 113,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3829,
+            "length": 23,
+            "line": 113,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3871,
+            "length": 19,
+            "line": 114,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3952,
+            "length": 22,
+            "line": 115,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4040,
+            "length": 23,
+            "line": 116,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4131,
+            "length": 24,
+            "line": 117,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4385,
+            "length": 47,
+            "line": 124,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6654,
+            "length": 30,
+            "line": 172,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7013,
+            "length": 34,
+            "line": 179,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7906,
+            "length": 34,
+            "line": 212,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7917,
+            "length": 23,
+            "line": 212,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8342,
+            "length": 30,
+            "line": 222,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8612,
+            "length": 40,
+            "line": 230,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8676,
+            "length": 22,
+            "line": 231,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9424,
+            "length": 49,
+            "line": 250,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9498,
+            "length": 17,
+            "line": 251,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9666,
+            "length": 19,
+            "line": 255,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9983,
+            "length": 34,
+            "line": 263,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10042,
+            "length": 17,
+            "line": 264,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10705,
+            "length": 144,
+            "line": 283,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10789,
+            "length": 23,
+            "line": 286,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10875,
+            "length": 11,
+            "line": 289,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11134,
+            "length": 13,
+            "line": 295,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11728,
+            "length": 33,
+            "line": 311,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11943,
+            "length": 39,
+            "line": 313,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11959,
+            "length": 23,
+            "line": 313,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12292,
+            "length": 39,
+            "line": 323,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12308,
+            "length": 23,
+            "line": 323,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 12631,
+            "length": 33,
+            "line": 333,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13263,
+            "length": 144,
+            "line": 348,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13347,
+            "length": 23,
+            "line": 351,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13435,
+            "length": 11,
+            "line": 354,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 13698,
+            "length": 13,
+            "line": 360,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 14298,
+            "length": 33,
+            "line": 376,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 14523,
+            "length": 39,
+            "line": 378,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 14539,
+            "length": 23,
+            "line": 378,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 14880,
+            "length": 39,
+            "line": 388,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 14896,
+            "length": 23,
+            "line": 388,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15640,
+            "length": 144,
+            "line": 411,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15724,
+            "length": 23,
+            "line": 414,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15817,
+            "length": 13,
+            "line": 417,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 15922,
+            "length": 11,
+            "line": 418,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16690,
+            "length": 45,
+            "line": 439,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16770,
+            "length": 39,
+            "line": 440,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16786,
+            "length": 23,
+            "line": 440,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17113,
+            "length": 39,
+            "line": 450,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17129,
+            "length": 23,
+            "line": 450,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 17879,
+            "length": 258,
+            "line": 473,
+            "column": 77
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18024,
+            "length": 23,
+            "line": 477,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18170,
+            "length": 13,
+            "line": 482,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 21768,
+            "length": 144,
+            "line": 563,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 21852,
+            "length": 23,
+            "line": 566,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 21945,
+            "length": 13,
+            "line": 569,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22054,
+            "length": 11,
+            "line": 570,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22447,
+            "length": 17,
+            "line": 578,
+            "column": 72
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23086,
+            "length": 39,
+            "line": 593,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23102,
+            "length": 23,
+            "line": 593,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23145,
+            "length": 21,
+            "line": 593,
+            "column": 111
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23349,
+            "length": 39,
+            "line": 598,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23365,
+            "length": 23,
+            "line": 598,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23840,
+            "length": 85,
+            "line": 611,
+            "column": 38
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23900,
+            "length": 23,
+            "line": 611,
+            "column": 98
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24080,
+            "length": 13,
+            "line": 613,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 24722,
+            "length": 11,
+            "line": 634,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25418,
+            "length": 33,
+            "line": 652,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25481,
+            "length": 34,
+            "line": 653,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on assertion discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25780,
+            "length": 45,
+            "line": 656,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25780,
+            "length": 72,
+            "line": 656,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 25829,
+            "length": 23,
+            "line": 656,
+            "column": 81
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26143,
+            "length": 21,
+            "line": 666,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26741,
+            "length": 39,
+            "line": 684,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26757,
+            "length": 23,
+            "line": 684,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27483,
+            "length": 44,
+            "line": 707,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 28085,
+            "length": 80,
+            "line": 717,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 28420,
+            "length": 341,
+            "line": 726,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 30180,
+            "length": 129,
+            "line": 776,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 30458,
+            "length": 11,
+            "line": 784,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 30641,
+            "length": 15,
+            "line": 789,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/bridge-config-runtime.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 31237,
+            "length": 13,
+            "line": 802,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 2593,
+            "length": 23,
+            "line": 50,
+            "column": 53
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 2625,
+            "length": 23,
+            "line": 50,
+            "column": 85
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 3536,
+            "length": 74,
+            "line": 75,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 3930,
+            "length": 48,
+            "line": 83,
+            "column": 38
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 5375,
+            "length": 15,
+            "line": 126,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 7440,
+            "length": 15,
+            "line": 190,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 7824,
+            "length": 76,
+            "line": 199,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 8543,
+            "length": 62,
+            "line": 222,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 8989,
+            "length": 158,
+            "line": 234,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 8990,
+            "length": 14,
+            "line": 234,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 9038,
+            "length": 14,
+            "line": 236,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 9156,
+            "length": 14,
+            "line": 240,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 10816,
+            "length": 12,
+            "line": 285,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on return value of `headersToRecord` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 11289,
+            "length": 6,
+            "line": 298,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on return value of `getRequestHeaders` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 11564,
+            "length": 45,
+            "line": 304,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `body` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 12754,
+            "length": 7,
+            "line": 333,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `payload` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 12958,
+            "length": 7,
+            "line": 337,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 14559,
+            "length": 23,
+            "line": 376,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 17390,
+            "length": 11,
+            "line": 431,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 17442,
+            "length": 27,
+            "line": 431,
+            "column": 79
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 20358,
+            "length": 45,
+            "line": 499,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27217,
+            "length": 28,
+            "line": 681,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27262,
+            "length": 27,
+            "line": 682,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27331,
+            "length": 12,
+            "line": 682,
+            "column": 79
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27716,
+            "length": 48,
+            "line": 690,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27724,
+            "length": 30,
+            "line": 690,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27787,
+            "length": 28,
+            "line": 691,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27865,
+            "length": 46,
+            "line": 693,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27873,
+            "length": 29,
+            "line": 693,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 27934,
+            "length": 27,
+            "line": 694,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28358,
+            "length": 48,
+            "line": 702,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28366,
+            "length": 30,
+            "line": 702,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28429,
+            "length": 28,
+            "line": 703,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28507,
+            "length": 46,
+            "line": 705,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28515,
+            "length": 29,
+            "line": 705,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 28576,
+            "length": 27,
+            "line": 706,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 30683,
+            "length": 49,
+            "line": 743,
+            "column": 56
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 30695,
+            "length": 11,
+            "line": 743,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `payload` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 35491,
+            "length": 7,
+            "line": 838,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 35533,
+            "length": 14,
+            "line": 839,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 35591,
+            "length": 54,
+            "line": 840,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55242,
+            "length": 49,
+            "line": 1242,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55254,
+            "length": 11,
+            "line": 1242,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55349,
+            "length": 11,
+            "line": 1244,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55377,
+            "length": 21,
+            "line": 1244,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55471,
+            "length": 11,
+            "line": 1246,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55521,
+            "length": 29,
+            "line": 1246,
+            "column": 69
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55598,
+            "length": 26,
+            "line": 1247,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 55850,
+            "length": 26,
+            "line": 1250,
+            "column": 43
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 56411,
+            "length": 12,
+            "line": 1266,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 56499,
+            "length": 16,
+            "line": 1266,
+            "column": 109
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 57543,
+            "length": 20,
+            "line": 1293,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 58230,
+            "length": 83,
+            "line": 1307,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 58569,
+            "length": 82,
+            "line": 1314,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 58761,
+            "length": 16,
+            "line": 1317,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 59240,
+            "length": 16,
+            "line": 1328,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 61104,
+            "length": 83,
+            "line": 1382,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 61499,
+            "length": 83,
+            "line": 1390,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 62328,
+            "length": 20,
+            "line": 1407,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 62509,
+            "length": 69,
+            "line": 1415,
+            "column": 40
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 62586,
+            "length": 15,
+            "line": 1416,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 62618,
+            "length": 15,
+            "line": 1416,
+            "column": 39
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 62650,
+            "length": 11,
+            "line": 1416,
+            "column": 71
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 63994,
+            "length": 21,
+            "line": 1457,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64258,
+            "length": 29,
+            "line": 1460,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64388,
+            "length": 26,
+            "line": 1461,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64636,
+            "length": 23,
+            "line": 1464,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64715,
+            "length": 21,
+            "line": 1465,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64795,
+            "length": 18,
+            "line": 1466,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64866,
+            "length": 22,
+            "line": 1467,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 64948,
+            "length": 21,
+            "line": 1468,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 68702,
+            "length": 14,
+            "line": 1556,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 68823,
+            "length": 14,
+            "line": 1558,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 69976,
+            "length": 14,
+            "line": 1585,
+            "column": 87
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 70291,
+            "length": 32,
+            "line": 1595,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 70340,
+            "length": 31,
+            "line": 1596,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 70454,
+            "length": 12,
+            "line": 1599,
+            "column": 41
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 70918,
+            "length": 32,
+            "line": 1615,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 70967,
+            "length": 31,
+            "line": 1616,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 71085,
+            "length": 71,
+            "line": 1621,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 71181,
+            "length": 22,
+            "line": 1622,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 71271,
+            "length": 22,
+            "line": 1623,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 71361,
+            "length": 22,
+            "line": 1624,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 72107,
+            "length": 29,
+            "line": 1643,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `error` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 73086,
+            "length": 7,
+            "line": 1670,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 73406,
+            "length": 7,
+            "line": 1680,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 73570,
+            "length": 43,
+            "line": 1686,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 73634,
+            "length": 21,
+            "line": 1687,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 73718,
+            "length": 21,
+            "line": 1688,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 74397,
+            "length": 53,
+            "line": 1706,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 74719,
+            "length": 74,
+            "line": 1713,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 74862,
+            "length": 16,
+            "line": 1715,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 76473,
+            "length": 19,
+            "line": 1749,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 76657,
+            "length": 12,
+            "line": 1752,
+            "column": 41
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 77351,
+            "length": 19,
+            "line": 1769,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 77733,
+            "length": 21,
+            "line": 1782,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 77872,
+            "length": 20,
+            "line": 1785,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 77949,
+            "length": 25,
+            "line": 1786,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 78916,
+            "length": 104,
+            "line": 1819,
+            "column": 31
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 79683,
+            "length": 7,
+            "line": 1836,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 79703,
+            "length": 12,
+            "line": 1836,
+            "column": 54
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `value` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 80388,
+            "length": 7,
+            "line": 1856,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 80430,
+            "length": 12,
+            "line": 1857,
+            "column": 3
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `parts` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82016,
+            "length": 7,
+            "line": 1897,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82133,
+            "length": 11,
+            "line": 1901,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82190,
+            "length": 61,
+            "line": 1902,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82303,
+            "length": 17,
+            "line": 1904,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82349,
+            "length": 20,
+            "line": 1904,
+            "column": 62
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82540,
+            "length": 23,
+            "line": 1913,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82599,
+            "length": 58,
+            "line": 1914,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82634,
+            "length": 23,
+            "line": 1914,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82674,
+            "length": 54,
+            "line": 1915,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 82693,
+            "length": 23,
+            "line": 1915,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83247,
+            "length": 14,
+            "line": 1929,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83290,
+            "length": 54,
+            "line": 1930,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83635,
+            "length": 14,
+            "line": 1939,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83676,
+            "length": 58,
+            "line": 1940,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83922,
+            "length": 13,
+            "line": 1949,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 83981,
+            "length": 95,
+            "line": 1950,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 84600,
+            "length": 23,
+            "line": 1965,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 84686,
+            "length": 25,
+            "line": 1966,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 84819,
+            "length": 23,
+            "line": 1970,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 84934,
+            "length": 58,
+            "line": 1971,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 84969,
+            "length": 23,
+            "line": 1971,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85009,
+            "length": 54,
+            "line": 1972,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85028,
+            "length": 23,
+            "line": 1972,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85084,
+            "length": 59,
+            "line": 1973,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85285,
+            "length": 48,
+            "line": 1975,
+            "column": 71
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on return value of `buildNotificationVariables` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85355,
+            "length": 471,
+            "line": 1976,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85521,
+            "length": 53,
+            "line": 1980,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85875,
+            "length": 23,
+            "line": 1988,
+            "column": 44
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85934,
+            "length": 58,
+            "line": 1989,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 85969,
+            "length": 23,
+            "line": 1989,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86009,
+            "length": 54,
+            "line": 1990,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86028,
+            "length": 23,
+            "line": 1990,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86245,
+            "length": 23,
+            "line": 1994,
+            "column": 44
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86311,
+            "length": 58,
+            "line": 1995,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86346,
+            "length": 23,
+            "line": 1995,
+            "column": 57
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86386,
+            "length": 54,
+            "line": 1996,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86405,
+            "length": 23,
+            "line": 1996,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86618,
+            "length": 63,
+            "line": 2001,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86744,
+            "length": 14,
+            "line": 2003,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86809,
+            "length": 34,
+            "line": 2007,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86820,
+            "length": 23,
+            "line": 2007,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86912,
+            "length": 56,
+            "line": 2009,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86945,
+            "length": 23,
+            "line": 2009,
+            "column": 55
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 86985,
+            "length": 54,
+            "line": 2010,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 87004,
+            "length": 23,
+            "line": 2010,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 87582,
+            "length": 12,
+            "line": 2028,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 87628,
+            "length": 30,
+            "line": 2029,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 90444,
+            "length": 51,
+            "line": 2088,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 90460,
+            "length": 23,
+            "line": 2088,
+            "column": 45
+          }
+        }
+      ]
+    },
+    {
+      "message": "This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "code": "anti-slop(no-chained-type-assertions)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 91639,
+            "length": 42,
+            "line": 2109,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 91639,
+            "length": 42,
+            "line": 2109,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 91639,
+            "length": 21,
+            "line": 2109,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/webview/main.baseline.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 93343,
+            "length": 40,
+            "line": 2147,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 784,
+            "length": 72,
+            "line": 31,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3585,
+            "length": 63,
+            "line": 125,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3703,
+            "length": 17,
+            "line": 128,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3767,
+            "length": 17,
+            "line": 129,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 3832,
+            "length": 18,
+            "line": 130,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `parseSkillMd` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6868,
+            "length": 104,
+            "line": 208,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7062,
+            "length": 13,
+            "line": 216,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7092,
+            "length": 26,
+            "line": 216,
+            "column": 65
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `parseSkillMd` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7137,
+            "length": 29,
+            "line": 217,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `parseSkillMd` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7191,
+            "length": 102,
+            "line": 219,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10654,
+            "length": 25,
+            "line": 313,
+            "column": 44
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11744,
+            "length": 39,
+            "line": 348,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11875,
+            "length": 32,
+            "line": 349,
+            "column": 31
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16328,
+            "length": 34,
+            "line": 478,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16421,
+            "length": 34,
+            "line": 479,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 19007,
+            "length": 34,
+            "line": 537,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/skillsCatalog.baseline.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 19102,
+            "length": 34,
+            "line": 538,
+            "column": 23
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 5,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.59252
+}

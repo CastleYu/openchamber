@@ -1,0 +1,92 @@
+{
+  "baseline": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+  "testedWorkingTree": true,
+  "fingerprints": {
+    "packages/ui/src/sync/domain-event-authority.ts": "51776a036dd37a28a7d2a2f27b5aed6b9aeff82aa88ca82fc8abed31176d78b2",
+    "packages/ui/src/sync/event-reducer.ts": "84261e4257f94fe60f564fa93b360b52f83290068215bbf122dde4436a581023",
+    "packages/ui/src/sync/domain-event-reducer.test.ts": "b68ba20f298de2b32628280053148028ed1cc935e7674a6728d4ab8a16811480",
+    "packages/ui/src/sync/domain-batch-authority.test.ts": "34c66140da01dba6239d4a028394456fd3e9dd2f70ed7cdc3d6fedb295e463d9"
+  },
+  "defect": "OC2 session.created durable.seq=0 reached the actual VS Code webview, but both unseen per-session ordering gates used 0 as their prior sequence and rejected the event.",
+  "fix": "Use -1 only for unseen sequence state; committed zero and duplicate/lower sequences remain rejected.",
+  "validation": {
+    "red": "12 pass, 2 fail across two files before production changes",
+    "focused": "14 pass, 0 fail after changes",
+    "sync": "81/82 isolated files passed; existing 850-session retention case exceeded default 5000ms",
+    "retentionRecheck": "Default timeout failed again; unchanged suite passed 22 tests with explicit --timeout 30000 in 7.93 seconds",
+    "types": "UI type-check passed",
+    "lint": "UI lint passed with five existing warnings",
+    "oxlint": "54 unchanged-line diagnostics; zero authored findings",
+    "builds": "Web and VS Code production builds passed",
+    "native": "44 checks passed in actual VS Code extension host/webview with real OC2 2.0.20; isolated USERPROFILE",
+    "excluded": [
+      "Model-generated conversation",
+      "Exact Legacy 1.2.27 conversation",
+      "Real CAgent API adaptation",
+      "Packaged desktop/mobile acceptance"
+    ]
+  },
+  "nativeEvidence": "artifacts/int02-r1-native-evidence.json",
+  "cleanup": {
+    "checkedAt": "2026-10-11T10:46:25.6351682Z",
+    "activeFixtureProcesses": 0,
+    "reparsePoints": 0,
+    "processRegistries": "absent or empty",
+    "removed": [
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-LUrXy8",
+        "bytes": 35099085
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-2Awvas",
+        "bytes": 61520773
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-yEhM2O",
+        "bytes": 35243180
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-uetDHF",
+        "bytes": 35243870
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-bSdx7a",
+        "bytes": 25039220
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-H0lsTJ",
+        "bytes": 34792387
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-mFub97",
+        "bytes": 2090632
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-C67SZN",
+        "bytes": 2090632
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-cqhPZZ",
+        "bytes": 35262093
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-zVkGbA",
+        "bytes": 35268871
+      }
+    ],
+    "reclaimedBytes": 301650743,
+    "evidence": "artifacts/int02-r1-native-evidence.json",
+    "retained": [
+      "Pinned OC2 executable and current Web/VS Code builds for R1 clause reconciliation and R2 regressions",
+      "Reusable native driver and preparation scripts until R1 closes"
+    ],
+    "nextCleanup": "R1 closeout"
+  },
+  "consumerDisposition": "artifacts/int02-r1-consumer-evidence.json",
+  "continuation": "R1 remains open for final INT-01/INT-02 clause reconciliation. R2 exact Legacy conversation and R7 packaged acceptance retain their existing scope.",
+  "weeklyRemainingAtEntry": 90,
+  "releaseChanged": false,
+  "commit": "7be9a791b548f7b89115291abedf94bff79a0a41",
+  "documentationLinksChecked": 53,
+  "helperCleanup": "One-time editing, review, checkpoint and cleanup helpers removed after commit; reusable native driver retained until R1 closes."
+}

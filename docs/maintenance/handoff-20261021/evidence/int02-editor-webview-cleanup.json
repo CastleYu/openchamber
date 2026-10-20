@@ -1,0 +1,50 @@
+{
+  "removed": [
+    {
+      "path": "int02-editor-webview-RLsXVF",
+      "bytes": 26085738
+    },
+    {
+      "path": "int02-editor-webview-ybVYLG",
+      "bytes": 26069993
+    },
+    {
+      "path": "int02-editor-webview-JH4JVA",
+      "bytes": 34497226
+    },
+    {
+      "path": "int02-editor-webview-lBOxdG",
+      "bytes": 34497942
+    },
+    {
+      "path": "int02-editor-webview-AGKgWS",
+      "bytes": 34916778
+    },
+    {
+      "path": "int02-editor-webview-TU8kMA",
+      "bytes": 35280109
+    },
+    {
+      "path": "int02-editor-webview-lEOEg0",
+      "bytes": 35255817
+    },
+    {
+      "path": "int02-editor-webview-QPIavd",
+      "bytes": 35646141
+    },
+    {
+      "path": "int02-editor-webview-Sk0eX4",
+      "bytes": 35646966
+    }
+  ],
+  "nextCleanup": "R1 closeout",
+  "ownedProcesses": 0,
+  "reparsePoints": 0,
+  "retained": [
+    "Compact evidence and validation logs: checkpoint reproducibility",
+    "Reusable native driver and production build: remaining R1 checks",
+    "Real OC2 executable: remaining R1 and later compatibility checks"
+  ],
+  "bytesReclaimed": 297896710,
+  "registryFiles": 0
+}

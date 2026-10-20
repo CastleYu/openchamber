@@ -60,6 +60,17 @@ const parseVersion = (version) => {
   };
 };
 
+export const areOpenCodeVersionsEqual = (left, right) => {
+  const parsedLeft = parseVersion(left);
+  const parsedRight = parseVersion(right);
+  return Boolean(parsedLeft && parsedRight && parsedLeft.value.split('+')[0] === parsedRight.value.split('+')[0]);
+};
+
+export const isLegacyOpenCodeVersion = (version) => {
+  const parsed = parseVersion(version);
+  return Boolean(parsed && parsed.value.split('+')[0] === LEGACY_HEALTH_ONLY_VERSION && !parsed.prerelease);
+};
+
 export const isSupportedOpenCodeVersion = (version) => {
   const parsed = parseVersion(version);
   if (!parsed) return false;
@@ -137,7 +148,7 @@ const detectIdentity = async ({ endpoint, epoch, headers = {}, headersForGenerat
   // 1.2.27 forwards unknown paths and their headers to its hosted web app.
   // Its authenticated health identity is sufficient; /api/info is not its API.
   const healthVersion = health.version?.version;
-  if (healthVersion?.split('+')[0] === LEGACY_HEALTH_ONLY_VERSION) {
+  if (isLegacyOpenCodeVersion(healthVersion)) {
     return result(OPENCODE_GENERATION.OC1, healthVersion);
   }
   if (healthOnly) {
@@ -183,7 +194,7 @@ export const detectOpenCodeProfile = async (options) => {
   const reject = (status) => ({ status, selection, descriptor });
   if (identity.reason === PROFILE_STATUS.AUTH || identity.reason === PROFILE_STATUS.UNREACHABLE
     || identity.reason === PROFILE_STATUS.CONFLICT || identity.reason === PROFILE_STATUS.INVALID_ENDPOINT) return reject(identity.reason);
-  const exact = descriptor.version?.split('+')[0] === LEGACY_HEALTH_ONLY_VERSION;
+  const exact = isLegacyOpenCodeVersion(descriptor.version);
   const declared = selection === OPENCODE_SELECTION.LEGACY && !descriptor.version && identity.healthy;
   if (selection === OPENCODE_SELECTION.LEGACY && !exact && !declared) return reject(descriptor.version ? PROFILE_STATUS.MISMATCH : PROFILE_STATUS.UNVERIFIED);
   if (!declared && descriptor.generation !== OPENCODE_GENERATION.OC1 && descriptor.generation !== OPENCODE_GENERATION.OC2) {

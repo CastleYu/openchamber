@@ -1,0 +1,24 @@
+{
+  "scope": "INT-05 Legacy durable server queue owner, before UI and exact-binary correlation acceptance",
+  "risks": [
+    "persisted item format",
+    "public queue projection",
+    "explicit confirmed resubmit route",
+    "owner retirement and duplicate sends"
+  ],
+  "surfaces": {
+    "web": "existing server queue",
+    "electron": "same server queue",
+    "hostedMobile": "connected server queue",
+    "capacitor": "connected server queue",
+    "vscode": "local queue is a later batch; no false parity claim"
+  },
+  "validation": [
+    "existing queue Vitest regression",
+    "durability and lost-response tests",
+    "real filesystem failure",
+    "UI projection and exact-binary ID correlation remain pending"
+  ],
+  "astra": "Accepted records may be skipped under authoritative idle gate; unknown scans entire session; do not infer terminal from idle or completed alone",
+  "quotaRemainingAtStart": 45
+}

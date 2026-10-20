@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createLegacyCredentials } from '../../web/server/lib/opencode/legacy-credentials.js';
+import type { OpenCodeGenerationDescriptor } from '../../web/server/lib/opencode/compatibility.js';
 import {
   configureOpenCodeCredentials as configureSharedCredentials,
   getOpenCodeCredentialGeneration as getSharedCredentialGeneration,
@@ -11,7 +13,8 @@ import {
 
 type CredentialManager = {
   getApiUrl(): string | null;
-  getKernelRuntime(): { generation: string; endpoint?: string | null; epoch?: number | string; version?: string | null };
+  getKernelRuntime(): Readonly<OpenCodeGenerationDescriptor>;
+  getNativeConfigContext(): { id: symbol; env: NodeJS.ProcessEnv; cwd: string } | null;
   getOpenCodeAuthHeaders(): Record<string, string>;
   getManagedLaunchEnvironment(): NodeJS.ProcessEnv | null;
 };
@@ -35,7 +38,10 @@ export const openCodeCredentialSource = (manager: CredentialManager) => {
 export const configureOpenCodeCredentials = configureSharedCredentials;
 export const configureOpenCodeCredentialSource = (manager: CredentialManager): void => {
   const getRuntime = () => manager.getKernelRuntime();
-  configureSharedCredentials(getRuntime, openCodeCredentialSource(manager));
+  configureSharedCredentials(getRuntime, openCodeCredentialSource(manager), createLegacyCredentials({
+    getRuntime,
+    getNativeConfigContext: () => manager.getNativeConfigContext(),
+  }));
 };
 export const readOpenCodeCredentials = (): Promise<AuthFile> => readSharedCredentials();
 export const getOpenCodeProviderAuth = (providerId: string): Promise<AuthEntry | null> => getSharedProviderAuth(providerId);

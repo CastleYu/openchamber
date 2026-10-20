@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-11T17:37:01.416Z",
+  "antiSlop": {
+    "baseline": 93,
+    "current": 93,
+    "unchanged": true,
+    "authoredTestClean": true,
+    "logs": [
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-final-anti-slop-baseline.log",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-final-anti-slop.log"
+    ]
+  },
+  "lint": {
+    "code": 0,
+    "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-clean-lint.log",
+    "existingWarnings": 5
+  }
+}

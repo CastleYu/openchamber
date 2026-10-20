@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "files": 95,
+  "digest": "03d825364a42c392b8af2a4c24e764eb0ed55207366f5948563c10d957753c98",
+  "commands": 11,
+  "activation": "unavailable",
+  "node": "24.9.0",
+  "bun": "1.3.14"
+}

@@ -13,10 +13,23 @@
 
 import fs from 'fs';
 import path from 'path';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { z } from 'zod';
 import { readDescendantActivity } from '../opencode/descendant-activity.js';
 
 const QUEUE_FILE_NAME = 'message-queue.json';
 const QUEUE_FILE_VERSION = 1;
+const ATTEMPT = Object.freeze({ PENDING: 'pending', ACCEPTED: 'accepted', UNKNOWN: 'unknown', COMPLETED: 'completed', FAILED: 'failed' });
+const attemptSchema = z.object({ id: z.string().min(1), state: z.enum(Object.values(ATTEMPT)), createdAt: z.number().finite().nonnegative(), messageID: z.string().regex(/^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/).optional() }).strict();
+let lastMessageTime = 0;
+let messageCounter = 0;
+const nextMessageId = (timestamp) => {
+  if (timestamp !== lastMessageTime) { lastMessageTime = timestamp; messageCounter = 0; }
+  const clock = (BigInt(timestamp) * 4096n + BigInt(++messageCounter)).toString(16).padStart(12, '0').slice(-12);
+  return 'msg_' + clock + randomBytes(7).toString('hex');
+};
+const unresolved = item => item.attempt?.state === ATTEMPT.PENDING || item.attempt?.state === ATTEMPT.UNKNOWN;
+const isLegacy = identity => identity?.generation === 'oc1' && identity.profile === 'legacy-1.2.27';
 const TARGET_PATTERN = /^[a-f0-9]{64}$/;
 const TAKE = Object.freeze({ SEND: 'send', EDIT: 'edit' });
 const takePurpose = value => {
@@ -152,10 +165,16 @@ const parseStoredItem = (value) => {
   const raw = asRecord(value);
   const id = raw ? asNonEmptyString(raw.id) : '';
   if (!id) return null;
+  const storedAttempt = raw.attempt === undefined ? null : attemptSchema.parse(raw.attempt);
+  const attempt = storedAttempt ? { ...storedAttempt,
+    state: storedAttempt.state === ATTEMPT.PENDING || storedAttempt.state === ATTEMPT.ACCEPTED ? ATTEMPT.UNKNOWN : storedAttempt.state } : null;
   try {
-    return { id, createdAt: asCount(raw.createdAt) ?? Date.now(), ...parseQueuedItemInput(raw),
+    const item = { id, createdAt: asCount(raw.createdAt) ?? Date.now(), ...parseQueuedItemInput(raw),
       target: TARGET_PATTERN.test(asText(raw.target)) ? raw.target : null };
-  } catch {
+    if (attempt) item.attempt = attempt;
+    return item;
+  } catch (error) {
+    if (attempt) throw error;
     return null;
   }
 };
@@ -181,6 +200,7 @@ const toPublicItem = (item) => {
       + (contextPreview.length > firstLine.length || firstLine.length > 100 ? '...' : '');
   }
   publicItem.sendConfig = { ...item.sendConfig };
+  if (item.attempt) publicItem.attempt = { id: item.attempt.id, state: item.attempt.state, createdAt: item.attempt.createdAt };
   return publicItem;
 };
 
@@ -342,19 +362,24 @@ export function createMessageQueueRuntime({
 
   const persist = () => {
     const payload = JSON.stringify(serialize());
-    writePromise = writePromise
-      .then(async () => {
+    const write = writePromise.then(async () => {
+      const tmpPath = `${filePath}.${process.pid}.tmp`;
+      try {
         await fs.promises.mkdir(dataDir, { recursive: true });
-        const tmpPath = `${filePath}.${process.pid}.tmp`;
         await fs.promises.writeFile(tmpPath, payload, 'utf8');
         await fs.promises.rename(tmpPath, filePath);
         writeError = null;
-      })
-      .catch((error) => {
-        writeError = error;
-        console.warn('[message-queue] failed to persist queue:', error?.message ?? error);
-      });
-    return writePromise;
+        return null;
+      } finally {
+        await fs.promises.rm(tmpPath, { force: true }).catch(() => undefined);
+      }
+    }).catch(error => {
+      writeError = error;
+      console.warn('[message-queue] failed to persist queue:', error?.message ?? error);
+      return error;
+    });
+    writePromise = write.then(() => undefined);
+    return write;
   };
 
   const refreshTarget = async () => {
@@ -569,7 +594,7 @@ export function createMessageQueueRuntime({
       : [synthetic];
   };
 
-  const sendItem = async (sessionId, directory, item, identity) => {
+  const sendItem = async (sessionId, directory, item, identity, beforeMutation) => {
     if (!isCurrent(identity)) throw httpError('OpenCode runtime changed before queued dispatch', 409);
     const { providerID, modelID, agent, variant } = item.sendConfig;
     const fileParts = item.attachments.map(toFilePart);
@@ -606,11 +631,13 @@ export function createMessageQueueRuntime({
           ? { ...identity, body }
           : { ...identity, model, synthetics, body: commandBody };
         if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+        await beforeMutation?.(body);
         await kernelOperations.sendCommand({ sessionID: sessionId, directory, request });
         if (knowledge.text && sessionKnowledgeRuntime) {
           await sessionKnowledgeRuntime.recordDelivered(sessionId, directory, knowledge.signature).catch(() => undefined);
         }
       } else {
+        await beforeMutation?.(body);
         await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/command`, { directory, method: 'POST', body });
       }
       return;
@@ -664,8 +691,10 @@ export function createMessageQueueRuntime({
         ? { ...identity, body }
         : { ...identity, model, synthetics, body: promptBody };
       if (identity.generation === 'oc2' && body.agent) request.agent = body.agent;
+      await beforeMutation?.(body);
       await kernelOperations.sendPrompt({ sessionID: sessionId, directory, request });
     } else {
+      await beforeMutation?.(body);
       await openCodeFetch(`/session/${encodeURIComponent(sessionId)}/prompt_async`, { directory, method: 'POST', body });
     }
     if (knowledge.text && sessionKnowledgeRuntime) {
@@ -706,6 +735,96 @@ export function createMessageQueueRuntime({
     return false;
   };
 
+  // The existing queue owns intent, attempts and result durability together.
+  const dispatchItem = async (sessionId, directory, item, identity) => {
+    const legacy = isLegacy(identity);
+    let attempt;
+    let dispatched = false;
+    const beforeMutation = async (body) => {
+      if (stopped || paused || !isCurrent(identity) || delivery(item) !== DELIVERY.READY || !queues.get(sessionId)?.items.includes(item)) throw httpError('OpenCode runtime changed during queued dispatch', 409);
+      if (!legacy) return;
+      const previous = item.attempt;
+      attempt = { id: randomUUID(), state: ATTEMPT.PENDING, createdAt: now(), messageID: nextMessageId(now()) };
+      body.messageID = attempt.messageID;
+      item.attempt = attempt;
+      revision += 1;
+      const error = await persist();
+      if (error) {
+        if (previous) item.attempt = previous;
+        else delete item.attempt;
+        attempt = undefined;
+        throw httpError('Could not persist queued dispatch attempt', 503);
+      }
+      // Nothing after this boundary may enter the automatic retry path.
+      if (stopped || paused || !isCurrent(identity) || delivery(item) !== DELIVERY.READY) throw httpError('OpenCode runtime changed during queued dispatch', 409);
+      dispatched = true;
+      broadcast(sessionId);
+    };
+    try {
+      await sendItem(sessionId, directory, item, identity, beforeMutation);
+      if (legacy) {
+        attempt.state = ATTEMPT.ACCEPTED;
+        revision += 1;
+        const error = await persist();
+        if (error) throw httpError('Could not persist queued dispatch result', 503);
+      } else {
+        const after = queues.get(sessionId);
+        if (after) setQueueItems(sessionId, after.directory, after.items.filter(entry => entry.id !== item.id));
+        commit(sessionId);
+      }
+      failures.delete(sessionId);
+      try { onPromptSent?.(sessionId); } catch { /* bookkeeping only */ }
+      return true;
+    } catch (error) {
+      if (!attempt) throw error;
+      // A durable pending write also stays unknown after retirement before send.
+      attempt.state = ATTEMPT.UNKNOWN;
+      revision += 1;
+      await persist();
+      failures.delete(sessionId);
+      console.warn('[message-queue] Legacy dispatch outcome is unknown:', dispatched ? 'request entered' : 'owner retired');
+      return false;
+    }
+  };
+
+  // A bounded tail can prove a matching result, never prove non-acceptance.
+  // Existing timers/events own this read; no replay or new polling loop is added.
+  const reconcileAttempts = async (sessionId, queue, identity) => {
+    let page;
+    try { page = (await kernelOperations.listMessages({ sessionID: sessionId, directory: queue.directory, limit: MESSAGE_TAIL_LIMIT })).data; }
+    catch { return; }
+    if (!isCurrent(identity) || stopped || paused || !asList(page?.items)) return;
+    for (const item of queue.items) {
+      const attempt = item.attempt;
+      if (!attempt?.messageID || ![ATTEMPT.ACCEPTED, ATTEMPT.UNKNOWN].includes(attempt.state) || delivery(item) !== DELIVERY.READY) continue;
+      const candidate = page.items.find(message => message.role === 'assistant' && message.parentID === attempt.messageID && message.completed !== undefined && message.finish !== 'tool-calls' && message.finish !== 'unknown');
+      if (!candidate) continue;
+      let result;
+      try { result = await kernelOperations.getMessage({ sessionID: sessionId, messageID: candidate.id, directory: queue.directory }); }
+      catch { continue; }
+      if (stopped || paused || !isCurrent(identity) || sending.has(sessionId)
+        || queues.get(sessionId) !== queue || !queue.items.includes(item) || item.attempt !== attempt
+        || ![ATTEMPT.ACCEPTED, ATTEMPT.UNKNOWN].includes(attempt.state) || delivery(item) !== DELIVERY.READY) return;
+      const info = asRecord(asRecord(result.data)?.info);
+      if (info?.id !== candidate.id || info.sessionID !== sessionId || info.role !== 'assistant'
+        || info.parentID !== attempt.messageID || info.summary || asCount(asRecord(info.time)?.completed) === null) continue;
+      const errorName = asNonEmptyString(asRecord(info.error)?.name);
+      if (info.error !== undefined && !errorName) continue;
+      if (!errorName && info.finish !== 'stop') continue;
+      attempt.state = errorName ? ATTEMPT.FAILED : ATTEMPT.COMPLETED;
+      revision += 1;
+      const error = await persist();
+      if (error) {
+        // A failed terminal write cannot release the unresolved-send barrier.
+        attempt.state = ATTEMPT.UNKNOWN;
+        revision += 1;
+        broadcast(sessionId);
+        return;
+      }
+      broadcast(sessionId);
+    }
+  };
+
   async function tick(sessionId) {
     if (stopped || paused) return;
     const queue = queues.get(sessionId);
@@ -717,7 +836,18 @@ export function createMessageQueueRuntime({
       return;
     }
 
-    const head = queue.items[0];
+    if (queue.items.some(item => item.attempt?.messageID && [ATTEMPT.ACCEPTED, ATTEMPT.UNKNOWN].includes(item.attempt.state))) {
+      await refreshTarget();
+      if (stopped || paused) return;
+      const identity = kernelOperations?.captureIdentity();
+      if (isLegacy(identity) && await isSessionIdle(sessionId, queue.directory, identity) === true
+        && !stopped && !paused && isCurrent(identity) && !sending.has(sessionId)) {
+        await reconcileAttempts(sessionId, queue, identity);
+      }
+    }
+    if (stopped || paused || queue.items.some(unresolved)) return;
+    const head = queue.items.find(item => !item.attempt);
+    if (!head) return;
     const failure = failures.get(sessionId);
     if (failure && failure.itemId !== head.id) failures.delete(sessionId);
     else if (failure && failure.nextAttemptAt > now()) {
@@ -747,24 +877,16 @@ export function createMessageQueueRuntime({
 
     // Re-read after the awaits — the user may have edited the queue meanwhile.
     const current = queues.get(sessionId);
-    const item = current?.items[0];
-    if (!item || item.id !== head.id || sending.has(sessionId) || delivery(item) !== DELIVERY.READY) return;
+    const item = current?.items.find(entry => !entry.attempt);
+    if (!item || item.id !== head.id || current.items.some(unresolved) || sending.has(sessionId) || delivery(item) !== DELIVERY.READY) return;
 
     sending.set(sessionId, item.id);
     broadcast(sessionId);
     try {
-      await sendItem(sessionId, current.directory, item, identity);
-      const after = queues.get(sessionId);
-      if (after) setQueueItems(sessionId, after.directory, after.items.filter((entry) => entry.id !== item.id));
-      failures.delete(sessionId);
+      await dispatchItem(sessionId, current.directory, item, identity);
       sending.delete(sessionId);
-      commit(sessionId);
-      try {
-        onPromptSent?.(sessionId);
-      } catch {
-        // bookkeeping only
-      }
-      console.log(`[message-queue] sent queued message to ${sessionId}`);
+      broadcast(sessionId);
+      if (isLegacy(identity)) armDispatch(sessionId);
     } catch (error) {
       sending.delete(sessionId);
       const count = (failure?.itemId === item.id ? failure.failures : 0) + 1;
@@ -860,6 +982,7 @@ export function createMessageQueueRuntime({
     if (!queue || !queue.items.some((item) => item.id === itemId)) {
       return { revision, session: sessionSnapshot(sessionId) };
     }
+    if (unresolved(queue.items.find(item => item.id === itemId))) throw httpError('Unknown dispatch cannot be discarded through ordinary removal', 409);
     setQueueItems(sessionId, queue.directory, queue.items.filter((item) => item.id !== itemId));
     return commit(sessionId);
   };
@@ -875,6 +998,7 @@ export function createMessageQueueRuntime({
     const queue = queues.get(sessionId);
     const item = queue?.items.find((entry) => entry.id === itemId);
     if (!queue || !item) throw httpError('queued message not found', 404);
+    if (item.attempt || queue.items.some(unresolved)) throw httpError('Queued dispatch outcome requires explicit handling before sending or editing', 409);
     if (purpose === TAKE.SEND && delivery(item) !== DELIVERY.READY) throw httpError('Queued message belongs to an unavailable connection', 409);
     setQueueItems(sessionId, queue.directory, queue.items.filter((entry) => entry.id !== itemId));
     return { ...commit(sessionId), item: { ...item, delivery: delivery(item) } };
@@ -892,6 +1016,7 @@ export function createMessageQueueRuntime({
     const sendingId = sending.get(sessionId) ?? null;
     const items = queue.items.filter((item) => item.id !== sendingId);
     if (items.length === 0) return { revision, session: sessionSnapshot(sessionId), items: [] };
+    if (items.some(item => item.attempt)) throw httpError('Queue contains recorded dispatch outcomes; handle them explicitly', 409);
     if (purpose === TAKE.SEND && items.some(item => delivery(item) !== DELIVERY.READY)) throw httpError('Queue contains intent for an unavailable connection', 409);
     setQueueItems(sessionId, queue.directory, queue.items.filter((item) => item.id === sendingId));
     return { ...commit(sessionId), items };
@@ -905,6 +1030,7 @@ export function createMessageQueueRuntime({
     await load();
     const queue = queues.get(sessionId);
     if (!queue) return { revision, session: sessionSnapshot(sessionId) };
+    if (queue.items.some(unresolved)) throw httpError('Unresolved dispatch prevents queue reordering', 409);
     const byId = new Map(queue.items.map((item) => [item.id, item]));
     if (itemIds.length !== byId.size || new Set(itemIds).size !== itemIds.length || itemIds.some((id) => !byId.has(id))) {
       throw new TypeError('itemIds must list every queued message exactly once');
@@ -921,9 +1047,41 @@ export function createMessageQueueRuntime({
     // Never drop a message already handed to OpenCode: its send resolves and
     // must find its entry.
     const sendingId = sending.get(sessionId) ?? null;
-    setQueueItems(sessionId, queue.directory, queue.items.filter((item) => item.id === sendingId));
+    setQueueItems(sessionId, queue.directory, queue.items.filter((item) => item.id === sendingId || unresolved(item)));
     clearTimer(sessionId);
     return commit(sessionId);
+  };
+
+  const resubmitSchema = z.object({ attemptId: z.string().min(1), confirmed: z.literal(true) }).strict();
+  const performResubmit = async (sessionIdInput, itemId, input) => {
+    const sessionId = requireSessionId(sessionIdInput);
+    const parsed = resubmitSchema.safeParse(input);
+    if (!parsed.success) throw httpError('Explicit duplicate-side-effect confirmation is required', 409);
+    await load();
+    const queue = queues.get(sessionId);
+    const item = queue?.items.find(entry => entry.id === itemId);
+    if (!item || item.attempt?.state !== ATTEMPT.UNKNOWN || item.attempt.id !== parsed.data.attemptId) throw httpError('Queued dispatch attempt changed', 409);
+    if (stopped || paused || sending.has(sessionId) || delivery(item) !== DELIVERY.READY) throw httpError('Queued dispatch is unavailable', 409);
+    const identity = kernelOperations?.captureIdentity();
+    if (!isLegacy(identity)) throw httpError('Legacy dispatch owner is unavailable', 409);
+    // Claim before the first await so two confirmations cannot both dispatch.
+    sending.set(sessionId, item.id);
+    broadcast(sessionId);
+    try {
+      if (await isSessionIdle(sessionId, queue.directory, identity) !== true) throw httpError('Session is not verified idle', 409);
+      await dispatchItem(sessionId, queue.directory, item, identity);
+      return { revision, session: sessionSnapshot(sessionId) };
+    } finally {
+      sending.delete(sessionId);
+      broadcast(sessionId);
+      armDispatch(sessionId);
+    }
+  };
+  const resubmit = (...args) => {
+    const job = performResubmit(...args);
+    dispatches.add(job);
+    void job.then(() => dispatches.delete(job), () => dispatches.delete(job));
+    return job;
   };
 
   const setHold = (sessionIdInput, held, ttlMs = HOLD_DEFAULT_TTL_MS) => {
@@ -956,7 +1114,7 @@ export function createMessageQueueRuntime({
         if (stopped || paused || !isCurrent(identity) || !currentTarget) return;
         const queue = queues.get(deletedSessionId);
         if (!queue) return;
-        const kept = queue.items.filter(item => !candidates.has(item.id) || delivery(item) !== DELIVERY.READY);
+        const kept = queue.items.filter(item => unresolved(item) || !candidates.has(item.id) || delivery(item) !== DELIVERY.READY);
         if (kept.length === queue.items.length) return;
         setQueueItems(deletedSessionId, queue.directory, kept);
         clearTimer(deletedSessionId);
@@ -1029,6 +1187,7 @@ export function createMessageQueueRuntime({
     remove,
     take,
     takeAll,
+    resubmit,
     reorder,
     clear,
     setHold,
@@ -1101,6 +1260,14 @@ export function registerMessageQueueRoutes(app, runtime) {
       res.json(await runtime.take(req.params.sessionId, req.params.itemId, req.body?.purpose));
     } catch (error) {
       respondError(res, error, 'Failed to take queued message');
+    }
+  });
+
+  app.post('/api/message-queue/sessions/:sessionId/items/:itemId/resubmit', async (req, res) => {
+    try {
+      res.json(await runtime.resubmit(req.params.sessionId, req.params.itemId, req.body));
+    } catch (error) {
+      respondError(res, error, 'Failed to resubmit queued dispatch');
     }
   });
 

@@ -1,0 +1,21 @@
+# OpenChamber 2.0.4-DIJIANG.5.0-DEBUG
+
+This temporary CAgent host preview is built from the independent `codex/cagent-integration` branch. It retains notification-only updates. It is not the parallel DIJIANG 4.1 build.
+
+## App
+
+- Add maintainer-owned CAgent startup selection, typed host dispatch, revision-bound independent approvals and revocation, and durable mutation outcomes.
+- Keep unsupported and unverified features unavailable. Generic OpenCode HTTP and event requests refuse in CAgent mode; scheduled tasks refuse before claiming persisted occurrences.
+- Provide an offline documentation mapping and adapter packet toolchain. Weak authoring agents edit bounded handlers against protected fixtures; finite additional actions use reviewed manifests and handlers.
+
+Real CAgent API mappings, target permissions, local-model calibration and live environment acceptance remain unverified. Synthetic tests do not grant support. Only migrated consumers with independent current approval can open. VS Code CAgent remains unsupported. Legacy OpenCode 1.2.27 and remaining INT work are not delivered by this preview.
+
+The maintainer must provision protected approval/attempt storage and a reviewed startup descriptor before selecting CAgent. See the [startup contract](https://github.com/CastleYu/openchamber/blob/v2.0.4-DIJIANG.5.0-DEBUG/packages/web/server/lib/agent/DOCUMENTATION.md#protected-process-startup-file) and [adaptation workbook](https://github.com/CastleYu/openchamber/blob/v2.0.4-DIJIANG.5.0-DEBUG/docs/maintenance/CAGENT-ADAPTER-WORKBOOK.md). The Windows portable build and synthetic packaged startup checks passed. English is the handoff source; the [Chinese review copy](https://github.com/CastleYu/openchamber/blob/v2.0.4-DIJIANG.5.0-DEBUG/docs/maintenance/zh-CN/releases/2.0.4-DIJIANG.5.0-DEBUG.md) stays synchronized until final archival.
+
+## Validation
+
+Existing OC1/OC2 UI contracts pass 87 tests; Web proxy/kernel/scheduler/startup pass 124 tests; Electron packaged resources, update policy and version build pass 9 tests. Locale checks and UI type-check pass. Actual portable and HMR development journeys pass login, one synthetic send, rendered history and approval revocation. These establish host/toolchain behavior; environment-local API and model acceptance remain separate. The release includes the offline kit and checksums.
+
+Download the adapter ZIP for offline commands and operation references; START-HERE describes the four-operation minimum and maintainer preparation. The automatically attached source archive contains the full English SPEC/workbook and paired Chinese documents.
+
+Independent protected-kit digest: `352f4228bfee94cff7d3df651d286618a247aababd45bdf14bc422c269930c96`. Verify it with the bundled verify-kit command; SHA256SUMS covers the release assets.

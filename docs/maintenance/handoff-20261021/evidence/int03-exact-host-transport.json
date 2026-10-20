@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-11T14:51:43.084Z",
+  "exeSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "create-owned-metadata",
+    "title-and-merge-patch",
+    "no-unsupported-wire-metadata",
+    "metadata-restart-roundtrip",
+    "conditional-write-serialization",
+    "create-selection-refusal",
+    "async-acceptance-to-completed-history",
+    "permission-once-through-host",
+    "question-reply-through-host",
+    "question-reject-through-host",
+    "stop-and-aborted-history",
+    "directory-sse-proxy-conversation-observed",
+    "one-shared-global-reader",
+    "shared-global-replay",
+    "shared-global-decisions"
+  ],
+  "passed": 15,
+  "wireCalls": 71,
+  "modelCalls": 10,
+  "events": 167,
+  "scope": "Exact executable and controlled model through production kernel, directory SSE proxy and shared global hub/replay modules. No shared UI, full authenticated host, relay or VS Code acceptance.",
+  "hubEvents": 168,
+  "cleanup": "isolated process and home removed in finally"
+}

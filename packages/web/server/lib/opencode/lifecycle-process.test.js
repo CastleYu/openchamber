@@ -5,6 +5,8 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createMessageQueueRuntime } from '../message-queue/runtime.js';
 import { createOpenCodeLifecycleRuntime } from './lifecycle.js';
+import { createLegacyCredentialOperations } from './legacy-credential-operations.js';
+import { createKernelRuntime } from './kernel-runtime.js';
 
 const alive = (pid) => {
   try { process.kill(pid, 0); return true; } catch { return false; }
@@ -232,6 +234,18 @@ describe('confirmed restart with real owned children', () => {
 });
 
 describe('native configuration launch ownership', () => {
+  it('combines kernel credential owner retirement and idempotent unsubscription', () => {
+    const kernelRuntime = createKernelRuntime({ getEndpoint: () => 'http://legacy.test', getHeaders: () => ({}) });
+    const runtime = createRuntime(async () => true, {}, 5000, { kernelRuntime });
+    let notifications = 0;
+    const unsubscribe = runtime.subscribeCredentialOwner(() => { notifications += 1; });
+    kernelRuntime.invalidate();
+    expect(notifications).toBe(1);
+    unsubscribe();
+    unsubscribe();
+    kernelRuntime.invalidate();
+    expect(notifications).toBe(1);
+  });
   it.each(['path', 'configured', 'bundled'])('binds %s configuration to the ready owned process and actual launch environment', async (mode) => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'oc-native-config-'));
     const previous = process.env.OPENCHAMBER_MANAGED_PROCESS_REGISTRY;
@@ -241,11 +255,12 @@ describe('native configuration launch ownership', () => {
     let revision = 1;
     const env = { XDG_CONFIG_HOME: path.join(root, 'child-xdg'), OPENCODE_CONFIG: 'custom.json' };
     let runtime;
+    let resolveConnection = null;
     runtime = createRuntime(async () => {
       expect(runtime.getNativeConfigContext()).toBeNull();
       return true;
     }, state, 5000, {
-      getConnection: async () => ({ mode, binary: process.execPath }),
+      getConnection: async () => resolveConnection ? await new Promise(resolve => { resolveConnection = resolve; }) : ({ mode, binary: process.execPath }),
       getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
       getManagedOpenCodeEnv: async () => env,
     });
@@ -262,8 +277,49 @@ describe('native configuration launch ownership', () => {
       context.env.XDG_CONFIG_HOME = 'caller-mutation';
       env.XDG_CONFIG_HOME = 'provider-mutation';
       expect(runtime.getNativeConfigContext().env.XDG_CONFIG_HOME).toBe(path.join(root, 'child-xdg'));
+      const descriptor = { generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27', endpoint: 'http://legacy.test', epoch: 1 };
+      let requestSignal;
+      const credentials = createLegacyCredentialOperations({
+        getRuntime: () => descriptor,
+        getNativeConfigContext: runtime.getNativeConfigContext,
+        getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision }),
+        getHeaders: () => ({}),
+        subscribe: runtime.subscribeCredentialOwner,
+        fetchImpl: async request => {
+          requestSignal = request.signal;
+          return await new Promise((_resolve, reject) => {
+            request.signal.addEventListener('abort', () => reject(request.signal.reason), { once: true });
+          });
+        },
+      });
+      const pendingRequest = async () => {
+        requestSignal = null;
+        const result = credentials.methods().catch(error => error);
+        await expect.poll(() => Boolean(requestSignal)).toBe(true);
+        return { result, signal: requestSignal };
+      };
       if (mode === 'path') {
-        await runtime.restartOpenCode();
+        const refused = await pendingRequest();
+        resolveConnection = true;
+        const failedRestart = runtime.restartOpenCode();
+        expect(refused.signal.aborted).toBe(true);
+        const rejectConnection = resolveConnection;
+        resolveConnection = null;
+        rejectConnection(null);
+        await expect(failedRestart).rejects.toMatchObject({ status: 422 });
+        expect(await refused.result).toMatchObject({ statusCode: 409 });
+        expect(runtime.getNativeConfigContext().id).toBe(context.id);
+        expect(alive(server.pid)).toBe(true);
+        const pending = await pendingRequest();
+        resolveConnection = true;
+        const restarting = runtime.restartOpenCode();
+        expect(pending.signal.aborted).toBe(true);
+        expect(await pending.result).toMatchObject({ statusCode: 409 });
+        expect(alive(server.pid)).toBe(true);
+        const resolve = resolveConnection;
+        resolveConnection = null;
+        resolve({ mode, binary: process.execPath });
+        await restarting;
         const restarted = runtime.getNativeConfigContext();
         expect(restarted.id).toEqual(expect.any(Symbol));
         expect(restarted.id).not.toBe(context.id);
@@ -274,14 +330,24 @@ describe('native configuration launch ownership', () => {
       state.isRestartingOpenCode = true;
       expect(runtime.getNativeConfigContext()).toBeNull();
       state.isRestartingOpenCode = false;
+      const pending = await pendingRequest();
       if (mode === 'path') {
         process.kill(state.openCodeProcess.pid);
-        await expect.poll(() => runtime.getNativeConfigContext()).toBeNull();
+        await expect.poll(() => pending.signal.aborted).toBe(true);
+        expect(runtime.getNativeConfigContext()).toBeNull();
       } else {
         const closing = server.close();
+        expect(pending.signal.aborted).toBe(true);
         expect(runtime.getNativeConfigContext()).toBeNull();
         await closing;
       }
+      expect(await pending.result).toMatchObject({ statusCode: 409 });
+      let notifications = 0;
+      const unsubscribe = runtime.subscribeCredentialOwner(() => { notifications += 1; });
+      unsubscribe();
+      unsubscribe();
+      await state.openCodeProcess?.close();
+      expect(notifications).toBe(0);
     } finally {
       await state.openCodeProcess?.close();
       await server?.close();

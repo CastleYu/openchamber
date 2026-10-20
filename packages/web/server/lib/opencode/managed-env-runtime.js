@@ -1,5 +1,5 @@
 import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
-import { OPENCODE_GENERATION } from './compatibility.js';
+import { isLegacyOpenCodeVersion, OPENCODE_GENERATION } from './compatibility.js';
 
 export const createManagedOpenCodeEnv = ({
   getBackendSelection,
@@ -32,6 +32,7 @@ export const createManagedOpenCodeEnv = ({
     error.code = AGENT_ERROR.UNAVAILABLE;
     throw error;
   }
+  if (isLegacyOpenCodeVersion(kernel.version)) return {};
   const settings = await readSettings().catch(() => null);
   requireCurrent();
   const includeControl = settings?.agentControlToolEnabled !== false;

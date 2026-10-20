@@ -1,0 +1,27 @@
+{
+  "stage": "INT-05 queue projection and explicit resubmission",
+  "risks": [
+    "shared UI contract",
+    "server persisted projection",
+    "confirmed mutation",
+    "runtime switch",
+    "localization"
+  ],
+  "surfaces": {
+    "web": "server-owned attempts and confirmed resubmit",
+    "electron": "same shared UI and in-process server",
+    "hostedMobile": "same server contract",
+    "capacitor": "same connected server contract",
+    "vscode": "existing foreground local queue; no resubmit endpoint or control in this batch"
+  },
+  "performance": "Existing bounded queues: 20 items per session. Add bounded status scans only; no polling, caches or indexes.",
+  "acceptance": [
+    "projection survives snapshot and event hydration",
+    "unknown barriers prevent ordinary controls and store bypass",
+    "resubmit uses captured attempt ID and no optimistic success",
+    "failed resubmit retains authoritative intent",
+    "stale runtime responses ignored",
+    "real confirmation workflow and locale switching"
+  ],
+  "next": "Exact executable terminal evidence before auto completion; scheduled/goal/VS Code owners follow."
+}

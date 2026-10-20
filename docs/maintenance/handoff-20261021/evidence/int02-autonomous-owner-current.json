@@ -1,0 +1,550 @@
+{
+  "numTotalTestSuites": 7,
+  "numPassedTestSuites": 7,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 41,
+  "numPassedTests": 41,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791726302560,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime restores OC2 pins as a synthetic message and saves the cursor",
+          "status": "passed",
+          "title": "restores OC2 pins as a synthetic message and saves the cursor",
+          "duration": 11.120999999999981,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime rejects a late OC2 read before synthetic insertion",
+          "status": "passed",
+          "title": "rejects a late OC2 read before synthetic insertion",
+          "duration": 1.945600000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime injects pinned text in chronological order after compaction and records the summary cursor",
+          "status": "passed",
+          "title": "injects pinned text in chronological order after compaction and records the summary cursor",
+          "duration": 31.763900000000035,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime restores project knowledge after compaction even with nothing pinned",
+          "status": "passed",
+          "title": "restores project knowledge after compaction even with nothing pinned",
+          "duration": 3.199100000000044,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime sends pinned messages and project knowledge as one message",
+          "status": "passed",
+          "title": "sends pinned messages and project knowledge as one message",
+          "duration": 4.276700000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime does nothing when the session already carries the knowledge and has no pins",
+          "status": "passed",
+          "title": "does nothing when the session already carries the knowledge and has no pins",
+          "duration": 0.5613999999999351,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "context obligatory runtime"
+          ],
+          "fullName": "context obligatory runtime ignores ordinary idle events without making requests",
+          "status": "passed",
+          "title": "ignores ordinary idle events without making requests",
+          "duration": 0.2897000000000389,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791726303847,
+      "endTime": 1791726303900.5613,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/context-obligatory/runtime.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "settled turn history"
+          ],
+          "fullName": "settled turn history keeps completed history and excludes the newly sent request",
+          "status": "passed",
+          "title": "keeps completed history and excludes the newly sent request",
+          "duration": 24.64250000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "settled turn history"
+          ],
+          "fullName": "settled turn history treats a failed page as unknown history",
+          "status": "passed",
+          "title": "treats a failed page as unknown history",
+          "duration": 1.5842000000000098,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context stops paging at three human turns and excludes tools and injected instructions",
+          "status": "passed",
+          "title": "stops paging at three human turns and excludes tools and injected instructions",
+          "duration": 1.1385000000000218,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context finds the real user across a page boundary and compaction continuations",
+          "status": "passed",
+          "title": "finds the real user across a page boundary and compaction continuations",
+          "duration": 0.5304999999999609,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context retains interrupted requests as progress, not as completed turns",
+          "status": "passed",
+          "title": "retains interrupted requests as progress, not as completed turns",
+          "duration": 0.39150000000000773,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context keeps synthetic annotations and separates author language from quoted material",
+          "status": "passed",
+          "title": "keeps synthetic annotations and separates author language from quoted material",
+          "duration": 0.34880000000003974,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context retains the comment after a large quote and the conclusion after a long answer",
+          "status": "passed",
+          "title": "retains the comment after a large quote and the conclusion after a long answer",
+          "duration": 0.6415999999999826,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context fails explicitly on malformed annotation text instead of losing the comment",
+          "status": "passed",
+          "title": "fails explicitly on malformed annotation text instead of losing the comment",
+          "duration": 0.4966000000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context does not treat a failed or repeated page as complete history",
+          "status": "passed",
+          "title": "does not treat a failed or repeated page as complete history",
+          "duration": 0.8288000000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context bounds retrieval and refuses to invent a user for an orphaned answer",
+          "status": "passed",
+          "title": "bounds retrieval and refuses to invent a user for an orphaned answer",
+          "duration": 0.4216999999999871,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context skips unfinished, failed, summary, and user tails",
+          "status": "passed",
+          "title": "skips unfinished, failed, summary, and user tails",
+          "duration": 0.33260000000001355,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context keeps both sides of the newest exchange within a small model budget",
+          "status": "passed",
+          "title": "keeps both sides of the newest exchange within a small model budget",
+          "duration": 1.798400000000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist context"
+          ],
+          "fullName": "session assist context does not assign an older parent's late answer to a newer user request",
+          "status": "passed",
+          "title": "does not assign an older parent's late answer to a newer user request",
+          "duration": 0.24389999999999645,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791726303770,
+      "endTime": 1791726303804.244,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/session-assist/context.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime accepts an OC2 assistant followed by idle",
+          "status": "passed",
+          "title": "accepts an OC2 assistant followed by idle",
+          "duration": 62.72550000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime retires only its own OC2 assist on busy, once, through the metadata queue",
+          "status": "passed",
+          "title": "retires only its own OC2 assist on busy, once, through the metadata queue",
+          "duration": 120.25,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime queues retirement behind an assist write still in flight",
+          "status": "passed",
+          "title": "queues retirement behind an assist write still in flight",
+          "duration": 120.8916999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime retires a stored assist for a newer user message, not an old replay",
+          "status": "passed",
+          "title": "retires a stored assist for a newer user message, not an old replay",
+          "duration": 138.23669999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime does not retire a stored assist on a different runtime epoch",
+          "status": "passed",
+          "title": "does not retire a stored assist on a different runtime epoch",
+          "duration": 93.36000000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime retires an OC1 assist without erasing unrelated metadata",
+          "status": "passed",
+          "title": "retires an OC1 assist without erasing unrelated metadata",
+          "duration": 121.65699999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime keeps the OC1 assist path when a checker callback is present",
+          "status": "passed",
+          "title": "keeps the OC1 assist path when a checker callback is present",
+          "duration": 61.450599999999895,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime does no transcript read when Jev rules out both assist fields",
+          "status": "passed",
+          "title": "does no transcript read when Jev rules out both assist fields",
+          "duration": 75.69990000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime keeps the original assist path when Jev cannot decide",
+          "status": "passed",
+          "title": "keeps the original assist path when Jev cannot decide",
+          "duration": 61.07260000000019,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime drops a pending OC2 gate when a new user message starts another turn",
+          "status": "passed",
+          "title": "drops a pending OC2 gate when a new user message starts another turn",
+          "duration": 90.61639999999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime retries an unknown live status without treating it as idle",
+          "status": "passed",
+          "title": "retries an unknown live status without treating it as idle",
+          "duration": 61.38079999999991,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime drops OC2 assistance when a newer user prompt appears after generation",
+          "status": "passed",
+          "title": "drops OC2 assistance when a newer user prompt appears after generation",
+          "duration": 77.5003999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime uses bounded authenticated SDK reads and preserves metadata with an empty suggestion",
+          "status": "passed",
+          "title": "uses bounded authenticated SDK reads and preserves metadata with an empty suggestion",
+          "duration": 79.97050000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime does no work with both settings off and skips child, archived, or reverted sessions",
+          "status": "passed",
+          "title": "does no work with both settings off and skips child, archived, or reverted sessions",
+          "duration": 215.20089999999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime keeps recent context for recap-only and performs no write for an empty suggestion-only result",
+          "status": "passed",
+          "title": "keeps recent context for recap-only and performs no write for an empty suggestion-only result",
+          "duration": 138.5545999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime does not write a stale result when the tail moves during generation",
+          "status": "passed",
+          "title": "does not write a stale result when the tail moves during generation",
+          "duration": 77.83829999999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime does not fall back to stale metadata when the fresh read fails",
+          "status": "passed",
+          "title": "does not fall back to stale metadata when the fresh read fails",
+          "duration": 60.8442,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime cancels old work and retains an expired newer idle timer until it can run",
+          "status": "passed",
+          "title": "cancels old work and retains an expired newer idle timer until it can run",
+          "duration": 216.17909999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime aborts on stop and honors settings switched off during generation",
+          "status": "passed",
+          "title": "aborts on stop and honors settings switched off during generation",
+          "duration": 169.10249999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime ignores historical user updates but cancels a new request during generation",
+          "status": "passed",
+          "title": "ignores historical user updates but cancels a new request during generation",
+          "duration": 90.15049999999974,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session assist runtime"
+          ],
+          "fullName": "session assist runtime rejects endpoint changes before writing instead of carrying a session into a new runtime",
+          "status": "passed",
+          "title": "rejects endpoint changes before writing instead of carrying a session into a new runtime",
+          "duration": 60.53659999999991,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791726303901,
+      "endTime": 1791726306094.5366,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/session-assist/runtime.test.js"
+    }
+  ]
+}

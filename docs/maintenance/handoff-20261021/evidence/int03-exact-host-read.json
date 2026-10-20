@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-11T14:07:50.277Z",
+  "passed": true,
+  "version": "1.2.27",
+  "exeSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "exact runtime version",
+    "profile identity",
+    "session list",
+    "cross-directory session list",
+    "session get",
+    "empty history",
+    "children",
+    "status",
+    "pending permissions",
+    "pending questions",
+    "commands",
+    "selection catalog",
+    "missing message is failure",
+    "mutations refused before transport",
+    "canceled read",
+    "retired read",
+    "authentication failure"
+  ],
+  "requests": 14,
+  "scope": "Production host kernel against exact executable; no UI, streaming or conversation acceptance",
+  "cleanup": {
+    "exited": true,
+    "isolatedHomeRemoved": true
+  }
+}

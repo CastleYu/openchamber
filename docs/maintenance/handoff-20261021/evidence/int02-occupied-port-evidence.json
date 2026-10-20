@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "occupied command port refuses readiness",
+    "failed owned launch attempts exit",
+    "failed startup leaves empty managed registry",
+    "existing occupied listener survives startup failure",
+    "existing listener still serves its original response"
+  ],
+  "pids": [
+    45896,
+    12460
+  ],
+  "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-occupied-port-QeBP8G",
+  "realWindowsChildren": true,
+  "syntheticCommand": true,
+  "sourceSha256": "c9f159a39a57a836ce45d93934f75683deb52328305e764d02d4c197f6d5f09f"
+}

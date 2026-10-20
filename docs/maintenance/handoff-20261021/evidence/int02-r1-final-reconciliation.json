@@ -1,0 +1,124 @@
+{
+  "candidate": "7115f32fb6c46d57df4061232f3cad3fb5744191",
+  "checkedAt": "2026-10-11T12:55:47.814Z",
+  "sync": {
+    "fileCount": 82,
+    "passedFiles": 82,
+    "runner": "node scripts/run-isolated-tests.mjs packages/ui/src/sync",
+    "defaultTimeoutUnchanged": true,
+    "log": "artifacts/int02-r1-sync-current.log",
+    "retention": {
+      "passed": 22,
+      "expectations": 67,
+      "largeCaseMs": 4259.82,
+      "log": "artifacts/int02-r1-retention-current.log"
+    },
+    "limitation": "Historical default-timeout failure remains recorded; current passing run is not a performance guarantee."
+  },
+  "retainedConsumerFingerprints": [
+    {
+      "file": "packages/ui/src/sync/sync-context.tsx",
+      "expected": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+      "actual": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/sync/session-actions.ts",
+      "expected": "8302c67553df2e8da755f54b1aed28991e37615674ef62eb5c4c758fce5e13c4",
+      "actual": "8302c67553df2e8da755f54b1aed28991e37615674ef62eb5c4c758fce5e13c4",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/stores/useMcpStore.ts",
+      "expected": "586999d4596e5f0d491a41ae0b55a76ac49a46965790d0b19da4267316de62a1",
+      "actual": "586999d4596e5f0d491a41ae0b55a76ac49a46965790d0b19da4267316de62a1",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/lib/gitApi.ts",
+      "expected": "fa75b2787f9f10ecec226a9510605874d90b1f02488f442010567a93ffb48f02",
+      "actual": "fa75b2787f9f10ecec226a9510605874d90b1f02488f442010567a93ffb48f02",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/components/sections/providers/ProvidersPage.tsx",
+      "expected": "6ddf41da7297016f2efebb5b19edfe2502e6d66a90ec4252d26dad7e5606996d",
+      "actual": "6ddf41da7297016f2efebb5b19edfe2502e6d66a90ec4252d26dad7e5606996d",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/components/sections/providers/ProviderOAuthMethods.tsx",
+      "expected": "e7eb40b73a5440bb32ca83751042a9165eda2b5f9dd727852a733eaecc580d20",
+      "actual": "e7eb40b73a5440bb32ca83751042a9165eda2b5f9dd727852a733eaecc580d20",
+      "unchanged": true
+    },
+    {
+      "file": "packages/ui/src/lib/opencode/client.ts",
+      "expected": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491",
+      "actual": "5d07c79510acab2e24840eb9a652857e5b239bcc85a5d4eb41c7909f0e9c4491",
+      "unchanged": true
+    },
+    {
+      "file": "docs/maintenance/CAGENT-BOUNDARIES.md",
+      "expected": "c08204d954f9cad8a36c6b14ebddaf1a722893b5bf4d99b4e79aa7d0797b1e5a",
+      "actual": "a85cafd16653a99de190c0f17f95bca91ebc0f21ef757203026e9f600bbc4bf8",
+      "unchanged": false
+    }
+  ],
+  "nativeHistoricalRecordReview": [
+    {
+      "suffix": "LUrXy8",
+      "classification": "invalid acceptance: USERPROFILE was not isolated; repair scope recorded separately",
+      "success": false,
+      "checkCount": 23
+    },
+    {
+      "suffix": "2Awvas",
+      "classification": "invalid acceptance: USERPROFILE was not isolated; repair scope recorded separately",
+      "success": false,
+      "checkCount": 1
+    },
+    {
+      "suffix": "yEhM2O",
+      "classification": "isolated diagnostic or acceptance run",
+      "success": false,
+      "checkCount": 28
+    },
+    {
+      "suffix": "uetDHF",
+      "classification": "isolated diagnostic or acceptance run",
+      "success": false,
+      "checkCount": 29
+    },
+    {
+      "suffix": "bSdx7a",
+      "classification": "isolated diagnostic or acceptance run"
+    },
+    {
+      "suffix": "H0lsTJ",
+      "classification": "isolated diagnostic or acceptance run"
+    },
+    {
+      "suffix": "mFub97",
+      "classification": "isolated diagnostic or acceptance run"
+    },
+    {
+      "suffix": "C67SZN",
+      "classification": "isolated diagnostic or acceptance run"
+    },
+    {
+      "suffix": "cqhPZZ",
+      "classification": "isolated diagnostic or acceptance run",
+      "success": false,
+      "checkCount": 29
+    },
+    {
+      "suffix": "zVkGbA",
+      "classification": "isolated diagnostic or acceptance run",
+      "success": true,
+      "checkCount": 44
+    }
+  ],
+  "sessionOwnerEvidence": "artifacts/int02-session-owner-evidence.json",
+  "remaining": "Final cross-host clause reconciliation against current source; R1 remains open. No new model or packaged acceptance."
+}

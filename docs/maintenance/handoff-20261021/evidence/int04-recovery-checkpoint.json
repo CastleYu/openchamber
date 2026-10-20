@@ -1,0 +1,83 @@
+{
+  "at": "2026-10-11T17:48:49.276Z",
+  "sourceBase": "92e9fe42ec46b2531e8933396ed7f4dfa193e47b",
+  "status": "reconnect snapshot implementation checkpoint; enclosing R3 remains open",
+  "sourceFiles": {
+    "packages/ui/src/sync/sync-context.tsx": "fd3ef808e379b2c9b6d495c3cacc7e846da83054e293396a42e06a6dfe4b11d9",
+    "packages/ui/src/sync/blocking-resync.test.js": "4ec2bf65c80a209e6b63cfa94673d590ffab1e944fd66185141cbbbf04db9afd",
+    "packages/ui/src/sync/DOCUMENTATION.md": "6127fe164702e4569c88170b1210c3fafeccb8df8045e8b873619ce5751e04a2",
+    "docs/maintenance/command-failures.md": "e9ffd3b5839bb8201344a4a338fedad8283709feda41766345e76bd8f3ce35b0",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "7d6dee7d75908664d8ef8db002bf2d5a9a74e7a7c6f51a68c9ae5b9cc6e4ec4e",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "53d295cebfe55f1a75d6cffbe0a72b202c917b37827ce2307530a7e9305322c9"
+  },
+  "evidenceFiles": {
+    "artifacts/int04-recovery-baseline.json": "08db23b55261f896dadc94273a9d97f66fa36345b01bd046a6e602aefa29f3f6",
+    "artifacts/int04-blocking-resync-red.log": "b078043c96b93a3dd07a84478fa87ac4dccd23953eba2c142f5ddcc11b5c51de",
+    "artifacts/int04-recovery-validation.json": "c79657ba7d1dcd4b7f95020cb6d41025883aedd5acf4288cd8ee10a5e5d1be3d",
+    "artifacts/int04-recovery-final-validation.json": "fcde3414677205c394d9ce3b73620e9dc8c5925af896152124d5d80b848f7bdd",
+    "artifacts/int04-host-recovery-evidence.json": "7e6b61deb77dc9f7111cb05968faeced4c11826f2cbe674c0442924db22417d1",
+    "artifacts/int04-helper-cleanup.json": "57a0a40e6af9c29e7ff4db14f9bf0ce7624524ca6e48299ad620ffac4afd781e",
+    "artifacts/int04-recovery-cleanup.json": "af0aded65e92674db021d7eebe7935ce8b838241080dc6e265c73bcee4dcfeea",
+    "artifacts/int04-recovery-builds.json": "c069c82a2e51d4d63bb9dc61dfd9046bba175eb746c515e1dd40488749a8f145"
+  },
+  "validation": {
+    "focusedTests": 45,
+    "unchangedOtherBaselineTests": 2,
+    "newHttpTests": 8,
+    "uiTypes": "pass",
+    "uiLint": "pass; five existing warnings; clean lint rerun without temporary source",
+    "authoredAntiSlop": "zero new diagnostics; existing 93 diagnostics unchanged",
+    "deadCode": "unchanged 2 files,319 exports,231 types",
+    "exactChecks": 6
+  },
+  "surfaces": {
+    "web": "shared directory recovery",
+    "electron": "shared directory recovery through in-process Web backend",
+    "vscode": "shared recovery including permission auto-accept read window",
+    "hostedMobile": "selected host shared recovery",
+    "capacitor": "selected host shared recovery; physical-device acceptance remains R7"
+  },
+  "invariant": "SSE/local mutations during the authoritative pending-list read override stale HTTP; failed scopes preserve state independently.",
+  "liveObservation": "Pending permission/question survives SDK recreation in the same exact process. After process restart those request identities are absent while message/part IDs persist. No blind replay; explicit new user turn continues.",
+  "limitations": [
+    "Controlled model and isolated auth gate, not full app/native UI acceptance.",
+    "Native UI server-restart/interruption reconciliation remains required.",
+    "Real-process two-directory journey remains required; HTTP partial-directory failure is covered.",
+    "Permission/Question internal implementation omitted from selective exact source snapshot.",
+    "INT-05 and current OC1/OC2 enclosing R3 regression gates remain open."
+  ],
+  "weeklyRemainingPercent": 77,
+  "cleanup": {
+    "at": "2026-10-11T17:44:42.733Z",
+    "removed": [
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-0ukU3p",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-AJhbTb",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-eUFI6g",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-h2CUMd",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-kNHawQ",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-sFVliR",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-wwjWD8",
+      "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-recovery-XSCpC2"
+    ],
+    "bytes": 121454364,
+    "linksUnlinked": 12,
+    "processInventoryVerified": true,
+    "retained": [
+      "Compact evidence and failure summaries outside fixture homes",
+      "Pinned binary and reusable native drivers for full UI recovery acceptance"
+    ]
+  },
+  "consumerBuilds": [
+    {
+      "name": "web",
+      "code": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-web-build.log"
+    },
+    {
+      "name": "vscode",
+      "code": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-vscode-build.log"
+    }
+  ],
+  "committedSource": "3cf78c66fccf66f0e68efcd9ccb8e9081910e38d"
+}

@@ -1,0 +1,329 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 1,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": false,
+      "checks": [
+        "production manager connected",
+        "GET /api/opencode/runtime succeeds",
+        "Auto admits exact Legacy",
+        "GET /api/opencode/runtime succeeds",
+        "exact upstream version",
+        "dedicated production SSE bridge admitted",
+        "POST /api/session succeeds",
+        "native bridge creates real session",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi succeeds",
+        "isolated metadata round trip",
+        "editor session switcher reachable",
+        "created session appears in production switcher",
+        "created session opens in production editor",
+        "composer is reachable",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "composer text completes in authoritative history",
+        "assistant response rendered by production UI",
+        "native selection appears as composer attachment",
+        "composer is reachable",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "GET /api/session/ses_ed439a9a9ffeYik8zZ4sM0mNOi/message succeeds",
+        "attachment turn persisted",
+        "attachment turn settles",
+        "composer is reachable"
+      ],
+      "error": "Error: real tool permission appears in production UI",
+      "sessionID": "ses_ed439a9a9ffeYik8zZ4sM0mNOi",
+      "body": "Session\n\nLEGACY_NATIVE_TEXT\n\n12:23 AM\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n2.0s\n\nLEGACY_NATIVE_ATTACHMENT\n\nfixture.js\n12:23 AM\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n1.1s\n\nLEGACY_PERMISSION\n\n12:23 AM\nShell Command\n44.3s\necho LEGACY_APPROVED\nPermission Required\nbash\nPatterns:\necho LEGACY_APPROVED\nAllow Once\nAlt + Enter\nAlways: echo *\nDeny\nAlt + ⌫\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nControlled probe\nBuild",
+      "controls": [
+        {
+          "text": "Session",
+          "aria": "Open session switcher",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "MCP servers",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Rate limits",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "Allow OnceAlt + Enter",
+          "aria": null,
+          "title": null
+        },
+        {
+          "text": "Always: echo *",
+          "aria": null,
+          "title": null
+        },
+        {
+          "text": "DenyAlt + ⌫",
+          "aria": null,
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Scroll to bottom",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Attach files",
+          "title": "Attach files"
+        },
+        {
+          "text": "",
+          "aria": "Toggle focus mode",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Enable permission auto-accept",
+          "title": "Enable permission auto-accept"
+        },
+        {
+          "text": "",
+          "aria": "Send message",
+          "title": null
+        }
+      ],
+      "diagnostics": [],
+      "wire": [
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        }
+      ]
+    },
+    "error": "Error: real tool permission appears in production UI"
+  },
+  "modelCalls": [
+    {
+      "marker": "\"LEGACY_NATIVE_TEXT\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "[{\"type\":\"text\",\"text\":\"LEGACY_NATIVE_ATTACHMENT\"},{\"type\":\"text\",\"text\":\"Called the Read tool with the following input: {\\\"filePath\\\":\\\"fixture.js\\\"}\"},{\"type\":\"text\",\"text\":\"const attached = \\\"LEGACY_NATIVE_ATTACHMENT_CONTENT\\\";\\n\"}]",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "server.heartbeat",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "permission.asked"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-2UJLDm",
+  "limitations": [
+    "Controlled model does not prove external provider quality",
+    "Reopen and remaining cross-host/current-profile checks must be independently verified"
+  ]
+}

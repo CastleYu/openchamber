@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-11T16:51:41.513Z",
+  "round": "R2 / INT-03",
+  "status": "accepted",
+  "sourceBase": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "sourceHashes": {
+    "packages/web/server/lib/routing/runtime.js": "31334225d26f31dca39ffc3a8a57a2c3b7c179bb01d28495e2b1fb57125ece29",
+    "packages/web/server/lib/routing/runtime.test.js": "630cacd7354da5c5feef0c5dfa9b0f20ddafc8515dac91eba7915d20a921fb69"
+  },
+  "evidence": {
+    "artifacts/int03-browser-acceptance.json": "9eecd0e8ef2f54b59812bace90b94a3f46a4012e8203b927557f7f6cd56dfb99",
+    "artifacts/int03-native-evidence.json": "31c57b3c1d1bded9e1814160af4e42683bf2def06bf9fa3481c32c87b5261545",
+    "artifacts/int03-current-oc1-evidence.json": "c033ebbd20c324ed81160acce7a15583ca142b3a83998f9e7f1a00ce59c277c9",
+    "artifacts/int03-current-oc2-evidence.json": "fda47a7862a656e0489eae9211d01f3a5d14b4041babbc4bf030da89bc508609",
+    "artifacts/int03-relay-legacy-evidence.json": "6ef08c71f5293fbb239c9f41f42319efe44e1a98c8341707c0c7fb7e55d656b7",
+    "artifacts/int03-final-validation.json": "9b0770fb633b8ff5d95bd3ff1d4b8f38c68b8d02f1d92eee95a9578a1f52e9f7",
+    "artifacts/int03-vscode-bridge-checkpoint.json": "5635cb0246304cd615dc21443661a292284758e8e1bf1f39f92cd1f6ec8807f0",
+    "artifacts/int03-r2-cleanup.json": "dc5e17dd3da268cf350c132bd594d1adf45e83b1444221319614677304fcec53"
+  },
+  "gates": {
+    "exactLegacyWeb": "Auto/manual,text,text attachments,tools,permissions,questions,stop,history",
+    "exactLegacyVSCode": "Actual production webview, extension host, attachment contents, panel recreation and subsequent turn",
+    "currentOC1": "1.18.33, real authenticated core conversation and stop",
+    "currentOC2": "2.0.20, real authenticated core conversation and stop after classifier accessor fix",
+    "relay": "Production TS client/JS host E2EE, local Layer-1 broker, authenticated HTTP/SSE conversation and Legacy refusal",
+    "focusedRegression": "81 tests passed; Web type-check/lint and authored anti-slop passed; dead-code unchanged 2 files/319 exports/231 types"
+  },
+  "limitations": [
+    "Legacy remains experimental; advanced/configuration/recovery work belongs to R3/R4",
+    "No new release or full Legacy compatibility claim",
+    "Real CAgent API remains unavailable; CA-03 environment-local",
+    "Public Relay/WAN and physical mobile/native packaged acceptance remain INT-10 gates"
+  ],
+  "retained": [
+    {
+      "path": "artifacts/legacy-1.2.27/bin/opencode.exe",
+      "reason": "Exact Legacy R3/R4 real acceptance"
+    },
+    {
+      "path": "artifacts/int01-real/oc2-2.0.20/package/bin/opencode.exe",
+      "reason": "Supported OC2 R3/R4 regression"
+    },
+    {
+      "paths": [
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc1-live.mjs",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc2.mjs",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-driver.mjs",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-journey.js",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-suite.cjs",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-relay-prepare.mjs",
+        "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-final-checks.mjs"
+      ],
+      "reason": "Reusable R3/R4 real-runtime regression drivers. Reassess and remove superseded drivers at R3/R4 acceptance."
+    }
+  ],
+  "acceptedAt": "2026-10-11T16:58:09.251Z",
+  "weeklyRemainingPercent": 80,
+  "committedSource": "bd0c0a3a5ab49f3938ddfff0b571a52d0a0fa2d8",
+  "finalVerification": {
+    "cleanWorktree": true,
+    "documentationLinksChecked": 123,
+    "weeklyRemainingPercent": 80,
+    "at": "2026-10-11T17:00:06.434Z"
+  }
+}

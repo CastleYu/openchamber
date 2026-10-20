@@ -1,0 +1,728 @@
+{
+  "syntheticUpstream": true,
+  "realModel": false,
+  "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-r1-browser-queue-VbaTnQ",
+  "checks": [
+    "browser-closed marker received with durable pending intent and zero upstream prompts",
+    "authoritative idle after browser closure dispatches captured model and text exactly once"
+  ],
+  "sourceHashes": {
+    "packages/web/server/index.js": "9df39ee020a4670f966fb1983530790ac927c31a1d1bfa69aee98988df663b1c",
+    "packages/web/server/lib/message-queue/runtime.js": "005026132f5373db26fa6916e2623bbace79aa49f0ef05b07eb6bd79b7b2d278",
+    "packages/web/server/lib/event-stream/global-hub.js": "37266a8534cf639266c17313f27fd60467cd025196dca77e3c65e7facf5cd65a"
+  },
+  "pendingAfterBrowserClosed": {
+    "version": 1,
+    "revision": 1,
+    "sessions": {
+      "ses_browser_queue": {
+        "directory": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-r1-browser-queue-VbaTnQ",
+        "items": [
+          {
+            "id": "queued-1791719949329-w62imin",
+            "createdAt": 1791719949329,
+            "content": "browser closure follow up",
+            "text": "browser closure follow up",
+            "attachments": [],
+            "context": [],
+            "sendConfig": {
+              "providerID": "fixture",
+              "modelID": "fixture",
+              "agent": "build"
+            },
+            "target": "1e6c4b9e1fe964147c66449e1c56f30e53c723828f38ce2f98002fb48a4a3dd0"
+          }
+        ]
+      }
+    }
+  },
+  "queueAfterSend": {
+    "revision": 2,
+    "sessions": []
+  },
+  "sent": [
+    {
+      "path": "/session/ses_browser_queue/prompt_async",
+      "body": {
+        "model": {
+          "providerID": "fixture",
+          "modelID": "fixture"
+        },
+        "agent": "build",
+        "parts": [
+          {
+            "type": "text",
+            "text": "browser closure follow up"
+          }
+        ]
+      },
+      "at": "2026-10-11T11:59:36.513Z"
+    }
+  ],
+  "externalListeningBeforeShutdown": true,
+  "externalListeningAfterShutdown": true,
+  "registryAfterShutdown": [],
+  "seen": [
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/global/event"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/global/event"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/path"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/provider"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/question"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/project/current"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/path"
+    },
+    {
+      "method": "GET",
+      "path": "/lsp"
+    },
+    {
+      "method": "GET",
+      "path": "/vcs"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/question"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/project/current"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/path"
+    },
+    {
+      "method": "GET",
+      "path": "/lsp"
+    },
+    {
+      "method": "GET",
+      "path": "/vcs"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/skill"
+    },
+    {
+      "method": "GET",
+      "path": "/global/event"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_browser_queue/message"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/path"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/question"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/project/current"
+    },
+    {
+      "method": "GET",
+      "path": "/config"
+    },
+    {
+      "method": "GET",
+      "path": "/path"
+    },
+    {
+      "method": "GET",
+      "path": "/lsp"
+    },
+    {
+      "method": "GET",
+      "path": "/vcs"
+    },
+    {
+      "method": "GET",
+      "path": "/mcp"
+    },
+    {
+      "method": "GET",
+      "path": "/mcp"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/config/providers"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/experimental/session"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/agent"
+    },
+    {
+      "method": "GET",
+      "path": "/global/event"
+    },
+    {
+      "method": "GET",
+      "path": "/permission"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_browser_queue/message"
+    },
+    {
+      "method": "GET",
+      "path": "/session/status"
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_browser_queue/message"
+    },
+    {
+      "method": "GET",
+      "path": "/session/ses_browser_queue"
+    },
+    {
+      "method": "POST",
+      "path": "/session/ses_browser_queue/prompt_async"
+    }
+  ],
+  "finishedAt": "2026-10-11T11:59:38.282Z"
+}

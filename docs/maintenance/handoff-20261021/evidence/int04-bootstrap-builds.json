@@ -1,0 +1,6 @@
+{
+  "web": 0,
+  "vscode": 0,
+  "webLog": "int04-bootstrap-web-build-retry.log",
+  "reason": "esbuild Windows commit-limit failure; isolated constrained retry"
+}

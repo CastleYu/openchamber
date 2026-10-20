@@ -1,0 +1,73 @@
+{
+  "commit": "33b063ea3045921f1b6eb4948fa43c19eccfd933",
+  "tests": 80,
+  "realHost": {
+    "sourceSha": "395cfc8e4275bf278d3f9ae318e539891b799ab0",
+    "profile": "oc2",
+    "mode": "configured",
+    "version": "2.0.20",
+    "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+    "checks": [
+      "migration discovery requires host authentication",
+      "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+      "activity route authenticates and leaves cold upstream unknown",
+      "unconfirmed cold startup leaves authenticated settings reachable and no process",
+      "invalid candidate does not replace settings",
+      "actual React candidate confirmation starts real OC2 and initializes the shared client",
+      "UI confirmed save is durable with prior settings backup",
+      "UI confirmed saved record suppresses contradictory legacy prefill",
+      "configured binary managed startup and exact profile",
+      "production host activity reads real OC2 status permission and form APIs without settings mutation",
+      "duplicate save is inert and active replacement is rejected durably",
+      "one owned live server registry entry",
+      "active confirmed reload exits old PID before one replacement is ready",
+      "managed host facade session creation and reopened history",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "checks": {
+    "anti": 1,
+    "lint": 0,
+    "dead": 0,
+    "types": 0,
+    "build": 0
+  },
+  "anti": {
+    "diagnostics": 175,
+    "authored": 0,
+    "details": []
+  },
+  "deadCode": {
+    "files": 2,
+    "exports": 319,
+    "types": 231
+  },
+  "quotaRemainingPercent": 43,
+  "release": "unchanged",
+  "activeReplacement": "incomplete-and-gated",
+  "next": [
+    "original-target queue ownership",
+    "peer identity and coordination",
+    "confirmation and recovery UI"
+  ],
+  "fingerprints": {
+    "packages/web/server/index.js": "b8086b302356f36d35d92f63b9e051ba34a9b790f20899c55cc0c229724c32e9",
+    "packages/web/server/lib/opencode/connection.js": "5320e05f93adc2815285f7768dc2fb5b1762d6b79571482af31d26d9635bec96",
+    "packages/web/server/lib/opencode/connection-activity.js": "4c524beff22d8fd3f73bdd398e0274b63a7ba099d3e5bd623846e2cf05204111",
+    "packages/web/server/lib/opencode/connection-activity.test.js": "e1b58e07516f3839c75f78df1f3430bb04d3aee2dac247538ea415e07ed3d30e",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "a60cdb538df1ad1da2d9f5f238a4bc5712abcc2ac485fcda7b7c8dc6624ece93",
+    "packages/web/server/lib/opencode/kernel-operations.js": "6ab175e83cf704a3da1fb10bd6019164adda4afc199d9d878d486570570402b2",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "c70c8fdbcc103d045cc6806368e502a79c985c86e099b1cf4d36e87569d0980b",
+    "packages/web/server/lib/opencode/kernel-operations.test.js": "bb938829b8368cf1690e4f701812e99ee80cb43e1a68d1860d9826a18cc627b9",
+    "packages/web/server/lib/opencode/routes.js": "3a176fdafd01984b71c1a5f4d9c7f004f4ea41118222e46fccfeb0db9d686fb8",
+    "packages/web/server/lib/opencode/routes-runtime.test.js": "7b2bf06ecc25e61c063cf277b5443ad9c0e90575134eb624a62b6c3276be6744",
+    "packages/vscode/webview/main.tsx": "1ad16a2ffc57c5523d633f9759d369c859069477b3292e9d5b8ecc7477d91892",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "9ca7337c255f7b92cd7a4ee2e2d055e20e2d948cbc4b38e3c51fa0b210339136",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "e3abc892883ffa037f61abd85168032ede0d523756b8915fe15af11da615e128",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "4f7cd20c785eb0df4da5acb2f19233164de6fb19ae9d6da883939f0d16a26b26",
+    "docs/maintenance/zh-CN/CONNECTION-ACTIVITY.md": "0d57e100d4bdc9eca32d85feed0ff97173c08dafdfec557d74d34a205a46c8e4"
+  }
+}

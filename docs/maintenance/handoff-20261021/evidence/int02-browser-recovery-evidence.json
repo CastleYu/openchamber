@@ -1,0 +1,155 @@
+{
+  "at": "2026-10-09T23:46:00.7019872Z",
+  "baseline": "a932f91fea6f8b29a5f250547b6eba6361764af6",
+  "source": [
+    {
+      "sha256": "0483BC34951764712B349C644B8232E76758E462BC3A56861FBFD77060A5B68A",
+      "path": "packages/ui/src/App.tsx"
+    },
+    {
+      "sha256": "137B9D77F24157AD281E9ED848F5FA8AF587C72856A38259C7FFDC7085F500C5",
+      "path": "packages/ui/src/apps/MobileApp.tsx"
+    },
+    {
+      "sha256": "111DE628A920DD4794887F3FB382FC6A553144BFBC0C2E841A03ECA1FEDB703F",
+      "path": "packages/ui/src/sync/DOCUMENTATION.md"
+    }
+  ],
+  "browser": {
+    "at": "2026-10-09T23:44:19.415Z",
+    "origin": "http://127.0.0.1:26118",
+    "checks": [
+      "Web unbound source renders existing recovery after fix",
+      "old executable candidate remains unconfirmed until explicitly selected",
+      "review requires acknowledgement before switch",
+      "initial unknown activity shown as unknown, queue zero",
+      "real OC2 startup admits chat shell",
+      "idle live activity reports busy sessions permissions questions queues zero",
+      "unreachable replacement retires browser binding",
+      "second real browser shows failure recovery",
+      "first stale previous review refuses and refreshes",
+      "second previous review requires acknowledgement",
+      "peer previous recovery restores chat",
+      "original peer preserves settings context and returns to chat after closing settings",
+      "hosted mobile healthy shell initially renders",
+      "hosted mobile failed cold start initially mislabels OpenCode failure as host unreachable",
+      "final hosted mobile cold failure renders OpenCode recovery rather than host unreachable",
+      "mobile previous-connection review requires acknowledgement",
+      "mobile reviewed recovery launches real OC2 and restores chat shell",
+      "mobile refresh retains admitted configuration",
+      "fresh desktop tab uses the configuration recovered by mobile"
+    ],
+    "notValidated": [
+      "model response quality",
+      "native Capacitor",
+      "packaged Electron"
+    ]
+  },
+  "validation": [
+    "UI types passed",
+    "changed-file ESLint passed",
+    "4 connection component tests passed, 82 assertions",
+    "final Web build exit 0",
+    "dead-code inventory inspected: 2 files, 319 exports, 231 exported types, 1 duplicate export",
+    "oxlint baseline and current each 37 existing diagnostics, no authored-line diagnostic"
+  ],
+  "limitations": [
+    "Browser host was an isolated loopback fixture without UI authentication; prior authenticated acceptance is separate",
+    "VS Code queue checks use production stores and binding, synthetic sessions, and test RPC inside real production webviews",
+    "No model response, real CAgent, exact Legacy conversation, native Capacitor or packaged Electron acceptance in this batch"
+  ],
+  "logs": [
+    {
+      "sha256": "F495BFC565537DCAE6DFC061969587F3FE37A5E0436E9844789BF78F3C8B4B6A",
+      "path": "int02-browser-recovery-types.log",
+      "tail": [
+        "$ bun run --cwd packages/ui type-check",
+        "$ tsc --noEmit"
+      ]
+    },
+    {
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "path": "int02-browser-recovery-lint.log",
+      "tail": []
+    },
+    {
+      "sha256": "A9FE5638C2A160BC3809F5608B795E6D893531246E5A682D406741E09C0B3070",
+      "path": "int02-browser-recovery-tests.log",
+      "tail": [
+        "      at async listSyncSessions (C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\packages\\ui\\src\\lib\\opencode\\client.ts:896:44)",
+        "",
+        "(pass) failed discovery can retry, unsupported never offers writes, retired response cannot refill form [393.20ms]",
+        "",
+        " 4 pass",
+        " 0 fail",
+        " 82 expect() calls",
+        "Ran 4 tests across 1 file. [6.75s]"
+      ]
+    },
+    {
+      "sha256": "71E2D0FB325520D34F507B517079B632956E635DE98EF3A9B1917F9FCE5A2F6D",
+      "path": "int02-browser-recovery-build.log",
+      "tail": [
+        "Building src/sw.ts service worker (\"iife\" format)...",
+        "vite v7.3.1 building client environment for production...",
+        "transforming...",
+        "✓ 1 modules transformed.",
+        "rendering chunks...",
+        "computing gzip size...",
+        "dist/sw.js  1.02 kB │ gzip: 0.52 kB",
+        "✓ built in 19ms"
+      ]
+    },
+    {
+      "sha256": "704C1415C16A8B7C36950FFC9ACAD21D3EF74504001D9CB3D67BAAAA339FD2F6",
+      "path": "int02-browser-recovery-deadcode.log",
+      "tail": [
+        "OpenChamberVersionParts                  type       packages/sdk/src/host-version.ts:5:13                               ",
+        "Exported types in used namespace (2)",
+        "SharedTrustRunsIn          sharedTrust  type  packages/ui/src/lib/sharedTrustConfirmation.ts:20:13",
+        "PendingSharedTrustRequest  sharedTrust  type  packages/ui/src/lib/sharedTrustConfirmation.ts:22:13",
+        "Duplicate exports (1)",
+        "SETTINGS_SECTION_TITLE_CLASS|SETTINGS_PANEL_TITLE_CLASS  packages/ui/src/components/sections/shared/SettingsSection.tsx",
+        "Configuration hints (1)",
+        "scripts/bundle-guest.ts  packages/sdk  knip.json  Remove redundant entry pattern"
+      ]
+    },
+    {
+      "sha256": "1FB74E3CC59FDF2AB8B6BD974551221FAAA47735C8FC586865843CEB94BB0C9B",
+      "path": "int02-browser-recovery-oxlint.log",
+      "tail": [
+        "packages/ui/src/App.tsx:721:6: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.tsx:266:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.tsx:282:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.tsx:293:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.tsx:336:38: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.tsx:484:16: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.tsx:570:14: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.tsx:1213:20: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement."
+      ]
+    },
+    {
+      "sha256": "FC0790088752F751307F637A567A133ABEC98A1A7052A14C8055ADEE5D5EEA77",
+      "path": "int02-browser-recovery-oxlint-baseline.log",
+      "tail": [
+        "packages/ui/src/App.int02-baseline.tsx:721:6: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:265:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:281:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:292:9: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:335:38: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:483:16: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:569:14: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/apps/MobileApp.int02-baseline.tsx:1211:20: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement."
+      ]
+    },
+    {
+      "path": "int02-browser-recovery-oxlint-final.log",
+      "sha256": "1FB74E3CC59FDF2AB8B6BD974551221FAAA47735C8FC586865843CEB94BB0C9B",
+      "diagnostics": 37,
+      "authoredDiagnostics": 0
+    }
+  ],
+  "retained": [
+    "Real OC2 binary, current builds, reusable browser/native drivers and selected compact evidence remain needed until R1 closeout; remove obsolete copies then"
+  ]
+}

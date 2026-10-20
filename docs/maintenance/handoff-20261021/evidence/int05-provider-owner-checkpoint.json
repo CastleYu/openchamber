@@ -1,0 +1,107 @@
+{
+  "at": "2026-10-11T22:48:15.465Z",
+  "phase": "INT-05 native provider provenance and disconnect owner prerequisite",
+  "status": "R3 INT-05 remains open; owner not composed into production",
+  "source": [
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "075b6a157e1fe63ea6c01b8553806179459ddaf5dc460a613d70b5c672c33745"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "84c58b5c2c558b67fba931e316655163c77dfe933dcc420e760b8077a6d5c47d"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-LEGACY-1.2.27-SPEC.md",
+      "sha256": "2bf0365476818fb82bbad64c6dee04bcfa3b6ab023e74ca819fa537b64769874"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-LEGACY-1.2.27-SPEC.md",
+      "sha256": "db33f0563a25aa26e72fddd8b89601994c312b8fbffe54cdee5c3ae5319bb360"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/DOCUMENTATION.md",
+      "sha256": "2d63b7e5e45c3afadd0332bac3d48235a5306fbcb2f8f5e18fae78fdf9fc4542"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/legacy-provider-config.js",
+      "sha256": "3aaf3130003e6884daea1121d68f221421fc843d713f77684b4bd1d7e58d2afb"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/legacy-provider-config.d.ts",
+      "sha256": "faae31f75a1beef6b521f2796b0efceeb723002084544653121e0343fc3e2129"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/legacy-provider-config.test.js",
+      "sha256": "14789c569c1e3dcfa93bd4454529d77bb0cc2372686fcfa96bbf8fb180bc4e6e"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/legacy-config-layers.js",
+      "sha256": "9e7b7ca9385f408ed884115d3808a94a564b4a6f08d875c77d26f70e2968b18c"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/legacy-config-layers.test.js",
+      "sha256": "8c782c71f48938f9ffad2c79694c1df2c20c3320430aa8b1e6cb7d4c70d65bef"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/kernel-operations.js",
+      "sha256": "c23267d9cdc69d4734bc6e9ef6363192700146b029ac7cdd44c890541f01b1e8"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/kernel-operations.d.ts",
+      "sha256": "3aeb06c591d235163e137d8db87690c4a1cece97c68a29f2cf8a92407c6f9c19"
+    },
+    {
+      "file": "packages/web/server/lib/opencode/kernel-operations.test.js",
+      "sha256": "2fb674a281204c2cd0142f63af4da72d9f0206c66d3dc8a4267ba6d03df0d918"
+    }
+  ],
+  "validation": {
+    "tests": 113,
+    "files": 4,
+    "testLog": "artifacts/int05-provider-owner-tests.log",
+    "eslint": "artifacts/int05-provider-owner-eslint.log",
+    "oxlint": "artifacts/int05-provider-owner-oxlint.json",
+    "types": [
+      "type-check:web",
+      "type-check:ui",
+      "type-check:electron",
+      "type-check:mobile",
+      "vscode:type-check"
+    ],
+    "build": "VS Code extension only",
+    "buildLog": "artifacts/int05-provider-owner-build-vscode.log",
+    "deadCode": "artifacts/int05-provider-owner-dead-code.log",
+    "docLinks": "four bilingual SPEC/milestone documents have no missing local links",
+    "result": "113/113 tests, five workspace type checks, ESLint, Oxlint and VS Code extension build passed; dead-code report reviewed",
+    "warnings": "Existing Vite option warnings and credential-db import.meta/CJS extension build warning retained; no authored Oxlint diagnostics",
+    "deadCodeCounts": {
+      "unusedTypes": 231,
+      "unusedExports": 319,
+      "duplicateExports": 1,
+      "unusedFiles": 2
+    }
+  },
+  "astra": "Read-only review identified effective/remote/plugin/environment residuals, preflight truth and ambiguous credential removal after retirement. Owner now gates these; official SDK deletion and abort ownership still require integration.",
+  "approvalReview": "Expanded provider return values rejected before execution; safer metadata-only plus private boolean comparison accepted. No rejected action was bypassed.",
+  "next": [
+    "Implement official native-bound SDK credential removal/save/OAuth and runtime abort ownership",
+    "Compose same owner in Web/Electron and VS Code with full workflow admission and persisted-versus-applied UI feedback",
+    "Verify pinned executable and actual host fidelity before opening Legacy credentials",
+    "Generated plugins/unattended callers, then R4 apply/reload"
+  ],
+  "limits": [
+    "Controlled module/HTTP tests, not exact executable or real provider OAuth acceptance",
+    "Legacy credentials/OAuth production admission remains closed",
+    "New owner is deliberately not wired until complete workflow accepted",
+    "No dependency, download, Git, remote branch or Release changes"
+  ],
+  "weeklyQuotaRemainingAtEntry": 63,
+  "cleanup": {
+    "tempFixtures": "Tests remove owned roots in afterEach; atomic temporary files checked",
+    "helperDirectory": "cdee/openchamber/provider-owner-stage removed after checkpoint",
+    "retained": "Current extension consumer build and compact evidence for INT-05/R7"
+  },
+  "weeklyQuotaRemainingAtCompletion": 63,
+  "completedAt": "2026-10-11T22:50:31.0753097Z"
+}

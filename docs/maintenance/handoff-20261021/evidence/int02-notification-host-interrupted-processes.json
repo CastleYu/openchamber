@@ -1,0 +1,32 @@
+[
+  {
+    "ProcessId": 4100,
+    "ParentProcessId": 119244,
+    "Name": "node.exe"
+  },
+  {
+    "ProcessId": 108536,
+    "ParentProcessId": 4100,
+    "Name": "esbuild.exe"
+  },
+  {
+    "ProcessId": 75716,
+    "ParentProcessId": 4100,
+    "Name": "node.exe"
+  },
+  {
+    "ProcessId": 114472,
+    "ParentProcessId": 75716,
+    "Name": "git.exe"
+  },
+  {
+    "ProcessId": 104244,
+    "ParentProcessId": 114472,
+    "Name": "conhost.exe"
+  },
+  {
+    "ProcessId": 111640,
+    "ParentProcessId": 114472,
+    "Name": "git.exe"
+  }
+]

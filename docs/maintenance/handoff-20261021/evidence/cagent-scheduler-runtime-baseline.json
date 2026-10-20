@@ -1,0 +1,360 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 749,
+            "length": 11,
+            "line": 19,
+            "column": 52
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1314,
+            "length": 16,
+            "line": 46,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1473,
+            "length": 21,
+            "line": 51,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1737,
+            "length": 23,
+            "line": 58,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2230,
+            "length": 13,
+            "line": 76,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2736,
+            "length": 15,
+            "line": 99,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 3776,
+            "length": 15,
+            "line": 130,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 3845,
+            "length": 24,
+            "line": 134,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5736,
+            "length": 20,
+            "line": 196,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5773,
+            "length": 20,
+            "line": 196,
+            "column": 46
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6558,
+            "length": 31,
+            "line": 233,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6828,
+            "length": 17,
+            "line": 237,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13588,
+            "length": 58,
+            "line": 462,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14095,
+            "length": 64,
+            "line": 479,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14165,
+            "length": 70,
+            "line": 480,
+            "column": 5
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 19700,
+            "length": 64,
+            "line": 598,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 19843,
+            "length": 70,
+            "line": 600,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 20244,
+            "length": 27,
+            "line": 613,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 21591,
+            "length": 27,
+            "line": 654,
+            "column": 48
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 27824,
+            "length": 54,
+            "line": 816,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 29136,
+            "length": 54,
+            "line": 845,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/scheduled-tasks/cagent-scheduler-baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37316,
+            "length": 35,
+            "line": 1080,
+            "column": 11
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 1,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.1928888
+}

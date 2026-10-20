@@ -1,0 +1,49 @@
+{
+  "runtime": "VS Code Extension Host + target opencode.ts + exact Legacy 1.2.27 binary",
+  "checks": [],
+  "notVerified": [],
+  "failures": [
+    "The manager did not admit exact Legacy 1.2.27"
+  ],
+  "identity": {
+    "generation": "unknown",
+    "status": "unverified",
+    "version": "1.2.27",
+    "readyVersion": "1.2.27"
+  },
+  "readProbes": [
+    {
+      "route": "/session",
+      "error": "TimeoutError"
+    },
+    {
+      "route": "/session/status",
+      "status": 200,
+      "bytes": 2,
+      "shape": "object"
+    },
+    {
+      "route": "/permission",
+      "status": 200,
+      "bytes": 2,
+      "shape": "array:0"
+    },
+    {
+      "route": "/question",
+      "status": 200,
+      "bytes": 2,
+      "shape": "array:0"
+    },
+    {
+      "route": "/command",
+      "status": 200,
+      "bytes": 187233,
+      "shape": "array:27"
+    }
+  ],
+  "runner": {
+    "state": "behavior-failed",
+    "at": "2026-10-12T00:07:38.563Z",
+    "error": "Error: The manager did not admit exact Legacy 1.2.27\n\tat Object.run (c:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int05-manager-owner-driver\\suite.cjs:25255:37)\n\tat async exports.run (c:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int05-manager-owner-driver\\test-runner.cjs:45:5)"
+  }
+}

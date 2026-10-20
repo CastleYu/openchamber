@@ -1,0 +1,197 @@
+{
+  "notVerified": [
+    "model conversation",
+    "real CAgent",
+    "exact Legacy",
+    "packaged runtime"
+  ],
+  "time": "2026-10-10T00:20:02.4833944Z",
+  "remaining": "R1 final mode/migration and SPEC 3.1 consumer-boundary reconciliation",
+  "checks": {
+    "deadCode": {
+      "unusedExports": 319,
+      "unusedTypes": 231,
+      "unusedFiles": 2
+    },
+    "syntax": "passed",
+    "antiSlopExisting": 37,
+    "webLint": "passed",
+    "cliEslint": "passed",
+    "webTypes": "passed",
+    "antiSlopAuthored": 0
+  },
+  "focusedTests": {
+    "passed": 120,
+    "skipped": 1
+  },
+  "fingerprints": [
+    {
+      "path": "packages/web/bin/cli.js",
+      "sha256": "C6B4EA57411E18B32BD66928043799079522998063F3D6044B9B06529D7A147C"
+    },
+    {
+      "path": "packages/web/bin/cli.test.js",
+      "sha256": "C19AC20814F621F8014445C15A8B548F5F6DB6927764058D7C9809C67CD7E440"
+    },
+    {
+      "path": "packages/web/bin/lib/commands-serve.js",
+      "sha256": "38470EC60AC693538A4B056E3552E09D889F63DB94B02FDED218A951E72C873B"
+    },
+    {
+      "path": "packages/web/bin/lib/cli-http.js",
+      "sha256": "559BB6C00735419DEDA9D74ED0764A9A27A416B54F41B973F4135041686DFD7B"
+    },
+    {
+      "path": "packages/web/bin/lib/cli-executables.js",
+      "sha256": "49E482BD9CB49D450EADBAA0AB802714FCC0280C0F314E6BAAFCADAFB5A0F523"
+    }
+  ],
+  "realCli": [
+    {
+      "scenario": "setup",
+      "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-x46zTV",
+      "checks": [
+        "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+        "non-TTY JSON output is pure and contains no configured password",
+        "authenticated configuration remains reachable",
+        "saved record is sole startup authority and failure does not select a fallback",
+        "CLI authenticated stop completes with JSON output",
+        "owned upstream registry is empty after shutdown"
+      ]
+    },
+    {
+      "scenario": "external",
+      "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-JgQ7mT",
+      "checks": [
+        "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+        "non-TTY JSON output is pure and contains no configured password",
+        "authenticated configuration remains reachable",
+        "saved record is sole startup authority and failure does not select a fallback",
+        "CLI authenticated stop completes with JSON output",
+        "owned upstream registry is empty after shutdown"
+      ]
+    },
+    {
+      "scenario": "configured",
+      "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-dbfi84",
+      "checks": [
+        "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+        "non-TTY JSON output is pure and contains no configured password",
+        "authenticated configuration remains reachable",
+        "saved record is sole startup authority and failure does not select a fallback",
+        "CLI authenticated stop completes with JSON output",
+        "owned upstream registry is empty after shutdown"
+      ]
+    }
+  ],
+  "cleanup": {
+    "checkedAt": "2026-10-10T00:17:51.0264691Z",
+    "retained": "Real OC2 binary and reusable CLI driver remain needed until R1 closeout",
+    "items": [
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-4fB4OI",
+        "bytes": 179,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-D491Pp",
+        "bytes": 4499,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-dbfi84",
+        "bytes": 7275965,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-JgQ7mT",
+        "bytes": 4620,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-mFQRhB",
+        "bytes": 4620,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-mTzdVg",
+        "bytes": 7275964,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ugwRxq",
+        "bytes": 373,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-W7Q7fh",
+        "bytes": 281,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [
+          {
+            "live": false,
+            "pid": 89276,
+            "ownerPid": 63092
+          }
+        ],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-weX6ft",
+        "bytes": 7270727,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-WvC2Rw",
+        "bytes": 4680,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-x46zTV",
+        "bytes": 4680,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ybrqcn",
+        "bytes": 4604,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-1XMu4H",
+        "bytes": 4499,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [
+          {
+            "live": false,
+            "pid": 42456,
+            "ownerPid": 76944
+          }
+        ],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ysH8nk",
+        "bytes": 6423685,
+        "removed": true
+      },
+      {
+        "staleExitedRegistry": [],
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ZTuEYR",
+        "bytes": 4604,
+        "removed": true
+      }
+    ],
+    "evidence": "Compact CLI results, baseline reproduction and external task logs retained"
+  },
+  "baseline": "567fe630b2590e67c93af56bb4cbed138503496e"
+}

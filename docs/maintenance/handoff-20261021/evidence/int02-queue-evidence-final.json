@@ -1,0 +1,40 @@
+{
+  "vscode": 0,
+  "activity": 0,
+  "ui": 0,
+  "lint": 0,
+  "types": 0,
+  "build": 0,
+  "anti": 0,
+  "dead": 0,
+  "initialTypes": 2,
+  "vscodeFinalTests": 0,
+  "typeEvidence": "All other workspaces passed the initial root check. The corrected VS Code host/webview check passed separately; initial fixture type errors remain in the original log.",
+  "focusedTests": {
+    "activityAndSwitch": 30,
+    "vscode": 5,
+    "ui": 4
+  },
+  "nativeChecks": 46,
+  "weeklyRemainingPercent": 38,
+  "cleanup": {
+    "removed": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-jc04ww",
+    "registryRecords": 0,
+    "reclaimedBytes": 37842054,
+    "nextCleanup": "R1 closeout",
+    "activeFixtureProcesses": 0,
+    "sourceSHA256": {
+      "packages/vscode/src/connection-runtime.js": "3DC0AA80E3A856C3234A6CEC96C670D6FF1EAE251F9E6B64D111082B4E085AFE",
+      "packages/ui/src/lib/opencode/connection.ts": "A96245EF37C1EBD4801DC758EDF4BC6B1830C77FE8687781953B97E6C4C92793",
+      "packages/web/server/lib/opencode/connection-activity.js": "EEA59B49FE39E851DBD6D3EF94E5060018590CAB40736EA9DCF3C8D238297A3D",
+      "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.tsx": "A6392C62DE38540ED0EF125F2D263F4BAB0B684BBAD858F2767B1DFF66874B79"
+    },
+    "retained": "Compact evidence/logs and reusable native launcher until R1 acceptance. Current VS Code build retained for the remaining shared-webview journey."
+  },
+  "remaining": [
+    "Original configured target captured at enqueue and enforced at dispatch",
+    "Client/peer coordination",
+    "Complete shared webview/bridge journey",
+    "Windows console-flash observation"
+  ]
+}

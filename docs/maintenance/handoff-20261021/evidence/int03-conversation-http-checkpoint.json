@@ -1,0 +1,110 @@
+{
+  "at": "2026-10-11T15:23:57.067Z",
+  "baseline": "be235054f",
+  "round": "R2 / INT-03 remains open",
+  "weeklyRemainingPercent": 82,
+  "scope": "Finite exact-1.2.27 shared client admission, host SDK create/update bridge and supplementary metadata read projection. No new dependencies.",
+  "tests": {
+    "host": {
+      "passed": 169,
+      "failed": 0,
+      "report": "artifacts/int03-conversation-http-final.json"
+    },
+    "ui": {
+      "passed": 54,
+      "failed": 0,
+      "files": 7,
+      "report": "artifacts/int03-isolated-ui-results.json"
+    },
+    "limits": "Shared SDK client through real Express/proxy/kernel against loopback fixtures. Upstream fixture authentication is tested; browser rendering, full OpenChamber authentication, exact executable and VS Code are not proven by these tests."
+  },
+  "validation": {
+    "workspaceTypes": "passed",
+    "workspaceLint": "passed, five existing UI warnings",
+    "webBuild": "passed",
+    "oxlint": {
+      "files": 9,
+      "diagnostics": 0,
+      "report": "artifacts/int03-conversation-final-oxlint.json"
+    },
+    "syntax": "passed",
+    "diffCheck": "passed",
+    "deadCode": {
+      "files": 2,
+      "exports": 319,
+      "types": 231,
+      "baselineUnchanged": true,
+      "report": "artifacts/int03-conversation-deadcode.log"
+    }
+  },
+  "resolvedFailures": [
+    "An unsupported negative Bun matcher type was replaced with direct assertion invocation; workspace type-check now passes.",
+    "Combined Bun run reported 24 failures from existing mock.module leakage. All seven files pass in isolated processes, matching the repository test runner contract. The failed mixed report remains artifacts/int03-conversation-ui-tests.log."
+  ],
+  "sourceHashes": {
+    "packages/ui/src/lib/opencode/client.protocol.test.ts": "874469c1e03bbc5faa899ab0721dea6d70df05f9203c3451e7812f5cf6a4a46a",
+    "packages/ui/src/lib/opencode/runtime.test.ts": "9177baa02013467ec2cc4d9c9a532770edac1287bbae7bd7b1fb0b76de683994",
+    "packages/ui/src/lib/opencode/runtime.ts": "d85f7210b68885d3e116c575bc20631ec40117f003c9d4c37c15720635a3750e",
+    "packages/web/server/index.js": "6bf37fc362d6edad89190589e62ca79591025beab6126998a0b0c71f3858859f",
+    "packages/web/server/lib/openchamber-sessions/DOCUMENTATION.md": "16d1fc7f651ed02e731ed003393e7a7361b01f15bb8a7b53361a072a603ef25b",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "d3972a01d4b23ea56f18850676f4e8f4f1aa1c83801ecb2b1f7b75628df196ee",
+    "packages/web/server/lib/opencode/kernel-legacy-writes.test.js": "fc984f680f87e8e858e586a1532a88f76a273ec1bea6b82dcd1b9647e8fdfd57",
+    "packages/web/server/lib/opencode/kernel-operations.d.ts": "2175aefd6f8743a3156feca260f1d4c935f332cb689eaf01906e06a936cf53ad",
+    "packages/web/server/lib/opencode/kernel-operations.js": "4b4d3c7c290136d34f6b79ba9a6770491bf02792b4f865330d3e39a00360e14f",
+    "packages/web/server/lib/opencode/legacy-contract.d.ts": "ee6ad5a739d8f4e2f9bc74dfa0ac918c3fe8e2cf9526161189b1de9357fb403d",
+    "packages/web/server/lib/opencode/legacy-contract.js": "4f2fb21868bb379b3426fe02ea7b2352f95674d7da02c6df86d30df12c86b918",
+    "packages/web/server/lib/opencode/legacy-contract.test.js": "7988b15b63c1d76252e70d1d85fd6b0b7b00836400fd8d17eaf4805f1eec88a7",
+    "packages/web/server/lib/opencode/proxy.js": "e1ceb9700c4548154698ee0c643729ecf97fa98627a00dc2a64027e802dc5d00",
+    "packages/web/server/lib/opencode/server-utils-runtime.js": "176b47005e3503048947bbed6f6fed76c0d50849508ab25c50b974454b6088c3",
+    "packages/ui/src/lib/opencode/client.legacy-host.test.js": "1cf47ede9a4f5cf029be9e1b0143baac6904e2be504910190cab165eab30490a",
+    "packages/web/server/lib/opencode/legacy-proxy-http.test.js": "0a713434f7a8c6f0b6558ad40520310c532389fa7621c449e1dba7765536c962",
+    "packages/web/server/lib/opencode/legacy-session-http.js": "21175888a9952b62cfa501b671cf3297a24cfa9ba89422251a79e2fe018a20c8",
+    "packages/web/server/lib/opencode/legacy-session-http.test.js": "08645b6eae87e1a2ef89b383d45b37ed63c16bcb0c6544df9a3904495815e0a9"
+  },
+  "cleanup": {
+    "helpers": [
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-ui-edit.cjs",
+        "bytes": 5229
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-host-edit.cjs",
+        "bytes": 10223
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-http-fix.cjs",
+        "bytes": 1941
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-http-partial.cjs",
+        "bytes": 2109
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-contract-final.cjs",
+        "bytes": 1612
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-conversation-docs.cjs",
+        "bytes": 5860
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int03-conversation-checkpoint.cjs",
+        "bytes": 4526
+      },
+      {
+        "file": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\context-check-command-failures.md",
+        "bytes": 305
+      }
+    ],
+    "removedBytes": 31805,
+    "status": "removed all eight task-owned helper/diagnostic files; reclaimed 31805 bytes",
+    "retained": "Current focused reports, failed-run diagnosis, source hashes and Web build retained for actual R2 host/UI integration. Historical exact executable and probes remain required. Unrelated conversation directories and toolchains were preserved."
+  },
+  "next": [
+    "Use this committed source and built Web assets in an isolated full startWebUiServer host with fresh OpenChamber/OpenCode home, temporary auth and verified exact 1.2.27 executable. Preserve unrelated processes and personal settings.",
+    "Verify unauthenticated API refusal, authenticated login and actual shared UI. Exercise Auto/manual profile selection, session/history, text and attachments, streamed tools, permissions/questions, stop and reopened history.",
+    "Verify VS Code proxy/SSE/metadata integration and current OC1/OC2 core workflow regressions; retain explicit refusal for unaccepted advanced operations. Do not advance R2 before these acceptance checks.",
+    "Keep English handoff and Chinese archive synchronized; consolidate and clean owned runtime homes/logs after extracting required evidence. Then proceed to R3-R7 in the existing sequence."
+  ],
+  "commit": "055c46c8ee91b7bb606f1bd0c64e615faf46f2cd"
+}

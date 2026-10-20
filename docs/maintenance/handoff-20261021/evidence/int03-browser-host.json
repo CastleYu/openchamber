@@ -1,0 +1,214 @@
+{
+  "source": "055c46c8e",
+  "origin": "http://127.0.0.1:32825",
+  "executableSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "state": "stopped",
+  "ownUpstreamStopped": false,
+  "modelCalls": [
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_TEXT\"",
+      "afterTool": false
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_TEXT\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "[{\"type\":\"text\",\"text\":\"LEGACY_TEXT attachment\"},{\"type\":\"text\",\"text\":\"Called the Read tool with the following input: {\\\"filePath\\\":\\\"note.txt\\\"}\"},{\"type\":\"text\",\"text\":\"LEGACY_ATTACHMENT_CONTENT\\n\"}]",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_HOLD\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "marker": "\"LEGACY_TEXT manual profile\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "server.heartbeat",
+    "project.updated",
+    "file.watcher.updated",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "question.asked",
+    "question.replied",
+    "permission.asked",
+    "permission.replied",
+    "session.error"
+  ],
+  "runtimeRoot": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\legacy-1.2.27\\conversation-h7lFij"
+}

@@ -1,0 +1,133 @@
+{
+  "webTests": 129,
+  "uiVSCodeTests": 26,
+  "productionChecks": 10,
+  "realKernel": "OC2 2.0.20",
+  "types": "workspace pass",
+  "lint": "workspace pass; 5 existing warnings",
+  "webBuild": "pass",
+  "vscodeBuild": "pass",
+  "anti": {
+    "diagnostics": 234,
+    "authored": []
+  },
+  "deadCode": {
+    "files": 2,
+    "exports": 319,
+    "types": 231
+  },
+  "fingerprints": {
+    "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.test.tsx": "460c5c949ea7915367271b01d61f8d3412ea8426f81538ef2c2a4b6ccba3035f",
+    "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.tsx": "cdaed88d2c25dec9c9279205776860df18ef5f4ea9f9333d1753690dbabc93a5",
+    "packages/ui/src/lib/i18n/messages/de.settings.ts": "6b7f09a8e92d3ba29b480c38491cf50e1aceddee662abc5c0d14a07640b78385",
+    "packages/ui/src/lib/i18n/messages/en.settings.ts": "135a86dd5aa535637eef7838be0860a610d7d88a57f1d40ff6a66e5a2decb3e6",
+    "packages/ui/src/lib/i18n/messages/es.settings.ts": "25c5bbedcb3c5ef2276bb3b5f0690c01a9f01ea603ad510406f255467dab087f",
+    "packages/ui/src/lib/i18n/messages/fr.settings.ts": "f811ccae0ae21c52919e82856d6d9f1ecc06d5e016fbd5dfceb483f8510f8594",
+    "packages/ui/src/lib/i18n/messages/ja.settings.ts": "8ac6882970d408de31d3a8681145f41cb48c5f8ee8894be12461fe8226de10a8",
+    "packages/ui/src/lib/i18n/messages/ko.settings.ts": "07bba3444b36bdff5631ceea4169adfe992029db6406fa3809a32f14bb458e9f",
+    "packages/ui/src/lib/i18n/messages/nl.settings.ts": "40f662d229d2c911accc798dac1693f0b47b7dfe051932aa86465643023d91aa",
+    "packages/ui/src/lib/i18n/messages/pl.settings.ts": "7903905612fa1ad70017c04922aa20ce5a481fcc127019f3d434f155dc16f74b",
+    "packages/ui/src/lib/i18n/messages/pt-BR.settings.ts": "af9953d1062a587a11d8cf1d36026f242032ed7c7c742acd9a08ba9bfd40a2e4",
+    "packages/ui/src/lib/i18n/messages/tr.settings.ts": "d477e044da2ce5821cb84e0fa1307a6a4870b8ba36ad428d75ec4360e8d8f6a7",
+    "packages/ui/src/lib/i18n/messages/uk.settings.ts": "965cb34dffb088e390366df93fba315b41586e137800f5a0a4f4ab8ca1217560",
+    "packages/ui/src/lib/i18n/messages/zh-CN.settings.ts": "50375a0ed01048b09dcd9f9a0ca975f4d05d233b11297cedffa0efc903725409",
+    "packages/ui/src/lib/i18n/messages/zh-TW.settings.ts": "cebcca280a1c93d4c6b03191fc9a9aa9f0be7a5d56fe038d65021f1931261d9a",
+    "packages/ui/src/lib/opencode/connection.ts": "f388d912d3efe24de5fffcf4f44bf2906d58bf1c503bf47f619eecd5779b7357",
+    "packages/ui/src/lib/settings/search.test.ts": "91a9658eddfc435dd035cf5e7daa896919a36fce54172ef1be21886cd81b2ead",
+    "packages/ui/src/lib/settings/search.ts": "0b9125db02f7220d33691da29c92c7531059c6c1a460b82402c88d63b8ec8fef",
+    "packages/vscode/src/connection-runtime.d.ts": "6ba59fad5c9f69975657d3a5db00df6dd871b817f343ca8339fe6cbe1f59b1dc",
+    "packages/vscode/src/connection-runtime.js": "67d2da362796e4a42d375b5e3d1cb9c77f7751504229566f556851c9b65a6c60",
+    "packages/vscode/src/connection-settings.test.ts": "779c5632e27df2018a36b6e988b2475d30dadb8f5f765728974bef48a96b2e77",
+    "packages/vscode/webview/main.tsx": "be07aa3e7d5f83b9b71d4253330f7c2c8e05f51ae0731200dcec08b932b39bc5",
+    "packages/web/server/index.js": "18c2fab5c1b3e72197b11cc9bcc9e0a0288917475282f122c4ea0ed6d6aaef61",
+    "packages/web/server/lib/opencode/feature-routes-runtime.js": "7f39f04a607ce7864cc9b886a16e36f37a3b6737798edea58628111a2d512d9d",
+    "packages/web/server/lib/opencode/routes.js": "377b829186eacce319429a406cdafb4af141352162bbd81846bb68ccca84e9e8",
+    "packages/web/server/lib/opencode/connection-test.js": "01f52d2e14326b4b65f9e39d14677d5e8b2c2ffff335ac3e1f85261dcc692107",
+    "packages/web/server/lib/opencode/connection-test.d.ts": "a214f7806df8d7f83e06a4e47aae88c14772d701c762fad3505b4221f9e0a31a",
+    "packages/web/server/lib/opencode/connection-test.test.js": "447a74c84ec952f2cb771eff959065a215835d7343b18cdb019fb4d69e16a645"
+  },
+  "cleanup": {
+    "removed": [
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-readonly-smoke-xQd7zT",
+        "bytes": 7270410,
+        "checkedPids": [
+          95352,
+          35376
+        ]
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-readonly-smoke-gR1gyb",
+        "bytes": 7275933,
+        "checkedPids": []
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-connection-test-edit.mjs",
+        "bytes": 12459
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-connection-test-ui.mjs",
+        "bytes": 13129
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-connection-test-checks.mjs",
+        "bytes": 15989
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-test-followup.mjs",
+        "bytes": 4631
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-test-fix.mjs",
+        "bytes": 1547
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-test-closeout.mjs",
+        "bytes": 6223
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-test-smoke-create.mjs",
+        "bytes": 2094
+      },
+      {
+        "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-test-smoke.mjs",
+        "bytes": 7650
+      }
+    ],
+    "bytes": 14610065,
+    "failedFixtureRegistry": [
+      {
+        "home": "int02-readonly-smoke-xQd7zT",
+        "registry": {
+          "pid": 95352,
+          "ownerPid": 35376,
+          "port": 5169,
+          "binary": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int01-real/oc2-2.0.20/package/bin/opencode.exe",
+          "runtime": "web",
+          "startedAt": "2026-10-10T00:42:29.038Z"
+        }
+      }
+    ]
+  },
+  "retained": [
+    {
+      "path": "artifacts/int01-real",
+      "reason": "real pinned kernels required by remaining R1 modes and profile checks"
+    },
+    {
+      "path": "packages/web/dist and packages/vscode/dist",
+      "reason": "latest builds retained for remaining runtime acceptance"
+    },
+    {
+      "path": "cdee/artifacts/int02-cli-admission.mjs",
+      "reason": "reusable isolated CLI driver needed until R1 closeout"
+    }
+  ],
+  "unverified": [
+    "real IDE action for new test control",
+    "packaged desktop/mobile acceptance",
+    "complete R1 mode/migration and SPEC 3.1 inventory",
+    "real CAgent environment"
+  ],
+  "verifiedCommit": "805881f73"
+}

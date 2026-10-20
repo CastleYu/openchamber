@@ -1,0 +1,26 @@
+[
+  {
+    "name": "web-types",
+    "code": 0
+  },
+  {
+    "name": "vscode-types",
+    "code": 0
+  },
+  {
+    "name": "eslint",
+    "code": 0
+  },
+  {
+    "name": "oxlint",
+    "code": 1
+  },
+  {
+    "name": "vscode-build",
+    "code": 0
+  },
+  {
+    "name": "dead-code",
+    "code": 0
+  }
+]

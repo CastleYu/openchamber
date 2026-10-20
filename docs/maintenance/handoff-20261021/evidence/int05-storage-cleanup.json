@@ -1,0 +1,66 @@
+{
+  "removed": [
+    {
+      "bytes": 31071355,
+      "directory": "cagent-offline-calibration-20261009"
+    },
+    {
+      "bytes": 31096340,
+      "directory": "cagent-offline-declarative-20261009"
+    },
+    {
+      "bytes": 31096340,
+      "directory": "cagent-offline-declarative-handoff-20261009"
+    },
+    {
+      "bytes": 31109462,
+      "directory": "cagent-offline-excerpts-20261009"
+    },
+    {
+      "bytes": 32224840,
+      "directory": "cagent-offline-extension-client-20261009"
+    },
+    {
+      "bytes": 32224840,
+      "directory": "cagent-offline-extension-client-final-20261009"
+    },
+    {
+      "bytes": 32212599,
+      "directory": "cagent-offline-extension-dispatch-20261009"
+    },
+    {
+      "bytes": 32173773,
+      "directory": "cagent-offline-extension-inventory-20261009"
+    },
+    {
+      "bytes": 32142554,
+      "directory": "cagent-offline-extensions-20261009"
+    },
+    {
+      "bytes": 32278240,
+      "directory": "cagent-offline-finite-pipeline-20261009"
+    },
+    {
+      "bytes": 32790062,
+      "directory": "cagent-offline-maintenance-20261009"
+    },
+    {
+      "bytes": 31620303,
+      "directory": "cagent-offline-openapi-20261009"
+    },
+    {
+      "bytes": 32791007,
+      "directory": "cagent-offline-proxy-20261009"
+    },
+    {
+      "bytes": 32792184,
+      "directory": "cagent-offline-startup-20261009"
+    },
+    {
+      "bytes": 32792184,
+      "directory": "cagent-offline-zip-check-20261009"
+    }
+  ],
+  "retained": "Delivery ZIP, canonical release kit, source, logs and exact-version executables",
+  "date": "2026-10-13T16:35:29.6840709Z"
+}

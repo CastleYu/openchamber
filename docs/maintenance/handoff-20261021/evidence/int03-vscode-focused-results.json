@@ -1,0 +1,32 @@
+[
+  {
+    "file": "packages/vscode/src/kernelRequest.test.ts",
+    "exit": 1,
+    "log": "artifacts/int03-vscode-focused-kernelRequest.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/src/bridge-proxy-runtime.test.ts",
+    "exit": 1,
+    "log": "artifacts/int03-vscode-focused-bridge-proxy-runtime.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/src/bridge-proxy-runtime.test.js",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-focused-bridge-proxy-runtime.test.js.log"
+  },
+  {
+    "file": "packages/vscode/src/sseProxy.test.ts",
+    "exit": 1,
+    "log": "artifacts/int03-vscode-focused-sseProxy.test.ts.log"
+  },
+  {
+    "file": "packages/vscode/src/sseProxy.test.js",
+    "exit": 0,
+    "log": "artifacts/int03-vscode-focused-sseProxy.test.js.log"
+  },
+  {
+    "file": "packages/vscode/webview/api/bridge.test.ts",
+    "exit": 1,
+    "log": "artifacts/int03-vscode-focused-bridge.test.ts.log"
+  }
+]

@@ -5,9 +5,11 @@ import { configureOpenCodeCredentials as configureV2Credentials, getProviderAuth
 import { getProviderAuth as getLegacyV2ProviderAuth, readAuthFile as readLegacyV2Credentials } from './auth-v2-legacy.js';
 import { OPENCODE_PROFILE, isSupportedOpenCodeVersion, supportsCredentialApi } from './compatibility.js';
 
+import { supportsLegacyStream } from './legacy-contract.js';
 import { AGENT_ERROR } from '../agent/constants.js';
 
 let getRuntime = () => ({ generation: 'oc1' });
+let legacyReader = null;
 
 export { openCodeCredentialSource };
 const assertProfile = (runtime = getRuntime()) => {
@@ -18,14 +20,37 @@ const assertProfile = (runtime = getRuntime()) => {
 };
 export const getOpenCodeCredentialGeneration = () => assertProfile().generation;
 
-export function configureOpenCodeCredentials(runtime, source) {
+export function configureOpenCodeCredentials(runtime, source, legacy = null) {
   getRuntime = runtime;
+  legacyReader = legacy;
   configureV2Credentials(source);
+}
+
+async function readLegacyCredentials(selected) {
+  const reader = legacyReader;
+  if (!supportsLegacyStream(selected) || !reader) assertProfile(selected);
+  const check = () => {
+    const current = getRuntime();
+    if (reader !== legacyReader || current.generation !== selected.generation || current.profile !== selected.profile
+      || current.version !== selected.version || current.endpoint !== selected.endpoint || current.epoch !== selected.epoch) {
+      throw Object.assign(new Error('OpenCode runtime changed during credential read'), { statusCode: 409 });
+    }
+  };
+  try {
+    const credentials = await reader.read();
+    check();
+    return credentials;
+  } catch (error) {
+    check();
+    throw error;
+  }
 }
 
 /** Read the active kernel's credentials without letting OC2 use the OC1 file. */
 export async function readOpenCodeCredentials() {
-  const selected = assertProfile();
+  const selected = getRuntime();
+  if (selected.profile === OPENCODE_PROFILE.LEGACY) return readLegacyCredentials(selected);
+  assertProfile(selected);
   if (selected.generation === 'oc1') return readAuthFile();
   if (selected.generation !== 'oc2') throw new Error('OpenCode generation is not ready');
   if (!selected.version || !isSupportedOpenCodeVersion(selected.version)) throw new Error('OpenCode version is not known for credential access');
@@ -103,7 +128,12 @@ function removeProviderAuth(providerId) {
 }
 
 async function getProviderAuth(providerId) {
-  const selected = assertProfile();
+  const selected = getRuntime();
+  if (selected.profile === OPENCODE_PROFILE.LEGACY) {
+    const credentials = await readLegacyCredentials(selected);
+    return Object.hasOwn(credentials, providerId) ? credentials[providerId] : null;
+  }
+  assertProfile(selected);
   if (selected.generation === 'oc1') return readAuthFile()[providerId] || null;
   if (selected.generation !== 'oc2' || !selected.version || !isSupportedOpenCodeVersion(selected.version)) {
     throw new Error('OpenCode version is not known for credential access');

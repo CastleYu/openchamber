@@ -1,4 +1,4 @@
-import { detectOpenCodeGeneration, detectOpenCodeProfile, OPENCODE_GENERATION, PROFILE_STATUS } from './compatibility.js';
+import { areOpenCodeVersionsEqual, detectOpenCodeGeneration, detectOpenCodeProfile, OPENCODE_GENERATION, PROFILE_STATUS } from './compatibility.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
 
 const OPEN_CODE_SELECTION = Object.freeze({ family: AGENT_FAMILY.OPENCODE, revision: 0 });
@@ -26,6 +26,7 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
   let selection = getBackendSelection();
   let requested = getRequestedSelection();
   let admission = null;
+  let managedKernel = null;
   let source = getEndpoint();
   let epoch = 0;
   let revision = 0;
@@ -36,6 +37,15 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     endpoint: null, epoch, version: null,
   });
   let current = unresolved();
+  const listeners = new Set();
+  const notify = () => {
+    onChange(current);
+    for (const listener of listeners) listener(current);
+  };
+  const subscribe = (listener) => {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+  };
 
   const invalidate = () => {
     selection = getBackendSelection();
@@ -47,7 +57,7 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     pendingProbe = null;
     pendingRefresh = null;
     current = unresolved();
-    onChange(current);
+    notify();
   };
 
   const get = () => {
@@ -76,7 +86,7 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     const descriptor = { ...result, epoch };
     if (admission) descriptor.status = admission.status;
     current = Object.freeze(descriptor);
-    if (changed) onChange(current);
+    if (changed) notify();
     return current;
   };
 
@@ -102,15 +112,37 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
         : admitted.status === PROFILE_STATUS.MISMATCH || admitted.status === PROFILE_STATUS.UNSUPPORTED
           ? OPENCODE_GENERATION.UNSUPPORTED : OPENCODE_GENERATION.UNKNOWN;
       return { result: { ...('descriptor' in admitted ? admitted.descriptor : unresolved()), generation }, admission: admitted };
-    }).then(({ result, admission }) => {
+    }).then((probe) => {
       get();
       if (ticket !== revision || endpoint !== source) throw new KernelRuntimeChangedError();
-      return { result, admission, revision: ticket, endpoint };
+      return { ...applyManagedKernel(probe), revision: ticket, endpoint };
     }).finally(() => {
       if (pendingProbe === operation) pendingProbe = null;
     });
     pendingProbe = operation;
     return operation;
+  };
+
+  const applyManagedKernel = (probe) => {
+    const result = probe.result;
+    if (!managedKernel || !isResolvedGeneration(result.generation)) return probe;
+    if (result.version && result.generation === managedKernel.generation
+      && areOpenCodeVersionsEqual(result.version, managedKernel.version)) return probe;
+    const status = result.version ? PROFILE_STATUS.MISMATCH : PROFILE_STATUS.UNVERIFIED;
+    const generation = OPENCODE_GENERATION.UNSUPPORTED;
+    const descriptor = { ...result, generation, status };
+    const rejectedAdmission = requested === null ? probe.admission
+      : { status, selection: requested, descriptor };
+    return { result: descriptor, admission: rejectedAdmission };
+  };
+
+  const setManagedKernel = (next) => {
+    const same = managedKernel === null ? next === null
+      : next !== null && managedKernel.generation === next.generation
+        && areOpenCodeVersionsEqual(managedKernel.version, next.version);
+    if (same) return;
+    managedKernel = next === null ? null : { generation: next.generation, version: next.version };
+    invalidate();
   };
 
   const refresh = () => {
@@ -137,6 +169,7 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     checkProbe(candidate);
     const result = candidate.result;
     if (TRANSIENT_GENERATIONS.has(result.generation) && isResolvedGeneration(current.generation)
+      && !result.status
       && (candidate.admission === null || candidate.admission.status === PROFILE_STATUS.UNREACHABLE)) {
       admission = candidate.admission;
       return { descriptor: current, generation: result.generation, preserved: true };
@@ -144,5 +177,5 @@ export const createKernelRuntime = ({ getEndpoint, getHeaders, headersForGenerat
     return { descriptor: commit(candidate), generation: result.generation, preserved: false };
   };
 
-  return { get, refresh, reprobe, invalidate, getAdmission: () => { get(); return admission; } };
+  return { get, refresh, reprobe, invalidate, subscribe, setManagedKernel, getAdmission: () => { get(); return admission; } };
 };

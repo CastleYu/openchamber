@@ -1,0 +1,9 @@
+{
+  "kind": "controlled existing-owner reproduction; no real upstream",
+  "profile": "legacy-1.2.27",
+  "acceptedButResponseLost": 1,
+  "sendAttempts": 2,
+  "remainingItems": 0,
+  "expectedContract": "unknown attempt retained without automatic resubmission",
+  "observedGap": true
+}

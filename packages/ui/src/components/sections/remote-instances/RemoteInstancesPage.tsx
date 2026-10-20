@@ -72,7 +72,7 @@ import {
 import { createRelayTunnelClient } from '@/lib/relay/tunnel-client';
 import { getDesktopLanAddress, isDesktopLocalOriginActive, isDesktopShell } from '@/lib/desktop';
 import { loadDesktopSettings } from '@/lib/persistence';
-import { getRuntimeApiBaseUrl, switchRuntimeEndpoint } from '@/lib/runtime-switch';
+import { getRuntimeApiBaseUrl, prepareRuntimeNavigation, switchRuntimeEndpoint } from '@/lib/runtime-switch';
 import { useSshConfirmation } from './useSshConfirmation';
 
 const randomPort = (): number => {
@@ -370,9 +370,15 @@ const resolvePairingServerUrl = async (): Promise<string> => {
   return `http://${address}:${port}`;
 };
 
-const navigateToUrl = (rawUrl: string): void => {
+const navigateToUrl = async (rawUrl: string): Promise<void> => {
   const target = rawUrl.trim();
   if (!target) {
+    return;
+  }
+  try {
+    await prepareRuntimeNavigation();
+  } catch (error) {
+    console.warn('[remote-instances] navigation blocked during runtime switch', error);
     return;
   }
   try {
@@ -579,7 +585,7 @@ export const RemoteInstancesPage: React.FC = () => {
     setDirectHeaders([]);
     setDirectAddDialogOpen(false);
     if (resolved.redeemUrl) {
-      navigateToUrl(resolved.redeemUrl);
+      await navigateToUrl(resolved.redeemUrl);
     }
   }, [directDefaultHostId, directHeaders, directHosts, directLabel, directToken, directUrl, persistDirectHosts, t]);
 
@@ -780,7 +786,7 @@ export const RemoteInstancesPage: React.FC = () => {
     if (!await persistDirectHosts(nextHosts, directDefaultHostId)) return;
     setDirectEditingId(null);
     if (resolved.redeemUrl) {
-      navigateToUrl(resolved.redeemUrl);
+      await navigateToUrl(resolved.redeemUrl);
     }
   }, [directDefaultHostId, directEditHeaders, directEditLabel, directEditToken, directEditUrl, directEditingId, directHosts, persistDirectHosts, t]);
 
@@ -1035,6 +1041,7 @@ export const RemoteInstancesPage: React.FC = () => {
     const isLocalDesktopClient = client.clientKind === 'desktop-local';
     setRemoteClientError(null);
     try {
+      if (isLocalDesktopClient && isDesktopShell()) await prepareRuntimeNavigation();
       await clientAuth.revokeClient(client.id);
       if (isLocalDesktopClient && isDesktopShell()) {
         const config = await desktopHostsGet();
@@ -1047,7 +1054,7 @@ export const RemoteInstancesPage: React.FC = () => {
         setRemoteClients((clients) => clients.map((entry) => entry.id === client.id
           ? { ...entry, revokedAt: new Date().toISOString() }
           : entry));
-        switchRuntimeEndpoint({ apiBaseUrl: getRuntimeApiBaseUrl(), clientToken: null, runtimeKey: 'local' });
+        await switchRuntimeEndpoint({ apiBaseUrl: getRuntimeApiBaseUrl(), clientToken: null, runtimeKey: 'local' });
         return;
       }
       await loadRemoteClients();
@@ -1270,13 +1277,13 @@ export const RemoteInstancesPage: React.FC = () => {
 
   // Opening a ready instance means pointing this window at the forwarded local
   // URL — the same navigation the host switcher performs after its own connect.
-  const openInstanceUrl = React.useCallback((localUrl?: string) => {
+  const openInstanceUrl = React.useCallback(async (localUrl?: string) => {
     const target = (localUrl || '').trim();
     if (!target) {
       toast.error(t('settings.remoteInstances.page.toast.instanceUrlUnavailable'));
       return;
     }
-    navigateToUrl(target);
+    await navigateToUrl(target);
   }, [t]);
 
   const handlePatternCreate = React.useCallback(async () => {
@@ -1469,7 +1476,7 @@ export const RemoteInstancesPage: React.FC = () => {
       return;
     }
 
-    navigateToUrl(target);
+    await navigateToUrl(target);
   }, [status?.localUrl, t]);
 
   const handlePrimaryConnectionAction = React.useCallback(() => {

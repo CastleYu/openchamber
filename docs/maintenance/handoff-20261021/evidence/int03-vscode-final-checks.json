@@ -1,0 +1,155 @@
+{
+  "sourceBase": "c3f5dbcff2928d9d12e6aecd26be030480ed1ba3",
+  "results": [
+    {
+      "name": "types",
+      "args": [
+        "run",
+        "vscode:type-check"
+      ],
+      "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+      "exit": 0,
+      "log": "artifacts/int03-vscode-final-types.log"
+    },
+    {
+      "name": "extension",
+      "args": [
+        "run",
+        "build:extension"
+      ],
+      "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\packages\\vscode",
+      "exit": 0,
+      "log": "artifacts/int03-vscode-final-extension.log"
+    },
+    {
+      "name": "anti",
+      "args": [
+        "run",
+        "lint:anti-slop",
+        "packages/vscode/src/kernelRequest.ts",
+        "packages/vscode/src/kernelRequest.test.ts",
+        "packages/vscode/src/bridge.ts",
+        "packages/vscode/src/bridge-proxy-runtime.ts",
+        "packages/vscode/src/bridge-proxy-runtime.test.js",
+        "packages/vscode/src/bridge-legacy-session.test.js",
+        "packages/web/server/lib/opencode/legacy-session-api.js",
+        "packages/web/server/lib/opencode/legacy-session-api.d.ts",
+        "packages/web/server/lib/opencode/legacy-session-http.js"
+      ],
+      "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+      "exit": 1,
+      "log": "artifacts/int03-vscode-final-anti.log"
+    },
+    {
+      "name": "dead-code",
+      "args": [
+        "run",
+        "dead-code"
+      ],
+      "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+      "exit": 0,
+      "log": "artifacts/int03-vscode-final-dead-code.log"
+    },
+    {
+      "name": "kernel",
+      "args": [
+        "test",
+        "packages/vscode/src/kernelRequest.test.ts"
+      ],
+      "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+      "exit": 0,
+      "log": "artifacts/int03-vscode-final-kernel.log"
+    },
+    {
+      "name": "proxy",
+      "args": [
+        "test",
+        "packages/vscode/src/bridge-proxy-runtime.test.js"
+      ],
+      "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber",
+      "exit": 0,
+      "log": "artifacts/int03-vscode-final-proxy.log"
+    }
+  ],
+  "diagnostics": [
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 196,
+      "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 197,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 205,
+      "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 206,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 208,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 299,
+      "rule": "anti-slop(no-known-value-widening)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 305,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 367,
+      "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 369,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 395,
+      "rule": "anti-slop(no-known-value-widening)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 409,
+      "rule": "anti-slop(no-runtime-typeof)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 436,
+      "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+      "inherited": true
+    },
+    {
+      "file": "packages/vscode/src/bridge-proxy-runtime.ts",
+      "line": 437,
+      "rule": "anti-slop(require-safety-comment-for-type-assertion)",
+      "inherited": true
+    }
+  ],
+  "authoredDiagnostics": []
+}

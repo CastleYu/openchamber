@@ -1,0 +1,385 @@
+{
+  "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+  "count": 54,
+  "authoredFindings": [],
+  "findings": [
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 42,
+      "column": 28,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 42,
+      "column": 40,
+      "diagnostic": "error anti-slop(no-unsafe-dictionary-type): This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 43,
+      "column": 24,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 43,
+      "column": 32,
+      "diagnostic": "error anti-slop(no-unsafe-dictionary-type): This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 44,
+      "column": 9,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 44,
+      "column": 46,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 54,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 55,
+      "column": 7,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 59,
+      "column": 20,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 60,
+      "column": 10,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 68,
+      "column": 19,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 69,
+      "column": 10,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 85,
+      "column": 7,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 85,
+      "column": 42,
+      "diagnostic": "error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 104,
+      "column": 34,
+      "diagnostic": "error anti-slop(no-unknown-parameters): Parameter `left` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 104,
+      "column": 50,
+      "diagnostic": "error anti-slop(no-unknown-parameters): Parameter `right` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 116,
+      "column": 8,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 116,
+      "column": 54,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 117,
+      "column": 8,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 117,
+      "column": 65,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 134,
+      "column": 29,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 134,
+      "column": 41,
+      "diagnostic": "error anti-slop(no-unsafe-dictionary-type): This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 134,
+      "column": 75,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 134,
+      "column": 83,
+      "diagnostic": "error anti-slop(no-unsafe-dictionary-type): This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 189,
+      "column": 40,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 308,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 314,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 324,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 338,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 353,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 380,
+      "column": 90,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 380,
+      "column": 129,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 400,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 418,
+      "column": 40,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 421,
+      "column": 26,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 422,
+      "column": 45,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 445,
+      "column": 13,
+      "diagnostic": "error anti-slop(no-chained-type-assertions): This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 445,
+      "column": 13,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 445,
+      "column": 13,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 456,
+      "column": 61,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 476,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 494,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 517,
+      "column": 24,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 517,
+      "column": 44,
+      "diagnostic": "error anti-slop(no-unsafe-dictionary-type): This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 518,
+      "column": 29,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 519,
+      "column": 29,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 523,
+      "column": 25,
+      "diagnostic": "error anti-slop(no-chained-type-assertions): This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 523,
+      "column": 25,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 523,
+      "column": 25,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 533,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 540,
+      "column": 26,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 554,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 568,
+      "column": 24,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    },
+    {
+      "file": "packages/ui/src/sync/event-reducer.ts",
+      "row": 583,
+      "column": 21,
+      "diagnostic": "error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "unchangedLine": true
+    }
+  ]
+}

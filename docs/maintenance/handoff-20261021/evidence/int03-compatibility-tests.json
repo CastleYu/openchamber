@@ -1,0 +1,1021 @@
+{
+  "numTotalTestSuites": 12,
+  "numPassedTestSuites": 12,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 81,
+  "numPassedTests": 81,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791727690546,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection does not forward credentials to the undeclared info route on 1.2.27",
+          "status": "passed",
+          "title": "does not forward credentials to the undeclared info route on 1.2.27",
+          "duration": 56.82499999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection does not forward credentials to the undeclared info route on v1.2.27",
+          "status": "passed",
+          "title": "does not forward credentials to the undeclared info route on v1.2.27",
+          "duration": 11.118499999999926,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection does not forward credentials to the undeclared info route on 1.2.27+build.1",
+          "status": "passed",
+          "title": "does not forward credentials to the undeclared info route on 1.2.27+build.1",
+          "duration": 18.0317,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection keeps an unverified 1.2.27 prerelease on the ordinary comparison path",
+          "status": "passed",
+          "title": "keeps an unverified 1.2.27 prerelease on the ordinary comparison path",
+          "duration": 13.327199999999948,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection uses each generation credential and accepts only its authenticated protocol response",
+          "status": "passed",
+          "title": "uses each generation credential and accepts only its authenticated protocol response",
+          "duration": 3.09050000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection accepts OC1 health even when its /api/info fallback is HTML",
+          "status": "passed",
+          "title": "accepts OC1 health even when its /api/info fallback is HTML",
+          "duration": 25.46419999999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection identifies OC2 from matching valid info and health versions",
+          "status": "passed",
+          "title": "identifies OC2 from matching valid info and health versions",
+          "duration": 9.374199999999973,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection identifies OC2 when legacy health is absent",
+          "status": "passed",
+          "title": "identifies OC2 when legacy health is absent",
+          "duration": 9.243299999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection accepts matching OC1 evidence on both endpoints",
+          "status": "passed",
+          "title": "accepts matching OC1 evidence on both endpoints",
+          "duration": 8.839900000000057,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection rejects conflicting valid endpoints",
+          "status": "passed",
+          "title": "rejects conflicting valid endpoints",
+          "duration": 7.672699999999963,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection accepts OC2 info when the old health path has no generation evidence",
+          "status": "passed",
+          "title": "accepts OC2 info when the old health path has no generation evidence",
+          "duration": 14.16619999999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection keeps 401 authentication failure distinct from valid OC1 health",
+          "status": "passed",
+          "title": "keeps 401 authentication failure distinct from valid OC1 health",
+          "duration": 8.772799999999961,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection keeps 403 authentication failure distinct from valid OC1 health",
+          "status": "passed",
+          "title": "keeps 403 authentication failure distinct from valid OC1 health",
+          "duration": 6.530899999999974,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection does not identify OC1 from info alone",
+          "status": "passed",
+          "title": "does not identify OC1 from info alone",
+          "duration": 10.185699999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection reports unsupported major and OC2 below its minimum",
+          "status": "passed",
+          "title": "reports unsupported major and OC2 below its minimum",
+          "duration": 20.740099999999984,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection keeps prereleases below the minimum stable release",
+          "status": "passed",
+          "title": "keeps prereleases below the minimum stable release",
+          "duration": 12.308300000000031,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection reports unreachable for connection failure and unknown for invalid responses",
+          "status": "passed",
+          "title": "reports unreachable for connection failure and unknown for invalid responses",
+          "duration": 12.333799999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection keeps descriptors bound to the probed endpoint and epoch",
+          "status": "passed",
+          "title": "keeps descriptors bound to the probed endpoint and epoch",
+          "duration": 11.897600000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode generation detection"
+          ],
+          "fullName": "OpenCode generation detection reads info only when its JSON version is valid",
+          "status": "passed",
+          "title": "reads info only when its JSON version is valid",
+          "duration": 0.9180000000000064,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission resolves 1.2.27 through Auto and OC1 without an info request or writes",
+          "status": "passed",
+          "title": "resolves 1.2.27 through Auto and OC1 without an info request or writes",
+          "duration": 28.53419999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission resolves v1.2.27 through Auto and OC1 without an info request or writes",
+          "status": "passed",
+          "title": "resolves v1.2.27 through Auto and OC1 without an info request or writes",
+          "duration": 30.83299999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission resolves 1.2.27+build.1 through Auto and OC1 without an info request or writes",
+          "status": "passed",
+          "title": "resolves 1.2.27+build.1 through Auto and OC1 without an info request or writes",
+          "duration": 30.072199999999953,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission preserves auto selection for 1.18.32 as oc1",
+          "status": "passed",
+          "title": "preserves auto selection for 1.18.32 as oc1",
+          "duration": 7.477499999999964,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission preserves oc1 selection for 1.18.32 as oc1",
+          "status": "passed",
+          "title": "preserves oc1 selection for 1.18.32 as oc1",
+          "duration": 6.269999999999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission preserves auto selection for 2.0.20 as oc2",
+          "status": "passed",
+          "title": "preserves auto selection for 2.0.20 as oc2",
+          "duration": 6.283200000000079,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission preserves oc2 selection for 2.0.20 as oc2",
+          "status": "passed",
+          "title": "preserves oc2 selection for 2.0.20 as oc2",
+          "duration": 6.163299999999936,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission preserves auto selection for 1.2.27-rc.1 as oc1",
+          "status": "passed",
+          "title": "preserves auto selection for 1.2.27-rc.1 as oc1",
+          "duration": 6.1721,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects contradictory oc2 selection on 1.2.27 before catalog requests",
+          "status": "passed",
+          "title": "rejects contradictory oc2 selection on 1.2.27 before catalog requests",
+          "duration": 4.425899999999956,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects contradictory oc1 selection on 2.0.20 before catalog requests",
+          "status": "passed",
+          "title": "rejects contradictory oc1 selection on 2.0.20 before catalog requests",
+          "duration": 5.9968000000000075,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects contradictory legacy-1.2.27 selection on 1.18.32 before catalog requests",
+          "status": "passed",
+          "title": "rejects contradictory legacy-1.2.27 selection on 1.18.32 before catalog requests",
+          "duration": 4.807899999999904,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects contradictory legacy-1.2.27 selection on 1.2.27-rc.1 before catalog requests",
+          "status": "passed",
+          "title": "rejects contradictory legacy-1.2.27 selection on 1.2.27-rc.1 before catalog requests",
+          "duration": 3.8295000000000528,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects contradictory legacy-1.2.27 selection on 2.0.20 before catalog requests",
+          "status": "passed",
+          "title": "rejects contradictory legacy-1.2.27 selection on 2.0.20 before catalog requests",
+          "duration": 4.278699999999958,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission permits version-absent declaration only for explicit Legacy after all read checks",
+          "status": "passed",
+          "title": "permits version-absent declaration only for explicit Legacy after all read checks",
+          "duration": 9.994199999999978,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission refuses incomplete or malformed read contract /session",
+          "status": "passed",
+          "title": "refuses incomplete or malformed read contract /session",
+          "duration": 6.208499999999958,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission refuses incomplete or malformed read contract /session/status",
+          "status": "passed",
+          "title": "refuses incomplete or malformed read contract /session/status",
+          "duration": 8.375499999999988,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission refuses incomplete or malformed read contract /permission",
+          "status": "passed",
+          "title": "refuses incomplete or malformed read contract /permission",
+          "duration": 8.42489999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission refuses incomplete or malformed read contract /question",
+          "status": "passed",
+          "title": "refuses incomplete or malformed read contract /question",
+          "duration": 7.851799999999912,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission refuses incomplete or malformed read contract /command",
+          "status": "passed",
+          "title": "refuses incomplete or malformed read contract /command",
+          "duration": 9.109399999999937,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission surfaces authentication failure 401 before manual declaration",
+          "status": "passed",
+          "title": "surfaces authentication failure 401 before manual declaration",
+          "duration": 7.998699999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission surfaces authentication failure 403 before manual declaration",
+          "status": "passed",
+          "title": "surfaces authentication failure 403 before manual declaration",
+          "duration": 6.1965999999999894,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission distinguishes failed read authorization from malformed data",
+          "status": "passed",
+          "title": "distinguishes failed read authorization from malformed data",
+          "duration": 14.940600000000018,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission reports conflict, unsupported versions and transport failure separately",
+          "status": "passed",
+          "title": "reports conflict, unsupported versions and transport failure separately",
+          "duration": 15.154300000000035,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenCode profile admission"
+          ],
+          "fullName": "OpenCode profile admission rejects invalid selection and endpoint before network work",
+          "status": "passed",
+          "title": "rejects invalid selection and endpoint before network work",
+          "duration": 0.6901000000000295,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser reads auto without deriving an operation profile",
+          "status": "passed",
+          "title": "reads auto without deriving an operation profile",
+          "duration": 0.5088000000000648,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser reads oc1 without deriving an operation profile",
+          "status": "passed",
+          "title": "reads oc1 without deriving an operation profile",
+          "duration": 0.10410000000001673,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser reads oc2 without deriving an operation profile",
+          "status": "passed",
+          "title": "reads oc2 without deriving an operation profile",
+          "duration": 0.09800000000007003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser reads legacy-1.2.27 without deriving an operation profile",
+          "status": "passed",
+          "title": "reads legacy-1.2.27 without deriving an operation profile",
+          "duration": 0.07349999999996726,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser defaults only a missing field to Auto",
+          "status": "passed",
+          "title": "defaults only a missing field to Auto",
+          "duration": 0.18409999999994398,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection null",
+          "status": "passed",
+          "title": "rejects malformed persisted selection null",
+          "duration": 0.7173000000000229,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection undefined",
+          "status": "passed",
+          "title": "rejects malformed persisted selection undefined",
+          "duration": 0.20000000000004547,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection \"oc1\"",
+          "status": "passed",
+          "title": "rejects malformed persisted selection \"oc1\"",
+          "duration": 0.18010000000003856,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection {\"opencodeSelection\":null}",
+          "status": "passed",
+          "title": "rejects malformed persisted selection {\"opencodeSelection\":null}",
+          "duration": 0.21469999999999345,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection {\"opencodeSelection\":\"guessed\"}",
+          "status": "passed",
+          "title": "rejects malformed persisted selection {\"opencodeSelection\":\"guessed\"}",
+          "duration": 0.16089999999996962,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "shared requested selection document parser"
+          ],
+          "fullName": "shared requested selection document parser rejects malformed persisted selection {\"opencodeSelection\":1}",
+          "status": "passed",
+          "title": "rejects malformed persisted selection {\"opencodeSelection\":1}",
+          "duration": 0.1732000000000653,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791727691561,
+      "endTime": 1791727692066.2146,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/compatibility.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity shares a valid probe across concurrent consumers: refresh-first",
+          "status": "passed",
+          "title": "shares a valid probe across concurrent consumers: refresh-first",
+          "duration": 4.502799999999979,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity shares a valid probe across concurrent consumers: reprobe-first",
+          "status": "passed",
+          "title": "shares a valid probe across concurrent consumers: reprobe-first",
+          "duration": 0.4519999999999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity notifies stream owners only when identity changes, including invalidation",
+          "status": "passed",
+          "title": "notifies stream owners only when identity changes, including invalidation",
+          "duration": 0.5990999999999076,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity does not probe an arbitrary endpoint before startup chooses one",
+          "status": "passed",
+          "title": "does not probe an arbitrary endpoint before startup chooses one",
+          "duration": 0.3688000000000784,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity coalesces pending probes and preserves identity on an unchanged refresh",
+          "status": "passed",
+          "title": "coalesces pending probes and preserves identity on an unchanged refresh",
+          "duration": 0.4435000000000855,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity rejects a probe from an endpoint that was replaced",
+          "status": "passed",
+          "title": "rejects a probe from an endpoint that was replaced",
+          "duration": 1.0618999999999232,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity invalidates on restart or credential changes even at the same URL",
+          "status": "passed",
+          "title": "invalidates on restart or credential changes even at the same URL",
+          "duration": 0.38049999999998363,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity does not start a probe after its connection has already changed",
+          "status": "passed",
+          "title": "does not start a probe after its connection has already changed",
+          "duration": 0.46460000000001855,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel identity"
+          ],
+          "fullName": "backend kernel identity changes identity when the binary version changes at a stable URL",
+          "status": "passed",
+          "title": "changes identity when the binary version changes at a stable URL",
+          "duration": 0.5527000000000726,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel re-probe"
+          ],
+          "fullName": "backend kernel re-probe preserves a resolved kernel and its epoch through one transient re-probe",
+          "status": "passed",
+          "title": "preserves a resolved kernel and its epoch through one transient re-probe",
+          "duration": 4.803200000000061,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel re-probe"
+          ],
+          "fullName": "backend kernel re-probe keeps the resolved kernel through repeated transient re-probes",
+          "status": "passed",
+          "title": "keeps the resolved kernel through repeated transient re-probes",
+          "duration": 1.1802999999999884,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel re-probe"
+          ],
+          "fullName": "backend kernel re-probe updates when a re-probe identifies a different generation",
+          "status": "passed",
+          "title": "updates when a re-probe identifies a different generation",
+          "duration": 0.42050000000006094,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend kernel re-probe"
+          ],
+          "fullName": "backend kernel re-probe does not resurrect a resolved kernel after an explicit invalidation",
+          "status": "passed",
+          "title": "does not resurrect a resolved kernel after an explicit invalidation",
+          "duration": 0.2989000000000033,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend family selection"
+          ],
+          "fullName": "backend family selection rejects a pending probe after a family round trip without an intervening read",
+          "status": "passed",
+          "title": "rejects a pending probe after a family round trip without an intervening read",
+          "duration": 0.43200000000001637,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend family selection"
+          ],
+          "fullName": "backend family selection does not resolve OpenCode while CAgent is selected, including refresh and re-probe",
+          "status": "passed",
+          "title": "does not resolve OpenCode while CAgent is selected, including refresh and re-probe",
+          "duration": 0.830600000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend family selection"
+          ],
+          "fullName": "backend family selection retires a known OpenCode descriptor and rejects a probe when CAgent takes over",
+          "status": "passed",
+          "title": "retires a known OpenCode descriptor and rejects a probe when CAgent takes over",
+          "duration": 0.5731000000000677,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "backend family selection"
+          ],
+          "fullName": "backend family selection retires epochs across a same-endpoint family return and a revision-only change",
+          "status": "passed",
+          "title": "retires epochs across a same-endpoint family return and a revision-only change",
+          "duration": 0.37810000000001764,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "CAgent kernel-operation boundary"
+          ],
+          "fullName": "CAgent kernel-operation boundary refuses session reads and sends before issuing a fetch",
+          "status": "passed",
+          "title": "refuses session reads and sends before issuing a fetch",
+          "duration": 0.5975000000000819,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "CAgent kernel-operation boundary"
+          ],
+          "fullName": "CAgent kernel-operation boundary rejects a session read that completes after the backend family changes",
+          "status": "passed",
+          "title": "rejects a session read that completes after the backend family changes",
+          "duration": 6.066400000000044,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "resolved profile identity"
+          ],
+          "fullName": "resolved profile identity increments the epoch and notifies once when only the profile changes",
+          "status": "passed",
+          "title": "increments the epoch and notifies once when only the profile changes",
+          "duration": 0.5517999999999574,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding retires old-profile probes immediately when requested selection changes at the same endpoint",
+          "status": "passed",
+          "title": "retires old-profile probes immediately when requested selection changes at the same endpoint",
+          "duration": 0.6068000000000211,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding refuses mismatches and commits admission diagnostics instead of keeping a ready generation",
+          "status": "passed",
+          "title": "refuses mismatches and commits admission diagnostics instead of keeping a ready generation",
+          "duration": 0.23509999999998854,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding does not preserve a ready identity when health and info authoritatively conflict",
+          "status": "passed",
+          "title": "does not preserve a ready identity when health and info authoritatively conflict",
+          "duration": 0.24459999999999127,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding retracts a ready identity after auth admission",
+          "status": "passed",
+          "title": "retracts a ready identity after auth admission",
+          "duration": 0.2726999999999862,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding retracts a ready identity after unverified admission",
+          "status": "passed",
+          "title": "retracts a ready identity after unverified admission",
+          "duration": 0.13580000000001746,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "requested OpenCode selection binding"
+          ],
+          "fullName": "requested OpenCode selection binding retracts a ready identity after invalid-selection admission",
+          "status": "passed",
+          "title": "retracts a ready identity after invalid-selection admission",
+          "duration": 0.1894999999999527,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "session snapshot protocol ownership"
+          ],
+          "fullName": "session snapshot protocol ownership preserves same-profile request retirement and clears snapshots on an Auto protocol change",
+          "status": "passed",
+          "title": "preserves same-profile request retirement and clears snapshots on an Auto protocol change",
+          "duration": 2.3583999999999605,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791727691671,
+      "endTime": 1791727691701.3584,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/kernel-runtime.test.js"
+    }
+  ]
+}

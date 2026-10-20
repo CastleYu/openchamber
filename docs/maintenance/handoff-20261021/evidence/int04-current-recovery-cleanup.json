@@ -1,0 +1,30 @@
+{
+  "removed": [
+    {
+      "internalJunctionsUnlinked": 0,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc1-native-ZZ345d",
+      "bytes": 92017463
+    },
+    {
+      "internalJunctionsUnlinked": 0,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc2-recovery-Glfobb",
+      "bytes": 9054790
+    },
+    {
+      "internalJunctionsUnlinked": 0,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc2-recovery-hGDqSm",
+      "bytes": 9002945
+    }
+  ],
+  "archive": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-recovery-archive",
+  "preserved": [
+    "Compact pass/failure reports and OC2 session-only diagnostic",
+    "Pinned binaries",
+    "Current builds",
+    "Reusable native and OC2 recovery probes",
+    "Product source and user data"
+  ],
+  "reclaimedBytes": 110075198,
+  "processInventoryVerified": true,
+  "at": "2026-10-11T19:20:22.9399149Z"
+}

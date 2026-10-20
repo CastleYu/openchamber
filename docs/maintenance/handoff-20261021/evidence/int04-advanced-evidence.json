@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-11T17:04:32.610Z",
+  "sourceHead": "bd0c0a3a5 (provided by task owner; git intentionally not invoked)",
+  "binary": {
+    "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/bin/opencode.exe",
+    "version": "1.2.27",
+    "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4"
+  },
+  "source": {
+    "exactSessionRoute": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/session.ts",
+    "exactPromptSource": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/session/prompt.ts"
+  },
+  "checks": [
+    "exact 1.2.27 binary version verified on isolated loopback",
+    "session.create ses_ed413b8d3ffezpSwcb28sBc9J6",
+    "session.prompt completed deterministic controlled-model turn",
+    "session.command invoked listed command init",
+    "session.shell executed isolated echo",
+    "session.fork accepted full and before-message boundary",
+    "session.todo and session.diff returned (0, 0)",
+    "session.revert and session.unrevert accepted (true)",
+    "session.summarize completed with controlled model",
+    "session.delete removed probe sessions; source session was readable before deletion"
+  ],
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-advanced-lrvu73",
+  "modelCalls": 2,
+  "limitations": [
+    "Controlled loopback model verifies wire behavior and lifecycle, not a real provider.",
+    "Command/shell tests use isolated workspace and controlled inputs."
+  ],
+  "ownedProcessStopped": true
+}

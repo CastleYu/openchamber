@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-11T21:15:15.881Z",
+  "binary": {
+    "version": "1.2.27",
+    "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4"
+  },
+  "checks": [
+    "exact binary hash and running version",
+    "host authentication protects MCP mutation",
+    "configured disabled MCP status forwarded",
+    "connect 1 negotiates MCP and lists real stdio tool",
+    "disconnect 1 disables MCP and exits owned child",
+    "connect 2 negotiates MCP and lists real stdio tool",
+    "disconnect 2 disables MCP and exits owned child",
+    "MCP creation auth and wrong-method requests remain refused",
+    "wrong exact-version identity refused"
+  ],
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int05-mcp-live-zc9IIj",
+  "limitations": [
+    "Production OpenCode proxy with isolated host auth middleware, not full native UI.",
+    "Real local stdio MCP negotiation and discovery; no model tool invocation or remote OAuth.",
+    "Settings persistence, plugins and unattended execution remain INT-05 work."
+  ],
+  "cleanup": {
+    "openCodeExited": true,
+    "fixtureRemoved": true,
+    "removedBytes": 1824086,
+    "removedFiles": 12
+  }
+}

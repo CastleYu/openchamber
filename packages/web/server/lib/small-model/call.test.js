@@ -2,6 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { configureOpenCodeCredentials } from '../opencode/auth.js';
 
 // readConfig reads merged opencode config layers from disk; mock it so each
 // test controls the provider config without touching the filesystem. call.js
@@ -1001,6 +1002,39 @@ describe('callSmallModel — providers with an SDK-owned endpoint', () => {
       prompt: 'summarize',
     })).rejects.toThrow('has no known API base URL');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('callSmallModel — OpenAI OAuth refresh with Legacy credentials', () => {
+  it('rejects before requesting or writing a rotated refresh token', async () => {
+    const fetchMock = vi.fn();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock;
+    const write = vi.spyOn(fs, 'writeFileSync');
+    const authRuntime = {
+      generation: 'oc1', profile: 'legacy-1.2.27', version: '1.2.27',
+      endpoint: 'http://127.0.0.1:4096', epoch: 1,
+    };
+    configureOpenCodeCredentials(() => authRuntime, null, {
+      read: async () => ({ openai: { type: 'oauth', access: 'expired', refresh: 'refresh-token', expires: 1 } }),
+    });
+
+    try {
+      await expect(callSmallModel({
+        auth: { openai: { type: 'oauth', access: 'expired', refresh: 'refresh-token', expires: 1 } },
+        catalog: {},
+        workingDirectory: '/proj',
+        providerID: 'openai',
+        modelID: 'gpt-test',
+        prompt: 'summarize',
+      })).rejects.toMatchObject({ statusCode: 501 });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      write.mockRestore();
+      globalThis.fetch = originalFetch;
+      configureOpenCodeCredentials(() => ({ generation: 'oc1' }), null);
+    }
   });
 });
 

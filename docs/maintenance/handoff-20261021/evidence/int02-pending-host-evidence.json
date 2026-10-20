@@ -1,0 +1,231 @@
+{
+  "checks": [
+    "production host admits synthetic OC2 external identity",
+    "permissions pending blocks wait without saving or interrupting",
+    "questions pending blocks wait without saving or interrupting",
+    "failed permission read remains unknown and blocks wait while preserving other categories",
+    "busy wait leaves external upstream untouched",
+    "accepted interruption without authoritative idle blocks replacement",
+    "explicit stop rechecks authoritative idle before committing replacement",
+    "committed confirmation cannot be replayed",
+    "host shutdown preserves external server and creates no managed process"
+  ],
+  "seen": [
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/ses_pending"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "POST",
+      "path": "/api/session/ses_pending/interrupt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "POST",
+      "path": "/api/session/ses_pending/interrupt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    }
+  ],
+  "synthetic": true,
+  "realModel": false,
+  "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-pending-host-uJtSJN",
+  "sourceHashes": {
+    "packages/web/server/index.js": "eb8bd991e9caeedb0d2e3a3886f8021bcd9dfa6911b34a6a467b6e68deda3bea",
+    "packages/web/server/lib/opencode/connection-switch.js": "970dbf882dbe2f26b070756fd30795ff27c47e0dabef39b6875d196e08565a31",
+    "packages/web/server/lib/opencode/connection-activity.js": "eea59b49fe39e851dbd6d3ef94e5060018590cab40736ea9dcf3c8d238297a3d"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-10",
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-configured-7gRszx",
+      "files": 63,
+      "bytes": 12851288,
+      "sourceFiles": {
+        "packages/web/server/index.js": "94d0f380c4eb5565f033fbd697f0c47e01ac6c68549fce5321ecc43907f6ca6f",
+        "packages/web/server/lib/message-queue/runtime.js": "41644bf46fd710f8f5775bddb5d9a7548ff919125a33c534cc3962d59cfcfb40",
+        "packages/web/server/lib/opencode/queue-target.js": "93798d10fcec286a12ab0b709aa9dd2638ac7442638437854e27526c75091a92"
+      },
+      "reason": "Completed isolated queue-target run; final compact evidence retained; no follow-up needs its test home"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-connection-configured-QHY84T",
+      "files": 63,
+      "bytes": 12851203,
+      "sourceFiles": {
+        "packages/web/server/index.js": "94d0f380c4eb5565f033fbd697f0c47e01ac6c68549fce5321ecc43907f6ca6f",
+        "packages/web/server/lib/message-queue/runtime.js": "005026132f5373db26fa6916e2623bbace79aa49f0ef05b07eb6bd79b7b2d278",
+        "packages/web/server/lib/opencode/queue-target.js": "93798d10fcec286a12ab0b709aa9dd2638ac7442638437854e27526c75091a92"
+      },
+      "reason": "Completed isolated queue-target run; final compact evidence retained; no follow-up needs its test home"
+    }
+  ],
+  "bytesReclaimed": 25702491,
+  "retained": [
+    "int02-queue-target-live-evidence.json: selected acceptance evidence",
+    "int02-queue-target-final-evidence.json and final logs: checkpoint review",
+    "int01-real/oc2-2.0.20: remaining R1 and integrated real OC2 acceptance"
+  ],
+  "nextCleanup": "Review retained acceptance inputs at R1 completion"
+}

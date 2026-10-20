@@ -98,6 +98,7 @@ import { createBootstrapRuntime } from './lib/opencode/bootstrap-runtime.js';
 import { createSessionRuntime } from './lib/opencode/session-runtime.js';
 import { configureOpenCodeRuntimeProviders, resetOpenCodeRuntimeProviders } from './lib/small-model/runtime-providers.js';
 import { configureOpenCodeCredentials, openCodeCredentialSource } from './lib/opencode/auth.js';
+import { createLegacyCredentials } from './lib/opencode/legacy-credentials.js';
 import { createOpenCodeWatcherRuntime } from './lib/opencode/watcher.js';
 import { createSessionAssistRuntime } from './lib/session-assist/runtime.js';
 import { createSessionGoalRuntime } from './lib/session-goal/runtime.js';
@@ -1355,6 +1356,8 @@ const clientPairingRuntime = createClientPairingRuntime({
 });
 const featureRoutesRuntime = createFeatureRoutesRuntime({
   getNativeConfigContext: () => openCodeLifecycleRuntime.getNativeConfigContext(),
+  subscribeCredentialOwner: (listener) => openCodeLifecycleRuntime.subscribeCredentialOwner(listener),
+  getUiAuth: () => uiAuthController,
   clientReloadDelayMs: CLIENT_RELOAD_DELAY_MS,
 });
 const bootstrapRuntime = createBootstrapRuntime({
@@ -1544,6 +1547,10 @@ configureOpenCodeCredentials(kernelRuntime.get, openCodeCredentialSource({
   getOpenCodeAuthHeaders,
   getLaunchEnvironment: () => openCodeLifecycleRuntime.getManagedOpenCodeProcessEnv(),
   getIdentity: kernelRuntime.get,
+}), createLegacyCredentials({
+  getRuntime: kernelRuntime.get,
+  getNativeConfigContext: () => openCodeLifecycleRuntime.getNativeConfigContext(),
+  getBackendSelection: agentHost.getSelection,
 }));
 
 const getOpenCodeUpgradeCapability = () => {
@@ -1894,6 +1901,7 @@ const gracefulShutdownRuntime = createGracefulShutdownRuntime({
   },
   tunnelAuthController,
   scheduledTasksRuntime,
+  getLegacyProviderRuntime: () => featureRoutesRuntime.getLegacyProviderRuntime(),
   getSpacesHost: () => spacesHost,
   beginGuestServiceShutdown,
   stopAllGuestServices,

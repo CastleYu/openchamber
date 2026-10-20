@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-11T18:41:12Z",
+  "status": "OC1 bound bootstrap owner correction; R3 open",
+  "base": "3cf78c66fccf66f0e68efcd9ccb8e9081910e38d",
+  "uncommitted": true,
+  "hashes": {
+    "packages/ui/src/sync/DOCUMENTATION.md": "0be61fa7a1321817e816c34e8f645337ee215733e992d0b9c0d5464abe107082",
+    "packages/ui/src/sync/bootstrap.ts": "0857cdc6cf75117f93ad81c24dc653d2253fc3f96d4abfcaa7784d127d550fe7",
+    "packages/ui/src/sync/bootstrap.test.ts": "2f60126f9eb5fb8222f8e35d1b06224e9337b46585fd8dd5a8a364d83e8ed16a",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "3cca17909fedbb49b0f0b29df6cfc3fdd8bb5fb47041c70fea772147d60fde84",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "ec2600ef605b896feaa88552aff5ba5a6efdbe768733a986b1e46557698a327a"
+  },
+  "before": {
+    "failed": 2,
+    "log": "int04-bootstrap-red.log",
+    "passed": 19
+  },
+  "after": {
+    "types": 0,
+    "passed": 52,
+    "lint": 0,
+    "antiSlopAuthored": 0,
+    "failed": 0,
+    "antiSlopInherited": 7,
+    "log": "int04-bootstrap-green.log"
+  },
+  "builds": "int04-bootstrap-builds.json",
+  "remaining": [
+    "Actual native restart recovery and production UI acceptance",
+    "INT-05 exact settings/auth/plugins/MCP and unattended callers",
+    "Current OC1/OC2 R3 regressions"
+  ],
+  "weeklyRemainingPercent": 76,
+  "twoDirectoryApi": {
+    "status": "passed",
+    "checks": 11,
+    "evidence": "int04-two-directory-evidence.json",
+    "scope": "API-level permission/question independence, history retention, restart pending-request disappearance, and explicit new turns in A and B; not production UI acceptance"
+  },
+  "buildResults": {
+    "web": 0,
+    "vscode": 0,
+    "webLog": "int04-bootstrap-web-build-retry.log",
+    "vscodeLog": "int04-bootstrap-vscode-build.log",
+    "initialWebFailure": "int04-bootstrap-web-build.log: esbuild VirtualAlloc errno 1455 / out of memory; constrained isolated retry succeeded"
+  },
+  "deadCode": {
+    "log": "int04-bootstrap-dead-code.log",
+    "report": "non-blocking knip report",
+    "unusedFiles": 2,
+    "unusedExports": 319,
+    "unusedExportedTypes": 231,
+    "duplicateExports": 1,
+    "configurationHints": 1
+  }
+}

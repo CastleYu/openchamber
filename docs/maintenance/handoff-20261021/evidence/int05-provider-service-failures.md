@@ -1,0 +1,3 @@
+- 2026-10-12: Initial exact-file write helper failed because its patch parser matched `** Add File` while the submitted patch used `*** Add File`. No target file was written. Corrected the parser to match the actual patch marker before continuing.
+- 2026-10-12: UI type-check found Bun's typed `expect(promise).rejects` only exposes `toThrow`; focused tests used unsupported rejection matchers. Replaced those assertions with a typed error capture helper before rerunning validation.
+- 2026-10-12: Final path-constant cleanup initially passed the complete `/api/legacy/providers` base into a helper that already prefixes it. Focused tests caught the duplicated route prefix; internal calls now pass only their suffix.

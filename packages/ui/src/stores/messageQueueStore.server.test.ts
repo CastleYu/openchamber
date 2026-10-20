@@ -450,6 +450,110 @@ describe("server-owned message queue", () => {
     expect(useMessageQueueStore.getState().queuedMessages[key]?.map((m) => m.content)).toEqual(["later"])
   })
 
+  test("attempt metadata survives hydration and broadcasts, while malformed updates preserve the projection", async () => {
+    const unknown = serverItem("q1", "uncertain", { attempt: { id: "attempt-1", state: "unknown", createdAt: 10 }, delivery: "ready" });
+    respond = () => json({ revision: 20, sessions: [session([unknown, serverItem("q2", "plain")])] });
+    await useMessageQueueStore.getState().hydrate();
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.attempt).toEqual(unknown.attempt);
+
+    const pending = serverItem("q1", "retrying", { attempt: { id: "attempt-2", state: "pending", createdAt: 11 }, delivery: "ready" });
+    applyMessageQueueUpdatedEvent(updated(21, session([pending, serverItem("q2", "plain")])), "runtime-a");
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.attempt).toEqual(pending.attempt);
+
+    const malformed = serverItem("q1", "bad", { attempt: { id: "", state: "unknown", createdAt: 12 } });
+    applyMessageQueueUpdatedEvent(updated(22, session([malformed])), "runtime-a");
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.map((item) => item.id)).toEqual(["q1", "q2"]);
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.attempt).toEqual(pending.attempt);
+    respond = () => json({ revision: 23, sessions: [session([malformed])] });
+    await expect(useMessageQueueStore.getState().resync()).rejects.toThrow();
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.attempt).toEqual(pending.attempt);
+  });
+
+  test("unresolved attempts block item mutations and remain projected after clear", async () => {
+    const unknown = serverItem("q1", "uncertain", { attempt: { id: "attempt-1", state: "unknown", createdAt: 10 }, delivery: "ready" });
+    const pending = serverItem("q2", "pending", { attempt: { id: "attempt-2", state: "pending", createdAt: 11 }, delivery: "ready" });
+    applyMessageQueueUpdatedEvent(updated(30, session([unknown, pending])), "runtime-a");
+    respond = () => json({ revision: 31, session: session([unknown, pending]) });
+
+    expect(useMessageQueueStore.getState().getSendableQueue(target)).toEqual([]);
+    await expect(useMessageQueueStore.getState().takeForSend(target, "q1")).rejects.toThrow();
+    await expect(useMessageQueueStore.getState().takeForSend(target)).rejects.toThrow();
+    await expect(useMessageQueueStore.getState().popToInput(target, "q1")).rejects.toThrow();
+    useMessageQueueStore.getState().removeFromQueue(target, "q1");
+    useMessageQueueStore.getState().reorderQueue(target, "q1", "q2");
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.map((item) => item.id)).toEqual(["q1", "q2"]);
+    expect(calls).toHaveLength(0);
+    useMessageQueueStore.getState().clearQueue(target);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(calls).toEqual([{ method: "DELETE", path: "/api/message-queue/sessions/session-1", body: undefined }]);
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.map((item) => item.id)).toEqual(["q1", "q2"]);
+  });
+
+  test("resubmit sends exact confirmation once and rejects duplicate or stale attempts", async () => {
+    const unknown = serverItem("q1", "uncertain", { attempt: { id: "attempt-1", state: "unknown", createdAt: 10 }, delivery: "ready" });
+    applyMessageQueueUpdatedEvent(updated(40, session([unknown])), "runtime-a");
+    const pendingResponse = deferredResponse();
+    respond = () => pendingResponse.promise;
+    await expect(useMessageQueueStore.getState().resubmit(target, "q1", "stale-attempt")).rejects.toThrow();
+    expect(calls).toHaveLength(0);
+    const first = useMessageQueueStore.getState().resubmit(target, "q1", "attempt-1");
+    expect(useMessageQueueStore.getState().sendingIds[key]).toContain("q1");
+    await expect(useMessageQueueStore.getState().resubmit(target, "q1", "attempt-1")).rejects.toThrow();
+    expect(calls).toEqual([{
+      method: "POST",
+      path: "/api/message-queue/sessions/session-1/items/q1/resubmit",
+      body: { attemptId: "attempt-1", confirmed: true },
+    }]);
+    pendingResponse.resolve(json({ revision: 41, session: session([serverItem("q1", "queued")]) }));
+    await first;
+    expect(useMessageQueueStore.getState().sendingIds[key]).toBeUndefined();
+    await expect(useMessageQueueStore.getState().resubmit(target, "q1", "attempt-1")).rejects.toThrow();
+    expect(calls).toHaveLength(1);
+  });
+
+  test("failed resubmit refreshes the session and preserves its unknown attempt", async () => {
+    const unknown = serverItem("q1", "uncertain", { attempt: { id: "attempt-1", state: "unknown", createdAt: 10 }, delivery: "ready" });
+    applyMessageQueueUpdatedEvent(updated(50, session([unknown])), "runtime-a");
+    respond = (call) => call.method === "POST"
+      ? new Response("failed", { status: 503 })
+      : json({ revision: 51, sessions: [session([unknown])] });
+    await expect(useMessageQueueStore.getState().resubmit(target, "q1", "attempt-1")).rejects.toThrow();
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      "POST /api/message-queue/sessions/session-1/items/q1/resubmit",
+      "GET /api/message-queue",
+    ]);
+    expect(useMessageQueueStore.getState().queuedMessages[key]?.[0]?.attempt).toEqual(unknown.attempt);
+    expect(useMessageQueueStore.getState().sendingIds[key]).toBeUndefined();
+  });
+
+  test("accepted attempts are skipped by sendable selection while plain items remain sendable", async () => {
+    const accepted = serverItem("q1", "accepted", { attempt: { id: "attempt-1", state: "accepted", createdAt: 10 } });
+    const plain = serverItem("q2", "plain");
+    applyMessageQueueUpdatedEvent(updated(60, session([accepted, plain])), "runtime-a");
+    expect(useMessageQueueStore.getState().getSendableQueue(target).map((item) => item.id)).toEqual(["q2"]);
+    await expect(useMessageQueueStore.getState().takeForSend(target, "q1")).rejects.toThrow();
+  });
+
+  test("late resubmit completion after switching away and back cannot change the new queue or sending state", async () => {
+    const unknown = serverItem("q1", "uncertain", { attempt: { id: "attempt-1", state: "unknown", createdAt: 10 }, delivery: "ready" });
+    applyMessageQueueUpdatedEvent(updated(70, session([unknown])), "runtime-a");
+    const pendingResponse = deferredResponse();
+    respond = () => pendingResponse.promise;
+    const resubmit = useMessageQueueStore.getState().resubmit(target, "q1", "attempt-1");
+    useMessageQueueStore.getState().resetForRuntimeSwitch(activeRuntimeKey);
+    activeRuntimeKey = "runtime-b";
+    activeRuntimeKey = "runtime-a";
+    const newTarget = createMessageQueueTarget("session-1", "/repo", "runtime-a");
+    if (!newTarget) throw new Error("Missing test target");
+    const newKey = getMessageQueueKey(newTarget);
+    const newItem = serverItem("q1", "new owner");
+    useMessageQueueStore.setState({ queuedMessages: { [newKey]: [{ id: newItem.id, content: newItem.content, text: newItem.text, createdAt: newItem.createdAt, sendConfig: newItem.sendConfig }] }, sendingIds: { [newKey]: ["q1"] } });
+    pendingResponse.resolve(json({ revision: 71, session: session([serverItem("q1", "old owner completed")]) }));
+    await resubmit;
+    expect(useMessageQueueStore.getState().queuedMessages[newKey]?.[0]?.content).toBe("new owner");
+    expect(useMessageQueueStore.getState().sendingIds[newKey]).toEqual(["q1"]);
+  });
   test("removeFromQueue and clearQueue update locally and tell the server", async () => {
     useMessageQueueStore.setState({ queuedMessages: { [key]: [{ id: "q1", content: "a", text: "a", createdAt: 1 }, { id: "q2", content: "b", text: "b", createdAt: 2 }] } })
     respond = () => json({ revision: 10, session: session([serverItem("q2", "b")]) })

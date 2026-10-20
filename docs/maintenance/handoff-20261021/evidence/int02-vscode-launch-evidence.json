@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "revision": "63649e477",
+    "pass": 5,
+    "fail": 1,
+    "failure": "raw child output exposed in startup error"
+  },
+  "date": "2026-10-10",
+  "realWindowsProcessTests": 6,
+  "checks": {
+    "tests": 0,
+    "types": 0,
+    "anti": 0,
+    "lint": 0,
+    "extensionBuild": 0
+  },
+  "fingerprints": {
+    "packages/vscode/src/managed-opencode-process.ts": "af55911c68211d656a85e6ac1f686566fe9c55067fb2f6ac921431208ea8524a",
+    "packages/vscode/src/managed-opencode-process.test.ts": "097d6bd6aa17fa99f5ab8a42f0566436bd70c76b66b91ea74e51dfe466805c4c",
+    "packages/vscode/src/DOCUMENTATION.md": "7ceac091e19b9ff4aafcb3aecec64202223f6e83fa179799f2ccdef7dfb611a6"
+  },
+  "logs": [
+    "artifacts/int02-vscode-launch-before.log",
+    "artifacts/int02-vscode-launch-tests.log",
+    "artifacts/int02-vscode-launch-types.log",
+    "artifacts/int02-vscode-launch-anti.log",
+    "artifacts/int02-vscode-launch-lint.log",
+    "artifacts/int02-vscode-launch-build.log"
+  ],
+  "limits": [
+    "No IDE adoption",
+    "No Windows batch shim argv acceptance",
+    "No credential DB runtime acceptance",
+    "No console flash visual acceptance"
+  ],
+  "retained": [
+    {
+      "path": "packages/vscode/dist/extension.js",
+      "reason": "next R1 extension host validation",
+      "cleanup": "after verified replacement or host acceptance"
+    }
+  ],
+  "weeklyRemainingPercent": 40
+}

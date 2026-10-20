@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-11T20:00:09.353Z",
+  "milestone": "INT-05 in progress; R3 open",
+  "sourceSha256": {
+    "packages/web/server/lib/opencode/legacy-config.js": "1dae60537cb314340879fd9aec983c758cb907d6ae19922b387c557a4e2ae454",
+    "packages/web/server/lib/opencode/legacy-config.test.js": "a3ded44e07ec15dbc44502cda4d46ca788fa8fd5afebea5a96a6166fea767cbc",
+    "packages/web/server/lib/opencode/mcp.js": "8354e457e322285c4a260493b7e62c342167b2146be33bf4bcc629df6bbfbb8a",
+    "packages/web/server/lib/opencode/mcp.legacy.test.js": "12d28851eab48b5aeff7ef0e3d80eb6b14b2887d1930235ac4a2525eb345b2c9",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "27dd69b99189214606e8f01cec33c73ece1722ca3c6c0986d15b1682cba3a3e3",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "2f088e5d3e29651a7760e385e61380c667cbb0e60a71fcdeac08d6b72f16478e",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "6e15d2734f615bb75fcd4494dbfa215792952c859da7ff9f705b70f1d0015ec7"
+  },
+  "scope": "Exact entity schemas and opt-in Web MCP filesystem writer only; runtime configuration routes remain closed",
+  "validation": {
+    "focused": "103 tests in 5 files passed",
+    "webTypeCheck": "passed",
+    "authoredOxlint": "passed",
+    "mcpOxlint": "15 existing findings, identical to original source baseline",
+    "deadCode": "completed; existing repository findings, no new module findings",
+    "syntax": "both authored production JS files passed"
+  },
+  "probe": "artifacts/int05-config-probe-evidence.json",
+  "probeLimits": [
+    "Isolated exact 1.2.27 binary, no production remote server or native UI",
+    "Controlled command configuration only; MCP and credential runtime mutation not proven by these probes",
+    "Project PATCH echoes input; post-dispose read retains existing entries after empty/omitted mutations; global PATCH merges; null entity deletion returns 400"
+  ],
+  "astraDecision": "Managed process does not prove local filesystem ownership. Verify native versus arbitrary Command launch and use actual child environment for user/custom config paths; remote config needs separately evidenced mutation semantics.",
+  "runtimeDecisions": {
+    "web": "writer ready, route admission closed",
+    "electron": "uses Web owner; admission closed; packaged runtime not rerun",
+    "vscode": "existing owner unchanged; admission closed until exact codec and launch environment parity",
+    "hostedMobile": "uses Web owner; admission closed; device not rerun",
+    "capacitorMobile": "uses Web owner; admission closed; device not rerun"
+  },
+  "nextBatch": [
+    "Implement launch-environment path ownership for verified native Legacy connections and equivalent VS Code owner",
+    "Connect exact MCP writer to narrow config routes, preserving version/epoch/endpoint checks and deferred apply",
+    "Preflight all agent/command/reference writes before any mutation, retaining source-layer ownership",
+    "Implement only evidenced remote operations; do not treat merged config as layer provenance or PATCH response as application",
+    "Then credential, generated-plugin and unattended dispatch acceptance; apply/reload remains R4"
+  ],
+  "weeklyRemainingPercent": 71,
+  "cleanup": {
+    "exited": true,
+    "fixtureRemoved": true
+  },
+  "toolingNote": "One child bunx invocation resolved/downloaded/extracted two unnamed tool packages. Project bun.lock unchanged. Subsequent invocations use --no-install; no project dependencies added.",
+  "sourceCommit": "f42bb4acc42d5c3c3645cf975755a60bacaee28e"
+}

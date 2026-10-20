@@ -1,0 +1,55 @@
+{
+  "checkedAt": "2026-10-11T10:46:25.6351682Z",
+  "activeFixtureProcesses": 0,
+  "reparsePoints": 0,
+  "processRegistries": "absent or empty",
+  "removed": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-LUrXy8",
+      "bytes": 35099085
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-2Awvas",
+      "bytes": 61520773
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-yEhM2O",
+      "bytes": 35243180
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-uetDHF",
+      "bytes": 35243870
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-bSdx7a",
+      "bytes": 25039220
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-H0lsTJ",
+      "bytes": 34792387
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-mFub97",
+      "bytes": 2090632
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-C67SZN",
+      "bytes": 2090632
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-cqhPZZ",
+      "bytes": 35262093
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-zVkGbA",
+      "bytes": 35268871
+    }
+  ],
+  "reclaimedBytes": 301650743,
+  "evidence": "artifacts/int02-r1-native-evidence.json",
+  "retained": [
+    "Pinned OC2 executable and current Web/VS Code builds for R1 clause reconciliation and R2 regressions",
+    "Reusable native driver and preparation scripts until R1 closes"
+  ],
+  "nextCleanup": "R1 closeout"
+}

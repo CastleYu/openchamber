@@ -1,0 +1,138 @@
+{
+  "at": "2026-10-11T18:07:25.837Z",
+  "source": "3cf78c66fccf66f0e68efcd9ccb8e9081910e38d",
+  "hashes": {
+    "packages/web/server/lib/opencode/managed-env-runtime.js": "d1d9357fdf1f3985a28520d21b689bdde24b7aa9b750c10bfb2e94cd01e0bc59",
+    "packages/web/server/lib/opencode/legacy-contract.js": "11960ac8470b97ad703e40b05ca80bc71eed9d8cea257582c39a460efec52abe",
+    "packages/web/server/lib/opencode/config-family.test.js": "4569864028bea75e8d450d1362eb3f11aa57debca2b1c07c18666a79d2a8eee1",
+    "packages/web/server/lib/opencode/auth-dual.test.js": "4b0e4e32fb52bf5bca77092dfe71bfea42ec95a864dae522f6a2dfb0eeb40d92",
+    "packages/web/server/lib/opencode/managed-env-runtime.test.js": "af4a6356cf83f649f9b3b1c23a4e68b8faa832125c76a3e6178db3df8e797fd7",
+    "packages/web/server/lib/opencode/managed-generation.test.js": "aea27d0e15cece53ae9d5d25f68a4530d31f5fc70d7700cbbfea14110a06f0c2",
+    "packages/web/server/lib/opencode/mcp-oauth-callback.test.js": "4160af812944bf71ee9153f7f9e836cc6cf67cbe429b0296a90b6f1209c1da95"
+  },
+  "status": "INT-05 entry baseline only; no feature admission or milestone acceptance",
+  "tests": {
+    "total": 53,
+    "passed": 53,
+    "failed": 0,
+    "success": true
+  },
+  "findings": [
+    "Existing configuration family tests explicitly reject unaccepted Legacy agent/command/MCP/plugin/skill routes before dependencies. Their passing result proves refusal, not working Legacy settings.",
+    "Legacy generic HTTP allowlist currently admits catalog/config reads but not config/auth/MCP mutations; exact-version write contracts remain to implement and validate.",
+    "Managed environment preparation selects OC1/OC2 generation only. Exact Legacy generated tool/plugin preparation requires version/profile evidence before admission.",
+    "Existing auth and MCP callback tests are baseline regressions. They do not prove exact 1.2.27 authentication, plugin loading, or MCP lifecycle."
+  ],
+  "next": [
+    "Finish INT-04 actual UI and real two-directory recovery acceptance.",
+    "Use pinned exact source/schema plus isolated executable to implement supported INT-05 settings/auth/MCP/plugin operations.",
+    "Validate browser-closed queue/scheduler/assist/goals with lost acknowledgement, restart and duplicate triggers.",
+    "Run current OC1/OC2 enclosing R3 regression checks."
+  ],
+  "evidence": [
+    "artifacts/int05-baseline-tests.json",
+    "artifacts/int05-baseline-tests.log"
+  ],
+  "exactSchema": {
+    "file": "artifacts/legacy-1.2.27/source/packages/sdk/openapi.json",
+    "sha256": "ef236d6647f0b462ac7fb03454ae1a75575d951ff75021d7af7b38c8c34a84dd",
+    "operations": [
+      {
+        "method": "GET",
+        "route": "/global/config",
+        "operation": "global.config.get"
+      },
+      {
+        "method": "PATCH",
+        "route": "/global/config",
+        "operation": "global.config.update"
+      },
+      {
+        "method": "PUT",
+        "route": "/auth/{providerID}",
+        "operation": "auth.set"
+      },
+      {
+        "method": "DELETE",
+        "route": "/auth/{providerID}",
+        "operation": "auth.remove"
+      },
+      {
+        "method": "GET",
+        "route": "/config",
+        "operation": "config.get"
+      },
+      {
+        "method": "PATCH",
+        "route": "/config",
+        "operation": "config.update"
+      },
+      {
+        "method": "GET",
+        "route": "/config/providers",
+        "operation": "config.providers"
+      },
+      {
+        "method": "GET",
+        "route": "/provider",
+        "operation": "provider.list"
+      },
+      {
+        "method": "GET",
+        "route": "/provider/auth",
+        "operation": "provider.auth"
+      },
+      {
+        "method": "POST",
+        "route": "/provider/{providerID}/oauth/authorize",
+        "operation": "provider.oauth.authorize"
+      },
+      {
+        "method": "POST",
+        "route": "/provider/{providerID}/oauth/callback",
+        "operation": "provider.oauth.callback"
+      },
+      {
+        "method": "GET",
+        "route": "/mcp",
+        "operation": "mcp.status"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp",
+        "operation": "mcp.add"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp/{name}/auth",
+        "operation": "mcp.auth.start"
+      },
+      {
+        "method": "DELETE",
+        "route": "/mcp/{name}/auth",
+        "operation": "mcp.auth.remove"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp/{name}/auth/callback",
+        "operation": "mcp.auth.callback"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp/{name}/auth/authenticate",
+        "operation": "mcp.auth.authenticate"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp/{name}/connect",
+        "operation": "mcp.connect"
+      },
+      {
+        "method": "POST",
+        "route": "/mcp/{name}/disconnect",
+        "operation": "mcp.disconnect"
+      }
+    ],
+    "boundary": "Pinned schema proves operation vocabulary only. Exact request/response, persistence, credentials and lifecycle still require executable validation."
+  }
+}

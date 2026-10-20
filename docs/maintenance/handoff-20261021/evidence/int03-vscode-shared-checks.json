@@ -1,0 +1,55 @@
+[
+  {
+    "name": "anti",
+    "exit": 1,
+    "log": "artifacts\\int03-vscode-shared-anti.log",
+    "command": [
+      "C:/Users/74756/.bun/bin/bun.exe",
+      "run",
+      "lint:anti-slop",
+      "packages/vscode/src/kernelRequest.ts",
+      "packages/vscode/src/kernelRequest.test.ts",
+      "packages/vscode/src/bridge.ts",
+      "packages/vscode/src/bridge-proxy-runtime.ts",
+      "packages/vscode/src/bridge-proxy-runtime.test.js",
+      "packages/vscode/src/bridge-legacy-session.test.js",
+      "packages/web/server/lib/opencode/legacy-session-api.js",
+      "packages/web/server/lib/opencode/legacy-session-api.d.ts",
+      "packages/web/server/lib/opencode/legacy-session-http.js"
+    ],
+    "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber"
+  },
+  {
+    "name": "dead-code",
+    "exit": 0,
+    "log": "artifacts\\int03-vscode-shared-dead-code.log",
+    "command": [
+      "C:/Users/74756/.bun/bin/bun.exe",
+      "run",
+      "dead-code"
+    ],
+    "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber"
+  },
+  {
+    "name": "build-vscode",
+    "exit": 0,
+    "log": "artifacts\\int03-vscode-shared-build-vscode.log",
+    "command": [
+      "C:/Users/74756/.bun/bin/bun.exe",
+      "run",
+      "build"
+    ],
+    "cwd": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\packages\\vscode"
+  },
+  {
+    "name": "build-web",
+    "exit": 0,
+    "log": "artifacts\\int03-vscode-shared-build-web.log",
+    "command": [
+      "C:/Users/74756/.bun/bin/bun.exe",
+      "run",
+      "build:web"
+    ],
+    "cwd": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber"
+  }
+]

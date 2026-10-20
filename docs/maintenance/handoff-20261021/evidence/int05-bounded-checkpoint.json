@@ -1,0 +1,53 @@
+{
+  "at": "2026-10-12T00:02:41.851Z",
+  "status": "R3 INT-05 open; module termination accepted, actual host unverified",
+  "source": [
+    {
+      "file": "packages/vscode/src/owned-process.ts",
+      "sha256": "bf232525304b027355f36fadd86b5a43c5f147ecb54b3c385c224ffc747e0048"
+    },
+    {
+      "file": "packages/vscode/src/owned-process.test.ts",
+      "sha256": "df57c7306b6d37593c07774fe5c90642127c3fa8817a472b1f860fae78ffcf88"
+    },
+    {
+      "file": "packages/vscode/src/DOCUMENTATION.md",
+      "sha256": "90247759d76925750b3f2f9e73cc520edb3445ba66219249bbce9f7b4e02268c"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "e9425220ae7457e111c6b14ba796fcabf821aff85a9ee8d512e6722443f4e6ef"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "3ebdc0de0bf75835c0787547096e68ce8a63d348f70baaa10b0c290c898bc892"
+    }
+  ],
+  "validation": {
+    "focused": "18 pass, 1 skip",
+    "vscode": "62/62 files",
+    "types": "pass",
+    "eslint": "pass after cleanup-report fix",
+    "oxlint": "pass",
+    "build": "pass with existing import.meta warning",
+    "deadCode": "exit 0; unchanged baseline 2 unused files, 319 exports, 231 types, 1 duplicate; no owned-process finding",
+    "finalOwnedTest": "1 pass after cleanup-report lint fix"
+  },
+  "measured": {
+    "beforeCalls": 13,
+    "boundedCalls": 3,
+    "boundedDeadlineBatches": [
+      2,
+      10
+    ],
+    "maxActive": 1
+  },
+  "next": [
+    "One bounded verbose/trace host launch",
+    "Authorized OAuth binding before credential production composition",
+    "Legacy persistence feedback and plugins/unattended",
+    "R4 apply/reload"
+  ],
+  "weeklyRemainingPercent": 59,
+  "cleanup": "One-off helpers and exact original-source backup removed; diagnostic logs/checkpoint and unresolved host profiles retained"
+}

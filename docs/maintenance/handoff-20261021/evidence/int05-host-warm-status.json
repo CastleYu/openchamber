@@ -1,0 +1,13 @@
+{
+  "launcher": {
+    "exitCode": null,
+    "pid": 176700,
+    "at": "2026-10-12T00:12:44.6094611Z",
+    "state": "process-exited"
+  },
+  "runner": {
+    "state": "behavior-passed",
+    "at": "2026-10-12T00:12:42.797Z"
+  },
+  "cleanup": "deferred; isolated profile may still be in use or process ownership could not be verified"
+}

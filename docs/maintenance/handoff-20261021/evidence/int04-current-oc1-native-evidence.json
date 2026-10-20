@@ -1,0 +1,3392 @@
+{
+  "sourceHashes": {
+    "packages/ui/src/sync/bootstrap.ts": "0857cdc6cf75117f93ad81c24dc653d2253fc3f96d4abfcaa7784d127d550fe7",
+    "packages/ui/src/sync/sync-context.tsx": "18c46278b4865e36163fb1b9957bfd4213f34f7a14cbc6cc667d3b561602f964",
+    "packages/ui/src/sync/directory-recovery-snapshots.ts": "817ec0c0815e2b197a9701e30825df2e090cc764643fcb9d863f68ea8abfbaa1"
+  },
+  "sourceRevision": "6c050b000be171e0abb34431895c23d3203304b3",
+  "runtime": "actual VS Code production webview and extension host; frozen current OC1 1.18.33; controlled loopback model",
+  "sha256": "52f60248a576b34c9a6dcaa27e0a7f08089af35bcdc0dfb10c04d3e00a98314c",
+  "exit": 0,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": true,
+      "checks": [
+        "production VS Code webview connects to isolated OpenChamber server",
+        "exact 1.18.33 runtime admitted",
+        "exact upstream executable version is 1.18.33",
+        "exact upstream config selects controlled model",
+        "exact upstream catalog includes controlled model",
+        "Controlled catalog defaults: {\"legacy-probe\":\"probe\"}",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "permission request card rendered in production DOM",
+        "composer creates its real server session",
+        "permission pending tool part is running in persisted session",
+        "permission pending interaction visible without resolving it",
+        "permission restarts its own exact upstream PID",
+        "permission production webview reconnects after upstream restart",
+        "permission fresh upstream pending-list request succeeds after restart",
+        "permission fresh upstream pending list is empty after restart",
+        "permission fresh upstream status request succeeds after restart",
+        "permission post-restart session status is no longer busy",
+        "permission restart provenance: {\"connectionAfterRestart\":\"2026-10-11T19:13:54.253Z\",\"pending\":{\"at\":\"2026-10-11T19:13:54.773Z\",\"status\":200,\"body\":[]},\"sessionStatus\":{\"at\":\"2026-10-11T19:13:54.849Z\",\"status\":200,\"body\":{}},\"sessionEntry\":null,\"connectionTrace\":[{\"at\":\"2026-10-11T19:13:48.888Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:49.139Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:49.385Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:49.634Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:49.884Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:50.133Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:50.379Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:50.628Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:50.889Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:51.135Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:51.382Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:51.630Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:51.878Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:52.141Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:52.388Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:52.628Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:52.883Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:53.130Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:53.379Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:53.629Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:53.892Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:54.134Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:54.389Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:54.637Z\",\"status\":\"connected\"}],\"wireTrace\":[{\"at\":\"2026-10-11T19:13:49.620Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:49.625Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:49.634Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:49.643Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:49.652Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:50.238Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:50.376Z\",\"type\":\"api:openchamber:update-check\",\"success\":true},{\"at\":\"2026-10-11T19:13:50.942Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:50.966Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:51.284Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:51.364Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:51.474Z\",\"type\":\"api:opencode/upgrade-status\",\"success\":true},{\"at\":\"2026-10-11T19:13:51.505Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:51.509Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:51.856Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.050Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.280Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.311Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.430Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.472Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:13:52.598Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:52.616Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:54.773Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:13:54.849Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200}]}",
+        "permission stale request card disappears from production DOM",
+        "permission generating state settles or is explicitly interrupted",
+        "permission restart preserves every message ID",
+        "permission restart preserves every part ID",
+        "permission persisted tool part status after restart: [\"running\"]",
+        "permission persisted tool status is diagnostic; UI interruption and explicit continuation establish recovery",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "permission explicit new round completes in existing session",
+        "permission completion rendered by production UI",
+        "permission old IDs remain unique after new round",
+        "permission exactly one user message was sent for explicit continuation",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "question request card rendered in production DOM",
+        "question pending tool part is running in persisted session",
+        "question pending interaction visible without resolving it",
+        "question restarts its own exact upstream PID",
+        "question production webview reconnects after upstream restart",
+        "question fresh upstream pending-list request succeeds after restart",
+        "question fresh upstream pending list is empty after restart",
+        "question fresh upstream status request succeeds after restart",
+        "question post-restart session status is no longer busy",
+        "question restart provenance: {\"connectionAfterRestart\":\"2026-10-11T19:14:03.076Z\",\"pending\":{\"at\":\"2026-10-11T19:14:03.568Z\",\"status\":200,\"body\":[]},\"sessionStatus\":{\"at\":\"2026-10-11T19:14:03.647Z\",\"status\":200,\"body\":{}},\"sessionEntry\":null,\"connectionTrace\":[{\"at\":\"2026-10-11T19:13:57.889Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:58.141Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:58.386Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:58.638Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:58.888Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:59.128Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:59.384Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:59.632Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:13:59.884Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:00.129Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:00.385Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:00.631Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:00.878Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:01.128Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:01.379Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:01.634Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:01.887Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:02.136Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:02.388Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:02.639Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:02.888Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:03.138Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:03.383Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:14:03.633Z\",\"status\":\"connected\"}],\"wireTrace\":[{\"at\":\"2026-10-11T19:13:59.976Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.113Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.257Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.291Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:00.376Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.522Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.527Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:00.553Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.795Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:00.871Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":204},{\"at\":\"2026-10-11T19:14:00.878Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:00.886Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:01.047Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:01.064Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:01.077Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:01.262Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:01.288Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:01.410Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:14:01.467Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:01.543Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:01.582Z\",\"type\":\"api:sse:end\",\"error\":\"terminated\"},{\"at\":\"2026-10-11T19:14:01.583Z\",\"type\":\"api:sse:stop\",\"success\":true},{\"at\":\"2026-10-11T19:14:03.568Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:14:03.647Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200}]}",
+        "question stale request card disappears from production DOM",
+        "question generating state settles or is explicitly interrupted",
+        "question restart preserves every message ID",
+        "question restart preserves every part ID",
+        "question persisted tool part status after restart: [\"running\"]",
+        "question persisted tool status is diagnostic; UI interruption and explicit continuation establish recovery",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "question explicit new round completes in existing session",
+        "question completion rendered by production UI",
+        "question old IDs remain unique after new round",
+        "question exactly one user message was sent for explicit continuation"
+      ],
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "connectionTrace": [
+        {
+          "at": "2026-10-11T19:13:45.244Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:45.386Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:45.920Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:46.250Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:46.567Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:46.632Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:46.880Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:47.128Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:47.378Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:47.633Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:47.878Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:48.134Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:48.384Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:48.628Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:48.888Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:49.139Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:49.385Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:49.634Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:49.884Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:50.133Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:50.379Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:50.628Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:50.889Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:51.135Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:51.382Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:51.630Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:51.878Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:52.141Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:52.388Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:52.628Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:52.883Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:53.130Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:53.379Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:53.629Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:53.892Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:54.134Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:54.389Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:54.637Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:54.886Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:55.136Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:55.386Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:55.632Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:55.880Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:56.166Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:56.378Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:56.644Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:56.892Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:57.139Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:57.389Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:57.640Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:57.889Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:58.141Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:58.386Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:58.638Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:58.888Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:59.128Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:59.384Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:59.632Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:13:59.884Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:00.129Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:00.385Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:00.631Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:00.878Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:01.128Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:01.379Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:01.634Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:01.887Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:02.136Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:02.388Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:02.639Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:02.888Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:03.138Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:03.383Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:03.633Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:03.879Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:04.142Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:04.378Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:04.639Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:04.878Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:05.128Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:05.380Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:05.629Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:05.890Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:06.142Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:06.387Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:06.629Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:06.885Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:07.142Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:07.386Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:07.633Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:07.883Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:08.140Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:08.391Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:08.629Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:08.889Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:14:09.138Z",
+          "status": "connected"
+        }
+      ],
+      "wireTrace": [
+        {
+          "at": "2026-10-11T19:13:45.248Z",
+          "type": "api:fs/home",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:45.291Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:13:45.337Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:13:46.235Z",
+          "type": "api:config/settings:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.250Z",
+          "type": "api:config/settings:save",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.254Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.254Z",
+          "type": "api:github/auth:status",
+          "success": false,
+          "error": "OpenChamber VS Code backend GitHub integration is disabled. Use native VS Code GitHub integrations."
+        },
+        {
+          "at": "2026-10-11T19:13:46.254Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.255Z",
+          "type": "api:openchamber:enterprise-policy",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.255Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:13:46.568Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.569Z",
+          "type": "api:config/settings:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.573Z",
+          "type": "api:fs/home",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.573Z",
+          "type": "api:permission-auto-accept:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.573Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.574Z",
+          "type": "api:config/mcp",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.608Z",
+          "type": "api:git/check",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.632Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.633Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.634Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.634Z",
+          "type": "api:project-setup:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:46.641Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.661Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.667Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:46.869Z",
+          "type": "api:git/status",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:47.444Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.466Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.476Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.478Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.480Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.482Z",
+          "type": "api:session-activity:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:47.518Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:13:47.521Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.522Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.527Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.542Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.549Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.566Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.580Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.615Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:47.630Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:13:47.631Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.027Z",
+          "type": "api:models/metadata",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.130Z",
+          "type": "api:config/commands",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.131Z",
+          "type": "api:sse:start",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.132Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.134Z",
+          "type": "api:project-setup:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.134Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.138Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.139Z",
+          "type": "api:config/commands",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.172Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.260Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.307Z",
+          "type": "api:config/skills",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.308Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.449Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:13:48.486Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.533Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.738Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:48.747Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.764Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:48.764Z",
+          "type": "api:config/settings:save",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:48.802Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.498Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.512Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.516Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.517Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.570Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.582Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.586Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.597Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.601Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.607Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.620Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.625Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.634Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.643Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:49.652Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:50.238Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:50.376Z",
+          "type": "api:openchamber:update-check",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:50.942Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:50.966Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:51.284Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:51.364Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:51.474Z",
+          "type": "api:opencode/upgrade-status",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:13:51.505Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:51.509Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:51.856Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.050Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.280Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.311Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.430Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.472Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:52.598Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:52.616Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:54.773Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:54.849Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.670Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.674Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:55.701Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.712Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.722Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.723Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.733Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.759Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.776Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.790Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.794Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:55.860Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:56.116Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:56.216Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:13:56.851Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:56.864Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:56.928Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:56.943Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:56.999Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.013Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.023Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.027Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.149Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.296Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.450Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.458Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:57.601Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.733Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:57.860Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:58.046Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:58.100Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:58.122Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:58.386Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:58.392Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:58.437Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:58.511Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:58.849Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:58.857Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:58.997Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.128Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.258Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.423Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:59.430Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.497Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:59.580Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.710Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.836Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:13:59.889Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:13:59.976Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.113Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.257Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.291Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:00.376Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.522Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.527Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:00.553Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.795Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:00.871Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:14:00.878Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:00.886Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:01.047Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:01.064Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:01.077Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:01.262Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:01.288Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:01.410Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:01.467Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:01.543Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:01.582Z",
+          "type": "api:sse:end",
+          "error": "terminated"
+        },
+        {
+          "at": "2026-10-11T19:14:01.583Z",
+          "type": "api:sse:stop",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:14:03.568Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:03.647Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.614Z",
+          "type": "api:sse:start",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.614Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:04.639Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.650Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.657Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.674Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.688Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.693Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.704Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.709Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.721Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.725Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:04.753Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.000Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.073Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:14:05.095Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:05.705Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.769Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:05.781Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:05.845Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.948Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.961Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.975Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:05.985Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.111Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.242Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:06.256Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.387Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.455Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.486Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.530Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.669Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.813Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:06.885Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:06.908Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:07.153Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:07.159Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:07.206Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:07.313Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:07.581Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:07.588Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:07.732Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:07.883Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.016Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.114Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:08.163Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.196Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:08.296Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.427Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.563Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.597Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:08.718Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:08.853Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:09.000Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:09.030Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:14:09.154Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:14:09.184Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        }
+      ]
+    }
+  },
+  "modelCalls": [
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false,
+      "model": "probe"
+    },
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "bash",
+        "edit",
+        "glob",
+        "grep",
+        "question",
+        "read",
+        "skill",
+        "task",
+        "todowrite",
+        "webfetch",
+        "write"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_PERMISSION_CONTINUE\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "bash",
+        "edit",
+        "glob",
+        "grep",
+        "question",
+        "read",
+        "skill",
+        "task",
+        "todowrite",
+        "webfetch",
+        "write"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_QUESTION\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "bash",
+        "edit",
+        "glob",
+        "grep",
+        "question",
+        "read",
+        "skill",
+        "task",
+        "todowrite",
+        "webfetch",
+        "write"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_QUESTION_CONTINUE\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "bash",
+        "edit",
+        "glob",
+        "grep",
+        "question",
+        "read",
+        "skill",
+        "task",
+        "todowrite",
+        "webfetch",
+        "write"
+      ]
+    }
+  ],
+  "collectors": [
+    {
+      "pid": 141224,
+      "attachedAt": "2026-10-11T19:13:39.250Z",
+      "status": 200
+    },
+    {
+      "pid": 157516,
+      "attachedAt": "2026-10-11T19:13:54.181Z",
+      "status": 200
+    },
+    {
+      "pid": 157016,
+      "attachedAt": "2026-10-11T19:14:03.056Z",
+      "status": 200
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "session.created",
+    "sync",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "server.heartbeat",
+    "session.diff",
+    "plugin.added",
+    "catalog.updated",
+    "reference.updated",
+    "integration.updated",
+    "project.directories.updated",
+    "message.part.delta",
+    "permission.asked",
+    "session.idle",
+    "question.asked"
+  ],
+  "eventTrace": [
+    {
+      "at": "2026-10-11T19:13:39.253Z",
+      "pid": 141224,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:13:45.813Z",
+      "pid": 141224,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:48.108Z",
+      "pid": 141224,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:48.259Z",
+      "pid": 141224,
+      "type": "session.created",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:48.259Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62b316001jKBJESbASj3lnF"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62b387001WtduDjJuu0nzRx"
+    },
+    {
+      "at": "2026-10-11T19:13:48.472Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.473Z",
+      "pid": 141224,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:48.473Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.502Z",
+      "pid": 141224,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:48.502Z",
+      "pid": 141224,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62b3b3001MKLvF51RGdAq18"
+    },
+    {
+      "at": "2026-10-11T19:13:48.502Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:48.735Z",
+      "pid": 141224,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:48.735Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:49.271Z",
+      "pid": 141224,
+      "type": "server.heartbeat"
+    },
+    {
+      "at": "2026-10-11T19:13:50.237Z",
+      "pid": 141224,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:50.237Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:50.237Z",
+      "pid": 141224,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:50.237Z",
+      "pid": 141224,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62b316001jKBJESbASj3lnF"
+    },
+    {
+      "at": "2026-10-11T19:13:50.237Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.941Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:50.964Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.283Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:51.363Z",
+      "pid": 141224,
+      "type": "reference.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:51.854Z",
+      "pid": 141224,
+      "type": "integration.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:51.855Z",
+      "pid": 141224,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:52.049Z",
+      "pid": 141224,
+      "type": "project.directories.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:52.279Z",
+      "pid": 141224,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:52.309Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62c2ad001cdwDUVsKay2kDL"
+    },
+    {
+      "at": "2026-10-11T19:13:52.309Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:52.309Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62c2b2001m66t2MC1L7CIyq"
+    },
+    {
+      "at": "2026-10-11T19:13:52.309Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:52.309Z",
+      "pid": 141224,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62b3b3001MKLvF51RGdAq18"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62c310001Pz0zxJo9Oj8VcN"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62c310001Pz0zxJo9Oj8VcN"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62c2b2001m66t2MC1L7CIyq"
+    },
+    {
+      "at": "2026-10-11T19:13:52.429Z",
+      "pid": 141224,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:52.470Z",
+      "pid": 141224,
+      "type": "permission.asked",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:54.181Z",
+      "pid": 157516,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:13:54.701Z",
+      "pid": 157516,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:56.849Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d196001fZNLBevRuubDSr"
+    },
+    {
+      "at": "2026-10-11T19:13:56.849Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:56.927Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62d1e8001KqDPQibw3CE95S"
+    },
+    {
+      "at": "2026-10-11T19:13:56.927Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:56.927Z",
+      "pid": 157516,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:56.927Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:56.942Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:56.942Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d4b9001bzqE0NBVc5iMRd"
+    },
+    {
+      "at": "2026-10-11T19:13:56.942Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:57.457Z",
+      "pid": 157516,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:57.457Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:57.457Z",
+      "pid": 157516,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:57.457Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d196001fZNLBevRuubDSr"
+    },
+    {
+      "at": "2026-10-11T19:13:57.457Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.099Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.121Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.385Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:13:58.435Z",
+      "pid": 157516,
+      "type": "reference.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:58.848Z",
+      "pid": 157516,
+      "type": "integration.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:58.848Z",
+      "pid": 157516,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:13:59.422Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62deb7001U614hL7rF3XAH4"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62debb001lnIEW5p4zXe2Ig"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d4b9001bzqE0NBVc5iMRd"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62debb001lnIEW5p4zXe2Ig"
+    },
+    {
+      "at": "2026-10-11T19:13:59.496Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:59.888Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e049001u6ZTnXrynnom2r"
+    },
+    {
+      "at": "2026-10-11T19:13:59.888Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:13:59.888Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d4b9001bzqE0NBVc5iMRd"
+    },
+    {
+      "at": "2026-10-11T19:13:59.888Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.289Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d4b9001bzqE0NBVc5iMRd"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "session.idle",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.290Z",
+      "pid": 157516,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.524Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62d196001fZNLBevRuubDSr"
+    },
+    {
+      "at": "2026-10-11T19:14:00.524Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62e3dd001JmqdM8f0B10LmQ"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e41d001FdtRJDpHrD8vVy"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.876Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:00.877Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:00.877Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62e42a001xsXzXNcXZK2gZd"
+    },
+    {
+      "at": "2026-10-11T19:14:00.877Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62e3dd001JmqdM8f0B10LmQ"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.261Z",
+      "pid": 157516,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:01.287Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e5c0001pI5iVa1wxJHWq4"
+    },
+    {
+      "at": "2026-10-11T19:14:01.287Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.287Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e5c3001MZqCTPEIBZ761h"
+    },
+    {
+      "at": "2026-10-11T19:14:01.287Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.287Z",
+      "pid": 157516,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62e42a001xsXzXNcXZK2gZd"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e62e0016Bs4N0bSD4tRkI"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "question.asked",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e62e0016Bs4N0bSD4tRkI"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62e5c3001MZqCTPEIBZ761h"
+    },
+    {
+      "at": "2026-10-11T19:14:01.408Z",
+      "pid": 157516,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:03.056Z",
+      "pid": 157016,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:14:03.501Z",
+      "pid": 157016,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:14:05.094Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f449001Yr3RPOc3YELZDC"
+    },
+    {
+      "at": "2026-10-11T19:14:05.094Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:05.768Z",
+      "pid": 157016,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c62f494001r554kx0zIWOS6C"
+    },
+    {
+      "at": "2026-10-11T19:14:05.768Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:05.768Z",
+      "pid": 157016,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:05.768Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:05.778Z",
+      "pid": 157016,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:05.778Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f743001J5ePTXW18ugInD"
+    },
+    {
+      "at": "2026-10-11T19:14:05.778Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:06.241Z",
+      "pid": 157016,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:06.241Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:06.241Z",
+      "pid": 157016,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:06.241Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f449001Yr3RPOc3YELZDC"
+    },
+    {
+      "at": "2026-10-11T19:14:06.241Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.884Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:06.907Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.152Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "plugin.added"
+    },
+    {
+      "at": "2026-10-11T19:14:07.204Z",
+      "pid": 157016,
+      "type": "reference.updated"
+    },
+    {
+      "at": "2026-10-11T19:14:07.580Z",
+      "pid": 157016,
+      "type": "integration.updated"
+    },
+    {
+      "at": "2026-10-11T19:14:07.580Z",
+      "pid": 157016,
+      "type": "catalog.updated"
+    },
+    {
+      "at": "2026-10-11T19:14:08.112Z",
+      "pid": 157016,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:08.194Z",
+      "pid": 157016,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c6300af0018luEb4YVzuOTzx"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c6300b4001hFi7sEPDsOoJBo"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f743001J5ePTXW18ugInD"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c6300b4001hFi7sEPDsOoJBo"
+    },
+    {
+      "at": "2026-10-11T19:14:08.195Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:08.593Z",
+      "pid": 157016,
+      "type": "message.part.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "partID": "prt_12c630236001lyLqRu0n6hbilU"
+    },
+    {
+      "at": "2026-10-11T19:14:08.593Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:08.593Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f743001J5ePTXW18ugInD"
+    },
+    {
+      "at": "2026-10-11T19:14:08.593Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f743001J5ePTXW18ugInD"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "session.status",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "session.idle",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "session.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "sync"
+    },
+    {
+      "at": "2026-10-11T19:14:09.029Z",
+      "pid": 157016,
+      "type": "session.diff",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5"
+    },
+    {
+      "at": "2026-10-11T19:14:09.273Z",
+      "pid": 157016,
+      "type": "message.updated",
+      "sessionID": "ses_ed39d4d7efferzQ2n1cnDXnjX5",
+      "messageID": "msg_12c62f449001Yr3RPOc3YELZDC"
+    },
+    {
+      "at": "2026-10-11T19:14:09.273Z",
+      "pid": 157016,
+      "type": "sync"
+    }
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-current-oc1-native-ZZ345d",
+  "limitations": [
+    "Controlled model does not prove external provider quality"
+  ]
+}

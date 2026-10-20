@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-11T20:40:34.91Z",
+  "milestone": "INT-05 / R3",
+  "status": "local reader verified; persistence and runtime admission remain open",
+  "tests": {
+    "files": 3,
+    "passed": 176,
+    "runner": "cached Vitest 5.0.3"
+  },
+  "exactBinaryChecks": 5,
+  "evidence": "artifacts/int05-layers-live-evidence.json",
+  "webTypes": "pass",
+  "next": "Compose persisted-definition edits with current native identity and exact local layers; preserve raw JSONC, verify repeated saves, lower-layer reappearance and retirement; complete VS Code parity before route admission.",
+  "files": [
+    {
+      "path": "packages/web/server/lib/opencode/legacy-config-layers.js",
+      "sha256": "ba796b7744fc927f69a8b9a569898541ad11d739503817b3d89159309a4a9439"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/legacy-config-layers.test.js",
+      "sha256": "614dcaedde779b04fd032427de10a2e970f025b4d89558f322fbb31a01021e91"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/kernel-operations.js",
+      "sha256": "9e2df0debebdf6bad3a84113933bdf946d1d77c034a792c3bb6b558c69ca2104"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/kernel-operations.d.ts",
+      "sha256": "4327fa63a90fbb6cfaebd46b3aa1ef7f3c15a8c6afc5e157f3f25df7000f44b5"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/kernel-operations.test.js",
+      "sha256": "e2b36781bf834a644a64f6a3b257a2f8047f2812d8e6d731779c467ce3414440"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/legacy-contract.js",
+      "sha256": "1e8d3cb851ab0eae30836358b6f85b0a37bbbc9d659ffddd8a028e29e4a1e704"
+    },
+    {
+      "path": "packages/web/server/lib/opencode/legacy-contract.test.js",
+      "sha256": "a3cf1056cdc3d52b08019208dc6beaee9003c247d0cc613afeb96e02f9769d5f"
+    }
+  ],
+  "workspaceTypes": "pass",
+  "workspaceLint": "pass; five existing warnings",
+  "focusedEslint": "pass",
+  "focusedOxlint": "pass; CLI 1.78.0 exit zero",
+  "deadCode": "cached Knip 5.80.0; two files, 319 exports, 231 types; no changed-file findings",
+  "commit": "250d7089860b62ae93ee9e5de251229353726d22"
+}

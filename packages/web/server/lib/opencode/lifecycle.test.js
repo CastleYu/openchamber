@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createKernelRuntime } from './kernel-runtime.js';
 import { AGENT_ERROR, AGENT_FAMILY } from '../agent/constants.js';
+import { createManagedOpenCodeEnv } from './managed-env-runtime.js';
 
 const spawnMock = vi.fn();
 const spawnSyncMock = vi.fn();
@@ -141,6 +142,87 @@ const createRuntime = (overrides = {}, stateOverrides = {}, envOverrides = {}) =
 };
 
 describe('OpenCode lifecycle', () => {
+
+  it.skipIf(process.platform !== 'win32')('retires a mismatched endpoint even when owned cleanup fails', async () => {
+    let runtime;
+    const child = createMockChild();
+    child.kill.mockImplementation(() => false);
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => runtime?.testState.openCodePort ? 'http://127.0.0.1:45678' : null,
+      getHeaders: () => ({}), detect: async ({ endpoint, epoch }) => ({ generation: 'oc1', version: '1.2.28', endpoint, epoch }),
+    });
+    spawnMock.mockImplementation(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    runtime = createRuntime({ kernelRuntime, terminateWindowsTree: async () => {},
+      probeManagedOpenCodeGeneration: async () => ({ generation: 'oc1', version: '1.2.27' }),
+    });
+    try {
+      await expect(runtime.startOpenCode()).rejects.toThrow('cleanup did not confirm process exit');
+      expect(runtime.testState.isOpenCodeReady).toBe(false);
+      expect(runtime.testState.openCodePort).toBeNull();
+      expect(kernelRuntime.get().endpoint).toBeNull();
+      expect(runtime.testState.openCodeProcess).not.toBeNull();
+      await expect(runtime.startOpenCode()).rejects.toThrow('must stop before another launch');
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    } finally {
+      child.exitCode = 0;
+      child.emit('close', 0, null);
+      await runtime.testState.openCodeProcess?.close();
+    }
+  }, 10000);
+
+
+  it.each([
+    ['oc1', '1.2.27', 'v1.2.27+local'],
+    ['oc1', '1.18.32', '1.18.32'],
+    ['oc2', '2.0.20', '2.0.20'],
+  ])('binds the selected %s executable before readiness (%s)', async (generation, selected, actual) => {
+    let runtime;
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => runtime?.testState.openCodePort ? 'http://127.0.0.1:45678' : null,
+      getHeaders: () => ({}), detect: async ({ endpoint, epoch }) => ({ generation, version: actual, endpoint, epoch }),
+    });
+    const child = createMockChild();
+    spawnMock.mockImplementation(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    runtime = createRuntime({ kernelRuntime, probeManagedOpenCodeGeneration: async () => ({ generation, version: selected }) });
+    const server = await runtime.startOpenCode();
+    expect(runtime.testState.isOpenCodeReady).toBe(true);
+    expect(kernelRuntime.get()).toMatchObject({ generation, version: actual });
+    await server.close();
+    expect(kernelRuntime.get().endpoint).toBeNull();
+    expect(runtime.testState.isOpenCodeReady).toBe(false);
+  });
+
+  it.each([
+    ['oc1', '1.2.28'], ['oc1', '1.2.27-rc.1'], ['oc2', '2.0.20'], ['oc1', null],
+  ])('rejects endpoint identity %s %s before any ready publication', async (generation, version) => {
+    let runtime;
+    const changes = [];
+    const kernelRuntime = createKernelRuntime({
+      getEndpoint: () => runtime?.testState.openCodePort ? 'http://127.0.0.1:45678' : null,
+      getHeaders: () => ({}), detect: async ({ endpoint, epoch }) => ({ generation, version, endpoint, epoch }),
+      onChange: value => changes.push(value),
+    });
+    const child = createMockChild();
+    spawnMock.mockImplementation(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    runtime = createRuntime({ kernelRuntime, probeManagedOpenCodeGeneration: async () => ({ generation: 'oc1', version: '1.2.27' }) });
+    await expect(runtime.startOpenCode()).rejects.toThrow('OpenCode readiness:');
+    expect(child.kill).toHaveBeenCalled();
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(runtime.testState.isOpenCodeReady).toBe(false);
+    expect(runtime.testState.openCodePort).toBeNull();
+    expect(kernelRuntime.get().endpoint).toBeNull();
+    expect(changes.some(value => value.generation === 'oc1' || value.generation === 'oc2')).toBe(false);
+  });
+
   it('closes a newly spawned process when selection retires during readiness', async () => {
     let backend = { family: AGENT_FAMILY.OPENCODE, revision: 1 };
     let release;
@@ -258,6 +340,49 @@ describe('OpenCode lifecycle', () => {
     expect(getManagedOpenCodeEnv).not.toHaveBeenCalled();
     expect(ensureLocalOpenCodeServerPassword).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it('spawns Legacy 1.2.27 with no managed config and preserves inherited user config', async () => {
+    const previousConfig = process.env.OPENCODE_CONFIG;
+    const previousConfigContent = process.env.OPENCODE_CONFIG_CONTENT;
+    process.env.OPENCODE_CONFIG = '/user/opencode.json';
+    process.env.OPENCODE_CONFIG_CONTENT = '{\"plugin\":[\"user.js\"]}';
+    const readSettings = vi.fn(async () => ({ optimizeSystemPrompt: true }));
+    const prepareTools = vi.fn(async () => ({ OPENCODE_CONFIG_CONTENT: '{\"plugin\":[\"file:///tool.js\"]}' }));
+    const preparePrompt = vi.fn(async () => ({ OPENCODE_CONFIG_CONTENT: 'prompt-managed' }));
+    const prepareMcp = vi.fn(async () => ({ OPENCODE_CONFIG_CONTENT: 'mcp-managed' }));
+    const getManagedOpenCodeEnv = createManagedOpenCodeEnv({
+      getBackendSelection: () => ({ family: AGENT_FAMILY.OPENCODE, revision: 1 }),
+      readSettings, isMemoryAvailable: () => true, prepareTools, preparePrompt, prepareMcp,
+      prepareOc2: async () => ({}), getConfigContent: () => '{}',
+    });
+    const child = createMockChild();
+    spawnMock.mockImplementationOnce(() => {
+      queueMicrotask(() => child.stdout.emit('data', 'opencode server listening on http://127.0.0.1:45678\n'));
+      return child;
+    });
+    const probeManagedOpenCodeGeneration = vi.fn(async () => ({
+      generation: 'oc1', version: '1.2.27', launchSpec: { binary: 'opencode', args: [] },
+    }));
+    const runtime = createRuntime({ getManagedOpenCodeEnv, probeManagedOpenCodeGeneration });
+    try {
+      const server = await runtime.startOpenCode();
+      const [, args, options] = spawnMock.mock.calls[0];
+      expect(spawnMock).toHaveBeenCalledOnce();
+      expect(args).toContain('serve');
+      expect(options.env.OPENCODE_CONFIG).toBe('/user/opencode.json');
+      expect(options.env.OPENCODE_CONFIG_CONTENT).toBe('{\"plugin\":[\"user.js\"]}');
+      expect(readSettings).not.toHaveBeenCalled();
+      expect(prepareTools).not.toHaveBeenCalled();
+      expect(preparePrompt).not.toHaveBeenCalled();
+      expect(prepareMcp).not.toHaveBeenCalled();
+      await server.close();
+    } finally {
+      if (previousConfig === undefined) delete process.env.OPENCODE_CONFIG;
+      else process.env.OPENCODE_CONFIG = previousConfig;
+      if (previousConfigContent === undefined) delete process.env.OPENCODE_CONFIG_CONTENT;
+      else process.env.OPENCODE_CONFIG_CONTENT = previousConfigContent;
+    }
   });
 
   it('uses the probed launch specification and config generation together', async () => {

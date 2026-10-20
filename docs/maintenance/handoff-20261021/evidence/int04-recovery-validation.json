@@ -1,0 +1,119 @@
+{
+  "at": "2026-10-11T17:34:25.356Z",
+  "results": [
+    {
+      "name": "test-blocking-resync.test.js",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-blocking-resync.test.js.log",
+      "summary": [
+        "(pass) blocking request reconnect reconciliation > permission arriving during reconnect survives an older empty HTTP result [16.05ms]",
+        "(pass) blocking request reconnect reconciliation > permission failure preserves its directory while another complete directory clears [33.73ms]",
+        "(pass) blocking request reconnect reconciliation > permission settled without a cached request is not resurrected by HTTP [27.95ms]",
+        " 8 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "test-reconnect-recovery.test.ts",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-reconnect-recovery.test.ts.log",
+      "summary": [
+        "(pass) mergeBootstrapSessions > preserves known children when the child-session request fails [0.15ms]",
+        "(pass) mergeBootstrapSessions > overlays live session events that arrive after the request starts [0.13ms]",
+        "(pass) mergeBootstrapSessions > does not resurrect a session deleted after the request starts [0.15ms]",
+        " 11 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "test-directory-recovery-snapshots.test.ts",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-directory-recovery-snapshots.test.ts.log",
+      "summary": [
+        "(pass) directory recovery snapshots > direct local mutations survive while unchanged stale requests are removed [0.21ms]",
+        "(pass) directory recovery snapshots > deleting a session invalidates its status and blocking requests in every in-flight snapshot [0.23ms]",
+        "(pass) directory recovery snapshots > failed reads leave no event history for a later successful snapshot [1.24ms]",
+        " 10 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "test-question-recovery.test.ts",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-question-recovery.test.ts.log",
+      "summary": [
+        "(pass) hasActiveQuestionToolInCurrentTurn > ignores completed questions and active questions from an older turn [0.05ms]",
+        "(pass) recoverPendingQuestionWithRetry > retries the cold-start inconsistency with bounded delays and stops on recovery [0.46ms]",
+        "(pass) recoverPendingQuestionWithRetry > does no more work after cancellation [0.12ms]",
+        " 4 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "test-__tests___interrupted-turn-tools.test.ts",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-__tests___interrupted-turn-tools.test.ts.log",
+      "summary": [
+        "(pass) interruptedTurnToolParts (#2577) > only active parts are finalized; completed parts are untouched [0.14ms]",
+        "(pass) interruptedTurnToolParts (#2577) > unfinished assistant with no tools is completed as aborted [0.07ms]",
+        "(pass) interruptedTurnToolParts (#2577) > completed tools are untouched while the unfinished assistant is aborted [0.08ms]",
+        " 9 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "test-__tests___session-event-freshness.test.ts",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-test-__tests___session-event-freshness.test.ts.log",
+      "summary": [
+        "(pass) shouldSkipStaleSessionEvent > skips a stale SSE session update after a newer local rename [0.23ms]",
+        "(pass) shouldSkipStaleSessionEvent > allows a fresher SSE update to apply [0.09ms]",
+        "(pass) shouldSkipStaleSessionEvent > falls back to created timestamp when updated is missing [0.05ms]",
+        " 3 pass",
+        " 0 fail"
+      ]
+    },
+    {
+      "name": "types",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-types.log",
+      "summary": []
+    },
+    {
+      "name": "lint",
+      "code": 1,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-lint.log",
+      "summary": [
+        "  320:6  warning  React Hook React.useEffect has a missing dependency: 'settingsDirectory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "   354:7  error    'cmp' is assigned a value but never used                                                                          @typescript-eslint/no-unused-vars",
+        "  2875:6  warning  React Hook useEffect has a missing dependency: 'messageLoader'. Either include it or remove the dependency array  react-hooks/exhaustive-deps",
+        "✖ 6 problems (1 error, 5 warnings)",
+        "error: script \"lint\" exited with code 1"
+      ]
+    },
+    {
+      "name": "dead-code",
+      "code": 0,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-dead-code.log",
+      "summary": [
+        "ToolStateError                           type       packages/ui/src/lib/opencode/model.ts:429:13                        ",
+        "McpFailureSource                         type       packages/ui/src/stores/useMcpStore.ts:17:15                         ",
+        "ContextFileOpenFailureReason             type       packages/ui/src/lib/contextFileOpenGuard.ts:11:13                   ",
+        "McpFailureClass                          type       packages/ui/src/components/sections/mcp/mcpFailureHints.ts:1:13     ",
+        "McpFailureHint                           interface  packages/ui/src/components/sections/mcp/mcpFailureHints.ts:16:18    "
+      ]
+    },
+    {
+      "name": "anti-slop",
+      "code": 1,
+      "log": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-recovery-anti-slop.log",
+      "summary": [
+        "packages/ui/src/sync/sync-context.tsx:3671:10: error anti-slop(no-runtime-typeof): A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+        "packages/ui/src/sync/sync-context.tsx:3721:28: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/sync/sync-context.tsx:3741:28: error anti-slop(require-safety-comment-for-type-assertion): This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+        "packages/ui/src/sync/sync-context.tsx:3748:12: error anti-slop(no-known-value-widening): The explicit anonymous object type on return value of `getVisibleMessagesForSession` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+        "packages/ui/src/sync/sync-context.tsx:3755:10: error anti-slop(no-known-value-widening): The explicit anonymous object type on return value of `getVisibleMessagesForSession` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract."
+      ]
+    }
+  ]
+}

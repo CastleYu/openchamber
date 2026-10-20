@@ -1,0 +1,2039 @@
+{
+  "sourceHashes": {
+    "packages/ui/src/sync/bootstrap.ts": "0857cdc6cf75117f93ad81c24dc653d2253fc3f96d4abfcaa7784d127d550fe7",
+    "packages/ui/src/sync/sync-context.tsx": "18c46278b4865e36163fb1b9957bfd4213f34f7a14cbc6cc667d3b561602f964",
+    "packages/ui/src/sync/directory-recovery-snapshots.ts": "817ec0c0815e2b197a9701e30825df2e090cc764643fcb9d863f68ea8abfbaa1"
+  },
+  "sourceRevision": "not measured; this run does not claim that any commit contains the fixed bootstrap.ts",
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 0,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": true,
+      "checks": [
+        "production VS Code webview connects to isolated OpenChamber server",
+        "exact 1.2.27 runtime admitted",
+        "exact upstream executable version is 1.2.27",
+        "exact upstream config selects controlled model",
+        "exact upstream catalog includes controlled model",
+        "Controlled catalog defaults: {\"legacy-probe\":\"probe\"}",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "permission request card rendered in production DOM",
+        "composer creates its real server session",
+        "permission pending tool part is running in persisted session",
+        "permission pending interaction visible without resolving it",
+        "permission restarts its own exact upstream PID",
+        "permission production webview reconnects after upstream restart",
+        "permission fresh upstream pending-list request succeeds after restart",
+        "permission fresh upstream pending list is empty after restart",
+        "permission fresh upstream status request succeeds after restart",
+        "permission post-restart session status is no longer busy",
+        "permission restart provenance: {\"connectionAfterRestart\":\"2026-10-11T19:07:05.796Z\",\"pending\":{\"at\":\"2026-10-11T19:07:06.235Z\",\"status\":200,\"body\":[]},\"sessionStatus\":{\"at\":\"2026-10-11T19:07:06.253Z\",\"status\":200,\"body\":{}},\"sessionEntry\":null,\"connectionTrace\":[{\"at\":\"2026-10-11T19:07:00.955Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:01.039Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:01.483Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:02.007Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:02.355Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:02.536Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:02.781Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:03.036Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:03.307Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:03.539Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:03.955Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:04.035Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:04.282Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:04.531Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:04.785Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.033Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.283Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.544Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.794Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:06.040Z\",\"status\":\"connected\"}],\"wireTrace\":[{\"at\":\"2026-10-11T19:07:04.123Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:04.159Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:04.160Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:04.200Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:04.373Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:04.385Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:04.581Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.583Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.586Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.591Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.593Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.594Z\",\"type\":\"api:fs:list\",\"success\":true},{\"at\":\"2026-10-11T19:07:04.602Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.603Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:04.607Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.104Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.105Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.111Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.112Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.119Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.119Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:05.123Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:06.234Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:06.253Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200}]}",
+        "permission stale request card disappears from production DOM",
+        "permission generating state settles or is explicitly interrupted",
+        "permission restart preserves every message ID",
+        "permission restart preserves every part ID",
+        "permission persisted tool part status after restart: [\"running\"]",
+        "permission persisted tool status is diagnostic; UI interruption and explicit continuation establish recovery",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "permission explicit new round completes in existing session",
+        "permission completion rendered by production UI",
+        "permission old IDs remain unique after new round",
+        "permission exactly one user message was sent for explicit continuation",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "question request card rendered in production DOM",
+        "question pending tool part is running in persisted session",
+        "question pending interaction visible without resolving it",
+        "question restarts its own exact upstream PID",
+        "question production webview reconnects after upstream restart",
+        "question fresh upstream pending-list request succeeds after restart",
+        "question fresh upstream pending list is empty after restart",
+        "question fresh upstream status request succeeds after restart",
+        "question post-restart session status is no longer busy",
+        "question restart provenance: {\"connectionAfterRestart\":\"2026-10-11T19:07:09.949Z\",\"pending\":{\"at\":\"2026-10-11T19:07:10.405Z\",\"status\":200,\"body\":[]},\"sessionStatus\":{\"at\":\"2026-10-11T19:07:10.422Z\",\"status\":200,\"body\":{}},\"sessionEntry\":null,\"connectionTrace\":[{\"at\":\"2026-10-11T19:07:04.531Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:04.785Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.033Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.283Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.544Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:05.794Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:06.040Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:06.280Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:06.534Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:06.784Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:07.033Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:07.284Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:07.530Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:07.789Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:08.038Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:08.288Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:08.534Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:08.781Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:09.044Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:09.282Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:09.531Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:09.789Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:10.040Z\",\"status\":\"connected\"},{\"at\":\"2026-10-11T19:07:10.290Z\",\"status\":\"connected\"}],\"wireTrace\":[{\"at\":\"2026-10-11T19:07:08.381Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:08.464Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:08.481Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:08.484Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:08.486Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:08.487Z\",\"type\":\"api:sse:chunk\"},{\"at\":\"2026-10-11T19:07:08.635Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:08.698Z\",\"type\":\"api:sse:end\",\"error\":\"terminated\"},{\"at\":\"2026-10-11T19:07:08.700Z\",\"type\":\"api:sse:stop\",\"success\":true},{\"at\":\"2026-10-11T19:07:09.521Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.521Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.522Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.529Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.531Z\",\"type\":\"api:fs:list\",\"success\":true},{\"at\":\"2026-10-11T19:07:09.531Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.537Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.538Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:09.541Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":502},{\"at\":\"2026-10-11T19:07:10.372Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:10.379Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:10.402Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:10.406Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:10.415Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200},{\"at\":\"2026-10-11T19:07:10.422Z\",\"type\":\"api:proxy\",\"success\":true,\"status\":200}]}",
+        "question stale request card disappears from production DOM",
+        "question generating state settles or is explicitly interrupted",
+        "question restart preserves every message ID",
+        "question restart preserves every part ID",
+        "question persisted tool part status after restart: [\"running\"]",
+        "question persisted tool status is diagnostic; UI interruption and explicit continuation establish recovery",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts button submission",
+        "question explicit new round completes in existing session",
+        "question completion rendered by production UI",
+        "question old IDs remain unique after new round",
+        "question exactly one user message was sent for explicit continuation"
+      ],
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru",
+      "connectionTrace": [
+        {
+          "at": "2026-10-11T19:07:00.955Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:01.039Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:01.483Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:02.007Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:02.355Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:02.536Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:02.781Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:03.036Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:03.307Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:03.539Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:03.955Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:04.035Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:04.282Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:04.531Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:04.785Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:05.033Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:05.283Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:05.544Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:05.794Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:06.040Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:06.280Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:06.534Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:06.784Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:07.033Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:07.284Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:07.530Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:07.789Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:08.038Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:08.288Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:08.534Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:08.781Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:09.044Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:09.282Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:09.531Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:09.789Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:10.040Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:10.290Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:10.538Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:10.788Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:11.038Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:11.283Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:11.534Z",
+          "status": "connected"
+        },
+        {
+          "at": "2026-10-11T19:07:11.780Z",
+          "status": "connected"
+        }
+      ],
+      "wireTrace": [
+        {
+          "at": "2026-10-11T19:07:00.961Z",
+          "type": "api:fs/home",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:01.065Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:07:01.483Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:07:02.000Z",
+          "type": "api:config/settings:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.011Z",
+          "type": "api:config/settings:save",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.017Z",
+          "type": "api:github/auth:status",
+          "success": false,
+          "error": "OpenChamber VS Code backend GitHub integration is disabled. Use native VS Code GitHub integrations."
+        },
+        {
+          "at": "2026-10-11T19:07:02.017Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.017Z",
+          "type": "api:openchamber:enterprise-policy",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.017Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:07:02.358Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.359Z",
+          "type": "api:config/settings:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.364Z",
+          "type": "api:fs/home",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.364Z",
+          "type": "api:permission-auto-accept:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.364Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.365Z",
+          "type": "api:config/mcp",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:02.392Z",
+          "type": "api:project-setup:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.397Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.400Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.400Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.403Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.405Z",
+          "type": "api:git/check",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.436Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.455Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.539Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.545Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.547Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.549Z",
+          "type": "api:session-activity:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.559Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.564Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.566Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.571Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.584Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.593Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.627Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.644Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.644Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.644Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:07:02.662Z",
+          "type": "api:config/skills",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:02.663Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.664Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.666Z",
+          "type": "api:config/commands",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:02.667Z",
+          "type": "api:config/commands",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:02.708Z",
+          "type": "api:git/status",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.742Z",
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "at": "2026-10-11T19:07:02.755Z",
+          "type": "api:sse:start",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.756Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:02.760Z",
+          "type": "api:opencode/connection",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.828Z",
+          "type": "api:project-setup:get",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:02.852Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:02.858Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:02.859Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:02.929Z",
+          "type": "api:proxy",
+          "success": false,
+          "error": "OpenCode legacy-1.2.27 request is not supported"
+        },
+        {
+          "at": "2026-10-11T19:07:03.033Z",
+          "type": "api:config/skills",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:03.083Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.085Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.086Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.086Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.086Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:07:03.095Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.197Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.198Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.203Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.222Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:03.305Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:03.317Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.318Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:03.318Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:03.812Z",
+          "type": "api:models/metadata",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:03.955Z",
+          "type": "api:config/skills",
+          "success": false,
+          "error": "Legacy OpenCode configuration is not yet verified in VS Code"
+        },
+        {
+          "at": "2026-10-11T19:07:03.956Z",
+          "type": "api:config/settings:save",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:04.078Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.079Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.079Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.123Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.159Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.160Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.200Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:04.373Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:04.385Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:04.581Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.583Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.586Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.591Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.593Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.594Z",
+          "type": "api:fs:list",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:04.602Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.603Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:04.607Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.104Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.105Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.111Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.112Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.119Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.119Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:05.123Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:06.234Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.253Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.257Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.268Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.282Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.330Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.347Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.348Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.370Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.382Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.615Z",
+          "type": "api:proxy",
+          "success": false,
+          "error": "OpenCode legacy-1.2.27 request is not supported"
+        },
+        {
+          "at": "2026-10-11T19:07:06.675Z",
+          "type": "api:openchamber:update-check",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:06.699Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:07:06.820Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:06.936Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.071Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.177Z",
+          "type": "api:opencode/upgrade-status",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:07.191Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.210Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.212Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.321Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.445Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.456Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.468Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.475Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.479Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.484Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.490Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.501Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.502Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.521Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.524Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.569Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.695Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.710Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.714Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.714Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.714Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.723Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.735Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.833Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.834Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.840Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:07.841Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:07.860Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.076Z",
+          "type": "api:proxy",
+          "success": false,
+          "error": "OpenCode legacy-1.2.27 request is not supported"
+        },
+        {
+          "at": "2026-10-11T19:07:08.125Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.140Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.141Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.141Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.141Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:07:08.141Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.142Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.144Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.275Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.288Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.296Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.299Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.309Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.379Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.381Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.381Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.464Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.481Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.484Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.486Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.487Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:08.635Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:08.698Z",
+          "type": "api:sse:end",
+          "error": "terminated"
+        },
+        {
+          "at": "2026-10-11T19:07:08.700Z",
+          "type": "api:sse:stop",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:09.521Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.521Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.522Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.529Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.531Z",
+          "type": "api:fs:list",
+          "success": true
+        },
+        {
+          "at": "2026-10-11T19:07:09.531Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.537Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.538Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:09.541Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 502
+        },
+        {
+          "at": "2026-10-11T19:07:10.372Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.379Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.402Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.406Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.415Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.422Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.427Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.433Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.444Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.475Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.675Z",
+          "type": "api:proxy",
+          "success": false,
+          "error": "OpenCode legacy-1.2.27 request is not supported"
+        },
+        {
+          "at": "2026-10-11T19:07:10.717Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.757Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "at": "2026-10-11T19:07:10.853Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:10.983Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.122Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.246Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.365Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.495Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.622Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.724Z",
+          "type": "api:sse:start",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.724Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:11.755Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:11.772Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:11.772Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:11.773Z",
+          "type": "api:sse:chunk"
+        },
+        {
+          "at": "2026-10-11T19:07:11.773Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.780Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.792Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.793Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.794Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.822Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.832Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.832Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.832Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.863Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.868Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.881Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T19:07:11.915Z",
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        }
+      ]
+    }
+  },
+  "modelCalls": [
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false,
+      "model": "probe"
+    },
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_PERMISSION_CONTINUE\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_QUESTION\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"RECOVERY_QUESTION_CONTINUE\"",
+      "afterTool": false,
+      "model": "probe",
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "collectors": [
+    {
+      "pid": 156516,
+      "attachedAt": "2026-10-11T19:06:54.464Z",
+      "status": 200
+    },
+    {
+      "pid": 160568,
+      "attachedAt": "2026-10-11T19:07:05.691Z",
+      "status": 200
+    },
+    {
+      "pid": 149028,
+      "attachedAt": "2026-10-11T19:07:09.861Z",
+      "status": 200
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "permission.asked",
+    "session.idle",
+    "question.asked"
+  ],
+  "eventTrace": [
+    {
+      "at": "2026-10-11T19:06:54.467Z",
+      "pid": 156516,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:06:59.994Z",
+      "pid": 156516,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:07:02.852Z",
+      "pid": 156516,
+      "type": "session.created",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:02.852Z",
+      "pid": 156516,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "message.updated",
+      "messageID": "msg_12c5c8394001k3tuAVuDY61tZo"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8403001ADOkug1Knj2sBM"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "message.updated",
+      "messageID": "msg_12c5c8426001ZIy2a1p0xvu3bg"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "message.updated",
+      "messageID": "msg_12c5c8394001k3tuAVuDY61tZo"
+    },
+    {
+      "at": "2026-10-11T19:07:03.203Z",
+      "pid": 156516,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.232Z",
+      "pid": 156516,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:03.265Z",
+      "pid": 156516,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:04.072Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8804001va9V3eXFRHuS6k"
+    },
+    {
+      "at": "2026-10-11T19:07:04.072Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8805001aCtZrV4mLJioPW"
+    },
+    {
+      "at": "2026-10-11T19:07:04.072Z",
+      "pid": 156516,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru",
+      "messageID": "msg_12c5c8426001ZIy2a1p0xvu3bg"
+    },
+    {
+      "at": "2026-10-11T19:07:04.164Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8837001CJiB2bTJs9f06R"
+    },
+    {
+      "at": "2026-10-11T19:07:04.164Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8837001CJiB2bTJs9f06R"
+    },
+    {
+      "at": "2026-10-11T19:07:04.164Z",
+      "pid": 156516,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c8805001aCtZrV4mLJioPW"
+    },
+    {
+      "at": "2026-10-11T19:07:04.183Z",
+      "pid": 156516,
+      "type": "permission.asked",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:05.691Z",
+      "pid": 160568,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:07:06.036Z",
+      "pid": 160568,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:07:06.811Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c91fa001ayKfbr8jS2PvRL"
+    },
+    {
+      "at": "2026-10-11T19:07:06.811Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c924d001Q5g7qkqI4HER3c"
+    },
+    {
+      "at": "2026-10-11T19:07:06.811Z",
+      "pid": 160568,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:06.811Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:06.919Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c92cb0011ZqLvwITwdbOxB"
+    },
+    {
+      "at": "2026-10-11T19:07:06.919Z",
+      "pid": 160568,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:06.919Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c91fa001ayKfbr8jS2PvRL"
+    },
+    {
+      "at": "2026-10-11T19:07:06.919Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:06.919Z",
+      "pid": 160568,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.216Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c9437001i6bj0DgRybggTh"
+    },
+    {
+      "at": "2026-10-11T19:07:07.216Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c9438001AR67eL4pLZqnYu"
+    },
+    {
+      "at": "2026-10-11T19:07:07.216Z",
+      "pid": 160568,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru",
+      "messageID": "msg_12c5c92cb0011ZqLvwITwdbOxB"
+    },
+    {
+      "at": "2026-10-11T19:07:07.216Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c9438001AR67eL4pLZqnYu"
+    },
+    {
+      "at": "2026-10-11T19:07:07.431Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c943e0011BKz21O2OpIXP2"
+    },
+    {
+      "at": "2026-10-11T19:07:07.431Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c92cb0011ZqLvwITwdbOxB"
+    },
+    {
+      "at": "2026-10-11T19:07:07.699Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c92cb0011ZqLvwITwdbOxB"
+    },
+    {
+      "at": "2026-10-11T19:07:07.699Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.699Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.699Z",
+      "pid": 160568,
+      "type": "session.idle",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.832Z",
+      "pid": 160568,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.838Z",
+      "pid": 160568,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:07.840Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c91fa001ayKfbr8jS2PvRL"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c97ad0013p52Ow1d69Y2yV"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c97da001HWEwx76IdvOaVH"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c97df001NKfawKtha5Ze3x"
+    },
+    {
+      "at": "2026-10-11T19:07:08.141Z",
+      "pid": 160568,
+      "type": "message.updated",
+      "messageID": "msg_12c5c97ad0013p52Ow1d69Y2yV"
+    },
+    {
+      "at": "2026-10-11T19:07:08.144Z",
+      "pid": 160568,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.286Z",
+      "pid": 160568,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.288Z",
+      "pid": 160568,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.379Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c98d8001woZdpvhnGDOSJi"
+    },
+    {
+      "at": "2026-10-11T19:07:08.379Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c98d9001TVc8PK0Zm3Ns9Z"
+    },
+    {
+      "at": "2026-10-11T19:07:08.379Z",
+      "pid": 160568,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru",
+      "messageID": "msg_12c5c97df001NKfawKtha5Ze3x"
+    },
+    {
+      "at": "2026-10-11T19:07:08.486Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c993c0016aO7u0yk5PDJWu"
+    },
+    {
+      "at": "2026-10-11T19:07:08.486Z",
+      "pid": 160568,
+      "type": "question.asked",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:08.486Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c993c0016aO7u0yk5PDJWu"
+    },
+    {
+      "at": "2026-10-11T19:07:08.486Z",
+      "pid": 160568,
+      "type": "message.part.updated",
+      "partID": "prt_12c5c98d9001TVc8PK0Zm3Ns9Z"
+    },
+    {
+      "at": "2026-10-11T19:07:09.861Z",
+      "pid": 149028,
+      "type": "server.connected"
+    },
+    {
+      "at": "2026-10-11T19:07:10.176Z",
+      "pid": 149028,
+      "type": "project.updated"
+    },
+    {
+      "at": "2026-10-11T19:07:10.833Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca1d5001vgWE72iPb47UqI"
+    },
+    {
+      "at": "2026-10-11T19:07:10.833Z",
+      "pid": 149028,
+      "type": "message.part.updated",
+      "partID": "prt_12c5ca21200147Apvg8HBJ0Qbo"
+    },
+    {
+      "at": "2026-10-11T19:07:10.833Z",
+      "pid": 149028,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:10.833Z",
+      "pid": 149028,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:10.968Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca28c001arLge1eqstZsEW"
+    },
+    {
+      "at": "2026-10-11T19:07:10.968Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca1d5001vgWE72iPb47UqI"
+    },
+    {
+      "at": "2026-10-11T19:07:10.968Z",
+      "pid": 149028,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.109Z",
+      "pid": 149028,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.111Z",
+      "pid": 149028,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.269Z",
+      "pid": 149028,
+      "type": "message.part.updated",
+      "partID": "prt_12c5ca414001kLjYZXUbLZxgGK"
+    },
+    {
+      "at": "2026-10-11T19:07:11.269Z",
+      "pid": 149028,
+      "type": "message.part.updated",
+      "partID": "prt_12c5ca416001VQQajQA1fN8fPo"
+    },
+    {
+      "at": "2026-10-11T19:07:11.269Z",
+      "pid": 149028,
+      "type": "message.part.delta",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru",
+      "messageID": "msg_12c5ca28c001arLge1eqstZsEW"
+    },
+    {
+      "at": "2026-10-11T19:07:11.269Z",
+      "pid": 149028,
+      "type": "message.part.updated",
+      "partID": "prt_12c5ca416001VQQajQA1fN8fPo"
+    },
+    {
+      "at": "2026-10-11T19:07:11.515Z",
+      "pid": 149028,
+      "type": "message.part.updated",
+      "partID": "prt_12c5ca41c00124fK7g7g7tBIOW"
+    },
+    {
+      "at": "2026-10-11T19:07:11.515Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca28c001arLge1eqstZsEW"
+    },
+    {
+      "at": "2026-10-11T19:07:11.761Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca28c001arLge1eqstZsEW"
+    },
+    {
+      "at": "2026-10-11T19:07:11.761Z",
+      "pid": 149028,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.761Z",
+      "pid": 149028,
+      "type": "session.status",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.761Z",
+      "pid": 149028,
+      "type": "session.idle",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.915Z",
+      "pid": 149028,
+      "type": "session.updated",
+      "messageID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.916Z",
+      "pid": 149028,
+      "type": "session.diff",
+      "sessionID": "ses_ed3a37cbeffetmOfv3V5xwdtru"
+    },
+    {
+      "at": "2026-10-11T19:07:11.931Z",
+      "pid": 149028,
+      "type": "message.updated",
+      "messageID": "msg_12c5ca1d5001vgWE72iPb47UqI"
+    }
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-YMZ5Tl",
+  "limitations": [
+    "Controlled model does not prove external provider quality"
+  ]
+}

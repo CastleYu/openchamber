@@ -13,7 +13,11 @@ its original `auth.json`; OC2 through 2.0.19 keeps the read-only database
 view; OC2 2.0.20 and newer asks the running OpenCode credential API. Stored
 credentials outrank keys from the managed OpenCode launch environment. A
 failed credential read is an error, not an empty configured-provider list.
-The credential list is never returned to the UI.
+The credential list is never returned to the UI. Exact Legacy 1.2.27 native
+reads follow the [shared credential owner](../opencode/DOCUMENTATION.md#public-exports-authjs).
+Legacy xAI token refresh is refused before sending any refresh request,
+including before joining an existing refresh, while mutation admission remains
+unfinished. Valid access tokens do not require a refresh.
 
 Node server entrypoints apply `../network-defaults.js` before serving requests,
 including the daemon launched directly through `server/index.js`. Connection

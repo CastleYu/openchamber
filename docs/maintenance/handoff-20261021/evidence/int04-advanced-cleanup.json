@@ -1,0 +1,89 @@
+{
+  "at": "2026-10-11T17:22:22.628Z",
+  "processInventory": "elevated CIM succeeded; zero matching exact binary or fixture command lines",
+  "items": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-73sN1R",
+      "bytes": 8023419
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37",
+      "bytes": 23712272
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73",
+      "bytes": 23712266
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-DRWucE",
+      "bytes": 12710012
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq",
+      "bytes": 23718087
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-Nz22XG",
+      "bytes": 1841232
+    }
+  ],
+  "links": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\zod\\4.1.8@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-JLxV37\\cache\\.bun\\install\\cache\\zod@4.1.8@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\zod\\4.1.8@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-advanced-lrvu73\\cache\\.bun\\install\\cache\\zod@4.1.8@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-DRWucE\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-DRWucE\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-DRWucE\\cache\\.bun\\install\\cache\\zod\\4.1.8@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-DRWucE\\cache\\.bun\\install\\cache\\zod@4.1.8@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\@opencode-ai\\plugin@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk\\1.2.27@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\@opencode-ai\\sdk@1.2.27@@@1",
+      "action": "unlink only; target never traversed"
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\zod\\4.1.8@@@1",
+      "target": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-host-advanced-hyYbQq\\cache\\.bun\\install\\cache\\zod@4.1.8@@@1",
+      "action": "unlink only; target never traversed"
+    }
+  ],
+  "reclaimedBytes": 93717288,
+  "retained": "Exact binary/source, compact evidence and failure summaries, current builds and reusable R3 drivers remain needed."
+}

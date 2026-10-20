@@ -22,6 +22,21 @@ Server-owned scheduled task runtime and routes for OpenChamber-only automation.
 - Runtime orchestration and execution is owned by `packages/web/server/lib/scheduled-tasks/runtime.js`.
 - This module is OpenChamber feature logic; it is intentionally separate from OpenCode proxy/runtime internals.
 
+## Legacy watchdog lifetime
+
+For Legacy 1.2.27, watchdog expiry retires the local run. Preparation checks
+the captured runtime identity and lifetime after asynchronous work, including
+knowledge resolution, before dispatch. A session created after expiry cannot
+continue into permission enrollment, goal preparation or prompt dispatch. A send
+that settles after expiry cannot mark knowledge delivered or replace the timeout
+result. Other OpenCode profiles retain their existing timeout behavior.
+
+Timeout means the remote outcome is unknown. The watchdog cannot cancel a request
+already received by OpenCode. A session ID known at expiry is retained in the error
+result; a late create response is not yet persisted. This guard does not provide
+durable attempt recovery or prevent manual/restart replay. Those remain INT-05
+work in the integration milestones.
+
 ## Chats scope
 
 OC2 can schedule tasks in chats outside a project. The public `projectId` is

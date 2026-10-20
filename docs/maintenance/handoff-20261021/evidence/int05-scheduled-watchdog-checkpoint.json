@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-13T16:48:29.975Z",
+  "scope": "INT-05 Legacy scheduled watchdog lifetime",
+  "status": "partial progress; R3 remains open",
+  "tests": {
+    "newWatchdog": 5,
+    "existingScheduled": 69,
+    "total": 74,
+    "files": 5,
+    "result": "pass"
+  },
+  "checks": {
+    "webTypes": "pass",
+    "sourceSyntax": "pass",
+    "changedFileEslint": "pass",
+    "newTestOxlint": "pass",
+    "runtimeOxlint": {
+      "result": "22 existing diagnostics; code counts match prior baseline; authored guards have no findings",
+      "counts": {
+        "anti-slop(no-runtime-typeof)": 16,
+        "anti-slop(no-conditional-empty-object-spread)": 6
+      }
+    },
+    "cachedKnip": "completed; no finding in changed files; untouched CHATS_SCOPE_PUBLIC_ID export in chats-scope.js and other existing findings retained"
+  },
+  "evidence": [
+    "int05-scheduled-watchdog-tests.log",
+    "int05-scheduled-watchdog-regression.log",
+    "int05-scheduled-watchdog-types.log",
+    "int05-scheduled-watchdog-eslint.log",
+    "int05-scheduled-watchdog-oxlint.log",
+    "int05-scheduled-watchdog-test-eslint.log",
+    "int05-scheduled-watchdog-test-oxlint.log",
+    "int05-scheduled-watchdog-knip.log",
+    "int05-storage-cleanup.json"
+  ],
+  "next": [
+    "Legacy atomic claim and pending attempt under existing project lock",
+    "persist session ID before following mutations and submitting phase before send",
+    "attempt ID CAS for all final writes and retries",
+    "pending/accepted/unknown task barriers, restart recovery and exact terminal correlation",
+    "confirmed resubmit with new attempt; protect live peers and preserve ordinary OC1/OC2 behavior"
+  ],
+  "limitations": [
+    "in-flight remote requests may execute after timeout",
+    "late created session ID not yet durably recorded",
+    "durable scheduled attempts and unattended recovery not implemented",
+    "no packaged runtime or real model acceptance in this batch"
+  ],
+  "astraReview": "completed read-only review; reuse existing persistence owner and lock; one unresolved attempt per Legacy task",
+  "weeklyRemainingPercent": 78,
+  "fingerprints": [
+    {
+      "file": "packages/web/server/lib/scheduled-tasks/runtime.js",
+      "sha256": "3c21c97ab70345b53d5e0455767e963079296ec001734e6bfc61fc08873cc406"
+    },
+    {
+      "file": "packages/web/server/lib/scheduled-tasks/legacy-watchdog.test.js",
+      "sha256": "c03855bc9c0b120d94f21ddc07e9f853b5920c606d9c993dc59fbfa718e6e219"
+    },
+    {
+      "file": "packages/web/server/lib/scheduled-tasks/DOCUMENTATION.md",
+      "sha256": "3752c64480c6008441715511058a2c4770fbb70109faf290e8b76a99e7adcb7c"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "eeca7a4c5e4021caca0c21b876db77142c2c7c0309fe6c31a558cf7a9912c86d"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "5fa2b7c78fde61c6d1641de78eb587c224d07a078ed61f98037cb816c984cb7c"
+    }
+  ]
+}

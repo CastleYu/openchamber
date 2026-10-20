@@ -1,0 +1,51 @@
+{
+  "at": "2026-10-11T14:52:51.785Z",
+  "baseline": "3ea7d2d12a32b9f89fd6d5dff84d1104ced03594",
+  "round": "R2 remains open",
+  "weeklyRemainingPercent": 83,
+  "tests": {
+    "passed": 134,
+    "failed": 0,
+    "report": "artifacts/int03-transport-focused.json"
+  },
+  "exact": {
+    "passed": 15,
+    "report": "artifacts/int03-exact-host-transport.json",
+    "scope": "Exact executable and controlled model through production kernel, directory SSE proxy and shared global hub/replay modules. No shared UI, full authenticated host, relay or VS Code acceptance."
+  },
+  "static": {
+    "typeCheck": "passed",
+    "webLint": "passed",
+    "syntax": "passed",
+    "oxlint": {
+      "current": 38,
+      "baseline": 38,
+      "authoredFindings": 0
+    },
+    "deadCode": {
+      "files": 2,
+      "exports": 319,
+      "types": 231,
+      "report": "artifacts/int03-transport-deadcode.log"
+    }
+  },
+  "sourceHashes": {
+    "packages/web/server/lib/event-stream/global-hub.js": "0fa0cb5717b479df8edb9546e57a6c5c5b70fd29ba9e2a497f8e3acdd9a2dfea",
+    "packages/web/server/lib/event-stream/directory-ws-bridge.js": "d696b4c112a6d31c479d9ee4056e9f6f48145632b325b80a48f2eaa381f8cc2c",
+    "packages/web/server/lib/opencode/proxy.js": "5052b8d4bf2e2ad0aba64cf38df85054d8f2d07ee036be5a215174c5281ac8d8",
+    "packages/web/server/lib/opencode/legacy-contract.js": "d0eae728bf0323fbdb1dbd13f529af4d2dc8cc0e499ce094d386e5d69e62bfad"
+  },
+  "cleanup": {
+    "removed": [
+      {
+        "file": "artifacts/int03-proxy-diagnostic.log",
+        "bytes": 6230
+      }
+    ],
+    "isolatedRuntime": "exact probe exited successfully and removed its own process/home",
+    "retained": "Current compact reports and exact probe retained for R2 UI integration; earlier write/read evidence remains historical. No unrelated old conversation directories removed.",
+    "helperCleanup": "Removed five task-owned cdee helper scripts, 28056 bytes; removed ignored oxlint baseline copies after comparison. Duplicate diagnostic log removal reclaimed 6230 bytes."
+  },
+  "next": "Admit the finite shared UI Legacy conversation path, preserving create permission/workspace fields and host metadata; verify actual UI with authenticated host, attachments, tools, decisions, stop/reopen and VS Code. Keep advanced HTTP and autonomous Legacy callers gated until their acceptance.",
+  "commit": "be235054f"
+}

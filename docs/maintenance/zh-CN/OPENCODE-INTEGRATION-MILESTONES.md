@@ -1,5 +1,7 @@
 # Agent 集成里程碑
 
+> 当前状态，2026-10-21：开发已暂停，保存于 `codex/integration-handoff-20261021`。继续前阅读[交接归档](HANDOFF-20261021.md)。下方带日期的执行状态属于历史记录，INT-05 及后续验收仍未完成。
+
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 
 状态：执行中，2026-10-12。INT-00、CA-00 和 INT-00L 已通过。最小 CAgent 架构／离线工具包预览已发布；CA-01/CA-02 剩余迁移留在 R6，真实 CAgent 验收留在环境内 CA-03。R1 / INT-01 和 INT-02 已验收。R2 / INT-03 已通过精确 Legacy Web、实际 VS Code 对话、经本地 broker 的生产 E2EE Relay，以及当前 OC1 1.18.33／OC2 2.0.20 真实核心回归验收。OC2 验证发现分类器端点访问方法缺失；修复复用现有来源策略，并拒绝已退役的运行时身份。最终专项检查通过 81 项测试、Web 类型／lint、语法和新增代码 anti-slop；死代码基线不变。证据、源码指纹及清理见 artifacts/int03-r2-exit.json。Legacy 在 R3/R4 和最终宿主验收前仍为实验支持。本地 Relay 结果不覆盖公网 Relay／WAN、打包后的原生宿主及真机移动端。R3 正在进行。INT-04 的 Legacy 高级操作和恢复已验收，证据及边界见 artifacts/int04-acceptance.json。INT-05 已开始，有限的 MCP 状态／连接／断开协议已验证，配置／凭据、插件和无人值守验收仍未完成；依赖重载的配置验收留到 R4，打包宿主、公网 Relay 和移动真机留到 R7。 [执行检查点](CAGENT-EXECUTION.md) 维护历史预览发布记录，[验收复核](R1-ACCEPTANCE.md) 维护 R1 条款核对。
@@ -573,3 +575,160 @@ Web 和 VS Code 仅为已就绪且仍为当前实例的本机受管进程提供�
 MCP 持久化现由同一个本机文件 owner 承担，Web／Electron 与 VS Code 扩展宿主复用；托管移动端和 Capacitor 操作其所连接的宿主。精确版本 SDK 路径／配置读取保留捕获到的版本，owner 复核进程身份、运行时身份和后端修订。保存保留 JSONC 与原始占位符，不移动未改动的继承相对引用，并拒绝合并后无法表达的删除。删除最高层定义时报告是否露出低优先级定义。Command、外部和 CAgent 连接不获得本机写权限。原始替换阻止编辑时，通过展开后的只读视图保留合法配置的可见性。Astra 评审还发现了仅含 enabled 的定义：这些条目保留显示，不虚构连接地址，并禁用连接、OAuth 和编辑入口。
 
 当前证据：195 项后端／配置聚焦测试、60 项 VS Code 桥接测试，以及认证的固定 1.2.27 可执行文件上的九项检查。可执行进程已退出，隔离夹具已删除。文件保存后运行配置仍保持缓存，符合延迟应用语义。VS Code 扩展打包通过，保留 credential-db 的既有 import.meta 警告。见 artifacts/int05-mcp-regression.log、artifacts/int05-mcp-bridge.log 和 artifacts/int05-mcp-persistence-live-evidence.json。共享 UI／类型／构建结果记录于 artifacts/int05-mcp-persistence-checkpoint.json。此证据不代表完整 IDE／原生界面、便携分发包或 R4 应用／重载验收。INT-05／R3 仍待凭据、插件与无人值守行为，随后按顺序推进 R4 应用／重载及后续里程碑。本检查点未增加依赖，未更改 Release 或远端分支。
+
+### INT-05 凭据契约评审检查点，2026-10-12
+
+Astra 复核了下一批凭据方案。固定 1.2.27 的 schema 和可执行文件推翻了使用 SDK path.data 的初始建议，该字段不存在。修订方案采用共享的原生只读凭据 owner，使用当前进程启动上下文，并复核私有进程 Symbol、运行时和后端修订。Command 与外部连接的读取明确返回不支持。秘密写入仍交给绑定的官方 SDK。保留普通 OC1／OC2 行为。
+
+隔离 Windows 驱动 artifacts/int05-credentials-live.mjs 在五种模式中各通过九项检查，共 45 项：绝对 XDG、缺省 XDG、相对 XDG、空 XDG，以及 HOME／USERPROFILE 冲突。已去掉 OPENCODE_TEST_HOME。显式 XDG 按子进程 cwd 解析；缺省或空 XDG 使用 USERPROFILE/.local/share/opencode。每组验证 api／oauth／wellknown 字段保留、SDK 删除、400／401 不改凭据字节及认证方法发现。所有自建进程已退出，夹具已删除。这些是直接 SDK／二进制契约检查，不代表生产入口、真实 OAuth 或其他平台验收。
+
+下一批实现：将原生读取器接入 Web／VS Code 共享消费者，区分缺文件与损坏文件，并在连接／进程切换后丢弃旧结果；绑定官方 SDK 写入及 provider OAuth，不向 renderer 传递原始秘密；验证宿主／桥接请求保真与普通 OC1／OC2 回归。真实 OAuth 生命周期仍需单独验证。之后完成 R3 设置、生成插件与无人值守调用，再进入 R4 应用／重载。生产凭据入口继续关闭，R3／INT-05 继续未完成。本研究阶段在此交接到实现阶段。未改变依赖、工具链、远端分支或 Release。当周实时额度剩余 66%。
+
+自动审批因保留的禁止下载约束拒绝补取固定版本 auth／global／provider 源码，未执行取回，也未绕过拒绝。现有 schema 与可执行文件证据支持已验证的 Windows 分支；未验证的平台／路径行为必须明确处理。故障修正和精简交接见 artifacts/int05-credentials-live-failures.md 与 artifacts/int05-credentials-contract-checkpoint.json。
+
+### INT-05 原生凭据读取实现，2026-10-12
+
+本检查点替代上一检查点中计划的只读接入步骤。Web／Electron 与 VS Code 现复用私有的精确 1.2.27 原生凭据读取器。Windows 路径来自启动上下文，并检查进程／运行时退役；缺文件返回空映射，损坏文件报错。Command、外部、CAgent 及尚未验证的平台仍明确不支持。未增加原始凭据桥接。
+
+Astra 发现 xAI 配额与小模型 OpenAI 路径在 Legacy 持久化门禁前交换了刷新令牌。现均在交换或复用等待中的刷新前拒绝。Legacy 同步写入及写入／OAuth 准入继续关闭。聚焦验证通过 130 项测试，包括零网络／零写入刷新回归。固定可执行文件的五种模式通过 55 项检查，自建进程与夹具已清理。普通 OC1／OC2 回归通过。所有工作区类型／lint、受影响 Web／VS Code 构建及复核的 dead-code 结果连同源码指纹记录于 artifacts/int05-credentials-reader-checkpoint.json。既有 lint／Oxlint／构建警告另有记录。这些结果不代表真实 OAuth、完整 IDE UI 或便携分发包验收。
+
+下一步：绑定官方凭据写入与 OAuth 生命周期，完成 provider 来源／删除、生成插件与无人值守调用，再进入 R4 应用／重载。INT-05／R3 保持未完成。英文交接与中文归档已同步。本批次未改变依赖、下载、Git、远端分支或 Release。当周实时额度剩余 65%。
+
+### INT-05 OAuth 生命周期前置修复，2026-10-12
+
+Astra 确认 Legacy Provider 准入须同时闭合来源读取、官方凭据保存／OAuth、完整断开和持久化反馈。双语 Legacy SPEC 已要求保留真实层来源、预检只读目标、明确部分删除结果，并在 R4 前记录待重启。自定义 Provider 创建／编辑须等写入器验收后开放，包括其初始凭据写入。上一检查点的原生凭据读取验收继续有效。
+
+既有 OC1 OAuth 组件现从授权到回调保留同一 SDK 客户端、运行时绑定和目录。取消、卸载和连接变化会中止并丢弃待处理工作；请求完成时检测到目录变化会清除旧流程。主代理审查移除了无必要的导出判断函数及重复测试。挂载真实 React 组件与现有 SDK 的九项受控测试通过，覆盖晚到成功／失败、验证码流程失效和请求保真。Provider 目录八个隔离测试文件、UI 类型检查、改动文件 ESLint／Oxlint 及 Web／VS Code webview 构建通过。复核的 dead-code 结果和源码指纹见 artifacts/int05-oauth-checkpoint.json，既有构建警告保留在日志中。这些结果不代表真实 Provider OAuth、便携包运行或 Legacy 宿主准入。Web、Electron、VS Code、托管移动端和 Capacitor 的共享 OC1 UI 使用该组件，本轮未改变转发行为。
+
+下一实现批次完成原生 Provider 来源与完整删除、绑定的官方凭据操作、持久化与生效分别反馈的 UI，以及 Web／VS Code 一致性，再开放 Legacy 准入。之后完成生成插件和无人值守调用，再进入 R4。独立的 OC2 集成 OAuth 生命周期留作后续审查，本批次 OC2 辅助逻辑回归通过。INT-05／R3 保持未完成。一次性编辑脚本已删除。本轮未改变依赖、下载、Git、远端分支或 Release。当周实时额度剩余 64%。
+
+
+### INT-05 Provider 来源 owner 检查点，2026-10-12
+
+原生配置层现保留来源种类及准确加载顺序，包括显式配置目录去重。尚未接入生产路由的 Windows Legacy Provider owner 返回来源信息与凭据存在状态，预检全部定义，以 JSONC 编辑移除被遮蔽的低层定义，并报告部分提交。环境凭据、wellknown 远程配置、未验收插件及无法归属的有效 Provider ID 均在写入前拒绝断开。共享内核元数据不新增展开后的 Provider 值。有效 Provider 值只在私有边界比较，并只返回相等性结果。Astra 评审促成了这些限制，以及连接退休后凭据结果保持未知。
+
+owner／配置层／MCP／内核聚焦回归共 113 项通过。静态验证和源码指纹记录在 artifacts/int05-provider-owner-checkpoint.json。这是受控模块证据，不代表生产准入、真实 OAuth 或宿主验收。官方绑定凭据删除现有私有 SDK 实现，但生产组合仍待完成。下一步补齐官方凭据／OAuth owner、Web／VS Code 组合及持久化与生效状态反馈，再处理生成插件、无人值守调用与 R4。INT-05／R3 仍开放。未新增依赖、下载、Git 或 Release 更改。
+
+### INT-05 私有凭据操作检查点，2026-10-12
+
+新增私有 SDK owner 仅为所选原生 Windows 1.2.27 进程读取认证方法、保存和删除 API 凭据。它在发送前检查完整身份与版本，清理监听并隐藏失败中的敏感内容；中断后的写入保持未知。最终模块测试和五种独立二进制路径模式见 artifacts/int05-credential-operations-checkpoint.json。这些证据不代表宿主组合或真实 OAuth 验收。
+
+Astra 已复核 Windows 终止方案。第一次按事件轮次合并的实验仅合并了 12 个请求中的 2 个，虽然测试通过，仍已回退。保留的实现同时仅运行一个 taskkill，将执行期间到达的请求合并到下一批；排队时间计入原有 5 秒请求预算。相同的 12 进程真实对照现为 2 批期限清理，加 1 次停用清理，总调用数由 13 次降为 3 次，实测最大并发为 1。聚焦测试 18 项通过、1 项按平台跳过，正常四工作进程 VS Code 套件 62/62 个文件通过。类型检查、改动文件 ESLint／Oxlint 和扩展构建通过，原有 import.meta 构建警告仍存在。证据见 artifacts/int05-taskkill-{before,after,bounded}.log 与 artifacts/int05-bounded-*.log。真实 VS Code 1.136.1 宿主现已对精确 Legacy 1.2.27 通过 8 项生命周期断言，使用已初始化的独立缓存，覆盖原生上下文、候选预检失败保留旧 owner、停用／重启立即退休、SDK 请求取消与 409、替换 owner 不同、取消订阅及子进程意外退出。驱动已修正 Request.signal 读取，并以最终套件证据纠正外层启动状态竞态。全新隔离目录的冷启动仍未验收：上游自动安装默认插件，首次 /session 耗时 10215ms，超过原有 5 秒准入期限，因此保持 unknown/unverified。Astra 已确认只读准入失败分类；未放宽生产降级、schema 或期限。证据见 artifacts/int05-host-{warm,cold}-evidence.json。旧的两个 profile 仍有进程归属不可读，继续保留。凭据生产组合仍关闭，此前被拒绝的 OAuth 绑定接口变更仍待明确授权。现有请求转发刷新已通过真实宿主恢复验证：首次 /session 受控返回一次 503 后，unknown/unverified 无需重启即恢复为精确 Legacy 1.2.27 的 ready，并继续通过原有 8 项生命周期断言，共 10 项检查。本次复用已初始化的隔离缓存，不代表空缓存冷启动已验收；生产重试、期限和 schema 均未修改。证据见 artifacts/int05-host-recovery-evidence.json。下一步完成已授权范围内的 OAuth 绑定、持久化反馈、插件／无人值守调用及 R4。INT-05／R3 仍开放。本轮未变更仓库依赖、Git 或 Release。上游默认插件在一次性隔离目录中自动下载，后续宿主对照复用已有缓存。核对进程与 junction 后已清理 457160710 字节的废弃 profile；保留一个暖缓存 home 用于后续真实宿主验收。实时周额度剩余 59%。
+
+
+### INT-05 Legacy 插件准备检查点，2026-10-12
+
+稳定版精确 1.2.27 现会在读取设置前跳过项目生成的工具、提示词及 MCP 准备。普通 OC1／OC2 准备流程保持原有行为；受控生命周期测试确认 Legacy 仍能启动，且保留继承的用户配置路径与内容。Astra 确认采用这一局部版本门槛；未新增 profile、依赖或插件框架。
+
+准备／生命周期聚焦回归 126 项通过；路由／兼容性回归分别通过 57 项 Vitest 测试和 36 项 Bun 测试。Web 类型检查及改动文件 ESLint 通过。Oxlint 报告生命周期测试中位于新增代码块之外的 7 项既有问题；dead-code 结果仍为待处理存量，新增 helper 无报告项。证据与指纹见 artifacts/int05-plugin-preparation-checkpoint.json。本轮关闭未验收生成插件的注入缺口，不代表 Legacy 插件完整支持或全新缓存宿主已验收。INT-05／R3 仍开放。
+
+下一批先处理所选 CLI 版本与响应端点版本的独立绑定缺口，再完成已授权的凭据组合、插件支持及无人值守验收，之后进入 R4。英文交接与中文归档同步。本轮未新增下载、依赖、Git 或 Release 更改。实时周额度剩余 58%。
+
+### INT-05 CLI 版本绑定检查点，2026-10-12
+
+原生托管 OpenCode 在发布端点描述符之前绑定所探测的 CLI 代际与完整版本。共享刷新及健康重探测在失效后仍保留绑定。版本比较忽略 v 前缀与构建元数据，但区分预发布版本。端点版本不匹配或缺失时不能保留 ready。Command 与外部目标仍以端点响应为准。Web 在等待关闭子进程之前退休就绪状态和端点；关闭失败保留进程归属并阻止再次启动。VS Code 仅在端点准入成功后发布 connected，CLI 探测复用启动时的 Windows 批处理解析器，不将准备结果的 schema 版本视为 CLI 版本。
+
+4 个聚焦文件共 123 项测试通过，包含关闭失败与缺失版本重探测。正常 VS Code 套件 62/62 个文件通过。Web／VS Code 类型检查、改动文件 ESLint 与扩展构建通过。Oxlint 报告新增代码块之外的 38 项既有问题；dead-code 复核未发现新增绑定 helper 问题。证据见 artifacts/int05-cli-binding-checkpoint.json。
+
+旧的 connected/unverified 启动恢复证据仅保留为历史。当前启动必须先准入，再发布 connected；后续恢复应从已准入连接失去验证的状态进行验收。首次新增宿主夹具未隔离版本不匹配原因，不能作为验收证据。修正后的真实 IDE 驱动被 VS Code 更新锁阻止启动，本次修改的真实宿主验收仍待完成；未放宽生产期限或重试。下一步待更新完成后重跑驱动，再完成允许范围内的凭据组合、插件与无人值守验收，之后进入 R4。INT-05／R3 仍开放。本轮未新增依赖、下载、Git 或 Release 更改。实时周额度剩余 57%。
+
+### INT-05 无人值守评审，2026-10-12
+
+现有 owner 的受控复现模拟一次受理后响应丢失，随后自动发送两次并移除队列项。这证明队列派发结果契约尚不完整，不代表真实上游去重结论。定时槽 claim 与目标记账同样缺少持久化派发结果。Astra 已确认复用现有 owner 及投影，从队列开始分批实现；Legacy SPEC 已记录顺序与验收门槛。证据见 artifacts/int05-unattended-review.json。本次不授予无人值守验收。维护者现已明确授权私有绑定 beginOAuth 接口变更，凭据生产组合仍须等待其实现及验证。
+
+### INT-05 绑定 OAuth 检查点，2026-10-12
+
+维护者已明确授权私有 beginOAuth 接口。authorize/callback/cancel 现绑定同一个 SDK 客户端、捕获的请求头、目录和原生进程 owner；两次请求之间持续观察退休状态。取消及迟到响应不能启用回调，已派发但中断的修改保持 unknown。主审移除了冗余派发状态，补充初始化及取消边界覆盖。最终验证与文件哈希见 artifacts/int05-bound-oauth-checkpoint.json。凭据生产组合和真实提供商 OAuth 仍待完成。已确认的无人值守重复发送缺口按双语 Legacy SPEC 的队列优先顺序处理。真实 IDE 绑定验收仍受已记录的更新锁启动阻塞影响。INT-05／R3 继续开放；本批未新增依赖、Git 或 Release 更改。实时周额度剩余 56%。
+
+### INT-05 私有提供商组合检查点，2026-10-12
+
+依据明确授权及 Astra 评审，私有宿主 owner 现以绑定受信调用者的不透明 attempt ID 保存 OAuth flow。begin 在 authorize 派发前返回。终止失败、请求中止、取消、原生 owner 退休、过期及 dispose 均释放 flow。主审修正了终止 callback 清理、dispose 后准入和重复校验。五项文件／SDK 组合测试覆盖来源脱敏、完整多层删除、响应丢失、退休及不支持的后端。四个聚焦文件共 62 项测试通过，改动文件 ESLint 和 Oxlint 通过。最终静态检查证据及指纹见 artifacts/int05-provider-runtime-checkpoint.json。
+
+生产 Web／VS Code 适配器、Legacy UI 反馈、旧 effective 缓存处理及真实宿主／提供商验收仍待完成。之后完成无人值守结果持久化，再进入 R4。INT-05／R3 继续开放。已实时核验现有 CAgent 预览 Release，为已发布的预发行版，八个附件均已上传。本批未更改 Release、Git、依赖或下载。实时周额度剩余 55%。
+
+### INT-05 Provider 入口检查点，2026-10-13
+
+Web 为每个 feature host 保留一个私有 Provider owner。VS Code 现为每个 manager 保留一个 owner，并通过扩展 subscriptions 释放。聊天、Agent 管理和会话文档各自拥有宿主生成的调用方标识与取消生命周期。Ready/reset、释放及请求取消仅终止原文档的 OAuth 工作，兄弟文档仍可使用。专用入口在通用代理前处理。OC1／OC2 对外接口保持原有行为。
+
+两种传输复用有限请求分发器，统一严格请求体、精确原生运行时准入、企业模式连接限制及脱敏后的持久化／部分结果。可供浏览器使用的路由常量不包含服务端依赖。Webview 保留 RequestInit 取消信号覆盖语义（包括 null），并按请求 ID 转发取消。专用 Legacy 页面和此前有界等待切换清理的行为继续保留。
+
+本批 58 项定向测试通过：共享 HTTP／认证／分发／接入／运行时 35 项、私有宿主 8 项、Webview 6 项及现有代理／会话 9 项。工作区类型检查及 ESLint 通过，保留五条已有 UI 警告。改动服务端／测试文件 ESLint 和本轮编写文件的 Oxlint 无诊断。已审查缓存 Knip 报告，保留已有待办，无新增桥接问题。VS Code 扩展及 Webview 生产构建通过；已有 import.meta、CSS 和分块大小警告保留在日志中。当前证据和源码指纹见 artifacts/int05-provider-bridge-checkpoint.json。此前 Web 和切换回归计数属于 artifacts/int05-provider-entry-checkpoint.json 的历史证据，不计入本批。
+
+受控桥接接入已经实现。真实 IDE Provider 流程、真实提供商 OAuth 和原生应用切换验收仍开放；本批测试与构建不关闭这些门槛。下一步完成无人值守结果持久化，同时保留这些验收门槛，再进入 R4 应用／重载。INT-05／R3 继续开放。英文交付与中文归档同步。本批未新增依赖、下载、Git 或 Release 更改。临时编辑脚本已清理。实时周额度剩余 45%。
+
+### INT-05 Legacy 队列服务端检查点，2026-10-13
+
+现有队列所有者在 Legacy 提示或命令变更前持久化 pending attempt。请求返回后保留 accepted 记录。响应丢失、结果写入失败，以及重启恢复的 pending/accepted 记录均转为 unknown，不自动重放。同会话自动发送、取出发送或编辑、批量取出和排序均不能绕过未知意图。清空与会话删除保留未决 attempt。明确确认的重新提交比较旧 attempt ID，在异步空闲验证前占用会话。普通 OC1/OC2 行为仍有回归覆盖。
+
+主代理审查修复了同会话另一个条目可被取出编辑的绕过，并补强真实文件写入失败证据。队列专项共 68 项测试通过，包括准备期间运行时退出和畸形 attempt 文件保留。静态检查证据和最终文件指纹记录在 artifacts/int05-queue-attempt-checkpoint.json。Astra 审查了接受与终态的区别及队列优先的边界。
+
+这是服务端检查点。共享界面状态投影与确认重提控件、精确 1.2.27 可执行文件终态关联、定时任务与 goal 所有者、VS Code 本地队列结果仍待完成。accepted 记录计入现有队列上限。真实 IDE Provider/OAuth 与原生切换验收仍开放。完成这些门槛后才能进入 R4，不能据此宣称无人值守验收通过。英文交接和中文归档同步。本轮未增加依赖、下载、Git 或 Release 变更。
+
+最终审查同时保护带有 attempt 的损坏载荷，加载失败时保留原文件。Web 类型检查和变更文件 ESLint 通过。Oxlint 剩余 3 项是 runtime.js 原有 typeof 辅助函数诊断，本轮新增代码无剩余诊断。缓存 Knip 已审查，未发现新增队列项。最新实时周额度剩余 99%。
+
+## INT-05 共享队列控件检查点，2026-10-13
+
+共享 Store 已通过快照和事件保留服务端 attempt 记录。pending/unknown 项会
+阻止整个会话的普通发送、编辑和排序，移除或清空也会保留这些未确定项。
+accepted 项保持可见，选择下一条普通消息时会跳过它；accepted 仍不能证明完成。
+服务端拥有的 unknown 项提供重复执行风险确认，绑定打开时捕获的目标、消息和
+attempt ID。Store 同步占用发送标记、检查当前运行时，并拒绝运行时重置后的
+过期响应。失败时恢复权威状态，不将失败解释为成功。全部 13 种主要语言已提供
+状态与确认文案。
+
+针对性验证：35 项服务端投影测试、13 项本地队列回归测试和 2 项 DOM 组件测试
+分别在独立进程中通过。DOM 测试覆盖取消、确认请求绑定、禁用操作，以及新
+attempt 对旧确认的失效。证据和静态检查结果记录在
+artifacts/int05-queue-ui-checkpoint.json。这些属于模拟 HTTP 和 DOM 验证，
+不能替代打包后布局或真实 Legacy 投递验收。
+
+R3 仍未完成。进入 R4 或宣称无人值守验收前，仍需完成精确 1.2.27 可执行文件
+终态关联、计划任务和 goal 所有者、VS Code 本地 attempt 结果，以及真实 IDE
+Provider/OAuth 和原生切换验收。本检查点不涉及依赖、下载、Git 或 Release 操作。
+
+
+最终静态验证：UI、Web、Electron、Mobile 和 VS Code 类型检查及改动文件 ESLint 均通过。最终 Oxlint 保留 messageQueueStore.ts 第 21、26、453、454 行的 4 条既有持久化/辅助函数诊断，本轮新增代码无剩余诊断。已审阅缓存 Knip 报告，无新的队列问题。语言校验确认全部 143 个状态/确认键各出现一次。最新实时周额度剩余 98%。Store 与 composer 所属文档已记录相同的 attempt 和确认约束。
+
+
+## INT-05 队列终态检查点，2026-10-14
+
+Legacy 队列在发送前持久化私有 caller messageID，排序前缀遵循固定版本协议的 48 位格式。公开快照仍仅包含 attempt ID、状态和创建时间。HTTP 接受仍为 accepted；响应丢失保持 unknown，直到权威证据解决结果。
+
+现有队列唤醒时，同一所有者先确认空闲，读取最多两条消息的尾部，再按 ID 重新读取匹配的 assistant。必须匹配父消息、会话及当前 runtime/target，具有完成时间，并且为最终 stop 或结构化错误。工具中间回复不能完成 attempt。终态写入失败保留 unknown，不增加自动重发。缺少私有 ID 的旧记录、尾部未命中、命令合成父消息及无法精确关联的压缩均保持不确定。
+
+官方 1.2.27 可执行文件通过四个直接 API 场景，以及经过生产 KernelOperations 和队列的相同四个场景：普通完成、响应丢失、工具后继续执行、主动中止。共发生预期的 10 次受控模型调用，无额外重发。逐个按精确 ID 读取用户消息，并检查队列结果持久化和公开投影不变。隔离服务、连接和临时数据均已清理。此证据覆盖受控 provider 下的 API 与队列路径，不代表真实模型或打包 UI 验收。
+
+使用已有校验通过的二进制复现，无需 Git、下载或真实凭据：
+
+`node scripts/legacy-attempt-probe.mjs artifacts/legacy-1.2.27`
+
+本地脱敏证据为 artifacts/int05-legacy-attempt-evidence.json。R3 仍需计划任务、goal 所有者、VS Code 本地 attempt、真实 IDE Provider/OAuth 及原生切换验收。既有幂等证据限制仍适用；精确终态关联仅证明已观察到的结果，不证明去重。
+
+定向检查与文件指纹：artifacts/int05-queue-terminal-checkpoint.json。实时周额度剩余 81%。本检查点不涉及依赖、下载、Git 或 Release 操作。
+
+## INT-05 计划任务 watchdog 检查点，2026-10-14
+
+Legacy 1.2.27 在现有 watchdog 超时后终止本地准备流程。迟到的会话创建不能继续发送，
+迟到的知识读取不能触发发送，迟到的发送响应不能记录知识已投递或覆盖超时结果。
+异步发送辅助函数内部重新检查运行时身份。已经发出的远端操作仍可能执行，因此超时
+明确表示远端结果未知。计划任务所属文档定义了该边界。
+
+5 个定向 watchdog 测试与原有 69 个计划任务测试通过。Web 类型检查和改动文件
+ESLint 通过。Runtime Oxlint 保留 22 条既有诊断，新增测试无诊断。静态检查不代表
+打包运行或无人值守恢复验收。检查结果和文件指纹记录于
+artifacts/int05-scheduled-watchdog-checkpoint.json。
+
+Astra 已复核下一步方案。复用 project-config 写锁和条件状态更新，每个 Legacy
+任务保留一个 attempt。创建会话前，在同一次写入中认领调度时点并持久化 pending
+attempt。后续变更前保存已返回的会话 ID，发送前保存 submitting 阶段。所有完成和
+重试写入必须比较 attempt ID。pending、accepted、unknown 均阻止新的自动发送和
+普通手动发送，直到精确终态证据或明确确认的重提解决它们。创建响应丢失时保持
+unknown，不猜测会话。恢复必须保护其他存活进程的 attempt，不能在每次读取时把
+pending 一律转为 unknown。会丢弃新状态的旧版调度进程混用时无法满足该保证。
+
+本检查点尚未实现上述持久化 attempt、终态关联和重提控制，R3 仍未完成。存储清理
+删除了 15 个已完成的 CAgent 离线测试副本，约 480 MB，保留交付 ZIP、源码和证据。
+删除明细为 artifacts/int05-storage-cleanup.json。本批未进行依赖安装、下载、Git
+或 Release 操作。
+
+本检查点实时周额度剩余 78%。

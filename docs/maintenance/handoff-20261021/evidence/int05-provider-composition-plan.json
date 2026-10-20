@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-12",
+  "previousTurn": "progress: authorized bound OAuth source/tests/docs completed",
+  "consultation": "Astra: host-issued opaque attempt ID; reuse private flow and combined owner subscription",
+  "surfaces": {
+    "web": "Compose server native owner; complete workflow before admission",
+    "electron": "Reuse in-process server owner",
+    "vscode": "Same private owner through extension-host bridge; bind bridge caller/dispose",
+    "hostedMobile": "Use authenticated connected host owner",
+    "capacitorMobile": "Use authenticated connected host owner"
+  },
+  "admission": "Keep production gates closed until source/save/OAuth/disconnect plus UI and host parity are complete",
+  "next": [
+    "Private composition and SDK/file integration tests",
+    "Trusted caller mapping and explicit server/bridge routes",
+    "Legacy UI source layers, deferred restart, partial outcome and custom writer guard",
+    "Real host and provider acceptance"
+  ],
+  "limits": [
+    "no generic auth allowlist expansion",
+    "no new auth framework or dependencies",
+    "no real-environment acceptance from synthetic tests"
+  ]
+}

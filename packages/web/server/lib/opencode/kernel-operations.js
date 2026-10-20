@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { createOpencodeClient } from '@opencode-ai/sdk/v2';
 import { OpenCode } from '@opencode/client';
 import { z } from 'zod';
@@ -496,9 +497,10 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
     if (!supportsLegacyStream(getRuntime())) {
       throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Exact Legacy configuration requires OpenCode 1.2.27', context.generation);
     }
-    const [paths, config] = await Promise.all([
+    const [paths, config, catalog] = await Promise.all([
       context.client.path.get({ directory }, requestOptions(signal)),
       context.client.config.get({ directory }, requestOptions(signal)),
+      context.client.provider.list({ directory }, requestOptions(signal)),
     ]).catch(error => {
       check(context);
       throw error;
@@ -508,13 +510,38 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
       home: z.string().min(1), config: z.string().min(1),
       directory: z.string().min(1), worktree: z.string().min(1),
     }).safeParse(paths.data);
-    const configResult = z.object({ mcp: z.record(z.string(), z.json()).default({}) }).safeParse(config.data);
-    if (!pathResult.success || !configResult.success) {
+    const configResult = z.object({ mcp: z.record(z.string(), z.json()).default({}),
+      provider: z.record(z.string(), z.json()).default({}), plugin: z.array(z.string()).default([]),
+    }).safeParse(config.data);
+    const catalogResult = z.object({ all: z.array(z.object({ id: z.string(), env: z.array(z.string()) })) }).safeParse(catalog.data);
+    if (!pathResult.success || !configResult.success || !catalogResult.success) {
       throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Invalid Legacy configuration response', context.generation);
     }
     const mcp = Object.fromEntries(Object.entries(configResult.data.mcp)
       .map(([name, entry]) => [name, parseLegacyConfig(LEGACY_CONFIG_KIND.MCP, entry)]));
-    return { ...stamped(context, { paths: pathResult.data, mcp }), version: context.version };
+    return { ...stamped(context, { paths: pathResult.data, mcp, providerIds: Object.keys(configResult.data.provider),
+      hasPlugins: configResult.data.plugin.length > 0, providerEnv: Object.fromEntries(catalogResult.data.all.map(entry => [entry.id, entry.env])),
+    }), version: context.version };
+  };
+
+  // Compare inside the native/server owner; expanded values never enter the result.
+  const compareLegacyProvider = async ({ providerID, value, baseline, directory, signal, expectedIdentity }) => {
+    const context = capture(directory, LEGACY_OPERATION.CONFIG_READ);
+    if (!supportsLegacyStream(getRuntime())) throw kernelError(ERROR_CODE.UNSUPPORTED_OPERATION, 'Exact Legacy provider comparison requires OpenCode 1.2.27', context.generation);
+    assertRequest(context, expectedIdentity);
+    if (expectedIdentity.version !== context.version) throw kernelError(ERROR_CODE.RUNTIME_CHANGED, 'Provider comparison was built for another OpenCode version', context.generation);
+    z.string().min(1).parse(providerID);
+    const expected = z.json().optional().parse(value);
+    const response = await context.client.config.get({ directory }, requestOptions(signal)).catch(error => { check(context); throw error; });
+    check(context);
+    const config = z.object({ provider: z.record(z.string(), z.json()).default({}) }).safeParse(response.data);
+    if (!config.success) throw kernelError(ERROR_CODE.INVALID_RESPONSE, 'Invalid Legacy provider configuration', context.generation);
+    const present = Object.hasOwn(config.data.provider, providerID);
+    return stamped(context, {
+      matchesPersisted: isDeepStrictEqual(config.data.provider[providerID], expected),
+      matchesBaseline: baseline !== undefined && isDeepStrictEqual(config.data.provider[providerID], z.json().optional().parse(baseline.value)),
+      present,
+    });
   };
 
   const getDefaultModel = async ({ directory, signal } = {}) => {
@@ -732,7 +759,7 @@ export const createKernelOperations = ({ getRuntime, getHeaders, fetchImpl = fet
 
   return {
     captureIdentity, getSession, createSession, listSessions, listMessages, listChildren, listActiveStatuses, getSessionStatus,
-    listCommands, getSelectionCatalog, getLegacyConfiguration, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
+    listCommands, getSelectionCatalog, getLegacyConfiguration, compareLegacyProvider, getDefaultModel, importSession, forkSession, removeSession, updateSession, sendPrompt, sendCommand, interruptSession,
     listPendingPermissions, listPendingQuestions, replyPermission, replyQuestion, rejectQuestion, getMessage, getMessageView, addSynthetic, switchSessionSelection,
   };
 };

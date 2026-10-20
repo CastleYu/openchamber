@@ -91,6 +91,16 @@ export type QueuedContextPart =
 
 export const QUEUE_DELIVERY = { READY: 'ready', CHANGED: 'target-changed', UNKNOWN: 'target-unknown' } as const;
 
+export const QUEUE_ATTEMPT = { PENDING: 'pending', ACCEPTED: 'accepted', UNKNOWN: 'unknown', COMPLETED: 'completed', FAILED: 'failed' } as const;
+const queueAttemptSchema = z.object({
+    id: z.string().min(1),
+    state: z.enum([QUEUE_ATTEMPT.PENDING, QUEUE_ATTEMPT.ACCEPTED, QUEUE_ATTEMPT.UNKNOWN, QUEUE_ATTEMPT.COMPLETED, QUEUE_ATTEMPT.FAILED]),
+    createdAt: z.number().finite().nonnegative(),
+}).strict();
+
+export const isQueueUnresolved = (message: QueuedMessage): boolean => message.attempt?.state === QUEUE_ATTEMPT.PENDING
+    || message.attempt?.state === QUEUE_ATTEMPT.UNKNOWN;
+
 const localQueueReady = (message: QueuedMessage) => message.delivery === QUEUE_DELIVERY.READY
     && !!message.queueTarget && /^[a-f0-9]{64}$/.test(message.queueTarget);
 
@@ -98,6 +108,7 @@ const QUEUE_TAKE = { SEND: 'send', EDIT: 'edit' } as const;
 type QueueTakePurpose = typeof QUEUE_TAKE[keyof typeof QUEUE_TAKE];
 
 export interface QueuedMessage {
+    attempt?: z.infer<typeof queueAttemptSchema>;
     /** Opaque configured OpenCode target captured by the VS Code host at enqueue. */
     queueTarget?: string;
     delivery?: typeof QUEUE_DELIVERY[keyof typeof QUEUE_DELIVERY];
@@ -189,6 +200,7 @@ const serverContextPartSchema = z.discriminatedUnion('kind', [
 ]);
 
 const serverItemSchema = z.object({
+    attempt: queueAttemptSchema.optional(),
     delivery: z.enum([QUEUE_DELIVERY.READY, QUEUE_DELIVERY.CHANGED, QUEUE_DELIVERY.UNKNOWN]).optional(),
     id: z.string().min(1),
     createdAt: z.number(),
@@ -273,6 +285,7 @@ const toQueuedMessage = (item: ServerQueueItem): QueuedMessage => {
         createdAt: item.createdAt,
         sendConfig: { ...item.sendConfig },
     };
+    if (item.attempt) message.attempt = { ...item.attempt };
     if (item.delivery) message.delivery = item.delivery;
     if (item.agentMention) message.agentMention = item.agentMention;
     if (item.attachments.length > 0) message.attachments = item.attachments.map(toAttachedFile);
@@ -298,7 +311,8 @@ type ServerQueueRequestBody =
     | { directory: string; item: ServerQueueItemInput }
     | { itemIds: string[] }
     | { held: boolean }
-    | { purpose: QueueTakePurpose };
+    | { purpose: QueueTakePurpose }
+    | { attemptId: string; confirmed: true };
 
 const toServerAttachment = (attachment: AttachedFile): ServerQueueAttachmentInput => {
     const input: ServerQueueAttachmentInput = {
@@ -386,6 +400,7 @@ interface MessageQueueState {
 
 interface MessageQueueActions {
     addToQueue: (target: MessageQueueTarget, message: QueuedMessageInput) => Promise<void>;
+    resubmit: (target: MessageQueueTarget, messageId: string, attemptId: string) => Promise<void>;
     removeFromQueue: (target: MessageQueueTarget, messageId: string) => void;
     restoreTaken: (target: MessageQueueTarget, messages: QueuedMessage[]) => void;
     reorderQueue: (target: MessageQueueTarget, fromId: string, toId: string) => void;
@@ -554,8 +569,10 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
 
                 /** Server state wins; a failed round-trip re-reads it instead of guessing. */
                 const refreshSession = async (target: MessageQueueTarget) => {
+                    const generation = hydrationGeneration;
                     try {
                         const snapshot = await requestJson(serverSnapshotSchema, '/api/message-queue');
+                        if (generation !== hydrationGeneration || target.runtimeKey !== getRuntimeKey()) return;
                         const session = snapshot.sessions.find((entry) => entry.sessionId === target.sessionId)
                             ?? { sessionId: target.sessionId, directory: target.directory, items: [], sendingId: null };
                         applyServerSession(session, snapshot.revision, target.runtimeKey);
@@ -655,8 +672,34 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                         void refreshLocalTarget(target.runtimeKey).catch(() => {});
                     },
 
+                    resubmit: async (target, messageId, attemptId) => {
+                        const key = getMessageQueueKey(target);
+                        const generation = hydrationGeneration;
+                        const state = get();
+                        const item = state.queuedMessages[key]?.find(message => message.id === messageId);
+                        if (!isServerOwnedMessageQueue() || target.runtimeKey !== getRuntimeKey()
+                            || item?.attempt?.state !== QUEUE_ATTEMPT.UNKNOWN || item.attempt.id !== attemptId
+                            || item.delivery !== QUEUE_DELIVERY.READY || state.sendingIds[key]?.includes(messageId)) {
+                            throw new Error('Queued attempt is unavailable or changed');
+                        }
+                        get().markSending(target, messageId);
+                        try {
+                            const result = await requestJson(serverSessionResponseSchema,
+                                sessionPath(target.sessionId) + '/items/' + encodeURIComponent(messageId) + '/resubmit',
+                                jsonInit('POST', { attemptId, confirmed: true }));
+                            if (generation !== hydrationGeneration || target.runtimeKey !== getRuntimeKey()) return;
+                            applyServerSession(result.session, result.revision, target.runtimeKey);
+                        } catch (error) {
+                            if (generation === hydrationGeneration && target.runtimeKey === getRuntimeKey()) await refreshSession(target);
+                            throw error;
+                        } finally {
+                            if (generation === hydrationGeneration && target.runtimeKey === getRuntimeKey()) get().clearSending(target, messageId);
+                        }
+                    },
+
                     removeFromQueue: (target, messageId) => {
                         const key = getMessageQueueKey(target);
+                        if (get().queuedMessages[key]?.some(message => message.id === messageId && isQueueUnresolved(message))) return;
                         set((state) => removeMessageLocally(state, key, messageId));
                         if (isServerOwnedMessageQueue()) {
                             void serverMutation(target, `${sessionPath(target.sessionId)}/items/${encodeURIComponent(messageId)}`, jsonInit('DELETE'));
@@ -667,7 +710,7 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                         if (fromId === toId) return;
                         const key = getMessageQueueKey(target);
                         const currentQueue = get().queuedMessages[key];
-                        if (!currentQueue) return;
+                        if (!currentQueue || currentQueue.some(isQueueUnresolved)) return;
                         const fromIndex = currentQueue.findIndex((m) => m.id === fromId);
                         const toIndex = currentQueue.findIndex((m) => m.id === toId);
                         if (fromIndex === -1 || toIndex === -1) return;
@@ -695,6 +738,10 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
 
                     takeForSend: async (target, messageId, purpose = QUEUE_TAKE.SEND) => {
                         const key = getMessageQueueKey(target);
+                        const queue = get().queuedMessages[key] ?? [];
+                        if (queue.some(isQueueUnresolved) || queue.some(message => message.attempt && (!messageId || message.id === messageId))) {
+                            throw new Error('Queued dispatch outcome requires explicit handling');
+                        }
                         if (isServerOwnedMessageQueue()) {
                             try {
                                 if (messageId) {
@@ -739,7 +786,7 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                             // already handed to the server: that send will resolve
                             // and must find its entry to remove or restore.
                             const sending = state.sendingIds[key] ?? [];
-                            const retained = (state.queuedMessages[key] ?? []).filter((m) => sending.includes(m.id));
+                            const retained = (state.queuedMessages[key] ?? []).filter((m) => sending.includes(m.id) || isQueueUnresolved(m));
                             if (retained.length > 0) {
                                 return { queuedMessages: { ...state.queuedMessages, [key]: retained } };
                             }
@@ -788,7 +835,8 @@ export const useMessageQueueStore = create<MessageQueueStore>()(
                         const state = get();
                         const queue = state.queuedMessages[key] ?? [];
                         const sending = state.sendingIds[key];
-                        return queue.filter((message) => (isServerOwnedMessageQueue() || localQueueReady(message))
+                        if (queue.some(isQueueUnresolved)) return [];
+                        return queue.filter((message) => !message.attempt && (isServerOwnedMessageQueue() || localQueueReady(message))
                             && !sending?.includes(message.id));
                     },
 

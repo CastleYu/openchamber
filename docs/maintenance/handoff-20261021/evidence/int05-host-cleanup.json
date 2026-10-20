@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-12T00:16:27.215Z",
+  "removedTargets": 11,
+  "bytes": 457160710,
+  "removedJunctions": 17,
+  "retainedWarmHome": "int05-manager-owner-run-56cb5301b9/home",
+  "retainedOldProfiles": [
+    "2860d0453e",
+    "f2777441c9"
+  ],
+  "boundary": "All absolute paths and native link targets validated before unlink/deletion; process absence verified immediately before invocation"
+}

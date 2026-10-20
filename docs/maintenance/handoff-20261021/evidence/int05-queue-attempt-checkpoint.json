@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-13T05:16:33.526Z",
+  "stage": "INT-05 / R3 Legacy server queue attempts",
+  "status": "server implementation checkpoint; unattended acceptance remains open",
+  "changedFiles": [
+    {
+      "file": "packages/web/server/lib/message-queue/runtime.js",
+      "sha256": "716ef5cb3b90aff7a332f27d04c37dcf3a4652e2f1c7721c1a5e4d80d755c602"
+    },
+    {
+      "file": "packages/web/server/lib/message-queue/attempts.test.js",
+      "sha256": "301b6b66e11a12818336677b6379facfe681a19d5a66618b6af479537e86fc9c"
+    },
+    {
+      "file": "packages/web/server/lib/message-queue/DOCUMENTATION.md",
+      "sha256": "d2405911d81bda646e580a78a67b5aa5b2068c2cd956f527704aaefba4398096"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "6fe1da2c55ad22d88079f1242458c5886ca75f240b88ce4d74df9dc4dcab1e8d"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "928f4abb74ca578b409858d4ebec7ac9c6480fd3a7b1578d72c8cd297b4a4d37"
+    }
+  ],
+  "validation": {
+    "tests": "68 passed, 2 files, Node Vitest",
+    "typecheck": "Web package passed",
+    "eslint": "changed runtime and test passed",
+    "oxlint": "3 existing typeof helpers at runtime.js:67-69; no authored finding",
+    "deadCode": "cached pinned Knip command reviewed, no new queue finding; existing backlog retained"
+  },
+  "evidence": [
+    "artifacts/int05-queue-all-tests.log",
+    "artifacts/int05-queue-static-checks.json",
+    "artifacts/int05-queue-typecheck.log",
+    "artifacts/int05-queue-eslint.log",
+    "artifacts/int05-queue-oxlint.log",
+    "artifacts/int05-queue-dead-code.log",
+    "artifacts/int05-queue-attempt-failures.md"
+  ],
+  "next": [
+    "shared UI attempt projection and confirmed resubmission",
+    "exact 1.2.27 executable terminal correlation",
+    "scheduled tasks and goal accounting existing owners",
+    "VS Code foreground queue outcomes",
+    "retain real IDE Provider/OAuth and native switch acceptance before R4"
+  ],
+  "limits": [
+    "accepted is not terminal; records count toward queue capacity",
+    "unknown does not prove upstream rejection or deduplication",
+    "no Release acceptance granted"
+  ],
+  "liveQuotaRemainingPercent": 99,
+  "temporaryHelpers": "remove own int05-queue *.cjs after recording checkpoint"
+}

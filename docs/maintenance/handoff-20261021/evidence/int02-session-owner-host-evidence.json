@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "actual host snapshots contain the original external owner activity, attention and pending decisions",
+    "confirmed external A to B switch removes all old-owner snapshot categories",
+    "same session ID receives only replacement metadata and no old pending requests",
+    "durable replacement and shutdown preserve both external servers without managed process ownership"
+  ],
+  "dir": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-session-owner-host-ka4bF5",
+  "syntheticUpstream": true,
+  "actualProductionHost": true,
+  "realModel": false,
+  "sourceHashes": {
+    "packages/web/server/index.js": "3cd3037f7292bf2b8fcc2933349f703fb54cd2dc38f75c4fc79ff41f7ef66413",
+    "packages/web/server/lib/opencode/session-runtime.js": "f0efdcd0bd3420a7caa39eaa07537bfa07801cdecc82e544bd46f965d1b2dd21"
+  },
+  "cleanup": {
+    "removed": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-session-owner-host-ka4bF5",
+    "bytes": 5209,
+    "reason": "Probe completed with exit 0 after closing both external HTTP servers and stopping the production host; compact evidence retained."
+  }
+}

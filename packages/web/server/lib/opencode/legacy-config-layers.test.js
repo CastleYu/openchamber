@@ -61,6 +61,13 @@ describe('readLegacyConfigLayers', () => {
     expect(result.mergedMcp.winner.v).toBe('nearest-dir');
     expect(result.mergedMcp.json.v).toBe('inner');
     expect(getLegacyMcpSource(result.layers, 'winner').scope).toBe('project');
+    expect(result.layers.map(({ order }, index) => order === index)).toEqual(result.layers.map(() => true));
+    expect(result.layers.find(({ path: file }) => file === path.join(input.cwd, 'custom.json')))
+      .toMatchObject({ origin: 'explicit-config', order: 0 });
+    expect(result.layers.find(({ path: file }) => file === path.join(outer, 'opencode.jsonc')))
+      .toMatchObject({ origin: 'project-root' });
+    expect(result.layers.find(({ path: file }) => file === path.join(input.paths.directory, '.opencode', 'opencode.jsonc')))
+      .toMatchObject({ origin: 'dot-directory' });
   });
 
   it('orders home, custom dir, inline and managed layers after project directories', async () => {
@@ -78,6 +85,10 @@ describe('readLegacyConfigLayers', () => {
     expect(result.mergedMcp.order.v).toBe('managed');
     expect(result.layers.at(-2)).toMatchObject({ path: null, scope: 'inline', writable: false });
     expect(result.layers.at(-1).scope).toBe('managed');
+    expect(result.layers.at(-2).origin).toBe('inline');
+    expect(result.layers.at(-1).origin).toBe('managed');
+    expect(result.layers.find(({ path: file }) => file === path.join(homeDir, 'opencode.jsonc')).origin).toBe('dot-directory');
+    expect(result.layers.find(({ path: file }) => file === path.join(customDir, 'opencode.json')).origin).toBe('explicit-config-dir');
   });
 
   it('skips project files when disabled and still reads global sources', async () => {
@@ -157,7 +168,7 @@ describe('readLegacyConfigLayers', () => {
     expect(dirs.every(({ writable }) => writable)).toBe(true);
   });
 
-  it('deduplicates identical project, home, and custom directory paths retaining the first scope', async () => {
+  it('deduplicates identical project, home, and custom directory paths retaining scope and explicit origin', async () => {
     const input = await fixture();
     const shared = path.join(path.dirname(input.paths.directory), '.opencode');
     input.paths.home = path.dirname(shared);
@@ -166,7 +177,7 @@ describe('readLegacyConfigLayers', () => {
     const result = await readLegacyConfigLayers(input);
     const matches = result.layers.filter(({ path: file }) => file === path.join(shared, 'opencode.json'));
     expect(matches).toHaveLength(1);
-    expect(matches[0]).toMatchObject({ scope: 'project', writable: true });
+    expect(matches[0]).toMatchObject({ scope: 'project', writable: true, origin: 'explicit-config-dir' });
   });
 
   it('uses custom config filenames with surrounding spaces literally', async () => {

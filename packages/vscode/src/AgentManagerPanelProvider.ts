@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { LegacyProviderDocument } from './legacyProviderDocument';
 import { scheduleCachedStateRetries } from './webviewCachedStateRetry';
 import { handleBridgeMessage, type BridgeRequest, type BridgeResponse } from './bridge';
 import { getThemeKindName } from './theme';
@@ -52,6 +53,7 @@ export class AgentManagerPanelProvider {
       return;
     }
 
+    const providers = new LegacyProviderDocument(this._openCodeManager, this._context.subscriptions);
     const distUri = vscode.Uri.joinPath(this._extensionUri, 'dist');
 
     // Create new panel
@@ -88,6 +90,7 @@ export class AgentManagerPanelProvider {
 
     // Handle panel disposal
     this._panel.onDidDispose(() => {
+      providers.dispose();
       // Clean up SSE streams
       for (const controller of this._sseStreams.values()) {
         controller.abort();
@@ -100,6 +103,7 @@ export class AgentManagerPanelProvider {
     // Handle messages
     this._panel.webview.onDidReceiveMessage(async (message: BridgeRequest) => {
       if (message.type === 'webview:ready') {
+        providers.reset();
         for (const controller of this._sseStreams.values()) {
           controller.abort();
         }
@@ -125,7 +129,7 @@ export class AgentManagerPanelProvider {
         return;
       }
 
-      const response = await handleBridgeMessage(message, {
+      const response = await providers.handle(message) ?? await handleBridgeMessage(message, {
         manager: this._openCodeManager,
         context: this._context,
       });

@@ -1,0 +1,93 @@
+{
+  "checks": [
+    "cold startup requires confirmation",
+    "cold discovery has no saved record",
+    "candidate preparation succeeds",
+    "confirmed native OC2 is ready",
+    "actual kernel resolves OC2",
+    "duplicate confirmation is rejected",
+    "SDK activity is available",
+    "active candidate preparation succeeds",
+    "active replacement succeeds",
+    "replacement binds a new server",
+    "previous target is persisted",
+    "confirmed intent is durable in isolated home",
+    "failed stop exposes error and retires resolved kernel",
+    "failed stop retains process ownership",
+    "unresolved cleanup blocks replacement launch",
+    "explicit stop retry clears retained ownership",
+    "saved intent restarts after explicit cleanup",
+    "external failure candidate can be reviewed",
+    "external readiness failure reports 503 and error",
+    "failed endpoint has no resolved active kernel",
+    "failed confirmed intent remains durable",
+    "old managed endpoint is retired without fallback",
+    "generated managed credentials never reach external endpoint",
+    "previous configured intent survives failed readiness",
+    "previous recovery requires fresh review",
+    "explicit previous recovery starts real OC2",
+    "real external OC2 review succeeds",
+    "unauthenticated real OC2 refuses activation without reusing managed password",
+    "fresh host can review previous intent after auth failure",
+    "fresh host explicitly restores configured OC2",
+    "authenticated external review succeeds",
+    "real external OC2 connects with explicit environment credentials",
+    "external return review succeeds",
+    "external stop-and-switch restores managed OC2",
+    "external process remains alive after switch",
+    "external process remains alive after manager shutdown",
+    ".cmd command prepares in actual IDE",
+    ".cmd starts real OC2 in actual IDE",
+    ".cmd invalid argv leaves active target connected",
+    ".cmd shutdown clears resolved target",
+    ".bat command prepares in actual IDE",
+    ".bat starts real OC2 in actual IDE",
+    ".bat invalid argv leaves active target connected",
+    ".bat shutdown clears resolved target"
+  ],
+  "status": "disconnected",
+  "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-pAKCMZ\\home",
+  "externalPid": 2964,
+  "externalClosed": true,
+  "observations": {
+    "externalEndpoint": "http://127.0.0.1:13630",
+    "externalHealthStatus": 200,
+    "externalProbes": [
+      {
+        "suffix": "/global/health",
+        "status": 200,
+        "type": "text/html"
+      },
+      {
+        "suffix": "/api/info",
+        "status": 401,
+        "type": "application/json"
+      }
+    ],
+    "externalApply": {
+      "status": 503,
+      "body": {
+        "error": "connection_failed"
+      },
+      "kernel": {
+        "generation": "unknown",
+        "endpoint": null,
+        "epoch": 30,
+        "version": null
+      },
+      "statusAfter": "error",
+      "authPresent": false,
+      "externalClosed": false,
+      "error": "Failed to start OpenCode: External OpenCode is not ready"
+    }
+  },
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-pAKCMZ",
+  "suiteSha256": "a92a34046aaa71d49d8b334cb87a76ef370dc85622a609ab3c294103f8d9161f",
+  "bundleSha256": "8be51ee5f3d56584f5868a9906a187039bb5ed907368a41b50f47473211c8ba0",
+  "limits": [
+    "Manager and real OC2 only; no complete shared webview journey",
+    "No visual console-flash observation",
+    "No Legacy or real CAgent acceptance"
+  ],
+  "retention": "R1 closeout"
+}

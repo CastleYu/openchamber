@@ -1,0 +1,1288 @@
+[
+  {
+    "suffix": "LUrXy8",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-LUrXy8",
+    "bytes": 35099085,
+    "classification": "invalid acceptance: USERPROFILE was not isolated; repair scope recorded separately",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": false,
+        "checks": [
+          "production React webview mounted",
+          "cold editor exposes connection candidate",
+          "runtime bridge responds",
+          "cold runtime is not ready",
+          "candidate can be confirmed",
+          "runtime bridge responds",
+          "native configured test validates without launch",
+          "runtime bridge responds",
+          "configured test keeps cold runtime",
+          "configured test does not save",
+          "external test endpoint input is reachable",
+          "real host probe reaches controlled slow endpoint",
+          "native cancel retires pending test",
+          "runtime bridge responds",
+          "cancel keeps cold runtime",
+          "cancel does not save",
+          "cancel restores test control",
+          "configured candidate restored after cancelled test",
+          "explicit review is shown",
+          "review requires acknowledgement",
+          "review acknowledgement enables switch",
+          "host reports connected",
+          "runtime bridge responds"
+        ],
+        "error": "Error: real OC2 descriptor admitted",
+        "diagnostics": [],
+        "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nDeepSeek V4.1 Flash\nBuild",
+        "controls": [
+          {
+            "text": "Chat",
+            "aria": "Open session switcher"
+          },
+          {
+            "text": "",
+            "aria": "MCP servers"
+          },
+          {
+            "text": "",
+            "aria": "Rate limits"
+          },
+          {
+            "text": "Explore the codebase",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Catch me up",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Weigh my options",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Start feature planning",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Debug an issue",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Review my changes",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "",
+            "aria": "Add a starter"
+          },
+          {
+            "text": "",
+            "aria": "Attach files"
+          },
+          {
+            "text": "",
+            "aria": "Toggle focus mode"
+          },
+          {
+            "text": "",
+            "aria": "Enable permission auto-accept"
+          },
+          {
+            "text": "",
+            "aria": "Send message"
+          }
+        ]
+      },
+      "error": "Error: real OC2 descriptor admitted"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/NDYxNjBjMDctMDE3Yi00NTViLWEwN2MtMTJjM2YzNzA2N2Zj\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/NDYxNjBjMDctMDE3Yi00NTViLWEwN2MtMTJjM2YzNzA2N2Zj\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:13:31.134Z] Extension host with pid 92636 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "Unknown channel: agentHostClientByokLm",
+      "(node:92636) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+      "Error: Error: real OC2 descriptor admitted",
+      "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-LUrXy8\\suite.cjs:1:9464)"
+    ]
+  },
+  {
+    "suffix": "2Awvas",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-2Awvas",
+    "bytes": 61520773,
+    "classification": "invalid acceptance: USERPROFILE was not isolated; repair scope recorded separately",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": false,
+        "checks": [
+          "production React webview mounted"
+        ],
+        "error": "Error: cold editor exposes connection candidate",
+        "diagnostics": [
+          "[event-pipeline] stream failed Error: Failed to mint runtime URL auth token (403)"
+        ],
+        "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nDeepSeek V4.1 Flash\nBuild\nOpenCode update\nVersion 1.19.0 available.\nDismiss\nUpdate",
+        "controls": [
+          {
+            "text": "Chat",
+            "aria": "Open session switcher"
+          },
+          {
+            "text": "",
+            "aria": "MCP servers"
+          },
+          {
+            "text": "",
+            "aria": "Rate limits"
+          },
+          {
+            "text": "Explore the codebase",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Catch me up",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Weigh my options",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Start feature planning",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Debug an issue",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Review my changes",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "",
+            "aria": "Add a starter"
+          },
+          {
+            "text": "",
+            "aria": "Attach files"
+          },
+          {
+            "text": "",
+            "aria": "Toggle focus mode"
+          },
+          {
+            "text": "",
+            "aria": "Enable permission auto-accept"
+          },
+          {
+            "text": "",
+            "aria": "Send message"
+          }
+        ]
+      },
+      "error": "Error: cold editor exposes connection candidate"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "Loading development extension at c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-2Awvas\\extension",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZDA2ZWNjNWEtZWM2NC00MDQzLWEwOTktYTUxN2JiYTdhNmJi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZDA2ZWNjNWEtZWM2NC00MDQzLWEwOTktYTUxN2JiYTdhNmJi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZDA2ZWNjNWEtZWM2NC00MDQzLWEwOTktYTUxN2JiYTdhNmJi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:14:49.500Z] Extension host with pid 99804 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "Unknown channel: agentHostClientByokLm",
+      "(node:99804) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+      "Error: Error: cold editor exposes connection candidate",
+      "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-2Awvas\\suite.cjs:1:9774)",
+      "[main 2026-10-11T10:14:49.522Z] [UtilityProcessWorker]: terminated unexpectedly with code 3221225477, signal: unknown"
+    ]
+  },
+  {
+    "suffix": "yEhM2O",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-yEhM2O",
+    "bytes": 35243180,
+    "classification": "isolated diagnostic or acceptance run",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": false,
+        "checks": [
+          "production React webview mounted",
+          "cold editor exposes connection candidate",
+          "runtime bridge responds",
+          "cold runtime is not ready",
+          "candidate can be confirmed",
+          "runtime bridge responds",
+          "native configured test validates without launch",
+          "runtime bridge responds",
+          "configured test keeps cold runtime",
+          "configured test does not save",
+          "external test endpoint input is reachable",
+          "real host probe reaches controlled slow endpoint",
+          "native cancel retires pending test",
+          "runtime bridge responds",
+          "cancel keeps cold runtime",
+          "cancel does not save",
+          "cancel restores test control",
+          "configured candidate restored after cancelled test",
+          "explicit review is shown",
+          "review requires acknowledgement",
+          "review acknowledgement enables switch",
+          "host reports connected",
+          "runtime bridge responds",
+          "real OC2 descriptor admitted",
+          "cold recovery leaves after successful initialization",
+          "production bridge creates session",
+          "real session has identity",
+          "production bridge reads session"
+        ],
+        "error": "Error: real session appears in editor switcher",
+        "descriptor": {
+          "generation": "oc2",
+          "endpoint": "http://127.0.0.1:42191",
+          "epoch": 5,
+          "version": "2.0.20",
+          "profile": "oc2",
+          "status": "ready"
+        },
+        "diagnostics": [],
+        "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nBig Pickle\nBuild\nNew session\nNo recent sessions",
+        "controls": [
+          {
+            "text": "Chat",
+            "aria": "Open session switcher"
+          },
+          {
+            "text": "",
+            "aria": "MCP servers"
+          },
+          {
+            "text": "",
+            "aria": "Rate limits"
+          },
+          {
+            "text": "Explore the codebase",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Catch me up",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Weigh my options",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Start feature planning",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Debug an issue",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Review my changes",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "",
+            "aria": "Add a starter"
+          },
+          {
+            "text": "",
+            "aria": "Attach files"
+          },
+          {
+            "text": "",
+            "aria": "Toggle focus mode"
+          },
+          {
+            "text": "",
+            "aria": "Permissions: ask every time"
+          },
+          {
+            "text": "",
+            "aria": "Send message"
+          }
+        ]
+      },
+      "error": "Error: real session appears in editor switcher"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/NjFiZTllYTctMDNhMy00NGIxLTkxNjgtN2ZhYTNhOWE3NzVj\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/NjFiZTllYTctMDNhMy00NGIxLTkxNjgtN2ZhYTNhOWE3NzVj\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[SSE] Connecting to /event (attempt 1/4)",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/NjFiZTllYTctMDNhMy00NGIxLTkxNjgtN2ZhYTNhOWE3NzVj\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:17:58.134Z] Extension host with pid 22928 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "[main 2026-10-11T10:16:29.964Z] updateWindowsJumpList#setJumpList unexpected result: error",
+      "Unknown channel: agentHostClientByokLm",
+      "(node:22928) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+      "Error: Error: real session appears in editor switcher",
+      "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-yEhM2O\\suite.cjs:1:9774)"
+    ]
+  },
+  {
+    "suffix": "uetDHF",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-uetDHF",
+    "bytes": 35243870,
+    "classification": "isolated diagnostic or acceptance run",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": false,
+        "checks": [
+          "production React webview mounted",
+          "cold editor exposes connection candidate",
+          "runtime bridge responds",
+          "cold runtime is not ready",
+          "candidate can be confirmed",
+          "runtime bridge responds",
+          "native configured test validates without launch",
+          "runtime bridge responds",
+          "configured test keeps cold runtime",
+          "configured test does not save",
+          "external test endpoint input is reachable",
+          "real host probe reaches controlled slow endpoint",
+          "native cancel retires pending test",
+          "runtime bridge responds",
+          "cancel keeps cold runtime",
+          "cancel does not save",
+          "cancel restores test control",
+          "configured candidate restored after cancelled test",
+          "explicit review is shown",
+          "review requires acknowledgement",
+          "review acknowledgement enables switch",
+          "host reports connected",
+          "runtime bridge responds",
+          "real OC2 descriptor admitted",
+          "cold recovery leaves after successful initialization",
+          "production event stream is admitted",
+          "production bridge creates session",
+          "real session has identity",
+          "production bridge reads session"
+        ],
+        "error": "Error: real session appears in editor switcher",
+        "descriptor": {
+          "generation": "oc2",
+          "endpoint": "http://127.0.0.1:43387",
+          "epoch": 5,
+          "version": "2.0.20",
+          "profile": "oc2",
+          "status": "ready"
+        },
+        "trace": [
+          {
+            "type": "api:sse:start",
+            "status": 200,
+            "data": {
+              "status": 200,
+              "headers": {
+                "content-type": "text/event-stream",
+                "cache-control": "no-cache, no-transform"
+              },
+              "streamId": "sse_webview_1791714306162_1"
+            }
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          },
+          {
+            "type": "api:sse:chunk"
+          }
+        ],
+        "diagnostics": [],
+        "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nBig Pickle\nBuild\nNew session\nNo recent sessions",
+        "controls": [
+          {
+            "text": "Chat",
+            "aria": "Open session switcher"
+          },
+          {
+            "text": "",
+            "aria": "MCP servers"
+          },
+          {
+            "text": "",
+            "aria": "Rate limits"
+          },
+          {
+            "text": "Explore the codebase",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Catch me up",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Weigh my options",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Start feature planning",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Debug an issue",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Review my changes",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "",
+            "aria": "Add a starter"
+          },
+          {
+            "text": "",
+            "aria": "Attach files"
+          },
+          {
+            "text": "",
+            "aria": "Toggle focus mode"
+          },
+          {
+            "text": "",
+            "aria": "Permissions: ask every time"
+          },
+          {
+            "text": "",
+            "aria": "Send message"
+          }
+        ]
+      },
+      "error": "Error: real session appears in editor switcher"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/Y2QyZTA0ZGYtZjE5My00YTljLWIyZDYtYmQ4NzkyMTAyMmQ0\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[SSE] Connecting to /event (attempt 1/4)",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/Y2QyZTA0ZGYtZjE5My00YTljLWIyZDYtYmQ4NzkyMTAyMmQ0\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:26:25.973Z] Extension host with pid 99756 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "[main 2026-10-11T10:24:59.273Z] updateWindowsJumpList#setJumpList unexpected result: error",
+      "Unknown channel: agentHostClientByokLm",
+      "(node:99756) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+      "Error: Error: real session appears in editor switcher",
+      "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-uetDHF\\suite.cjs:1:10149)"
+    ]
+  },
+  {
+    "suffix": "bSdx7a",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-bSdx7a",
+    "bytes": 25039220,
+    "classification": "isolated diagnostic or acceptance run",
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZjM4YjBlNTktMDU1MC00NmMzLTk5MjAtZjY2N2Y2Nzg5MjRi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:27:06.138Z] Extension host with pid 75044 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "const vscode=require('vscode');const fs=require('node:fs/promises');const http=require('node:http');exports.run=async()=>{let manager,provider,result,failure;const timers=new Set();const slow=http.createServer((req,res)=>{if(provider)for(const state of provider._panels.values())state.panel.webview.postMessage({type:'test:probeHit'});const timer=setTimeout(()=>{timers.delete(timer);res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({healthy:true,version:'2.0.20'}));},10000);timers.add(timer);res.on('close',()=>{clearTimeout(timer);timers.delete(timer);});});await new Promise(resolve=>slow.listen(0,'127.0.0.1',resolve));const slowEndpoint='http://127.0.0.1:'+slow.address().port;try{const factory=await vscode.extensions.getExtension('openchamber.editor-journey').activate();({manager,provider}=factory.create());await manager.start(process.env.OC_TEST_HOME);provider.updateConnectionStatus(manager.getStatus());const original=provider._getHtmlForWebview.bind(provider);provider._getHtmlForWebview=(...args)=>original(...args).replace('<head>','<head><script>window.__journeyApi=acquireVsCodeApi();window.__requests={};window.__wireTrace=[];const nativeApi=window.__journeyApi;window.__journeyApi={getState:()=>nativeApi.getState(),setState:s=>nativeApi.setState(s),postMessage:m=>{if(m.id){window.__requests[m.id]=m.payload?.path;if(/session|project|fs/home/.test(m.payload?.path||''))window.__wireTrace.push({type:m.type,path:m.payload.path,method:m.payload.method});}return nativeApi.postMessage(m);}};window.addEventListener('message',e=>{const m=e.data;const path=window.__requests[m?.id];if(/session|project|fs/home/.test(path||''))window.__wireTrace.push({path,success:m.success,data:JSON.stringify(m.data)?.slice(0,3000)});});window.acquireVsCodeApi=()=>window.__journeyApi;window.__journeyErrors=[];window.__slowEndpoint=\"'+slowEndpoint+'\";window.__probeHits=0;window.__bridgeTrace=[];window.__sseReady=false;window.addEventListener(\"message\",event=>{const m=event.data;if(m?.type===\"test:probeHit\")window.__probeHits++;if(m?.type?.startsWith(\"api:sse\")){window.__bridgeTrace.push({type:m.type,status:m.data?.status,error:m.error,event:m.event,data:m.data,chunk:m.chunk?.slice(0,4000)});if(m.type===\"api:sse:start\"&&m.data?.status===200)window.__sseReady=true;}});const oldError=console.error;console.error=(...args)=>{window.__journeyErrors.push(args.map(String).join(\" \"));oldError(...args);};window.addEventListener(\"error\",e=>window.__journeyErrors.push(e.message));window.addEventListener(\"unhandledrejection\",e=>window.__journeyErrors.push(String(e.reason)));</script>').replace('</body>','<script>'+\"\\n(async()=>{\\n const checks=[]; const api=window.__journeyApi;\\n const check=(name,value)=>{if(!value)throw Error(name);checks.push(name);};\\n const wait=async(test,name,ms=30000)=>{const end=Date.now()+ms;while(!test()&&Date.now()<end)await new Promise(r=>setTimeout(r,100));check(name,test());};\\n const button=label=>Array.from(document.querySelectorAll('button')).find(x=>x.textContent.trim()===label);\\n const inspect=async()=>{const r=await fetch('/api/opencode/runtime');check('runtime bridge responds',r.ok);const value=await r.json();window.__lastDescriptor=value;return value;};\\n const admitted=async()=>{let value;const end=Date.now()+15000;do{value=await inspect();if(value.status==='ready')return value;await new Promise(resolve=>setTimeout(resolve,100));}while(Date.now()<end);return value;};\\n try {\\n    await wait(()=>document.querySelector('#root')?.childNodes.length>0,'production React webview mounted');\\n  const originalFetch=window.fetch;window.fetch=async(...args)=>{const response=await originalFetch(...args);if(!response.ok&&String(args[0]).includes('opencode-connection'))window.__journeyErrors.push({status:response.status,body:await response.clone().text()});return response;};\\n  await wait(()=>button('Use candidate'),'cold editor exposes connection candidate',15000);\\n  check('cold runtime is not ready',(await inspect()).status!=='ready');\\n  const candidates=Array.from(document.querySelectorAll('button')).filter(x=>x.textContent.trim()==='Use candidate');candidates.at(-1).click();\\n  await wait(()=>button('Confirm and connect'),'candidate can be confirmed');\\n  const beforeTest=await inspect();\\n  button('Test connection').click();\\n  await wait(()=>document.body.innerText.includes('Launch inputs are valid.'),'native configured test validates without launch');\\n  check('configured test keeps cold runtime',(await inspect()).status===beforeTest.status);\\n  check('configured test does not save',(await (await fetch('/api/config/opencode-connection')).json()).saved===null);\\n  button('External server').click();\\n  await wait(()=>document.querySelector('input[aria-label=\\\"Server URL\\\"]'),'external test endpoint input is reachable');\\n  const endpoint=document.querySelector('input[aria-label=\\\"Server URL\\\"]');\\n  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(endpoint,window.__slowEndpoint);\\n  endpoint.dispatchEvent(new Event('input',{bubbles:true}));\\n  button('Test connection').click();\\n  await wait(()=>window.__probeHits>0&&button('Cancel'),'real host probe reaches controlled slow endpoint');\\n  button('Cancel').click();\\n  await wait(()=>document.body.innerText.includes('Test cancelled. Settings were kept.'),'native cancel retires pending test');\\n  check('cancel keeps cold runtime',(await inspect()).status===beforeTest.status);\\n  check('cancel does not save',(await (await fetch('/api/config/opencode-connection')).json()).saved===null);\\n  check('cancel restores test control',!button('Test connection').disabled);\\n  candidates.at(-1).click();\\n  await wait(()=>button('Executable path')?.getAttribute('aria-pressed')==='true','configured candidate restored after cancelled test');\\n  button('Confirm and connect').click();\\n  await wait(()=>button('Switch if idle'),'explicit review is shown');\\n  check('review requires acknowledgement',button('Switch if idle').disabled);\\n  document.querySelector('[role=\\\"checkbox\\\"]').parentElement.click();\\n  await wait(()=>!button('Switch if idle').disabled,'review acknowledgement enables switch');button('Switch if idle').click();\\n  await wait(()=>window.__OPENCHAMBER_CONNECTION__?.status==='connected','host reports connected',75000);\\n  check('real OC2 descriptor admitted',(await admitted()).profile==='oc2');\\n  await wait(()=>!button('Use candidate'),'cold recovery leaves after successful initialization',75000);\\n  await wait(()=>window.__sseReady,'production event stream is admitted',30000);const r=await fetch('/api/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'INT02 native bridge',location:{directory:window.__VSCODE_CONFIG__.workspaceFolder}})});\\n  check('production bridge creates session',r.ok);const wire=await r.json();const session=wire.data;\\n  check('real session has identity',session && typeof session.id==='string');\\n  const read=await fetch('/api/session/'+encodeURIComponent(session.id));check('production bridge reads session',read.ok&&(await read.json()).data.id===session.id);\\n    document.querySelector('button[aria-label=\\\"Open session switcher\\\"]').click();\\n  await wait(()=>Array.from(document.querySelectorAll('[role=\\\"menuitem\\\"]')).some(x=>x.textContent.includes('INT02 native bridge')),'real session appears in editor switcher',75000);\\n  Array.from(document.querySelectorAll('[role=\\\"menuitem\\\"]')).find(x=>x.textContent.includes('INT02 native bridge')).click();\\n  await wait(()=>document.querySelector('button[aria-label=\\\"Open session switcher\\\"]')?.textContent.includes('INT02 native bridge'),'real session opens in editor');\\n  api.postMessage({type:'test:selection'});\\n  await wait(()=>document.body.innerText.includes('fixture.js'),'native editor selection becomes composer attachment');\\n  const remove=await fetch('/api/session/'+encodeURIComponent(session.id),{method:'DELETE'});check('test session removed',remove.ok);\\n    const call=async(suffix,body)=>fetch('/api/config/opencode-connection/'+suffix,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});\\n  const prepare=await call('prepare',{source:'candidate',connection:{version:1,confirmed:true,mode:'external',endpoint:'http://127.0.0.1:9'}});\\n  check('failed-target preparation uses real bridge',prepare.ok);const review=await prepare.json();\\n  const failed=await call('apply',{token:review.token,decision:'wait',acknowledgeClients:true});check('unreachable target fails explicitly',!failed.ok);\\n  await wait(()=>button('Return to previous connection')&&!button('Return to previous connection').disabled,'failed editor exposes previous connection recovery');\\n  check('failed runtime stays unavailable',(await inspect()).status!=='ready');button('Return to previous connection').click();\\n  await wait(()=>button('Switch if idle'),'previous connection requires review');check('previous recovery requires acknowledgement',button('Switch if idle').disabled);\\n  document.querySelector('[role=\\\"checkbox\\\"]').parentElement.click();await wait(()=>!button('Switch if idle').disabled,'recovery acknowledgement enables switch');button('Switch if idle').click();\\n  await wait(()=>window.__OPENCHAMBER_CONNECTION__?.status==='connected'&&!button('Use candidate')&&!button('Switch if idle'),'previous configured connection restores editor',75000);\\n  check('recovered real OC2 descriptor admitted',(await admitted()).profile==='oc2');\\n  api.postMessage({type:'test:result',success:true,checks});\\n }catch(error){api.postMessage({type:'test:result',success:false,checks,error:String(error),descriptor:window.__lastDescriptor,trace:window.__bridgeTrace,wire:window.__wireTrace,diagnostics:window.__journeyErrors,body:document.body.innerText.slice(-2200),controls:Array.from(document.querySelectorAll('button')).slice(0,20).map(x=>({text:x.textContent,aria:x.getAttribute('aria-label')}))});}\\n})();\"+'</script></body>');const pending=new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Native webview journey timed out')),180000);provider.createOrShowNewSession();for(const state of provider._panels.values())state.panel.webview.onDidReceiveMessage(async message=>{if(message.type==='test:selection'){const doc=await vscode.workspace.openTextDocument(vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri,'fixture.js'));const editor=await vscode.window.showTextDocument(doc,{viewColumn:vscode.ViewColumn.One,preserveFocus:true});editor.selection=new vscode.Selection(0,0,0,20);provider.addContextSelectionToActivePanel({filePath:doc.uri.fsPath,filename:'fixture.js',text:doc.getText(editor.selection)});}if(message.type==='test:result'){clearTimeout(timer);resolve(message);}});});result=await pending;if(!result.success)throw Error(result.error);}catch(error){failure=error;}finally{await new Promise(resolve=>setTimeout(resolve,200));if(provider)for(const state of [...provider._panels.values()])state.panel.dispose();if(manager)await manager.stop();for(const timer of timers)clearTimeout(timer);slow.closeAllConnections();await new Promise(resolve=>slow.close(resolve));await new Promise(resolve=>setTimeout(resolve,1500));await fs.writeFile(process.env.OC_TEST_EVIDENCE,JSON.stringify({source:\"cc6f2db6049e211ce6822cf37564a3485363e75d\",runtime:'actual VS Code webview and extension host, production UI assets, real OC2 2.0.20',result,error:failure?.message},null,2));}if(failure)throw failure;};",
+      "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ",
+      "",
+      "SyntaxError: missing ) after argument list",
+      "\tat wrapSafe (node:internal/modules/cjs/loader:1811:18)",
+      "\tat Module._compile (node:internal/modules/cjs/loader:1852:20)",
+      "\tat Object..js (node:internal/modules/cjs/loader:2012:10)",
+      "\tat Module.load (node:internal/modules/cjs/loader:1601:32)",
+      "\tat node:internal/modules/cjs/loader:1403:12",
+      "\tat Module.<anonymous> (node:electron/js2c/node_init:2:18159)",
+      "\tat i._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:851:6673)",
+      "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:682:29304)",
+      "\tat n._load (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:674:26756)",
+      "\tat wrapModuleLoad (node:internal/modules/cjs/loader:262:19)",
+      "\tat Module.require (node:internal/modules/cjs/loader:1624:12)",
+      "\tat require (node:internal/modules/helpers:153:16)",
+      "\tat FR._doLoadModule (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:685:1487)",
+      "\tat FR._loadCommonJSModule (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:685:1630)",
+      "\tat FR._doHandleExtensionTests (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:546:22090)",
+      "\tat async FR.$extensionTestsExecute (file:///d:/Code/ide/VSCode/VSCode/a44adf7f53/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:546:21721)"
+    ]
+  },
+  {
+    "suffix": "H0lsTJ",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-H0lsTJ",
+    "bytes": 34792387,
+    "classification": "isolated diagnostic or acceptance run",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "error": "Native webview journey timed out"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZWM5ZTcyMTgtYTRiZi00ZWY2LThkN2QtMzdiNjM0NDVmNzk4\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZWM5ZTcyMTgtYTRiZi00ZWY2LThkN2QtMzdiNjM0NDVmNzk4\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/ZWM5ZTcyMTgtYTRiZi00ZWY2LThkN2QtMzdiNjM0NDVmNzk4\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:30:32.994Z] Extension host with pid 102340 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "[main 2026-10-11T10:27:28.056Z] updateWindowsJumpList#setJumpList unexpected result: error",
+      "Unknown channel: agentHostClientByokLm",
+      "Error: Native webview journey timed out",
+      "\tat Timeout._onTimeout (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-H0lsTJ\\suite.cjs:1:10083)",
+      "\tat listOnTimeout (node:internal/timers:605:17)",
+      "\tat process.processTimers (node:internal/timers:541:7)"
+    ]
+  },
+  {
+    "suffix": "mFub97",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-mFub97",
+    "bytes": 2090632,
+    "classification": "isolated diagnostic or acceptance run"
+  },
+  {
+    "suffix": "C67SZN",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-C67SZN",
+    "bytes": 2090632,
+    "classification": "isolated diagnostic or acceptance run"
+  },
+  {
+    "suffix": "cqhPZZ",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-cqhPZZ",
+    "bytes": 35262093,
+    "classification": "isolated diagnostic or acceptance run",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": false,
+        "checks": [
+          "production React webview mounted",
+          "cold editor exposes connection candidate",
+          "runtime bridge responds",
+          "cold runtime is not ready",
+          "candidate can be confirmed",
+          "runtime bridge responds",
+          "native configured test validates without launch",
+          "runtime bridge responds",
+          "configured test keeps cold runtime",
+          "configured test does not save",
+          "external test endpoint input is reachable",
+          "real host probe reaches controlled slow endpoint",
+          "native cancel retires pending test",
+          "runtime bridge responds",
+          "cancel keeps cold runtime",
+          "cancel does not save",
+          "cancel restores test control",
+          "configured candidate restored after cancelled test",
+          "explicit review is shown",
+          "review requires acknowledgement",
+          "review acknowledgement enables switch",
+          "host reports connected",
+          "runtime bridge responds",
+          "real OC2 descriptor admitted",
+          "cold recovery leaves after successful initialization",
+          "production event stream is admitted",
+          "production bridge creates session",
+          "real session has identity",
+          "production bridge reads session"
+        ],
+        "error": "Error: real session appears in editor switcher",
+        "descriptor": {
+          "generation": "oc2",
+          "endpoint": "http://127.0.0.1:44160",
+          "epoch": 5,
+          "version": "2.0.20",
+          "profile": "oc2",
+          "status": "ready"
+        },
+        "trace": [
+          {
+            "type": "api:sse:start",
+            "status": 200,
+            "data": {
+              "status": 200,
+              "headers": {
+                "content-type": "text/event-stream",
+                "cache-control": "no-cache, no-transform"
+              },
+              "streamId": "sse_webview_1791714712286_1"
+            }
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84dae8001M4MWgmK28Wavpf\",\"type\":\"server.connected\",\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84db84001ik8uSLe8DtWrBT\",\"created\":1791714712452,\"type\":\"worktree.resolved\",\"data\":{\"projectID\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"directory\":\"H:\\\\Documents\\\\Abyss\\\\openchamber\",\"previous\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\"},\"durable\":{\"aggregateID\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"seq\":0,\"version\":1}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84db920011UhzP6Pk0rUYfJ\",\"created\":1791714712466,\"type\":\"worktree.resolved\",\"data\":{\"projectID\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\",\"previous\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\"},\"durable\":{\"aggregateID\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"seq\":1,\"version\":1}}\n\ndata: {\"id\":\"evt_12a84db98001EqriOxe238JV1u\",\"created\":1791714712473,\"type\":\"project.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{\"id\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"canonical\":\"H:\\\\Documents\\\\Abyss\\\\openchamber\",\"vcs\":\"git\",\"time\":{\"created\":1791714712448,\"updated\":1791714712448,\"active\":1791714712471},\"sandboxes\":[]}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84dc8a001r1cNHdfahqIdOk\",\"created\":1791714712714,\"type\":\"session.created\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{\"sessionID\":\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\",\"slug\":\"misty-harbor\",\"version\":\"2.0.20\",\"projectID\":\"83cb7386acbd343324eec265c0f7cde5bef13ddf\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"subpath\":\"artifacts/int02-r1-native-test-cqhPZZ/workspace\",\"title\":\"INT02 native bridge\"},\"durable\":{\"aggregateID\":\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\",\"seq\":0,\"version\":1}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e149001M931yDl6INg80Y\",\"created\":1791714713929,\"type\":\"integration.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e152001t0xdAcZngbFw1J\",\"created\":1791714713939,\"type\":\"provider.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e163001PZGV4I52NIMAc4\",\"created\":1791714713955,\"type\":\"model.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e212001jwmoWU4pYWkk4s\",\"created\":1791714714130,\"type\":\"vcs.branch.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{\"branch\":\"codex/cagent-integration\"}}\n\ndata: {\"id\":\"evt_12a84e214001Aey5uz8EQcvylX\",\"created\":1791714714132,\"type\":\"agent.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e216001QD1H1IGaDHvONs\",\"created\":1791714714134,\"type\":\"command.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e218001c7hXmdfnuF2NrV\",\"created\":1791714714136,\"type\":\"skill.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e220001siYQ3CeiFCXZ8X\",\"created\":1791714714144,\"type\":\"websearch.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e223001L2FZfPldsaD227\",\"created\":1791714714147,\"type\":\"reference.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e25c001xuuxcn86Q7mMFI\",\"created\":1791714714204,\"type\":\"integration.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e266001tBno5aPM3CrQLS\",\"created\":1791714714214,\"type\":\"provider.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e275001RkWTze8l8LOGor\",\"created\":1791714714229,\"type\":\"model.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e294001bCTGLjDQ6uMYQT\",\"created\":1791714714260,\"type\":\"plugin.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\workspace\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e33a001WxWaV3GSyWMvgg\",\"created\":1791714714426,\"type\":\"vcs.branch.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{\"branch\":\"codex/cagent-integration\"}}\n\ndata: {\"id\":\"evt_12a84e33c001ZmSRtcQYVl2TEY\",\"created\":1791714714428,\"type\":\"agent.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e33d001kyrHmvOAjoQQRU\",\"created\":1791714714429,\"type\":\"command.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e33e001607qF8CszB7ilH\",\"created\":1791714714430,\"type\":\"skill.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e345001gi83U51Df3QB6S\",\"created\":1791714714437,\"type\":\"websearch.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\ndata: {\"id\":\"evt_12a84e348001MLeK5RH4FPn8Ln\",\"created\":1791714714440,\"type\":\"reference.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": "data: {\"id\":\"evt_12a84e3a8001k09IahmMVbrUs4\",\"created\":1791714714536,\"type\":\"plugin.updated\",\"location\":{\"directory\":\"C:\\\\Users\\\\74756\\\\.codex\\\\worktrees\\\\dijiang-next\\\\openchamber\\\\artifacts\\\\int02-r1-native-test-cqhPZZ\\\\profile\\\\User\\\\globalStorage\\\\openchamber.editor-journey\"},\"data\":{}}\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          },
+          {
+            "type": "api:sse:chunk",
+            "chunk": ": heartbeat\n\n"
+          }
+        ],
+        "wire": [
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "method": "GET"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/project",
+            "method": "GET"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session/active",
+            "method": "GET"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "method": "GET"
+          },
+          {
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "method": "GET"
+          },
+          {
+            "path": "/session/active",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":{}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500",
+            "method": "GET"
+          },
+          {
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          },
+          {
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          },
+          {
+            "path": "/session?limit=500",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session",
+            "method": "POST"
+          },
+          {
+            "path": "/session",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":{\\\"id\\\":\\\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\\\",\\\"projectID\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"cost\\\":0,\\\"tokens\\\":{\\\"input\\\":0,\\\"output\\\":0,\\\"reasoning\\\":0,\\\"cache\\\":{\\\"read\\\":0,\\\"write\\\":0}},\\\"time\\\":{\\\"created\\\":1791714712714,\\\"updated\\\":1791714712714},\\\"title\\\":\\\"INT02 native bridge\\\",\\\"subpath\\\":\\\"artifacts/int02-r1-native-test-cqhPZZ/workspace\\\",\\\"location\\\":{\\\"directory\\\":\\\"C:\\\\\\\\Users\\\\\\\\74756\\\\\\\\.codex\\\\\\\\worktrees\\\\\\\\dijiang-next\\\\\\\\openchamber\\\\\\\\artifacts\\\\\\\\int02-r1-native-test-cqhPZZ\\\\\\\\workspace\\\"}}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session/ses_ed57b24d1ffeWc0VS1mmy8W4zq",
+            "method": "GET"
+          },
+          {
+            "path": "/session/ses_ed57b24d1ffeWc0VS1mmy8W4zq",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:52 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":{\\\"id\\\":\\\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\\\",\\\"projectID\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"cost\\\":0,\\\"tokens\\\":{\\\"input\\\":0,\\\"output\\\":0,\\\"reasoning\\\":0,\\\"cache\\\":{\\\"read\\\":0,\\\"write\\\":0}},\\\"time\\\":{\\\"created\\\":1791714712714,\\\"updated\\\":1791714712714},\\\"title\\\":\\\"INT02 native bridge\\\",\\\"subpath\\\":\\\"artifacts/int02-r1-native-test-cqhPZZ/workspace\\\",\\\"location\\\":{\\\"directory\\\":\\\"C:\\\\\\\\Users\\\\\\\\74756\\\\\\\\.codex\\\\\\\\worktrees\\\\\\\\dijiang-next\\\\\\\\openchamber\\\\\\\\artifacts\\\\\\\\int02-r1-native-test-cqhPZZ\\\\\\\\workspace\\\"}}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/project",
+            "method": "GET"
+          },
+          {
+            "path": "/project",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:53 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"[{\\\"id\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"canonical\\\":\\\"H:\\\\\\\\Documents\\\\\\\\Abyss\\\\\\\\openchamber\\\",\\\"vcs\\\":\\\"git\\\",\\\"time\\\":{\\\"created\\\":1791714712448,\\\"updated\\\":1791714712448,\\\"active\\\":1791714712471},\\\"sandboxes\\\":[]}]\"}"
+          },
+          {
+            "path": "/project",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:53 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"[{\\\"id\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"canonical\\\":\\\"H:\\\\\\\\Documents\\\\\\\\Abyss\\\\\\\\openchamber\\\",\\\"vcs\\\":\\\"git\\\",\\\"time\\\":{\\\"created\\\":1791714712448,\\\"updated\\\":1791714712448,\\\"active\\\":1791714712471},\\\"sandboxes\\\":[]}]\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "method": "GET"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session/active",
+            "method": "GET"
+          },
+          {
+            "path": "/session/active",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":{}}\"}"
+          },
+          {
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[{\\\"id\\\":\\\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\\\",\\\"projectID\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"cost\\\":0,\\\"tokens\\\":{\\\"input\\\":0,\\\"output\\\":0,\\\"reasoning\\\":0,\\\"cache\\\":{\\\"read\\\":0,\\\"write\\\":0}},\\\"time\\\":{\\\"created\\\":1791714712714,\\\"updated\\\":1791714712714},\\\"title\\\":\\\"INT02 native bridge\\\",\\\"subpath\\\":\\\"artifacts/int02-r1-native-test-cqhPZZ/workspace\\\",\\\"location\\\":{\\\"directory\\\":\\\"C:\\\\\\\\Users\\\\\\\\74756\\\\\\\\.codex\\\\\\\\worktrees\\\\\\\\dijiang-next\\\\\\\\openchamber\\\\\\\\artifacts\\\\\\\\int02-r1-native-test-cqhPZZ\\\\\\\\workspace\\\"}}],\\\"cursor\\\":{\\\"previous\\\":\\\"eyJwYXJlbnRJRCI6Im51bGwiLCJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6InByZXZpb3VzIn19\\\",\\\"next\\\":\\\"eyJwYXJlbnRJRCI6Im51bGwiLCJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0\\\"}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace&cursor=eyJwYXJlbnRJRCI6Im51bGwiLCJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0",
+            "method": "GET"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/project",
+            "method": "GET"
+          },
+          {
+            "path": "/session?limit=500&parentID=null&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace&cursor=eyJwYXJlbnRJRCI6Im51bGwiLCJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "method": "GET"
+          },
+          {
+            "path": "/project",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"[{\\\"id\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"canonical\\\":\\\"H:\\\\\\\\Documents\\\\\\\\Abyss\\\\\\\\openchamber\\\",\\\"vcs\\\":\\\"git\\\",\\\"time\\\":{\\\"created\\\":1791714712448,\\\"updated\\\":1791714712448,\\\"active\\\":1791714712471},\\\"sandboxes\\\":[]}]\"}"
+          },
+          {
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[{\\\"id\\\":\\\"ses_ed57b24d1ffeWc0VS1mmy8W4zq\\\",\\\"projectID\\\":\\\"83cb7386acbd343324eec265c0f7cde5bef13ddf\\\",\\\"cost\\\":0,\\\"tokens\\\":{\\\"input\\\":0,\\\"output\\\":0,\\\"reasoning\\\":0,\\\"cache\\\":{\\\"read\\\":0,\\\"write\\\":0}},\\\"time\\\":{\\\"created\\\":1791714712714,\\\"updated\\\":1791714712714},\\\"title\\\":\\\"INT02 native bridge\\\",\\\"subpath\\\":\\\"artifacts/int02-r1-native-test-cqhPZZ/workspace\\\",\\\"location\\\":{\\\"directory\\\":\\\"C:\\\\\\\\Users\\\\\\\\74756\\\\\\\\.codex\\\\\\\\worktrees\\\\\\\\dijiang-next\\\\\\\\openchamber\\\\\\\\artifacts\\\\\\\\int02-r1-native-test-cqhPZZ\\\\\\\\workspace\\\"}}],\\\"cursor\\\":{\\\"previous\\\":\\\"eyJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6InByZXZpb3VzIn19\\\",\\\"next\\\":\\\"eyJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0\\\"}}\"}"
+          },
+          {
+            "type": "api:proxy",
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace&cursor=eyJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0",
+            "method": "GET"
+          },
+          {
+            "path": "/session?limit=500&directory=C%3A%2FUsers%2F74756%2F.codex%2Fworktrees%2Fdijiang-next%2Fopenchamber%2Fartifacts%2Fint02-r1-native-test-cqhPZZ%2Fworkspace&cursor=eyJkaXJlY3RvcnkiOiJDOi9Vc2Vycy83NDc1Ni8uY29kZXgvd29ya3RyZWVzL2RpamlhbmctbmV4dC9vcGVuY2hhbWJlci9hcnRpZmFjdHMvaW50MDItcjEtbmF0aXZlLXRlc3QtY3FoUFpaL3dvcmtzcGFjZSIsImFuY2hvciI6eyJpZCI6InNlc19lZDU3YjI0ZDFmZmVXYzBWUzFtbXk4VzR6cSIsInRpbWUiOjE3OTE3MTQ3MTI3MTQsImRpcmVjdGlvbiI6Im5leHQifX0",
+            "success": true,
+            "data": "{\"status\":200,\"headers\":{\"connection\":\"keep-alive\",\"content-type\":\"application/json\",\"date\":\"Sun, 11 Oct 2026 10:31:54 GMT\",\"keep-alive\":\"timeout=5\",\"vary\":\"Origin, Accept-Encoding\"},\"bodyText\":\"{\\\"data\\\":[],\\\"cursor\\\":{\\\"previous\\\":null,\\\"next\\\":null}}\"}"
+          }
+        ],
+        "diagnostics": [],
+        "body": "Chat\nWhat are we working on in workspace?\nExplore the codebase\nCatch me up\nWeigh my options\nStart feature planning\nDebug an issue\nReview my changes\nsd\nBig Pickle\nBuild",
+        "controls": [
+          {
+            "text": "Chat",
+            "aria": "Open session switcher"
+          },
+          {
+            "text": "",
+            "aria": "MCP servers"
+          },
+          {
+            "text": "",
+            "aria": "Rate limits"
+          },
+          {
+            "text": "Explore the codebase",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Catch me up",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Weigh my options",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Start feature planning",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Debug an issue",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "Review my changes",
+            "aria": null
+          },
+          {
+            "text": "",
+            "aria": "Remove"
+          },
+          {
+            "text": "",
+            "aria": "Add a starter"
+          },
+          {
+            "text": "",
+            "aria": "Attach files"
+          },
+          {
+            "text": "",
+            "aria": "Toggle focus mode"
+          },
+          {
+            "text": "",
+            "aria": "Permissions: ask every time"
+          },
+          {
+            "text": "",
+            "aria": "Send message"
+          }
+        ]
+      },
+      "error": "Error: real session appears in editor switcher"
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/MWYzZmExMmQtMjkwMC00M2FhLTkwMDMtNjQ5MjlkMTVjOTdi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/MWYzZmExMmQtMjkwMC00M2FhLTkwMDMtNjQ5MjlkMTVjOTdi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[SSE] Connecting to /event (attempt 1/4)",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/MWYzZmExMmQtMjkwMC00M2FhLTkwMDMtNjQ5MjlkMTVjOTdi\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:33:11.890Z] Extension host with pid 93576 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "[main 2026-10-11T10:31:46.246Z] updateWindowsJumpList#setJumpList unexpected result: error",
+      "Unknown channel: agentHostClientByokLm",
+      "(node:93576) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)",
+      "libpng warning: iCCP: known incorrect sRGB profile",
+      "libpng warning: iCCP: known incorrect sRGB profile",
+      "Error: Error: real session appears in editor switcher",
+      "\tat exports.run (c:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-cqhPZZ\\suite.cjs:1:10832)"
+    ]
+  },
+  {
+    "suffix": "zVkGbA",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-native-test-zVkGbA",
+    "bytes": 35268871,
+    "classification": "isolated diagnostic or acceptance run",
+    "evidence": {
+      "source": "cc6f2db6049e211ce6822cf37564a3485363e75d",
+      "sourceFingerprints": {
+        "packages/ui/src/sync/domain-event-authority.ts": "51776a036dd37a28a7d2a2f27b5aed6b9aeff82aa88ca82fc8abed31176d78b2",
+        "packages/ui/src/sync/event-reducer.ts": "84261e4257f94fe60f564fa93b360b52f83290068215bbf122dde4436a581023",
+        "packages/vscode/dist/extension.js": "57a3238e19f12d4e2b0b84924a38a840a522af6cbcb445bfd56a5304ce0d6221",
+        "packages/vscode/dist/webview/index.html": "754a076908edbd2d65fc9d0ffd58b7ab200596559258d4ca118f7e670274c3b1"
+      },
+      "runtime": "actual VS Code webview and extension host, production UI assets, real OC2 2.0.20",
+      "result": {
+        "type": "test:result",
+        "success": true,
+        "checks": [
+          "production React webview mounted",
+          "cold editor exposes connection candidate",
+          "runtime bridge responds",
+          "cold runtime is not ready",
+          "candidate can be confirmed",
+          "runtime bridge responds",
+          "native configured test validates without launch",
+          "runtime bridge responds",
+          "configured test keeps cold runtime",
+          "configured test does not save",
+          "external test endpoint input is reachable",
+          "real host probe reaches controlled slow endpoint",
+          "native cancel retires pending test",
+          "runtime bridge responds",
+          "cancel keeps cold runtime",
+          "cancel does not save",
+          "cancel restores test control",
+          "configured candidate restored after cancelled test",
+          "explicit review is shown",
+          "review requires acknowledgement",
+          "review acknowledgement enables switch",
+          "host reports connected",
+          "runtime bridge responds",
+          "real OC2 descriptor admitted",
+          "cold recovery leaves after successful initialization",
+          "production event stream is admitted",
+          "production bridge creates session",
+          "real session has identity",
+          "production bridge reads session",
+          "real session appears in editor switcher",
+          "real session opens in editor",
+          "native editor selection becomes composer attachment",
+          "test session removed",
+          "failed-target preparation uses real bridge",
+          "unreachable target fails explicitly",
+          "failed editor exposes previous connection recovery",
+          "runtime bridge responds",
+          "failed runtime stays unavailable",
+          "previous connection requires review",
+          "previous recovery requires acknowledgement",
+          "recovery acknowledgement enables switch",
+          "previous configured connection restores editor",
+          "runtime bridge responds",
+          "recovered real OC2 descriptor admitted"
+        ]
+      }
+    },
+    "stdout.log": [
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "[AgentHost] No token resolved for resource: https://api.github.com/repos",
+      "Settings Sync: Account status changed from uninitialized to unavailable",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/YWJhZjRiOTgtYzA5Ni00MzFjLTg3MjYtODQzYTMxODQ4YzY5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/YWJhZjRiOTgtYzA5Ni00MzFjLTg3MjYtODQzYTMxODQ4YzY5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false",
+      "[SSE] Connecting to /event (attempt 1/4)",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/YWJhZjRiOTgtYzA5Ni00MzFjLTg3MjYtODQzYTMxODQ4YzY5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[ChatModelSelection] event=no-model-at-toolbar-build surface=\"workbench\" sessionKey=\"local\" conversationKey=\"vscode-chat-session://local/YWJhZjRiOTgtYzA5Ni00MzFjLTg3MjYtODQzYTMxODQ4YzY5\" modelTarget=undefined storageKey=\"chat.currentLanguageModel.panel\" widgetViewKind=\"view\"",
+      "[main 2026-10-11T10:45:00.647Z] Extension host with pid 38564 exited with code: 0, signal: unknown."
+    ],
+    "stderr.log": [
+      "[main 2026-10-11T10:44:09.937Z] updateWindowsJumpList#setJumpList unexpected result: error",
+      "Unknown channel: agentHostClientByokLm",
+      "(node:38564) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.",
+      "(Use `Code --trace-deprecation ...` to show where the warning was created)"
+    ]
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-11T13:54:19.7237036Z",
+  "round": "R2",
+  "task": "INT-03",
+  "baseline": "f5c0fa5c73eb3815ca7dad1285c82bd2578f6f75",
+  "branch": "codex/cagent-integration",
+  "previousRound": "R1 accepted; artifacts/int02-r1-exit.json",
+  "binary": "artifacts/legacy-1.2.27/bin/opencode.exe",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "contractEvidence": "docs/maintenance/evidence/2026-10-09-legacy-contracts.json",
+  "historicalControlledProbe": "artifacts/legacy-1.2.27/conversation-6naNAq/result.json",
+  "owners": [
+    "packages/ui/src/lib/opencode/runtime.ts",
+    "packages/ui/src/lib/opencode/client.ts",
+    "packages/web/server/lib/opencode/kernel-operations.js",
+    "packages/web/server/lib/opencode/compatibility.js"
+  ],
+  "currentLimitation": "UI runtime and host kernel operations explicitly refuse Legacy. Do not remove guards globally; implement and admit only evidence-backed INT-03 operations. Advanced/config/reload gates remain later.",
+  "requiredWorkflow": [
+    "Auto/manual exact identity and read-only manual declaration checks",
+    "session creation, text and attachments, streamed tools and authoritative events",
+    "permission/question replies, stop, completion and reopened history",
+    "actual shared UI and production host journey with exact binary",
+    "focused newer OC1/OC2 core regressions",
+    "synchronized EN/ZH evidence and task-owned temporary cleanup"
+  ],
+  "unavailable": "Real CAgent API mapping remains CA-03; full consumer migration remains R6; distributable acceptance remains R7",
+  "retention": "Retain verified exact binary, sanitized wire fixtures and reusable legacy-contract-probe.mjs for R2. Keep compact historical failures separate from accepted evidence."
+}

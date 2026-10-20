@@ -1,0 +1,9 @@
+{
+  "anti": 1,
+  "regression": 0,
+  "lint": 0,
+  "dead": 0,
+  "types": 0,
+  "vscode-build": 0,
+  "web-build": 0
+}

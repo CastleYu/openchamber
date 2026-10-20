@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-11T17:48:21.794Z",
+  "results": [
+    {
+      "name": "web",
+      "code": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-web-build.log"
+    },
+    {
+      "name": "vscode",
+      "code": 0,
+      "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-vscode-build.log"
+    }
+  ]
+}

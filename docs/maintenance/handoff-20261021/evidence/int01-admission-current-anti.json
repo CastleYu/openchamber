@@ -1,0 +1,1640 @@
+{
+  "diagnostics": [
+    {
+      "message": "Parameter `error` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4061,
+            "length": 7,
+            "line": 70,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4138,
+            "length": 12,
+            "line": 72,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4194,
+            "length": 12,
+            "line": 73,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4245,
+            "length": 46,
+            "line": 73,
+            "column": 67
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4253,
+            "length": 29,
+            "line": 73,
+            "column": 75
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4320,
+            "length": 28,
+            "line": 74,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `error` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 4959,
+            "length": 7,
+            "line": 93,
+            "column": 43
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6339,
+            "length": 13,
+            "line": 131,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 6372,
+            "length": 29,
+            "line": 131,
+            "column": 40
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7437,
+            "length": 16,
+            "line": 164,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7609,
+            "length": 13,
+            "line": 170,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8686,
+            "length": 23,
+            "line": 213,
+            "column": 3
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22813,
+            "length": 40,
+            "line": 560,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 22971,
+            "length": 40,
+            "line": 565,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23035,
+            "length": 51,
+            "line": 568,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23376,
+            "length": 40,
+            "line": 576,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23495,
+            "length": 43,
+            "line": 581,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23615,
+            "length": 58,
+            "line": 584,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23780,
+            "length": 58,
+            "line": 589,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `deriveHomeDirectory` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23858,
+            "length": 43,
+            "line": 592,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 26804,
+            "length": 13,
+            "line": 689,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27100,
+            "length": 14,
+            "line": 698,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 27134,
+            "length": 18,
+            "line": 698,
+            "column": 63
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 35388,
+            "length": 47,
+            "line": 851,
+            "column": 77
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 47251,
+            "length": 70,
+            "line": 1074,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 47507,
+            "length": 80,
+            "line": 1085,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 49696,
+            "length": 109,
+            "line": 1154,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 49996,
+            "length": 23,
+            "line": 1163,
+            "column": 39
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 51975,
+            "length": 35,
+            "line": 1227,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 54151,
+            "length": 23,
+            "line": 1283,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 58761,
+            "length": 53,
+            "line": 1385,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 59738,
+            "length": 60,
+            "line": 1418,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 60004,
+            "length": 57,
+            "line": 1426,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 60071,
+            "length": 51,
+            "line": 1427,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 60291,
+            "length": 28,
+            "line": 1433,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 61946,
+            "length": 96,
+            "line": 1471,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 63636,
+            "length": 60,
+            "line": 1515,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 63889,
+            "length": 38,
+            "line": 1521,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 64422,
+            "length": 60,
+            "line": 1535,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 66149,
+            "length": 41,
+            "line": 1572,
+            "column": 75
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 68856,
+            "length": 60,
+            "line": 1637,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 69889,
+            "length": 60,
+            "line": 1657,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 70634,
+            "length": 60,
+            "line": 1673,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 71207,
+            "length": 60,
+            "line": 1685,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 71748,
+            "length": 60,
+            "line": 1695,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76257,
+            "length": 11,
+            "line": 1804,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76328,
+            "length": 40,
+            "line": 1808,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76613,
+            "length": 25,
+            "line": 1818,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "code": "anti-slop(no-chained-type-assertions)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76867,
+            "length": 42,
+            "line": 1823,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76867,
+            "length": 42,
+            "line": 1823,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76867,
+            "length": 30,
+            "line": 1823,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 76947,
+            "length": 11,
+            "line": 1824,
+            "column": 37
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 78225,
+            "length": 60,
+            "line": 1852,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 78306,
+            "length": 57,
+            "line": 1854,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 80190,
+            "length": 42,
+            "line": 1903,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 80242,
+            "length": 48,
+            "line": 1904,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 80300,
+            "length": 60,
+            "line": 1905,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 80370,
+            "length": 54,
+            "line": 1906,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 80434,
+            "length": 51,
+            "line": 1907,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 84210,
+            "length": 16,
+            "line": 1992,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "code": "anti-slop(no-chained-type-assertions)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 84498,
+            "length": 53,
+            "line": 1997,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 84498,
+            "length": 53,
+            "line": 1997,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 84498,
+            "length": 30,
+            "line": 1997,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 85253,
+            "length": 11,
+            "line": 2021,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 85309,
+            "length": 24,
+            "line": 2022,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 85351,
+            "length": 9,
+            "line": 2023,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 86828,
+            "length": 21,
+            "line": 2055,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 86873,
+            "length": 19,
+            "line": 2057,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 87090,
+            "length": 60,
+            "line": 2063,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 88284,
+            "length": 16,
+            "line": 2089,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This assertion chain discards type evidence. Keep the original precise type, or parse untrusted input at its boundary before narrowing it.",
+      "code": "anti-slop(no-chained-type-assertions)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 88568,
+            "length": 51,
+            "line": 2094,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 88568,
+            "length": 51,
+            "line": 2094,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 88568,
+            "length": 30,
+            "line": 2094,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 89319,
+            "length": 11,
+            "line": 2118,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 89375,
+            "length": 24,
+            "line": 2119,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 89417,
+            "length": 9,
+            "line": 2120,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 92382,
+            "length": 18,
+            "line": 2186,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 92701,
+            "length": 18,
+            "line": 2190,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 93382,
+            "length": 23,
+            "line": 2211,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 93701,
+            "length": 16,
+            "line": 2215,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 97761,
+            "length": 75,
+            "line": 2322,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 98184,
+            "length": 58,
+            "line": 2331,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 98371,
+            "length": 23,
+            "line": 2335,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99752,
+            "length": 23,
+            "line": 2364,
+            "column": 39
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99795,
+            "length": 18,
+            "line": 2365,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99834,
+            "length": 37,
+            "line": 2366,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99886,
+            "length": 31,
+            "line": 2367,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99932,
+            "length": 31,
+            "line": 2368,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 99979,
+            "length": 32,
+            "line": 2369,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 100029,
+            "length": 34,
+            "line": 2370,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 106158,
+            "length": 74,
+            "line": 2505,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 107542,
+            "length": 20,
+            "line": 2544,
+            "column": 37
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 109416,
+            "length": 18,
+            "line": 2592,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 109587,
+            "length": 29,
+            "line": 2594,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 109969,
+            "length": 35,
+            "line": 2606,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 110869,
+            "length": 25,
+            "line": 2638,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 113693,
+            "length": 18,
+            "line": 2704,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 113936,
+            "length": 19,
+            "line": 2711,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 114887,
+            "length": 20,
+            "line": 2737,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 115587,
+            "length": 18,
+            "line": 2759,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 115796,
+            "length": 14,
+            "line": 2765,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/ui/src/lib/opencode/client.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 115842,
+            "length": 32,
+            "line": 2766,
+            "column": 16
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 9,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.4875792
+}

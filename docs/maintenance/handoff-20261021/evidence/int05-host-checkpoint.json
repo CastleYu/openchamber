@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-12T00:13:40.417Z",
+  "status": "R3 INT-05 open",
+  "warmHost": {
+    "vscode": "1.136.1",
+    "legacy": "1.2.27",
+    "checks": 8,
+    "state": "behavior-passed",
+    "launcherSession": 93645,
+    "launcher": "exit 0; terminal suite evidence reconciled"
+  },
+  "coldHost": {
+    "state": "unverified",
+    "cause": "Upstream default-plugin installation; first /session 10215ms versus 5000ms admission",
+    "productionChange": "none",
+    "serviceEvidence": [
+      "INFO  2026-10-12T00:07:34 +34ms service=server status=completed duration=10215 method=GET path=/session request",
+      "INFO  2026-10-12T00:07:34 +0ms service=server status=completed duration=5201 method=GET path=/session request"
+    ],
+    "upstreamSources": [
+      "https://raw.githubusercontent.com/anomalyco/opencode/v1.2.27/packages/opencode/src/plugin/index.ts",
+      "https://raw.githubusercontent.com/anomalyco/opencode/v1.2.27/packages/opencode/src/flag/flag.ts"
+    ]
+  },
+  "source": [
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "8f4fd767d8864356ccacce5111dfa00c5d0aead0451ec5e7ad764b3744a93947"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "d0812f9f655d5f214a2282874fa089365aefd8235b2f32470a5425591a7d8c24"
+    }
+  ],
+  "next": [
+    "Authorized OAuth binding and full credential workflow",
+    "Plugins/unattended then R4",
+    "Fresh-cache cold startup remains separate acceptance"
+  ],
+  "quotaRemainingPercent": 59,
+  "cleanup": {
+    "retainedOldProfiles": [
+      "2860d0453e",
+      "f2777441c9"
+    ],
+    "retainWarmHome": "56cb5301b9/home for subsequent real-host verification",
+    "newProfileCleanup": {
+      "at": "2026-10-12T00:16:27.215Z",
+      "removedTargets": 11,
+      "bytes": 457160710,
+      "removedJunctions": 17,
+      "retainedWarmHome": "int05-manager-owner-run-56cb5301b9/home",
+      "retainedOldProfiles": [
+        "2860d0453e",
+        "f2777441c9"
+      ],
+      "boundary": "All absolute paths and native link targets validated before unlink/deletion; process absence verified immediately before invocation"
+    }
+  },
+  "recovery": {
+    "at": "2026-10-12T00:22:44.824Z",
+    "checks": 10,
+    "state": "behavior-passed",
+    "method": "controlled first session 503 in real host; existing request forwarding refresh; initialized cache",
+    "productionChange": "none",
+    "coldFreshCacheAcceptance": false,
+    "quotaRemainingPercent": 59,
+    "cleanup": {
+      "run": "b22e703910",
+      "bytes": 31551356,
+      "junctions": 0
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createKernelRuntime, KernelRuntimeChangedError } from './kernel-runtime.js';
+import { areOpenCodeVersionsEqual } from './compatibility.js';
 import { createKernelOperations } from './kernel-operations.js';
 import { AGENT_FAMILY } from '../agent/constants.js';
 import { createSessionRuntime } from './session-runtime.js';
@@ -460,4 +461,175 @@ describe('session snapshot protocol ownership', () => {
       sessions.dispose();
     }
   });
+});
+
+describe('kernel identity subscriptions', () => {
+  it('notifies active owners on identity retirement and releases subscribers', async () => {
+    const changes = [];
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => ready(endpoint, epoch),
+      onChange: value => changes.push(value),
+    });
+    await runtime.refresh();
+    const controller = new AbortController();
+    const owner = runtime.get();
+    const release = runtime.subscribe(value => {
+      if (value.epoch !== owner.epoch) controller.abort();
+    });
+    await runtime.refresh();
+    expect(controller.signal.aborted).toBe(false);
+    runtime.invalidate();
+    expect(controller.signal.aborted).toBe(true);
+    expect(changes).toHaveLength(2);
+    release();
+    release();
+    const notifications = [];
+    const stop = runtime.subscribe(value => notifications.push(value));
+    await runtime.refresh();
+    expect(notifications).toHaveLength(1);
+    stop();
+    runtime.invalidate();
+    expect(notifications).toHaveLength(1);
+  });
+
+  it('does not retire subscribers for a transient health probe', async () => {
+    let fail = false;
+    const runtime = createKernelRuntime({
+      getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+      detect: async ({ endpoint, epoch }) => fail
+        ? { generation: 'unreachable', endpoint, epoch, version: null }
+        : ready(endpoint, epoch),
+    });
+    await runtime.refresh();
+    const events = [];
+    const release = runtime.subscribe(value => events.push(value));
+    fail = true;
+    expect((await runtime.reprobe()).preserved).toBe(true);
+    expect(events).toEqual([]);
+    release();
+  });
+});
+
+
+describe('managed kernel binding', () => {
+  const endpoint = 'http://127.0.0.1:4096';
+  const found = (generation, version, inputEndpoint = endpoint, epoch = 0) => ({ generation, endpoint: inputEndpoint, epoch, version });
+
+  it.each([
+    ['oc1 match', 'oc1', '1.18.32', 'oc1', '1.18.32', 'oc1'],
+    ['legacy match', 'oc1', '1.2.27', 'oc1', '1.2.27', 'oc1'],
+    ['oc2 normalized match', 'oc2', '2.0.20', 'oc2', 'v2.0.20+local.1', 'oc2'],
+    ['patch mismatch', 'oc1', '1.18.32', 'oc1', '1.18.33', 'unsupported'],
+    ['prerelease mismatch', 'oc2', '2.0.20', 'oc2', '2.0.20-rc.1', 'unsupported'],
+    ['generation mismatch', 'oc2', '2.0.20', 'oc1', '2.0.20', 'unsupported'],
+  ])('checks %s', async (_name, expectedGeneration, expectedVersion, actualGeneration, actualVersion, generation) => {
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}),
+      detect: async input => found(actualGeneration, actualVersion, input.endpoint, input.epoch) });
+    runtime.setManagedKernel({ generation: expectedGeneration, version: expectedVersion });
+    const descriptor = await runtime.refresh();
+    expect(descriptor.generation).toBe(generation);
+    expect(descriptor.status).toBe(generation === 'unsupported' ? 'mismatch' : undefined);
+  });
+
+  it('normalizes leading v and build metadata while retaining prerelease identity', () => {
+    expect(areOpenCodeVersionsEqual('v2.0.20+one', '2.0.20+two')).toBe(true);
+    expect(areOpenCodeVersionsEqual('2.0.20-rc.1', '2.0.20-rc.1+build')).toBe(true);
+    expect(areOpenCodeVersionsEqual('2.0.20-rc.1', '2.0.20')).toBe(false);
+    expect(areOpenCodeVersionsEqual('bad', 'bad')).toBe(false);
+    expect(areOpenCodeVersionsEqual(undefined, '1.2.3')).toBe(false);
+  });
+
+  it('marks a missing-version ready manual admission unverified', async () => {
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}), getRequestedSelection: () => 'oc1',
+      detectProfile: async ({ endpoint: foundEndpoint, epoch, selection }) => ({ status: 'ready', selection, provenance: 'server', exactVersion: false,
+        descriptor: { ...found('oc1', null, foundEndpoint, epoch), profile: 'oc1' } }),
+    });
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+    const descriptor = await runtime.refresh();
+    expect(descriptor).toMatchObject({ generation: 'unsupported', status: 'unverified' });
+    expect(runtime.getAdmission()).toMatchObject({ status: 'unverified', selection: 'oc1' });
+  });
+
+  it('rejects a mismatch for concurrent refresh and reprobe before any ready notification', async () => {
+    let finish;
+    const changes = [];
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}),
+      detect: input => new Promise(resolve => { finish = () => resolve(found('oc1', '1.18.33', input.endpoint, input.epoch)); }),
+      onChange: descriptor => changes.push(descriptor),
+    });
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+    changes.length = 0;
+    const refresh = runtime.refresh();
+    const reprobe = runtime.reprobe();
+    await Promise.resolve(); finish();
+    const [descriptor, health] = await Promise.all([refresh, reprobe]);
+    expect(descriptor.generation).toBe('unsupported');
+    expect(health.generation).toBe('unsupported');
+    expect(changes.some(change => change.generation === 'oc1' || change.generation === 'oc2')).toBe(false);
+  });
+
+  it('retires a previously ready descriptor on re-probe mismatch', async () => {
+    let version = '1.18.32';
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}),
+      detect: async input => found('oc1', version, input.endpoint, input.epoch),
+    });
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+    await runtime.refresh(); version = '1.18.33';
+    const health = await runtime.reprobe();
+    expect(health.preserved).toBe(false);
+    expect(runtime.get()).toMatchObject({ generation: 'unsupported', status: 'mismatch' });
+  });
+
+  it('rejects an outstanding probe when the managed binding changes', async () => {
+    let finish;
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}),
+      detect: input => new Promise(resolve => { finish = () => resolve(found('oc1', '1.18.32', input.endpoint, input.epoch)); }),
+    });
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+    const pending = runtime.refresh(); await Promise.resolve();
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.33' });
+    finish();
+    await expect(pending).rejects.toBeInstanceOf(KernelRuntimeChangedError);
+    expect(runtime.get().generation).toBe('unknown');
+  });
+
+  it('retains the binding across ordinary invalidation and clears it explicitly', async () => {
+    const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}),
+      detect: async input => found('oc1', '1.18.33', input.endpoint, input.epoch),
+    });
+    runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+    runtime.invalidate();
+    expect((await runtime.refresh()).generation).toBe('unsupported');
+    runtime.setManagedKernel(null);
+    expect((await runtime.refresh()).generation).toBe('oc1');
+  });
+});
+
+
+it('clears the managed constraint and admits a remote-only profile', async () => {
+  const endpoint = 'http://127.0.0.1:4096';
+  const runtime = createKernelRuntime({ getEndpoint: () => endpoint, getHeaders: () => ({}), getRequestedSelection: () => 'auto',
+    detectProfile: async ({ endpoint: foundEndpoint, epoch, selection }) => ({ status: 'ready', selection, provenance: 'server', exactVersion: false,
+      descriptor: { generation: 'oc2', version: '2.0.20', endpoint: foundEndpoint, epoch, profile: 'oc2' } }),
+  });
+  runtime.setManagedKernel({ generation: 'oc1', version: '1.18.32' });
+  expect((await runtime.refresh()).generation).toBe('unsupported');
+  runtime.setManagedKernel(null);
+  expect((await runtime.refresh()).generation).toBe('oc2');
+  expect(runtime.getAdmission()).toMatchObject({ status: 'ready', selection: 'auto' });
+});
+
+
+it('retracts a bound ready descriptor when its endpoint stops reporting a version', async () => {
+  let version = '1.2.27';
+  const runtime = createKernelRuntime({ getEndpoint: () => 'http://127.0.0.1:4096', getHeaders: () => ({}),
+    detect: async ({ endpoint, epoch }) => ({ generation: 'oc1', endpoint, epoch, version }),
+  });
+  runtime.setManagedKernel({ generation: 'oc1', version });
+  await runtime.refresh();
+  version = null;
+  const health = await runtime.reprobe();
+  expect(health.preserved).toBe(false);
+  expect(runtime.get()).toMatchObject({ generation: 'unsupported', status: 'unverified' });
 });

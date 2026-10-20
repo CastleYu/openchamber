@@ -1,0 +1,16 @@
+[
+  {
+    "injected": false,
+    "status": 200,
+    "sessionCreated": true,
+    "elapsedMs": 2324,
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-plugin-isolate-lMgJLG"
+  },
+  {
+    "injected": true,
+    "status": 200,
+    "sessionCreated": true,
+    "elapsedMs": 20981,
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-plugin-isolate-C9L3ju"
+  }
+]

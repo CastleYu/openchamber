@@ -1,0 +1,38 @@
+[
+  {
+    "scenario": "setup",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-x46zTV",
+    "checks": [
+      "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+      "non-TTY JSON output is pure and contains no configured password",
+      "authenticated configuration remains reachable",
+      "saved record is sole startup authority and failure does not select a fallback",
+      "CLI authenticated stop completes with JSON output",
+      "owned upstream registry is empty after shutdown"
+    ]
+  },
+  {
+    "scenario": "external",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-JgQ7mT",
+    "checks": [
+      "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+      "non-TTY JSON output is pure and contains no configured password",
+      "authenticated configuration remains reachable",
+      "saved record is sole startup authority and failure does not select a fallback",
+      "CLI authenticated stop completes with JSON output",
+      "owned upstream registry is empty after shutdown"
+    ]
+  },
+  {
+    "scenario": "configured",
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-cli-admission-dbfi84",
+    "checks": [
+      "CLI daemon starts without OpenCode on PATH despite invalid imported binary",
+      "non-TTY JSON output is pure and contains no configured password",
+      "authenticated configuration remains reachable",
+      "saved record is sole startup authority and failure does not select a fallback",
+      "CLI authenticated stop completes with JSON output",
+      "owned upstream registry is empty after shutdown"
+    ]
+  }
+]

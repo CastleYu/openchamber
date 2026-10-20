@@ -56,9 +56,9 @@ both settings are `false`.
 The production callback router admits only the OpenCode family and non-Legacy
 profile before dispatching OC1 to the retained plugin and OC2 to the current
 plugin. An unknown generation returns 503. The callback boundary rejects
-unaccepted Legacy requests; managed plugin preparation has its own family and
-revision lease, so this callback guard does not imply every Legacy plugin
-preparation path is disabled.
+unaccepted Legacy requests. The [managed environment owner](../opencode/DOCUMENTATION.md)
+skips generated plugin preparation for stable exact 1.2.27 before reading
+settings. This leaves Legacy tool support closed pending acceptance.
 
 ## Agent context budget
 

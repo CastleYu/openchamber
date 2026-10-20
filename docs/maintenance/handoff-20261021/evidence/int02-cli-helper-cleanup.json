@@ -1,0 +1,22 @@
+[
+  {
+    "sha256": "20CED5C34E5C2DC7F30A04A8961E2BA94BA6D0E161B27460FEDC6C11D5E22E1E",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-cli-auth-edit.mjs",
+    "bytes": 5982
+  },
+  {
+    "sha256": "01388DF19B81FA11D525B2EA5FBF2A0AD8855917506CA16BFDAD53087C64243C",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-cli-finalize.mjs",
+    "bytes": 5957
+  },
+  {
+    "sha256": "76D43FB3EA04318F3059829318A2FE38C537BF056317B8A0EC786AB4E2E50964",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-cli-review.mjs",
+    "bytes": 1401
+  },
+  {
+    "sha256": "DF031D14FAD63DC93491B0533E0856034E7AC5FF8A12545C664BEFD5D0266402",
+    "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\int02-cli-cleanup.ps1",
+    "bytes": 3013
+  }
+]

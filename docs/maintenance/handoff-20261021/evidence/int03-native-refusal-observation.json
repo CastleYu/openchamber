@@ -1,0 +1,437 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 1,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": false,
+      "checks": [
+        "production manager connected",
+        "GET /api/opencode/runtime succeeds",
+        "Auto admits exact Legacy",
+        "GET /api/opencode/runtime succeeds",
+        "exact upstream version",
+        "dedicated production SSE bridge admitted",
+        "POST /api/session succeeds",
+        "native bridge creates real session",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46 succeeds",
+        "isolated metadata round trip",
+        "editor session switcher reachable",
+        "created session appears in production switcher",
+        "created session opens in production editor",
+        "composer is reachable",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "composer text completes in authoritative history",
+        "assistant response rendered by production UI",
+        "native selection appears as composer attachment",
+        "composer is reachable",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "attachment turn persisted",
+        "attachment turn settles",
+        "composer is reachable",
+        "real tool permission appears in production UI",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "approved real bash tool output persists",
+        "tool turn settles",
+        "composer is reachable",
+        "real tool question appears",
+        "question submit appears",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "question response completes in history",
+        "question turn settles",
+        "composer is reachable",
+        "held model exposes Stop generating",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "GET /api/session/ses_ed4375038ffeaAsxuODrb8VY46/message succeeds",
+        "stop persists authoritative abort",
+        "stop restores idle composer",
+        "PATCH /api/config/settings succeeds",
+        "GET /api/opencode/runtime succeeds",
+        "manual Legacy selection rebinds"
+      ],
+      "error": "Error: OpenCode legacy-1.2.27 request is not supported",
+      "sessionID": "ses_ed4375038ffeaAsxuODrb8VY46",
+      "body": "INT03 native Legacy\n\nLEGACY_NATIVE_TEXT\n\n12:25 AM\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n1.8s\n\nLEGACY_NATIVE_ATTACHMENT\n\nfixture.js\n12:25 AM\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n1.3s\n\nLEGACY_PERMISSION\n\n12:25 AM\n\nPreparing controlled tool.\n\nShell Command\n0.4s\necho LEGACY_APPROVED\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n3.1s\n\nLEGACY_QUESTION\n\n12:25 AM\n\nPreparing controlled tool.\n\nQuestion\nAsked 1 question\n\nLEGACY_COMPLETED\n\nControlled probe\n·\nbuild\n·\n2.5s\n\nLEGACY_HOLD\n\n12:25 AM\n\nOpencode failed to send message with error: The operation was aborted.\n\nControlled probe\n·\nbuild\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nControlled probe\nBuild",
+      "controls": [
+        {
+          "text": "INT03 native Legacy",
+          "aria": "Open session switcher",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "MCP servers",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Rate limits",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "More actions",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Scroll to bottom",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Attach files",
+          "title": "Attach files"
+        },
+        {
+          "text": "",
+          "aria": "Toggle focus mode",
+          "title": null
+        },
+        {
+          "text": "",
+          "aria": "Enable permission auto-accept",
+          "title": "Enable permission auto-accept"
+        },
+        {
+          "text": "",
+          "aria": "Send message",
+          "title": null
+        }
+      ],
+      "diagnostics": [],
+      "wire": [
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 204
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:config/settings:save",
+          "success": true
+        },
+        {
+          "type": "api:sse:end",
+          "error": "OpenCode connection changed during request"
+        },
+        {
+          "type": "api:sse:stop",
+          "success": true
+        },
+        {
+          "type": "api:opencode/runtime",
+          "success": true,
+          "status": "ready"
+        },
+        {
+          "type": "api:proxy",
+          "success": false,
+          "error": "OpenCode legacy-1.2.27 request is not supported"
+        }
+      ]
+    },
+    "error": "Error: OpenCode legacy-1.2.27 request is not supported"
+  },
+  "modelCalls": [
+    {
+      "marker": "\"LEGACY_NATIVE_TEXT\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "[{\"type\":\"text\",\"text\":\"LEGACY_NATIVE_ATTACHMENT\"},{\"type\":\"text\",\"text\":\"Called the Read tool with the following input: {\\\"filePath\\\":\\\"fixture.js\\\"}\"},{\"type\":\"text\",\"text\":\"const attached = \\\"LEGACY_NATIVE_ATTACHMENT_CONTENT\\\";\\n\"}]",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_PERMISSION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_QUESTION\"",
+      "afterTool": true,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    },
+    {
+      "marker": "\"LEGACY_HOLD\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "server.heartbeat",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "permission.asked",
+    "permission.replied",
+    "question.asked",
+    "question.replied",
+    "session.error"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-BFh2TQ",
+  "limitations": [
+    "Controlled model does not prove external provider quality",
+    "Reopen and remaining cross-host/current-profile checks must be independently verified"
+  ]
+}

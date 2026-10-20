@@ -1,0 +1,232 @@
+{
+  "source": "37bc3948e9ab283d0c9a5ca2a5fe25b3217cd0f1",
+  "sourceHashes": {
+    "packages/web/server/index.js": "6bf37fc362d6edad89190589e62ca79591025beab6126998a0b0c71f3858859f",
+    "packages/web/server/lib/opencode/kernel-operations.js": "4b4d3c7c290136d34f6b79ba9a6770491bf02792b4f865330d3e39a00360e14f",
+    "packages/web/server/lib/routing/runtime.js": "31334225d26f31dca39ffc3a8a57a2c3b7c179bb01d28495e2b1fb57125ece29"
+  },
+  "version": "opencode v2.0.20",
+  "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int03-current-oc2-fGnole",
+  "checks": [
+    "actual host refuses unauthenticated mutation",
+    "production host discovers exact OC2",
+    "production facade creates real session",
+    "real model stream completes and normalizes history",
+    "reopened session retains completed history",
+    "real interrupted generation returns idle",
+    "host shutdown preserves external OC2 process"
+  ],
+  "calls": [
+    {
+      "marker": "\"R2_TEXT\"",
+      "path": "/v1/chat/completions"
+    },
+    {
+      "marker": "\"R2_HOLD\"",
+      "path": "/v1/chat/completions"
+    }
+  ],
+  "limitations": [
+    "Controlled loopback model; no external provider quality or mobile/device claims"
+  ],
+  "upstreamPid": 140396,
+  "sessionID": "ses_ed4233e22ffe1qfEpYbyf1vLqu",
+  "history": [
+    {
+      "id": "msg_12bdcc4d1001jTQClqr9dIQYgU",
+      "role": "model-switched",
+      "textParts": [],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcc4d1001jTQClqr9dIQYgU",
+        "type": "model-switched",
+        "time": {
+          "created": 1791737251025
+        },
+        "model": {
+          "id": "probe",
+          "providerID": "regression"
+        }
+      },
+      "created": 1791737251025,
+      "model": {
+        "id": "probe",
+        "providerID": "regression"
+      }
+    },
+    {
+      "id": "msg_12bdcc4df001JOyhPp4wBuL904",
+      "role": "user",
+      "textParts": [
+        "R2_TEXT"
+      ],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcc4df001JOyhPp4wBuL904",
+        "type": "user",
+        "time": {
+          "created": 1791737251193
+        },
+        "text": "R2_TEXT"
+      },
+      "text": "R2_TEXT",
+      "created": 1791737251193
+    },
+    {
+      "id": "msg_12bdcc588001sD9vBZFVNGYAIR",
+      "role": "assistant",
+      "textParts": [
+        "R2_COMPLETED"
+      ],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcc588001sD9vBZFVNGYAIR",
+        "type": "assistant",
+        "time": {
+          "created": 1791737251666,
+          "streamed": 1791737251692,
+          "completed": 1791737251893
+        },
+        "agent": "build",
+        "model": {
+          "id": "probe",
+          "providerID": "regression",
+          "variant": "default"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "R2_COMPLETED"
+          }
+        ],
+        "snapshot": {
+          "start": "142e0933a452eab1a72f4c8557c9d8b6af9f873a",
+          "end": "142e0933a452eab1a72f4c8557c9d8b6af9f873a",
+          "files": []
+        },
+        "finish": "stop",
+        "rawFinish": "stop",
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      },
+      "agent": "build",
+      "variant": "default",
+      "text": "R2_COMPLETED",
+      "created": 1791737251666,
+      "completed": 1791737251893,
+      "finish": "stop",
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "reasoning": 0,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      },
+      "model": {
+        "id": "probe",
+        "providerID": "regression",
+        "variant": "default"
+      }
+    },
+    {
+      "id": "msg_12bdcc8010017gw5nTxFEH4rST",
+      "role": "user",
+      "textParts": [
+        "R2_HOLD"
+      ],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcc8010017gw5nTxFEH4rST",
+        "type": "user",
+        "time": {
+          "created": 1791737251906
+        },
+        "text": "R2_HOLD"
+      },
+      "text": "R2_HOLD",
+      "created": 1791737251906
+    },
+    {
+      "id": "msg_12bdcc84a00152SdIleGNbs0vU",
+      "role": "assistant",
+      "textParts": [
+        "R2_WAIT"
+      ],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcc84a00152SdIleGNbs0vU",
+        "type": "assistant",
+        "time": {
+          "created": 1791737252109,
+          "streamed": 1791737252171,
+          "completed": 1791737252354
+        },
+        "agent": "build",
+        "model": {
+          "id": "probe",
+          "providerID": "regression",
+          "variant": "default"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "R2_WAIT"
+          }
+        ],
+        "snapshot": {
+          "start": "142e0933a452eab1a72f4c8557c9d8b6af9f873a",
+          "end": "142e0933a452eab1a72f4c8557c9d8b6af9f873a",
+          "files": []
+        },
+        "finish": "error",
+        "error": {
+          "type": "aborted",
+          "message": "Step interrupted"
+        }
+      },
+      "agent": "build",
+      "variant": "default",
+      "text": "R2_WAIT",
+      "created": 1791737252109,
+      "completed": 1791737252354,
+      "finish": "error",
+      "error": {
+        "type": "aborted",
+        "message": "Step interrupted"
+      },
+      "model": {
+        "id": "probe",
+        "providerID": "regression",
+        "variant": "default"
+      }
+    },
+    {
+      "id": "msg_12bdcca05001QT49CTvnGEsGgZ",
+      "role": "idle",
+      "textParts": [],
+      "tools": [],
+      "raw": {
+        "id": "msg_12bdcca05001QT49CTvnGEsGgZ",
+        "type": "idle",
+        "time": {
+          "created": 1791737252357
+        },
+        "outcome": "interrupted"
+      },
+      "created": 1791737252357
+    }
+  ],
+  "success": true,
+  "ownedProcessStopped": true
+}

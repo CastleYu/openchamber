@@ -1,0 +1,19 @@
+{
+  "sourceHead": "42c6f7396",
+  "profile": "oc2",
+  "mode": "configured",
+  "version": "2.0.20",
+  "testHome": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-workflow-managed-current-configured-j6VyUC",
+  "acceptanceChecks": 24,
+  "logHttpLines": 186,
+  "tempFiles": 66,
+  "tempDirectories": 35,
+  "tempBytes": 12926444,
+  "registryEntries": 0,
+  "activeProcessMatches": 0,
+  "reparsePoints": 0,
+  "realBinaryPath": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int01-real\\oc2-2.0.20\\package\\bin\\opencode.exe",
+  "realBinaryBytes": 206857096,
+  "temporaryHomeRemoved": true,
+  "oneOffHelperRemoved": true
+}

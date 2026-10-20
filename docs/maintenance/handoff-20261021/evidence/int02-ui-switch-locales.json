@@ -1,0 +1,39 @@
+{
+  "locales": [
+    "en",
+    "zh-CN",
+    "zh-TW",
+    "de",
+    "es",
+    "fr",
+    "ja",
+    "ko",
+    "nl",
+    "pl",
+    "pt-BR",
+    "tr",
+    "uk"
+  ],
+  "keys": [
+    "review",
+    "activityBusy",
+    "activityBusyGlobal",
+    "activityPermissions",
+    "activityQuestions",
+    "activityQueue",
+    "coverage",
+    "unknown",
+    "clients",
+    "acknowledge",
+    "consequences",
+    "wait",
+    "stop",
+    "previous",
+    "refresh",
+    "activityChanged",
+    "switchFailed",
+    "reviewFailed"
+  ],
+  "uniqueKeys": true,
+  "countPlaceholders": true
+}

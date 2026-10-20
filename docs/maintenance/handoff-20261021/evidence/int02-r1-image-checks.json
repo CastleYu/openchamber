@@ -1,0 +1,67 @@
+[
+  {
+    "seconds": 158.01,
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-types.log",
+    "exitCode": 0,
+    "name": "types"
+  },
+  {
+    "seconds": 57.22,
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-lint.log",
+    "exitCode": 0,
+    "name": "lint"
+  },
+  {
+    "seconds": 67.42,
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-dead.log",
+    "exitCode": 0,
+    "name": "dead"
+  },
+  {
+    "seconds": 195.14,
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-web-build.log",
+    "exitCode": 0,
+    "name": "web-build"
+  },
+  {
+    "seconds": 173.57,
+    "log": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-r1-image-vscode-build.log",
+    "exitCode": 0,
+    "name": "vscode-build"
+  },
+  {
+    "file": "packages/web/server/index.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "file": "packages/web/server/lib/markdown-image-grants/routes.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "file": "packages/web/server/lib/markdown-image-grants/routes.test.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "file": "packages/web/server/lib/opencode/feature-routes-runtime.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "file": "packages/web/server/lib/opencode/kernel-operations.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "file": "packages/web/server/lib/opencode/kernel-operations.test.js",
+    "exitCode": 0,
+    "name": "syntax"
+  },
+  {
+    "log": "artifacts/int02-r1-image-oxlint.json",
+    "exitCode": 1,
+    "name": "oxlint"
+  }
+]

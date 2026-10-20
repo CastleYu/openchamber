@@ -29,7 +29,21 @@ Each webview consumes host connection status in `VSCodeApp`. An unavailable stat
 
 Confirmed connection ownership is defined in the [integration specification](../../../docs/maintenance/OPENCODE-INTEGRATION-SPEC.md#vs-code-confirmed-connection-ownership), with a synchronized [Chinese review copy](../../../docs/maintenance/zh-CN/OPENCODE-INTEGRATION-SPEC.md). The manager adopts that contract through connection-runtime.js and connection-settings.ts. The managed process accepts the established OC1 and OC2 readiness prefixes.
 
+Exact Legacy 1.2.27 private credential reads in `opencodeAuth.ts` now use the
+shared `legacy-credentials.js` owner and the manager native process context.
+Windows path resolution, missing/corrupt handling and retirement follow the
+[shared credential contract](../../web/server/lib/opencode/DOCUMENTATION.md#public-exports-authjs).
+External/command connections and unverified platforms return unsupported.
+The manager subscription combines kernel retirement with native context changes, queued stop/restart and managed process exit. The process handle exposes whenExited separately from pipe closure so descendants holding stdio cannot delay credential cancellation. Private Provider composition now uses one owner per manager through `legacyProviderDocument.ts`; controlled host tests cover native retirement and document isolation. Real IDE Provider workflow and provider OAuth acceptance remain pending.
+Generic Provider mutation routes and Legacy xAI refresh remain refused; the old
+fixed-path writer must not receive Legacy credentials. Explicit `/api/legacy/providers/*` requests use the private owner.
+
 ## Runtime modules
+
+- `legacyProviderDocument.ts`
+  - Handles the explicit finite Legacy Provider bridge before generic proxy forwarding in chat, agent-manager and session panels. One private runtime per manager shares disconnect locks and unknown credential outcomes, and is disposed through extension subscriptions.
+  - Each document has a host-generated caller and abort lifetime. Ready/reset and disposal retire its pending requests and retained OAuth attempts without canceling sibling documents. Request abort is scoped to that document and request ID. Bodies cannot supply caller identity.
+  - Reuses the Web request dispatcher for schemas, exact runtime admission, enterprise restrictions, persistence feedback and sanitized errors. The webview adapter preserves Fetch signal overrides and forwards cancellation; no raw credentials are returned. Controlled tests establish this boundary, not real IDE or provider OAuth acceptance.
 
 - `bridge.ts`
   - Entry orchestration layer for bridge messages.
@@ -48,7 +62,7 @@ Confirmed connection ownership is defined in the [integration specification](../
   - Tracks outstanding commands through completion and timeout cleanup. Extension deactivation awaits `stopGitProcesses`, which terminates active work and rejects later launches. Operations delegated to VS Code's built-in Git API remain owned by that extension.
 
 - `owned-process.ts`
-  - Owns background child termination shared by Git and managed OpenCode. POSIX children have a separate process group, which receives SIGKILL after the grace period or root exit so a SIGTERM-resistant descendant cannot survive. Windows enumerates and terminates the tree before losing its root, using an asynchronous hidden `taskkill` invocation. Completion waits for stdio closure; failed termination remains an error. Failed termination retains ownership and permits an explicit retry. The manager publishes error with no resolved endpoint and blocks a replacement launch until that cleanup succeeds, as required by the integration specification.
+  - Owns background child termination shared by Git and managed OpenCode. POSIX children have a separate process group, which receives SIGKILL after the grace period or root exit so a SIGTERM-resistant descendant cannot survive. Windows enumerates and terminates the tree before losing its root, using hidden asynchronous `taskkill` invocations. Only one invocation runs at a time; queued owned PIDs share the next invocation. Each request retains its original five-second budget, including queue time. Already-exited owners are removed before dispatch. A batch uses its earliest remaining deadline, so later requests can fail early and remain available for explicit retry. Completion waits for stdio closure; failed termination remains an error. Failed termination retains ownership and permits an explicit retry. The manager publishes error with no resolved endpoint and blocks a replacement launch until that cleanup succeeds, as required by the integration specification.
 
 - `managed-opencode-process.ts` and `opencode.ts`
   - The process handle and shared registry entry exist from spawn, before readiness. Startup timeout, malformed output, and cancellation terminate the child before the attempt settles. Registry removal follows confirmed termination. Startup diagnostics report the failure reason, selected binary and received byte count. Raw child stdout/stderr stays out of returned errors because commands can print environment credentials. The readiness parser retains only its bounded incomplete line; ready processes keep draining both streams.
@@ -130,7 +144,7 @@ The webview build emits each worker as one self-contained file. VS Code webviews
   - Includes Zen utility model parity handler used by shared notification settings (`/api/zen/models`).
   - Owns managed OpenCode upgrade status and mutation handlers, including capability reporting, upgrade serialization, and process restart after a successful upgrade.
   - Provider handlers cover source lookup, disconnect (`DELETE /api/provider/:id/auth`), and custom provider upsert (`PUT /api/provider`; create/update OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages config with explicit `scope` for user/project/custom layers; requires `env` or stored auth; secrets via OpenCode auth API). Updates preserve existing provider, option, and retained-model fields that the form does not manage while honoring explicit model, header, and env removal. Legacy `providers` entries migrate to the canonical `provider` key when edited.
-  - Provider source/delete/upsert and provider quota lookup capture generation, profile, endpoint and epoch at admission. Discovery preserves a known endpoint and validates its returned descriptor against the current owner; asynchronous credential/quota reads recheck that owner before configuration writes or publishing results. Legacy provider operations explicitly refuse pending their VS Code acceptance.
+  - Provider source/delete/upsert and provider quota lookup capture generation, profile, endpoint and epoch at admission. Discovery preserves a known endpoint and validates its returned descriptor against the current owner; asynchronous credential/quota reads recheck that owner before configuration writes or publishing results. Generic Legacy provider operations explicitly refuse; the dedicated private entry is owned by `legacyProviderDocument.ts`.
   - OC2 provider source reads use the read-only OpenCode credential database and v2 config reader. OC2 credential deletion returns an explicit ownership error; config removal and upsert use the v2 writer. OC1 keeps `auth.json` and its existing config writes. Session archive/metadata bridge messages use OpenCode native updates on OC1 and OpenChamber scoped state on OC2. Both capture generation, profile, endpoint and epoch before dispatch and reject retired results. OC1 metadata reads and unarchive routing recheck identity before a following write; multi-session archive operations stop when their owner retires. Legacy session operations explicitly refuse before I/O pending their VS Code acceptance.
 
 - `openchamberSessionState.ts`
@@ -348,3 +362,9 @@ The extension connection runtime composes the shared host test owner. The dedica
 
 
 The private getNativeConfigContext getter returns a copied launch environment and cwd only while the ready native managed process still owns the current connection. It returns null during transitions, after retirement or process exit, and for Command/external connections. Null must never fall back to the host user's configuration. Exact Legacy MCP configuration now uses the shared native file owner through the config bridge; other Legacy configuration routes remain refused. The bridge reads path/config through the selected SDK, returns raw editable placeholders or a read-only view, awaits file mutations and reports deferred application. Command and external managers have no native file context. See the [file owner contract](../../web/server/lib/opencode/DOCUMENTATION.md). Transport tests cover consecutive saves and deletion; real IDE rendering and R4 apply/reload remain separate acceptance gates.
+
+### Managed CLI and endpoint binding
+
+Native managed OpenCode binds the probed CLI generation and full version before publishing an endpoint descriptor. Shared refresh and health re-probe retain this binding across invalidation. Version comparison ignores a v prefix and build metadata, but preserves prerelease identity. A mismatched or missing endpoint version cannot retain ready state. Command and external targets remain endpoint-authoritative. Web retires readiness and endpoint before awaiting child closure; failed closure preserves the owned process and blocks a second spawn. VS Code publishes connected only after endpoint admission.
+
+The shared launch probe uses the same Windows batch resolver as spawning. Preparation schema version is not the CLI version. See artifacts/int05-cli-binding-checkpoint.json for current validation boundaries.

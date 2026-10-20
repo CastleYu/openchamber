@@ -1,0 +1,43 @@
+{
+  "sourceSha": "d24aa2d40020039d5ac7659c3b966c3795b72790",
+  "pendingChecks": [
+    "production host admits synthetic OC2 external identity",
+    "permissions pending blocks wait without saving or interrupting",
+    "questions pending blocks wait without saving or interrupting",
+    "failed permission read remains unknown and blocks wait while preserving other categories",
+    "busy wait leaves external upstream untouched",
+    "accepted interruption without authoritative idle blocks replacement",
+    "explicit stop rechecks authoritative idle before committing replacement",
+    "committed confirmation cannot be replayed",
+    "host shutdown preserves external server and creates no managed process"
+  ],
+  "occupiedChecks": [
+    "occupied command port refuses readiness",
+    "failed owned launch attempts exit",
+    "failed startup leaves empty managed registry",
+    "existing occupied listener survives startup failure",
+    "existing listener still serves its original response"
+  ],
+  "removed": true,
+  "items": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-pending-host-WjGGhv",
+      "bytes": 3664
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-pending-host-rt018J",
+      "bytes": 4118
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-pending-host-uJtSJN",
+      "bytes": 5211
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-occupied-port-QeBP8G",
+      "bytes": 317
+    }
+  ],
+  "failures": "Pending fixture initial run compared pre-normalization settings; second run omitted OC2 data envelope. Retained initial/final logs and last failure JSON. Corrected accepted log is int02-pending-host-accepted.log.",
+  "limits": "Pending decisions use a synthetic OC2 API with production authenticated host. Port conflict uses a real Windows command child and task-owned listener. Neither is a real model conversation.",
+  "retained": "Reusable drivers, compact evidence and logs remain until R1 closeout; current OC2 binaries/builds remain required by later milestones."
+}

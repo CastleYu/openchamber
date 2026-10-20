@@ -1,0 +1,17 @@
+{
+  "scope": "Await old Legacy OAuth cancellation before runtime endpoint, auth and relay commit",
+  "surfaces": {
+    "web": "Await same-origin host navigation and same-host credential replacement",
+    "electron": "Await renderer runtime switch; adopt probe tunnel only at commit; no IPC changes",
+    "vscode": "Shared cancellation lifecycle; Provider bridge adoption remains a separate R3 gate",
+    "hostedMobile": "Await shared switch and navigation",
+    "capacitor": "Await disconnect, reconnect and LAN/relay switch"
+  },
+  "failure": "Bound wait to 3 seconds, invalidate locally, warn if remote cleanup unconfirmed, never replay on new host",
+  "validation": [
+    "service pending begin and stable cancel tests",
+    "switch ordering, concurrent switch, timeout and relay adoption tests",
+    "existing runtime regression tests",
+    "UI and workspace type/lint checks"
+  ]
+}

@@ -48,3 +48,18 @@ The pinned schema exposes messageID and message/history reads, but no separate i
 Web uses the shared detector; Electron reuses the in-process Web backend; VS Code imports the same detector in its extension host; hosted mobile and Capacitor use the selected host descriptor. Each stops after an authenticated stable 1.2.27 health response. No UI, bridge payload or persisted profile changes in this correction. Other versions retain their health/info comparison, now sequential. A slow health probe can therefore delay the info probe by its existing five-second timeout. This does not enable the dedicated Legacy profile.
 
 Focused compatibility/kernel-runtime tests pass 38 cases, including three stable-version representations and a prerelease contradiction. Web and VS Code type-checks pass; authored-file oxlint reports no diagnostics. Packaged host behavior was not rerun for this correction. The published CAgent preview remains pinned to its original release source.
+
+
+## INT-05 queue terminal checkpoint, 2026-10-14
+
+Legacy queue attempts now persist a private caller messageID before sending. Its sortable 48-bit prefix matches the pinned protocol. Public snapshots retain only attempt ID, state and creation time. HTTP acceptance remains accepted; a lost response remains unknown until authoritative evidence resolves it.
+
+At an existing queue wake, the same owner first verifies idle, reads a bounded two-message tail, then re-reads a matching assistant by ID. It requires the captured parent ID, session and current runtime/target, a completed timestamp, and either final stop or a structured error. Tool-call intermediate replies cannot complete an attempt. A failed terminal write retains unknown; no automatic resend is added. Records without the private ID, missing tail matches, command synthetic parents and compaction without an exact match remain inconclusive.
+
+The official 1.2.27 executable passed four direct API cases and the same four cases through production KernelOperations and the queue: normal completion, lost response, tool continuation and abort. Ten controlled model calls occurred, with no extra replay. Each caller message was read by its exact ID; queue result persistence and unchanged public projection were checked. The isolated server, sockets and scratch data were removed. This proves these API and queue paths with a controlled provider; it does not accept real-model behavior or packaged UI.
+
+Reproduce with the existing verified binary, without Git, downloads or real credentials:
+
+`node scripts/legacy-attempt-probe.mjs artifacts/legacy-1.2.27`
+
+Sanitized local evidence is artifacts/int05-legacy-attempt-evidence.json. R3 remains open for scheduled task and goal owners, VS Code local attempts, real IDE Provider/OAuth and native switching. Older evidence about absent idempotency guarantees still applies. Exact terminal correlation proves an observed outcome, never deduplication.

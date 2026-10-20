@@ -1,0 +1,313 @@
+{
+  "source": "3cf78c66fccf66f0e68efcd9ccb8e9081910e38d",
+  "sourceHashes": {
+    "packages/ui/src/sync/sync-context.tsx": "fd3ef808e379b2c9b6d495c3cacc7e846da83054e293396a42e06a6dfe4b11d9",
+    "packages/ui/src/sync/directory-recovery-snapshots.ts": "817ec0c0815e2b197a9701e30825df2e090cc764643fcb9d863f68ea8abfbaa1"
+  },
+  "runtime": "actual VS Code production webview and extension host; official exact OpenCode 1.2.27; controlled loopback model",
+  "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "exit": 1,
+  "evidence": {
+    "result": {
+      "type": "test:result",
+      "success": false,
+      "checks": [
+        "production VS Code webview connects to isolated OpenChamber server",
+        "exact 1.2.27 runtime admitted",
+        "exact upstream executable version is 1.2.27",
+        "production composer available",
+        "production composer exposes an enabled Send message button",
+        "production composer accepts Enter submission",
+        "permission request card rendered in production DOM",
+        "composer creates its real server session",
+        "permission pending tool part is running in persisted session",
+        "permission pending interaction visible without resolving it",
+        "permission restarts its own exact upstream PID",
+        "permission production webview reconnects after upstream restart"
+      ],
+      "error": "Error: permission stale request card disappears from production DOM",
+      "sessionID": "ses_ed3d908fdffeUsZr69IlhzYhlg",
+      "composer": {
+        "tag": "DIV",
+        "html": "<div spellcheck=\"false\" autocorrect=\"off\" autocapitalize=\"none\" writingsuggestions=\"false\" translate=\"no\" contenteditable=\"true\" style=\"tab-size: 4;\" class=\"cm-content cm-lineWrapping\" role=\"textbox\" aria-multiline=\"true\" aria-placeholder=\"@ for files/agents; / for commands and skills; ! for shell; # for snippets\" dir=\"ltr\"><div class=\"cm-line\"><img class=\"cm-widgetBuffer\" aria-hidden=\"true\"><span class=\"cm-placeholder\" aria-hidden=\"true\" contenteditable=\"false\" style=\"pointer-events: none;\">@ for files/agents; / for commands and skills; ! for shell; # for snippets</span><br></div></div>",
+        "text": ""
+      },
+      "body": "Session\n\nRECOVERY_PERMISSION\n\n2:08 AM\nShell Command\n91.8s\necho RECOVERY_PERMISSION_APPROVED\nPermission Required\nbash\nPatterns:\necho RECOVERY_PERMISSION_APPROVED\nAllow Once\nAlt + Enter\nAlways: echo *\nDeny\nAlt + ⌫\n@ for files/agents; / for commands and skills; ! for shell; # for snippets\n\nControlled probe\nBuild",
+      "controls": [
+        {
+          "text": "Session",
+          "aria": "Open session switcher",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "MCP servers",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Rate limits",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Revert to this message",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Fork from this message",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Copy message text",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "Allow OnceAlt + Enter",
+          "aria": null,
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "Always: echo *",
+          "aria": null,
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "DenyAlt + ⌫",
+          "aria": null,
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Scroll to bottom",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Attach files",
+          "title": "Attach files",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Toggle focus mode",
+          "title": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Enable permission auto-accept",
+          "title": "Enable permission auto-accept",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "aria": "Send message",
+          "title": null,
+          "disabled": true
+        }
+      ],
+      "diagnostics": [],
+      "wire": [
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        },
+        {
+          "type": "api:sse:chunk"
+        },
+        {
+          "type": "api:proxy",
+          "success": true,
+          "status": 200
+        }
+      ]
+    },
+    "error": "Error: permission stale request card disappears from production DOM"
+  },
+  "modelCalls": [
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false
+    },
+    {
+      "marker": "\"RECOVERY_PERMISSION\"",
+      "afterTool": false,
+      "tools": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ]
+    }
+  ],
+  "eventTypes": [
+    "server.connected",
+    "project.updated",
+    "server.heartbeat",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "permission.asked"
+  ],
+  "fixture": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-EIp5V4",
+  "limitations": [
+    "Controlled model does not prove external provider quality"
+  ],
+  "postRestartEvidence": {
+    "domPendingCard": true,
+    "proxyTrace": "api:proxy=23, api:sse:chunk=7",
+    "eventTypesObserved": "server.connected, project.updated, server.heartbeat, session.created, session.updated, message.updated, message.part.updated, session.status, session.diff, message.part.delta, permission.asked",
+    "sdkPermissionQuestionCounts": "not captured in this run; endpoint payloads were not retained",
+    "sessionStatus": "not captured after restart",
+    "transportIdentity": "not established: webview connected status and uncorrelated proxy/SSE events do not identify a new stream",
+    "interpretation": "Production DOM retained the old permission card after owned upstream restart and webview reported connected; persisted history running state is not used as interruption evidence."
+  }
+}

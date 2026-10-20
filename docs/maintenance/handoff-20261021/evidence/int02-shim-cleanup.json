@@ -1,0 +1,15 @@
+{
+  "removed": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-vscode-host-pAKCMZ",
+  "bytes": 37832078,
+  "nativeChecks": 44,
+  "sourceSha256": {
+    "packages/vscode/src/managed-opencode-process.test.ts": "FF622EAEB6E06285862348394D94195B040F9880F96C701D4EACBFC8A786BBAE",
+    "packages/vscode/src/owned-process.ts": "74ADDF6F48F1E20C3A836D7C10106E07D544DF735D463A805255854A4DDAB6D2",
+    "packages/vscode/src/opencode.ts": "F3B84FA266D9CDF334CCC1D1AFBAF5A0FBF2D5BBAEBEF5E54A84B5834ECB2929",
+    "packages/vscode/src/managed-opencode-process.ts": "03253905E5D687E2365A7F4D0BE24A2E0E838646B7C0643720FB9431BE272EE4"
+  },
+  "evidence": "artifacts/int02-shim-native-evidence.json",
+  "retained": "Compact logs, reusable native fixture and actual OC2 binary for remaining R1",
+  "nextCleanup": "R1 closeout",
+  "quotaRemainingPercent": 39
+}

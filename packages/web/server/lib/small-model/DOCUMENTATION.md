@@ -10,7 +10,10 @@ plugins — this module replicates that mechanism as an OpenChamber runtime API.
 Credentials never leave the server process. The client sends only a prompt;
 auth resolution, OAuth refresh, and provider dispatch all happen server-side.
 Routes live under `/api/*` and are gated by the ui-auth middleware like every
-other runtime API.
+other runtime API. Exact Legacy 1.2.27 OpenAI token refresh is refused before
+any exchange or reuse of an existing refresh, while credential mutation
+admission remains unfinished. Reading a credential does not grant permission
+to rotate its refresh token.
 
 ## Files
 

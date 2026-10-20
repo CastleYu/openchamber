@@ -244,7 +244,7 @@ const applyDesktopClientToken = async (
   if (!clientToken || !isRuntimeIdentityActive(runtime)) return false;
   if (!await persistDesktopClientToken(runtime, clientToken)) return false;
   if (!isRuntimeIdentityActive(runtime)) return false;
-  switchRuntimeEndpoint({
+  await switchRuntimeEndpoint({
     apiBaseUrl: runtime.apiBaseUrl,
     clientToken,
     requestHeaders: Object.keys(requestHeaders).length > 0 ? requestHeaders : null,

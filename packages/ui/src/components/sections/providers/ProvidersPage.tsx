@@ -28,6 +28,8 @@ import { getCurrentIntlLocale, useI18n } from '@/lib/i18n';
 import { runtimeFetch } from '@/lib/runtime-fetch';
 import { opencodeClient } from '@/lib/opencode/client';
 import { ProvidersPageV2 } from './ProvidersPageV2';
+import { LegacyProvidersPage } from './LegacyProvidersPage';
+import { resolveProvidersPageMode } from './legacy-provider-ui';
 import { requiresProviderAuth, shouldLoadAvailableProviders } from './providerAvailability';
 import {
   getOAuthAuthMethods,
@@ -1178,12 +1180,16 @@ const ProvidersPageV1: React.FC = () => {
 };
 
 export const ProvidersPage: React.FC = () => {
-  const generation = React.useSyncExternalStore(
+  const runtimeKey = React.useSyncExternalStore(
     (listener) => opencodeClient.subscribeRuntime(listener),
-    () => opencodeClient.getBoundRuntime()?.generation,
-    () => undefined,
+    () => { const runtime = opencodeClient.getBoundRuntime(); return runtime ? [runtime.generation, runtime.profile ?? '', runtime.version ?? '', runtime.endpoint, runtime.epoch].join('|') : ''; },
+    () => '',
   );
-  if (generation === 'oc2') return <ProvidersPageV2 />;
-  if (generation === 'oc1') return <ProvidersPageV1 />;
+  const runtime = opencodeClient.getBoundRuntime();
+  const mode = resolveProvidersPageMode(runtime);
+  if (!runtimeKey) return null;
+  if (mode === 'oc2') return <ProvidersPageV2 />;
+  if (mode === 'legacy') return <LegacyProvidersPage />;
+  if (mode === 'oc1') return <ProvidersPageV1 />;
   return null;
 };

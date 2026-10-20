@@ -1,0 +1,12 @@
+{
+  "source": "055c46c8e",
+  "exact": "1.2.27",
+  "checks": [
+    "anonymous runtime API 401",
+    "real browser password login",
+    "Auto selects legacy-1.2.27",
+    "UI text prompt persisted",
+    "UI displayed LEGACY_COMPLETED assistant text"
+  ],
+  "limitation": "Initial tool observer subscribed the project rather than the no-project chat directory. Restarting the isolated fixture with a global event observer before tools/decisions validation."
+}

@@ -1,0 +1,1724 @@
+{
+  "numTotalTestSuites": 32,
+  "numPassedTestSuites": 32,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 134,
+  "numPassedTests": 134,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791730267176,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer emits the first delta after a quiet spell at once and unchanged",
+          "status": "passed",
+          "title": "emits the first delta after a quiet spell at once and unchanged",
+          "duration": 5.263499999999965,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer merges following deltas for one part field and carries the last fragment id",
+          "status": "passed",
+          "title": "merges following deltas for one part field and carries the last fragment id",
+          "duration": 2.6228000000000975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer never holds text longer than the window",
+          "status": "passed",
+          "title": "never holds text longer than the window",
+          "duration": 0.9325999999999794,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer treats every other event as a barrier, so a delta never crosses a part snapshot",
+          "status": "passed",
+          "title": "treats every other event as a barrier, so a delta never crosses a part snapshot",
+          "duration": 0.9416999999999689,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer keeps several part fields pending at once and emits them in upstream id order",
+          "status": "passed",
+          "title": "keeps several part fields pending at once and emits them in upstream id order",
+          "duration": 0.6775000000000091,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer does not merge the same part across directories, sessions, messages, or fields",
+          "status": "passed",
+          "title": "does not merge the same part across directories, sessions, messages, or fields",
+          "duration": 0.4633000000000038,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer bounds pending text by characters and by part fields, emitting early instead of dropping",
+          "status": "passed",
+          "title": "bounds pending text by characters and by part fields, emitting early instead of dropping",
+          "duration": 1.407000000000039,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer flushes on demand and leaves nothing pending",
+          "status": "passed",
+          "title": "flushes on demand and leaves nothing pending",
+          "duration": 0.41849999999999454,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer passes a malformed delta through as a barrier instead of guessing",
+          "status": "passed",
+          "title": "passes a malformed delta through as a barrier instead of guessing",
+          "duration": 1.0115999999999303,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer is a pass-through when the window is zero",
+          "status": "passed",
+          "title": "is a pass-through when the window is zero",
+          "duration": 0.32789999999999964,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer loses, duplicates, and reorders nothing across randomized streams",
+          "status": "passed",
+          "title": "loses, duplicates, and reorders nothing across randomized streams",
+          "duration": 884.2511000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescer"
+          ],
+          "fullName": "delta coalescer collapses a dense single-part stream to a few frames per window",
+          "status": "passed",
+          "title": "collapses a dense single-part stream to a few frames per window",
+          "duration": 0.6399000000001251,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "resolveDeltaCoalesceWindowMs"
+          ],
+          "fullName": "resolveDeltaCoalesceWindowMs uses the default when unset and accepts zero as off",
+          "status": "passed",
+          "title": "uses the default when unset and accepts zero as off",
+          "duration": 0.23029999999994288,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "resolveDeltaCoalesceWindowMs"
+          ],
+          "fullName": "resolveDeltaCoalesceWindowMs keeps the default and says so for anything that is not 0-1000 whole milliseconds",
+          "status": "passed",
+          "title": "keeps the default and says so for anything that is not 0-1000 whole milliseconds",
+          "duration": 0.5141000000000986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730268198,
+      "endTime": 1791730269098.5142,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/delta-coalescer.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "directory message stream bridge"
+          ],
+          "fullName": "directory message stream bridge waits for the kernel generation before opening the directory stream",
+          "status": "passed",
+          "title": "waits for the kernel generation before opening the directory stream",
+          "duration": 62.70940000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "directory message stream bridge"
+          ],
+          "fullName": "directory message stream bridge keeps the OC1 bridge error for a stream that settles on OC2",
+          "status": "passed",
+          "title": "keeps the OC1 bridge error for a stream that settles on OC2",
+          "duration": 12.474000000000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730269642,
+      "endTime": 1791730269716.474,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/directory-ws-bridge.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "event stream family retirement"
+          ],
+          "fullName": "event stream family retirement does no kernel or HTTP work for CAgent hub selection",
+          "status": "passed",
+          "title": "does no kernel or HTTP work for CAgent hub selection",
+          "duration": 3.248199999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream family retirement"
+          ],
+          "fullName": "event stream family retirement does not wait or subscribe for CAgent watcher selection",
+          "status": "passed",
+          "title": "does not wait or subscribe for CAgent watcher selection",
+          "duration": 0.639699999999948,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream family retirement"
+          ],
+          "fullName": "event stream family retirement does not subscribe if selection changes while watcher readiness is pending",
+          "status": "passed",
+          "title": "does not subscribe if selection changes while watcher readiness is pending",
+          "duration": 1.8301000000000158,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream family retirement"
+          ],
+          "fullName": "event stream family retirement aborts a retired SSE stream, clears replay, rejects late injections, then starts fresh on OpenCode selection",
+          "status": "passed",
+          "title": "aborts a retired SSE stream, clears replay, rejects late injections, then starts fresh on OpenCode selection",
+          "duration": 34.207899999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream family retirement"
+          ],
+          "fullName": "event stream family retirement detaches watcher subscriptions when the selected host is cleared",
+          "status": "passed",
+          "title": "detaches watcher subscriptions when the selected host is cleared",
+          "duration": 0.8618999999999915,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rejects a Legacy hub profile without its exact version, and refuses synthetic injection",
+          "status": "passed",
+          "title": "rejects a Legacy hub profile without its exact version, and refuses synthetic injection",
+          "duration": 12.723799999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "does not wait, subscribe, or fetch for Legacy watcher profiles",
+          "status": "passed",
+          "title": "does not wait, subscribe, or fetch for Legacy watcher profiles",
+          "duration": 0.476099999999974,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "refuses watcher admission when readiness resolves to Legacy",
+          "status": "passed",
+          "title": "refuses watcher admission when readiness resolves to Legacy",
+          "duration": 0.4256000000000313,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retires buffered and replayed events when only the profile changes",
+          "status": "passed",
+          "title": "retires buffered and replayed events when only the profile changes",
+          "duration": 2.1797000000000253,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "drops a subscribed watcher event after a profile-only retirement",
+          "status": "passed",
+          "title": "drops a subscribed watcher event after a profile-only retirement",
+          "duration": 0.5240999999999758,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "drops standalone watcher data completed after a profile-only retirement",
+          "status": "passed",
+          "title": "drops standalone watcher data completed after a profile-only retirement",
+          "duration": 42.983100000000036,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "continues watching committed hub events after a same-target restart",
+          "status": "passed",
+          "title": "continues watching committed hub events after a same-target restart",
+          "duration": 0.8852000000000544,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730270004,
+      "endTime": 1791730270105.8853,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/family-retirement.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "delivers early Space events only to opted-in subscribers and uses the OC2 translator",
+          "status": "passed",
+          "title": "delivers early Space events only to opted-in subscribers and uses the OC2 translator",
+          "duration": 5.387499999999932,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "discards a buffered Space delta when the host kernel epoch retires",
+          "status": "passed",
+          "title": "discards a buffered Space delta when the host kernel epoch retires",
+          "duration": 2.293399999999906,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "keeps OC2 browser wire events raw and resets replay across kernel identities",
+          "status": "passed",
+          "title": "keeps OC2 browser wire events raw and resets replay across kernel identities",
+          "duration": 41.140300000000025,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "bounds a contiguous replay suffix by UTF-8 bytes and event count",
+          "status": "passed",
+          "title": "bounds a contiguous replay suffix by UTF-8 bytes and event count",
+          "duration": 14.29830000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "does not commit a buffered OC1 delta after its kernel epoch retires",
+          "status": "passed",
+          "title": "does not commit a buffered OC1 delta after its kernel epoch retires",
+          "duration": 63.164800000000014,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "commits a buffered OC1 delta when stopping within the same kernel epoch",
+          "status": "passed",
+          "title": "commits a buffered OC1 delta when stopping within the same kernel epoch",
+          "duration": 61.919200000000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescing in the global hub"
+          ],
+          "fullName": "delta coalescing in the global hub delivers the same text in far fewer frames",
+          "status": "passed",
+          "title": "delivers the same text in far fewer frames",
+          "duration": 63.08109999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescing in the global hub"
+          ],
+          "fullName": "delta coalescing in the global hub resumes from any cursor without losing or repeating text",
+          "status": "passed",
+          "title": "resumes from any cursor without losing or repeating text",
+          "duration": 63.34640000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescing in the global hub"
+          ],
+          "fullName": "delta coalescing in the global hub numbers id-less upstream events so a reconnect resumes from any cursor",
+          "status": "passed",
+          "title": "numbers id-less upstream events so a reconnect resumes from any cursor",
+          "duration": 61.56190000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescing in the global hub"
+          ],
+          "fullName": "delta coalescing in the global hub keeps pending text for replay when the hub stops",
+          "status": "passed",
+          "title": "keeps pending text for replay when the hub stops",
+          "duration": 45.654199999999946,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "delta coalescing in the global hub"
+          ],
+          "fullName": "delta coalescing in the global hub commits pending text on demand, so a client readied later starts after it",
+          "status": "passed",
+          "title": "commits pending text on demand, so a client readied later starts after it",
+          "duration": 46.13700000000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createGlobalMessageStreamHub"
+          ],
+          "fullName": "createGlobalMessageStreamHub continues fanout when an event subscriber throws",
+          "status": "passed",
+          "title": "continues fanout when an event subscriber throws",
+          "duration": 14.925899999999956,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createGlobalMessageStreamHub"
+          ],
+          "fullName": "createGlobalMessageStreamHub continues status fanout when a status subscriber throws",
+          "status": "passed",
+          "title": "continues status fanout when a status subscriber throws",
+          "duration": 15.177500000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createGlobalMessageStreamHub"
+          ],
+          "fullName": "createGlobalMessageStreamHub waits for the kernel generation before opening the upstream stream",
+          "status": "passed",
+          "title": "waits for the kernel generation before opening the upstream stream",
+          "duration": 61.08240000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createGlobalMessageStreamHub"
+          ],
+          "fullName": "createGlobalMessageStreamHub keeps the existing error behaviour after the kernel readiness timeout",
+          "status": "passed",
+          "title": "keeps the existing error behaviour after the kernel readiness timeout",
+          "duration": 31.920100000000048,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createGlobalMessageStreamHub"
+          ],
+          "fullName": "createGlobalMessageStreamHub continues fanout when an async event subscriber rejects",
+          "status": "passed",
+          "title": "continues fanout when an async event subscriber rejects",
+          "duration": 15.35979999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730268265,
+      "endTime": 1791730268872.3599,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/global-hub.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission opens the admitted 1.2.27 stream with auth and forwards a directory event",
+          "status": "passed",
+          "title": "opens the admitted 1.2.27 stream with auth and forwards a directory event",
+          "duration": 32.40689999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission keeps the ordinary OC1 profile working",
+          "status": "passed",
+          "title": "keeps the ordinary OC1 profile working",
+          "duration": 14.626800000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission refuses wrong generation before fetching with credentials",
+          "status": "passed",
+          "title": "refuses wrong generation before fetching with credentials",
+          "duration": 14.560799999999972,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission refuses wrong version before fetching with credentials",
+          "status": "passed",
+          "title": "refuses wrong version before fetching with credentials",
+          "duration": 15.849699999999984,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission refuses missing version before fetching with credentials",
+          "status": "passed",
+          "title": "refuses missing version before fetching with credentials",
+          "duration": 15.735799999999927,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission drops an event queued by the old reader after the profile changes",
+          "status": "passed",
+          "title": "drops an event queued by the old reader after the profile changes",
+          "duration": 47.54720000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission drops an event queued by the old reader after the version changes",
+          "status": "passed",
+          "title": "drops an event queued by the old reader after the version changes",
+          "duration": 45.99540000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission drops an event queued by the old reader after the epoch changes",
+          "status": "passed",
+          "title": "drops an event queued by the old reader after the epoch changes",
+          "duration": 47.452600000000075,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission rejects readiness when the descriptor changes during connection",
+          "status": "passed",
+          "title": "rejects readiness when the descriptor changes during connection",
+          "duration": 31.017000000000053,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "legacy OC1 directory stream admission"
+          ],
+          "fullName": "legacy OC1 directory stream admission stops the held upstream reader when the browser socket closes",
+          "status": "passed",
+          "title": "stops the held upstream reader when the browser socket closes",
+          "duration": 16.251400000000103,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730268266,
+      "endTime": 1791730268548.2515,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/legacy-directory.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub reads the OC1 global stream once and preserves upstream events in live delivery and replay",
+          "status": "passed",
+          "title": "reads the OC1 global stream once and preserves upstream events in live delivery and replay",
+          "duration": 96.78039999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub discards pending deltas after profile retirement",
+          "status": "passed",
+          "title": "discards pending deltas after profile retirement",
+          "duration": 13.711400000000026,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub discards pending deltas after version retirement",
+          "status": "passed",
+          "title": "discards pending deltas after version retirement",
+          "duration": 15.425499999999943,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub discards pending deltas after epoch retirement",
+          "status": "passed",
+          "title": "discards pending deltas after epoch retirement",
+          "duration": 15.952400000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub refuses Legacy admission before HTTP for wrong generation",
+          "status": "passed",
+          "title": "refuses Legacy admission before HTTP for wrong generation",
+          "duration": 29.712699999999927,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub refuses Legacy admission before HTTP for wrong version",
+          "status": "passed",
+          "title": "refuses Legacy admission before HTTP for wrong version",
+          "duration": 32.052099999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy global event hub"
+          ],
+          "fullName": "Legacy global event hub refuses Legacy admission before HTTP for missing version",
+          "status": "passed",
+          "title": "refuses Legacy admission before HTTP for missing version",
+          "duration": 31.289199999999937,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730268265,
+      "endTime": 1791730268500.2893,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/legacy-hub.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers exports stable websocket paths",
+          "status": "passed",
+          "title": "exports stable websocket paths",
+          "duration": 1.9144000000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers parses wrapped SSE payloads with event id and directory",
+          "status": "passed",
+          "title": "parses wrapped SSE payloads with event id and directory",
+          "duration": 0.9570999999999685,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers derives directory from payload properties when not wrapped",
+          "status": "passed",
+          "title": "derives directory from payload properties when not wrapped",
+          "duration": 0.31979999999998654,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers keeps the OC2 wire event and reads its location directory",
+          "status": "passed",
+          "title": "keeps the OC2 wire event and reads its location directory",
+          "duration": 0.31780000000003383,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers returns null for malformed SSE blocks",
+          "status": "passed",
+          "title": "returns null for malformed SSE blocks",
+          "duration": 0.2925000000000182,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers serializes generic websocket frames",
+          "status": "passed",
+          "title": "serializes generic websocket frames",
+          "duration": 0.42559999999997444,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers closes slow websocket clients instead of adding more buffered data",
+          "status": "passed",
+          "title": "closes slow websocket clients instead of adding more buffered data",
+          "duration": 0.4286999999999921,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers emits a backpressure warning when buffer exceeds the warn threshold",
+          "status": "passed",
+          "title": "emits a backpressure warning when buffer exceeds the warn threshold",
+          "duration": 1.4303999999999633,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers does not repeat backpressure warnings while still above threshold",
+          "status": "passed",
+          "title": "does not repeat backpressure warnings while still above threshold",
+          "duration": 0.6151999999999589,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers resets backpressure warning flag when buffer drains",
+          "status": "passed",
+          "title": "resets backpressure warning flag when buffer drains",
+          "duration": 0.5407999999999902,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream protocol helpers"
+          ],
+          "fullName": "event stream protocol helpers serializes event frames with routing metadata",
+          "status": "passed",
+          "title": "serializes event frames with routing metadata",
+          "duration": 0.31850000000002865,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730270368,
+      "endTime": 1791730270375.5408,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/protocol.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "rebindUpstream (#2638)"
+          ],
+          "fullName": "rebindUpstream (#2638) shares one OC2 global upstream for global and directory clients",
+          "status": "passed",
+          "title": "shares one OC2 global upstream for global and directory clients",
+          "duration": 26.55490000000009,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "rebindUpstream (#2638)"
+          ],
+          "fullName": "rebindUpstream (#2638) retires the global socket and resumes on the replacement port after reconnect",
+          "status": "passed",
+          "title": "retires the global socket and resumes on the replacement port after reconnect",
+          "duration": 42.89700000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "rebindUpstream (#2638)"
+          ],
+          "fullName": "rebindUpstream (#2638) closes directory-scoped sockets so their pinned readers reconnect to the new port",
+          "status": "passed",
+          "title": "closes directory-scoped sockets so their pinned readers reconnect to the new port",
+          "duration": 15.112799999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730270020,
+      "endTime": 1791730270105.1128,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/rebind.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "serializes a UI broadcast once per wire format and isolates failed clients",
+          "status": "passed",
+          "title": "serializes a UI broadcast once per wire format and isolates failed clients",
+          "duration": 4.548900000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "delivers oversized events live, but reports a replay gap instead of replaying across it",
+          "status": "passed",
+          "title": "delivers oversized events live, but reports a replay gap instead of replaying across it",
+          "duration": 68.98789999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream broadcaster"
+          ],
+          "fullName": "event stream broadcaster fans out synthetic events to SSE and WS clients",
+          "status": "passed",
+          "title": "fans out synthetic events to SSE and WS clients",
+          "duration": 0.7024999999999864,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "event stream broadcaster"
+          ],
+          "fullName": "event stream broadcaster removes websocket clients that fail to receive a payload",
+          "status": "passed",
+          "title": "removes websocket clients that fail to receive a payload",
+          "duration": 0.4055999999999358,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime shares one global upstream SSE reader across multiple websocket clients",
+          "status": "passed",
+          "title": "shares one global upstream SSE reader across multiple websocket clients",
+          "duration": 10.706099999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime replays buffered global events after a reconnecting client Last-Event-ID",
+          "status": "passed",
+          "title": "replays buffered global events after a reconnecting client Last-Event-ID",
+          "duration": 31.296100000000024,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime keeps directory websocket streams on separate upstream readers",
+          "status": "passed",
+          "title": "keeps directory websocket streams on separate upstream readers",
+          "duration": 16.538800000000037,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime closes the websocket and triggers health check on initial upstream unavailable response",
+          "status": "passed",
+          "title": "closes the websocket and triggers health check on initial upstream unavailable response",
+          "duration": 14.396499999999946,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime closes the websocket without health check when OpenCode URL cannot be built",
+          "status": "passed",
+          "title": "closes the websocket without health check when OpenCode URL cannot be built",
+          "duration": 15.054499999999962,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime reconnects a stalled upstream SSE stream and resumes from the last event id",
+          "status": "passed",
+          "title": "reconnects a stalled upstream SSE stream and resumes from the last event id",
+          "duration": 61.88250000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "message stream websocket runtime"
+          ],
+          "fullName": "message stream websocket runtime keeps synthetic event processing on forwarded upstream events",
+          "status": "passed",
+          "title": "keeps synthetic event processing on forwarded upstream events",
+          "duration": 14.903699999999958,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retires global and directory sockets before peers reconnect to a replacement upstream",
+          "status": "passed",
+          "title": "retires global and directory sockets before peers reconnect to a replacement upstream",
+          "duration": 0.857599999999934,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730269078,
+      "endTime": 1791730269319.8577,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/runtime.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent ignores non-objects and unknown types",
+          "status": "passed",
+          "title": "ignores non-objects and unknown types",
+          "duration": 3.56959999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent tags every event with its source id and directory",
+          "status": "passed",
+          "title": "tags every event with its source id and directory",
+          "duration": 0.7051999999999907,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent server.connected and update availability pass through",
+          "status": "passed",
+          "title": "server.connected and update availability pass through",
+          "duration": 1.0382000000000176,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent session.created carries the directory from its location",
+          "status": "passed",
+          "title": "session.created carries the directory from its location",
+          "duration": 0.48349999999999227,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent a finished compaction reads as session.compacted",
+          "status": "passed",
+          "title": "a finished compaction reads as session.compacted",
+          "duration": 0.6430000000000291,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent rename, move and usage all read as session.updated",
+          "status": "passed",
+          "title": "rename, move and usage all read as session.updated",
+          "duration": 0.5509999999999877,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent session.deleted keeps both the id and the legacy info shape",
+          "status": "passed",
+          "title": "session.deleted keeps both the id and the legacy info shape",
+          "duration": 0.28879999999998063,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent execution events synthesize the status vocabulary v2 no longer emits",
+          "status": "passed",
+          "title": "execution events synthesize the status vocabulary v2 no longer emits",
+          "duration": 0.458500000000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent an interruption ends the turn without reporting a failure",
+          "status": "passed",
+          "title": "an interruption ends the turn without reporting a failure",
+          "duration": 0.45240000000001146,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent a shutdown interruption is not an abort: the turn resumes after restart",
+          "status": "passed",
+          "title": "a shutdown interruption is not an abort: the turn resumes after restart",
+          "duration": 0.2991999999999848,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent a failed execution reports a structured error",
+          "status": "passed",
+          "title": "a failed execution reports a structured error",
+          "duration": 0.3494000000000028,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent a passed-through session.status is kept as is",
+          "status": "passed",
+          "title": "a passed-through session.status is kept as is",
+          "duration": 0.2633000000000152,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent an enqueued user prompt becomes a user message with text parts",
+          "status": "passed",
+          "title": "an enqueued user prompt becomes a user message with text parts",
+          "duration": 0.4568999999999619,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent non-user inbox items are not messages",
+          "status": "passed",
+          "title": "non-user inbox items are not messages",
+          "duration": 0.16100000000000136,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent steps become assistant message updates",
+          "status": "passed",
+          "title": "steps become assistant message updates",
+          "duration": 0.689899999999966,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent permission requests keep the v2 action and resources",
+          "status": "passed",
+          "title": "permission requests keep the v2 action and resources",
+          "duration": 0.33749999999997726,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent forms replace questions",
+          "status": "passed",
+          "title": "forms replace questions",
+          "duration": 0.3977999999999611,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent branch and mcp notices pass through",
+          "status": "passed",
+          "title": "branch and mcp notices pass through",
+          "duration": 0.1956000000000131,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "translateWireEvent"
+          ],
+          "fullName": "translateWireEvent events without a session id are dropped rather than half-translated",
+          "status": "passed",
+          "title": "events without a session id are dropped rather than half-translated",
+          "duration": 0.21680000000003474,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "wireEventDirectory"
+          ],
+          "fullName": "wireEventDirectory reads location.directory and tolerates its absence",
+          "status": "passed",
+          "title": "reads location.directory and tolerates its absence",
+          "duration": 0.22210000000001173,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "forwardTranslatedWireEvent"
+          ],
+          "fullName": "forwardTranslatedWireEvent forwards every translated event in order",
+          "status": "passed",
+          "title": "forwards every translated event in order",
+          "duration": 0.22140000000001692,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "forwardTranslatedWireEvent"
+          ],
+          "fullName": "forwardTranslatedWireEvent does nothing without a handler",
+          "status": "passed",
+          "title": "does nothing without a handler",
+          "duration": 0.961400000000026,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730270182,
+      "endTime": 1791730270194.9614,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/translate-v2.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader drops the upstream cursor when the endpoint identity changes",
+          "status": "passed",
+          "title": "drops the upstream cursor when the endpoint identity changes",
+          "duration": 34.495100000000036,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader emits parsed events and tracks the latest event id",
+          "status": "passed",
+          "title": "emits parsed events and tracks the latest event id",
+          "duration": 1.5745999999999754,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader reconnects a stalled stream with Last-Event-ID",
+          "status": "passed",
+          "title": "reconnects a stalled stream with Last-Event-ID",
+          "duration": 27.42439999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader resolves the stall timeout for each upstream read window",
+          "status": "passed",
+          "title": "resolves the stall timeout for each upstream read window",
+          "duration": 76.5231,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader reports unavailable upstream responses and continues reconnecting until stopped",
+          "status": "passed",
+          "title": "reports unavailable upstream responses and continues reconnecting until stopped",
+          "duration": 16.02710000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "createUpstreamSseReader"
+          ],
+          "fullName": "createUpstreamSseReader removes abort listeners after stop",
+          "status": "passed",
+          "title": "removes abort listeners after stop",
+          "duration": 1.5031999999999925,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730269255,
+      "endTime": 1791730269413.5032,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/event-stream/upstream-reader.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract admits the accepted read and minimum conversation operations",
+          "status": "passed",
+          "title": "admits the accepted read and minimum conversation operations",
+          "duration": 2.773399999999981,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.send\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.send\"",
+          "duration": 0.20150000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"config.update\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"config.update\"",
+          "duration": 0.13810000000000855,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"auth.login\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"auth.login\"",
+          "duration": 0.18370000000004438,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"experimental.session.import\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"experimental.session.import\"",
+          "duration": 0.14379999999999882,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.fork\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.fork\"",
+          "duration": 0.1756000000000313,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"session.list \"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"session.list \"",
+          "duration": 0.12739999999996598,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract refuses unsupported operation \"\"",
+          "status": "passed",
+          "title": "refuses unsupported operation \"\"",
+          "duration": 0.14069999999998117,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy operation contract"
+          ],
+          "fullName": "Legacy operation contract exposes frozen operation constants",
+          "status": "passed",
+          "title": "exposes frozen operation constants",
+          "duration": 0.23439999999999372,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy stream descriptor"
+          ],
+          "fullName": "Legacy stream descriptor admits only the exact Legacy OC1 descriptor",
+          "status": "passed",
+          "title": "admits only the exact Legacy OC1 descriptor",
+          "duration": 0.4933000000000334,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730270592,
+      "endTime": 1791730270596.4934,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-contract.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission forwards exact /event preserving directory and headers",
+          "status": "passed",
+          "title": "forwards exact /event preserving directory and headers",
+          "duration": 99.21810000000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission forwards exact /global/event preserving directory and headers",
+          "status": "passed",
+          "title": "forwards exact /global/event preserving directory and headers",
+          "duration": 29.865999999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses wrong version before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses wrong version before upstream credentials or prefix work",
+          "duration": 18.473200000000134,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses missing version before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses missing version before upstream credentials or prefix work",
+          "duration": 12.147899999999936,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses wrong generation before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses wrong generation before upstream credentials or prefix work",
+          "duration": 11.841100000000097,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses mutation before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses mutation before upstream credentials or prefix work",
+          "duration": 11.03430000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses unknown route before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses unknown route before upstream credentials or prefix work",
+          "duration": 9.929800000000114,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses unaccepted session create before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses unaccepted session create before upstream credentials or prefix work",
+          "duration": 12.459900000000061,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Legacy SSE proxy admission"
+          ],
+          "fullName": "Legacy SSE proxy admission refuses unaccepted session update before upstream credentials or prefix work",
+          "status": "passed",
+          "title": "refuses unaccepted session update before upstream credentials or prefix work",
+          "duration": 9.61460000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791730269740,
+      "endTime": 1791730269954.6145,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/packages/web/server/lib/opencode/legacy-proxy-stream.test.js"
+    }
+  ]
+}

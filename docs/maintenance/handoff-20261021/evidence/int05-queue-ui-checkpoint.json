@@ -1,0 +1,134 @@
+{
+  "stage": "INT-05 shared queue attempt controls",
+  "date": "2026-10-13T05:33:52.599Z",
+  "goalStatus": "active",
+  "tests": {
+    "serverProjection": 35,
+    "localQueue": 13,
+    "DOM": 2,
+    "total": 50
+  },
+  "typeChecks": [
+    "ui",
+    "web",
+    "electron",
+    "mobile",
+    "vscode"
+  ],
+  "eslint": "pass",
+  "oxlint": {
+    "log": "artifacts/int05-queue-ui-oxlint-final.log",
+    "authoredFindings": 0,
+    "existingFindings": 4
+  },
+  "deadCode": {
+    "reviewed": true,
+    "newQueueFindings": 0
+  },
+  "localeKeys": 143,
+  "weeklyQuotaRemaining": 98,
+  "removedHelpers": [
+    "int05-queue-ui-edit.cjs",
+    "int05-queue-ui-component.cjs",
+    "int05-queue-ui-tests.cjs",
+    "int05-queue-ui-fix.cjs",
+    "int05-queue-dom-fix.cjs",
+    "int05-queue-ui-checks.cjs",
+    "int05-queue-ui-docs.cjs",
+    "int05-queue-ui-review.cjs",
+    "int05-queue-ui-finalize.cjs"
+  ],
+  "remaining": [
+    "exact 1.2.27 terminal correlation",
+    "scheduled task and goal owners",
+    "VS Code local attempt outcomes",
+    "real IDE Provider/OAuth and native switch acceptance",
+    "packaged UI layout validation"
+  ],
+  "files": [
+    {
+      "file": "packages/ui/src/stores/messageQueueStore.ts",
+      "sha256": "b57e1beb4e242bfcfd72324a43b122060eedd2c76c162f8c7263ee82ec4d6dd6"
+    },
+    {
+      "file": "packages/ui/src/stores/messageQueueStore.server.test.ts",
+      "sha256": "d6811b27ce5604d6c7ffdf65da7d1e17ca034cc317c989777771748c87de7f6e"
+    },
+    {
+      "file": "packages/ui/src/components/chat/QueuedMessageChips.tsx",
+      "sha256": "7b020f38386880ce9ea2946e7c842812f4f8f2e266e4f83b55f8d004cb3de45f"
+    },
+    {
+      "file": "packages/ui/src/components/chat/QueuedMessageChips.test.tsx",
+      "sha256": "c8c676ea598ea50ab5218ce62491e0f0dcb447af5fd0b886c4ec2e1947de6375"
+    },
+    {
+      "file": "packages/ui/src/stores/DOCUMENTATION.md",
+      "sha256": "eb9ac9fc52127822013fe14330efc931a9d1d8d87437ffe74a75c3c1ade06358"
+    },
+    {
+      "file": "packages/ui/src/components/chat/composer/DOCUMENTATION.md",
+      "sha256": "88167e742c5bbe7c621a7e4c29ace62ef1c71bc884d70076307c26072b4e1d97"
+    },
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "c607c33930b273572cbca7ba0662d8bc2fdb3835194d73016df88bfd06fa1bc1"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "b6e6bcd4ded6c9419e77b9db33ad2816c07e845c58feeffa8dec246c96bcfc52"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/en.ts",
+      "sha256": "54e40bc6da41bee7daf59ff07f2e18421643d5c21a3a8a0994d4f2c355c0c7d4"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/de.ts",
+      "sha256": "67fc50caea0c0b71ffc8c571d3b6dfbc9038a2cffb282622e9339a29dfb5ff80"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/es.ts",
+      "sha256": "c2a8c90948ff9e35325598618f046e98707710380e31d539835b23ab2c548814"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/fr.ts",
+      "sha256": "c47c54d19bc850ff6e9ffa9c55a86957e7fade542966a75a5744d3153f74ca45"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/ja.ts",
+      "sha256": "b7102e66c7b632b57be1c8c74eb1a2c1d185d5fa6709a3650eaaba59b66ee891"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/ko.ts",
+      "sha256": "f3fa1ac2777593cc6a5e29448336dee48463a8a9a9f7bb520e88b02c50006908"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/nl.ts",
+      "sha256": "3d54baa176d2ec6e329720f0a82f013a82cc707ccead25c6f53ae7dd49513181"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/pl.ts",
+      "sha256": "354ce5c53d2e06ef03809183afbfdf30b74982907d3f832da46944b68637ab47"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/pt-BR.ts",
+      "sha256": "a29dd6053a576ff6c49a28540303a2886ceb62f8d4a8cddc892b9f4cf3c0acaf"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/tr.ts",
+      "sha256": "daa4bd480fa55d8f7970d522229b34b1c0ac8b1e36786bedbd388ef1407f8623"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/uk.ts",
+      "sha256": "c722e5ae4d0708ed27e036bbaa8f79511e6bb12436674d12ca80a8898d9a79da"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/zh-CN.ts",
+      "sha256": "3da2853951c807a1d600b74df9e7a324f9031b884a6f1c971e77c01125b0840b"
+    },
+    {
+      "file": "packages/ui/src/lib/i18n/messages/zh-TW.ts",
+      "sha256": "1d351f6855474d8bc8e5e2a3f5e1cd012ee8547c51837dab3097e2d33094add4"
+    }
+  ]
+}

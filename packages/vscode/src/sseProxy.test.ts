@@ -18,6 +18,7 @@ const createManager = (): OpenCodeManager => ({
   getOpenCodeAuthHeaders: () => ({}),
   getManagedLaunchEnvironment: () => null,
   getNativeConfigContext: () => null,
+  subscribeCredentialOwner: () => () => {},
   getWorkingDirectory: () => '/workspace',
   isCliAvailable: () => true,
   getDebugInfo: () => ({

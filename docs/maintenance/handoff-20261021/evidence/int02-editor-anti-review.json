@@ -1,0 +1,102 @@
+{
+  "inherited": 16,
+  "authored": 0,
+  "diagnostics": [
+    {
+      "file": "packages/ui/src/lib/settings/registry.ts",
+      "line": 113,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/lib/settings/registry.ts",
+      "line": 687,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 11,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 12,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 16,
+      "code": "anti-slop(no-unknown-returns)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 17,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 20,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 22,
+      "code": "anti-slop(no-unknown-returns)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 29,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 31,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 32,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 33,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 37,
+      "code": "anti-slop(no-unknown-parameters)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 44,
+      "code": "anti-slop(no-unknown-returns)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 60,
+      "code": "anti-slop(no-unknown-returns)",
+      "inherited": true
+    },
+    {
+      "file": "packages/ui/src/types/bun-test.d.ts",
+      "line": 62,
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "inherited": true
+    }
+  ]
+}

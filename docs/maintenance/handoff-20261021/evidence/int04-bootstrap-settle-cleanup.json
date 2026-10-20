@@ -1,0 +1,102 @@
+{
+  "at": "2026-10-11T19:11:11.0126145Z",
+  "retained": [],
+  "reclaimedBytes": 211941688,
+  "preserved": [
+    "Exact Legacy binary",
+    "Current builds",
+    "Three reusable native probe helpers",
+    "Product source and user data"
+  ],
+  "removed": [
+    {
+      "internalJunctionsUnlinked": 2,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-IBEUzY",
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "3e41ab8e6bccf16fb782ca98d3312298671f6650256dd1b282e0ffc084868821"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "128f72d1cf679556e48bcbee120cfc0427a1551d3dcb310efa22a287dc72843a"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        },
+        {
+          "file": "ide.log",
+          "sha256": "3b0dafd5fba14b92261f3cc880acb0933314baf234918fe1b66a39d04480195f"
+        }
+      ],
+      "bytes": 60579601
+    },
+    {
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-FCun7x",
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "24c460f4ca7b473320350e72e4d00fcf74c0e635d23efa07e935acf1c6a7006d"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "128f72d1cf679556e48bcbee120cfc0427a1551d3dcb310efa22a287dc72843a"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        },
+        {
+          "file": "ide.log",
+          "sha256": "a4cdaa6b9f191334c4e2f925651c88fbd06cf769701a29b76f6bedb72f2b8291"
+        }
+      ],
+      "bytes": 61058942
+    },
+    {
+      "internalJunctionsUnlinked": 0,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-gwOKAo",
+      "hashes": [
+        {
+          "file": "journey.js",
+          "sha256": "128f72d1cf679556e48bcbee120cfc0427a1551d3dcb310efa22a287dc72843a"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        },
+        {
+          "file": "ide.log",
+          "sha256": "68b7fafd4856a02b68541d504a8155beca42e9bb3c4658b21f693dc225dd5f52"
+        }
+      ],
+      "bytes": 27485217
+    },
+    {
+      "internalJunctionsUnlinked": 3,
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-native-recovery-YMZ5Tl",
+      "hashes": [
+        {
+          "file": "evidence.json",
+          "sha256": "db81cc057fa39c006fd206a4cb6635dd34a9114c8a21dcd7c998b87ed57e07e1"
+        },
+        {
+          "file": "journey.js",
+          "sha256": "128f72d1cf679556e48bcbee120cfc0427a1551d3dcb310efa22a287dc72843a"
+        },
+        {
+          "file": "suite.cjs",
+          "sha256": "9e5ee0429dd6a6c8e3d4ab72692dcc90319eee6e044de8b947c1fab772eb6026"
+        },
+        {
+          "file": "ide.log",
+          "sha256": "443d0c009b485107700ac822f22cb2659bd69c3d97548e607d4ccde0728eee4d"
+        }
+      ],
+      "bytes": 62817928
+    }
+  ],
+  "archive": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-recovery-evidence-archive"
+}

@@ -1,0 +1,20 @@
+{
+  "surfaces": {
+    "web": "Existing Web process owner unchanged",
+    "electron": "Existing Web-backed process owner unchanged",
+    "vscode": "Windows owned Git and managed OpenCode termination; one active taskkill and pending PID batches",
+    "hostedMobile": "Existing server owner unchanged",
+    "capacitor": "Existing server owner unchanged"
+  },
+  "scale": "Twelve concurrent deadline terminations",
+  "budget": "5000ms from enqueue, including queue time, then existing 1000ms closure check; no aggregation delay",
+  "owner": "VS Code extension host, owned-process.ts",
+  "authority": "Each owned ChildProcess exit and close",
+  "invariants": [
+    "Only requested owned PIDs",
+    "Per-owner exit, failure and explicit retry",
+    "At most one taskkill in flight",
+    "No production Git deadline change"
+  ],
+  "result": "First experiment reverted; bounded batching retained after 62/62 files and measured 13 to 3 calls"
+}

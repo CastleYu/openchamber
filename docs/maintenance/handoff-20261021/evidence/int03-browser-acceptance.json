@@ -1,0 +1,361 @@
+{
+  "at": "2026-10-11T15:44:46.731Z",
+  "source": "055c46c8e",
+  "round": "R2 / INT-03 remains open",
+  "weeklyRemainingPercent": 81,
+  "executableSha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "checks": [
+    "Anonymous runtime API returns 401",
+    "Actual password login",
+    "Auto selects exact Legacy profile",
+    "UI sends text and renders final assistant text",
+    "UI displays streamed bash tool",
+    "Session setup via production create route preserves bash ask permission; UI Allow Once completes tool",
+    "UI question Yes and Submit completes tool and assistant continuation",
+    "UI text attachment content reaches controlled model and survives history reopen",
+    "UI Stop generating aborts held model response; authoritative status idle and persisted MessageAbortedError",
+    "UI manual Legacy selection persists and next text turn completes"
+  ],
+  "browser": {
+    "evidence": {
+      "source": "055c46c8e",
+      "runtime": {
+        "generation": "oc1",
+        "endpoint": "http://127.0.0.1:32803",
+        "epoch": 5,
+        "version": "1.2.27",
+        "profile": "legacy-1.2.27",
+        "status": "ready"
+      },
+      "selection": "legacy-1.2.27",
+      "statuses": {},
+      "permissionSession": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_PERMISSION"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "tool-calls",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "Preparing controlled tool."
+            },
+            {
+              "type": "tool",
+              "tool": "bash",
+              "state": "completed",
+              "output": "LEGACY_APPROVED\n"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT attachment"
+            },
+            {
+              "type": "text",
+              "text": "Called the Read tool with the following input: {\"filePath\":\"note.txt\"}"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_ATTACHMENT_CONTENT\n"
+            },
+            {
+              "type": "file",
+              "filename": "note.txt"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_HOLD"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "error": "MessageAbortedError",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT manual profile"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        }
+      ],
+      "questionSession": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_TEXT"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_PERMISSION"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "tool-calls",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "Preparing controlled tool."
+            },
+            {
+              "type": "tool",
+              "tool": "bash",
+              "state": "completed",
+              "output": "LEGACY_APPROVED\n"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "LEGACY_QUESTION"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "tool-calls",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "Preparing controlled tool."
+            },
+            {
+              "type": "tool",
+              "tool": "question",
+              "state": "completed",
+              "output": "User has answered your questions: \"Choose probe answer\"=\"Yes\". You can now continue with the user's answers in mind."
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "finish": "stop",
+          "parts": [
+            {
+              "type": "step-start"
+            },
+            {
+              "type": "text",
+              "text": "LEGACY_COMPLETED"
+            },
+            {
+              "type": "step-finish"
+            }
+          ]
+        }
+      ]
+    },
+    "renderedManualConversation": true,
+    "renderedReopenedAttachment": true
+  },
+  "eventTypes": [
+    "server.connected",
+    "server.heartbeat",
+    "project.updated",
+    "file.watcher.updated",
+    "session.created",
+    "session.updated",
+    "message.updated",
+    "message.part.updated",
+    "session.status",
+    "session.diff",
+    "message.part.delta",
+    "session.idle",
+    "question.asked",
+    "question.replied",
+    "permission.asked",
+    "permission.replied",
+    "session.error"
+  ],
+  "attachmentReachedModel": true,
+  "heldModelCalls": 1,
+  "vscodeContracts": {
+    "passed": 23,
+    "failed": 0,
+    "files": 6,
+    "corrected": [
+      {
+        "file": "packages/vscode/src/kernelRequest.test.ts",
+        "exit": 0,
+        "log": "artifacts/int03-vscode-bun-kernelRequest.test.ts.log"
+      },
+      {
+        "file": "packages/vscode/src/bridge-proxy-runtime.test.ts",
+        "exit": 0,
+        "log": "artifacts/int03-vscode-bun-bridge-proxy-runtime.test.ts.log"
+      },
+      {
+        "file": "packages/vscode/src/sseProxy.test.ts",
+        "exit": 0,
+        "log": "artifacts/int03-vscode-bun-sseProxy.test.ts.log"
+      },
+      {
+        "file": "packages/vscode/webview/api/bridge.test.ts",
+        "exit": 0,
+        "log": "artifacts/int03-vscode-bun-bridge.test.ts.log"
+      }
+    ],
+    "unchangedJavaScriptLogs": [
+      "artifacts/int03-vscode-focused-bridge-proxy-runtime.test.js.log",
+      "artifacts/int03-vscode-focused-sseProxy.test.js.log"
+    ]
+  },
+  "limits": [
+    "Official exact executable with controlled local model, not commercial model quality or real CAgent",
+    "Local direct production Web host/browser only; relay, native mobile and packaged acceptance not established",
+    "Text attachment only; other attachment formats not established",
+    "VS Code contracts pass but kernelRequest.ts still refuses all Legacy requests; actual Legacy IDE conversation is incomplete",
+    "Existing advanced Legacy refusal remains; small-model credential read currently returns 500 and config/skills/project-resources/upgrade-status return 501; track settings work at R3"
+  ],
+  "next": [
+    "Implement the bounded exact Legacy VS Code request/stream/session-metadata bridge with refusal before unaccepted operations, preserving request auth, abort and owner retirement",
+    "Run actual VS Code exact conversation plus current OC1/OC2 workflow regressions and remaining applicable R2 transport checks",
+    "Keep R2 open until its full gate passes; continue R3-R7 in order"
+  ],
+  "documentationCommit": "c3f5dbcff",
+  "cleanup": {
+    "status": "Both owned runtime homes and four one-time cdee helpers removed; all fixture processes and ports absent",
+    "helpersRemoved": 4,
+    "report": "artifacts/int03-browser-cleanup.json",
+    "removedFixtureBytes": 45778741
+  }
+}

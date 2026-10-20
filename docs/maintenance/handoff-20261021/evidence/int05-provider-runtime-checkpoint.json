@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-12T01:24:33.066Z",
+  "status": "progress; INT-05/R3 open",
+  "tests": {
+    "files": 4,
+    "passed": 62
+  },
+  "lint": "ESLint and Oxlint passed on four changed files",
+  "weeklyRemainingPercent": 55,
+  "files": {
+    "packages/web/server/lib/opencode/legacy-provider-runtime.js": "fe572f29fd48fa8fa0972028d34fd5d34e9ac6e6cce0cce028d44e3505676223",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.d.ts": "68a650d3ce74c60eddf0c61293c01ebe1479aa923fb1f5bf32fd80838cf0aa1e",
+    "packages/web/server/lib/opencode/legacy-provider-runtime.test.js": "57022c267bc9c33478cc478b454af153314bf0e2c0897806d6031630126df0da",
+    "packages/web/server/lib/opencode/legacy-provider-owner.test.js": "4e4cec0489df33cfbc39eade724bbbf81d270863f3dedf14b6704601d3dbd4ab"
+  },
+  "pending": [
+    "production trusted caller mapping and explicit Web/VS Code adapters",
+    "Legacy UI source layers, deferred restart and partial outcomes",
+    "stale effective configuration after persistence",
+    "real provider OAuth and native host binding acceptance",
+    "unattended dispatch outcome persistence"
+  ],
+  "release": {
+    "tag": "v2.0.4-DIJIANG.5.0-DEBUG",
+    "liveUploadedAssets": 8,
+    "changed": false
+  },
+  "webTypeCheck": "passed",
+  "deadCode": "completed; existing backlog reviewed; no legacy-provider-runtime or legacy-provider-owner findings",
+  "evidence": [
+    "artifacts/int05-provider-final-tests.log",
+    "artifacts/int05-provider-final-eslint.log",
+    "artifacts/int05-provider-final-oxlint.log",
+    "artifacts/int05-provider-final-types.log",
+    "artifacts/int05-provider-final-dead-code.log",
+    "artifacts/int05-release-live-check.json"
+  ]
+}

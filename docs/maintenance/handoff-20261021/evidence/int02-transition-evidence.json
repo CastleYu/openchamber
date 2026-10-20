@@ -1,0 +1,83 @@
+{
+  "sourceBefore": "e253bde0438144ab9f91cd7dd06635414746ec57",
+  "antiSlop": {
+    "inherited": 8,
+    "authored": 0,
+    "checked": [
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 342,
+        "source": "if (error && typeof error === 'object' && (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH')) {",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 449,
+        "source": "const pathValue = typeof processEnv?.PATH === 'string' ? processEnv.PATH : '';",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 620,
+        "source": "if (typeof requestedPort === 'number' && Number.isFinite(requestedPort) && requestedPort > 0) {",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 638,
+        "source": "const port = address && typeof address === 'object' ? address.port : 0;",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 824,
+        "source": "if (typeof buildManagedOpenCodePath === 'function') {",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 826,
+        "source": "} else if (typeof buildAugmentedPath === 'function') {",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 829,
+        "source": "const shellEnv = typeof getManagedOpenCodeShellEnvSnapshot === 'function'",
+        "presentBefore": true
+      },
+      {
+        "rule": "anti-slop(no-runtime-typeof)",
+        "currentLine": 1516,
+        "source": "if (typeof directory !== 'string' || !directory) continue;",
+        "presentBefore": true
+      }
+    ]
+  },
+  "contractTests": {
+    "passed": 80,
+    "log": "artifacts/int02-transition-contract-test.log"
+  },
+  "webTypes": "artifacts/int02-transition-web-types.log",
+  "webLint": "artifacts/int02-transition-web-lint.log",
+  "firstProcessRun": {
+    "log": "artifacts/int02-transition-process-test.log",
+    "passed": 64,
+    "failed": 1,
+    "unhandled": 1,
+    "failure": "Existing shutdown-during-startup fixture timed out and final directory removal hit EBUSY during concurrent type-check. Isolated rerun required."
+  },
+  "next": "Public confirmation, settings commit permission, recovery action, clients, UI and VS Code adoption remain incomplete.",
+  "final": {
+    "passed": 145,
+    "realChild": 7,
+    "realChildLog": "artifacts/int02-transition-process-final.log",
+    "isolatedFailure": "artifacts/int02-transition-process-isolated.log",
+    "testsAntiSlop": "artifacts/int02-transition-tests-oxlint.log",
+    "changedSources": {
+      "lifecycle.js": "27f2e12e2878094fff5e5c4d32b3884110154aa68a3a0487f5897b2efb7a4bbe",
+      "lifecycle-family.test.js": "baebe273564527377f4f25309b396e048703a367df56e0f040d3c8bac06cfd8f",
+      "lifecycle-process.test.js": "d351714142d743824b768d341436a19ff92d8a0d1df725fb922fa5d33a2e974e"
+    }
+  }
+}

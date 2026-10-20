@@ -1,0 +1,60 @@
+{
+  "commit": "395cfc8e4275bf278d3f9ae318e539891b799ab0",
+  "regressionTests": 124,
+  "updatedRealChildSuite": 7,
+  "uniqueTests": 124,
+  "syntheticQueuedDispatch": true,
+  "realHost": {
+    "sourceSha": "52715104425fbe8f662ee3bdcc5161fa6806e2bf",
+    "profile": "oc2",
+    "mode": "configured",
+    "version": "2.0.20",
+    "binarySha256": "0024044a6b0a6fe041ead2c9678b1e784cc04136d84159fea9d3405379ea02e7",
+    "checks": [
+      "migration discovery requires host authentication",
+      "repeated readonly migration shows provenance and unavailable input without persisting or spawning",
+      "unconfirmed cold startup leaves authenticated settings reachable and no process",
+      "invalid candidate does not replace settings",
+      "actual React candidate confirmation starts real OC2 and initializes the shared client",
+      "UI confirmed save is durable with prior settings backup",
+      "UI confirmed saved record suppresses contradictory legacy prefill",
+      "configured binary managed startup and exact profile",
+      "duplicate save is inert and active replacement is rejected durably",
+      "one owned live server registry entry",
+      "active confirmed reload exits old PID before one replacement is ready",
+      "managed host facade session creation and reopened history",
+      "managed session deletion",
+      "owned server exit and registry cleanup"
+    ],
+    "isolated": true,
+    "conversationNotExercised": true
+  },
+  "types": 0,
+  "lint": 0,
+  "syntax": "passed",
+  "anti": {
+    "inherited": 70,
+    "authored": 0
+  },
+  "deadCode": {
+    "files": 2,
+    "exports": 319,
+    "types": 231
+  },
+  "weeklyRemainingPercent": 44,
+  "release": "unchanged",
+  "activeReplacement": "gated",
+  "fingerprints": {
+    "packages/web/server/index.js": "9ceba8121d00185051910209a1e53d8cf7b5713ca88ed8fe996fdb229b40ab6a",
+    "packages/web/server/lib/message-queue/runtime.js": "2cca7648e1322d7054e491ae36b28d4933dd8248e3421df7a853888e75bd0d39",
+    "packages/web/server/lib/message-queue/runtime.test.js": "2ff00fcbbc28a108c28083a50550c684d89a494f5a59bf1ed0ebf25eba63f417",
+    "packages/web/server/lib/message-queue/DOCUMENTATION.md": "b169376908eb21164632b029d703d70ef5b856496ec9ce17f992c701ca4782ab",
+    "packages/web/server/lib/opencode/lifecycle.js": "cc69f10cdbc866809fd29b41a1e39218042e46c6ab7643d88afcf6149d377362",
+    "packages/web/server/lib/opencode/lifecycle-family.test.js": "4c64823a5b5f228af92d32f14de86e79947413c11acdd42d174a876991a8b0d4",
+    "packages/web/server/lib/opencode/lifecycle-process.test.js": "f3e05747d0f2eadb819b459b8bc1a1cfaafeca5a03b3a569b0cb074d973c1977",
+    "packages/web/server/lib/opencode/DOCUMENTATION.md": "3791f5954646239295df28f8658d379b9c8ec692aa29f1d41eec6eebb34b25b1",
+    "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md": "7182888017ad33e94f5b18f5e39183bc21772809f6fe3667225340daf7484091",
+    "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md": "04b885b31a5de2c32e66cf97e604683a68227e425fc2e5a323a534c53bce9bc4",
+    "docs/maintenance/zh-CN/QUEUE-CONNECTION-DRAIN.md": "96a90c8dd1677be7ce776ade6a3a544858b6cc1205a763c49168574e3970c674"
+  }
+}

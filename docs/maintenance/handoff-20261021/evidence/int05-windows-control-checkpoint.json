@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-11T23:47:24.731Z",
+  "status": "R3 INT-05 open",
+  "source": [
+    {
+      "file": "docs/maintenance/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "ac30f08494aee8c43afd12c830e175e9fc20fbf992091605f0981e26af643cac"
+    },
+    {
+      "file": "docs/maintenance/zh-CN/OPENCODE-INTEGRATION-MILESTONES.md",
+      "sha256": "8e3de7b8070f01c402cffdbf8cd51675d31a65cdf93772d4b41d9ddcdc21d806"
+    },
+    {
+      "file": "packages/vscode/src/managed-opencode-process.test.ts",
+      "sha256": "59e170bf6274604fe8bbfc289acf6125c19688720aa31e92bc994bc3e0d40aa4"
+    },
+    {
+      "file": "packages/vscode/src/bridge-git-process-runtime.test.ts",
+      "sha256": "e1ed12481a3f24b31140e0eefaafed76e1bb8db54033a8b0e878803d58e95cb5"
+    },
+    {
+      "file": "scripts/run-isolated-tests.mjs",
+      "sha256": "88928e4e2d89529b23a5fc3a8ed082550a68c02de57dbf973c4902ff8cca5a8c"
+    }
+  ],
+  "focused": {
+    "git": "3 pass, 1 platform skip",
+    "managed": "14 pass",
+    "managedTestEslint": "pass",
+    "managedTestOxlint": "zero diagnostics"
+  },
+  "normalFullSuite": "59/61; Windows taskkill timeout, quota violation and call cancelled",
+  "serialFullSuite": "60/61; twelve-concurrent Git termination still fails",
+  "runnerChangedPermanently": false,
+  "productionDeadlineChanged": false,
+  "nativeHost": {
+    "accepted": false,
+    "runnerEntered": false,
+    "rootPid": 170284,
+    "rootExited": true,
+    "oldUnresolvedPid": 172948,
+    "profilesRetained": [
+      "int05-manager-owner-run-2860d0453e",
+      "int05-manager-owner-run-f2777441c9"
+    ],
+    "helper": "C:/Users/74756/.codex/worktrees/cdee/openchamber/artifacts"
+  },
+  "next": [
+    "Diagnose Windows termination without weakening twelve-process pressure or deadlines",
+    "Resolve real host runner startup",
+    "Pending explicit authorization for bound OAuth interface",
+    "Credential composition and persistence feedback",
+    "Generated plugins and unattended callers",
+    "R4 apply/reload"
+  ],
+  "quota": {
+    "source": "live Codex tool",
+    "remainingPercent": 60
+  }
+}

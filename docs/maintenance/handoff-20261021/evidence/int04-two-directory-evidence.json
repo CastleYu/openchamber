@@ -1,0 +1,680 @@
+{
+  "sameTypeDirectoryRecovery": {
+    "status": "passed: A and B each had a directory-scoped permission pending request; answering either left the other pending and independently answerable",
+    "requests": {
+      "A": {
+        "kind": "permission",
+        "requestID": "per_12c3c72c7001EtRcpyEmdNipwk",
+        "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+        "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a"
+      },
+      "B": {
+        "kind": "permission",
+        "requestID": "per_12c3c72c9001URYHHdP4s8jpR6",
+        "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+        "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b"
+      }
+    }
+  },
+  "historyAfterRestart": {
+    "A": {
+      "messageIds": [
+        "msg_12c3c718900113HEZRaXOaBHqI",
+        "msg_12c3c72110011zpbeLH3hBQTab",
+        "msg_12c3c78e6001HOyouygBwVWFif",
+        "msg_12c3c7990001jU2esOSN3xnLVj",
+        "msg_12c3c7caf001yjG46f01oOBcFG",
+        "msg_12c3c80f5001VBN0EL0sD95kAX",
+        "msg_12c3c818f001whXrQz5NI2qqrL",
+        "msg_12c3c84820016odSn8Xmt7ha3O"
+      ],
+      "priorPartIds": [
+        "prt_12c3c718a001WSF4geG8L5kDtx",
+        "prt_12c3c7538001HkTKACgPzQ3goF",
+        "prt_12c3c7539001Yzx4hrvy9s9WJz",
+        "prt_12c3c753a001WXoF72vDRIzjL2",
+        "prt_12c3c7644001tqSeX6mJ3n9aqC",
+        "prt_12c3c7a2f001AcvTPYvTMlN2ne",
+        "prt_12c3c7a30001dOP68eP5plRf3p",
+        "prt_12c3c7a32001sk0DjVxeJXytSZ",
+        "prt_12c3c7991001GjU2o4MTO6Qvqc",
+        "prt_12c3c7dee001Rs6juFaqIcFOOW",
+        "prt_12c3c7df00016zKwNQm5OL6ptp",
+        "prt_12c3c7df1001vYm73k1LvTiA7Z",
+        "prt_12c3c7ea4001Wrzrmg4Nj4Pb1E",
+        "prt_12c3c824a001IWnMeaA1PtLcwY",
+        "prt_12c3c824b001hVGeIMk3W7QSvn",
+        "prt_12c3c824d001Y4y7lfj1VTOLYG",
+        "prt_12c3c818f00246RSRB0ml9Kow8"
+      ],
+      "newPartIdsAfterRestart": [
+        "prt_12c3c85b1001TewaR2geOO7hDd",
+        "prt_12c3c85b2001dnzq0T7BtpTNF3",
+        "prt_12c3c85b3001mZMs1k4O4YF8Kr"
+      ],
+      "messageIdsPreserved": true,
+      "priorPartIdsPreserved": true
+    },
+    "B": {
+      "messageIds": [
+        "msg_12c3c71f80015Bt98fPwLBbYbH",
+        "msg_12c3c726d001iOHS5CPlhttIiX",
+        "msg_12c3c78c7001Sx1otbE53LpneF",
+        "msg_12c3c799e0013MbxBuGSSoPQgG",
+        "msg_12c3c7c5b0010Kri4I0Tc84Sc9",
+        "msg_12c3c81120017MHJxuRugbSE8o",
+        "msg_12c3c8504001Ez7Qn29ZB16oTw",
+        "msg_12c3c8509001Q8MRnMZEdtkYYo"
+      ],
+      "priorPartIds": [
+        "prt_12c3c71f8002GKWFcA75BK43u3",
+        "prt_12c3c73a2001PQT4OwcVCOUDhF",
+        "prt_12c3c73a3001hcn2MNsKyzJwFE",
+        "prt_12c3c73a5001qzCxGE6sTRM0XD",
+        "prt_12c3c7652001faq4vNmCzMxDLL",
+        "prt_12c3c7a1c001dXLzSnsd03KE1J",
+        "prt_12c3c7a1d0011m2AZrgXrXphOx",
+        "prt_12c3c7a1f001MS9pAZJYwf7a5F",
+        "prt_12c3c799e0023W1i1mptzP3Qgc",
+        "prt_12c3c7dd1001T6eZPCvNGS78Yr",
+        "prt_12c3c7dd20016q3TlmcspcrqI1",
+        "prt_12c3c7dd3001LJlnqozi2kbLSt",
+        "prt_12c3c7ebb0012zgqoEaFxJTmQy",
+        "prt_12c3c8272001kpsJHnGU8XPfaQ",
+        "prt_12c3c8273001EnfkLrx4vVCQS4",
+        "prt_12c3c8276001mYYPLVSPprDRps",
+        "prt_12c3c8504002f4LbyBIcjYr08i"
+      ],
+      "newPartIdsAfterRestart": [],
+      "messageIdsPreserved": true,
+      "priorPartIdsPreserved": true
+    }
+  },
+  "pendingAfterRestart": {
+    "A": {
+      "kind": "permission",
+      "oldRequestID": "per_12c3c8490001Is0GBRcNzjd2VW",
+      "visibleAfterRestart": false,
+      "autoReplayObserved": false
+    },
+    "B": {
+      "kind": "question",
+      "oldRequestID": "que_12c3c8523001iEkSht793U6Z22",
+      "visibleAfterRestart": false,
+      "autoReplayObserved": false
+    }
+  },
+  "explicitNewTurns": {
+    "A": {
+      "userMessageID": "msg_12c3c8e1c001h2Dy2CvB0QWtfx",
+      "priorMessageIDs": [
+        "msg_12c3c718900113HEZRaXOaBHqI",
+        "msg_12c3c72110011zpbeLH3hBQTab",
+        "msg_12c3c78e6001HOyouygBwVWFif",
+        "msg_12c3c7990001jU2esOSN3xnLVj",
+        "msg_12c3c7caf001yjG46f01oOBcFG",
+        "msg_12c3c80f5001VBN0EL0sD95kAX",
+        "msg_12c3c818f001whXrQz5NI2qqrL",
+        "msg_12c3c84820016odSn8Xmt7ha3O"
+      ],
+      "assistantMessageID": "msg_12c3c8ead00131zze9Cyw4R3Ez",
+      "assistantCompleted": true,
+      "priorMessageIdsExcluded": true,
+      "response": "Completed explicit user turn A"
+    },
+    "B": {
+      "userMessageID": "msg_12c3c92dd001oZnzOdx6hW0p0D",
+      "priorMessageIDs": [
+        "msg_12c3c71f80015Bt98fPwLBbYbH",
+        "msg_12c3c726d001iOHS5CPlhttIiX",
+        "msg_12c3c78c7001Sx1otbE53LpneF",
+        "msg_12c3c799e0013MbxBuGSSoPQgG",
+        "msg_12c3c7c5b0010Kri4I0Tc84Sc9",
+        "msg_12c3c81120017MHJxuRugbSE8o",
+        "msg_12c3c8504001Ez7Qn29ZB16oTw",
+        "msg_12c3c8509001Q8MRnMZEdtkYYo"
+      ],
+      "assistantMessageID": "msg_12c3c92ff001cbcm8gBHN2i5ED",
+      "assistantCompleted": true,
+      "priorMessageIdsExcluded": true,
+      "response": "Completed explicit user turn B"
+    }
+  },
+  "at": "2026-10-11T18:32:10.758Z",
+  "sourcebase": {
+    "head": "3cf78c66f (provided; git intentionally not invoked)",
+    "binary": {
+      "path": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/bin/opencode.exe",
+      "version": "1.2.27",
+      "sha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4"
+    },
+    "availableSourceFiles": [
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/permission.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/question.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/server/routes/session.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/session/prompt.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/session/index.ts",
+      "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/legacy-1.2.27/source/packages/opencode/src/tool/question.ts"
+    ],
+    "sourceGaps": [
+      "permission/next.ts and question module implementation are absent from the provided source snapshot"
+    ]
+  },
+  "checks": [
+    "exact 1.2.27 plus production proxy/session owners and isolated auth gate",
+    "A permission and B permission requests are pending independently",
+    "SDK recreation retains each directory and request identity",
+    "Answering one directory leaves the other directory's distinct pending request answerable",
+    "A question and B question requests are pending independently",
+    "SDK recreation retains each directory and request identity",
+    "Answering one directory leaves the other directory's distinct pending request answerable",
+    "A history IDs persist and process-local pending requests disappear after restart",
+    "B history IDs persist and process-local pending requests disappear after restart",
+    "A explicit new user turn creates a new completed assistant message",
+    "B explicit new user turn creates a new completed assistant message"
+  ],
+  "trace": [
+    {
+      "at": "2026-10-11T18:32:01.159Z",
+      "event": "promptAsync",
+      "name": "A",
+      "kind": "permission",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a"
+    },
+    {
+      "at": "2026-10-11T18:32:01.271Z",
+      "event": "promptAsync",
+      "name": "B",
+      "kind": "permission",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b"
+    },
+    {
+      "at": "2026-10-11T18:32:01.551Z",
+      "event": "pendingVisible",
+      "name": "A",
+      "kind": "permission",
+      "requestID": "per_12c3c72c7001EtRcpyEmdNipwk",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt"
+    },
+    {
+      "at": "2026-10-11T18:32:02.251Z",
+      "event": "pendingVisible",
+      "name": "B",
+      "kind": "permission",
+      "requestID": "per_12c3c72c9001URYHHdP4s8jpR6",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg"
+    },
+    {
+      "at": "2026-10-11T18:32:02.288Z",
+      "event": "replied",
+      "name": "A",
+      "kind": "permission",
+      "requestID": "per_12c3c72c7001EtRcpyEmdNipwk"
+    },
+    {
+      "at": "2026-10-11T18:32:02.305Z",
+      "event": "replied",
+      "name": "B",
+      "kind": "permission",
+      "requestID": "per_12c3c72c9001URYHHdP4s8jpR6"
+    },
+    {
+      "at": "2026-10-11T18:32:03.221Z",
+      "event": "promptAsync",
+      "name": "A",
+      "kind": "question",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a"
+    },
+    {
+      "at": "2026-10-11T18:32:03.233Z",
+      "event": "promptAsync",
+      "name": "B",
+      "kind": "question",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b"
+    },
+    {
+      "at": "2026-10-11T18:32:04.128Z",
+      "event": "pendingVisible",
+      "name": "A",
+      "kind": "question",
+      "requestID": "que_12c3c7cbb001rxlY1A7Ew4maGq",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt"
+    },
+    {
+      "at": "2026-10-11T18:32:04.487Z",
+      "event": "pendingVisible",
+      "name": "B",
+      "kind": "question",
+      "requestID": "que_12c3c7c6d001czVqignSl283Jz",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg"
+    },
+    {
+      "at": "2026-10-11T18:32:04.517Z",
+      "event": "replied",
+      "name": "A",
+      "kind": "question",
+      "requestID": "que_12c3c7cbb001rxlY1A7Ew4maGq"
+    },
+    {
+      "at": "2026-10-11T18:32:04.540Z",
+      "event": "replied",
+      "name": "B",
+      "kind": "question",
+      "requestID": "que_12c3c7c6d001czVqignSl283Jz"
+    },
+    {
+      "at": "2026-10-11T18:32:06.132Z",
+      "event": "restartPendingCaptured",
+      "name": "A",
+      "kind": "permission",
+      "requestID": "per_12c3c8490001Is0GBRcNzjd2VW",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a",
+      "messageIDs": [
+        "msg_12c3c718900113HEZRaXOaBHqI",
+        "msg_12c3c72110011zpbeLH3hBQTab",
+        "msg_12c3c78e6001HOyouygBwVWFif",
+        "msg_12c3c7990001jU2esOSN3xnLVj",
+        "msg_12c3c7caf001yjG46f01oOBcFG",
+        "msg_12c3c80f5001VBN0EL0sD95kAX",
+        "msg_12c3c818f001whXrQz5NI2qqrL",
+        "msg_12c3c84820016odSn8Xmt7ha3O"
+      ],
+      "partIDs": [
+        "prt_12c3c718a001WSF4geG8L5kDtx",
+        "prt_12c3c7538001HkTKACgPzQ3goF",
+        "prt_12c3c7539001Yzx4hrvy9s9WJz",
+        "prt_12c3c753a001WXoF72vDRIzjL2",
+        "prt_12c3c7644001tqSeX6mJ3n9aqC",
+        "prt_12c3c7a2f001AcvTPYvTMlN2ne",
+        "prt_12c3c7a30001dOP68eP5plRf3p",
+        "prt_12c3c7a32001sk0DjVxeJXytSZ",
+        "prt_12c3c7991001GjU2o4MTO6Qvqc",
+        "prt_12c3c7dee001Rs6juFaqIcFOOW",
+        "prt_12c3c7df00016zKwNQm5OL6ptp",
+        "prt_12c3c7df1001vYm73k1LvTiA7Z",
+        "prt_12c3c7ea4001Wrzrmg4Nj4Pb1E",
+        "prt_12c3c824a001IWnMeaA1PtLcwY",
+        "prt_12c3c824b001hVGeIMk3W7QSvn",
+        "prt_12c3c824d001Y4y7lfj1VTOLYG",
+        "prt_12c3c818f00246RSRB0ml9Kow8"
+      ]
+    },
+    {
+      "at": "2026-10-11T18:32:06.349Z",
+      "event": "restartPendingCaptured",
+      "name": "B",
+      "kind": "question",
+      "requestID": "que_12c3c8523001iEkSht793U6Z22",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b",
+      "messageIDs": [
+        "msg_12c3c71f80015Bt98fPwLBbYbH",
+        "msg_12c3c726d001iOHS5CPlhttIiX",
+        "msg_12c3c78c7001Sx1otbE53LpneF",
+        "msg_12c3c799e0013MbxBuGSSoPQgG",
+        "msg_12c3c7c5b0010Kri4I0Tc84Sc9",
+        "msg_12c3c81120017MHJxuRugbSE8o",
+        "msg_12c3c8504001Ez7Qn29ZB16oTw",
+        "msg_12c3c8509001Q8MRnMZEdtkYYo"
+      ],
+      "partIDs": [
+        "prt_12c3c71f8002GKWFcA75BK43u3",
+        "prt_12c3c73a2001PQT4OwcVCOUDhF",
+        "prt_12c3c73a3001hcn2MNsKyzJwFE",
+        "prt_12c3c73a5001qzCxGE6sTRM0XD",
+        "prt_12c3c7652001faq4vNmCzMxDLL",
+        "prt_12c3c7a1c001dXLzSnsd03KE1J",
+        "prt_12c3c7a1d0011m2AZrgXrXphOx",
+        "prt_12c3c7a1f001MS9pAZJYwf7a5F",
+        "prt_12c3c799e0023W1i1mptzP3Qgc",
+        "prt_12c3c7dd1001T6eZPCvNGS78Yr",
+        "prt_12c3c7dd20016q3TlmcspcrqI1",
+        "prt_12c3c7dd3001LJlnqozi2kbLSt",
+        "prt_12c3c7ebb0012zgqoEaFxJTmQy",
+        "prt_12c3c8272001kpsJHnGU8XPfaQ",
+        "prt_12c3c8273001EnfkLrx4vVCQS4",
+        "prt_12c3c8276001mYYPLVSPprDRps",
+        "prt_12c3c8504002f4LbyBIcjYr08i"
+      ]
+    },
+    {
+      "at": "2026-10-11T18:32:06.404Z",
+      "event": "upstreamStoppedForRestart",
+      "pid": 150840
+    },
+    {
+      "at": "2026-10-11T18:32:07.678Z",
+      "event": "upstreamRestarted",
+      "pid": 149548
+    },
+    {
+      "at": "2026-10-11T18:32:09.676Z",
+      "event": "explicitTurnCompleted",
+      "name": "A",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a",
+      "sessionID": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+      "userMessageID": "msg_12c3c8e1c001h2Dy2CvB0QWtfx",
+      "assistantMessageID": "msg_12c3c8ead00131zze9Cyw4R3Ez"
+    },
+    {
+      "at": "2026-10-11T18:32:10.591Z",
+      "event": "explicitTurnCompleted",
+      "name": "B",
+      "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b",
+      "sessionID": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+      "userMessageID": "msg_12c3c92dd001oZnzOdx6hW0p0D",
+      "assistantMessageID": "msg_12c3c92ff001cbcm8gBHN2i5ED"
+    }
+  ],
+  "controlledModelCalls": [
+    {
+      "at": "2026-10-11T18:32:01.415Z",
+      "modelCallID": "recovery-1",
+      "marker": "\"RECOVERY_A_PERMISSION\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_1"
+    },
+    {
+      "at": "2026-10-11T18:32:01.415Z",
+      "modelCallID": "recovery-2",
+      "marker": "\"RECOVERY_B_PERMISSION\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_2"
+    },
+    {
+      "at": "2026-10-11T18:32:03.061Z",
+      "modelCallID": "recovery-3",
+      "marker": "\"RECOVERY_B_PERMISSION\"",
+      "lastRole": "tool",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_3"
+    },
+    {
+      "at": "2026-10-11T18:32:03.063Z",
+      "modelCallID": "recovery-4",
+      "marker": "\"RECOVERY_A_PERMISSION\"",
+      "lastRole": "tool",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_4"
+    },
+    {
+      "at": "2026-10-11T18:32:03.941Z",
+      "modelCallID": "recovery-5",
+      "marker": "\"<system-reminder>\\nThe user sent the following message:\\nRECOVERY_B_QUESTION\\n\\nPlease address this message and continue with your tasks.\\n</system-reminder>\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_5"
+    },
+    {
+      "at": "2026-10-11T18:32:04.023Z",
+      "modelCallID": "recovery-6",
+      "marker": "\"<system-reminder>\\nThe user sent the following message:\\nRECOVERY_A_QUESTION\\n\\nPlease address this message and continue with your tasks.\\n</system-reminder>\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_6"
+    },
+    {
+      "at": "2026-10-11T18:32:05.148Z",
+      "modelCallID": "recovery-7",
+      "marker": "\"RECOVERY_A_QUESTION\"",
+      "lastRole": "tool",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_7"
+    },
+    {
+      "at": "2026-10-11T18:32:05.151Z",
+      "modelCallID": "recovery-8",
+      "marker": "\"RECOVERY_B_QUESTION\"",
+      "lastRole": "tool",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_8"
+    },
+    {
+      "at": "2026-10-11T18:32:06.027Z",
+      "modelCallID": "recovery-9",
+      "marker": "\"<system-reminder>\\nThe user sent the following message:\\nRECOVERY_A_PERMISSION_CRASH_PENDING\\n\\nPlease address this message and continue with your tasks.\\n</system-reminder>\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_9"
+    },
+    {
+      "at": "2026-10-11T18:32:06.172Z",
+      "modelCallID": "recovery-10",
+      "marker": "\"RECOVERY_B_QUESTION_CRASH_PENDING\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": "call_10"
+    },
+    {
+      "at": "2026-10-11T18:32:08.772Z",
+      "modelCallID": "recovery-11",
+      "marker": "\"RECOVERY_EXPLICIT_NEW_TURN_A\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": null
+    },
+    {
+      "at": "2026-10-11T18:32:09.748Z",
+      "modelCallID": "recovery-12",
+      "marker": "\"RECOVERY_EXPLICIT_NEW_TURN_B\"",
+      "lastRole": "user",
+      "toolNames": [
+        "question",
+        "bash",
+        "read",
+        "glob",
+        "grep",
+        "edit",
+        "write",
+        "task",
+        "webfetch",
+        "todowrite",
+        "skill"
+      ],
+      "toolCallID": null
+    }
+  ],
+  "controlledModelCallIDsUnique": true,
+  "ownedProcessPids": [
+    150840,
+    149548
+  ],
+  "modelCalls": 12,
+  "controlledModelToolNames": [
+    "question",
+    "bash",
+    "read",
+    "glob",
+    "grep",
+    "edit",
+    "write",
+    "task",
+    "webfetch",
+    "todowrite",
+    "skill"
+  ],
+  "fixture": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int04-two-directory-SE4sVE",
+  "isolation": {
+    "home": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\home",
+    "appdata": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\appdata",
+    "localappdata": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\localappdata",
+    "xdgData": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\data",
+    "xdgConfig": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\config",
+    "xdgCache": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\cache",
+    "xdgState": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\state",
+    "temp": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\temp",
+    "workspaces": {
+      "A": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a",
+      "B": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b"
+    },
+    "distinctRealDirectories": true,
+    "windowsRegistryWrites": "none observed; source search found no Windows registry persistence path"
+  },
+  "directoryCoverage": {
+    "isolatedHomeAndWorkingDirectory": true,
+    "multipleWorkingDirectoriesInOneRun": true,
+    "sameOpenCodeProcess": true,
+    "sessions": {
+      "A": {
+        "id": "ses_ed3c38fdbffeHJ8MA5AYTOicEt",
+        "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-a"
+      },
+      "B": {
+        "id": "ses_ed3c38eb7ffecKh14h10WS7jQg",
+        "directory": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int04-two-directory-SE4sVE\\workspace-b"
+      }
+    }
+  },
+  "processStopped": true,
+  "limitations": [
+    "Controlled loopback model validates request/event mechanics, not provider quality.",
+    "HTTP/API probes do not establish full OpenChamber UI acceptance.",
+    "A pending native permission/question request disappears after restart while history identifiers persist; no interrupted request was automatically replayed."
+  ],
+  "result": "R3_TWO_DIRECTORY_RECOVERY_OK",
+  "cleanup": {
+    "ownedOpenCodeStopped": true,
+    "hostClosed": true,
+    "modelClosed": true,
+    "fixtureRetainedForParentCleanup": true
+  }
+}

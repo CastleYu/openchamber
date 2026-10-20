@@ -1,0 +1,24 @@
+{
+  "locales": [
+    "en",
+    "nl",
+    "uk",
+    "de",
+    "es",
+    "fr",
+    "ja",
+    "ko",
+    "pl",
+    "pt-BR",
+    "tr",
+    "zh-CN",
+    "zh-TW"
+  ],
+  "keys": 60,
+  "fallback": false,
+  "placeholders": "passed",
+  "untranslatedEnglish": 0,
+  "literalParity": "passed",
+  "unrelatedKeys": "merge checked unchanged",
+  "verification": "actual Bun module import"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "exitCode": 0,
+    "log": "artifacts/int02-r1-boundary-types.log",
+    "name": "types"
+  },
+  {
+    "exitCode": 0,
+    "log": "artifacts/int02-r1-boundary-lint.log",
+    "name": "lint"
+  },
+  {
+    "exitCode": 0,
+    "log": "artifacts/int02-r1-boundary-dead-code.log",
+    "name": "dead-code"
+  },
+  {
+    "exitCode": 0,
+    "log": "artifacts/int02-r1-boundary-build.log",
+    "name": "build"
+  }
+]

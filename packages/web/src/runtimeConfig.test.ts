@@ -13,7 +13,7 @@ vi.mock('@openchamber/ui/lib/runtime-switch', () => ({
   getRuntimeApiBaseUrl: vi.fn(() => ''),
   getRuntimeKey: vi.fn(() => 'local'),
   initializeRuntimeEndpoint: vi.fn(),
-  switchRuntimeEndpoint: vi.fn(),
+  switchRuntimeEndpoint: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('@openchamber/ui/lib/desktopRelayRestore', () => ({ restoreDesktopRelayRuntime: vi.fn(() => Promise.resolve()) }));
 vi.mock('@openchamber/ui/lib/runtime-url', () => ({ configureRuntimeUrlResolver: vi.fn(() => ({})) }));

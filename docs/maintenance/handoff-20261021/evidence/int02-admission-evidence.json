@@ -1,0 +1,77 @@
+{
+  "baseCommit": "da0725b64a9c5dbcfc7e8155c2ff9a17f42013a0",
+  "stage": "R1 peer restart admission; R1 remains open",
+  "weeklyRemainingPercent": 36,
+  "sourceFiles": {
+    "packages/ui/src/apps/VSCodeApp.tsx": "74609b3dafc683d64d65821a7f976ac21af9973b36907f2677d67203b8dd3043",
+    "packages/ui/src/stores/useConfigStore.ts": "02ff62d815664acfabbeba122707be87b62ad1214e57af80c9be5ce34a1ce5d7",
+    "packages/ui/src/stores/useConfigStore.test.ts": "e55e209fc86fe06fd10753d7b47d6a344f9c3470e842242e90b16f1c861f32b2",
+    "packages/ui/src/sync/event-pipeline.ts": "f9f5aeea3bc152a0e2cc3750c1be23d9d7dc46d6d4f3d6859fb834dc675e85c9",
+    "packages/ui/src/sync/sync-context.tsx": "754a3f150aa565dd6cb95b00a1491e6749da14113c726d4a6a37a39a78f48847",
+    "packages/ui/src/sync/event-pipeline.test.ts": "28fdea08f811517f17b6ce48280a9b2ccdf8731c87e1f542f1fdb0b1907d6801",
+    "packages/ui/src/sync/event-pipeline-domain.test.ts": "4b885203dcc5f25bd873111b550fb3e8b0321a049fe0f742d0be25fe929ae1ef",
+    "packages/ui/src/sync/__tests__/event-pipeline-admission.test.js": "4f2affb36b686925f9fa68c9b403cb91ed21502dd4f47a15ea9cc4377e26e432",
+    "packages/ui/src/sync/__tests__/event-pipeline-admission.real.test.ts": "30fe47fe96a7eb08bd468ef5d9ff8b2b38ddfcd33b4d6056482da8e515e1bf04",
+    "packages/web/server/lib/event-stream/runtime.js": "d17e183cea89a05969c6afa9deb112329f3d7f43be19a3d4921d1bf064fe21b3",
+    "packages/web/server/lib/event-stream/runtime.test.js": "282690fe9989c99dc36408dfc828321b300874fe4d1268bb9507d669b69a3981",
+    "packages/web/server/lib/event-stream/rebind.test.js": "ade945ae20e82b3d8f9204e8d03fb8969f2d1752c326732d2fc1f939b75d9913"
+  },
+  "checks": {
+    "configuration": 85,
+    "pipelineAdmissionDomain": 23,
+    "isolatedProtocolSourceReconnect": 49,
+    "finalPipeline": 8,
+    "hostEventStream": 69,
+    "wireTranslation": 22,
+    "realPeerTransports": [
+      "sse",
+      "ws"
+    ],
+    "rootTypes": true,
+    "rootLint": "passed with 5 inherited warnings",
+    "finalUiTypes": true,
+    "focusedLint": true,
+    "webBuild": true,
+    "vscodeBuild": true,
+    "deadCode": "nonblocking inventory inspected; no admission-owned findings",
+    "antiSlop": "348 existing UI diagnostics; 3 existing host diagnostics; no authored-line findings; real/rebind tests zero diagnostics"
+  },
+  "logs": {
+    "int02-admission-pipeline.log": "fb0c4926de72ed495c0ed832235e350173aeb4a14c5674917882ff034e08c761",
+    "int02-admission-config.log": "50a0f1d67a1ec24d76bbeaa0f7d568bd25ea10912905d5957d87e2a822e86da4",
+    "int02-admission-regression.log": "5f677ec39a043862d5b4b121ffc23fee18b874a5beb70d82558dbc50a247942a",
+    "int02-admission-pipeline-final.log": "c81d9d2f13cc853adefc90026f46c3eb6ebb7b470adea171ebd883ecfb3a051f",
+    "int02-admission-types.log": "8712104691dbb2b872440e05ea10e87dd2aca6c5e03bbcaba90c7d01ca653e78",
+    "int02-admission-types-final.log": "5a3973f79ed9becd5f23c4feff467513814de7ea381d75a4d2e339aa8b8edca9",
+    "int02-admission-lint.log": "f7f502fa73f147c5080d7bc0398c855790433f4bbec1889b1aaa7c8ec9ecbcc3",
+    "int02-admission-final-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "int02-admission-web-build.log": "518d7a052f4411f1b7a9337beecd49b4377937e6d70cbfa004a0026d7460e676",
+    "int02-admission-vscode-build.log": "73e1dd96d664a1fc9bc3cef03693364584391a07596dd8e66d75ff6e1ff0eb67",
+    "int02-admission-event-stream-final.log": "b66ec1476b9818af8d7768094d319718de59cf23db6c0b9ed7a20c59e1aa1660",
+    "int02-admission-translate.log": "a6eaee785725c91bdf36b4ddf26ffcb7153c9777a2d44ecb0d62efe40d8bb06f",
+    "int02-admission-live-final.log": "c3042cecc1ec6295b161b51460b3d99bdb385be4370c82c705a8720a76fb6f4a"
+  },
+  "failures": [
+    "Browser fixture relative fetch URL and Origin corrected",
+    "Global WS retained across managed restart; close all stream sockets on explicit rebind",
+    "Initial type fixtures and Bun-only preconnect corrected",
+    "Vitest/Bun runner mismatch and manual WS ownership fixture corrected"
+  ],
+  "cleanup": {
+    "failedHomeBytes": 38642867,
+    "finalInventory": "int02-admission-cleanup.json",
+    "retained": "Compact logs, reusable admission/native fixtures, real OC2 binary, current Web/VS Code bundles for remaining R1; review at R1 closeout"
+  },
+  "remaining": [
+    "Complete shared webview/bridge/editor journey",
+    "Broader runtime acceptance",
+    "Windows console-flash observation"
+  ],
+  "limitations": [
+    "Browser API simulation against real authenticated host, not native browser visual acceptance",
+    "No real CAgent, exact Legacy or model invocation",
+    "No remote update or Release modification"
+  ],
+  "localCommit": "04c62480e2de7b3d34fd1095fc74fe757f6aa971",
+  "worktreeCleanAfterCommit": true
+}

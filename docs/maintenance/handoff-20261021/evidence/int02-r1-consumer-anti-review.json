@@ -1,0 +1,9 @@
+{
+  "total": 62,
+  "authored": 0,
+  "method": "Compare all diagnostic label lines with added-line ranges from git diff --unified=0",
+  "files": {
+    "packages/web/server/lib/small-model/runtime-providers.js": 3,
+    "packages/web/server/index.js": 59
+  }
+}

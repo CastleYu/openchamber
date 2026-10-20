@@ -21,6 +21,8 @@ export interface OpenCodeGenerationDescriptor {
   version: string | null;
 }
 
+export function areOpenCodeVersionsEqual(left: string | null | undefined, right: string | null | undefined): boolean;
+export function isLegacyOpenCodeVersion(version: string | null | undefined): boolean;
 export function isSupportedOpenCodeVersion(version: string): boolean;
 export function supportsCredentialApi(version: string | null | undefined): boolean;
 export function readOpenCodeInfo(response: Response): Promise<{ version: string } | null>;

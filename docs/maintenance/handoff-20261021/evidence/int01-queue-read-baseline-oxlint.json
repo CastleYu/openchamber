@@ -1,0 +1,56 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/message-queue/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2567,
+            "length": 12,
+            "line": 53,
+            "column": 38
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/message-queue/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2658,
+            "length": 12,
+            "line": 54,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/message-queue/runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 2737,
+            "length": 12,
+            "line": 55,
+            "column": 39
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 2,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.3620111
+}

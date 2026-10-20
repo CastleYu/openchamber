@@ -6,6 +6,7 @@ import { z } from 'zod';
 const CONFIG_FILE = Object.freeze({ JSONC: 'opencode.jsonc', JSON: 'opencode.json', LEGACY: 'config.json' });
 const ENV = Object.freeze({ CONFIG: 'OPENCODE_CONFIG', DISABLE_PROJECT: 'OPENCODE_DISABLE_PROJECT_CONFIG', CONFIG_DIR: 'OPENCODE_CONFIG_DIR', CONTENT: 'OPENCODE_CONFIG_CONTENT', MANAGED_DIR: 'OPENCODE_TEST_MANAGED_CONFIG_DIR' });
 const SCOPE = Object.freeze({ USER: 'user', PROJECT: 'project', INLINE: 'inline', MANAGED: 'managed' });
+const ORIGIN = Object.freeze({ GLOBAL: 'global', EXPLICIT_CONFIG: 'explicit-config', PROJECT_ROOT: 'project-root', DOT_DIRECTORY: 'dot-directory', EXPLICIT_CONFIG_DIR: 'explicit-config-dir', INLINE: 'inline', MANAGED: 'managed' });
 const FILES = Object.freeze([CONFIG_FILE.JSONC, CONFIG_FILE.JSON]);
 const GLOBAL = Object.freeze([CONFIG_FILE.LEGACY, CONFIG_FILE.JSON, CONFIG_FILE.JSONC]);
 const MCP = 'mcp';
@@ -71,7 +72,7 @@ function parseConfig(text, empty = false) {
   return parsed.data;
 }
 
-async function readFile(file, scope, env, nativeHome) {
+async function readFile(file, scope, origin, order, env, nativeHome) {
   let raw;
   try {
     raw = await fs.readFile(file, 'utf8');
@@ -81,7 +82,7 @@ async function readFile(file, scope, env, nativeHome) {
   }
   const expanded = await substitute(raw, path.dirname(file), env, nativeHome);
   const config = parseConfig(expanded, raw === '');
-  return { path: file, scope, writable: scope === SCOPE.USER || scope === SCOPE.PROJECT, raw, config };
+  return { path: file, scope, writable: scope === SCOPE.USER || scope === SCOPE.PROJECT, raw, config, origin, order };
 }
 
 function dedupe(values) {
@@ -117,54 +118,55 @@ export async function readLegacyConfigLayers(input, options = {}) {
   const { paths, env, cwd, nativeHome } = validateInputs(input);
   const replacement = options?.replacement;
   const layers = [];
-  const load = async (file, scope) => {
+  const load = async (file, scope, origin) => {
     if (replacement?.path === file) {
       const expanded = await substitute(replacement.raw, path.dirname(file), env, nativeHome);
       const config = parseConfig(expanded, replacement.raw === '');
-      layers.push({ path: file, scope, writable: scope === SCOPE.USER || scope === SCOPE.PROJECT, raw: replacement.raw, config });
+      layers.push({ path: file, scope, writable: scope === SCOPE.USER || scope === SCOPE.PROJECT, raw: replacement.raw, config, origin, order: layers.length });
       return;
     }
-    const result = await readFile(file, scope, env, nativeHome);
+    const result = await readFile(file, scope, origin, layers.length, env, nativeHome);
     if (result) layers.push(result);
   };
   const userFiles = GLOBAL.map((name) => path.join(paths.config, name));
-  for (const file of userFiles) await load(file, SCOPE.USER);
+  for (const file of userFiles) await load(file, SCOPE.USER, ORIGIN.GLOBAL);
 
   const custom = env[ENV.CONFIG] ? path.resolve(cwd, env[ENV.CONFIG]) : null;
-  if (custom) await load(custom, SCOPE.USER);
+  if (custom) await load(custom, SCOPE.USER, ORIGIN.EXPLICIT_CONFIG);
 
   const projectDisabled = env[ENV.DISABLE_PROJECT] === 'true' || env[ENV.DISABLE_PROJECT] === '1';
   const projectRoots = ancestors(paths.directory, paths.worktree);
   if (!projectDisabled) {
-    for (const root of projectRoots.slice().reverse()) await load(path.join(root, CONFIG_FILE.JSONC), SCOPE.PROJECT);
-    for (const root of projectRoots.slice().reverse()) await load(path.join(root, CONFIG_FILE.JSON), SCOPE.PROJECT);
+    for (const root of projectRoots.slice().reverse()) await load(path.join(root, CONFIG_FILE.JSONC), SCOPE.PROJECT, ORIGIN.PROJECT_ROOT);
+    for (const root of projectRoots.slice().reverse()) await load(path.join(root, CONFIG_FILE.JSON), SCOPE.PROJECT, ORIGIN.PROJECT_ROOT);
   }
 
   const customDir = env[ENV.CONFIG_DIR] ? path.resolve(cwd, env[ENV.CONFIG_DIR]) : null;
   const projectDirs = projectDisabled ? [] : projectRoots.map((root) => path.join(root, '.opencode'));
   const dirs = dedupe([
-    { path: paths.config, scope: SCOPE.USER },
-    ...projectDirs.map((dir) => ({ path: dir, scope: SCOPE.PROJECT })),
-    { path: path.join(paths.home, '.opencode'), scope: SCOPE.USER },
-    ...(customDir ? [{ path: customDir, scope: SCOPE.USER }] : []),
+    { path: paths.config, scope: SCOPE.USER, origin: ORIGIN.DOT_DIRECTORY },
+    ...projectDirs.map((dir) => ({ path: dir, scope: SCOPE.PROJECT, origin: ORIGIN.DOT_DIRECTORY })),
+    { path: path.join(paths.home, '.opencode'), scope: SCOPE.USER, origin: ORIGIN.DOT_DIRECTORY },
+    ...(customDir ? [{ path: customDir, scope: SCOPE.USER, origin: ORIGIN.EXPLICIT_CONFIG_DIR }] : []),
   ]);
   for (const dir of dirs) {
     if (!dir.path.endsWith('.opencode') && dir.path !== customDir) continue;
-    for (const name of FILES) await load(path.join(dir.path, name), dir.scope);
+    const origin = dir.path === customDir ? ORIGIN.EXPLICIT_CONFIG_DIR : dir.origin;
+    for (const name of FILES) await load(path.join(dir.path, name), dir.scope, origin);
   }
 
   if (env[ENV.CONTENT]?.length) {
     const raw = env[ENV.CONTENT];
     const expanded = await substitute(raw, paths.directory, env, nativeHome);
     const config = parseConfig(expanded);
-    layers.push({ path: null, scope: SCOPE.INLINE, writable: false, raw, config });
+    layers.push({ path: null, scope: SCOPE.INLINE, writable: false, raw, config, origin: ORIGIN.INLINE, order: layers.length });
   }
 
   const managedDir = env[ENV.MANAGED_DIR]
     ? path.resolve(cwd, env[ENV.MANAGED_DIR])
     : process.platform === 'win32' ? path.join(env.ProgramData || 'C:\\ProgramData', 'opencode')
       : process.platform === 'darwin' ? '/Library/Application Support/opencode' : '/etc/opencode';
-  for (const name of FILES) await load(path.join(managedDir, name), SCOPE.MANAGED);
+  for (const name of FILES) await load(path.join(managedDir, name), SCOPE.MANAGED, ORIGIN.MANAGED);
 
   const userCandidates = [userFiles[2], userFiles[1], userFiles[0]];
   let userPath = userFiles[2];

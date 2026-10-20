@@ -1,0 +1,27 @@
+[
+  {
+    "exit": 0,
+    "log": "artifacts/int02-r1-final-OpenCodeConnectionSettings.test.tsx.log",
+    "file": "packages/ui/src/components/sections/openchamber/OpenCodeConnectionSettings.test.tsx"
+  },
+  {
+    "exit": 0,
+    "log": "artifacts/int02-r1-final-messageQueueStore.test.ts.log",
+    "file": "packages/ui/src/stores/messageQueueStore.test.ts"
+  },
+  {
+    "exit": 0,
+    "log": "artifacts/int02-r1-final-messageQueueStore.server.test.ts.log",
+    "file": "packages/ui/src/stores/messageQueueStore.server.test.ts"
+  },
+  {
+    "exit": 0,
+    "log": "artifacts/int02-r1-final-QueuedMessageChips.test.tsx.log",
+    "file": "packages/ui/src/components/chat/QueuedMessageChips.test.tsx"
+  },
+  {
+    "exit": 0,
+    "log": "artifacts/int02-r1-final-useConfigStore.test.ts.log",
+    "file": "packages/ui/src/stores/useConfigStore.test.ts"
+  }
+]

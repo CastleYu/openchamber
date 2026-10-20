@@ -1,0 +1,128 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   observedCount: 0,\n+   state: 'unknown'\n-   count: 1,\n-   state: 'known'\n  }\n",
+  "seen": [
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/ses_pending"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    }
+  ],
+  "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-pending-host-rt018J",
+  "checks": [
+    "production host admits synthetic OC2 external identity",
+    "permissions pending blocks wait without saving or interrupting",
+    "questions pending blocks wait without saving or interrupting",
+    "failed permission read remains unknown and blocks wait while preserving other categories"
+  ]
+}

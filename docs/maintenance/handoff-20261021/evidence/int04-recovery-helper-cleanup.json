@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-11T17:49:21.203Z",
+  "removed": [
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-checks.mjs",
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-final-checks.mjs",
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-blocking-resync.test.js",
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-checkpoint.mjs",
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-closeout.mjs",
+    "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r3-recovery-commit.mjs"
+  ],
+  "bytes": 24114,
+  "retained": [
+    "r3-host-recovery.mjs reusable exact-process driver",
+    "r2-native-* actual UI recovery drivers",
+    "Pinned exact and current OC1/OC2 binaries for remaining R3 checks"
+  ]
+}

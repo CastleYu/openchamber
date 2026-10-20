@@ -1,0 +1,106 @@
+{
+  "at": "2026-10-11T20:07:31.638Z",
+  "binarySha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "observations": [
+    {
+      "name": "xdg-and-custom",
+      "global": {
+        "configJson": {
+          "template": "configJson"
+        },
+        "winner": {
+          "template": "openJsonc"
+        },
+        "openJson": {
+          "template": "openJson"
+        },
+        "openJsonc": {
+          "template": "openJsonc"
+        }
+      },
+      "effective": {
+        "configJson": {
+          "template": "configJson"
+        },
+        "winner": {
+          "template": "custom"
+        },
+        "openJson": {
+          "template": "openJson"
+        },
+        "openJsonc": {
+          "template": "openJsonc"
+        },
+        "custom": {
+          "template": "custom"
+        }
+      },
+      "globalWriteTargets": [
+        "xdg\\opencode\\opencode.jsonc"
+      ]
+    },
+    {
+      "name": "home-fallback",
+      "global": {
+        "profileHome": {
+          "template": "profileHome"
+        },
+        "winner": {
+          "template": "profileHome"
+        }
+      },
+      "effective": {
+        "profileHome": {
+          "template": "profileHome"
+        },
+        "winner": {
+          "template": "profileHome"
+        }
+      },
+      "globalWriteTargets": [
+        "profile\\.config\\opencode\\opencode.json"
+      ]
+    },
+    {
+      "name": "config-directory",
+      "global": {
+        "configJson": {
+          "template": "configJson"
+        },
+        "winner": {
+          "template": "openJsonc"
+        },
+        "openJson": {
+          "template": "openJson"
+        },
+        "openJsonc": {
+          "template": "openJsonc"
+        }
+      },
+      "effective": {
+        "configJson": {
+          "template": "configJson"
+        },
+        "winner": {
+          "template": "extra"
+        },
+        "openJson": {
+          "template": "openJson"
+        },
+        "openJsonc": {
+          "template": "openJsonc"
+        },
+        "extra": {
+          "template": "extra"
+        }
+      },
+      "globalWriteTargets": [
+        "xdg\\opencode\\opencode.jsonc"
+      ]
+    }
+  ],
+  "cleanup": {
+    "childrenExited": true,
+    "fixtureRemoved": true
+  }
+}

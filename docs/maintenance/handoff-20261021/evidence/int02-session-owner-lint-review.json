@@ -1,0 +1,498 @@
+{
+  "total": 82,
+  "newFindings": [],
+  "findings": [
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 12,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 13,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 14,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 15,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 17,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 19,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 28,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 29,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 31,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 32,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 34,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 35,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 37,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 41,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 94,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 95,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 112,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 131,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 148,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 183,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 212,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 246,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/lib/opencode/session-runtime.js",
+      "line": 307,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 197,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 202,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 253,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 263,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 270,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 750,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 751,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1008,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1051,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1054,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1191,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1208,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1208,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1218,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1219,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1220,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1221,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1222,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1224,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1237,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1239,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1240,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1242,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1243,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1245,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1301,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1468,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1474,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1597,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1618,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1619,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1651,
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1901,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1903,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1915,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1936,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 1959,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2006,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2027,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2029,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2032,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2045,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2046,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2048,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2049,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2050,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2056,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2069,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2070,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2073,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2076,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2079,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2083,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2084,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2085,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2159,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2280,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2372,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    },
+    {
+      "file": "packages/web/server/index.js",
+      "line": 2666,
+      "code": "anti-slop(no-runtime-typeof)",
+      "preExisting": true
+    }
+  ]
+}

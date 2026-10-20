@@ -1,0 +1,8 @@
+[
+  {
+    "injected": true,
+    "error": "TimeoutError: The operation was aborted due to timeout",
+    "elapsedMs": 183199,
+    "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-plugin-isolate-n9AYmb"
+  }
+]

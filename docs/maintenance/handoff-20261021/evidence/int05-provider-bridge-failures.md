@@ -1,0 +1,4 @@
+Initial focused Bun run failed. See artifacts/int05-provider-bridge-dispatch.log for diagnostic output.
+
+2026-10-13: Vitest entry is packages/web/node_modules/vitest/vitest.mjs, not root node_modules. Node/Vitest correctly passes all 19 HTTP/auth/dispatcher tests; Bun test was the wrong runner for these Vitest HTTP transport tests. Removed speculative socket-close listener added during that failed diagnosis. Initial VSCode type failures were corrected through inferred Zod JSON and actual descriptor declarations. A read-only lookup of nonexistent bunfig.toml had no source effect.
+2026-10-13: After context continuation, write_stdin handle 29669 was no longer registered. The retained final build log confirms completion (built in 2m43s); the build was not restarted. All remaining validation process handles had already returned exit 0.

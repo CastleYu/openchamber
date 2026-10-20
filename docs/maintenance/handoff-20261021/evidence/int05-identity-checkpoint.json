@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-12",
+  "phase": "INT-05 native configuration identity",
+  "tests": {
+    "webLifecycle": 10,
+    "vscodeManagedProcess": 12,
+    "vscodeTypes": "passed",
+    "changedEslint": "passed"
+  },
+  "limits": [
+    "No Legacy configuration route admission",
+    "VS Code manager identity not asserted in a live manager journey",
+    "INT-05 and R3 remain open"
+  ],
+  "next": "Use raw highest-source definitions for editing; keep inherited fields separate, preserve substitution bases, reject structural substitution edits. Compose Web and VS Code persistence together before route admission.",
+  "review": "Astra confirmed raw editing avoids secret materialization and stale expanded UI baselines. A merged raw entry must not be copied to a different source file. Deleting a source definition can reveal lower layers and must be reported as such, not as guaranteed effective removal."
+}

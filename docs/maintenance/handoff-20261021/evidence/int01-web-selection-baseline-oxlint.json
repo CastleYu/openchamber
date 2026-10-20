@@ -1,0 +1,2120 @@
+{
+  "diagnostics": [
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1052,
+            "length": 12,
+            "line": 21,
+            "column": 88
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 10593,
+            "length": 12,
+            "line": 242,
+            "column": 90
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 19652,
+            "length": 12,
+            "line": 404,
+            "column": 90
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.test.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 21464,
+            "length": 44,
+            "line": 441,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "Rename symbol \"ensureNotificationTemplateShape\" for its domain role; \"shape\" describes structure rather than ownership.",
+      "code": "anti-slop(no-shape-in-symbol-names)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1004,
+            "length": 31,
+            "line": 33,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1084,
+            "length": 16,
+            "line": 34,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1364,
+            "length": 26,
+            "line": 41,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1466,
+            "length": 28,
+            "line": 42,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1572,
+            "length": 25,
+            "line": 43,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 1614,
+            "length": 27,
+            "line": 43,
+            "column": 68
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 3950,
+            "length": 13,
+            "line": 103,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4035,
+            "length": 12,
+            "line": 105,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4445,
+            "length": 12,
+            "line": 117,
+            "column": 81
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 4747,
+            "length": 11,
+            "line": 123,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5183,
+            "length": 12,
+            "line": 137,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5212,
+            "length": 17,
+            "line": 137,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5776,
+            "length": 16,
+            "line": 153,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 5858,
+            "length": 16,
+            "line": 154,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6123,
+            "length": 28,
+            "line": 157,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6216,
+            "length": 28,
+            "line": 158,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6346,
+            "length": 92,
+            "line": 163,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6350,
+            "length": 18,
+            "line": 163,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6446,
+            "length": 420,
+            "line": 164,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6874,
+            "length": 71,
+            "line": 167,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 6953,
+            "length": 208,
+            "line": 168,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 7169,
+            "length": 218,
+            "line": 171,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 7395,
+            "length": 218,
+            "line": 174,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 7621,
+            "length": 202,
+            "line": 177,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 7835,
+            "length": 39,
+            "line": 180,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 8024,
+            "length": 39,
+            "line": 182,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 8975,
+            "length": 12,
+            "line": 209,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 9665,
+            "length": 12,
+            "line": 231,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 14188,
+            "length": 14,
+            "line": 346,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15446,
+            "length": 31,
+            "line": 382,
+            "column": 29
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 15726,
+            "length": 72,
+            "line": 389,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 16452,
+            "length": 12,
+            "line": 405,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 17270,
+            "length": 27,
+            "line": 425,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 17903,
+            "length": 18,
+            "line": 438,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 18434,
+            "length": 17,
+            "line": 447,
+            "column": 101
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 18512,
+            "length": 8,
+            "line": 448,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 19142,
+            "length": 19,
+            "line": 470,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 22112,
+            "length": 13,
+            "line": 539,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 22231,
+            "length": 12,
+            "line": 544,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 22814,
+            "length": 12,
+            "line": 562,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 25593,
+            "length": 12,
+            "line": 625,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 25756,
+            "length": 13,
+            "line": 631,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 26071,
+            "length": 12,
+            "line": 640,
+            "column": 51
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30435,
+            "length": 19,
+            "line": 744,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 30952,
+            "length": 12,
+            "line": 756,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 31507,
+            "length": 14,
+            "line": 770,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 31731,
+            "length": 31,
+            "line": 776,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 31901,
+            "length": 29,
+            "line": 781,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 33397,
+            "length": 14,
+            "line": 831,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 33462,
+            "length": 23,
+            "line": 833,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 33556,
+            "length": 28,
+            "line": 834,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 33657,
+            "length": 28,
+            "line": 836,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 33763,
+            "length": 27,
+            "line": 837,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 34592,
+            "length": 63,
+            "line": 867,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 34663,
+            "length": 60,
+            "line": 868,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 34894,
+            "length": 14,
+            "line": 875,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36304,
+            "length": 14,
+            "line": 917,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36416,
+            "length": 32,
+            "line": 921,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36538,
+            "length": 34,
+            "line": 925,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36664,
+            "length": 29,
+            "line": 929,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36780,
+            "length": 32,
+            "line": 933,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "Rename symbol \"ensureNotificationTemplateShape\" for its domain role; \"shape\" describes structure rather than ownership.",
+      "code": "anti-slop(no-shape-in-symbol-names)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 36948,
+            "length": 31,
+            "line": 938,
+            "column": 54
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37076,
+            "length": 37,
+            "line": 939,
+            "column": 64
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 37376,
+            "length": 14,
+            "line": 948,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 38037,
+            "length": 28,
+            "line": 962,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 39002,
+            "length": 39,
+            "line": 982,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 39976,
+            "length": 14,
+            "line": 1012,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 43976,
+            "length": 27,
+            "line": 1088,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/lib/opencode/settings-runtime.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 45218,
+            "length": 12,
+            "line": 1108,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 11726,
+            "length": 12,
+            "line": 191,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 11885,
+            "length": 12,
+            "line": 196,
+            "column": 34
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13329,
+            "length": 18,
+            "line": 247,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13573,
+            "length": 12,
+            "line": 257,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 13817,
+            "length": 12,
+            "line": 264,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 34145,
+            "length": 24,
+            "line": 722,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 34223,
+            "length": 24,
+            "line": 723,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 45214,
+            "length": 22,
+            "line": 962,
+            "column": 23
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 46934,
+            "length": 55,
+            "line": 1005,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 47043,
+            "length": 47,
+            "line": 1008,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 52451,
+            "length": 23,
+            "line": 1139,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53302,
+            "length": 14,
+            "line": 1156,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53333,
+            "length": 25,
+            "line": 1156,
+            "column": 50
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53541,
+            "length": 25,
+            "line": 1166,
+            "column": 44
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53649,
+            "length": 24,
+            "line": 1167,
+            "column": 43
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53747,
+            "length": 22,
+            "line": 1168,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53827,
+            "length": 27,
+            "line": 1169,
+            "column": 21
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53921,
+            "length": 22,
+            "line": 1170,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 53993,
+            "length": 16,
+            "line": 1172,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54285,
+            "length": 25,
+            "line": 1185,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54368,
+            "length": 19,
+            "line": 1187,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54447,
+            "length": 25,
+            "line": 1188,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54530,
+            "length": 19,
+            "line": 1190,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54606,
+            "length": 22,
+            "line": 1191,
+            "column": 15
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 54683,
+            "length": 16,
+            "line": 1193,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 56310,
+            "length": 20,
+            "line": 1249,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 63474,
+            "length": 29,
+            "line": 1413,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 63811,
+            "length": 20,
+            "line": 1419,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 68469,
+            "length": 58,
+            "line": 1520,
+            "column": 13
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 69118,
+            "length": 58,
+            "line": 1541,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 69188,
+            "length": 46,
+            "line": 1542,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "This conditional spread hides property omission behind an empty object. Build the object in separate statements and add the property only when present.",
+      "code": "anti-slop(no-conditional-empty-object-spread)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 70293,
+            "length": 58,
+            "line": 1574,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 79524,
+            "length": 19,
+            "line": 1819,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 79653,
+            "length": 35,
+            "line": 1821,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 80118,
+            "length": 14,
+            "line": 1833,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 80984,
+            "length": 14,
+            "line": 1854,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 82071,
+            "length": 32,
+            "line": 1877,
+            "column": 17
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 84446,
+            "length": 11,
+            "line": 1924,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 85267,
+            "length": 25,
+            "line": 1945,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 85338,
+            "length": 42,
+            "line": 1947,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 85505,
+            "length": 17,
+            "line": 1950,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86265,
+            "length": 25,
+            "line": 1963,
+            "column": 42
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86311,
+            "length": 29,
+            "line": 1964,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86402,
+            "length": 31,
+            "line": 1966,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86454,
+            "length": 26,
+            "line": 1967,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86501,
+            "length": 29,
+            "line": 1968,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 86828,
+            "length": 26,
+            "line": 1974,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87295,
+            "length": 28,
+            "line": 1987,
+            "column": 25
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87377,
+            "length": 29,
+            "line": 1988,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87479,
+            "length": 36,
+            "line": 1991,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87632,
+            "length": 33,
+            "line": 1994,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87804,
+            "length": 38,
+            "line": 1997,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 87963,
+            "length": 35,
+            "line": 2001,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 88021,
+            "length": 37,
+            "line": 2002,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 88081,
+            "length": 37,
+            "line": 2003,
+            "column": 8
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 91873,
+            "length": 25,
+            "line": 2077,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 97771,
+            "length": 11,
+            "line": 2198,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 101633,
+            "length": 17,
+            "line": 2290,
+            "column": 27
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/web/server/index.baseline.js",
+      "labels": [
+        {
+          "span": {
+            "offset": 113263,
+            "length": 27,
+            "line": 2579,
+            "column": 25
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 3,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.3039313
+}

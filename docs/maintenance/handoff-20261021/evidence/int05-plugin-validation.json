@@ -1,0 +1,22 @@
+[
+  {
+    "name": "routes",
+    "code": 1
+  },
+  {
+    "name": "eslint",
+    "code": 0
+  },
+  {
+    "name": "oxlint",
+    "code": 1
+  },
+  {
+    "name": "types",
+    "code": 0
+  },
+  {
+    "name": "dead-code",
+    "code": 0
+  }
+]

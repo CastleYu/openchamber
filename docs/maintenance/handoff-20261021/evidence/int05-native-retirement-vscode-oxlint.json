@@ -1,0 +1,408 @@
+{
+  "diagnostics": [
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/sseProxy.test.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 1981,
+            "length": 168,
+            "line": 59,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/sseProxy.test.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 2725,
+            "length": 403,
+            "line": 83,
+            "column": 26
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5224,
+            "length": 15,
+            "line": 117,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5323,
+            "length": 23,
+            "line": 120,
+            "column": 37
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5522,
+            "length": 26,
+            "line": 124,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5568,
+            "length": 13,
+            "line": 125,
+            "column": 19
+          }
+        }
+      ]
+    },
+    {
+      "message": "This type assertion has no `SAFETY:` justification. State the checked invariant immediately before the assertion or its containing statement.",
+      "code": "anti-slop(require-safety-comment-for-type-assertion)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5637,
+            "length": 33,
+            "line": 126,
+            "column": 14
+          }
+        }
+      ]
+    },
+    {
+      "message": "This dictionary's unknown value type gives callers no concrete value contract. Use an owner/schema-derived value type; parse external payloads before insertion.",
+      "code": "anti-slop(no-unsafe-dictionary-type)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5647,
+            "length": 23,
+            "line": 126,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `resolveWindowsLaunchSpec` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7432,
+            "length": 16,
+            "line": 181,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `resolveWindowsLaunchSpec` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7730,
+            "length": 25,
+            "line": 188,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit anonymous object type on return value of `resolveWindowsLaunchSpec` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 7770,
+            "length": 107,
+            "line": 190,
+            "column": 10
+          }
+        }
+      ]
+    },
+    {
+      "message": "Parameter `raw` leaves input unparsed. Accept a named domain type; run the expected schema or parser at the I/O boundary before calling this function.",
+      "code": "anti-slop(no-unknown-parameters)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9161,
+            "length": 7,
+            "line": 240,
+            "column": 49
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9193,
+            "length": 10,
+            "line": 241,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 9942,
+            "length": 16,
+            "line": 264,
+            "column": 39
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 10020,
+            "length": 31,
+            "line": 267,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11181,
+            "length": 16,
+            "line": 300,
+            "column": 11
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 11707,
+            "length": 8,
+            "line": 319,
+            "column": 18
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16330,
+            "length": 10,
+            "line": 456,
+            "column": 7
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 16959,
+            "length": 13,
+            "line": 479,
+            "column": 92
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 18217,
+            "length": 20,
+            "line": 520,
+            "column": 32
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 19046,
+            "length": 12,
+            "line": 549,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 19675,
+            "length": 15,
+            "line": 576,
+            "column": 9
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 23488,
+            "length": 14,
+            "line": 684,
+            "column": 31
+          }
+        }
+      ]
+    },
+    {
+      "message": "The explicit open dictionary type on return value of `getOpenCodeAuthHeaders` discards known type evidence. Keep inference, validate with `satisfies`, or use a named owner contract.",
+      "code": "anti-slop(no-known-value-widening)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 28002,
+            "length": 64,
+            "line": 797,
+            "column": 12
+          }
+        }
+      ]
+    },
+    {
+      "message": "A `typeof` check narrows a representation without establishing its contract. Parse input at its I/O boundary, then branch on the domain value.",
+      "code": "anti-slop(no-runtime-typeof)",
+      "severity": "error",
+      "filename": "packages/vscode/src/opencode.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 34012,
+            "length": 14,
+            "line": 911,
+            "column": 9
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 4,
+  "number_of_rules": 15,
+  "threads_count": 16,
+  "start_time": 0.2776324
+}

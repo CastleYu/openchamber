@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-12T01:31:54.386Z",
+  "scope": "exact executable config-cache observation; not full provider integration",
+  "checks": [
+    "authenticated exact 1.2.27 SDK config read",
+    "project provider persisted removal",
+    "same native process subsequent effective configuration observed"
+  ],
+  "binarySha256": "dc9c7a2f97101329459fc46500913cc0c9d6514c39a6820fc720423ad04823b4",
+  "persistedProviderAbsent": true,
+  "effectiveProviderStillPresent": true,
+  "effectiveMatchesPreDelete": true,
+  "cleanup": {
+    "ownedServerExited": true,
+    "fixtureRemoved": true
+  }
+}

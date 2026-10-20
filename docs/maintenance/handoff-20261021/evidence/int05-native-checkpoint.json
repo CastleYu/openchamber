@@ -1,0 +1,33 @@
+{
+  "milestone": "INT-05",
+  "status": "native ownership prerequisite only; Legacy configuration routes remain closed",
+  "tests": {
+    "vscode": 12,
+    "web": 42
+  },
+  "types": {
+    "vscode": "pass",
+    "web": "pass"
+  },
+  "syntax": "pass",
+  "patch": "pass",
+  "deadCode": "report reviewed; no changed-file findings",
+  "oxlint": "existing findings only; new lines reviewed",
+  "quotaRemainingPercent": 70,
+  "evidence": "artifacts/int05-native-path-evidence.json",
+  "next": "Implement exact Legacy configuration precedence and writable source selection; verify MCP round trips before admission",
+  "files": [
+    {
+      "sha256": "1BDAC10E5DA4DDCDF075C9F9ED42FEA12C6D6804F16C2FDFBD3FF23157D79FC6",
+      "path": "packages/web/server/lib/opencode/lifecycle.js"
+    },
+    {
+      "sha256": "B701868FD4373485595411597BAD553EA31EE4A023ED646752C1F40F41B9157E",
+      "path": "packages/vscode/src/opencode.ts"
+    },
+    {
+      "sha256": "3EF12451EAAFFDBE7751553E3FD42A95B9D3D8D26BB217FE59F5CDE5BE7FBD9E",
+      "path": "packages/vscode/src/managed-opencode-process.ts"
+    }
+  ]
+}

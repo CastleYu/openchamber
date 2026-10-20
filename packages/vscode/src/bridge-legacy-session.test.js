@@ -80,6 +80,10 @@ const createHarness = async ({ onUpstream = () => {}, beforeQueueReply } = {}) =
       response.writeHead(200, { 'content-type': 'application/json' });
       return response.end(JSON.stringify([session]));
     }
+    if (url.pathname === `/session/${SESSION_ID}/fork` && request.method === 'POST') {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      return response.end(JSON.stringify({ ...session, id: 'ses_fork', parentID: SESSION_ID }));
+    }
     if (url.pathname.endsWith('/prompt_async') && request.method === 'POST') {
       if (request.headers['x-test-hold']) await new Promise((resolve) => response.once('close', resolve));
       response.writeHead(200, { 'content-type': 'application/json' });
@@ -194,10 +198,22 @@ describe('VS Code exact Legacy 1.2.27 loopback bridge', () => {
   it('refuses a Legacy advanced route before it reaches upstream', async () => {
     const calls = [];
     const harness = await createHarness({ onUpstream: (call) => calls.push(call) });
-    const result = await harness.send('advanced', 'POST', `/api/session/${SESSION_ID}/fork`, '{}');
+    const result = await harness.send('advanced', 'POST', '/api/experimental/generate', '{}');
     expect(result.success).toBe(false);
     expect(result.error).toContain('not supported');
     expect(calls).toHaveLength(0);
+  });
+
+  it('forwards admitted fork with its body, directory and authentication', async () => {
+    const calls = [];
+    const harness = await createHarness({ onUpstream: call => calls.push(call) });
+    const body = { messageID: 'msg_boundary' };
+    const search = `?directory=${encodeURIComponent(DIRECTORY)}`;
+    const result = await harness.send('fork', 'POST', `/api/session/${SESSION_ID}/fork${search}`, JSON.stringify(body));
+    expect(result.success).toBe(true);
+    expect(resultData(result).status).toBe(200);
+    expect(responseBody(result)).toMatchObject({ id: 'ses_fork', parentID: SESSION_ID });
+    expect(calls).toEqual([{ method: 'POST', path: `/session/${SESSION_ID}/fork`, search, directory: DIRECTORY, body, authorization: AUTH }]);
   });
 
   it('stops a queued write when the owner changes during confirmation', async () => {

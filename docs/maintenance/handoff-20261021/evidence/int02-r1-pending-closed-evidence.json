@@ -1,0 +1,503 @@
+{
+  "checks": [
+    "production host admits synthetic OC2 external identity",
+    "production activity retains busy permission and question evidence after actual browser closure",
+    "browser-closed pending decisions block switch without interruption",
+    "permissions pending blocks wait without saving or interrupting",
+    "questions pending blocks wait without saving or interrupting",
+    "failed permission read remains unknown and blocks wait while preserving other categories",
+    "busy wait leaves external upstream untouched",
+    "accepted interruption without authoritative idle blocks replacement",
+    "explicit stop rechecks authoritative idle before committing replacement",
+    "committed confirmation cannot be replayed",
+    "host shutdown preserves external server and creates no managed process"
+  ],
+  "seen": [
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/ses_pending"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/ses_pending"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/location"
+    },
+    {
+      "method": "GET",
+      "path": "/api/config"
+    },
+    {
+      "method": "GET",
+      "path": "/api/project"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/location"
+    },
+    {
+      "method": "GET",
+      "path": "/api/config"
+    },
+    {
+      "method": "GET",
+      "path": "/api/location"
+    },
+    {
+      "method": "GET",
+      "path": "/api/vcs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/shell"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/location"
+    },
+    {
+      "method": "GET",
+      "path": "/api/config"
+    },
+    {
+      "method": "GET",
+      "path": "/api/location"
+    },
+    {
+      "method": "GET",
+      "path": "/api/vcs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/shell"
+    },
+    {
+      "method": "GET",
+      "path": "/api/command"
+    },
+    {
+      "method": "GET",
+      "path": "/api/skill"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mcp"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/command"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/command"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/ses_pending"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "POST",
+      "path": "/api/session/ses_pending/interrupt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/api/permission/request"
+    },
+    {
+      "method": "GET",
+      "path": "/api/form"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "POST",
+      "path": "/api/session/ses_pending/interrupt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/active"
+    },
+    {
+      "method": "GET",
+      "path": "/global/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/event"
+    }
+  ],
+  "synthetic": true,
+  "realModel": false,
+  "out": "C:/Users/74756/.codex/worktrees/dijiang-next/openchamber/artifacts/int02-r1-pending-closed-YZ2Nzd",
+  "sourceHashes": {
+    "packages/web/server/index.js": "9df39ee020a4670f966fb1983530790ac927c31a1d1bfa69aee98988df663b1c",
+    "packages/web/server/lib/opencode/connection-switch.js": "970dbf882dbe2f26b070756fd30795ff27c47e0dabef39b6875d196e08565a31",
+    "packages/web/server/lib/opencode/connection-activity.js": "eea59b49fe39e851dbd6d3ef94e5060018590cab40736ea9dcf3c8d238297a3d"
+  },
+  "candidate": "80bc7fd0f",
+  "browserObservation": {
+    "busy": 1,
+    "closedBeforeServerAssertions": true,
+    "questions": 1,
+    "tool": "Chrome browser_evaluate then browser_tabs close",
+    "status": 200,
+    "fullUiAcceptance": false,
+    "permissions": 1
+  }
+}

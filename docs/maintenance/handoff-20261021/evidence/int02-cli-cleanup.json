@@ -1,0 +1,109 @@
+{
+  "checkedAt": "2026-10-10T00:17:51.0264691Z",
+  "retained": "Real OC2 binary and reusable CLI driver remain needed until R1 closeout",
+  "items": [
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-4fB4OI",
+      "bytes": 179,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-D491Pp",
+      "bytes": 4499,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-dbfi84",
+      "bytes": 7275965,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-JgQ7mT",
+      "bytes": 4620,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-mFQRhB",
+      "bytes": 4620,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-mTzdVg",
+      "bytes": 7275964,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ugwRxq",
+      "bytes": 373,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-W7Q7fh",
+      "bytes": 281,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [
+        {
+          "live": false,
+          "pid": 89276,
+          "ownerPid": 63092
+        }
+      ],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-weX6ft",
+      "bytes": 7270727,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-WvC2Rw",
+      "bytes": 4680,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-x46zTV",
+      "bytes": 4680,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ybrqcn",
+      "bytes": 4604,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-1XMu4H",
+      "bytes": 4499,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [
+        {
+          "live": false,
+          "pid": 42456,
+          "ownerPid": 76944
+        }
+      ],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ysH8nk",
+      "bytes": 6423685,
+      "removed": true
+    },
+    {
+      "staleExitedRegistry": [],
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int02-cli-admission-ZTuEYR",
+      "bytes": 4604,
+      "removed": true
+    }
+  ],
+  "evidence": "Compact CLI results, baseline reproduction and external task logs retained"
+}

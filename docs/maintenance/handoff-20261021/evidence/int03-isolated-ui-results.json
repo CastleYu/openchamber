@@ -1,0 +1,37 @@
+[
+  {
+    "file": "packages/ui/src/lib/opencode/runtime.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-runtime.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/client.protocol.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-client.protocol.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/client.legacy-host.test.js",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-client.legacy-host.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/client.questions.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-client.questions.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/client.permission.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-client.permission.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/v1/sessions.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-v1-sessions.test.log"
+  },
+  {
+    "file": "packages/ui/src/lib/opencode/v2/sessions.test.ts",
+    "exit": 0,
+    "log": "artifacts/int03-isolated-v2-sessions.test.log"
+  }
+]

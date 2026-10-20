@@ -169,7 +169,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     requireSelection(selection);
     if (descriptor.generation !== OPENCODE_GENERATION.OC1
       && descriptor.generation !== OPENCODE_GENERATION.OC2) {
-      throw new Error(`OpenCode readiness: ${descriptor.generation}`);
+      throw new OpenCodeConnectionError(`OpenCode readiness: ${descriptor.status ?? descriptor.generation}`, 409);
     }
     return descriptor;
   };
@@ -183,6 +183,23 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   let managedProcessEnv = null;
   let nativeConfigContext = null;
+  const nativeListeners = new Set();
+  const notifyNativeOwner = () => {
+    for (const listener of nativeListeners) listener();
+  };
+  const retireNativeOwner = () => {
+    if (!nativeConfigContext) return;
+    nativeConfigContext = null;
+    notifyNativeOwner();
+  };
+  const subscribeCredentialOwner = (listener) => {
+    nativeListeners.add(listener);
+    const unsubscribe = kernelRuntime?.subscribe?.(listener);
+    return () => {
+      nativeListeners.delete(listener);
+      unsubscribe?.();
+    };
+  };
 
   const getNativeConfigContext = () => {
     const context = nativeConfigContext;
@@ -412,7 +429,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
   const closeManagedOpenCodeChild = async (child, dropRegistration) => {
     try {
       await terminateChildProcess(child);
-      if (getConnection && !hasChildProcessExited(child)) {
+      if (!hasChildProcessExited(child)) {
         throw new OpenCodeConnectionError('Owned OpenCode cleanup did not confirm process exit', 409);
       }
     } finally {
@@ -499,10 +516,12 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       signalCode: observedSignalCode ?? child.signalCode ?? null,
       stderrTail: getBoundedTextTail(sanitizeDiagnosticText(runtimeStderrTail), MANAGED_STDERR_TAIL_MAX_BYTES),
     });
+    let serverProcess = null;
     const recordManagedProcessExit = (code, signal) => {
       if (code !== null && code !== undefined) observedExitCode = code;
       if (signal !== null && signal !== undefined) observedSignalCode = signal;
       state.lastManagedOpenCodeProcess = getManagedProcessSnapshot();
+      if (nativeConfigContext?.process === serverProcess) retireNativeOwner();
     };
     const attachRuntimeStderrCapture = () => {
       if (runtimeStderrAttached) return;
@@ -540,15 +559,28 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     if (hasChildProcessExited(child)) void dropRegistration();
 
     let closePromise = null;
-    const serverProcess = {
+    serverProcess = {
       url: null,
       pid: child.pid || null,
       get exitCode() { return observedExitCode ?? child.exitCode; },
       get signalCode() { return observedSignalCode ?? child.signalCode; },
       get stderrTail() { return getManagedProcessSnapshot().stderrTail; },
       close() {
-        if (nativeConfigContext?.process === serverProcess) nativeConfigContext = null;
-        if (!closePromise) closePromise = registration.then(() => closeManagedOpenCodeChild(child, dropRegistration)).catch(error => {
+        if (nativeConfigContext?.process === serverProcess) retireNativeOwner();
+        if (state.openCodeProcess === serverProcess) {
+          state.isOpenCodeReady = false;
+          state.openCodePort = null;
+          state.openCodeBaseUrl = null;
+          kernelRuntime?.setManagedKernel?.(null);
+          kernelRuntime?.invalidate();
+          syncToHmrState();
+        }
+        if (!closePromise) closePromise = registration.then(() => closeManagedOpenCodeChild(child, dropRegistration)).then(() => {
+          if (state.openCodeProcess === serverProcess) {
+            state.openCodeProcess = null;
+            syncToHmrState();
+          }
+        }).catch(error => {
           closePromise = null;
           throw error;
         });
@@ -801,7 +833,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
   const startOpenCodeOnce = async (attempt, connection) => {
     const selection = requireSelection();
-    nativeConfigContext = null;
+    retireNativeOwner();
     const attemptStartedAt = performance.now();
     let phaseStartedAt = attemptStartedAt;
     recordStartupPerformance('opencode.attempt.start', { attempt });
@@ -877,6 +909,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
 
     const cwd = command ? connection.cwd : state.openCodeWorkingDirectory;
     let serverInstance;
+    kernelRuntime?.setManagedKernel?.(command ? null : selectedKernel);
     try {
       if (state.isShuttingDown) throw new Error('OpenCode startup cancelled during shutdown');
       requireSelection(selection);
@@ -959,7 +992,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     connectionTransitions += 1;
     try {
       if (getConnection && !confirmedConnection && (connectionTransitions > 1 || state.currentRestartPromise)) throw new OpenCodeConnectionError('OpenCode transition is already in progress', 409);
-      if (getConnection && state.openCodeProcess) throw new OpenCodeConnectionError('The owned OpenCode process must stop before another launch', 409);
+      if (state.openCodeProcess) throw new OpenCodeConnectionError('The owned OpenCode process must stop before another launch', 409);
+      notifyNativeOwner();
       const connection = confirmedConnection ?? (getConnection ? await getConnection() : null);
       requireSelection(selection);
       if (connection?.mode === CONNECTION_MODE.EXTERNAL || (!getConnection
@@ -980,7 +1014,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
           return server;
         } catch (error) {
           lastError = error;
-          if (error?.code === AGENT_ERROR.CHANGED || (getConnection && state.openCodeProcess)) break;
+          if (error?.code === AGENT_ERROR.CHANGED || state.openCodeProcess
+            || (error instanceof OpenCodeConnectionError && error.status === 409)) break;
           if (state.isShuttingDown || error?.code === 'OPENCODE_BINARY_INVALID') {
             break;
           }
@@ -1183,6 +1218,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         console.warn('Failed to rebind event stream after OpenCode restart:', error?.message ?? error);
       }
     })();
+    notifyNativeOwner();
 
     try {
       await state.currentRestartPromise;
@@ -1376,6 +1412,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     let bootstrapError = null;
     recordStartupPerformance('opencode.bootstrap.start');
     connectionTransitions += 1;
+    notifyNativeOwner();
     try {
       // Before doing anything, reap any OpenCode process WE spawned in a prior
       // run that was orphaned by a crash/hard-exit. Verified + scoped to our own
@@ -1403,6 +1440,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
         state.lastOpenCodeError = null;
         state.openCodeNotReadySince = Date.now();
         if (connection.mode === CONNECTION_MODE.EXTERNAL) {
+          kernelRuntime?.setManagedKernel?.(null);
           const endpoint = new URL(connection.endpoint);
           state.isExternalOpenCode = true;
           state.openCodeBaseUrl = connection.endpoint;
@@ -1419,6 +1457,8 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
       syncFromHmrState();
       if (env.ENV_CONFIGURED_OPENCODE_HOST || env.ENV_SKIP_OPENCODE_START) {
         // External intent survives failed readiness so recovery only re-probes.
+        state.openCodePort = null;
+        kernelRuntime?.setManagedKernel?.(null);
         state.isExternalOpenCode = true;
         state.isOpenCodeReady = false;
         state.openCodeBaseUrl = env.ENV_CONFIGURED_OPENCODE_HOST?.origin ?? null;
@@ -1723,6 +1763,7 @@ export const createOpenCodeLifecycleRuntime = (deps) => {
     isConnectionTransitioning: () => connectionTransitions > 0 || Boolean(state.currentRestartPromise),
     getManagedOpenCodeProcessEnv: () => (state.isExternalOpenCode ? null : managedProcessEnv),
     getNativeConfigContext,
+    subscribeCredentialOwner,
     killProcessOnPort,
     startOpenCode,
     restartOpenCode,

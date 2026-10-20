@@ -1,0 +1,21 @@
+{
+  "scope": "INT-05 VS Code Legacy Provider bridge",
+  "surfaces": {
+    "web": "Reuse finite request dispatcher; preserve auth and HTTP abort.",
+    "electron": "Uses same Web owner and dispatcher.",
+    "vscode": "One owner per manager, host-generated caller and abort lifetime per webview document; explicit finite requests before generic proxy.",
+    "hostedMobile": "Existing connected Web owner and routes.",
+    "capacitor": "Existing connected Web owner and routes."
+  },
+  "gates": [
+    "strict body and exact runtime identity",
+    "caller isolation and ready/dispose cancellation",
+    "request abort cancels followup without replacement replay",
+    "provider-owner disposal on extension shutdown",
+    "focused tests, workspace types/lint, VS Code build"
+  ],
+  "quota": {
+    "weeklyRemainingPercent": 46,
+    "source": "live"
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "At": "2026-10-11T16:52:34.1935587Z",
+  "ActiveFixtureProcesses": 0,
+  "Removed": [
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc1-6a4aIw",
+      "Bytes": 534028,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc1-pqdZRg",
+      "Bytes": 48309698,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc1-RARj2E",
+      "Bytes": 608812,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc2-0GmBod",
+      "Bytes": 6748544,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc2-87OBtt",
+      "Bytes": 8609439,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-current-oc2-fGnole",
+      "Bytes": 8604452,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-2UJLDm",
+      "Bytes": 59611206,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-BFh2TQ",
+      "Bytes": 60176382,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-BqJjDB",
+      "Bytes": 59871867,
+      "LinksRemoved": 2
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-native-pA9AET",
+      "Bytes": 71141740,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-exqHD7",
+      "Bytes": 23024702,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-GmE4RF",
+      "Bytes": 1112801,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-mVnkSt",
+      "Bytes": 23022462,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-N5KgPn",
+      "Bytes": 23278837,
+      "LinksRemoved": 3
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-legacy-s6IHAx",
+      "Bytes": 1112801,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-fixture.mjs",
+      "Bytes": 4781,
+      "LinksRemoved": 0
+    },
+    {
+      "Path": "C:\\Users\\74756\\.codex\\worktrees\\dijiang-next\\openchamber\\artifacts\\int03-relay-client.mjs",
+      "Bytes": 586352,
+      "LinksRemoved": 0
+    }
+  ],
+  "ApproximateBytes": 396358904,
+  "Retained": "Reports, source/binary fingerprints and reusable drivers; pinned binaries retained for R3/R4. Shared caches, source, installations and unrelated artifacts untouched.",
+  "HelperRemoved": [
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-native-driver-fix.cjs",
+      "bytes": 522
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-stale-check.mjs",
+      "bytes": 1176
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-records.mjs",
+      "bytes": 5972
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-cleanup.ps1",
+      "bytes": 3241
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc1-command-notes.md",
+      "bytes": 459
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-current-oc2-notes.md",
+      "bytes": 483
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-relay-notes.md",
+      "bytes": 761
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\context-document-check-failures-20261012.md",
+      "bytes": 504
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\context-recheck-command-failure-20261012.md",
+      "bytes": 356
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-relay-run.mjs",
+      "bytes": 11411
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-close.mjs",
+      "bytes": 7902
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-close-check.mjs",
+      "bytes": 1370
+    },
+    {
+      "path": "C:\\Users\\74756\\.codex\\worktrees\\cdee\\openchamber\\artifacts\\r2-finalize.mjs",
+      "bytes": 4196
+    }
+  ],
+  "HelperBytes": 38353
+}

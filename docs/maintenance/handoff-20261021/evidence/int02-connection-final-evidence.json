@@ -1,0 +1,46 @@
+{
+  "baseline": "3f6d9eaeebd92a2b4aa32ad8ffe55c3e57c59e5a",
+  "testedSourceFiles": {
+    "packages/ui/src/lib/settings/registry.test.ts": "5f8615f6b353db2b61c9bbd391c4aa503c3eaad4b0d02f3d1499564b94e616f6",
+    "packages/ui/src/lib/settings/registry.ts": "f0d6fb98e6c1732eca3a02b96ea438bf3fc5dd68625c7f3c54cf4ee5152e40b4",
+    "packages/vscode/src/settings-registry.json": "5f375f8281d8f171a806aee8a3e1293571b314529804a306d7e348b7c7b0ae82",
+    "packages/web/server/index.js": "304ca947b41f2ef1725c2a7d0b2e3a9e08d3e5f1849e26d8d11360906f0c4df0",
+    "packages/web/server/lib/opencode/env-runtime.js": "66f37eddad164c441907f8583937261903790494f4e01fd51c2d790ce84e73d5",
+    "packages/web/server/lib/opencode/env-runtime.test.js": "0fb76c5cb1318be7df3703290a981bed610ea1f734e48b091a8bf1f83944a242",
+    "packages/web/server/lib/opencode/lifecycle-family.test.js": "10aa8081333a68bf3eb72d7c1b35f44b16408b8fb7e5ace265e4bd0359d3653f",
+    "packages/web/server/lib/opencode/lifecycle-process.test.js": "f16d394833310ca3f6f708f3576804e887a3e5b6c51f2b0aa0e6c7301a68bc70",
+    "packages/web/server/lib/opencode/lifecycle.js": "5aad6337b108e737bf618065fefce0e7522401cc2ec85570b24c9736c6924938",
+    "packages/web/server/lib/opencode/routes-runtime.test.js": "2e55535a1dedc147651e3edb57ac5e2902b656f443c19903a1bd5e6078783028",
+    "packages/web/server/lib/opencode/routes.js": "1ca2f037b09e88365ed067614d1d99f71f97d5be4f55b968eebf50f7fa9ae0a7",
+    "packages/web/server/lib/opencode/settings-helpers.js": "d11643c67504fcc6ff61563e5f8086649dd4032dfc642786952fc0678119df27",
+    "packages/web/server/lib/opencode/settings-helpers.test.js": "7ccc8c90adab700a910c72d11e3b3fa751ba791f4934d6046162969c04928b3f",
+    "packages/web/server/lib/opencode/settings-registry.json": "5f375f8281d8f171a806aee8a3e1293571b314529804a306d7e348b7c7b0ae82",
+    "packages/web/server/lib/opencode/settings-runtime.js": "614cb3a6c93567eda75bd6e090ea2de1103d388fca72982e95517440d66fdf4e",
+    "packages/web/server/lib/opencode/settings-runtime.test.js": "8a010e4efdfff42ca03c4fe4d2033ad8ded1fe18ad2c9d8744b967946564a139",
+    "packages/web/server/lib/opencode/connection.js": "80f01de75da59581783e20f8fe4fae0a48cb1663aba50ab6b8a77a3d6cfcf24d",
+    "packages/web/server/lib/opencode/connection.test.js": "29247e87cf249835adaeb94e4434d15c0ce10e45d7f37e092db324606d3f138a"
+  },
+  "validation": {
+    "web": {
+      "passed": 228,
+      "skipped": 2
+    },
+    "ui": {
+      "passed": 18
+    },
+    "realOC2": {
+      "configured": 10,
+      "command": 6,
+      "path": 6,
+      "bundled": 6,
+      "external": 9
+    },
+    "typeCheck": 0,
+    "lint": 0,
+    "deadCode": 0,
+    "webBuild": 0,
+    "antiNewFindings": 0
+  },
+  "weeklyRemainingPercent": 46,
+  "verifiedCommit": "7b50e499094653c47c5b1dcb8b319a0da6a7e738"
+}

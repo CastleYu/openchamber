@@ -63,8 +63,9 @@ export const createConfiguredWebAPIs = (bootstrap?: EmbeddedSessionRuntimeBootst
   });
   setRuntimeBearerToken(clientToken || null);
   setRuntimeExtraHeaders(runtimeHeaders || null);
+  let relayReady = Promise.resolve();
   if (relay) {
-    switchRuntimeEndpoint({
+    relayReady = switchRuntimeEndpoint({
       apiBaseUrl,
       clientToken: clientToken || null,
       requestHeaders: runtimeHeaders || null,
@@ -87,7 +88,7 @@ export const createConfiguredWebAPIs = (bootstrap?: EmbeddedSessionRuntimeBootst
   // the user sees the splash instead of a transient auth screen against an
   // endpoint that is still being selected.
   desktopRelayRestoreReady = relay
-    ? Promise.resolve()
+    ? relayReady
     : Promise.race([
         restoreDesktopRelayRuntime(relayHostId || undefined).catch(() => {}),
         // Never hold the app hostage: a stuck probe/tunnel gives up to the UI.

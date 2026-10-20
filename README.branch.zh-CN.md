@@ -1,6 +1,6 @@
 # DIJIANG 集成开发交接归档
 
-分支：`codex/integration-handoff-20261021`
+分支：`codex/opencode-legacy-cagent-integration`
 
 本分支保存截至 2026-10-21 尚未完成的 OpenCode 与 CAgent 集成开发。
 维护者因范围膨胀和偏离原项目的问题暂停了开发。这是开发快照，

@@ -27,7 +27,7 @@ edit it as the active integration implementation.
 The personal baseline is `a62bbe7136b740ff08d39b902b98fc4b0ebfe2e6`.
 Before this snapshot, the branch was `codex/cagent-integration` at
 `cb22855708b58db33dcef762068615b33ae1e6f2`.
-The destination is `origin/codex/integration-handoff-20261021` in
+The destination is `origin/codex/opencode-legacy-cagent-integration` in
 `CastleYu/openchamber`. The new branch preserves pending changes without merging
 them into the personal branch or another agent's work.
 

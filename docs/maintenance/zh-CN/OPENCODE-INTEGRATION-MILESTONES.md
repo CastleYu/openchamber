@@ -1,6 +1,6 @@
 # Agent 集成里程碑
 
-> 当前状态，2026-10-21：开发已暂停，保存于 `codex/integration-handoff-20261021`。继续前阅读[交接归档](HANDOFF-20261021.md)。下方带日期的执行状态属于历史记录，INT-05 及后续验收仍未完成。
+> 当前状态，2026-10-21：开发已暂停，保存于 `codex/opencode-legacy-cagent-integration`。继续前阅读[交接归档](HANDOFF-20261021.md)。下方带日期的执行状态属于历史记录，INT-05 及后续验收仍未完成。
 
 > 中文审阅与归档副本。英文交接源：[英文原文](../OPENCODE-INTEGRATION-MILESTONES.md)。同步与交接规则见 [README](README.md)。
 

@@ -1,6 +1,6 @@
 # DIJIANG integration development handoff
 
-Branch: `codex/integration-handoff-20261021`
+Branch: `codex/opencode-legacy-cagent-integration`
 
 This branch preserves unfinished OpenCode and CAgent integration work as of
 2026-10-21. Development is paused after the maintainer requested an audit of

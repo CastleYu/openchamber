@@ -11,4 +11,6 @@ This archive is part of the 2026-10-21 source handoff. [Chinese index](INDEX.zh-
 
 The Codex discussion is summarized in [the handoff](../../ACP-HANDOFF.md). Raw conversation dumps, credentials, global user configuration, dependency trees, generated bundles and release executables are excluded.
 
-Cleanup targets only reproducible local Electron download cache, Electron bundle, Web dist and Node tooling cache. Installed dependencies, existing portable packages, user data and the small local diagnostic archive are retained. See `closure-summary.txt` for the actual cleanup and final test results.
+`local-context.zip` supplements the selected evidence with 171 remaining local diagnostic files, logs, scripts, package metadata and a screenshot. `local-context-manifest.json` lists each archived path and SHA-256. Known environment secret values and credential token patterns were scanned before packaging; no replacements were needed. The archive excludes `.env`, Git metadata, dependencies, generated bundles and executables. Historical scripts are evidence, not instructions to execute.
+
+The maintainer subsequently requested complete removal of this worktree after checking the remote archive. `.env` is removed from the branch snapshot. All remaining worktree files, including dependencies and generated packages, are removed locally after remote verification. Other worktrees and external portable installations are retained. `closure-summary.txt` records the earlier cache-only cleanup and test results.

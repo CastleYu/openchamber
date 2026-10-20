@@ -1,0 +1,23 @@
+$ bun run --filter '*' lint
+@openchamber/mobile lint: Exited with code 0
+@openchamber/sdk lint: Exited with code 0
+@openchamber/web lint: Exited with code 0
+@openchamber/electron lint: Exited with code 0
+@openchamber/ui lint:
+@openchamber/ui lint: C:\Users\74756\.codex\worktrees\7c80\openchamber\packages\ui\src\components\chat\ChatInput.tsx
+@openchamber/ui lint:   1256:8  warning  React Hook React.useCallback has a missing dependency: 'parallel'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+@openchamber/ui lint:
+@openchamber/ui lint: C:\Users\74756\.codex\worktrees\7c80\openchamber\packages\ui\src\components\chat\ModelControls.tsx
+@openchamber/ui lint:   627:11  warning  The 'availableVariants' conditional could make the dependencies of useEffect Hook (at line 1272) change on every render. To fix this, wrap the initialization of 'availableVariants' in its own useMemo() Hook  react-hooks/exhaustive-deps
+@openchamber/ui lint:
+@openchamber/ui lint: C:\Users\74756\.codex\worktrees\7c80\openchamber\packages\ui\src\components\sections\providers\ProvidersPageV2.tsx
+@openchamber/ui lint:   274:6  warning  React Hook React.useEffect has a missing dependency: 'settingsDirectory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+@openchamber/ui lint:   320:6  warning  React Hook React.useEffect has a missing dependency: 'settingsDirectory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+@openchamber/ui lint:
+@openchamber/ui lint: C:\Users\74756\.codex\worktrees\7c80\openchamber\packages\ui\src\sync\sync-context.tsx
+@openchamber/ui lint:   2916:6  warning  React Hook useEffect has a missing dependency: 'messageLoader'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+@openchamber/ui lint:
+@openchamber/ui lint: ✖ 5 problems (0 errors, 5 warnings)
+@openchamber/ui lint:
+@openchamber/ui lint: Exited with code 0
+openchamber lint: Exited with code 0

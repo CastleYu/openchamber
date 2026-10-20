@@ -1,0 +1,3 @@
+- 2026-10-14: bun run --filter @openchamber/web type-check and lint failed before starting child processes with Failed to start process. Use Node to run the installed TypeScript and ESLint CLIs directly with the package scripts arguments.
+- 2026-10-14: node_modules/.bin/*.cmd inspection failed because Bun installation supplies no .cmd shims. Discover actual package entries before using Node directly.
+- 2026-10-14: .oxlintrc.json inspection found no such file; discover actual lint config before referencing it.

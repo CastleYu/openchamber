@@ -1,0 +1,25 @@
+✔ desktop resolves source and packaged DIJIANG metadata without duplicating the suffix (2.2916ms)
+✔ personal and CI versions retain independent upstream and feature components (0.4989ms)
+✔ checks release metadata only and compares against upstream, not the personal suffix (44.5958ms)
+✔ network and invalid metadata fail instead of reporting no update (2.3341ms)
+✔ runtime update execution is denied before spawning installers (0.7042ms)
+✔ desktop guards download and pending install and disables automatic installation (1.6965ms)
+✔ ACP version local is distinct and starts as a personal identity (1413.206ms)
+✔ ACP version local debug is distinct and starts as a personal identity (1135.1144ms)
+✔ ACP version 12.3 is distinct and starts as a personal identity (1082.3488ms)
+✔ ACP version 12.3 debug is distinct and starts as a personal identity (978.0218ms)
+✔ ACP identities reject malformed run numbers and suffixes (0.5583ms)
+✔ ACP workflow restricts the branch, builds by default and publishes only on explicit dispatch (15.146ms)
+✔ version-only build reports the release identity without packaging (1816.6086ms)
+✔ version-only build reports the debug identity without packaging (1242.7417ms)
+✔ ACP publication uploads checked artifacts and always requests a prerelease without latest (27.8821ms)
+✔ ACP publication rejects the stable branch, foreign repository and mismatched build before remote calls (64.0207ms)
+✔ upload or digest failure leaves the ACP draft unpublished (10.9105ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7970.5641

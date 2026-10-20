@@ -1,0 +1,44 @@
+# ACP local callback implementation
+
+## Scope and runtime decisions
+
+- Web: local stdio agent callbacks run on the backend host with its session agent cwd.
+- Electron: shares the in-process web backend; no new renderer privilege or native IPC.
+- Hosted mobile: callbacks access the server host, through its existing backend session.
+- Capacitor mobile: same backend behavior as web; device files are not exposed.
+- VS Code: ACP remains explicitly unsupported.
+- Remote ACP transport: must not advertise or route these local callbacks.
+
+This is a module/external protocol/platform change. No persisted format, UI, route or dependency changes were made in this subtask. Parent owns runtime integration and ACP documentation updates.
+
+## Files
+
+- `packages/web/server/lib/acp/callbacks.js`: callback constants, parsed v1 inputs, canonical session-root file policy, UTF-8 text read/write and line windows, owned process-backed terminal records, byte-limited UTF-8-safe output, wait/kill/release and cleanup.
+- `packages/web/server/lib/acp/callbacks.test.js`: real filesystem and process contract tests.
+- `packages/web/server/lib/acp/process.js`: optional explicit env and POSIX detached option; Windows command lookup and BAT shell selection read the same supplied env without case sensitivity. Existing defaults remain intact.
+
+## Runtime integration seam
+
+`createAcpCallbacks({ directory: sessionId => absoluteAgentCwd, onOutput })` returns:
+
+- `capabilities`: `{ fs: {readTextFile:true,writeTextFile:true}, terminal:true }`. Merge only for local stdio initialization.
+- `handles(method)`: checks known fs/terminal callback methods.
+- `request(method, params)`: parsed callback response or rejected error. Use the existing JSON-RPC result/error responder.
+- `stop(sessionId?)`: terminate and await owned children/pipes before clearing records. Scoped stop permits future session work; unscoped stop permanently rejects new creates.
+- `onOutput({ sessionId, terminalId, output, truncated, exitStatus? })`: complete bounded snapshot for tool terminal projection. Persist/project snapshots before release; this module deletes released resources. Repeated release is idempotent for the same session.
+
+Session cwd resolver must reject unknown IDs and use immutable `agentCwd`, not UI grouping. Call scoped stop after cancel/close/delete and global stop before switching connections/shutdown. Do not swallow cleanup failure. A terminal create underway during stop is tracked and terminated before stop resolves.
+
+ACP terminal commands are literal executable plus argv; only an explicitly selected Windows BAT/CMD target uses the existing hidden wrapper. No implicit shell. Output combines separate streaming UTF-8 stdout/stderr decoders. No parent environment mutation.
+
+## Validation
+
+- PASS: `node --test packages/web/server/lib/acp/callbacks.test.js packages/web/server/lib/acp/process.test.js`, 15 passed, 0 failed, real Windows processes and junctions. Narrow escalated execution reused main task's confirmed sandbox EPERM finding.
+- PASS: `bunx oxlint packages/web/server/lib/acp/callbacks.js packages/web/server/lib/acp/callbacks.test.js packages/web/server/lib/acp/process.js`.
+- PASS: `bun run type-check:web` and `bun run lint:web`.
+- Parent must run required `bun run dead-code` after integrating the added module/imports; running before integration would intentionally report the new owner as unused.
+- Not validated here: runtime JSON-RPC wiring, real model agent, browser/packaged Electron visual/process-tree acceptance, POSIX runtime.
+
+Windows known boundary: if command root exits before teardown and descendants retain its pipes, existing taskkill tree discovery cannot recover the orphan tree. Cleanup waits at most five seconds for close, then fails explicitly instead of hanging or claiming successful cleanup. Parent explicitly excluded a supervisor/IPC or Job Object extension. POSIX terminals establish an isolated process group; SIGTERM escalates after one second and cleanup awaits close, but this path is not exercised on Windows.
+
+Official v1 contract checked: https://agentclientprotocol.com/protocol/v1/file-system and https://agentclientprotocol.com/protocol/v1/terminals. Plan pins upstream revision `24f3b07f44f043c617666c20208b093e919648ac`.

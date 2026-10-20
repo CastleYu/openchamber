@@ -1,0 +1,13 @@
+# ACP Grok parity review command notes
+
+- Scope is the current uncommitted OpenChamber source tree; review is read-only and covers application capabilities formerly backed by OpenCode plus ACP/UI parity.
+- `rg` found no `.codegraph/` directory, so repository guidance says to skip CodeGraph. `Get-ChildItem .codegraph` returned missing-path; this was only an optional index probe.
+- Prior log `.codex-temp/acp-grok-review.log` documents a settings HTTP 401 plus project/global MCP startup stalls. It targets an older, two-file process review and is not current evidence.
+- `grok --help` confirms `--model`, `--reasoning-effort`, `--single`, `--prompt-file`, `--no-subagents`, and built-in tool controls. `grok agent --help` and `grok mcp --help` expose no MCP-disable option.
+- Official Grok CLI configuration guide documents `GROK_HOME` as the config directory override; an isolated home avoids existing MCP configuration but has no copied login state. No credentials will be read, copied, or logged.
+- Keep full stdout/stderr in `.codex-temp/acp-grok-parity.log`; record any timeout/auth/MCP failure here.
+- First Grok invocation used `--single` without its required positional prompt; help confirms this is a CLI usage error (exit 2), no model request occurred. Correct form is `--prompt-file <path>` without `--single`.
+- Corrected `--prompt-file` invocation reached Grok startup but exited 1 before session creation: sandbox denied Grok's own auth/session/SQLite lock writes under its user config (`FS_PERMISSION_DENIED`). This is environmental, not a model response. User task explicitly permits rerunning the exact command with elevation when the sandbox blocks Grok's lock.
+- The elevated rerun completed one `grok-4.7-build` model call at requested high reasoning effort and emitted a full review. Grok then exited 1 because it could not save the chat in its user data directory (`FS_DISK_QUOTA_EXCEEDED`, “No space left on device”). The complete emitted answer is captured in `acp-grok-parity.log`; do not describe the CLI exit as clean success, and do not retry because the model answer already exists.
+- The first corrected invocation was interrupted by the user during the wait. A subsequent `write_stdin` confirmed the process had ended with exit 1; inspecting the captured log showed the completed model answer and disk-quota error. No duplicate call was made after that evidence.
+- Source cross-checks corrected Grok's protocol claims: stable ACP v1 includes `session/delete` gated by `sessionCapabilities.delete`, and stable ACP v1 slash commands intentionally run as regular prompt text. Same-instance OpenChamber session/message links exist separately from OpenCode public shares.

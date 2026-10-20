@@ -1,0 +1,6 @@
+{"test":"scoped-discovery","sessions":[]}
+{"test":"unscoped-discovery","sessions":[{"id":"ses_ec5d03d85ffezX8m55jQu2m20F","directory":"D:\\CodexBuilds\\acp-real-validation\\opencode-test\\workspace"},{"id":"ses_ec5d03d45ffeZG0fb3VUAifwmr","directory":"D:\\CodexBuilds\\acp-real-validation\\opencode-test\\workspace"}]}
+{"test":"agent-history-import","sessions":2,"messages":6,"text":true}
+{"test":"permission-rejection","permissionCount":1,"fileExists":false}
+{"test":"cancel-running-shell","pid":193712,"elapsedMs":1839,"processExited":true,"pending":0,"lateFile":false,"outcome":"interrupted"}
+AGENT_STOPPED

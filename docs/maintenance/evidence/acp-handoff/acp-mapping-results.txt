@@ -1,0 +1,33 @@
+# ACP project mapping implementation handoff
+
+## Delivered
+
+- `packages/web/server/lib/acp/project-mapping.js` owns `absoluteDirectorySchema`, `projectMappingsSchema`, and `resolveProjectCwd(config, directory)`.
+- `server-transport.js` uses the mapping schemas only. Outbound transport mechanics remain as found.
+- `packages/ui/src/lib/agent-connection.ts` matches the optional persisted `projectMappings: [{directory, cwd}]` contract and exports `AcpProjectMapping`.
+- Both boundaries accept POSIX, rooted Windows drive, and UNC share paths; reject empty, relative, drive-relative, incomplete UNC, and embedded control-character paths. Exact duplicate directories after trimming are rejected. Lookup is exact text equality, without prefix, case, slash, or filesystem normalization.
+- `AcpProjectMappings.tsx` provides shared Settings primitives, capped inputs, add/remove controls, stable input identity when deleting preceding rows, and localized accessible labels.
+- `AgentConnectionSettings.tsx` hydrates saved mappings and includes nonempty mappings in the existing Apply request. Removing all rows omits the optional field. Existing authentication behavior is retained.
+- All 13 `*.settings.ts` dictionaries contain all eight new translated mapping keys. Original translation staging remains in `.codex-temp/acp-mapping-locales.json`.
+- Mapping rows are conditional on the selected ACP Server mode and are dynamic connection data; no search registry entry was added behind selected-entity state.
+
+## Runtime integration still required by the integration owner
+
+1. In `runtime.js`, import `resolveProjectCwd` from `./project-mapping.js` and retain the parsed server config (or its mappings) for the active connection.
+2. In `createSession`, resolve once using its local `directory`, pass the result to `METHOD.NEW`, and store the same value as the new entry's `agentCwd`.
+3. In `discover(scope)`, use the mapping result for scoped `METHOD.LIST` requests. Unscoped listing remains unscoped.
+4. Keep saved sessions' `agentCwd`, the legacy restoration fallback, and `nextIdentity` hash unchanged. Mapping edits alone must not create a new history partition.
+5. Add runtime regression coverage for new sessions, scoped discovery, mapping edits preserving connection identity/history, and restoration retaining each original `agentCwd`.
+
+## Verification
+
+- Focused UI/client/settings/i18n run: 8 tests passed, 515 assertions across four files.
+- Focused server mapping and persisted connection config: 4 tests passed, including apply, actual file read, new-owner bootstrap, and removal.
+- Targeted ESLint and oxlint passed for owned source/tests; `node --check project-mapping.js` and changed-file whitespace check passed.
+- UI package type-check after translation integration reports no mapping-owned errors, but fails in concurrently added `AcpInteractionCard.test.tsx` and `useAcpAuthentication.test.tsx`. Those failures concern happy-dom event types, an `Element.click`, and unavailable Bun spy matcher declarations. See `.codex-temp/acp-mapping-typecheck.log`; main has been notified. Initial missing-key, own test DOM type, and regex lint errors were corrected.
+- Main integration owner should run the mandatory dead-code check once for the complete integrated change.
+- Real remote agent, browser/device layout, and runtime mapping/session integration have not been exercised by this task.
+
+## Environment
+
+Default sandbox dependency reads and Node test subprocesses returned `EPERM`; narrow elevated executions ran the focused checks successfully. Details are in `.codex-temp/acp-mapping-command-notes.md`.

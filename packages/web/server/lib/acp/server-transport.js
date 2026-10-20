@@ -1,14 +1,16 @@
 import { connect } from 'node:http2';
 import WebSocket from 'ws';
 import { z } from 'zod';
-import { posix } from 'node:path';
+import { METHOD } from './protocol.js';
+import { absoluteDirectorySchema, projectMappingsSchema } from './project-mapping.js';
 
 export const ACP_SERVER_MODE = 'acp-server';
 export const serverSchema = z.object({
   mode: z.literal(ACP_SERVER_MODE),
   transport: z.enum(['websocket', 'http']),
   url: z.url(),
-  cwd: z.string().trim().refine((value) => posix.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\]+\\[^\\]+/.test(value), 'ACP server working directory must be absolute'),
+  cwd: absoluteDirectorySchema,
+  projectMappings: projectMappingsSchema.optional(),
 }).superRefine((value, ctx) => {
   const url = new URL(value.url);
   const protocols = value.transport === 'websocket' ? ['ws:', 'wss:'] : ['http:', 'https:'];
@@ -16,7 +18,6 @@ export const serverSchema = z.object({
 });
 const HEADER = Object.freeze({ CONNECTION: 'acp-connection-id', SESSION: 'acp-session-id', TYPE: 'content-type', ACCEPT: 'accept' });
 const MIME = Object.freeze({ JSON: 'application/json', SSE: 'text/event-stream' });
-const METHOD = Object.freeze({ INITIALIZE: 'initialize', LOAD: 'session/load' });
 const sessionSchema = z.object({ params: z.object({ sessionId: z.string().optional() }).passthrough().optional(), result: z.object({ sessionId: z.string().optional() }).passthrough().optional() }).passthrough();
 const sessionId = (value) => { const parsed = sessionSchema.safeParse(value); return parsed.success ? parsed.data.params?.sessionId ?? parsed.data.result?.sessionId : undefined; };
 
@@ -87,7 +88,7 @@ export const openServerTransport = async (config, receive, fail) => {
   const post = (value) => new Promise((resolve, reject) => {
     const initialize = value.method === METHOD.INITIALIZE;
     const id = sessionId(value) ?? replies.get(value.id);
-    const load = value.method === METHOD.LOAD;
+    const load = value.method === METHOD.LOAD || value.method === METHOD.RESUME;
     if (load) loads.set(value.id, id);
     const headers = { [HEADER.TYPE]: MIME.JSON };
     if (connectionId) headers[HEADER.CONNECTION] = connectionId;

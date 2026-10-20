@@ -20,6 +20,21 @@ import {
 const identity = (path: string) => path;
 
 describe('toolDiffUtils', () => {
+    test('ACP complete text changes use the existing per-file diff preview', () => {
+        const entries = getDiffPatchEntries({ diffs: [
+            { type: 'diff', path: 'file.txt', oldText: 'same\nbefore\nend\n', newText: 'same\nafter\nend\n' },
+            { type: 'diff', path: 'new.txt', oldText: null, newText: 'added' },
+            { type: 'diff', path: 'newline.txt', oldText: 'line', newText: 'line\n' },
+        ] }, undefined, identity);
+        expect(entries.map((entry) => [entry.filePath, entry.renderMode])).toEqual([
+            ['file.txt', 'diff'], ['new.txt', 'diff'], ['newline.txt', 'diff'],
+        ]);
+        expect(entries[0]?.patch).toContain(' same\n-before\n+after\n end');
+        expect(entries[1]?.patch).toContain('@@ -0,0 +1 @@');
+        expect(entries[1]?.patch).toContain('\\ No newline at end of file');
+        expect(entries[2]?.patch).toContain('-line\n\\ No newline at end of file\n+line');
+    });
+
     test('prefers the absolute apply_patch path over its worktree-relative label', () => {
         expect(getPrimaryToolPath('apply_patch', undefined, {
             files: [{

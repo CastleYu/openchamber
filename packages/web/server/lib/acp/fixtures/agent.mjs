@@ -10,7 +10,7 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   const request = JSON.parse(line);
   switch (request.method) {
     case 'initialize':
-      if (Object.keys(request.params.clientCapabilities).length) throw new Error('Unsupported client capabilities advertised');
+      if (JSON.stringify(request.params.clientCapabilities) !== JSON.stringify({ fs: { readTextFile: true, writeTextFile: true }, terminal: true, elicitation: { form: {}, url: {} } })) throw new Error('Unexpected client capabilities advertised');
       if (scenario === 'malformed') { process.stdout.write('not json\n'); break; }
       reply(request.id, { protocolVersion: 1, agentInfo: { name: 'fixture', version: scenario === 'lifecycle' ? String(process.pid) : '1' }, agentCapabilities: { loadSession: scenario !== 'no-load' }, authMethods: [] });
       break;
@@ -20,6 +20,7 @@ createInterface({ input: process.stdin }).on('line', (line) => {
       break;
     case 'session/load':
       if (request.params.sessionId !== 'session-1') throw new Error('Unexpected restored session');
+      update({ sessionUpdate: 'user_message_chunk', content: { type: 'text', text: 'Hello' } });
       update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'replayed history' } });
       reply(request.id, {});
       break;

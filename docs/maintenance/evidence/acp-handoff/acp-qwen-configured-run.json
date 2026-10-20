@@ -1,0 +1,172 @@
+{
+  "agent": "Qwen Code",
+  "version": "0.25.1",
+  "model": "deepseek-v4-flash",
+  "api": "OpenCode Go",
+  "tests": {
+    "initialize": {
+      "version": "0.25.1",
+      "agentInfo": {
+        "name": "qwen-code",
+        "title": "Qwen Code",
+        "version": "0.25.1"
+      },
+      "agentCapabilities": {
+        "loadSession": true,
+        "sessionCapabilities": {
+          "list": {},
+          "resume": {}
+        },
+        "promptCapabilities": {
+          "image": true,
+          "audio": true,
+          "embeddedContext": true
+        }
+      }
+    },
+    "multi_session": {
+      "idsDistinct": true
+    },
+    "concurrent_session_prompts": {
+      "a": {
+        "outcome": "completed",
+        "error": null
+      },
+      "b": {
+        "outcome": "completed",
+        "error": null
+      },
+      "aHasReply": true,
+      "bHasReply": true
+    },
+    "permission_grant_and_write": {
+      "completion": {
+        "outcome": "completed",
+        "error": null
+      },
+      "fileContent": "APPROVED_TOOL_OK",
+      "permissionKind": "allow_once"
+    },
+    "permission_reject_and_write": {
+      "completion": {
+        "outcome": "completed",
+        "error": null
+      },
+      "fileCreated": false,
+      "permissionKind": "reject_once"
+    },
+    "cancel_long_terminal_turn": {
+      "completion": {
+        "outcome": "interrupted",
+        "error": null
+      },
+      "cancelled": true
+    },
+    "restart_history_and_context": {
+      "reinitialized": "0.25.1",
+      "originalSessionsRestored": true,
+      "savedMessages": 6,
+      "reopenedMessages": 8,
+      "resumed": {
+        "outcome": "completed",
+        "error": null
+      },
+      "replyPresent": true
+    }
+  },
+  "errors": [],
+  "childExited": true,
+  "stopped": true,
+  "logs": [
+    {
+      "key": "initialize",
+      "value": {
+        "version": "0.25.1",
+        "agentInfo": {
+          "name": "qwen-code",
+          "title": "Qwen Code",
+          "version": "0.25.1"
+        },
+        "agentCapabilities": {
+          "loadSession": true,
+          "sessionCapabilities": {
+            "list": {},
+            "resume": {}
+          },
+          "promptCapabilities": {
+            "image": true,
+            "audio": true,
+            "embeddedContext": true
+          }
+        }
+      }
+    },
+    {
+      "key": "multi_session",
+      "value": {
+        "idsDistinct": true
+      }
+    },
+    {
+      "key": "concurrent_session_prompts",
+      "value": {
+        "a": {
+          "outcome": "completed",
+          "error": null
+        },
+        "b": {
+          "outcome": "completed",
+          "error": null
+        },
+        "aHasReply": true,
+        "bHasReply": true
+      }
+    },
+    {
+      "key": "permission_grant_and_write",
+      "value": {
+        "completion": {
+          "outcome": "completed",
+          "error": null
+        },
+        "fileContent": "APPROVED_TOOL_OK",
+        "permissionKind": "allow_once"
+      }
+    },
+    {
+      "key": "permission_reject_and_write",
+      "value": {
+        "completion": {
+          "outcome": "completed",
+          "error": null
+        },
+        "fileCreated": false,
+        "permissionKind": "reject_once"
+      }
+    },
+    {
+      "key": "cancel_long_terminal_turn",
+      "value": {
+        "completion": {
+          "outcome": "interrupted",
+          "error": null
+        },
+        "cancelled": true
+      }
+    },
+    {
+      "key": "restart_history_and_context",
+      "value": {
+        "reinitialized": "0.25.1",
+        "originalSessionsRestored": true,
+        "savedMessages": 6,
+        "reopenedMessages": 8,
+        "resumed": {
+          "outcome": "completed",
+          "error": null
+        },
+        "replyPresent": true
+      }
+    }
+  ]
+}

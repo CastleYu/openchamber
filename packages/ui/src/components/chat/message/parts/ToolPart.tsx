@@ -807,7 +807,7 @@ const ToolScrollableTextOutput: React.FC<{
     const jsonResult = React.useMemo(() => tryParseJsonOutput(renderedOutput), [renderedOutput]);
     const forcedMode = presentation?.output && presentation.output !== 'auto' ? presentation.output : null;
 
-    if (isShellTool(part.tool) && isStreaming) {
+    if ((isShellTool(part.tool) || metadata?.acp === true) && isStreaming) {
         return (
             <div className="typography-code text-muted-foreground/90">
                 <StreamingPlainTextOutput output={renderedOutput} />
@@ -1348,17 +1348,18 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
     const stateWithData = state as ToolStateWithMetadata;
     const metadata = stateWithData.metadata;
     const input = stateWithData.input;
-    const rawOutput = getToolOutput(part.tool, stateWithData.output, metadata?.output, state.status);
+    const isAcp = metadata?.acp === true;
+    const rawOutput = getToolOutput(part.tool, stateWithData.output ?? (isAcp ? metadata?.output : undefined), metadata?.output, state.status);
     const hasStringOutput = typeof rawOutput === 'string' && rawOutput.length > 0;
     const rawOutputString = typeof rawOutput === 'string' ? rawOutput : '';
-    const isStreamingBash = isShellTool(part.tool) && state.status === 'running';
+    const isStreamingOutput = (isShellTool(part.tool) || isAcp) && state.status === 'running';
     const throttledOutputString = useStreamingTextThrottle({
         text: rawOutputString,
-        isStreaming: isStreamingBash,
+        isStreaming: isStreamingOutput,
         identityKey: part.id,
-        allowTextReplacement: isStreamingBash,
+        allowTextReplacement: isStreamingOutput,
     });
-    const outputString = isStreamingBash ? throttledOutputString : rawOutputString;
+    const outputString = isStreamingOutput ? throttledOutputString : rawOutputString;
     const attachments = stateWithData.attachments;
     const diffContent = getToolFallbackDiff(metadata) ?? null;
     const diffEntries = React.useMemo(
@@ -1607,9 +1608,18 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             );
         }
 
-        if ((part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && (diffEntries.length > 0 || !!diagnosticSection)) {
+        if (diffEntries.length > 0 || ((part.tool === 'edit' || part.tool === 'multiedit' || isPatchTool(part.tool) || part.tool === 'write') && !!diagnosticSection)) {
             return renderScrollableBlock(
                 <div className="space-y-3">
+                    {isAcp && outputString.trim() ? (
+                        <ToolScrollableTextOutput
+                            output={outputString}
+                            part={part}
+                            metadata={metadata}
+                            input={input}
+                            isStreaming={isStreamingOutput}
+                        />
+                    ) : null}
                     {diffEntries.map((entry) => (
                         <div key={entry.id} className="w-full min-w-0">
                             <div className="mb-1 flex min-w-0 items-center gap-1 px-2 py-1">
@@ -1649,7 +1659,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                     ))}
                     {renderDiagnosticsSection()}
                 </div>,
-                { className: 'p-1' }
+                { className: 'p-1', followKey: isAcp && isStreamingOutput ? outputString : undefined }
             );
         }
 
@@ -1662,7 +1672,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
             );
         }
 
-        if (isWriteLikeTool) {
+        if (isWriteLikeTool && !isAcp) {
             return null;
         }
 
@@ -1680,7 +1690,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                     part={part}
                     metadata={metadata}
                     input={input}
-                    isStreaming={isStreamingBash}
+                    isStreaming={isStreamingOutput}
                 />
             );
 
@@ -1689,7 +1699,7 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
                 {
                     className: isShellTool(part.tool) ? 'p-1 rounded-none' : 'p-1',
                     maxHeightClass: isShellTool(part.tool) ? 'max-h-[46vh]' : undefined,
-                    followKey: isStreamingBash ? outputString : undefined,
+                    followKey: isStreamingOutput ? outputString : undefined,
                 }
             );
         }
@@ -1702,7 +1712,8 @@ const ToolExpandedContent: React.FC<ToolExpandedContentProps> = React.memo(({
 
     const hasVisibleOutput = outputString.trim().length > 0;
     const shouldRenderResult = (state.status === 'completed' && 'output' in state)
-        || (isShellTool(part.tool) && hasVisibleOutput);
+        || ((isShellTool(part.tool) || isAcp) && hasVisibleOutput)
+        || (isAcp && diffEntries.length > 0);
 
     if (isTodoTool) {
         if (state.status === 'error' && 'error' in state) {

@@ -13,8 +13,27 @@ The source projects both OpenCode generations into the shared `Session`, `Messag
 ACP uses `lib/opencode/acp.ts` as its generation-bound source. The selected backend
 process publishes domain records over authenticated SSE; reconnect snapshots
 carry unique fact IDs. ACP permissions preserve the agent's option IDs, and saved
-sessions without negotiated `loadSession` stay read-only. Protocol ownership and
+sessions that cannot load or resume stay read-only. Session rename, metadata,
+archive and removal use ACP operations, including per-session bulk archive with
+partial failure handling. Removal is agent deletion when advertised and local
+hiding otherwise. ACP refresh, deletion and transcript replacement events pass
+through the existing domain reducers. Protocol ownership and
 capabilities live in `packages/web/server/lib/acp/DOCUMENTATION.md`.
+
+ACP session elicitation uses the tagged pending-input owner and the existing
+`input-created`/`form-closed` reconciliation path. HTTP and SSE snapshots preserve
+the original request IDs. The shared interaction card handles primitive fields,
+enum choices, defaults and explicit URL consent. Accepted URLs remain waiting
+until the agent completes them or their originating request ends. Reply failures
+retain the input for retry; the server validates answers and connection epochs.
+
+Request-scoped authentication inputs have no session ID. Connection Settings
+owns their authoritative `connection-inputs` SSE snapshots while mounted, before
+the conversation runtime is bound. The hook clears on endpoint changes and
+disables replies on connection failure; reconnect is user-triggered. Authentication
+uses advertised agent methods and their connection epoch. Terminal methods offer
+CLI login guidance. The existing runtime fetch and external URL opener cover web,
+desktop and mobile; standalone VS Code keeps ACP explicitly unsupported.
 
 Both generations publish directory VCS snapshots to the child store's `vcs` field, which the tray reads. OC2 `vcs.branch.updated` updates that field for the event's directory; its optional branch can clear the current branch. The runtime binding and directory route reject stale or unrelated updates.
 

@@ -1,0 +1,22 @@
+[
+  {
+    "path": "packages/electron/.cache",
+    "bytes": 240716756.0,
+    "removed": true
+  },
+  {
+    "path": "packages/electron/dist-bundle",
+    "bytes": 1682816.0,
+    "removed": true
+  },
+  {
+    "path": "packages/web/dist",
+    "bytes": 55715312.0,
+    "removed": true
+  },
+  {
+    "path": "node_modules/.cache",
+    "bytes": 20148.0,
+    "removed": true
+  }
+]

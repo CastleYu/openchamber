@@ -1,4 +1,5 @@
 import { parsePatchFiles } from '@pierre/diffs';
+import { z } from 'zod';
 
 import { isToolDiffPreviewOversized } from './toolDiffPreview';
 
@@ -16,6 +17,33 @@ const GIT_DIFF_FILE_BREAK_PATTERN = /(?=^diff --git\s+)/gm;
 const GIT_DIFF_FILE_BREAK_TEST = /^diff --git\s+/m;
 const UNIFIED_DIFF_FILE_BREAK_PATTERN = /(?=^---\s+\S)/gm;
 const UNIFIED_DIFF_FILE_BREAK_TEST = /^---\s+\S/m;
+const CONTENT_DIFFS = z.array(z.object({ type: z.literal('diff'), path: z.string(), oldText: z.string().nullable().optional(), newText: z.string() }));
+
+// ACP provides complete before/after text. A single unified hunk uses the
+// existing tool preview, including its size limits and file-opening actions.
+const contentPatch = (path: string, before: string, after: string): string => {
+    if (before === after) return '';
+    const lines = (text: string) => text.replace(/\r\n/g, '\n').match(/[^\n]*\n|[^\n]+$/g) ?? [];
+    const lineText = (prefix: string, line: string) => `${prefix}${line.replace(/\n$/, '')}${line.endsWith('\n') ? '' : '\n\\ No newline at end of file'}`;
+    const oldLines = lines(before);
+    const newLines = lines(after);
+    let start = 0;
+    while (start < oldLines.length && start < newLines.length && oldLines[start] === newLines[start]) start += 1;
+    let end = 0;
+    while (end < oldLines.length - start && end < newLines.length - start && oldLines[oldLines.length - end - 1] === newLines[newLines.length - end - 1]) end += 1;
+    const from = Math.max(0, start - 3);
+    const oldEnd = Math.min(oldLines.length, oldLines.length - end + 3);
+    const newEnd = Math.min(newLines.length, newLines.length - end + 3);
+    const body = [
+        ...oldLines.slice(from, start).map((line) => lineText(' ', line)),
+        ...oldLines.slice(start, oldLines.length - end).map((line) => lineText('-', line)),
+        ...newLines.slice(start, newLines.length - end).map((line) => lineText('+', line)),
+        ...oldLines.slice(oldLines.length - end, oldEnd).map((line) => lineText(' ', line)),
+    ];
+    const oldCount = oldEnd - from;
+    const newCount = newEnd - from;
+    return `--- ${path}\n+++ ${path}\n@@ -${oldCount ? from + 1 : 0},${oldCount} +${newCount ? from + 1 : 0},${newCount} @@\n${body.join('\n')}\n`;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null;
@@ -545,6 +573,13 @@ export const getDiffPatchEntries = (
 
     if (fileEntries.length > 0) {
         return fileEntries;
+    }
+
+    const contentDiffs = CONTENT_DIFFS.safeParse(metadata?.diffs);
+    if (contentDiffs.success) {
+        return contentDiffs.data.flatMap((diff, index) => getPatchEntriesFromText(
+            contentPatch(diff.path, diff.oldText ?? '', diff.newText), diff.path, `content-${index}`, resolveTitle,
+        ).map((entry) => ({ ...entry, filePath: diff.path })));
     }
 
     const diff = typeof fallbackDiff === 'string' ? fallbackDiff : '';

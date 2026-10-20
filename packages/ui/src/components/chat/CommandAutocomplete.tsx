@@ -14,6 +14,7 @@ import { commandMatchesSearch, mergeCommandAutocompleteItems } from './commandAu
 import { useGuestCommands } from '@/hooks/useGuestSurfaces';
 import { AutocompleteRowTooltip } from './composer/ui/AutocompleteRowTooltip';
 import { opencodeClient } from '@/lib/opencode/client';
+import type { AcpCommand } from '@/lib/opencode/acp';
 
 type CommandSource = 'openchamber' | 'opencode' | 'skill' | 'extension';
 
@@ -63,6 +64,7 @@ const NEUTRAL_BADGE_CLASS = cn(
 );
 
 interface CommandAutocompleteProps {
+  acpCommands?: AcpCommand[];
   searchQuery: string;
   onCommandSelect: (command: CommandInfo) => void;
   onClose: () => void;
@@ -74,6 +76,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
   onCommandSelect,
   onClose,
   style,
+  acpCommands,
 }, ref) => {
   const { t } = useI18n();
   const currentSessionId = useSessionUIStore((state) => state.currentSessionId);
@@ -131,9 +134,10 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
 
   React.useEffect(() => {
     // Force refresh to get latest project context when mounting
+    if (kernelGeneration === 'acp') return;
     void refreshCommands();
     void refreshSkills();
-  }, [refreshCommands, refreshSkills]);
+  }, [refreshCommands, refreshSkills, kernelGeneration]);
 
   const reservedCommandNames = React.useMemo(() => {
     const names = new Set<string>(LOCAL_COMMAND_NAMES.filter((name) => name !== 'fork'));
@@ -145,6 +149,14 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
   const guestCommands = useGuestCommands(reservedCommandNames);
 
   React.useEffect(() => {
+    if (kernelGeneration === 'acp') {
+      const advertised: CommandInfo[] = (acpCommands ?? []).map((command) => ({
+        id: `acp:${command.name}`, name: command.name, description: command.description, source: 'opencode',
+      }));
+      setCommands(searchQuery ? advertised.filter((command) => commandMatchesSearch(command, searchQuery)) : advertised);
+      setLoading(false);
+      return;
+    }
     const loadCommands = async () => {
       setLoading(true);
       try {
@@ -240,7 +252,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
           extensionName: entry.guestName,
         }));
         const allCommands = [
-          ...mergeCommandAutocompleteItems(kernelGeneration === 'acp' ? [] : builtInCommands, customCommands, skillCommands),
+          ...mergeCommandAutocompleteItems(builtInCommands, customCommands, skillCommands),
           ...extensionCommands,
         ];
 
@@ -256,7 +268,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
           return a.name.localeCompare(b.name);
         });
 
-        setCommands(kernelGeneration === 'acp' ? [] : filtered);
+        setCommands(filtered);
       } catch {
 
         const builtInCommands: CommandInfo[] = [
@@ -337,7 +349,7 @@ export const CommandAutocomplete = React.forwardRef<CommandAutocompleteHandle, C
     };
 
     loadCommands();
-  }, [searchQuery, hasSession, canStartSessionCommand, canUseReviewHandoffFlow, canFork, commandsWithMetadata, guestCommands, skills, t]);
+  }, [searchQuery, hasSession, canStartSessionCommand, canUseReviewHandoffFlow, canFork, commandsWithMetadata, guestCommands, skills, t, kernelGeneration, acpCommands]);
 
   React.useEffect(() => {
     setSelectedIndex(0);

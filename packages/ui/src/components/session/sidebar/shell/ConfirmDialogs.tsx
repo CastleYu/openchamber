@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Icon } from "@/components/icon/Icon";
 import type { Session } from '@/lib/opencode/model';
 import { useI18n } from '@/lib/i18n';
+import { opencodeClient } from '@/lib/opencode/client';
 
 export type DeleteSessionConfirmState = {
   session: Session;
@@ -30,10 +31,10 @@ export function SessionDeleteConfirmDialog(props: {
       <DialogContent showCloseButton={false} className="max-w-sm gap-5">
         <DialogHeader>
           <DialogTitle>{value?.archivedBucket
-            ? t('sessions.sidebar.dialogs.deleteSession.title')
+            ? t(opencodeClient.isAcp() ? 'chat.acp.remove' : 'sessions.sidebar.dialogs.deleteSession.title')
             : t('sessions.sidebar.dialogs.archiveSession.title')}</DialogTitle>
           <DialogDescription>
-            {value && value.descendantCount > 0
+            {value?.archivedBucket && opencodeClient.isAcp() ? t('chat.acp.removeDescription') : value && value.descendantCount > 0
               ? value.archivedBucket
                 ? value.descendantCount === 1
                   ? t('sessions.sidebar.dialogs.deleteSession.withOneSubtask', {
@@ -85,7 +86,7 @@ export function SessionDeleteConfirmDialog(props: {
               onClick={() => void onConfirm()}
               className="inline-flex h-8 items-center justify-center rounded-md bg-destructive px-3 typography-ui-label text-destructive-foreground hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
             >
-              {value?.archivedBucket ? t('sessions.sidebar.bulkActions.delete') : t('sessions.sidebar.bulkActions.archive')}
+              {value?.archivedBucket ? t(opencodeClient.isAcp() ? 'chat.acp.remove' : 'sessions.sidebar.bulkActions.delete') : t('sessions.sidebar.bulkActions.archive')}
             </button>
           </div>
         </DialogFooter>
@@ -130,8 +131,8 @@ export function BulkSessionDeleteConfirmDialog(props: {
     <Dialog open={Boolean(value)} onOpenChange={(open) => { if (!open) setValue(null); }}>
       <DialogContent showCloseButton={false} className="max-w-sm gap-5">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{archived && opencodeClient.isAcp() ? t('chat.acp.remove') : title}</DialogTitle>
+          <DialogDescription>{archived && opencodeClient.isAcp() ? t('chat.acp.removeDescription') : description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="w-full sm:items-center sm:justify-between">
           <button
@@ -156,7 +157,7 @@ export function BulkSessionDeleteConfirmDialog(props: {
               onClick={() => void onConfirm()}
               className="inline-flex h-8 items-center justify-center rounded-md bg-destructive px-3 typography-ui-label text-destructive-foreground hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
             >
-              {archived ? t('sessions.sidebar.bulkActions.delete') : t('sessions.sidebar.bulkActions.archive')}
+              {archived ? t(opencodeClient.isAcp() ? 'chat.acp.remove' : 'sessions.sidebar.bulkActions.delete') : t('sessions.sidebar.bulkActions.archive')}
             </button>
           </div>
         </DialogFooter>

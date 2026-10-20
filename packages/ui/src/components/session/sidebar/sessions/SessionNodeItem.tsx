@@ -1418,7 +1418,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
       ) : null}
       <Item className="text-destructive focus:text-destructive [&>svg]:mr-1" onClick={() => handleDeleteSession(session, { archivedBucket, hardDelete: true })}>
         <Icon name="delete-bin" className="mr-1 h-4 w-4" />
-        {t('sessions.sidebar.bulkActions.delete')}
+        {t(opencodeClient.isAcp() ? 'chat.acp.remove' : 'sessions.sidebar.bulkActions.delete')}
       </Item>
     </>
   );
@@ -1882,7 +1882,7 @@ function SessionNodeItemComponent(props: SessionNodeItemProps): React.ReactNode 
             {showQuickArchiveAction ? (
               <QuickSessionAction
                 archiveLabel={t('sessions.sidebar.bulkActions.archive')}
-                deleteLabel={t('sessions.sidebar.bulkActions.delete')}
+                deleteLabel={t(opencodeClient.isAcp() ? 'chat.acp.remove' : 'sessions.sidebar.bulkActions.delete')}
                 buttonSizeClass={actionButtonSizeClass}
                 iconSizeClass={actionIconSizeClass}
                 onPointerDown={handleRowActionPointerDown}

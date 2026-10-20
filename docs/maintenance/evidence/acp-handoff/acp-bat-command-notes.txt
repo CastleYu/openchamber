@@ -1,0 +1,5 @@
+# ACP batch task command notes
+
+- Initial discovery referenced nonexistent `packages/electron/lib`; use `rg --files packages/electron` before choosing a subdirectory.
+- Memory ACP search found no matching entries, causing rg exit 1. No memory context applies to this task.
+- `node --test packages/web/server/lib/acp/process.test.js` failed before loading tests with runner `spawn EPERM` in the restricted Windows sandbox. Retry the same focused test with task-scoped escalation to permit actual child-process integration.

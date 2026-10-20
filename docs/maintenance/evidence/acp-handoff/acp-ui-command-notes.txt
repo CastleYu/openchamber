@@ -1,0 +1,8 @@
+# ACP UI command notes
+- packages/ui/README.md absent; confirmed package docs through rg --files instead.
+- PowerShell does not expand rg path globs; pass directory plus -g.
+- ComposerAutocomplete.tsx and acp.test.ts absent; discover filenames before reads.
+- Test launch hit sandbox EPERM on installed Bun dependency links; requires same focused command escalated. happy-dom resolution pending check outside sandbox. Translation dictionary exports differ; inspect declarations instead of assuming same shape.
+- Additional dictionary locales ja/de/nl/tr exist beyond the initial list; all now translated. Other guessed test/types paths absent; paths discovered before final verification.
+- Tool diff discovery initially guessed absent tools/message-doc and root dependency paths; nearest parts/DOCUMENTATION.md and packages/ui/node_modules were then discovered. rg no-match exit 1 is expected, not an environment failure.
+- A PowerShell double-quoted regex with embedded quotes failed parsing; subsequent slash-command checks use rg -e literal patterns.

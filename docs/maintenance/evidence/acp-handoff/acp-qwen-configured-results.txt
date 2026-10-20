@@ -1,0 +1,29 @@
+# Qwen Code ACP configured acceptance
+
+Date: 2026-10-14
+
+**Result: the real ACP run passed the configured acceptance scenarios.** Qwen Code 0.25.1 connected to OpenCode Go with model `deepseek-v4-flash`. The isolated run used `OPENCODE_GO_API_KEY`, the official Go endpoint, Qwen's own `QwenCode/0.25.1` user agent, and `outboundCorrelation.allowDynamicHeaderValues` with `generationConfig.customHeaders['x-opencode-session'] = '${session_id}'`. No credential value was written to settings, logs, or results.
+
+The previous prompt failure was caused by Go rejecting requests without `x-opencode-session` (`400 Request missing x-opencode-session`). The per-session dynamic header resolved it: two concurrent session prompts both completed and returned their matching sentinel text.
+
+| Scenario | Evidence |
+|---|---|
+| Initialize and negotiate ACP | Qwen Code 0.25.1 initialized; session list/resume capabilities advertised |
+| Session isolation | Two distinct sessions prompted concurrently; each returned its own expected text |
+| Permission grant | `allow_once`; file contained exactly `APPROVED_TOOL_OK` |
+| Permission rejection | `reject_once`; target file was not created |
+| Stop active terminal turn | Long-running terminal tool was active; cancel returned `interrupted`; runtime callback cleanup was awaited |
+| Restart and continue | Both session IDs restored; transcript reopened (6 saved messages, 8 after resume); continuation returned `HISTORY_RESTORED_OK` |
+| Process cleanup | Final `runtime.stop()` returned successfully after runtime awaited the child `close` event; recorded `childExited: true` |
+
+Diagnostics contain only a Qwen event-loop stall notice (1.14 s); no ACP or provider errors. No application source, dependency, or product settings were changed. The first sandboxed attempt could not write to D: (`EPERM`); the exact scoped retry succeeded, and the original failed JSON was copied intact before the run.
+
+Evidence files:
+
+- Machine-readable results: `D:/CodexBuilds/acp-real-validation/qwen-configured-run.json`
+- Redacted diagnostic log: `D:/CodexBuilds/acp-real-validation/qwen-configured-diagnostic.log`
+- Preserved prior failure: `D:/CodexBuilds/acp-real-validation/qwen-real-run-failed-preserved.json`
+- Temporary harness: `.codex-temp/acp-qwen-configured.mjs`
+- Failure/retry note: `.codex-temp/acp-qwen-configured-failure-notes.md`
+
+Direct OS process-ID polling was not performed; cleanup evidence is the runtime's awaited child-process close and clean `stop()` completion.

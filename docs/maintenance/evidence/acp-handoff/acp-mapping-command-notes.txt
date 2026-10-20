@@ -1,0 +1,5 @@
+# ACP mapping command notes
+
+- 2026-10-14: Default sandbox `bun test packages/ui/src/lib/agent-connection.test.ts` could not read the installed Zod dependency (`EPERM`). Default sandbox `node --test packages/web/server/lib/acp/project-mapping.test.js` could not spawn the Node test child (`EPERM`). Re-run those focused checks with the same commands under narrow elevated execution; neither failure came from a test assertion.
+- Narrow elevated execution passed both schema suites. UI type-check initially found the expected eight localization keys pending the locale-owner handoff, plus one test DOM type intersection which was corrected. ESLint rejected a control-character regex; replaced it with a character-code validation without disabling the rule.
+- One search supplied a wildcard path argument directly to `rg` on Windows and produced OS error 123. Use discovered concrete directories (or `rg --files` filtered paths), not a wildcard as an `rg` directory argument.

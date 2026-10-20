@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Mapowania katalogów projektów",
+  "settings.agentConnection.projectMappingsInfo": "Dokładnie dopasowane projekty lokalne używają swojego katalogu zdalnego do nowych sesji i wyszukiwania sesji. Pozostałe projekty używają domyślnego zdalnego katalogu roboczego. Istniejące sesje zachowują swój pierwotny katalog zdalny.",
+  "settings.agentConnection.projectDirectory": "Lokalny katalog projektu",
+  "settings.agentConnection.projectDirectoryRow": "Lokalny katalog projektu {number}",
+  "settings.agentConnection.remoteCwdRow": "Zdalny katalog roboczy {number}",
+  "settings.agentConnection.removeMappingRow": "Usuń mapowanie projektu {number}",
+  "settings.agentConnection.removeMapping": "Usuń mapowanie",
+  "settings.agentConnection.addMapping": "Dodaj mapowanie projektu",
   'settings.agentConnection.acpServer': "Serwer ACP",
   'settings.agentConnection.transport': "Transport",
   'settings.agentConnection.http': "Strumieniowy HTTP (eksperymentalny HTTP/2)",

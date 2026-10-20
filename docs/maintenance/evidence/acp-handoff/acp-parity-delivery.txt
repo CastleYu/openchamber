@@ -1,0 +1,21 @@
+# ACP parity delivery
+
+Scope: BAT/CMD startup and stable ACP capabilities from issue #1, on the independent ACP branch. No dependency additions, changelog edits, new daemon or database.
+
+Implemented: Windows batch/PATH shims; capability-based session list/load/resume, metadata and deletion; agent configuration and commands; usage, plans and mixed tool output/diffs; typed input and authentication; local filesystem/terminal callbacks; explicit remote project mappings. Unsupported OpenCode-only operations remain gated. English and Chinese maintenance documentation are synchronized.
+
+Validation:
+- ACP backend: 66 passed, zero skipped (`acp-parity-backend-final.log`).
+- ACP UI: 44 passed; adapter/tool-output regressions: 40 passed (overlapping suites, not additive).
+- OC1/OC2 regressions: 88 passed. Build/publication contracts: 17 passed.
+- Workspace type-check/lint passed; final UI type-check passed. Existing lint warnings remain outside this change.
+- Final dead-code check: no ACP findings. Final diff check passed.
+- Final Web assets and Electron main bundle built. Native rebuild passed earlier; unchanged afterward.
+- Browser fixtures: typed form defaults submitted and echoed; text/terminal output displayed alongside diff; plan updated in place; second turn stayed busy; Stop returned idle and terminal PID 131240 no longer existed.
+- Browser-found Windows slash mismatch fixed in directory-scoped lookups, covered by saved-session regression. Agent cwd and remote mappings remain unchanged.
+
+Boundary: private agent/model acceptance and non-Windows process cleanup were not exercised. Grok 4.7 high review blocked by settings HTTP 401 and stalled MCP startup; no current review verdict. Earlier Grok evidence is only for the previous baseline.
+
+Artifact location: D:\CodexBuilds\openchamber-acp-20261014. Local, unsigned Windows x64 portable build; not a public Release and not committed/pushed. C: packaging failed due to ENOSPC; only its owned failed win-unpacked was removed after exit. Existing C: packages preserved and must not be confused with this delivery.
+
+All preview servers were stopped gracefully before cleanup. The temporary browser tab was closed. Keep source/test files and small validation logs; remove only owned preview/build intermediates after their processes exit.

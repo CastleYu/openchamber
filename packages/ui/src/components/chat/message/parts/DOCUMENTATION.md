@@ -35,6 +35,7 @@ Use this doc when you ask an agent to change tool/header/description behavior.
 - `ToolPart.tsx`
   - Renders expandable tool rows (bash/edit/write/question/task + fallback).
   - Controls expandable header title/description/diff stats/timer and expanded output body.
+  - ACP tool metadata carries `acp: true`. Running ACP tools show `metadata.output` through the streaming text renderer, and mixed results keep text output visible alongside their file diffs. The backend excludes diff bodies from the text output.
   - If you want to change expandable tool layout, edit here.
 
 - `taskToolModel.ts`
@@ -47,6 +48,10 @@ Use this doc when you ask an agent to change tool/header/description behavior.
   - Shared icon mapping for tool names (`getToolIcon`).
   - Used by `ProgressiveGroup.tsx`, `ToolPart.tsx`, and `ToolOutputDialog.tsx`.
   - Takes an optional extension rule (below) whose `icon` wins when the sprite carries it.
+
+- `toolDiffUtils.ts`
+  - ACP completed tool metadata keeps its typed `diffs` entries across transcript and live-event parsing.
+  - Complete before/after text becomes one unified hunk with unchanged edge context. The existing per-file preview, size limits, and open-file actions render it; agent tool names do not need a separate renderer.
 
 - Extension tool presentations (`contributes.tools` in a guest manifest)
   - The registry is `lib/guests/tool-presentation.ts`: `useGuestToolPresentation(part.tool)` / `resolveGuestToolPresentation` return the first matching rule of an active guest (exact `match` beats a suffix wildcard; first extension wins) or `null`. Rules are compiled once per catalog array; each part does one linear scan.

@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "项目目录映射",
+  "settings.agentConnection.projectMappingsInfo": "新建会话和发现会话时，精确匹配的本地项目使用对应的远程目录；其他项目使用默认远程工作目录。已有会话保留原始远程目录。",
+  "settings.agentConnection.projectDirectory": "本地项目目录",
+  "settings.agentConnection.projectDirectoryRow": "本地项目目录 {number}",
+  "settings.agentConnection.remoteCwdRow": "远程工作目录 {number}",
+  "settings.agentConnection.removeMappingRow": "移除项目映射 {number}",
+  "settings.agentConnection.removeMapping": "移除映射",
+  "settings.agentConnection.addMapping": "添加项目映射",
   'settings.agentConnection.acpServer': "ACP 服务端",
   'settings.agentConnection.transport': "传输方式",
   'settings.agentConnection.http': "流式 HTTP（实验性 HTTP/2）",

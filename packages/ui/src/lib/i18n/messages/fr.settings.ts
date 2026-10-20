@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Correspondances des répertoires de projets",
+  "settings.agentConnection.projectMappingsInfo": "Les projets locaux correspondant exactement utilisent leur répertoire distant pour les nouvelles sessions et la recherche de sessions. Les autres projets utilisent le répertoire de travail distant par défaut. Les sessions existantes conservent leur répertoire distant d’origine.",
+  "settings.agentConnection.projectDirectory": "Répertoire du projet local",
+  "settings.agentConnection.projectDirectoryRow": "Répertoire du projet local {number}",
+  "settings.agentConnection.remoteCwdRow": "Répertoire de travail distant {number}",
+  "settings.agentConnection.removeMappingRow": "Supprimer la correspondance du projet {number}",
+  "settings.agentConnection.removeMapping": "Supprimer la correspondance",
+  "settings.agentConnection.addMapping": "Ajouter une correspondance de projet",
   'settings.agentConnection.acpServer': "Serveur ACP",
   'settings.agentConnection.transport': "Transport",
   'settings.agentConnection.http': "HTTP en streaming (HTTP/2 expérimental)",

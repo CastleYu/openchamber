@@ -1,0 +1,4 @@
+# ACP mixed output command notes
+
+- 2026-10-14: Default sandbox `node --test packages/web/server/lib/acp/wiring.test.js` failed with child spawn EPERM. Bun focused UI tests could not read dependency junction targets (EPERM / apparent missing SDK). Retry focused tests outside sandbox; do not install dependencies.
+- Focused oxlint reports existing ToolPart typing findings; changes do not add assertions or runtime typeof checks. Full output: `acp-mixed-oxlint.log`.

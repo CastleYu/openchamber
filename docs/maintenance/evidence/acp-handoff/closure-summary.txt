@@ -1,0 +1,14 @@
+2026-10-21 source handoff / 源码收束
+No product code changed during closure. / 本次收束未修改产品代码。
+Initial concurrent ACP backend run: 67 tests, 66 passed, 1 initialize timeout, 0 skipped. The helper summary incorrectly counted 18; the full runner output is authoritative.
+首次并行后端运行67项，66通过、1项初始化超时，无跳过。子代理简报误计为18项，以完整日志为准。
+The failed HTTP/SSE case passed alone (1/1). Full serial backend rerun: 67/67 passed, zero skips. No timeout or assertion was changed; concurrency sensitivity remains a release follow-up if reproduced on CI.
+失败HTTP/SSE用例单独复测1/1通过；完整串行后端67/67通过，无跳过。未调整超时或断言；CI如再现并发敏感问题，应在发布阶段处理。
+Build/publication contracts: 17/17 passed. Earlier workspace/UI/model-backed evidence remains in the archive; it was not all rerun for this documentation/snapshot operation.
+构建/发布契约17/17通过。此前工作区、UI及真实模型证据保留，本次文档与快照操作未重跑全部历史验收。
+Removed four reproducible cache/build directories, 298135032 bytes total. Installed dependencies, existing EXEs, user data and diagnostic originals retained. Paths/bytes are in acp-closure-cleanup.json.
+清理4个可重建缓存/构建目录，共298135032字节；保留依赖、现有EXE、用户数据和诊断原件。
+Default shell creation failed with code 5; scoped elevated shell worked. No new binary build, release or publication gate change was performed.
+默认shell创建失败代码5，限定提权命令可用。未重新打包、发布或修改发布分支范围。
+
+Archived text logs normalize line endings and trailing spaces only; original local logs remain intact. / 归档文本日志仅统一换行和行尾空格，原始本地日志保留。

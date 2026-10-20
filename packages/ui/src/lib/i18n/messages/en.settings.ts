@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Project directory mappings",
+  "settings.agentConnection.projectMappingsInfo": "Exact local project matches use their remote directory for new sessions and discovery. Other projects use the default remote working directory. Existing sessions keep their original remote directory.",
+  "settings.agentConnection.projectDirectory": "Local project directory",
+  "settings.agentConnection.projectDirectoryRow": "Local project directory {number}",
+  "settings.agentConnection.remoteCwdRow": "Remote working directory {number}",
+  "settings.agentConnection.removeMappingRow": "Remove project mapping {number}",
+  "settings.agentConnection.removeMapping": "Remove mapping",
+  "settings.agentConnection.addMapping": "Add project mapping",
   'settings.agentConnection.acpServer': "ACP Server",
   'settings.agentConnection.transport': "Transport",
   'settings.agentConnection.http': "Streamable HTTP (experimental HTTP/2)",

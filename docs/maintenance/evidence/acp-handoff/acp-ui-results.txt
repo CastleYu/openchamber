@@ -1,0 +1,30 @@
+# ACP shared UI parity
+
+## Scope and behavior
+- Changed only packages/ui source and its owning docs, plus this local handoff and command notes. No dependency, git, packaging, release, or backend writes.
+- Added typed ACP controls, nullable command inputs, session metadata, update/removal operations, refresh/delete/transcript events, and completed-tool diff metadata to the existing domain adapter.
+- opencodeClient owns controls/config/mode access and ACP session mutations; runtime-binding revision guards reject stale responses.
+- Desktop and mobile composer share advertised select controls, grouped options, legacy mode fallback, supplied context usage and supplied cost. Draft sessions remain agent-managed until creation.
+- Controls refresh on selected session/runtime and authoritative session-record revision. Failure preserves same-owner controls and exposes the error. Session/runtime switches never inherit old options. Configuration responses replace the full dependent option set.
+- ACP autocomplete uses only advertised agent commands. Built-in names such as btw are literal prompt text; OpenCode built-ins, skills and extension-command interception are bypassed. Slash prompts precede supplemental context without changing their exact spacing. Leading ! stays prompt text.
+- ACP bulk archive runs the existing authoritative per-session facade with partial-failure reporting. Removal labels explain local removal and agent deletion when supported, without per-row capability requests.
+- Existing share/fork/revert/provider capability gates already hide unsupported ACP actions. Local file/Git/terminal surfaces retain their owners. Standalone VS Code remains unsupported for ACP.
+- ACP complete before/after tool changes feed existing per-file diff previews, text fallbacks, size limits and file actions, including agents with custom tool names. No parallel renderer.
+- Added five localized control/removal strings in all 13 existing dictionaries. Updated composer, sync and message-parts ownership docs.
+
+## Validation
+- UI type-check passed (bun run type-check:ui).
+- Focused tests: 164 passed, 0 failed across ACP adapter (7), controls hook (4), autocomplete (2), facade (15), runtime binding (5), tool diff utilities (21), and session actions (110).
+- Hook cases cover same-session refresh failure, new-session failure, stale session completion, new-runtime failure, full configuration replacement and failed updates.
+- Adapter cases cover rename/metadata/archive/removal, grouped controls, nullable command inputs, malformed/failing responses, runtime switch, exact slash prompt, three event types, transcript/SSE diff metadata.
+- Added batch-archive partial-failure and diff creation/replacement/final-newline regression cases.
+- Focused ESLint: 0 errors; one pre-existing ChatInput useCallback dependency warning at line 1256 (parallel).
+- Oxlint: new adapter/control source and tests passed. Existing toolDiffUtils reports 32 anti-slop findings on its pre-existing unknown/dictionary/typeof contracts; the added schema and patch code introduce none. No suppressions or unrelated cleanup.
+- Dead-code command passed; inspected report has existing backlog and no new ACP control files/exports reported. git diff --check passed for packages/ui.
+- Tests required the existing installed Bun dependency links outside the sandbox. Environmental command notes: .codex-temp/acp-ui-command-notes.md.
+
+## Evidence limits / integration
+- No real-agent, browser, Electron, Capacitor-device or hosted-mobile end-to-end validation in this subtask. Parent owns integration and packaging checks.
+- UI expects final backend controls responses and session-refresh/session-upsert revision facts agreed in the task contract.
+- Diff previews use a linear common-prefix/common-suffix unified hunk; separate internal edits may share one hunk. Original before/after data remains intact.
+- No elicitation or remote-cwd settings implemented, as scoped.

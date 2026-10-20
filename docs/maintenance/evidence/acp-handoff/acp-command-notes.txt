@@ -1,0 +1,35 @@
+# ACP command notes
+
+- UI: Windows `rg` rejects explicit wildcard paths such as `messages/en*` with OS error 123. Search the discovered directory instead. This succeeded.
+- UI: ACP docs patch with incorrect wrapped-line context failed without mutation; retry with exact unique context succeeded. A subsequent notes patch found concurrent replacement of the shared notes; retained existing entries and appended with stable heading context.
+- UI: Default-sandbox Bun tests could not read linked `zod` and `zustand` (EPERM), and SDK resolution also failed. Four locale tests passed. Retry the exact focused tests with escalation for existing linked dependencies; do not change dependencies.
+
+- 2026-10-14: Default sandbox `node --test ...runtime.test.js ...server-transport.test.js` failed before tests with child runner `spawn EPERM`. Re-run the same focused test command with host escalation; this is an environment failure, not protocol evidence.
+- `bunx vitest` found no root-local Vitest and resolved v5.0.4 transiently; no repository lockfile changed. Agent-connection tests passed 12/12. Root `node_modules/vitest/package.json` and `.bin/vitest.cmd` reads failed because those paths do not exist. Discover package-local dependency paths before reading.
+- Official raw protocol.py web fetch returned cache miss twice; GitHub blob source worked. Use the blob page for protocol routing evidence.
+ACP Server Grok review: first call exited without a verdict; second direct-patch call reported settings fetch network failures at cli-chat-proxy.grok.com and still has no verdict. Do not claim Grok review passed.
+ACP Server release validation: source 692c366d5; node17/17, connection12/12, UI20/20, workspace lint exit0 with6 existing warnings, dead-code no new ACP findings, CI38501848172 success. Grok second call stopped after settings network failure/no verdict. Premature build-info read before artifact download completion found no file; wait for download completion before reading.
+ACP parity inspection: result files were read before agents had created them (no content); use agent completion before reading. Two guessed UI paths (capabilities.ts and chat/ComposerFooter.tsx) did not exist; discover exact paths with rg --files before reads.
+ACP parity inspection: guessed ChatHeader.tsx was absent; rg --files located components/layout/Header.tsx. Subsequent reads use discovered names.
+ACP parity inspection: rg with process* path failed OS123 on Windows. Use directory with -g process* or explicit discovered paths.
+ACP workflow inspection: guessed acp-release.yml absent; discovered .github/workflows/acp-portable.yml is the owner.
+2026-10-14: rg docs/maintenance/ACP failed because ACP is a filename stem, not a directory. Discover doc paths with rg --files docs before reading.
+2026-10-14: Grok review could not create its session because sandbox blocked ~/.grok session/auth lock writes (FS_PERMISSION_DENIED); settings fetch also returned 401. Retry the same read-only review with escalation once; do not change credentials.
+2026-10-14: Escalated Grok 4.7 high review stalled during MCP/settings/network initialization and produced no review verdict. Stopped only the owned review session with Ctrl+C; process exited 1. No review pass claimed.
+2026-10-14: rg scripts/lib/*.mjs failed OS123 because PowerShell does not expand path globs. Use scripts/lib with -g *.mjs.
+2026-10-14: Guessed packages/ui/src/lib/opencode/types.ts was absent; actual ACP adapter imports model.ts. Use discovered imports before reading.
+2026-10-14: Guessed UI opencode DOCUMENTATION and i18n/locales paths were absent. Use rg --files discovery; no source changes resulted.
+2026-10-14: Maintenance patch CN heading anchor did not match actual heading; inspect exact anchors and apply per file.
+`n- Main resumed check: attempted to read acp-wiring-results.md before agent completion; file not yet created. Wait for completion and discover paths before reads. Earlier nonexistent desktop-shell reference read was also a path assumption; use skill-listed references only.
+- Local portable build rejected OPENCHAMBER_BUILD_NUMBER=local before building. That variable accepts numeric CI run.attempt only. Clear it for the built-in ACP.local output.
+- Isolated preview stdin closed immediately in non-TTY execution, so its explicit EOF cleanup stopped the server successfully. Relaunch with tty=true to keep the control input open.
+- ACP.local portable build: web assets, bundled CLI verification, main bundle and native rebuild passed; packaging failed with ENOSPC writing win-unpacked/electron.exe. Build process exit confirmed. Inspect and clean only this failed build intermediate output, preserve prior releases.
+- Preview project persistence hit ENOSPC during first package attempt. After reclaiming failed unpacked output, existing settings write chain retained the rejection. Preview was stopped gracefully and restarted before continuing UI acceptance.
+
+- Final browser fixture reused session-1 after a server restart while its earlier transcript remained in the isolated data directory. The existing duplicate-ID guard rejected creation. Created a fresh fixture session-2 with the explicit test directory; no application fallback was added.
+- Final browser acceptance found a real second-turn UI status mismatch: backend busy and running tool, UI interrupted/Stop missing. Assigned focused state-sync correction before delivery.
+2026-10-14: parity inspection guessed useSessionActions.ts and ComposerFooter.tsx locations; rg reported missing paths. Resolve with rg --files before subsequent reads. Optional Qwen result reads occurred before output existed; use Test-Path for pending reports.
+
+2026-10-14 cleanup: sandbox Get-CimInstance Win32_Process failed with access denied. Retry process ownership inspection and task-owned D-drive cleanup with scoped escalation; no product failure.
+2026-10-21 status inspection: default shell failed CreateProcessAsUserW code 5 despite explicit system PowerShell; exact scoped escalated read succeeded.
+2026-10-21 closure: initial combined apply_patch failed on incomplete README anchor; no files changed; reapplied with exact separate file creation. Documentation helper observed sandbox code 5 and cmd/PowerShell mismatch; use explicit shell and scoped escalation.

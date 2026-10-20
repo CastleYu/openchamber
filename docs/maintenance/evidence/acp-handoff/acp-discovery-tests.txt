@@ -1,0 +1,38 @@
+✔ Windows scoped discovery uses native cwd and preserves agent history cwd (1749.4505ms)
+✔ two projects, paginated discovery, full replay, controls and restart resume (3489.0174ms)
+✔ parity: removal remains hidden through discovery and restart (2772.9618ms)
+✔ local-delete: removal remains hidden through discovery and restart (3084.2491ms)
+✔ incomplete listing and failed replay preserve visible records and transcript (4358.5561ms)
+✔ failed persistence rolls back metadata, replay and local removal (1407.4712ms)
+✔ same JSON preserves connection partitions with colliding IDs across process restart (7509.706ms)
+✔ legacy transcript migrates losslessly and resume-only agent can continue (2724.5004ms)
+✔ negotiated text and audio attachments preserve file parts and exact ACP content (1188.151ms)
+✔ busy config update keeps the active session owner and prompt returns to idle (1425.9475ms)
+✔ domain HTTP routes discover, open, update, configure and remove without implicit sessions (1449.3714ms)
+✔ switching connection rejects an in-flight restoration before it can publish old history (2705.8747ms)
+✔ server mappings round-trip without changing old server settings (5.7234ms)
+✔ mapping lookup matches exactly and keeps the explicit default for other projects (0.3852ms)
+✔ server boundary rejects duplicate local directories and invalid absolute roots (4.1642ms)
+✔ connection settings persist mappings, bootstrap them and remove them without migrating old settings (19.5271ms)
+✔ stdio initialize, new, streaming text and thought project domain facts (1717.5322ms)
+✔ permission preserves exact options and tools accept ACP content arrays and JSON input (1609.6682ms)
+✔ cancel resolves permission as cancelled and interrupts the prompt (1766.7713ms)
+✔ Windows directory snapshots retain a saved active session across slash formats (2756.2581ms)
+✔ agent error fails a prompt visibly (1625.7664ms)
+✔ agent exit fails a prompt visibly (97.2389ms)
+✔ invalid command and malformed stdout never fall back to another agent (1280.2578ms)
+✔ stop waits for the agent to exit before its working directory is removed (1390.6752ms)
+✔ saved sessions stay read-only when loadSession is unavailable (2795.275ms)
+✔ reconnect snapshot gives every fact a unique event id (1572.8884ms)
+✔ negotiated loadSession resumes the saved session without replay duplicates (2970.2842ms)
+✔ unsupported attachment is rejected before transcript changes (1653.8977ms)
+✔ accepted file links are canonical transcript parts (1418.1314ms)
+✔ a failed transcript save rolls back the unsent turn and later saves recover (1352.1938ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34737.3942

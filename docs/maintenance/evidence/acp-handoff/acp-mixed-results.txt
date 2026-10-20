@@ -1,0 +1,17 @@
+# ACP mixed output
+
+ACP tool projection now marks tool metadata with `acp: true`; the typed transcript/event adapter preserves it. Expanded ACP tools render running output from metadata through the existing throttled streaming text renderer. Diff entries and textual/terminal output render together, including live diff-only updates. The backend keeps diff bodies only in typed metadata, avoiding duplicate flattened text.
+
+Surfaces: web, Electron, hosted mobile and Capacitor share this renderer/backend behavior. Standalone VS Code remains unsupported for ACP. OC1/OC2 have no ACP marker and retain their existing branches. No new cache, subscriptions, dependencies or exports.
+
+Validation:
+- Wiring fixture: 5 passed, including running marker, completed marker, terminal output plus retained diffs and exclusion of flattened diff text.
+- Adapter and existing tool output regressions: 40 passed across 2 files.
+- Focused eslint: passed for five executable files.
+- Backend/adapter oxlint: passed after fixing the authored conditional spread.
+- Full ToolPart oxlint: existing typing findings remain; no new assertions or typeof checks were introduced.
+- All ACP backend tests: 65 passed. Parent expanded scope for runtime.test.js:53; it now asserts exact text output and retained diff newText instead of duplicate flattened diff text.
+- Runtime syntax check passed.
+- Main agent owns final build/type checks and browser verification.
+
+Environment failures and recovery are recorded in `acp-mixed-command-notes.md`. Tests required elevated execution to read dependency junctions and spawn children after sandbox EPERM.

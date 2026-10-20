@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SettingsSection, SettingsFieldRow, SettingsRadioGroup, SettingsRadioOption } from '@/components/sections/shared/SettingsSection';
 import { useI18n } from '@/lib/i18n';
-import { applyAgentConnection, loadAgentConnection, CONNECTION_MODE, ACP_TRANSPORT, type AgentConnection, type ConnectionSnapshot } from '@/lib/agent-connection';
+import { applyAgentConnection, loadAgentConnection, CONNECTION_MODE, ACP_TRANSPORT, type AgentConnection, type AcpProjectMapping, type ConnectionSnapshot } from '@/lib/agent-connection';
+import { AcpProjectMappings } from './AcpProjectMappings';
+import { useAcpAuthentication } from './useAcpAuthentication';
+import { AcpInteractionCard } from '@/components/chat/AcpInteractionCard';
 
 const modeKeys = [
   { mode: CONNECTION_MODE.EXTERNAL, key: 'settings.agentConnection.external' },
@@ -23,9 +26,11 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
   const [args, setArgs] = React.useState('[]');
   const [cwd, setCwd] = React.useState('');
   const [remoteCwd, setRemoteCwd] = React.useState('');
+  const [projectMappings, setProjectMappings] = React.useState<AcpProjectMapping[]>([]);
   const [transport, setTransport] = React.useState<typeof ACP_TRANSPORT[keyof typeof ACP_TRANSPORT] | null>(null);
   const [busy, setBusy] = React.useState(!initial);
   const [error, setError] = React.useState<string | null>(initial?.error || null);
+  const auth = useAcpAuthentication(!busy && (mode === CONNECTION_MODE.ACP || mode === CONNECTION_MODE.ACP_SERVER));
   React.useEffect(() => {
     let active = true;
     const adopt = (snapshot: ConnectionSnapshot) => {
@@ -37,6 +42,7 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
       setArgs(config && 'args' in config ? JSON.stringify(config.args) : '[]');
       setCwd(config?.mode === CONNECTION_MODE.ACP ? config.cwd || snapshot.prefill.cwd || '' : snapshot.prefill.cwd || '');
       setRemoteCwd(config?.mode === CONNECTION_MODE.ACP_SERVER ? config.cwd : '');
+      setProjectMappings(config?.mode === CONNECTION_MODE.ACP_SERVER ? config.projectMappings ?? [] : []);
       setTransport(config?.mode === CONNECTION_MODE.ACP_SERVER ? config.transport : null);
       setError(snapshot.error);
       setBusy(false);
@@ -53,7 +59,7 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
       let config: AgentConnection;
       if (mode === CONNECTION_MODE.ACP_SERVER) {
         if (!transport) return;
-        config = { mode, transport, url, cwd: remoteCwd };
+        config = { mode, transport, url, cwd: remoteCwd, ...(projectMappings.length ? { projectMappings } : {}) };
       } else config = mode === CONNECTION_MODE.EXTERNAL ? { mode, url }
         : mode === CONNECTION_MODE.COMMAND || mode === CONNECTION_MODE.ACP
           ? { mode, command, args: z.array(z.string()).parse(JSON.parse(args)) }
@@ -81,6 +87,7 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
           </SettingsFieldRow>
           <SettingsFieldRow label={t('settings.agentConnection.url')} info={t('settings.agentConnection.serverUrlInfo')}><Input aria-label={t('settings.agentConnection.url')} value={url} onChange={(event) => setUrl(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
           <SettingsFieldRow label={t('settings.agentConnection.remoteCwd')} info={t('settings.agentConnection.remoteCwdInfo')}><Input aria-label={t('settings.agentConnection.remoteCwd')} value={remoteCwd} onChange={(event) => setRemoteCwd(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
+          <AcpProjectMappings value={projectMappings} onChange={setProjectMappings} disabled={busy} />
         </>}
         {(mode === CONNECTION_MODE.COMMAND || mode === CONNECTION_MODE.ACP) && <>
           <SettingsFieldRow label={t('settings.agentConnection.executable')}><Input aria-label={t('settings.agentConnection.executable')} value={command} onChange={(event) => setCommand(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>
@@ -89,6 +96,16 @@ export function AgentConnectionSettings({ initial, onReady }: { initial?: Connec
         {mode === CONNECTION_MODE.ACP && <SettingsFieldRow label={t('settings.agentConnection.cwd')}><Input aria-label={t('settings.agentConnection.cwd')} value={cwd} onChange={(event) => setCwd(event.target.value)} disabled={busy} className="h-8 max-w-96 font-mono" /></SettingsFieldRow>}
         {error && <p role="alert" className="typography-meta text-[var(--status-error-text)] break-words">{error}</p>}
         <Button disabled={!mode || busy || mode === CONNECTION_MODE.ACP_SERVER && (!transport || !url.trim() || !remoteCwd.trim())} size="sm" onClick={() => { void apply(); }} data-settings-item="sessions.opencode-restart">{t(busy ? 'settings.agentConnection.connecting' : 'settings.agentConnection.apply')}</Button>
+        {auth.info?.authMethods.map((method) => <SettingsFieldRow key={method.id} label={method.name} info={method.description}>
+          {!method.type || method.type === 'agent'
+            ? <Button size="sm" variant="outline" disabled={auth.status === 'authenticating' || !auth.connected} onClick={() => void auth.authenticate(method.id)}>{t('chat.acp.authenticate')}</Button>
+            : <p className="typography-meta text-muted-foreground">{t('chat.acp.cliLogin')}</p>}
+        </SettingsFieldRow>)}
+        {auth.status === 'authenticating' && <p role="status" className="typography-meta text-muted-foreground">{t('chat.acp.authenticating')}</p>}
+        {auth.status === 'authenticated' && <p role="status" className="typography-meta text-muted-foreground">{t('chat.acp.authenticated')}</p>}
+        {auth.inputs.map((request) => <AcpInteractionCard key={request.id} request={request} respond={auth.respond} />)}
+        {auth.error && <p role="alert" className="typography-meta text-[var(--status-error-text)]">{auth.error}</p>}
+        {auth.error && !auth.connected && <Button size="sm" variant="outline" onClick={auth.reconnect}>{t('chat.acp.retry')}</Button>}
       </div>
     </SettingsSection>
   );

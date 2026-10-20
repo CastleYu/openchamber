@@ -7,10 +7,24 @@ everything between typing and sending.
 own state and wires these modules together; it should not grow logic that
 belongs to one of them.
 
-For an ACP binding, the agent owns model selection and permission policy. The
-composer can submit without an OpenCode provider/model, hides those model
-controls and disables OpenCode auto-accept. ACP permission cards send the exact
-agent option ID. Saved read-only sessions keep their transcript and disable send.
+For an ACP binding, `useAcpControls` reads the selected session's advertised
+select configuration, legacy modes, commands and current context usage through
+`opencodeClient`. `AcpControls` uses the same select controls on desktop and
+mobile. Complete configuration responses replace dependent choices. Session
+record revisions refresh controls without a polling loop; stale runtime/session
+responses are discarded and failed refreshes preserve controls with an error.
+Before session creation the composer shows agent-managed selection. Agent
+commands remain literal `/command` prompts and never enter OpenCode built-ins,
+skill expansion, extension-command routing or command APIs. A leading `!`
+also remains prompt text instead of entering OpenCode shell mode.
+Usage displays only supplied context and cost,
+with no inferred message token ledger. Permission cards send the agent's exact
+option ID and OpenCode auto-accept remains hidden. Saved read-only sessions keep
+their transcript and disable send and configuration changes.
+
+Web, Electron, hosted mobile and Capacitor share these backend operations.
+Standalone VS Code cannot bind an ACP runtime. Local host file, Git and terminal
+tools retain their existing owners.
 
 `ChatContainer.tsx` keeps one `ChatInput` mounted while a new-session draft
 becomes its first session. Draft-only UI first fades for 120ms while the editor

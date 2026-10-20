@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Proje dizini eşlemeleri",
+  "settings.agentConnection.projectMappingsInfo": "Tam olarak eşleşen yerel projeler, yeni oturumlar ve oturum araması için kendi uzak dizinlerini kullanır. Diğer projeler varsayılan uzak çalışma dizinini kullanır. Mevcut oturumlar özgün uzak dizinlerini korur.",
+  "settings.agentConnection.projectDirectory": "Yerel proje dizini",
+  "settings.agentConnection.projectDirectoryRow": "Yerel proje dizini {number}",
+  "settings.agentConnection.remoteCwdRow": "Uzak çalışma dizini {number}",
+  "settings.agentConnection.removeMappingRow": "Proje eşlemesi {number} kaldır",
+  "settings.agentConnection.removeMapping": "Eşlemeyi kaldır",
+  "settings.agentConnection.addMapping": "Proje eşlemesi ekle",
   'settings.agentConnection.acpServer': "ACP sunucusu",
   'settings.agentConnection.transport': "Aktarım",
   'settings.agentConnection.http': "Akışlı HTTP (deneysel HTTP/2)",

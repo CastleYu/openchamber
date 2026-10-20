@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Zuordnung der Projektverzeichnisse",
+  "settings.agentConnection.projectMappingsInfo": "Bei exakter Übereinstimmung mit einem lokalen Projekt wird dessen Remote-Verzeichnis für neue Sitzungen und die Sitzungssuche verwendet. Andere Projekte verwenden das standardmäßige Remote-Arbeitsverzeichnis. Vorhandene Sitzungen behalten ihr ursprüngliches Remote-Verzeichnis.",
+  "settings.agentConnection.projectDirectory": "Lokales Projektverzeichnis",
+  "settings.agentConnection.projectDirectoryRow": "Lokales Projektverzeichnis {number}",
+  "settings.agentConnection.remoteCwdRow": "Remote-Arbeitsverzeichnis {number}",
+  "settings.agentConnection.removeMappingRow": "Projektzuordnung {number} entfernen",
+  "settings.agentConnection.removeMapping": "Zuordnung entfernen",
+  "settings.agentConnection.addMapping": "Projektzuordnung hinzufügen",
   'settings.agentConnection.acpServer': "ACP-Server",
   'settings.agentConnection.transport': "Transport",
   'settings.agentConnection.http': "Streamable HTTP (experimentelles HTTP/2)",

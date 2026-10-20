@@ -13,6 +13,7 @@ import { V2CatalogOperations } from './v2/catalog';
 import type { SpaceMark } from '@/lib/spaces/spaces-store';
 import { isSpaceDirectory } from '@/lib/spaces/space-route';
 import type { BootstrapPath, McpCatalog, PendingInput, PendingPermission, ProviderCatalog, TaggedConfig } from './operations';
+import type { AcpAnswer } from './acp-interactions';
 import { createV2RuntimeClient } from './v2/client';
 import { createOpenCodeFetch, createTimeoutSignal } from './transport';
 import { createV1SyncSource, createV2SyncSource, type SyncSource } from '@/sync/source';
@@ -30,7 +31,7 @@ import { FilesystemError, parseFilesystemErrorReason } from "@/lib/api/files-err
 import type { PermissionRequest } from "@/types/permission";
 import type { QuestionRequest } from "@/types/question";
 import { runningShellFromWire, shellCancellationNote, type RunningShell } from './background-shell';
-import { AcpClient } from './acp';
+import { AcpClient, type AcpControls } from './acp';
 
 /**
  * Tagged result of `OpencodeService.fetchPermission()`. The caller can
@@ -407,9 +408,25 @@ class OpencodeService {
 
   isAcp(): boolean { return this.runtimeBinding.get()?.generation === 'acp'; }
 
+  getAcpControls(id: string, signal?: AbortSignal): Promise<AcpControls> {
+    return this.runtimeBinding.run('acp', 'session.controls', () => this.acp.controls(id, signal));
+  }
+
+  setAcpConfig(id: string, configId: string, value: string): Promise<AcpControls> {
+    return this.runtimeBinding.run('acp', 'session.config', () => this.acp.configure(id, configId, value));
+  }
+
+  setAcpMode(id: string, modeId: string): Promise<AcpControls> {
+    return this.runtimeBinding.run('acp', 'session.mode', () => this.acp.mode(id, modeId));
+  }
+
   replyToAcpPermission(id: string, optionID: string): Promise<boolean> {
     if (!this.isAcp()) throw new OpenCodeRuntimeError(this.runtimeBinding.get()?.generation ?? 'unknown', 'ACP permission');
     return this.acp.reply(id, optionID);
+  }
+
+  replyToAcpInput(id: string, answer: AcpAnswer): Promise<boolean> {
+    return this.runtimeBinding.run('acp', 'elicitation.reply', () => this.acp.replyInput(id, answer));
   }
 
   private scope(directory?: string | null, signal?: AbortSignal) {
@@ -784,6 +801,7 @@ class OpencodeService {
   }
 
   async deleteSession(id: string, directory?: string | null): Promise<boolean> {
+    if (this.isAcp()) return this.runtimeBinding.run('acp', 'session.delete', () => this.acp.remove(id));
     if (this.isV2()) return this.v2Sessions.remove(id, this.scope(directory));
     const requestDirectory = this.normalizeCandidatePath(directory) ?? this.currentDirectory;
     return this.runtimeBinding.run('oc1', 'session.delete', () => this.sessions.remove(id, { directory: requestDirectory }));
@@ -794,6 +812,7 @@ class OpencodeService {
     patch: { title?: string; metadata?: Metadata; time?: { archived?: number | null } },
     directory?: string | null,
   ): Promise<DomainSession> {
+    if (this.isAcp()) return this.runtimeBinding.run('acp', 'session.update', () => this.acp.update(id, patch));
     if (this.isV2()) {
       const requestDirectory = this.scope(directory).directory;
       if (patch.metadata !== undefined) {
@@ -1306,7 +1325,8 @@ class OpencodeService {
     if (this.isAcp()) {
       if (params.format || params.delivery) throw new Error('The selected ACP agent does not support this prompt operation');
       const messageID = params.messageId ?? ascendingId('msg');
-      const text = [params.prefaceText, params.text, ...(params.additionalParts ?? []).map((part) => part.text)].filter(Boolean).join('\n\n');
+      const prompt = params.text.startsWith('/') ? [params.text, params.prefaceText] : [params.prefaceText, params.text];
+      const text = [...prompt, ...(params.additionalParts ?? []).map((part) => part.text)].filter(Boolean).join('\n\n');
       const files = [...(params.files ?? []), ...(params.additionalParts ?? []).flatMap((part) => part.files ?? [])];
       await this.acp.prompt(params.id, messageID, text, files);
       this.assertRuntimeUnchanged(params.runtimeKey);
@@ -2161,7 +2181,7 @@ class OpencodeService {
   }
 
   async listTaggedInputs(options?: { directories?: Array<string | null | undefined> }): Promise<PendingInput[]> {
-    if (this.isAcp()) return [];
+    if (this.isAcp()) return this.runtimeBinding.run('acp', 'elicitation.list', () => this.acp.inputs());
     if (!this.isV2()) return (await this.listPendingQuestions(options)).map((value) => ({ generation: 'oc1', kind: 'question', value }));
     const directories = [null, ...new Set((options?.directories ?? []).map((value) => this.normalizeCandidatePath(value)).filter((value): value is string => !!value))];
     const lists = await Promise.all(directories.map(async (directory) =>
@@ -2388,7 +2408,7 @@ class OpencodeService {
 
   // Command Management
   async listCommandsWithDetails(directory?: string | null, signal?: AbortSignal): Promise<Array<{ name: string; description?: string; agent?: string; model?: string; source?: string; template?: string }>> {
-    if (this.isAcp()) return [];
+    if (this.isAcp()) return this.runtimeBinding.run('acp', 'commands.list', () => this.acp.commands(directory, signal));
     if (this.isV2()) return this.v2Catalog.commands(this.scope(directory, signal));
     const requestDirectory = this.normalizeCandidatePath(directory ?? null) ?? this.currentDirectory;
     const response = await this.client.command.list(

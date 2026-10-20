@@ -8,7 +8,7 @@ const wait = (runtime, predicate) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => { off(); reject(new Error('Missing ACP fact')); }, 5000);
   const off = runtime.subscribe((event) => { if (predicate(event)) { clearTimeout(timer); off(); resolve(event); } });
 });
-const fixture = async (t, transport) => {
+const fixture = async (t, transport, resume = false) => {
   const calls = [];
   let send;
   let pending;
@@ -16,9 +16,13 @@ const fixture = async (t, transport) => {
   const handle = (value) => {
     calls.push(value);
     const result = (body) => send({ jsonrpc: '2.0', id: value.id, result: body }, value.params?.sessionId);
-    if (value.method === 'initialize') return { jsonrpc: '2.0', id: value.id, result: { protocolVersion: 1, agentInfo: { name: 'remote', version: 'test' }, agentCapabilities: { loadSession: true } } };
+    if (value.method === 'initialize') {
+      const agentCapabilities = { loadSession: true };
+      if (resume) agentCapabilities.sessionCapabilities = { resume: {} };
+      return { jsonrpc: '2.0', id: value.id, result: { protocolVersion: 1, agentInfo: { name: 'remote', version: 'test' }, agentCapabilities } };
+    }
     if (value.method === 'session/new') result({ sessionId: 'remote-session' });
-    if (value.method === 'session/load') send({ jsonrpc: '2.0', id: value.id, result: {} });
+    if (value.method === 'session/load' || value.method === 'session/resume') send({ jsonrpc: '2.0', id: value.id, result: {} });
     if (value.method === 'session/prompt') {
       pending = value;
       send({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 'remote-session', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'remote text' } } } }, 'remote-session');
@@ -65,7 +69,7 @@ const fixture = async (t, transport) => {
       stream.setEncoding('utf8'); stream.on('data', (data) => { body += data; });
       stream.on('end', () => {
         const value = JSON.parse(body);
-        if (value.method === 'session/load') assert.equal(id, '');
+        if (value.method === 'session/load' || value.method === 'session/resume') assert.equal(id, '');
         else if (value.method?.startsWith('session/') && value.params?.sessionId) assert.equal(id, value.params.sessionId);
         if (value.id === 900) assert.equal(id, 'remote-session');
         const init = handle(value);
@@ -84,6 +88,20 @@ const fixture = async (t, transport) => {
 };
 
 for (const transport of ['websocket', 'http']) {
+  test(`${transport}: negotiated resume restores saved history at the connection setup boundary`, async (t) => {
+    const { runtime, calls, restart } = await fixture(t, transport, true);
+    const session = await runtime.createSession({ directory: process.cwd() });
+    await runtime.stop(); await restart();
+    await runtime.open(session.id);
+    const resume = calls.find((value) => value.method === 'session/resume');
+    assert.equal(resume.params.cwd, '/remote/project');
+    assert.equal(calls.some((value) => value.method === 'session/load'), false);
+    const asked = wait(runtime, (event) => event.type === 'permission-asked');
+    await runtime.prompt({ sessionID: session.id, messageID: 'after-resume', text: 'continue' });
+    const permission = await asked;
+    const done = wait(runtime, (event) => event.type === 'status' && event.outcome === 'completed');
+    await runtime.reply(permission.request.value.id, 'allow'); await done;
+  });
   test(`${transport}: remote initialize, cwd, streaming, permission, cancellation and owned disconnect`, async (t) => {
     const { runtime, calls, deleted, restart } = await fixture(t, transport);
     assert.equal(runtime.directory(), process.cwd());

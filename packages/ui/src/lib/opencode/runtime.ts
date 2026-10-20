@@ -54,14 +54,14 @@ export class OpenCodeRuntimeBinding {
     this.revision += 1;
   }
 
-  assert(generation: 'oc1' | 'oc2', operation: string): void {
+  assert(generation: 'oc1' | 'oc2' | 'acp', operation: string): void {
     if (!this.current) throw new OpenCodeRuntimeError('unknown', operation);
     if (this.current && this.current.generation !== generation) {
       throw new OpenCodeRuntimeError(this.current.generation, operation);
     }
   }
 
-  async run<T>(generation: 'oc1' | 'oc2', operation: string, fn: () => Promise<T>): Promise<T> {
+  async run<T>(generation: 'oc1' | 'oc2' | 'acp', operation: string, fn: () => Promise<T>): Promise<T> {
     this.assert(generation, operation);
     const revision = this.revision;
     const value = await fn();

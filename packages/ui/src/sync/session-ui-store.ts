@@ -164,7 +164,7 @@ export async function routeMessage(params: {
   }
 
   // Slash commands — fire and forget, SSE delivers messages and status
-  if (params.content.startsWith("/")) {
+  if (!opencodeClient.isAcp() && params.content.startsWith("/")) {
     const [head, ...tail] = params.content.split(" ")
     const cmdName = head.slice(1)
 

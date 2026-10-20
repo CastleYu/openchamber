@@ -1,0 +1,568 @@
+$ bunx knip@5.80.0 --no-exit-code --include files,exports,nsExports,types,nsTypes,enumMembers,duplicates
+Unused files (6)
+.tmp-provider-edit.cjs
+.tmp-provider-edit2.cjs
+.tmp-provider-test.cjs
+.tmp-tail.cjs
+oxlint.config.ts
+packages/ui/src/components/views/ImagePreview.tsx
+Unused exports (320)
+CHANGELOG_INDEX_URL                                  packages/web/server/lib/changelog/update-notes.js:13:14
+openCodeCredentialSource                             packages/vscode/src/opencodeAuth.ts:20:14
+configureOpenCodeCredentials                         packages/vscode/src/opencodeAuth.ts:35:14
+permissionModeSchema                                 packages/ui/src/stores/utils/permissionAutoAccept.ts:8:14
+getConfigDirectory                                   packages/ui/src/stores/useAgentsStore.ts:57:14
+DEFAULT_LARGE_TEXT_PASTE_BEHAV…                      packages/ui/src/stores/useUIStore.ts:49:14
+normalizeLargeTextPasteBehavior                      packages/ui/src/stores/useUIStore.ts:51:14
+MINIMUM_OPENCODE_V2_VERSION                          packages/web/server/lib/opencode/compatibility.js:11:14
+readAuthFile                                         packages/vscode/src/opencodeAuthV2.ts:194:14
+getProviderAuth                                      packages/vscode/src/opencodeAuthV2.ts:199:14
+validateCustomProviderConfig     v2Config            packages/vscode/src/opencodeConfigV2.ts:2229:14
+BUILT_IN_SKILL_LOCATION          v2Config            packages/vscode/src/opencodeConfigV2.ts:2536:14
+CHATS_SCOPE_PUBLIC_ID                                packages/web/server/lib/scheduled-tasks/chats-scope.js:9:14
+readOpenCodeKeys                                     packages/web/server/lib/routing/runtime.js:29:14
+inheritedServiceEnv                                  packages/web/server/lib/guests/service.js:497:14
+getCommitSummaries                         function  packages/web/server/lib/git/service.js:1261:23
+computeIntegratePlan                       function  packages/web/server/lib/git/service.js:1372:23
+getIntegrateConflictDetails                function  packages/web/server/lib/git/service.js:1426:23
+isCherryPickInProgress                     function  packages/web/server/lib/git/service.js:1445:23
+integrateWorktreeCommits                   function  packages/web/server/lib/git/service.js:1496:23
+abortIntegrate                             function  packages/web/server/lib/git/service.js:1559:23
+continueIntegrate                          function  packages/web/server/lib/git/service.js:1566:23
+getCurrentIdentity                         function  packages/web/server/lib/git/service.js:2210:23
+hasLocalIdentity                           function  packages/web/server/lib/git/service.js:2242:23
+collectDiffs                               function  packages/web/server/lib/git/service.js:3589:23
+pull                                       function  packages/web/server/lib/git/service.js:3604:23
+listStashes                                function  packages/web/server/lib/git/service.js:3641:23
+countStashFiles                            function  packages/web/server/lib/git/service.js:3655:23
+stashPush                                  function  packages/web/server/lib/git/service.js:3678:23
+stashApply                                 function  packages/web/server/lib/git/service.js:3692:23
+stashDrop                                  function  packages/web/server/lib/git/service.js:3704:23
+stashPop                                   function  packages/web/server/lib/git/service.js:3711:23
+deleteRemoteBranch                         function  packages/web/server/lib/git/service.js:3854:23
+fetch                                      function  packages/web/server/lib/git/service.js:3875:23
+stageFile                                  function  packages/web/server/lib/git/service.js:3901:23
+unstageFile                                function  packages/web/server/lib/git/service.js:3949:23
+commit                                     function  packages/web/server/lib/git/service.js:3977:23
+createBranch                               function  packages/web/server/lib/git/service.js:4267:23
+previewWorktreeCreate                      function  packages/web/server/lib/git/service.js:4808:23
+deleteBranch                               function  packages/web/server/lib/git/service.js:5282:23
+isLinkedWorktree                           function  packages/web/server/lib/git/service.js:5497:23
+validateWorktreeDirectory                  function  packages/web/server/lib/git/service.js:5511:23
+canonicalizeWorktreeState                  function  packages/web/server/lib/git/service.js:5547:23
+renameBranch                               function  packages/web/server/lib/git/service.js:5708:23
+removeRemote                               function  packages/web/server/lib/git/service.js:5775:23
+rebase                                     function  packages/web/server/lib/git/service.js:5795:23
+abortRebase                                function  packages/web/server/lib/git/service.js:5831:23
+merge                                      function  packages/web/server/lib/git/service.js:5843:23
+abortMerge                                 function  packages/web/server/lib/git/service.js:5879:23
+continueRebase                             function  packages/web/server/lib/git/service.js:5891:23
+continueMerge                              function  packages/web/server/lib/git/service.js:5931:23
+getConflictDetails                         function  packages/web/server/lib/git/service.js:5976:23
+getCommitFileDiff                          function  packages/web/server/lib/git/service.js:6036:23
+GH_CLI_ACCOUNT_ID                                    packages/web/server/lib/github/auth.js:15:14
+getGitHubAuthAccounts                      function  packages/web/server/lib/github/auth.js:203:17
+activateGitHubAuth                         function  packages/web/server/lib/github/auth.js:260:17
+clearGitHubAuth                            function  packages/web/server/lib/github/auth.js:277:17
+getGitHubClientId                          function  packages/web/server/lib/github/auth.js:301:17
+getGitHubScopes                            function  packages/web/server/lib/github/auth.js:319:17
+GITHUB_AUTH_FILE                                     packages/web/server/lib/github/auth.js:337:14
+setGhCliActive                             function  packages/web/server/lib/github/auth.js:357:17
+PENDING_AUTHORIZATION_TTL_MS                         packages/web/server/lib/guests/oauth.js:13:14
+usableClientCredentials                              packages/web/server/lib/guests/oauth.js:265:14
+platformSocketCandidates                             packages/web/server/lib/guests/sockets.js:26:14
+LinearMappingError                         class     packages/web/server/lib/linear/mapping.js:6:14
+LINEAR_AUTHORIZE_URL                                 packages/web/server/lib/linear/oauth.js:11:14
+LINEAR_TOKEN_URL                                     packages/web/server/lib/linear/oauth.js:12:14
+LINEAR_REVOKE_URL                                    packages/web/server/lib/linear/oauth.js:13:14
+PENDING_AUTHORIZATION_TTL_MS                         packages/web/server/lib/linear/oauth.js:14:14
+LinearOAuthError                           class     packages/web/server/lib/linear/oauth.js:19:14
+createPkcePair                             function  packages/web/server/lib/linear/oauth.js:27:17
+LinearSessionStatusError                   class     packages/web/server/lib/linear/status.js:10:14
+sourceOwnedLinksPatch                                …ages/web/server/lib/openchamber-sessions/fork-inheritance.js:18:14
+isValidObjectiveKey                                  packages/web/server/lib/session-goal/objectives.js:29:14
+listProviderAuths                                    packages/web/server/lib/opencode/auth-v2-legacy.js:78:3
+AUTH_FILE                                            packages/web/server/lib/opencode/auth-v2-legacy.js:79:3
+OPENCODE_DATA_DIR                                    packages/web/server/lib/opencode/auth-v2-legacy.js:80:3
+SKILL_DIR                                            packages/web/server/lib/opencode/shared-v2.js:723:3
+SKILL_SCOPE                                          packages/web/server/lib/opencode/shared-v2.js:727:3
+lookupSectionEntry                                   packages/web/server/lib/opencode/shared-v2.js:738:3
+walkSkillMdFiles                                     packages/web/server/lib/opencode/shared-v2.js:746:3
+addSkillFromMdFile                                   packages/web/server/lib/opencode/shared-v2.js:747:3
+resolveSkillSearchDirectories                        packages/web/server/lib/opencode/shared-v2.js:748:3
+listSkillSupportingFiles                             packages/web/server/lib/opencode/shared-v2.js:749:3
+readSkillSupportingFile                              packages/web/server/lib/opencode/shared-v2.js:750:3
+writeSkillSupportingFile                             packages/web/server/lib/opencode/shared-v2.js:751:3
+deleteSkillSupportingFile                            packages/web/server/lib/opencode/shared-v2.js:752:3
+parsePluginRaw                                       packages/web/server/lib/opencode/plugins.js:400:3
+serializePluginEntry                                 packages/web/server/lib/opencode/plugins.js:401:3
+createLegacyProviderCaller                           packages/web/server/lib/opencode/legacy-provider-http.js:139:10
+encodePluginId                   plugins…            packages/web/server/lib/opencode/plugins-v2.js:449:3
+decodePluginId                   plugins…            packages/web/server/lib/opencode/plugins-v2.js:450:3
+parsePluginRaw                   plugins…            packages/web/server/lib/opencode/plugins-v2.js:451:3
+serializePluginEntry             plugins…            packages/web/server/lib/opencode/plugins-v2.js:452:3
+RELAY_HKDF_INFO                                      packages/web/server/lib/relay/e2ee.js:12:14
+ENCRYPTED_FRAME_VERSION                              packages/web/server/lib/relay/e2ee.js:15:14
+ENCRYPTED_FRAME_IV_BYTES                             packages/web/server/lib/relay/e2ee.js:16:14
+ENCRYPTED_FRAME_HEADER_BYTES                         packages/web/server/lib/relay/e2ee.js:17:14
+RelayCryptoError                           class     packages/web/server/lib/relay/e2ee.js:34:14
+importEcdhPublicKey                                  packages/web/server/lib/relay/e2ee.js:54:14
+publicKeyJwkFingerprint                              packages/web/server/lib/relay/e2ee.js:82:14
+TUNNEL_FRAME_HEADER_BYTES                            packages/web/server/lib/relay/tunnel-codec.js:11:14
+TUNNEL_FRAGMENT_FLAG                                 packages/web/server/lib/relay/tunnel-codec.js:12:14
+BATCH_CONTAINER_TAG_SINGLE                           packages/web/server/lib/relay/tunnel-codec.js:17:14
+BATCH_CONTAINER_TAG_BATCH                            packages/web/server/lib/relay/tunnel-codec.js:18:14
+BATCH_FRAME_LENGTH_BYTES                             packages/web/server/lib/relay/tunnel-codec.js:19:14
+BATCH_ENVELOPE_RESERVED_BYTES                        packages/web/server/lib/relay/tunnel-codec.js:20:14
+isTunnelFrameType                                    packages/web/server/lib/relay/tunnel-codec.js:43:14
+DEFAULT_BATCH_WINDOW_MS                              packages/web/server/lib/relay/tunnel-codec.js:298:14
+DEFAULT_BATCH_MAX_BYTES                              packages/web/server/lib/relay/tunnel-codec.js:299:14
+DEFAULT_BATCH_MAX_FRAMES                             packages/web/server/lib/relay/tunnel-codec.js:300:14
+DEFAULT_BATCH_MAX_BYTES                              packages/ui/src/lib/relay/tunnel-codec.ts:269:14
+DEFAULT_BATCH_MAX_FRAMES                             packages/ui/src/lib/relay/tunnel-codec.ts:270:14
+BATCH_ENVELOPE_RESERVED_BYTES                        packages/ui/src/lib/relay/protocol.ts:33:14
+TTS_VOICES                                           packages/web/server/lib/tts/service.js:13:14
+ttsService                                           packages/web/server/lib/tts/service.js:179:14
+getRepositoryRootFor                       function  packages/web/server/lib/walkthrough/index.js:140:23
+WalkthroughSourceError                               packages/web/server/lib/walkthrough/index.js:604:10
+parseGitHubRemoteUrl                                 packages/web/server/lib/github/repo/index.js:3:14
+aliases                          clinePa…            packages/web/server/lib/quota/providers/cline-pass.js:15:14
+aliases                          exeDev              packages/web/server/lib/quota/providers/exe-dev.js:6:14
+aliases                          hyper               packages/web/server/lib/quota/providers/hyper.js:15:14
+aliases                          google              packages/web/server/lib/quota/providers/google/index.js:19:14
+fetchClaudeQuota                                     packages/web/server/lib/quota/providers/index.js:236:14
+fetchOpenaiQuota                                     packages/web/server/lib/quota/providers/index.js:237:14
+fetchGoogleQuota                                     packages/web/server/lib/quota/providers/index.js:238:14
+fetchCodexQuota                                      packages/web/server/lib/quota/providers/index.js:239:14
+fetchCursorQuota                                     packages/web/server/lib/quota/providers/index.js:240:14
+fetchDeepseekQuota                                   packages/web/server/lib/quota/providers/index.js:241:14
+fetchHyperQuota                                      packages/web/server/lib/quota/providers/index.js:242:14
+fetchCopilotQuota                                    packages/web/server/lib/quota/providers/index.js:243:14
+fetchCopilotAddonQuota                               packages/web/server/lib/quota/providers/index.js:244:14
+fetchKimiQuota                                       packages/web/server/lib/quota/providers/index.js:245:14
+fetchOpenRouterQuota                                 packages/web/server/lib/quota/providers/index.js:246:14
+fetchZaiQuota                                        packages/web/server/lib/quota/providers/index.js:247:14
+fetchNanoGptQuota                                    packages/web/server/lib/quota/providers/index.js:249:14
+fetchMinimaxCodingPlanQuota                          packages/web/server/lib/quota/providers/index.js:250:14
+fetchMinimaxCnCodingPlanQuota                        packages/web/server/lib/quota/providers/index.js:251:14
+fetchOllamaCloudQuota                                packages/web/server/lib/quota/providers/index.js:252:14
+fetchWaferQuota                                      packages/web/server/lib/quota/providers/index.js:253:14
+fetchZhipuaiQuota                                    packages/web/server/lib/quota/providers/index.js:254:14
+aliases                          kimi                packages/web/server/lib/quota/providers/kimi.js:16:14
+aliases                          opencod…            packages/web/server/lib/quota/providers/opencode-go.js:7:14
+aliases                          openrou…            packages/web/server/lib/quota/providers/openrouter.js:17:14
+aliases                          claude              packages/web/server/lib/quota/providers/claude/index.js:19:14
+openDesktopFileInApp                                 packages/ui/src/lib/desktop.ts:779:14
+loadProfiles                               function  packages/web/server/lib/git/identity-storage.js:14:17
+saveProfiles                               function  packages/web/server/lib/git/identity-storage.js:31:17
+createProfile                              function  packages/web/server/lib/git/identity-storage.js:53:17
+updateProfile                              function  packages/web/server/lib/git/identity-storage.js:84:17
+deleteProfile                              function  packages/web/server/lib/git/identity-storage.js:102:17
+startDeviceFlow                            function  packages/web/server/lib/github/device-flow.js:35:23
+exchangeDeviceCode                         function  packages/web/server/lib/github/device-flow.js:42:23
+getGitHubAuth                                        packages/web/server/lib/github/index.js:2:3
+getGitHubAuthAccounts                                packages/web/server/lib/github/index.js:3:3
+setGitHubAuth                                        packages/web/server/lib/github/index.js:4:3
+activateGitHubAuth                                   packages/web/server/lib/github/index.js:5:3
+clearGitHubAuth                                      packages/web/server/lib/github/index.js:6:3
+getGitHubClientId                                    packages/web/server/lib/github/index.js:7:3
+getGitHubScopes                                      packages/web/server/lib/github/index.js:8:3
+GH_CLI_ACCOUNT_ID                                    packages/web/server/lib/github/index.js:9:3
+isGhCliDisabled                                      packages/web/server/lib/github/index.js:10:3
+isGhCliActive                                        packages/web/server/lib/github/index.js:11:3
+setGhCliActive                                       packages/web/server/lib/github/index.js:12:3
+setGhCliDisabled                                     packages/web/server/lib/github/index.js:13:3
+GITHUB_AUTH_FILE                                     packages/web/server/lib/github/index.js:14:3
+startDeviceFlow                                      packages/web/server/lib/github/index.js:18:3
+exchangeDeviceCode                                   packages/web/server/lib/github/index.js:19:3
+getOctokitOrNull                                     packages/web/server/lib/github/index.js:23:3
+createOctokit                                        packages/web/server/lib/github/index.js:24:3
+parseGitHubRemoteUrl                                 packages/web/server/lib/github/index.js:28:3
+getLinearAuthByWorkspaceId                           packages/web/server/lib/linear/index.js:3:3
+getLinearAuthWorkspaces                              packages/web/server/lib/linear/index.js:4:3
+setLinearAuth                                        packages/web/server/lib/linear/index.js:5:3
+activateLinearAuth                                   packages/web/server/lib/linear/index.js:6:3
+toLinearPublicStatus                                 packages/web/server/lib/linear/index.js:8:3
+getLinearClientId                                    packages/web/server/lib/linear/index.js:9:3
+getLinearClientSecret                                packages/web/server/lib/linear/index.js:10:3
+getLinearScopes                                      packages/web/server/lib/linear/index.js:11:3
+getLinearBrokerUrl                                   packages/web/server/lib/linear/index.js:12:3
+getLinearRedirectUri                                 packages/web/server/lib/linear/index.js:13:3
+isLinearAccessTokenStale                             packages/web/server/lib/linear/index.js:14:3
+getLinearAuthFilePath                                packages/web/server/lib/linear/index.js:15:3
+getLinearSessionCommentsEnabled                      packages/web/server/lib/linear/index.js:16:3
+setLinearSessionCommentsEnabled                      packages/web/server/lib/linear/index.js:17:3
+DEFAULT_LINEAR_CLIENT_ID_VALUE                       packages/web/server/lib/linear/index.js:18:3
+consumeAuthorizationCallback                         packages/web/server/lib/linear/index.js:23:3
+pollAuthorizationBroker                              packages/web/server/lib/linear/index.js:24:3
+completeAuthorizationBroker                          packages/web/server/lib/linear/index.js:25:3
+refreshAccessToken                                   packages/web/server/lib/linear/index.js:26:3
+LinearOAuthError                                     packages/web/server/lib/linear/index.js:28:3
+fetchLinearIdentity                                  packages/web/server/lib/linear/index.js:32:3
+LinearApiError                                       packages/web/server/lib/linear/index.js:34:3
+listLinearIssues                                     packages/web/server/lib/linear/index.js:38:3
+getLinearIssue                                       packages/web/server/lib/linear/index.js:39:3
+listLinearIssueStates                                packages/web/server/lib/linear/index.js:40:3
+updateLinearIssue                                    packages/web/server/lib/linear/index.js:41:3
+listLinearTeams                                      packages/web/server/lib/linear/index.js:45:3
+LinearMappingError                                   packages/web/server/lib/linear/index.js:49:3
+getLinearMappingFilePath                             packages/web/server/lib/linear/index.js:50:3
+mergeLinearMappingView                               packages/web/server/lib/linear/index.js:51:3
+readStoredLinearMapping                              packages/web/server/lib/linear/index.js:52:3
+resolveMappedProjectPath                             packages/web/server/lib/linear/index.js:53:3
+setStoredLinearMapping                               packages/web/server/lib/linear/index.js:54:3
+LinearSessionStatusError                             packages/web/server/lib/linear/index.js:58:3
+isPublicSessionOrigin                                packages/web/server/lib/linear/index.js:59:3
+postLinearSessionStatus                              packages/web/server/lib/linear/index.js:60:3
+LinearApiError                             class     packages/web/server/lib/linear/client.js:17:14
+fetchLinearIdentity                        function  packages/web/server/lib/linear/client.js:133:23
+listConfiguredQuotaProviders                         packages/web/server/lib/quota/index.js:9:3
+fetchQuotaForProvider                                packages/web/server/lib/quota/index.js:10:3
+fetchClaudeQuota                                     packages/web/server/lib/quota/index.js:11:3
+fetchOpenaiQuota                                     packages/web/server/lib/quota/index.js:12:3
+fetchGoogleQuota                                     packages/web/server/lib/quota/index.js:13:3
+fetchCodexQuota                                      packages/web/server/lib/quota/index.js:14:3
+fetchCursorQuota                                     packages/web/server/lib/quota/index.js:15:3
+fetchDeepseekQuota                                   packages/web/server/lib/quota/index.js:16:3
+fetchHyperQuota                                      packages/web/server/lib/quota/index.js:17:3
+fetchCopilotQuota                                    packages/web/server/lib/quota/index.js:18:3
+fetchCopilotAddonQuota                               packages/web/server/lib/quota/index.js:19:3
+fetchKimiQuota                                       packages/web/server/lib/quota/index.js:20:3
+fetchOpenRouterQuota                                 packages/web/server/lib/quota/index.js:21:3
+fetchZaiQuota                                        packages/web/server/lib/quota/index.js:22:3
+fetchNanoGptQuota                                    packages/web/server/lib/quota/index.js:23:3
+fetchMinimaxCodingPlanQuota                          packages/web/server/lib/quota/index.js:24:3
+fetchMinimaxCnCodingPlanQuota                        packages/web/server/lib/quota/index.js:25:3
+fetchOllamaCloudQuota                                packages/web/server/lib/quota/index.js:26:3
+fetchZhipuaiQuota                                    packages/web/server/lib/quota/index.js:27:3
+fetchWaferQuota                                      packages/web/server/lib/quota/index.js:28:3
+MODELS_DEV_API_URL                                   packages/web/server/lib/opencode/models-metadata.js:61:10
+ttsService                                           packages/web/server/lib/tts/index.js:8:3
+TTSService                                           packages/web/server/lib/tts/index.js:9:3
+TTS_VOICES                                           packages/web/server/lib/tts/index.js:10:3
+summarizeText                                        packages/web/server/lib/tts/index.js:14:3
+sanitizeForTTS                                       packages/web/server/lib/tts/index.js:15:3
+sanitizeForNote                                      packages/web/server/lib/tts/index.js:16:3
+transcribeAudio                                      packages/web/server/lib/tts/index.js:19:10
+FINAL_TOOL_STATUSES                                  packages/ui/src/lib/opencode/model.ts:499:14
+ACTIVE_TOOL_STATUSES                                 packages/ui/src/lib/opencode/model.ts:500:14
+hasParts                                             packages/ui/src/lib/opencode/model.ts:505:14
+isConversationRole                                   packages/ui/src/lib/opencode/model.ts:508:14
+getSyncConfig                              function  packages/ui/src/sync/sync-refs.ts:110:17
+subscribeToSyncConfigChanges               function  packages/ui/src/sync/sync-refs.ts:129:17
+isFollowUpBehavior                                   packages/ui/src/stores/messageQueueStore.ts:20:14
+normalizeFollowUpBehavior                            packages/ui/src/stores/messageQueueStore.ts:24:14
+getGitDiff                       git       function  packages/ui/src/lib/gitApi.ts:111:23
+getGitFileDiff                   git       function  packages/ui/src/lib/gitApi.ts:117:23
+revertGitFile                    git       function  packages/ui/src/lib/gitApi.ts:153:23
+stageGitHunk                     git       function  packages/ui/src/lib/gitApi.ts:187:23
+unstageGitHunk                   git       function  packages/ui/src/lib/gitApi.ts:193:23
+revertGitHunk                    git       function  packages/ui/src/lib/gitApi.ts:199:23
+isLinkedWorktree                 git       function  packages/ui/src/lib/gitApi.ts:205:23
+deleteGitBranch                  git       function  packages/ui/src/lib/gitApi.ts:223:23
+listGitWorktrees                 git       function  packages/ui/src/lib/gitApi.ts:783:23
+validateGitWorktree              git       function  packages/ui/src/lib/gitApi.ts:792:23
+previewGitWorktree               git       function  packages/ui/src/lib/gitApi.ts:819:23
+createGitWorktree                git       function  packages/ui/src/lib/gitApi.ts:833:23
+deleteGitWorktree                git       function  packages/ui/src/lib/gitApi.ts:847:23
+createGitCommit                  git       function  packages/ui/src/lib/gitApi.ts:882:23
+gitPush                          git       function  packages/ui/src/lib/gitApi.ts:892:23
+gitPull                          git       function  packages/ui/src/lib/gitApi.ts:901:23
+gitFetch                         git       function  packages/ui/src/lib/gitApi.ts:910:23
+checkoutBranch                   git       function  packages/ui/src/lib/gitApi.ts:955:23
+renameBranch                     git       function  packages/ui/src/lib/gitApi.ts:971:23
+getGitLog                        git       function  packages/ui/src/lib/gitApi.ts:981:23
+getCurrentGitIdentity            git       function  packages/ui/src/lib/gitApi.ts:1043:23
+hasLocalIdentity                 git       function  packages/ui/src/lib/gitApi.ts:1049:23
+setGitIdentity                   git       function  packages/ui/src/lib/gitApi.ts:1055:23
+getRemoteUrl                     git       function  packages/ui/src/lib/gitApi.ts:1076:23
+getRemotes                       git       function  packages/ui/src/lib/gitApi.ts:1082:23
+removeRemote                     git       function  packages/ui/src/lib/gitApi.ts:1088:23
+abortRebase                      git       function  packages/ui/src/lib/gitApi.ts:1106:23
+abortMerge                       git       function  packages/ui/src/lib/gitApi.ts:1159:23
+continueRebase                   git       function  packages/ui/src/lib/gitApi.ts:1165:23
+continueMerge                    git       function  packages/ui/src/lib/gitApi.ts:1171:23
+stash                            git       function  packages/ui/src/lib/gitApi.ts:1177:23
+stashPop                         git       function  packages/ui/src/lib/gitApi.ts:1186:23
+validateWorktreeDirectory        git       function  packages/ui/src/lib/gitApi.ts:1198:23
+canonicalizeWorktreeState        git       function  packages/ui/src/lib/gitApi.ts:1214:23
+occupancyDirectoryKey                                packages/ui/src/lib/performance/occupancyPolicy.ts:60:14
+getOccupancyPolicy                                   packages/ui/src/lib/performance/occupancyPolicy.ts:130:14
+useSessionParts                            function  packages/ui/src/sync/sync-context.tsx:3260:17
+useSessionMessageCount                     function  packages/ui/src/sync/sync-context.tsx:3854:17
+useSessionTurnActive                                 packages/ui/src/sync/global-session-status.ts:115:14
+SimpleMarkdownRenderer                               packages/ui/src/components/chat/MarkdownRendererImpl.tsx:1420:14
+UNANSWERED_RECHECK_DELAYS_MS                         packages/ui/src/components/chat/sessionErrorNoticeState.ts:43:14
+shouldInlineDiffs                                    packages/ui/src/lib/multirun/fusion.ts:6:63
+groupModelsByFamily                        function  packages/ui/src/lib/quota/model-families.ts:68:17
+NO_CONTEXT_WINDOW_LIMITS                             packages/ui/src/lib/routing/contextWindowLimits.ts:7:14
+spaceOfCreationRequest                               packages/ui/src/lib/spaces/space-creation.ts:43:14
+LEGACY_ACTIONS                                       …/ui/src/components/sections/agents/agentPermissionModelV2.ts:52:14
+isLegacyAction                                       …/ui/src/components/sections/agents/agentPermissionModelV2.ts:66:14
+OPENCODE_DEFAULT_RULES                               …/ui/src/components/sections/agents/agentPermissionModelV2.ts:73:14
+customVariantOverlay                       function  …rc/components/sections/providers/custom-provider-form-v2.ts:187:17
+parseVariantIDs                            function  …rc/components/sections/providers/custom-provider-form-v2.ts:200:17
+EMPTY_CANVAS_READ                                    packages/ui/src/components/views/files/fileCanvas.ts:27:14
+stripTaskMetadataFromOutput                          …kages/ui/src/components/chat/message/parts/taskToolModel.ts:161:14
+requestsInFlightEnabled                              packages/ui/src/stores/utils/requestsInFlight.ts:68:14
+workerFactory                              function  packages/ui/src/lib/diff/workerFactory.ts:3:17
+TIMELINE_REVEAL_CAP_MS                               packages/ui/src/components/chat/timelineRevealGate.ts:30:14
+ChatErrorBoundaryView                      class     packages/ui/src/components/chat/ChatErrorBoundary.tsx:31:14
+GuestRailIcon                                        packages/ui/src/components/layout/GuestRailIcon.tsx:19:14
+MarkdownImageGallery                                 packages/ui/src/components/chat/MarkdownRenderer.tsx:71:14
+stripDirectoryGlob                                   packages/ui/src/components/chat/permissionSummary.ts:47:14
+describeSavePatterns                                 packages/ui/src/components/chat/permissionSummary.ts:115:14
+DiffIcon                                   function  packages/ui/src/components/icons/DiffIcon.tsx:22:17
+shouldInlineDiffs                                    packages/ui/src/lib/multirun/fusionV2.ts:61:14
+toolOutputText                             function  packages/ui/src/lib/opencode/projection.ts:93:17
+toolAttachments                            function  packages/ui/src/lib/opencode/projection.ts:101:17
+structuredErrorText                        function  packages/ui/src/lib/opencode/projection.ts:121:17
+projectToolPart                            function  packages/ui/src/lib/opencode/projection.ts:130:17
+projectAssistantContent                    function  packages/ui/src/lib/opencode/projection.ts:193:17
+projectUserParts                           function  packages/ui/src/lib/opencode/projection.ts:270:17
+projectMessage                             function  packages/ui/src/lib/opencode/projection.ts:319:17
+renderNativeMermaid                                  packages/ui/src/components/chat/markdown/diagramEngines.ts:122:14
+renderPlantUml                                       packages/ui/src/components/chat/markdown/diagramEngines.ts:126:14
+getComposerHostHeightLimit                 function  …ckages/ui/src/components/chat/composer/editor/heightLimit.ts:45:17
+resolveMissingProjectSessionSe…            function  …nents/session/sidebar/projects/useProjectSessionSelection.ts:42:17
+useProjectSessionSelection                           …nents/session/sidebar/projects/useProjectSessionSelection.ts:90:14
+formatArtifactDuration                               …kages/ui/src/components/views/files/previews/artifactMeta.ts:16:14
+Unused exported types (231)
+SettingsScope                            type       packages/ui/src/lib/settings/registry.ts:83:13
+SettingsSiblingView                      type       packages/ui/src/lib/settings/registry.ts:91:13
+SettingsUiBinding                        type       packages/ui/src/lib/settings/registry.ts:102:13
+SettingsFieldSpec                        type       packages/ui/src/lib/settings/registry.ts:109:13
+SettingsKey                              type       packages/ui/src/lib/settings/registry.ts:594:13
+SettingsRegistrySnapshotField            type       packages/ui/src/lib/settings/registry.ts:746:13
+SettingsRegistrySnapshot                 type       packages/ui/src/lib/settings/registry.ts:760:13
+AuthEntry                                type       packages/vscode/src/opencodeAuth.ts:47:13
+FetchPermissionResult                    type       packages/ui/src/lib/opencode/client.ts:42:13
+ViewportAnchor                           type       packages/ui/src/sync/session-ui-store.ts:370:13
+SessionHistoryMeta                       type       packages/ui/src/sync/session-ui-store.ts:375:13
+SettingsWriteResult                      type       packages/ui/src/lib/persistence.ts:299:13
+MermaidRenderingMode                     type       packages/ui/src/stores/useUIStore.ts:36:13
+UserMessageRenderingMode                 type       packages/ui/src/stores/useUIStore.ts:37:13
+ChatRenderMode                           type       packages/ui/src/stores/useUIStore.ts:38:13
+ActivityRenderMode                       type       packages/ui/src/stores/useUIStore.ts:39:13
+WeekStartPreference                      type       packages/ui/src/stores/useUIStore.ts:42:13
+DesktopWindowControlsPosition            type       packages/ui/src/stores/useUIStore.ts:43:13
+DesktopWindowControlsStyle               type       packages/ui/src/stores/useUIStore.ts:44:13
+EventStreamStatus                        type       packages/ui/src/stores/useUIStore.ts:186:13
+SessionMetadata                          type       packages/vscode/src/openchamberSessionState.ts:10:13
+AuthEntry                                type       packages/vscode/src/opencodeAuthV2.ts:32:13
+AuthFile                                 type       packages/vscode/src/opencodeAuthV2.ts:33:13
+Snippet                         v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:84:13
+PluginScope                     v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:93:13
+PluginEntry                     v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:96:13
+PluginFile                      v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:107:13
+PluginRegistryResult            v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:115:13
+ConfigSources                   v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:125:13
+McpConfigEntry                  v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:1365:13
+SkillConfigSources              v2Conf…  type       packages/vscode/src/opencodeConfigV2.ts:2509:13
+ProviderResult                           type       packages/vscode/src/quotaProviders.ts:203:13
+ManagedCredential                        type       packages/vscode/src/quotaCredentials.ts:9:13
+RuntimeAuthCredentialProvider            type       packages/ui/src/lib/runtime-auth.ts:8:13
+RuntimeUrlConfig                         interface  packages/ui/src/lib/runtime-url.ts:7:18
+ClientHandshake                          interface  packages/ui/src/lib/relay/handshake.ts:91:18
+ClientHandshakeOptions                   interface  packages/ui/src/lib/relay/handshake.ts:99:18
+HostHandshake                            interface  packages/ui/src/lib/relay/handshake.ts:160:18
+HostHandshakeOptions                     interface  packages/ui/src/lib/relay/handshake.ts:166:18
+OutboundFrameBatcherOptions              interface  packages/ui/src/lib/relay/tunnel-codec.ts:272:18
+RelayTunnelClientOptions                 interface  packages/ui/src/lib/relay/tunnel-client.ts:152:18
+WebAPIsOptions                           interface  packages/web/src/api/index.ts:23:18
+EmbeddedSessionChatThemeBoots…           type       packages/ui/src/components/layout/contextPanelEmbeddedChat.ts:4:13
+EmbeddedSessionChatSettingsBo…           type       packages/ui/src/components/layout/contextPanelEmbeddedChat.ts:11:13
+FetchDesktopInstalledAppsResu…           type       packages/ui/src/lib/desktop.ts:814:13
+DebugMessageInfo                         interface  packages/ui/src/lib/debug.ts:23:18
+MobileConnectionMode                     type       packages/ui/src/apps/mobileConnections.ts:91:13
+MobileTransportCandidate                 type       packages/ui/src/apps/mobileConnections.ts:107:13
+MobileSavedConnection                    type       packages/ui/src/apps/mobileConnections.ts:111:13
+MobilePendingConnection                  type       packages/ui/src/apps/mobileConnections.ts:122:13
+MobileConnectInput                       type       packages/ui/src/apps/mobileConnections.ts:133:13
+ReprobeOutcome                           type       packages/ui/src/apps/mobileConnections.ts:1188:13
+UseMobileConnection                      type       packages/ui/src/apps/mobileConnections.ts:1378:13
+PairingDirectCandidate                   type       packages/ui/src/lib/connectionPayload.ts:11:13
+PairingRelayCandidate                    type       packages/ui/src/lib/connectionPayload.ts:17:13
+MobileConnectionPayload                  type       packages/ui/src/apps/mobileQrScan.ts:9:13
+MobilePairingPayload                     type       packages/ui/src/apps/mobileQrScan.ts:15:13
+QrScanResult                             type       packages/ui/src/apps/mobileQrScan.ts:19:13
+EdgeSwipeOptions                         interface  packages/ui/src/apps/useEdgeSwipe.ts:23:18
+PendingBlockingRequests                  type       packages/ui/src/sync/global-blocking-requests.ts:20:13
+ThemeSyncPayloadShape                    type       packages/ui/src/contexts/theme-sync-payload.ts:4:13
+ConfigSource                             type       packages/ui/src/lib/opencode/model.ts:73:13
+PermissionRuleset                        type       packages/ui/src/lib/opencode/model.ts:74:36
+TokenUsageInfo                           type       packages/ui/src/lib/opencode/model.ts:74:55
+LegacyMessageError                       type       packages/ui/src/lib/opencode/model.ts:183:13
+MessageErrorDescription                  type       packages/ui/src/lib/opencode/model.ts:202:13
+SystemMessage                            type       packages/ui/src/lib/opencode/model.ts:273:13
+SkillMessage                             type       packages/ui/src/lib/opencode/model.ts:280:13
+ShellMessage                             type       packages/ui/src/lib/opencode/model.ts:288:13
+AgentSwitchedMessage                     type       packages/ui/src/lib/opencode/model.ts:311:13
+ModelSwitchedMessage                     type       packages/ui/src/lib/opencode/model.ts:318:13
+LocationSwitchedMessage                  type       packages/ui/src/lib/opencode/model.ts:325:13
+IdleMessage                              type       packages/ui/src/lib/opencode/model.ts:333:13
+MessageRole                              type       packages/ui/src/lib/opencode/model.ts:352:13
+AgentPart                                type       packages/ui/src/lib/opencode/model.ts:396:13
+ToolStatePending                         type       packages/ui/src/lib/opencode/model.ts:405:13
+ToolStateRunning                         type       packages/ui/src/lib/opencode/model.ts:412:13
+ToolStateError                           type       packages/ui/src/lib/opencode/model.ts:431:13
+SubtaskPart                              type       packages/ui/src/lib/opencode/model.ts:455:13
+StepStartPart                            type       packages/ui/src/lib/opencode/model.ts:459:13
+StepFinishPart                           type       packages/ui/src/lib/opencode/model.ts:460:13
+SnapshotPart                             type       packages/ui/src/lib/opencode/model.ts:461:13
+PatchPart                                type       packages/ui/src/lib/opencode/model.ts:462:13
+RetryPart                                type       packages/ui/src/lib/opencode/model.ts:463:13
+CompactionPart                           type       packages/ui/src/lib/opencode/model.ts:464:13
+PartType                                 type       packages/ui/src/lib/opencode/model.ts:468:13
+PermissionRequest                        type       packages/ui/src/lib/opencode/model.ts:474:13
+PermissionReply                          type       packages/ui/src/lib/opencode/model.ts:475:13
+TerminalBuffer                           type       packages/ui/src/stores/useTerminalStore.ts:31:13
+DirectoryTerminalState                   type       packages/ui/src/stores/useTerminalStore.ts:69:13
+SelectionState                           type       packages/ui/src/sync/selection-store.ts:31:13
+ContextFileOpenFailureReason             type       packages/ui/src/lib/contextFileOpenGuard.ts:11:13
+ContextFileOpenValidationResu…           type       packages/ui/src/lib/contextFileOpenGuard.ts:13:13
+ContextFileOpenOptions                   type       packages/ui/src/lib/contextFileOpenGuard.ts:17:13
+DesktopHostsConfig                       type       packages/ui/src/lib/desktopHosts.ts:68:13
+DesktopHostsConfigInput                  type       packages/ui/src/lib/desktopHosts.ts:76:13
+DesktopHostUrlResolution                 type       packages/ui/src/lib/desktopHosts.ts:204:13
+SessionCreateRequest                     type       packages/ui/src/lib/sessionEvents.ts:13:13
+LinkedGitHubIssue                        type       packages/ui/src/lib/linkedIssues.ts:16:13
+LinkedLinearIssue                        type       packages/ui/src/lib/linkedIssues.ts:28:13
+ModelVariantSource                       type       packages/ui/src/lib/modelVariants.ts:4:13
+ProjectDisplayMode                       type       packages/ui/src/stores/useSessionDisplayStore.ts:127:15
+SidebarViewMode                          type       packages/ui/src/stores/useSessionDisplayStore.ts:127:53
+AnnouncementOptions                      type       packages/ui/src/lib/terminalPreview.ts:89:13
+InputAnswer                              type       packages/ui/src/lib/opencode/operations.ts:66:13
+McpFailureSource                         type       packages/ui/src/stores/useMcpStore.ts:17:15
+McpRuntimeDiagnostic                     type       packages/ui/src/stores/useMcpStore.ts:17:33
+McpRuntimeDiagnosticMap                  type       packages/ui/src/stores/useMcpStore.ts:17:55
+SkillDraft                               interface  packages/ui/src/stores/useSkillsStore.ts:142:18
+McpStatusMap                             type       packages/ui/src/stores/mcpDiagnostics.ts:3:13
+CommandDraft                             interface  packages/ui/src/stores/useCommandsStore.ts:179:18
+FilesViewTabsStore                       type       packages/ui/src/stores/useFilesViewTabsStore.ts:34:13
+McpServerConfig                          type       packages/ui/src/stores/useMcpConfigStore.ts:119:13
+PluginMutationResult                     type       packages/ui/src/stores/usePluginsStore.ts:43:13
+PluginRuntimeSnapshot                    type       packages/ui/src/stores/usePluginsStore.ts:62:13
+PluginsStore                             interface  packages/ui/src/stores/usePluginsStore.ts:69:18
+SessionPinnedTarget                      type       packages/ui/src/stores/useSessionPinnedStore.ts:9:13
+BuiltInContextSurfaceId                  type       packages/ui/src/lib/surfaces/registry.ts:8:13
+WalkthroughEntryStatus                   type       packages/ui/src/stores/useWalkthroughStore.ts:24:13
+WalkthroughEntry                         interface  packages/ui/src/stores/useWalkthroughStore.ts:26:18
+SessionTurnActivity                      type       packages/ui/src/sync/global-session-status.ts:103:13
+StreamingStore                           type       packages/ui/src/sync/streaming.ts:23:13
+SessionActivityIndicatorState            type       …ckages/ui/src/components/session/SessionActivityIndicator.tsx:13:13
+BrowserController                        type       packages/ui/src/lib/browser/controlClient.ts:35:13
+SleepingBrowserTab                       type       packages/ui/src/lib/browser/controlClient.ts:45:13
+BrowserOpener                            type       packages/ui/src/lib/browser/controlClient.ts:57:13
+DevServerCandidate                       type       packages/ui/src/lib/browser/devServers.ts:75:13
+DevServerWaitRun                         type       packages/ui/src/lib/browser/devServerWait.ts:91:13
+ViewportPreset                           type       packages/ui/src/lib/browser/viewport.ts:20:13
+ViewportLayout                           type       packages/ui/src/lib/browser/viewport.ts:67:13
+BrowserViewportMode                      type       packages/ui/src/lib/browser/viewport.ts:111:13
+GuestSessionSource                       type       packages/ui/src/lib/guests/host-bridge.ts:159:13
+InstallGuestOptions                      type       packages/ui/src/lib/guests/install.ts:105:13
+TerminalContext                          type       packages/ui/src/lib/messages/terminalContext.ts:1:13
+ParsedTerminalContext                    type       packages/ui/src/lib/messages/terminalContext.ts:9:13
+FusionMode                               type       packages/ui/src/lib/multirun/fusion.ts:7:28
+ParsedMultiRunTitle                      type       packages/ui/src/lib/multirun/title.ts:1:13
+PendingOpenCodeRestartChange             type       packages/ui/src/stores/usePendingOpenCodeRestartStore.ts:14:13
+SessionKeys                              interface  packages/ui/src/lib/relay/crypto.ts:67:18
+ShikiThemeRegistrationResolve…           type       packages/ui/src/lib/shiki/appThemeRegistry.ts:7:13
+TemplateCallGrammar                      type       packages/ui/src/lib/shiki/sanitizeTemplateCallGrammar.ts:19:13
+WorktreeSourceBranchPreferenc…           interface  packages/ui/src/lib/worktrees/worktreeSourceBranchPreference.ts:3:18
+WorktreeSourceBranchPreferenc…           interface  packages/ui/src/lib/worktrees/worktreeSourceBranchPreference.ts:9:18
+WorktreeSourceBranchPersistAr…           interface  …ckages/ui/src/lib/worktrees/worktreeSourceBranchPreference.ts:14:18
+PermissionAutoAcceptToggleArgs           type       packages/ui/src/components/chat/permissionAutoAccept.ts:1:13
+RenderedBlock                            type       packages/ui/src/components/chat/markdown/markdownCore.ts:1042:13
+ParsedReadToolOutput                     interface  packages/ui/src/components/chat/message/toolRenderers.tsx:166:18
+UnifiedDiffHunk                          interface  packages/ui/src/components/chat/message/toolRenderers.tsx:582:18
+ImageAttachmentCandidate                 interface  packages/ui/src/components/chat/attachmentCitations.ts:1:18
+CitationRange                            interface  packages/ui/src/components/chat/attachmentCitations.ts:6:18
+AgentV2Permissions                       type       packages/ui/src/components/sections/agents/agentV2Config.ts:48:13
+McpFailureClass                          type       packages/ui/src/components/sections/mcp/mcpFailureHints.ts:1:13
+McpFailureHint                           interface  packages/ui/src/components/sections/mcp/mcpFailureHints.ts:16:18
+ModelVariantConfig                       type       …/src/components/sections/providers/custom-provider-form-v2.ts:33:13
+ModelVariantOverlay                      type       …/src/components/sections/providers/custom-provider-form-v2.ts:35:13
+AnswerableField                          type       …ges/ui/src/components/sections/providers/provider-oauth-v2.ts:49:13
+ProviderCredentialInput                  interface  packages/ui/src/components/sections/providers/providerAuth.ts:64:18
+ProviderIntegration                      type       …ckages/ui/src/components/sections/providers/providerAuthV2.ts:16:13
+ProviderCredentialInput                  interface  …ckages/ui/src/components/sections/providers/providerAuthV2.ts:88:18
+WorktreeIndexProject                     type       packages/ui/src/components/session/sidebar/worktreeIndex.ts:4:13
+WorktreeIndexEntry                       type       packages/ui/src/components/session/sidebar/worktreeIndex.ts:10:13
+PwaInstallToastDecisionInput             interface  packages/ui/src/components/update/openCodeUpdateDedup.ts:13:18
+OpenCodeUpdateToastDecisionIn…           interface  packages/ui/src/components/update/openCodeUpdateDedup.ts:38:18
+SortableProject                          type       packages/ui/src/components/session/sidebar/list/projectSort.ts:6:13
+QuestionBadgeSessionScope                type       …c/components/session/sidebar/sessions/sessionNodeItemUtils.ts:86:13
+DeleteSessionSource                      type       …/src/components/session/sidebar/sessions/useSessionActions.ts:13:13
+SessionSubtreeOutcome                    type       …/components/session/sidebar/sessions/sessionSubtreeActions.ts:21:13
+MobileComposerHolders                    interface  …/src/components/chat/composer/state/useMobileComposerShell.ts:33:18
+CommandRequirement                       type       …kages/ui/src/components/chat/composer/submit/slashCommands.ts:20:13
+OnboardingScreenMode                     type       packages/ui/src/components/onboarding/OnboardingScreen.tsx:7:13
+ClientPlatform                           type       packages/ui/src/lib/platform.ts:58:13
+DeepLinkHandlers                         interface  packages/ui/src/apps/deepLinkNavigation.ts:23:18
+AuthSessionState                         type       packages/ui/src/lib/runtime-auth-expiry.ts:14:13
+MobileFullscreenSurfaceProps             type       packages/ui/src/apps/MobileFullscreenSurface.tsx:25:13
+IconProps                                interface  packages/ui/src/components/icon/Icon.tsx:56:18
+ScrollShadowProps                        type       packages/ui/src/components/ui/ScrollShadow.tsx:5:13
+ProjectIconImageProps                    type       packages/ui/src/lib/projectMeta.ts:197:13
+GlobalSyncStore                          type       packages/ui/src/sync/global-sync-store.ts:5:13
+MobileWidgetSession                      interface  packages/ui/src/apps/mobileWidgetSnapshot.ts:22:18
+MobileWidgetSnapshot                     interface  packages/ui/src/apps/mobileWidgetSnapshot.ts:31:18
+FontOptionDefinition                     interface  packages/ui/src/lib/fontOptions.ts:21:18
+UseFireworksResult                       interface  packages/ui/src/hooks/useFireworks.ts:12:18
+DesktopSplashColors                      type       packages/ui/src/lib/desktopNative.ts:67:13
+UseChatTimelineScrollResult              interface  packages/ui/src/hooks/useChatTimelineScroll.ts:118:18
+UseGitmojiListResult                     type       packages/ui/src/hooks/useGitmojiList.ts:101:13
+ModelListItem                            interface  packages/ui/src/hooks/useModelLists.ts:6:18
+SkillsCatalogState                       interface  packages/ui/src/stores/useSkillsCatalogStore.ts:88:18
+ParsedModelIdentifier                    interface  packages/ui/src/lib/modelIdentifier.ts:1:18
+ModelSelection                           interface  packages/ui/src/lib/modelIdentifier.ts:22:18
+DesktopSshInstancesConfig                type       packages/ui/src/lib/desktopSsh.ts:63:13
+BuiltInStarter                           type       packages/ui/src/lib/draftStarters.ts:18:13
+BuiltInContextPanelMode                  type       packages/ui/src/lib/surfaces/modes.ts:16:13
+AppearancePreferences                    interface  packages/ui/src/lib/appearancePersistence.ts:3:18
+MagicPromptDefinition                    interface  packages/ui/src/lib/magicPrompts.ts:58:18
+MagicPromptOverridesPayload              interface  packages/ui/src/lib/magicPrompts.ts:67:18
+ProjectActionIconKey                     type       packages/ui/src/lib/projectActions.ts:7:13
+ProjectActionDesktopForwardOp…           type       packages/ui/src/lib/projectActions.ts:73:13
+NormalizedTunnelRequest                  interface  packages/ui/src/lib/relay/tunnel-payloads.ts:42:18
+SessionMemoryState                       type       packages/ui/src/sync/viewport-store.ts:9:13
+ViewportState                            type       packages/ui/src/sync/viewport-store.ts:33:13
+BrowserToolbarProps                      type       packages/ui/src/components/browser/BrowserToolbar.tsx:44:13
+WorkerHighlightedCodeProps               interface  packages/ui/src/components/code/WorkerHighlightedCode.tsx:56:18
+UseScrollShadowOptions                   type       packages/ui/src/components/ui/useScrollShadow.ts:13:13
+ChatTurnNavigation                       interface  packages/ui/src/components/chat/hooks/useChatTurnNavigation.ts:80:18
+ParsedAgentResult                        interface  packages/ui/src/lib/messages/agentMentions.ts:14:18
+BranchOption                             interface  …s/ui/src/components/chat/composer/ui/DraftTargetSelectors.tsx:49:18
+MessageRoleInfo                          interface  packages/ui/src/components/chat/message/messageRole.ts:3:18
+TurnRecordsResult                        interface  packages/ui/src/components/chat/hooks/useTurnRecords.ts:14:18
+EditModeColors                           interface  packages/ui/src/lib/permissions/editModeColors.ts:3:18
+PermissionTarget                         type       packages/ui/src/components/chat/permissionSummary.ts:10:13
+PermissionSummary                        type       packages/ui/src/components/chat/permissionSummary.ts:19:13
+PermissionSummaryMetadata                type       packages/ui/src/components/chat/permissionSummary.ts:42:13
+DiagramEditorHandle                      interface  packages/ui/src/components/diagram/DiagramEditor.tsx:5:18
+DiagramEditorProps                       interface  packages/ui/src/components/diagram/DiagramEditor.tsx:9:18
+DiagramEditorHandle                      type       packages/ui/src/components/diagram/index.ts:1:30
+AgentSelectorProps                       interface  packages/ui/src/components/multirun/AgentSelector.tsx:15:18
+ModelMultiSelectProps                    interface  packages/ui/src/components/multirun/ModelMultiSelect.tsx:62:18
+BranchSelectorProps                      interface  packages/ui/src/components/multirun/BranchSelector.tsx:22:18
+ThinkingPillProps                        type       packages/ui/src/components/session/ThinkingPill.tsx:11:13
+SlotProps                                interface  packages/ui/src/components/ui/slot.tsx:36:18
+PreviewToggleButtonProps                 type       packages/ui/src/components/views/PreviewToggleButton.tsx:7:13
+SkillsPageProps                          interface  packages/ui/src/components/sections/skills/SkillsPage.tsx:58:18
+WorktreeSectionContentProps              interface  …rc/components/sections/openchamber/WorktreeSectionContent.tsx:35:18
+V2RuntimeClientConfig                    type       packages/ui/src/lib/opencode/v2/client.ts:7:13
+AssistantContentItem                     type       packages/ui/src/lib/opencode/projection.ts:44:13
+AssistantToolItem                        type       packages/ui/src/lib/opencode/projection.ts:45:13
+QuotaProviderMeta                        interface  packages/ui/src/lib/quota/providers/index.ts:3:18
+Autosave                                 interface  …ckages/ui/src/components/sections/shared/SettingsAutosave.tsx:29:18
+MissingProjectSessionSelection           type       …onents/session/sidebar/projects/useProjectSessionSelection.ts:27:13
+SortableProjectItemProps                 interface  …ui/src/components/session/sidebar/projects/sortableItems.tsx:108:18
+OpenChamberVersionParts                  type       packages/sdk/src/host-version.ts:5:13
+Exported types in used namespace (2)
+SharedTrustRunsIn          sharedTrust  type  packages/ui/src/lib/sharedTrustConfirmation.ts:20:13
+PendingSharedTrustRequest  sharedTrust  type  packages/ui/src/lib/sharedTrustConfirmation.ts:22:13
+Duplicate exports (1)
+SETTINGS_SECTION_TITLE_CLASS|SETTINGS_PANEL_TITLE_CLASS  packages/ui/src/components/sections/shared/SettingsSection.tsx
+Configuration hints (1)
+scripts/bundle-guest.ts  packages/sdk  knip.json  Remove redundant entry pattern

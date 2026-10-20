@@ -50,7 +50,8 @@ test('permission preserves exact options and tools accept ACP content arrays and
   const tool = runtime.messages(session.id)[1].parts.find((part) => part.type === 'tool');
   assert.deepEqual(tool.state.input, { value: ['file.txt'] });
   assert.equal(tool.state.status, 'completed');
-  assert.match(tool.state.output, /file content\nfile.txt\nnew content/);
+  assert.equal(tool.state.output, 'file content');
+  assert.equal(tool.state.metadata.diffs[0].newText, 'new content');
   assert.deepEqual(runtime.permissions(), []);
 });
 
@@ -64,6 +65,32 @@ test('cancel resolves permission as cancelled and interrupts the prompt', async 
   await done;
   assert.deepEqual(runtime.permissions(), []);
   assert.equal(runtime.statuses()[session.id].type, 'idle');
+});
+
+test('Windows directory snapshots retain a saved active session across slash formats', { skip: process.platform !== 'win32' }, async (t) => {
+  const folder = await mkdtemp(join(tmpdir(), 'openchamber-acp-directory-'));
+  const storagePath = join(folder, 'sessions.json');
+  const { runtime, session } = await setup(t, 'cancel', storagePath, () => rm(folder, { recursive: true, force: true }));
+  const directory = process.cwd();
+  const scope = `${directory.replaceAll('\\', '/').replace(/^([A-Z]):/, (_, drive) => `${drive.toLowerCase()}:`)}/`;
+  await runtime.stop();
+  await runtime.start(selection('cancel'));
+  await runtime.open(session.id);
+  const asked = until(runtime, (event) => event.type === 'permission-asked');
+  await runtime.prompt({ sessionID: session.id, messageID: 'live', text: 'Read' });
+  await asked;
+  assert.equal(runtime.session(session.id).directory, directory);
+  assert.equal(runtime.sessions(scope)[0].id, session.id);
+  assert.deepEqual(runtime.statuses(scope), { [session.id]: { type: 'busy' } });
+  assert.equal(runtime.permissions(scope)[0].value.sessionID, session.id);
+  assert.deepEqual(runtime.statuses(`${scope}other`), {});
+  const saved = JSON.parse(await readFile(storagePath, 'utf8'));
+  const entry = Object.values(saved.partitions).flat().find((item) => item.session.id === session.id);
+  assert.equal(entry.agentCwd, directory);
+  const done = until(runtime, (event) => event.type === 'status' && event.outcome === 'interrupted');
+  await runtime.cancel(session.id);
+  await done;
+  assert.deepEqual(runtime.statuses(scope), { [session.id]: { type: 'idle' } });
 });
 
 for (const scenario of ['error', 'exit']) test(`agent ${scenario} fails a prompt visibly`, async (t) => {
@@ -137,7 +164,9 @@ test('negotiated loadSession resumes the saved session without replay duplicates
   await done;
   assert.equal(runtime.sessions().length, 1);
   assert.equal(runtime.messages(session.id).length, 4);
-  assert.ok(!JSON.stringify(runtime.messages(session.id)).includes('replayed history'));
+  assert.ok(JSON.stringify(runtime.messages(session.id)).includes('replayed history'));
+  await runtime.open(session.id);
+  assert.equal(runtime.messages(session.id).length, 4);
 });
 
 test('unsupported attachment is rejected before transcript changes', async (t) => {
@@ -174,7 +203,8 @@ test('a failed transcript save rolls back the unsent turn and later saves recove
   await done;
   await runtime.stop();
   const saved = JSON.parse(await readFile(storagePath, 'utf8'));
-  assert.equal(saved.sessions[0].messages.length, 2);
-  assert.equal(saved.sessions[0].messages[0].info.id, 'retry');
-  assert.equal(saved.sessions[0].messages[1].info.finish, 'end_turn');
+  const entries = Object.values(saved.partitions).flat();
+  assert.equal(entries[0].messages.length, 2);
+  assert.equal(entries[0].messages[0].info.id, 'retry');
+  assert.equal(entries[0].messages[1].info.finish, 'end_turn');
 });

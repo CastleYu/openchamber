@@ -1,0 +1,4 @@
+# ACP callback command notes
+
+- 2026-10-14: Real child process tests use narrow escalated `node --test` execution because the main task confirmed Windows sandbox child spawn returns EPERM. Ordinary reads and lint use the configured unelevated sandbox.
+- First oxlint run rejected a conditional empty object spread in the new callback snapshot. Replaced it with explicit property assignment; this was a code finding, not an environment failure.

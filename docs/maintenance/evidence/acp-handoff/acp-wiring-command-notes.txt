@@ -1,0 +1,15 @@
+# ACP wiring command notes
+
+- 2026-10-14: PowerShell passes wildcard file arguments literally to `rg`; `rg packages/web/server/lib/acp/*.test.js` returned OS error 123. Use directory plus `-g '*.test.js'` instead.
+- Real child-process tests require the previously confirmed narrow elevated execution because sandbox spawning returns EPERM. Preserve scope to ACP tests and package checks.
+
+## Runtime scope
+
+- Web: local stdio callbacks execute on the backend host inside the immutable session agent cwd.
+- Electron: uses the same in-process backend owner and cleanup sequence.
+- Hosted mobile: uses backend-host callbacks through existing authenticated HTTP/SSE.
+- Capacitor mobile: uses backend-host callbacks; device files are not exposed.
+- VS Code: ACP remains explicitly unsupported.
+- Remote ACP: local filesystem/terminal callbacks are neither advertised nor routed.
+
+Output updates target only live terminal-owning tool parts. Terminal snapshots are byte bounded by callbacks and dropped after lifecycle cleanup; persisted history stores final tool output once. No performance improvement claim is made.

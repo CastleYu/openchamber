@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Koppelingen van projectmappen",
+  "settings.agentConnection.projectMappingsInfo": "Exact overeenkomende lokale projecten gebruiken hun externe map voor nieuwe sessies en het zoeken naar sessies. Andere projecten gebruiken de standaard externe werkmap. Bestaande sessies behouden hun oorspronkelijke externe map.",
+  "settings.agentConnection.projectDirectory": "Lokale projectmap",
+  "settings.agentConnection.projectDirectoryRow": "Lokale projectmap {number}",
+  "settings.agentConnection.remoteCwdRow": "Externe werkmap {number}",
+  "settings.agentConnection.removeMappingRow": "Projectkoppeling {number} verwijderen",
+  "settings.agentConnection.removeMapping": "Koppeling verwijderen",
+  "settings.agentConnection.addMapping": "Projectkoppeling toevoegen",
   'settings.agentConnection.acpServer': "ACP-server",
   'settings.agentConnection.transport': "Transport",
   'settings.agentConnection.http': "Streaming HTTP (experimenteel HTTP/2)",

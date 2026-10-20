@@ -1,0 +1,113 @@
+# ACP parity plan
+
+Read-only source and protocol review, 2026-10-14. Repository HEAD `692c366d5e66e2cc95ebc6bcddae44787b80be44`; main agent's concurrent Windows process fix excluded. No runtime acceptance performed by this research task.
+
+## Decision
+
+Extend the existing in-process ACP runtime and existing application services. Prioritize history, session actions, agent configuration and ordinary project tools. One selected connection, its existing JSON transcript, and the existing shared UI are sufficient for this target. A separate daemon, general process pool, SQLite and shadow Git are not prerequisites.
+
+The issue's user goal is sound. Its architecture assumes infrastructure the app already has and treats optional or draft protocol features as universal. Browser refresh already leaves the backend-owned child alive. Electron shutdown ends the in-process backend by design; persistence after application exit is a separate product requirement.
+
+## Verified protocol boundary
+
+Official source main was `24f3b07f44f043c617666c20208b093e919648ac` during research. Fix this revision in implementation notes rather than following changing draft methods mid-batch. Current runtime explicitly negotiates v1; do not import v2 rules into it.
+
+| Operation | Current v1 contract and gate |
+| --- | --- |
+| New | `session/new {cwd, mcpServers}`; absolute per-session cwd, independent of process launch cwd |
+| Discover | `session/list {cwd?, cursor?}` gated by `agentCapabilities.sessionCapabilities.list`; returns `sessions` and optional `nextCursor` |
+| Load history | `session/load {sessionId, cwd, mcpServers}` gated separately by `agentCapabilities.loadSession: true`; replays history through updates |
+| Resume | `session/resume {sessionId, cwd, mcpServers}` gated by `sessionCapabilities.resume`; restores without history replay |
+| Close/delete | `{sessionId}` methods gated separately by `sessionCapabilities.close` / `.delete`; close releases active resources, delete removes agent listing |
+| Extra roots | `additionalDirectories` only when `.additionalDirectories` advertised; resend full root list on restoration |
+| Configure | `session/set_config_option {sessionId, configId, value}`; response and `config_option_update` carry complete `configOptions` |
+| Legacy mode | `session/set_mode {sessionId, modeId}` and `current_mode_update`; prefer configOptions when both supplied |
+| Commands | `available_commands_update` supplies commands; selection sends ordinary prompt text such as `/review ...` |
+| Usage | Stable `usage_update` supplies current context `used`, `size`, optional cumulative `cost`; this is not a per-message token ledger |
+| Questions | Stable `elicitation/create`, form or URL mode, negotiated client `elicitation.form` / `.url`; response `action: accept/decline/cancel` |
+| Files | `fs/read_text_file`, `fs/write_text_file`; capability names use `fs.readTextFile` / `fs.writeTextFile` |
+| Terminal | `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`; client `terminal: true` |
+
+Current stable v1 has no `session/fork` or `session/set_model`. Current draft includes UNSTABLE fork under `SessionCapabilities.fork`; its method prose still says `session.fork`, a documentation inconsistency to resolve against a pinned schema and target agent before enabling. Draft fork clones context, not an arbitrary OpenCode message-cutoff fork. Current draft also has no `session/set_model`; model choice should use configOptions category `model`. Older agent-specific model extensions need their own demonstrated compatibility need.
+
+Sources: [v1 schema](https://agentclientprotocol.com/protocol/v1/schema), [setup](https://agentclientprotocol.com/protocol/v1/session-setup), [listing](https://agentclientprotocol.com/protocol/v1/session-list), [deletion](https://agentclientprotocol.com/protocol/v1/session-delete), [configuration](https://agentclientprotocol.com/protocol/v1/session-config-options), [modes](https://agentclientprotocol.com/protocol/v1/session-modes), [commands](https://agentclientprotocol.com/protocol/v1/slash-commands), [elicitation](https://agentclientprotocol.com/protocol/v1/elicitation), [files](https://agentclientprotocol.com/protocol/v1/file-system), [terminals](https://agentclientprotocol.com/protocol/v1/terminals), [pinned draft schema](https://github.com/agentclientprotocol/agent-client-protocol/blob/24f3b07f44f043c617666c20208b093e919648ac/docs/protocol/v1/draft/schema.mdx).
+
+## Current code and gaps
+
+- `packages/web/server/lib/acp/runtime.js:31`: initialize parser retains only loadSession and prompt capabilities, dropping negotiated lifecycle capabilities.
+- `runtime.js:139`: update projection requires an existing assistant turn; it ignores all updates while loading. This preserves old local history but cannot import agent-owned history, replay user turns, or apply configuration/metadata updates outside generation.
+- `runtime.js:267`: stdio new sessions already use their requested directory. Remote mode always substitutes one configured remote cwd, even when local UI project changes.
+- `runtime.js:282`: prompt lazily loads locally known IDs, then ignores replay. No discovery or explicit load operation. A resume-only agent remains incorrectly read-only.
+- `runtime.js:66,212`: JSON stores one connection identity and its sessions. Selecting another identity clears the in-memory map and later writes can replace the prior connection's stored transcript. Cross-agent history requires preserving partitions in this same format before claiming a unified index.
+- `runtime.js:357`: modes and authenticate operations already exist, but there is no shared UI configuration operation. `routes.js` exposes them; no picker consumes them.
+- `packages/ui/src/lib/opencode/acp.ts`: domain parsers, SSE snapshot, and local-list transport exist. No delete event parser, metadata actions, lifecycle capability view, or session options.
+- `packages/ui/src/lib/opencode/client.ts:786,792`: delete and update have no ACP branch; existing sidebar actions reach incompatible OpenCode operations. `:850` returns all local sessions and an empty cursor.
+- `packages/ui/src/components/chat/ChatInput.tsx`, `composer/ui/ComposerFooter.tsx`, `CommandAutocomplete.tsx`: composer replaces model controls with agent-managed text and disables agent command discovery.
+- `packages/web/server/lib/opencode/agent-connection.js:105`: OpenCode routes are explicitly gated, while OpenChamber-owned services remain available. File tree, Git, worktrees and terminal already have backend owners; audit their callers before adding services.
+
+## Phase 1: daily session workflow
+
+Deliver one selected connection with two project directories, imported history, continued conversations, local rename/archive/remove, and accurate supported actions.
+
+1. Add typed negotiated capabilities and persisted session lifecycle state in ACP owner. Keep wire constants/parsers together; one focused protocol file is justified if runtime expansion makes it necessary.
+2. Add discover and open operations. List lazily by active directory with opaque cursors. Merge metadata with locally known sessions; failed or incomplete pages never mean authoritative empty history.
+3. Build a replay projector for `user_message_chunk`, agent text/thought/tool updates and session metadata. Stage a full load into a temporary transcript; replace and persist only after load succeeds. Preserve original messages on failed replay and avoid duplicate replay on reconnect.
+4. Use `resume` for an already complete local transcript when available; use load when history is missing or needs refresh. A discovered resume-only session can continue but must display that earlier history was not supplied. Never synthesize missing conversation.
+5. Add ACP branches to `deleteSession` and `updateSession`; support app-owned title, archive state and metadata using existing JSON. Agent title updates must not overwrite an explicit local title override.
+6. Offer agent deletion only when advertised. Otherwise call the action "Remove from OpenChamber" and persist a local hidden marker so rediscovery does not restore it. Reject removal during active work unless cancellation/close completes. Persist before publishing removal; a failed write keeps current UI state.
+7. Preserve multiple connection partitions in the existing file, migrate the current `{identity,sessions}` object losslessly, and key local metadata by connection plus session ID. This fixes an existing data-lifetime gap without a database.
+8. Preserve stdio's current per-session cwd behavior. Store `agentCwd` separately from UI grouping directory. Remote connections keep their existing configured default, with an explicit project-to-remote-directory override. Existing sessions retain their original agent cwd; directory moves must not silently retarget them.
+
+Owners: ACP runtime/routes/tests/fixture; UI `lib/opencode/acp.ts`, `client.ts`, `operations.ts` as needed; `sync/session-actions.ts`; sidebar `sessions/useSessionActions.ts`; domain events/reducer only if current delete handling needs additions. Owning docs: ACP DOCUMENTATION, sync DOCUMENTATION, docs/maintenance/ACP.
+
+Acceptance: create sessions in project A and B through one child; agent observes exact cwd; discover an external session through two pages; open complete user/assistant/tool history; restart backend and continue once; repeat reconnect without duplicates; rename/archive/unarchive/remove survive restart; failed list/load/save preserves visible data; switching agent away and back preserves each transcript and prevents colliding IDs crossing connections.
+
+## Phase 2: normal composer controls and agent interaction
+
+1. Parse and publish configOptions from new/load/resume responses and config_option_update. Render select controls in the existing composer model area, respecting supplied order/grouping. Model, mode and reasoning categories affect placement, not correctness. Unknown categories remain usable.
+2. Apply set_config_option responses as a full state replacement, including dependent options. Support legacy modes only when configOptions absent. Add boolean options only with matching client advertisement and complete UI support.
+3. Project available commands into existing autocomplete. Send commands as ordinary ACP prompts, without OpenCode built-in interception or false assumptions that every agent has `/undo`.
+4. Project session_info_update, plan and supplied usage into existing session/chat indicators. Show unavailable usage as unavailable, not zero. Retain tool diff old/new text for existing diff presentation instead of flattening every diff to output text.
+5. Add form elicitation through tagged ACP input contracts and existing blocking-input layout; implement accept/decline/cancel and cancellation cleanup. Add URL elicitation only with user-triggered opening and completion handling. Advertise only implemented modes.
+6. Expose advertised authentication methods through the existing connection UI and existing authenticate route. Agent-controlled auth does not imply an OpenCode provider catalog or API-key editor.
+
+Owners: ACP runtime/routes and fixture; UI AcpClient, operations/events, blocking-input sync, ChatContainer, ChatInput/ComposerFooter, CommandAutocomplete; useConfigStore only where existing catalog assumptions interfere. Load locale/theme/settings/sync skills when implementing respective files.
+
+Acceptance: select model and reasoning; dependent options replace correctly; agent-initiated config change updates controls while idle and busy; slash command appears and sends exact text; form reply/cancel and URL completion unblock exactly one request; usage survives reconnect without invented totals. Verify desktop and mobile layouts.
+
+## Phase 3: workspace capabilities where agents require them
+
+Keep file browsing, editing, Git status/diff, branches, worktrees and user terminals on current OpenChamber runtime services. Remove generation-only UI gates only after proving the called service is independent of OpenCode.
+
+ACP client callbacks are additional work. Implement server-side filesystem and terminal handlers using existing owning policy/helpers, with per-session root and terminal ownership. File capability uses snake_case method names despite camelCase capability names. Implement line/limit text reads, UTF-8 writes, terminal output limits, exit waiting, kill and release semantics. Do not repurpose a terminal-tab close as ACP release without checking lifecycle equivalence.
+
+Only trusted local stdio should initially receive callbacks. A remote agent receiving local filesystem/command access changes the trust boundary and needs an explicit connection option and root mapping; keep those capabilities absent for remote mode until that complete flow exists. Validate canonical paths including symlink escapes and bind every request to its originating session. Cancellation and connection switch must release owned resources.
+
+Owners: ACP callback owner plus existing `server/lib/fs/routes.js`, filesystem policy helpers, `server/lib/terminal/runtime.js` only where extraction/reuse is necessary. No renderer privileged work and no direct browser-to-agent connection.
+
+Acceptance: agent reads/writes allowed project text and creates/waits/reads/releases its terminal; out-of-root and cross-session IDs reject; cancellation/switch cleans resources; web refresh retains an active backend task. Real-agent file edit and Git diff verifies the complete user workflow.
+
+## Bounded exclusions and follow-up triggers
+
+- Draft fork is a separately pinned follow-up when the chosen real agent advertises it; expose full-context fork, not OpenCode message-cutoff behavior.
+- ACP provides no general OpenCode provider manager, skills/MCP management CRUD, share links, LSP service, or message revert contract. Existing host functionality may remain available independently; agent commands are usable only when advertised.
+- Passing mcpServers during setup is possible; it is not a universal runtime MCP administration API.
+- Shadow Git cannot observe every agent write because agents may write directly or via terminals. Keep explicit existing Git/worktree actions; do not promise generic undo from filesystem callbacks.
+- Add a process-per-project compatibility option only after a named agent/version demonstrably ignores session cwd. A general adaptive pool and idle scheduler are unnecessary for one selected connection.
+- Background work after full Electron exit needs a deliberate lifecycle product change. Keep the current in-process backend for this parity work.
+- Historical analytics or full-text search can justify indexed storage after measured JSON scale/cost; neither is required for these phases.
+
+## Runtime and validation boundary
+
+Web, Electron, hosted mobile and Capacitor share backend ACP behavior. Electron keeps native privilege in its backend. Hosted/mobile roots and terminals belong to the server host. Standalone VS Code remains explicitly unsupported for ACP until its own launch/bridge integration is scoped; do not silently route to OpenCode.
+
+Each phase is independently deliverable with focused runtime fixture tests, adapter/reducer/session-action tests and browser acceptance. Cross-workspace domain contracts require workspace checks and affected builds; run dead-code for new exports/files and oxlint for substantially rewritten JS/TS. Reuse parent process-fix checks rather than rerunning them. The final real-agent acceptance must record binary/version, advertised capabilities and an actual model-backed prompt, then create/edit file, approve, cancel, reload and resume across two projects. Static or fixture passes alone do not establish this.
+
+## Research command notes
+
+- Windows PowerShell does not expand wildcard path arguments supplied to rg. `rg ... directory/*` produced OS error 123. Use a verified directory and `-g` patterns.
+- Guessed directories `server/lib/agent-connection`, UI `sync/domain-reducer.ts` did not exist. `rg --files` located agent-connection under opencode; discover owners before reading them.
+- Piping live `gh api` into `Select-Object -First` caused a closed stdout pipe. Capture the completed output before selecting excerpts.
+- Direct draft page URLs returned web internal errors. The official GitHub contents API returned the exact draft source and its revision.
+
+Memory registry search produced no ACP-specific record; no historical memory fact was used in this plan.

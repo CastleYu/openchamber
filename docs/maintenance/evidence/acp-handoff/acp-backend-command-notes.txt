@@ -1,0 +1,4 @@
+# ACP backend command notes
+
+- 2026-10-14: `node --test ...runtime.test.js ...server-transport.test.js` failed before tests because Windows sandbox rejected the test runner child with `spawn EPERM`. Retry the unchanged focused tests with sandbox escalation; this is an execution restriction rather than a test failure.
+- Final fixture run exposed duplicate runtime termination paths on malformed stdout. Concurrent `taskkill` calls returned status 128 and replaced the protocol error. Runtime now shares one termination promise per child; `process.js` was not changed.

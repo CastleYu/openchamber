@@ -1,0 +1,2 @@
+2026-10-14: PowerShell rg arguments containing unresolved path wildcards (`domain-event*`, `useChat*`) caused Windows error 123. Use an existing directory path plus rg globs (`-g`) or discovered exact paths instead.
+2026-10-14: `domain-recovery-snapshots.ts` does not exist (only its test was discovered); the implementation lives in `directory-recovery-snapshots.ts`. Inspect discovered implementation paths before reads. UI package README is absent; guard that optional read with Test-Path.

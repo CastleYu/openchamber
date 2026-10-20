@@ -1,0 +1,26 @@
+# ACP elicitation and authentication handoff
+
+## Delivered
+
+- `elicitation.js` owns flat primitive/enum forms, normalized fields/defaults, server-side answer validation and URL consent/completion. Both session and originating-request scopes are implemented and advertised.
+- Session requests use the existing tagged `PendingInput` and input-created/form-closed reducers. HTTP/SSE snapshots retain request identity. Request-scoped authentication has no invented conversation and uses Settings-local state with authoritative SSE snapshots; no polling or new store.
+- Accept/decline/cancel, write-failure retry, stale connection epochs, origin-request completion, cancellation and agent-exit cleanup are handled. Unknown/duplicate URL completion is ignored; accepted URLs remain waiting.
+- URL schemas reject unsafe protocols and embedded credentials. Cards show the agent, message, full URL and host before explicit external navigation. Forms reject credential fields and state that credentials belong in URL flows.
+- Advertised authentication methods appear in connection settings. Absent/agent type calls authenticate with the current epoch and no human-flow timeout; terminal/other methods display CLI login guidance. Authentication failure can retry and connection failure disables replies.
+- All 13 dictionaries contain interaction/authentication/history copy. Resume-only history metadata displays a chat notice. Standalone VS Code retains explicit ACP unsupported behavior; other surfaces use existing runtime fetch/external opener boundaries.
+- Sync owning documentation updated. Backend owning documentation is handed to the callback integration agent; maintenance ACP EN/CN docs remain parent-owned.
+
+## Evidence
+
+- `node --test packages/web/server/lib/acp/elicitation.test.js`: 11 pass, 0 fail. Real local subprocess fixture covers blocked prompt forms, typed validation, decline/cancel, accepted URL wait/cleanup, both authentication modes, auth retry, stale epoch, actual agent exit, write-failure retry and HTTP/SSE recovery.
+- `bun test packages/ui/src/components/chat/AcpInteractionCard.test.tsx packages/ui/src/components/sections/openchamber/useAcpAuthentication.test.tsx`: 5 pass, 0 fail, 29 assertions. Cards test defaults, typed answers, retry, content-free decline/cancel and consent-only navigation; hook tests snapshots, failure/retry, disconnect, reconnect and late completion ownership.
+- New interaction modules/tests plus routes: oxlint passes. Focused new UI ESLint passes with 0 errors and 0 warnings.
+- Shared `client.ts`/`ChatContainer.tsx` oxlint reports existing anti-slop backlog in untouched code. New adapter/card additions contain none of those findings; no backlog rewrites or suppressions were added.
+- `bun run type-check:ui`: passes on the final interaction/card/hook/test and mapping locale state (exit 0).
+- Command/environment failures and successful narrow escalations: `.codex-temp/acp-interaction-command-notes.md`. No dependencies installed.
+
+## Ownership and remaining integration
+
+- runtime.js/protocol.js, acp.ts and dictionaries/AgentConnectionSettings.tsx handed back to parent before callback/mapping integration. Do not overwrite those later integrations.
+- Parent runs final cross-workspace build/dead-code and combined backend suite after callback integration. Existing backend/UI earlier handoffs remain preserved.
+- No real agent/model, browser visual review, desktop/mobile device or relay acceptance was run. Fixture and happy-dom evidence does not establish those checks.

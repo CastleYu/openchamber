@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Зіставлення каталогів проєктів",
+  "settings.agentConnection.projectMappingsInfo": "Локальні проєкти з точним збігом використовують свій віддалений каталог для нових сеансів і пошуку сеансів. Інші проєкти використовують типовий віддалений робочий каталог. Наявні сеанси зберігають свій початковий віддалений каталог.",
+  "settings.agentConnection.projectDirectory": "Локальний каталог проєкту",
+  "settings.agentConnection.projectDirectoryRow": "Локальний каталог проєкту {number}",
+  "settings.agentConnection.remoteCwdRow": "Віддалений робочий каталог {number}",
+  "settings.agentConnection.removeMappingRow": "Видалити зіставлення проєкту {number}",
+  "settings.agentConnection.removeMapping": "Видалити зіставлення",
+  "settings.agentConnection.addMapping": "Додати зіставлення проєкту",
   'settings.agentConnection.acpServer': "Сервер ACP",
   'settings.agentConnection.transport': "Транспорт",
   'settings.agentConnection.http': "Потоковий HTTP (експериментальний HTTP/2)",

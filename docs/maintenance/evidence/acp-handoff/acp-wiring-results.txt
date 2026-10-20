@@ -1,0 +1,29 @@
+# ACP wiring results
+
+Final source edits complete, 2026-10-14. No Git mutations, dependencies, releases or changelog edits.
+
+## Delivered
+
+- `runtime.js` creates fresh filesystem/terminal callbacks only for local stdio; advertises fs read/write and terminal alongside elicitation capabilities. Cwd comes from saved immutable `agentCwd`. Remote callbacks receive method-not-found.
+- Callback request validation returns invalid-params; execution failure returns internal-error. Permission validation also returns a request error without killing the connection. Asynchronous callback replies capture the originating epoch, child and remote transport.
+- Cancel, prompt completion, successful/failed history restoration, disconnect, switch, deletion and shutdown await terminal cleanup. Global callback shutdown closes its instance permanently. Cleanup failures remain observable and prevent successful replacement/shutdown reporting.
+- Terminal references project bounded snapshots into existing tool parts. Running output survives the typed adapter at `state.metadata.output`; completed output uses `state.output`, with diff metadata preserved. Live ownership lookup uses session/terminal/call indexes, and cleanup drops transient references and output snapshots.
+- Active/replayed plans project to one stable `todowrite` part per assistant turn. Updates replace supplied todo content/status/priority and use the existing Todo renderer.
+- Remote new/list requests use exact project mappings or explicit default cwd. Scoped discovery filters mismatched roots. Existing grouping and saved agent cwd survive mapping changes; connection identity is unchanged.
+- Persistence installation preserves current live session status, fixing a reproduced busy-config/prompt-completion race that otherwise reinstalled stale busy state.
+- ACP owning documentation covers callback lifecycle, Windows orphan-pipe failure, remote mappings, plan/tool projection, interaction scopes, agent-vs-CLI authentication and connection-input error facts.
+- Existing `fixtures/agent.mjs` now asserts the exact implemented capability set. New fixture/test files: `fixtures/callback-agent.mjs`, `wiring.test.js`. Adapter changes are limited to tool metadata/state schema and one focused regression case.
+
+## Final verification
+
+- PASS: all `packages/web/server/lib/acp/*.test.js` together with Node's test runner: 65 passed, 0 failed, 33.26 seconds. Log `.codex-temp/acp-wiring-tests.log`. Covers real Windows local child processes and filesystem callbacks, terminal output and teardown, active/replayed plans, mapping/default/scoped discovery/restoration, and existing WebSocket/HTTP behavior.
+- PASS: isolated `bun test packages/ui/src/lib/opencode/acp.test.ts`: 8 passed, 0 failed, 16 assertions. Log `.codex-temp/acp-wiring-adapter.log`.
+- PASS: targeted oxlint for runtime, new wiring fixture/test, existing capability fixture, adapter and adapter tests. Log `.codex-temp/acp-wiring-oxlint.log`, empty success output.
+- PASS: `node --check` runtime and new fixture; reviewed-file `git diff --check`.
+- Main owns final workspace type/lint/build/dead-code checks. No duplicate workspace checks run here.
+
+## Evidence boundary
+
+These tests exercise real fixture processes and local remote-transport servers. They do not establish real-model agent interoperability, packaged Electron process-tree/no-console-flash acceptance, browser/device visual acceptance, relay deployment, or POSIX process-group behavior. Remote terminal references have no local callback snapshots and rely on agent-provided ordinary content. Windows command-root exits with orphaned descendant pipes retain the documented explicit five-second cleanup failure; no Job Object or supervisor was added.
+
+Command/environment notes: `.codex-temp/acp-wiring-command-notes.md`. All source work for this subtask is finished.

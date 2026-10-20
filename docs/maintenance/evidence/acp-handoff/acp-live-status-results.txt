@@ -1,0 +1,27 @@
+# ACP live status fix
+
+Web: directory-scoped ACP snapshots match equivalent local Windows paths.
+Electron: the same in-process backend snapshot owner applies.
+VS Code: standalone ACP remains unsupported.
+Hosted mobile: the connected backend's local directory matching applies.
+Capacitor mobile: the connected backend's local directory matching applies.
+
+The live preview's global status reported session-2 busy; its normalized scoped
+status returned only session-1 idle. Session-2 retained a Windows backslash
+directory, while UI child stores query the forward-slash form. Omission from an
+authoritative snapshot settled the running turn and triggered local interruption.
+
+The runtime now compares local Windows grouping keys with node:path resolve and
+drive-letter normalization. This also covers persisted records without migration.
+Original session directories, agentCwd, remote cwd, and exact remote mapping
+matches stay intact. Scoped sessions, statuses, permissions, inputs and commands
+share the comparison. POSIX comparison stays exact.
+
+Validation: `node --test packages/web/server/lib/acp/runtime.test.js` passed
+14/14, zero skips. The new regression restores a saved native Windows directory,
+queries its slash/drive-case/trailing-separator variant while busy with permission
+pending, checks unrelated scope exclusion and preserved agentCwd, then cancels
+and checks authoritative idle. `node --check` passed for runtime and test;
+`bunx oxlint` for both paths and `git diff --check` passed. The parent owns
+production rebuild, browser acceptance and the shared dead-code check required
+by the added node:path import. No UI rendering code changed.

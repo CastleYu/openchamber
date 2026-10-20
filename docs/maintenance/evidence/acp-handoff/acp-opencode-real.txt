@@ -1,0 +1,21 @@
+{"info":{"protocolVersion":1,"agentInfo":{"name":"OpenCode","version":"1.19.0"},"agentCapabilities":{"loadSession":true,"sessionCapabilities":{"list":{},"resume":{},"close":{}},"promptCapabilities":{"image":true,"embeddedContext":true}},"authMethods":[{"id":"opencode-login","name":"Login with opencode","description":"Run `opencode auth login` in the terminal"}],"epoch":1,"error":null}}
+{"name":"multi-session-create","pass":true,"ids":["ses_ec5d03d85ffezX8m55jQu2m20F","ses_ec5d03d45ffeZG0fb3VUAifwmr"]}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F"}
+{"event":"status","sessionID":"ses_ec5d03d45ffeZG0fb3VUAifwmr"}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","outcome":"completed"}
+{"event":"status","sessionID":"ses_ec5d03d45ffeZG0fb3VUAifwmr","outcome":"completed"}
+{"name":"concurrent-prompts","answers":["ALPHA_718","BETA_629"]}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F"}
+{"event":"permission","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","options":[{"id":"once","kind":"allow_once"},{"id":"always","kind":"allow_always"},{"id":"reject","kind":"reject_once"}]}
+{"event":"permission","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","options":[{"id":"once","kind":"allow_once"},{"id":"always","kind":"allow_always"},{"id":"reject","kind":"reject_once"}]}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","outcome":"completed"}
+{"name":"tools-and-approval","tools":[{"id":"a301642b-1d87-474c-9f25-a92067f1d610","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","messageID":"20ccb989-0a9d-4b65-8e85-ea8d3e764b0a","type":"tool","callID":"call_00_ET_96GyJpyAeGOLuELHCyGO8795","tool":"read","state":{"status":"completed","input":{"filePath":"D:\\CodexBuilds\\acp-real-validation\\opencode-test\\workspace\\seed.txt"},"title":"CodexBuilds\\acp-real-validation\\opencode-test\\workspace\\seed.txt","output":"ACP_REAL_SEED_7341","metadata":{"acp":true},"time":{"start":1791977576910,"end":1791977577424}}},{"id":"45a39f87-33df-4f25-9f2f-0b0443f455f9","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","messageID":"20ccb989-0a9d-4b65-8e85-ea8d3e764b0a","type":"tool","callID":"call_00_3IZ6R2qLzlUvyvXMeVbd3099","tool":"edit","state":{"status":"completed","input":{"filePath":"D:\\CodexBuilds\\acp-real-validation\\opencode-test\\workspace\\result.txt","content":"ACP_WRITE_7341"},"title":"CodexBuilds\\acp-real-validation\\opencode-test\\workspace\\result.txt","output":"Wrote file successfully.","metadata":{"acp":true},"time":{"start":1791977579044,"end":1791977579261}}}],"approvals":2,"file":"ACP_WRITE_7341"}
+{"event":"status","sessionID":"ses_ec5d03d45ffeZG0fb3VUAifwmr"}
+{"event":"permission","sessionID":"ses_ec5d03d45ffeZG0fb3VUAifwmr","options":[{"id":"once","kind":"allow_once"},{"id":"always","kind":"allow_always"},{"id":"reject","kind":"reject_once"}]}
+{"event":"status","sessionID":"ses_ec5d03d45ffeZG0fb3VUAifwmr","outcome":"completed"}
+{"name":"cancel-pending-approval","pending":0,"status":{"type":"idle"}}
+{"name":"history-restore","beforeCount":4,"afterCount":4,"readOnly":false}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F"}
+{"event":"status","sessionID":"ses_ec5d03d85ffezX8m55jQu2m20F","outcome":"completed"}
+{"name":"history-continuation","answer":"ALPHA_718"}
+AGENT_STOPPED

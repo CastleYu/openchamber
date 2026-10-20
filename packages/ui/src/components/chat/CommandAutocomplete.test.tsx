@@ -92,4 +92,25 @@ describe('CommandAutocomplete fork command', () => {
     });
     expect(container.textContent).not.toContain('/fork');
   });
+
+  test('ACP offers only advertised commands, including names used by OpenCode built-ins', async () => {
+    let selected = '';
+    await act(async () => {
+      opencodeClient.bindRuntime({ generation: 'acp', endpoint: 'acp:test', epoch: 4, version: null });
+      root.render(
+        <SyncProvider source={sourceFromSdk(sdk)} directory="/project">
+          <I18nProvider>
+            <CommandAutocomplete searchQuery="" acpCommands={[{ name: 'btw', description: 'Agent command' }]} onCommandSelect={(command) => { selected = command.name; }} onClose={() => undefined} />
+          </I18nProvider>
+        </SyncProvider>,
+      );
+    });
+    expect(container.textContent).toContain('/btw');
+    expect(container.textContent).not.toContain('/undo');
+    expect(container.textContent).not.toContain('/init');
+    const row = Array.from(container.querySelectorAll('div.cursor-pointer')).find((element) => element.textContent?.includes('/btw'));
+    expect(row).toBeDefined();
+    await act(async () => { row?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(selected).toBe('btw');
+  });
 });

@@ -1,0 +1,30 @@
+# Windows ACP scoped discovery fix
+
+## Scope and behavior
+
+- `runtime.js`: local stdio `session/list` sends the existing native Windows directory form. Its result filter compares normalized local paths across slash, drive-letter and trailing-separator forms.
+- Remote `serverConfig` discovery and `projectMappings` still use exact path matches. Imported records keep the agent's original `agentCwd`; session grouping retains the caller's directory.
+- `parity.test.js` and `fixtures/parity-agent.mjs`: Windows regression requires the outgoing native cwd, returns a native cwd with a lowercase drive, rejects an unrelated directory and verifies history loading plus persisted original cwd and grouping.
+- Owning `DOCUMENTATION.md` describes these local discovery rules.
+
+## Runtime consumers
+
+- Web: shared backend local discovery fixed.
+- Electron: in-process shared backend local discovery fixed.
+- Hosted mobile: connected shared backend local discovery fixed.
+- Capacitor mobile: connected shared backend local discovery fixed.
+- Standalone VS Code: ACP remains explicitly unsupported.
+
+## Validation
+
+- `node --test packages/web/server/lib/acp/parity.test.js packages/web/server/lib/acp/project-mapping.test.js packages/web/server/lib/acp/runtime.test.js`: 30 passed, 0 failed, 0 skipped. Existing D: test-temp directory used. Log: `.codex-temp/acp-discovery-tests.log`.
+- `node --check` for all three changed JavaScript files: passed.
+- `bunx oxlint` and installed oxlint Node entrypoint on all three changed JavaScript files: exit 0.
+- Web ESLint, run through the installed Node CLI with package-script arguments: passed.
+- Web type-check, run through the installed TypeScript Node CLI with package-script arguments: passed. Log: `.codex-temp/acp-discovery-type-check.log`.
+- No imports/exports/dependencies/entrypoints added or changed; no dead-code run needed.
+- Real OpenCode retest belongs to the parent agent. This result does not claim real-agent or device acceptance.
+
+## Environment notes
+
+The Bun filtered type-check and lint scripts failed before spawning their command. The same package-script checks were invoked using the installed TypeScript and ESLint Node CLIs. Command failures and fallback notes are recorded in `.codex-temp/acp-discovery-command-notes.md`.

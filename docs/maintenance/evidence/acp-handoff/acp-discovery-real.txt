@@ -1,0 +1,2 @@
+{"test":"scoped-discovery-after-fix","pass":true,"scope":"d:/CodexBuilds/acp-real-validation/opencode-test/workspace/","sessions":3,"messages":6,"readOnly":false}
+AGENT_STOPPED

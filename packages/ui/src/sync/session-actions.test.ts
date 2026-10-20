@@ -1120,6 +1120,25 @@ describe("archiving a batch through the server", () => {
     expect(source.getState().sessionRevision).toBe(1)
   })
 
+  test("ACP archives each conversation through its facade and retains partial failures", async () => {
+    mockBoundRuntime = { generation: 'acp' }
+    globalActiveSessions = [liveSession('session-a'), liveSession('session-b')]
+    sessionUpdateResultsById.set('session-a', archivedSession('session-a'))
+    sessionUpdateResultsById.set('session-b', undefined)
+    const source = createStore({}, { session: [liveSession('session-a'), liveSession('session-b')] })
+    const { archiveSessions, setActionRefs } = await import('./session-actions')
+    setActionRefs(actionSdk, createChildStores([['/test/project', source]]), () => '/test/project')
+    try {
+      expect(await archiveSessions(['session-a', 'session-b'])).toEqual({ archivedIds: ['session-a'], failedIds: ['session-b'] })
+      expect(archiveBatchRequests).toEqual([])
+      expect(replyCalls.filter((call) => call.method === 'session.update').map((call) => call.params.sessionID)).toEqual(['session-a', 'session-b'])
+      expect(source.getState().session.map((item) => item.id)).toEqual(['session-b'])
+    } finally {
+      mockBoundRuntime = { generation: 'oc1' }
+      sessionUpdateResultsById.clear()
+    }
+  })
+
   test("batches sessions held only by the live directory store", async () => {
     archiveBatchResponse = {
       status: 200,

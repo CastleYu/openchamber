@@ -189,6 +189,8 @@ import {
 } from './composer/ui/DraftTargetSelectors';
 import { ComposerAutocompletePopups } from './composer/ui/ComposerAutocompletePopups';
 import { ComposerFooter } from './composer/ui/ComposerFooter';
+import { AcpControls } from './composer/ui/AcpControls';
+import { useAcpControls } from './composer/state/useAcpControls';
 import { MobilePillComposer } from './composer/ui/MobilePillComposer';
 import { ComposerContextChips } from './composer/ui/ComposerContextChips';
 import { LinkedReferenceRow } from './composer/ui/LinkedReferenceRow';
@@ -453,6 +455,8 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     const chatColumnSession = useChatColumnSession();
     const currentSessionId = chatColumnSession ? chatColumnSession.sessionId : liveSessionId;
     const currentSession = useSession(currentSessionId ?? undefined);
+    const acpState = useAcpControls(currentSession);
+    const acpControls = { controls: acpState.controls, error: acpState.error, changing: acpState.changing, disabled: currentSession?.readOnly === true, onChange: acpState.change };
     React.useEffect(() => {
         if (inputModeParentRef.current !== null && inputModeParentRef.current !== currentSessionId) {
             setInputMode('normal');
@@ -481,7 +485,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     const isBtwPanelVisible = Boolean((btwPanel.btwSessionId && btwPanel.btwDirectory) || btwPanel.creating || btwPanel.pending);
     const immediateBtwSubmitRef = React.useRef<{ identity: ChatDraftIdentity; text: string } | null>(null);
     const draftCaretModeRef = React.useRef({ btw: isBtwActive, atEnd: isBtwActive });
-    const inputMode = isBtwActive ? 'normal' : storedInputMode;
+    const inputMode = isBtwActive || opencodeClient.isAcp() ? 'normal' : storedInputMode;
     // A session promoted out of `/btw` keeps the boundary instructions in its
     // transcript — there is no way to delete a message part — so it has to say
     // they no longer apply.
@@ -791,7 +795,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         () => undefined,
     );
     const knownSlashNames = React.useMemo(() => {
-        if (kernelGeneration === 'acp') return new Set<string>();
+        if (kernelGeneration === 'acp') return new Set(acpState.controls?.commands.map((command) => command.name.toLowerCase()) ?? []);
         const names = new Set<string>([
             'init', 'review', 'undo', 'redo', 'timeline', 'compact', 'btw', 'summary', 'workspace-review', 'plan-feature', 'craft-goal', 'schedule-task', 'catch-up', 'debug', 'weigh', 'explore',
         ]);
@@ -800,7 +804,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         for (const command of availableCommands) names.add(command.name.toLowerCase());
         for (const skill of availableSkills) names.add(skill.name.toLowerCase());
         return names;
-    }, [availableCommands, availableSkills, isMobile, kernelGeneration]);
+    }, [availableCommands, availableSkills, isMobile, kernelGeneration, acpState.controls]);
 
     // Extension slash commands. Built-ins, OpenCode commands, and skills are
     // reserved: an extension command with one of those names is ignored.
@@ -1617,7 +1621,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         // An extension command never reaches the model: the extension turns
         // `/name args` into a chip, which lands through the same pending slot
         // a guest panel's `attach` uses. Nothing else in the composer moves.
-        const guestRoute = !queuedOnly && !isBtwActive && inputSnapshot.hasContent
+        const guestRoute = !opencodeClient.isAcp() && !queuedOnly && !isBtwActive && inputSnapshot.hasContent
             ? routeGuestSlashCommand(inputSnapshot.message, inputMode, guestCommands)
             : null;
         if (guestRoute) {
@@ -2264,7 +2268,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         // Enter shell mode before CodeMirror inserts the trigger. Keeping the
         // document unchanged also keeps the caret at the start for the first
         // command character.
-        if (!isBtwActive && inputMode === 'normal' && e.key === '!') {
+        if (!opencodeClient.isAcp() && !isBtwActive && inputMode === 'normal' && e.key === '!') {
             const selection = composerRef.current?.getSelection();
             if (selection?.start === 0 && selection.end === 0) {
                 e.preventDefault();
@@ -2573,7 +2577,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         // Mobile keyboards and paste may update the document without a usable
         // keydown, so consume the trigger in the same editor transaction rather
         // than moving the caret in a later frame against stale text.
-        if (!isBtwActive && inputMode === 'normal' && value.startsWith('!')) {
+        if (!opencodeClient.isAcp() && !isBtwActive && inputMode === 'normal' && value.startsWith('!')) {
             const shellCommand = value.slice(1);
             const nextCursor = Math.max(0, selection.start - 1);
             setInputMode('shell');
@@ -3006,7 +3010,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
     };
 
     const handleCommandSelect = (command: CommandInfo) => {
-        if (command.name === 'btw' && currentSessionId) {
+        if (kernelGeneration !== 'acp' && command.name === 'btw' && currentSessionId) {
             closeAutocomplete();
             void handleSubmitRef.current({ presetText: '/btw' });
             return;
@@ -3568,7 +3572,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
         <SessionDoneHintRow sessionId={currentSessionId} directory={currentSessionDirectoryForSync ?? currentDirectory} />
     ) : null;
     const composerTopRows = currentSession?.readOnly ? <p role="status" className="px-3 py-2 typography-meta text-muted-foreground">{t('chat.acp.readOnly')}</p> : doneHintRow || suggestionRow ? <>{doneHintRow}{suggestionRow}</> : null;
-    const mobileModelAgentRow = isMobile && kernelGeneration === 'acp' ? <p className="px-3.5 pb-2 typography-meta text-muted-foreground">{t('chat.acp.agentManaged')}</p> : isMobile && !isBtwActive ? (
+    const mobileModelAgentRow = isMobile && kernelGeneration === 'acp' ? <div className="px-3.5 pb-2"><AcpControls {...acpControls} /></div> : isMobile && !isBtwActive ? (
         // px-3.5 lines the model logo and the agent label up with the attach
         // and mic icons above them; the buttons drop their own padding so the
         // row alone owns the inset.
@@ -3868,6 +3872,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                     own contents and read as a flat tint over the transcript. */}
                 <div className={cn('relative', isComposerExpanded && 'flex flex-1 min-h-0 flex-col')}>
                     <ComposerAutocompletePopups
+                        acpCommands={acpState.controls?.commands}
                         open={openAutocomplete}
                         query={autocompleteQuery}
                         overlayPosition={isDesktopExpanded ? autocompleteOverlayPosition : null}
@@ -4009,6 +4014,7 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                         </div>
                     </div>
                     <ComposerFooter
+                        acpControls={acpControls}
                         isMobile={isMobile}
                         isVSCode={isVSCode}
                         sessionId={currentSessionId}

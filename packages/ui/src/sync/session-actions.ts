@@ -1579,6 +1579,14 @@ export async function archiveSessions(
   const expectedRuntimeKey = options?.expectedRuntimeKey ?? getRuntimeKey()
   if (ids.length === 0) return { archivedIds, failedIds }
 
+  if (opencodeClient.getBoundRuntime()?.generation === 'acp') {
+    for (const id of ids) {
+      if (await archiveSession(id, expectedRuntimeKey)) archivedIds.push(id)
+      else failedIds.push(id)
+    }
+    return { archivedIds, failedIds }
+  }
+
   const plan = planArchiveBatches(ids)
 
   for (const [directory, batchIds] of plan.batchesByDirectory) {

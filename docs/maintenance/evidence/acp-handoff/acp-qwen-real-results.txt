@@ -1,0 +1,19 @@
+# Qwen ACP real-model acceptance
+
+Date: 2026-10-14
+
+The product runtime was loaded from `packages/web/server/lib/acp/runtime.js` without product edits. The agent was the isolated Qwen Code CLI 0.25.1 at `D:/CodexBuilds/acp-real-validation/qwen/node_modules/@qwen-code/qwen-code/cli-entry.js`; runtime startup used its Node executable, `--acp`, `--approval-mode default`, and `--safe-mode`. Qwen config, cache, session storage, and workspace were placed under `D:/CodexBuilds/acp-real-validation/qwen-test`. Provider credentials were inherited from the configured environment and were not printed or stored in settings.
+
+ACP `initialize` succeeded. Qwen advertised `loadSession`, `session/list`, `session/resume`, plus image/audio/embedded-context prompt capabilities. Two distinct sessions were created. A real prompt was sent to each; both failed with `ACP -32603: Internal error`. No usable model response was received, and no permission request was emitted. The script then timed out waiting for the permission event and completed `runtime.stop()` successfully.
+
+| Scenario | Result |
+|---|---|
+| ACP initialization and capability negotiation | Passed |
+| Create two sessions | Passed; IDs differ |
+| Real model prompts | Failed; both returned `ACP -32603: Internal error` |
+| Tool call and user approval/rejection | Not reached; no permission event |
+| Cancel a running model turn | Not reached |
+| Stop/restart and restore prior transcript | Not reached |
+| Owned runtime cleanup | `runtime.stop()` completed; script recorded `stopped: true` |
+
+The exact cause of Qwen's generic internal error is unavailable from this runtime capture. Qwen's stderr is drained by the existing ACP runtime without being retained, and its isolated chat logs contain no assistant result or detailed error. This run does not establish prompt, tool, permission, cancellation, or history-restoration compatibility. The machine-readable capture is `D:/CodexBuilds/acp-real-validation/qwen-real-run.json`.

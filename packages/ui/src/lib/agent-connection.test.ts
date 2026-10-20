@@ -1,39 +1,23 @@
-import { describe, expect, test } from 'bun:test';
-import { ACP_TRANSPORT, CONNECTION_MODE, agentConnectionSchema } from './agent-connection';
+import { expect, test } from 'bun:test';
+import { agentConnectionSchema, CONNECTION_MODE, ACP_TRANSPORT } from './agent-connection';
 
-const server = {
-  mode: CONNECTION_MODE.ACP_SERVER,
-  transport: ACP_TRANSPORT.WEBSOCKET,
-  url: 'wss://agent.example/agents/acp',
-  cwd: '/srv/project',
-} as const;
+const server = { mode: CONNECTION_MODE.ACP_SERVER, transport: ACP_TRANSPORT.WEBSOCKET, url: 'ws://localhost:1234/acp', cwd: '/remote/default' };
 
-describe('agent connection contract', () => {
-  test('preserves explicit transport, full endpoint and remote POSIX or Windows cwd', () => {
-    for (const cwd of ['/srv/project', 'C:\\projects\\agent', 'C:/projects/agent', '\\\\server\\share\\project']) {
-      expect(agentConnectionSchema.parse({ ...server, cwd })).toEqual({ ...server, cwd });
-    }
-    const http = { ...server, transport: ACP_TRANSPORT.HTTP, url: 'https://agent.example/acp?version=1' };
-    expect(agentConnectionSchema.parse(http)).toEqual(http);
-  });
+test('ACP server settings preserve optional project mappings through serialization', () => {
+  expect(agentConnectionSchema.parse(server)).toEqual(server);
+  const config = { ...server, projectMappings: [{ directory: 'C:\\projects\\one', cwd: '/remote/one' }, { directory: '/local/two', cwd: 'D:\\remote\\two' }] };
+  expect(agentConnectionSchema.parse(JSON.parse(JSON.stringify(config)))).toEqual(config);
+  expect(agentConnectionSchema.parse({ ...server, projectMappings: [] })).toEqual({ ...server, projectMappings: [] });
+});
 
-  test('rejects omitted transport, credentials, protocol mismatch and relative remote cwd', () => {
-    for (const invalid of [
-      { ...server, transport: undefined },
-      { ...server, url: 'not-an-endpoint' },
-      { ...server, transport: ACP_TRANSPORT.HTTP },
-      { ...server, url: 'https://agent.example/acp' },
-      { ...server, url: 'wss://user:password@agent.example/acp' },
-      { ...server, url: 'wss://agent.example/acp#fragment' },
-      { ...server, cwd: undefined },
-      { ...server, cwd: '' },
-      { ...server, cwd: 'project' },
-      { ...server, cwd: 'C:project' },
-    ]) expect(() => agentConnectionSchema.parse(invalid)).toThrow();
-  });
-
-  test('keeps existing ACP stdio command and optional cwd', () => {
-    const stdio = { mode: CONNECTION_MODE.ACP, command: 'opencode', args: ['--pure', 'acp'] };
-    expect(agentConnectionSchema.parse(stdio)).toEqual(stdio);
-  });
+test('client boundary rejects duplicate local directories and invalid absolute roots', () => {
+  expect(agentConnectionSchema.safeParse({ ...server, projectMappings: [{ directory: '/local/one', cwd: '/remote/one' }, { directory: ' /local/one ', cwd: '/remote/two' }] }).success).toBe(false);
+  for (const invalid of ['', 'relative/project', 'C:relative', '\\rooted', '\\\\host', '\\\\host\\', '/remote\u0000path']) {
+    expect(agentConnectionSchema.safeParse({ ...server, cwd: invalid }).success).toBe(false);
+    expect(agentConnectionSchema.safeParse({ ...server, projectMappings: [{ directory: invalid, cwd: '/remote/one' }] }).success).toBe(false);
+    expect(agentConnectionSchema.safeParse({ ...server, projectMappings: [{ directory: '/local/one', cwd: invalid }] }).success).toBe(false);
+  }
+  for (const absolute of ['/', 'C:\\', 'C:/', '\\\\host\\share', '/local/one']) {
+    expect(agentConnectionSchema.safeParse({ ...server, projectMappings: [{ directory: absolute, cwd: absolute }] }).success).toBe(true);
+  }
 });

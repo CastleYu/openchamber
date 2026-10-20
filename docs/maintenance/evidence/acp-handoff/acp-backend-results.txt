@@ -1,0 +1,77 @@
+# ACP backend parity results
+
+Implemented in the existing ACP backend owner, against the plan's stable v1
+revision `24f3b07f44f043c617666c20208b093e919648ac`.
+
+## Delivered behavior
+
+- `GET /api/acp/sessions?directory` discovers advertised agent history through
+  opaque cursors. It merges only complete successful page sequences, preserves
+  local metadata/title overrides and never infers deletion from absence.
+- `GET /api/acp/sessions/:id/messages` restores a session once. Concurrent controls
+  and messages reads share its promise. Load replay stages complete user,
+  assistant, thought and tool messages, saves before publishing, and emits one
+  `transcript-refresh`. Failed replay/save preserves previous messages.
+- Negotiated resume restores complete saved local history without replay. A
+  discovered resume-only session remains writable and explicitly retains
+  `metadata.acpHistoryIncomplete: true`. Successful load clears this marker.
+- `POST /sessions/:id/update` accepts title, metadata and archive/unarchive time.
+  `POST /sessions/:id/delete` performs negotiated deletion or local removal.
+  Persistent hidden markers keep removed sessions out of discovery. Active work
+  rejects destructive session actions. Saves finish before visible removals.
+- `GET /sessions/:id/controls` returns select options, legacy modes, commands,
+  supplied usage and load/resume/delete capabilities. `POST /config` and existing
+  `POST /mode` return the same controls. Config responses replace dependent
+  options. Busy prompt completion remains authoritative during config changes.
+- Session-level config/mode/commands/usage/info/plan updates apply outside prompt
+  turns and refresh session consumers. Unknown option types are ignored; invalid
+  select contracts fail parsing. Nullable optional SDK payloads are accepted.
+- `GET /api/acp/commands?directory` reads known commands without creating sessions.
+  Slash command text passes unchanged through ordinary prompts.
+- Negotiated embedded text and audio attachments join existing image support.
+  Canonical visible file parts persist. Replay retains resource links, embedded
+  text/blob resources and image/audio files. Tool metadata preserves old/new diffs.
+- Existing JSON storage now writes `{version:2,partitions}`. Legacy
+  `{identity,sessions}` reads migrate losslessly. Connection switches and backend
+  restarts retain separate transcripts even when agent IDs collide. Active
+  transcripts are stored once. Every entry retains its original `agentCwd`.
+- HTTP/2 remote resume uses the connection setup boundary and starts the session
+  SSE stream, matching load. WebSocket behavior remains unchanged.
+- `authMethods.type` survives initialization parsing for later auth UI ownership.
+
+## Changed files
+
+- `packages/web/server/lib/acp/runtime.js`, `routes.js`, `protocol.js`
+- `packages/web/server/lib/acp/server-transport.js`
+- `packages/web/server/lib/acp/runtime.test.js`, `parity.test.js`,
+  `server-transport.test.js`, `fixtures/agent.mjs`, `fixtures/parity-agent.mjs`
+- `packages/web/server/lib/acp/DOCUMENTATION.md`
+
+Process launch/termination files, UI, dependencies, Git refs and releases were
+left to their designated owners.
+
+## Verification
+
+- Focused Node fixture suite: runtime, parity and remote transport; 30 passed,
+  0 failed (13 runtime, 11 parity, 6 transport).
+- `bunx oxlint` on all authored/substantially changed JS and new fixture: clean.
+- `node --check` on runtime, routes, protocol and server transport: passed.
+- Fixture coverage includes two workspace cwd values, full multi-page external
+  history, concurrent message/control restoration, tool diffs, commands and usage,
+  dependent config options, busy control changes and idle completion, local and
+  negotiated deletion, restart persistence, colliding connection IDs, legacy
+  migration, concurrent metadata saves, list/load/save failure preservation,
+  stale connection restoration rejection and HTTP domain routes.
+- Workspace checks, dead-code and application builds belong to the integrating
+  parent because the UI and remaining ACP callbacks are changing concurrently.
+- Real-agent/model, relay and device acceptance were not performed by this task.
+
+## Failure boundary
+
+An acknowledged agent deletion cannot be rolled back if the subsequent local
+save fails. The HTTP action fails, the local transcript remains visible and no
+delete event is published. This is the explicit remote/local partial outcome.
+
+Windows sandbox rejected the initial Node runner subprocess with `spawn EPERM`.
+The unchanged test command succeeded through escalation. Details are in
+`.codex-temp/acp-backend-command-notes.md`.

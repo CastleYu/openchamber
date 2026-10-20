@@ -1,0 +1,35 @@
+{
+  "agent": "Qwen Code",
+  "tests": {
+    "fresh_runtime_context_recall": {
+      "sessionID": "84f8248a-836d-4314-b820-bc1b99bc602b",
+      "completion": "completed",
+      "error": null,
+      "timedOut": false,
+      "prompt": "What exact marker did you output in your first assistant reply in this conversation? Reply with that marker only. Do not use tools.",
+      "newAssistantReplies": [
+        "SESSION_A_OK"
+      ],
+      "passed": true
+    },
+    "cancel_process": {
+      "sessionID": "ddacf1a0-c0a8-45cd-b1fb-1cc48113cf20",
+      "permissionKind": "allow_once",
+      "pidPath": "D:\\CodexBuilds\\acp-real-validation\\qwen-configured-test\\workspace\\cancel-1791990199022.pid",
+      "latePath": "D:\\CodexBuilds\\acp-real-validation\\qwen-configured-test\\workspace\\cancel-1791990199022.late",
+      "toolCall": null,
+      "pid": 69048,
+      "runningBeforeCancel": true,
+      "completion": "interrupted",
+      "timedOut": false,
+      "exitedAfterCancel": true,
+      "lateFileExists": false,
+      "exitedAfterLateDeadline": true,
+      "observationMs": 62006,
+      "passed": true
+    }
+  },
+  "errors": [],
+  "version": "0.25.1",
+  "stopped": true
+}

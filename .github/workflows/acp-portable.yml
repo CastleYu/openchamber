@@ -44,14 +44,29 @@ jobs:
       - name: Check ACP build and publication contracts
         run: node --test scripts/acp-build.test.mjs scripts/publish-acp.test.mjs scripts/build-personal.test.mjs packages/electron/personal-updates.test.mjs
       - name: Test ACP runtime
-        run: node --test packages/web/server/lib/acp/runtime.test.js packages/web/server/lib/acp/server-transport.test.js
+        run: node --test (Get-ChildItem packages/web/server/lib/acp -Filter '*.test.js').FullName
       - name: Test explicit selection and OpenCode lifecycle
         working-directory: packages/web
         run: bunx vitest run server/lib/opencode/agent-connection.test.js server/lib/opencode/lifecycle.test.js server/lib/opencode/env-runtime.test.js
       - name: Test dual-kernel UI behavior
         run: node scripts/test-dual-kernel.mjs
-      - name: Test ACP connection settings
-        run: bun test packages/ui/src/lib/agent-connection.test.ts
+      - name: Test ACP connection and UI integration
+        run: |
+          $tests = @(
+            'packages/ui/src/lib/agent-connection.test.ts',
+            'packages/ui/src/lib/opencode/acp.test.ts',
+            'packages/ui/src/components/chat/composer/state/useAcpControls.test.tsx',
+            'packages/ui/src/components/chat/AcpInteractionCard.test.tsx',
+            'packages/ui/src/components/chat/CommandAutocomplete.test.tsx',
+            'packages/ui/src/components/chat/message/parts/toolDiffUtils.test.ts',
+            'packages/ui/src/components/sections/openchamber/useAcpAuthentication.test.tsx',
+            'packages/ui/src/components/sections/openchamber/AcpProjectMappings.test.tsx',
+            'packages/ui/src/components/sections/openchamber/AgentConnectionSettings.test.tsx'
+          )
+          foreach ($test in $tests) {
+            bun test $test
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: Type-check workspace
         run: bun run type-check
       - name: Build ACP portable

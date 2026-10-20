@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "プロジェクトディレクトリの対応付け",
+  "settings.agentConnection.projectMappingsInfo": "完全に一致するローカルプロジェクトは、新しいセッションとセッションの検索に対応するリモートディレクトリを使用します。その他のプロジェクトは既定のリモート作業ディレクトリを使用します。既存のセッションは元のリモートディレクトリを保持します。",
+  "settings.agentConnection.projectDirectory": "ローカルプロジェクトディレクトリ",
+  "settings.agentConnection.projectDirectoryRow": "ローカルプロジェクトディレクトリ {number}",
+  "settings.agentConnection.remoteCwdRow": "リモート作業ディレクトリ {number}",
+  "settings.agentConnection.removeMappingRow": "プロジェクトの対応付け {number} を削除",
+  "settings.agentConnection.removeMapping": "対応付けを削除",
+  "settings.agentConnection.addMapping": "プロジェクトの対応付けを追加",
   'settings.agentConnection.acpServer': "ACP サーバー",
   'settings.agentConnection.transport': "トランスポート",
   'settings.agentConnection.http': "ストリーミング HTTP（実験的 HTTP/2）",

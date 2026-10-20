@@ -10,8 +10,8 @@ This module provides OpenCode server integration utilities for the web server ru
   `agent-connection.json`. Its authenticated `GET/POST /api/agent/connection`
   routes expose configuration and status and apply changes. With no selection,
   the server serves the connection form and starts no agent. External OpenCode,
-  a chosen command with arguments, system PATH, the bundled CLI, and ACP stdio
-  are separate choices. Old environment settings only prefill the form.
+  a chosen command with arguments, system PATH, the bundled CLI, ACP stdio and
+  ACP Server are separate choices. Old environment settings only prefill the form.
   Selection failure remains visible and retries require applying a selection.
   Switching closes the managed child before starting the selected replacement;
   external OpenCode processes remain user-owned. Explicit OpenCode startup uses
@@ -19,7 +19,9 @@ This module provides OpenCode server integration utilities for the web server ru
   ACP routes live under `/api/acp/*`; the existing `/api/opencode/runtime`
   discovery route returns the ACP descriptor while ACP is selected.
   The form shows the server working directory as the ACP default and saves it
-  with the selected command. ACP selection rejects OpenCode proxy and kernel
+  with the selected command. ACP Server requires an explicit transport, endpoint
+  and remote working directory; its protocol owner is
+  [the ACP runtime](../acp/DOCUMENTATION.md). ACP selection rejects OpenCode proxy and kernel
   configuration requests; themes and application settings remain available.
 - `managed-generation.js` probes the selected CLI through its resolved launch
   specification before managed configuration or plugin writes. Lifecycle spawning

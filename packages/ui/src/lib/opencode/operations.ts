@@ -3,6 +3,7 @@ import type { FormAnswer, FormInfo, PermissionRequest as V2PermissionRequest } f
 import type { Config as V2Config, McpServerStatus, Message, Metadata, Model, ModelRef, Part, Provider as V2Provider, Session } from './model';
 import type { PermissionRequest as LegacyPermissionRequest } from '@/types/permission';
 import type { QuestionRequest } from '@/types/question';
+import type { AcpSessionInput } from './acp-interactions';
 
 /** Session and message results shared by both protocol adapters. */
 export type SessionMessages = Array<{ info: Message; parts: Part[] }>;
@@ -59,7 +60,8 @@ export type AcpPermission = {
 
 export type PendingInput =
   | { generation: 'oc1'; kind: 'question'; value: QuestionRequest }
-  | { generation: 'oc2'; kind: 'form'; value: FormInfo };
+  | { generation: 'oc2'; kind: 'form'; value: FormInfo }
+  | { generation: 'acp'; kind: 'elicitation'; value: AcpSessionInput };
 
 export type InputAnswer =
   | { generation: 'oc1'; kind: 'question'; request: QuestionRequest; answers: string[][] }

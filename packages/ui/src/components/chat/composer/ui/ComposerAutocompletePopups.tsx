@@ -19,6 +19,7 @@ import { FileMentionAutocomplete, type FileMentionHandle } from '../../FileMenti
 import { SkillAutocomplete, type SkillAutocompleteHandle } from '../../SkillAutocomplete';
 import { SnippetAutocomplete, type SnippetAutocompleteHandle } from '../../SnippetAutocomplete';
 import type { AutocompleteKind } from '../language/triggers';
+import type { AcpCommand } from '@/lib/opencode/acp';
 
 export interface AutocompleteOverlayPosition {
     top: number;
@@ -56,6 +57,7 @@ function caretStyle(
 }
 
 export interface ComposerAutocompletePopupsProps {
+    acpCommands?: AcpCommand[];
     /** Which picker is open, if any. */
     open: AutocompleteKind | null;
     query: string;
@@ -83,6 +85,7 @@ export function ComposerAutocompletePopups(props: ComposerAutocompletePopupsProp
         case 'command':
             return (
                 <CommandAutocomplete
+                    acpCommands={props.acpCommands}
                     ref={props.commandRef}
                     searchQuery={query}
                     onCommandSelect={props.onCommandSelect}

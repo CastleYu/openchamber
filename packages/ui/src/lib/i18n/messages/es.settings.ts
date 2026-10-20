@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "Correspondencias de directorios de proyectos",
+  "settings.agentConnection.projectMappingsInfo": "Los proyectos locales que coincidan exactamente usan su directorio remoto para las sesiones nuevas y la búsqueda de sesiones. Los demás proyectos usan el directorio de trabajo remoto predeterminado. Las sesiones existentes conservan su directorio remoto original.",
+  "settings.agentConnection.projectDirectory": "Directorio del proyecto local",
+  "settings.agentConnection.projectDirectoryRow": "Directorio del proyecto local {number}",
+  "settings.agentConnection.remoteCwdRow": "Directorio de trabajo remoto {number}",
+  "settings.agentConnection.removeMappingRow": "Eliminar correspondencia del proyecto {number}",
+  "settings.agentConnection.removeMapping": "Eliminar correspondencia",
+  "settings.agentConnection.addMapping": "Añadir correspondencia de proyecto",
   'settings.agentConnection.acpServer': "Servidor ACP",
   'settings.agentConnection.transport': "Transporte",
   'settings.agentConnection.http': "HTTP en streaming (HTTP/2 experimental)",

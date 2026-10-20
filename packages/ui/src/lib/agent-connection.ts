@@ -3,6 +3,18 @@ import { runtimeFetch } from './runtime-fetch';
 
 export const CONNECTION_MODE = { EXTERNAL: 'external', COMMAND: 'command', PATH: 'path', BUNDLED: 'bundled', ACP: 'acp', ACP_SERVER: 'acp-server' } as const;
 export const ACP_TRANSPORT = { WEBSOCKET: 'websocket', HTTP: 'http' } as const;
+const absoluteDirectorySchema = z.string().trim().min(1).refine((value) =>
+  [...value].every((char) => char.charCodeAt(0) >= 32) && (value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\]+\\[^\\]+(?:\\|$)/.test(value)));
+const projectMappingsSchema = z.array(z.object({
+  directory: absoluteDirectorySchema,
+  cwd: absoluteDirectorySchema,
+})).superRefine((values, ctx) => {
+  const directories = new Set<string>();
+  values.forEach((value, index) => {
+    if (directories.has(value.directory)) ctx.addIssue({ code: 'custom', message: 'Each ACP project directory needs one mapping', path: [index, 'directory'] });
+    directories.add(value.directory);
+  });
+});
 const serverSchema = z.object({
   mode: z.literal(CONNECTION_MODE.ACP_SERVER),
   transport: z.enum([ACP_TRANSPORT.WEBSOCKET, ACP_TRANSPORT.HTTP]),
@@ -11,7 +23,8 @@ const serverSchema = z.object({
     const url = new URL(value);
     return !url.username && !url.password && !url.hash;
   }),
-  cwd: z.string().trim().min(1).refine((value) => value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\]+\\[^\\]+/.test(value)),
+  cwd: absoluteDirectorySchema,
+  projectMappings: projectMappingsSchema.optional(),
 }).refine(({ transport, url }) => URL.canParse(url) && (transport === ACP_TRANSPORT.WEBSOCKET ? ['ws:', 'wss:'] : ['http:', 'https:']).includes(new URL(url).protocol));
 export const agentConnectionSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal(CONNECTION_MODE.EXTERNAL), url: z.string() }),
@@ -28,6 +41,7 @@ const snapshotSchema = z.object({
   prefill: z.object({ url: z.string().optional(), command: z.string().optional(), cwd: z.string().optional() }),
 });
 export type AgentConnection = z.infer<typeof agentConnectionSchema>;
+export type AcpProjectMapping = NonNullable<Extract<AgentConnection, { mode: typeof CONNECTION_MODE.ACP_SERVER }>['projectMappings']>[number];
 export type ConnectionSnapshot = z.infer<typeof snapshotSchema>;
 export const loadAgentConnection = async (): Promise<ConnectionSnapshot> => {
   const response = await runtimeFetch('/api/agent/connection');

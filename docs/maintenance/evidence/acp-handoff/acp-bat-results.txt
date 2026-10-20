@@ -1,0 +1,27 @@
+# Windows ACP BAT/CMD result
+
+Implemented direct Windows BAT/CMD selection and PATH/PATHEXT shim resolution in the ACP stdio owner. Existing native executables still spawn directly. The hidden cmd wrapper uses literal argument escaping across both command parsing passes, including `%*` forwarding. No dependencies, protocol fallback, Git mutation or release changes.
+
+Changed files:
+- `packages/web/server/lib/acp/process.js` (new): executable resolution, hidden batch launch, Windows process-tree termination.
+- `packages/web/server/lib/acp/runtime.js`: launch/stop seam, malformed-output and failed-handshake cleanup await child close.
+- `packages/web/server/lib/acp/process.test.js` (new) and `fixtures/batch-agent.mjs` (new): real Windows child-process tests.
+- `packages/web/server/lib/acp/DOCUMENTATION.md`, `docs/maintenance/ACP.md`, `docs/maintenance/ACP.zh-CN.md`: ownership and direct BAT/CMD setup.
+
+Runtime behavior:
+- Web: Windows backend supports BAT/CMD stdio selection.
+- Electron: reuses the same in-process backend; no native bridge changes.
+- Hosted mobile: uses the selected backend process.
+- Capacitor: uses the selected backend process.
+- Standalone VS Code: existing unsupported ACP behavior remains unchanged.
+
+Verification on real Windows with Node v24.9.0:
+- Full focused ACP suite passed 24/24 (runtime, server transports, process).
+- Final helper change passed the 7/7 Windows process tests again.
+- BAT, CMD, PATH command, npm `.bin` and direct EXE retain spaces, empty args, quotes, trailing backslashes, shell metacharacters, percent variable literals and Chinese text.
+- Launch paths contain spaces, ampersand and literal percent-variable syntax. Initialization/session creation pass with stderr diagnostics and strict JSON stdout.
+- Stop removes fixture agent and persistent grandchild before working-directory cleanup; malformed stdout closes both. Missing batch/PATH command errors contain actionable setup guidance.
+- `bun run type-check:web`, `bun run lint:web`, changed-file `bunx oxlint`, `git diff --check` pass.
+- `bun run dead-code` completes; report has 6 unused files, 320 exports, 231 exported types, 2 namespace types and 1 duplicate export. No findings name the new ACP helper/fixture/exports. Report at `.codex-temp/acp-bat-dead-code.log`.
+
+Boundary: fixtures establish native Windows process/stdio behavior. No visual console-flash inspection, packaged Electron build, user's external agent launch or model-backed conversation was run in this subtask. Tests require task-scoped escalation because the restricted Node test runner initially failed with spawn EPERM; details are in `.codex-temp/acp-bat-command-notes.md`.

@@ -27,11 +27,13 @@ import { FocusModeButton } from './FocusModeButton';
 import { PermissionAutoAcceptButton } from './PermissionAutoAcceptButton';
 import type { BtwSelection } from '@/stores/useBtwStore';
 import type { PermissionMode } from '@/stores/utils/permissionAutoAccept';
+import { AcpControls, type AcpControlsProps } from './AcpControls';
 
 const MemoModelControls = React.memo(ModelControls);
 const MemoComposerDictation = React.memo(ComposerDictation);
 
 export interface ComposerFooterProps {
+    acpControls: AcpControlsProps;
     isMobile: boolean;
     isVSCode: boolean;
     sessionId: string | null;
@@ -268,7 +270,7 @@ export function ComposerFooter(props: ComposerFooterProps) {
                         {!isBtw && !opencodeClient.isAcp() ? <SessionGoalObjectiveCounter length={messageLength} /> : null}
                     </div>
                     <div className={cn('flex items-center flex-1 justify-end', footerGapClass, 'md:gap-x-3')}>
-                        {opencodeClient.isAcp() ? <span className="flex-1 typography-meta text-muted-foreground">{t('chat.acp.agentManaged')}</span> : parallelRun ? <div className="flex-1" /> : isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} onRunInParallel={onRunInParallel} />}
+                        {opencodeClient.isAcp() ? <AcpControls {...props.acpControls} /> : parallelRun ? <div className="flex-1" /> : isBtw ? <ModelControls className="flex-1 min-w-0 justify-end" sessionId={modelSessionId ?? null} selection={btwSelection} /> : <MemoModelControls className={cn('flex-1 min-w-0 justify-end')} onRunInParallel={onRunInParallel} />}
                         {!isBtw ? <MemoComposerDictation
                             radius={chatInputRadius}
                             isMobile={isMobile}

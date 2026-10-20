@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "專案目錄對應",
+  "settings.agentConnection.projectMappingsInfo": "建立工作階段和探索工作階段時，完全相符的本機專案使用對應的遠端目錄；其他專案使用預設遠端工作目錄。現有工作階段保留原始遠端目錄。",
+  "settings.agentConnection.projectDirectory": "本機專案目錄",
+  "settings.agentConnection.projectDirectoryRow": "本機專案目錄 {number}",
+  "settings.agentConnection.remoteCwdRow": "遠端工作目錄 {number}",
+  "settings.agentConnection.removeMappingRow": "移除專案對應 {number}",
+  "settings.agentConnection.removeMapping": "移除對應",
+  "settings.agentConnection.addMapping": "新增專案對應",
   'settings.agentConnection.acpServer': "ACP 伺服器",
   'settings.agentConnection.transport': "傳輸方式",
   'settings.agentConnection.http': "串流 HTTP（實驗性 HTTP/2）",

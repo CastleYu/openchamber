@@ -44,6 +44,8 @@ import { QuestionCard } from './QuestionCard';
 import { FormCard } from './FormCard';
 import { V2PermissionCard } from './V2PermissionCard';
 import { AcpPermissionCard } from './AcpPermissionCard';
+import { AcpInteractionCard } from './AcpInteractionCard';
+import type { AcpSessionInput } from '@/lib/opencode/acp-interactions';
 import type { AcpPermission } from '@/lib/opencode/operations';
 import { hasActiveQuestionToolInCurrentTurn, recoverPendingQuestionWithRetry } from '@/sync/question-recovery';
 // Mirrors the oc-chat-hydration-reveal duration in index.css.
@@ -228,6 +230,8 @@ type ChatViewportProps = {
     sessionPermissions: PermissionRequest[];
     v2Permissions: V2PermissionRequest[];
     acpPermissions: AcpPermission[];
+    acpInputs: AcpSessionInput[];
+    acpHistoryIncomplete: boolean;
     sessionForms: FormInfo[];
     isProgrammaticFollowActive: boolean;
     showLoadOlderButton: boolean;
@@ -268,6 +272,8 @@ const ChatViewport = React.memo(({
     sessionPermissions,
     v2Permissions,
     acpPermissions,
+    acpInputs,
+    acpHistoryIncomplete,
     sessionForms,
     isProgrammaticFollowActive,
     showLoadOlderButton,
@@ -384,7 +390,9 @@ const ChatViewport = React.memo(({
     // now renders as the list's header/footer, so it keeps scrolling with the
     // rows exactly as before.
     const listHeader = React.useMemo(() => (
-        showLoadOlderButton ? (
+        <>
+        {acpHistoryIncomplete && <p role="status" className="chat-column py-2 typography-meta text-muted-foreground">{t('chat.acp.historyIncomplete')}</p>}
+        {showLoadOlderButton ? (
             <div className="flex justify-center pt-3 pb-1">
                 <Button
                     variant="secondary"
@@ -398,12 +406,13 @@ const ChatViewport = React.memo(({
                     {t('chat.history.loadOlder')}
                 </Button>
             </div>
-        ) : null
-    ), [isLoadingOlder, onLoadOlder, showLoadOlderButton, t]);
+        ) : null}
+        </>
+    ), [acpHistoryIncomplete, isLoadingOlder, onLoadOlder, showLoadOlderButton, t]);
 
     const listFooter = React.useMemo(() => (
         <>
-            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || acpPermissions.length > 0 || sessionForms.length > 0) && (
+            {(sessionQuestions.length > 0 || sessionPermissions.length > 0 || v2Permissions.length > 0 || acpPermissions.length > 0 || sessionForms.length > 0 || acpInputs.length > 0) && (
                 <div>
                     {sessionQuestions.map((question) => (
                         <QuestionCard key={question.id} question={question} />
@@ -414,6 +423,7 @@ const ChatViewport = React.memo(({
                     {sessionForms.map((form) => <FormCard key={form.id} form={form} />)}
                     {v2Permissions.map((permission) => <V2PermissionCard key={permission.id} permission={permission} />)}
                     {acpPermissions.map((permission) => <AcpPermissionCard key={permission.id} permission={permission} />)}
+                    {acpInputs.map((request) => <div className="chat-column" key={request.id}><AcpInteractionCard request={request} /></div>)}
                 </div>
             )}
 
@@ -437,7 +447,7 @@ const ChatViewport = React.memo(({
                 aria-hidden="true"
             />
         </>
-    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions, acpPermissions]);
+    ), [currentSessionId, directory, floatingComposer, isMobile, sessionPermissions, sessionQuestions, sessionForms, v2Permissions, acpPermissions, acpInputs]);
 
     // Opening a session paints the timeline as one finished picture: the root
     // stays invisible while any renderer holds a provisional first paint, then
@@ -627,6 +637,8 @@ const ChatViewport = React.memo(({
         && prev.sessionPermissions === next.sessionPermissions
         && prev.v2Permissions === next.v2Permissions
         && prev.acpPermissions === next.acpPermissions
+        && prev.acpInputs === next.acpInputs
+        && prev.acpHistoryIncomplete === next.acpHistoryIncomplete
         && prev.sessionForms === next.sessionForms
         && prev.isProgrammaticFollowActive === next.isProgrammaticFollowActive
         && prev.showLoadOlderButton === next.showLoadOlderButton
@@ -917,6 +929,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     const v2Permissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedPermissions]);
     const acpPermissions = React.useMemo(() => taggedPermissions.flatMap((request) => request.generation === 'acp' ? [request.value] : []), [taggedPermissions]);
     const sessionForms = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'oc2' ? [request.value] : []), [taggedInputs]);
+    const acpInputs = React.useMemo(() => taggedInputs.flatMap((request) => request.generation === 'acp' ? [request.value] : []), [taggedInputs]);
 
     const hasUnreconciledQuestionTool = React.useMemo(
         () => !isOc2 && !sessionQuestions.some((question) => question.sessionID === currentSessionId)
@@ -954,7 +967,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     }, [active, currentSessionId, effectiveSessionDirectory, hasUnreconciledFormTool, sync]);
 
     const sessionIsWorking = React.useMemo(() => {
-        if (!currentSessionId || sessionPermissions.length > 0 || sessionQuestions.length > 0 || sessionForms.length > 0) {
+        if (!currentSessionId || sessionPermissions.length > 0 || sessionQuestions.length > 0 || sessionForms.length > 0 || acpInputs.length > 0) {
             return false;
         }
 
@@ -966,7 +979,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         // The last record can be a synthetic/skill/shell/switch message; the
         // turn is still running only per the last conversation message.
         return isIncompleteAssistantTurn(getLastConversationRecord(sessionMessages)?.info);
-    }, [currentSessionId, sessionMessages, sessionPermissions.length, sessionQuestions.length, sessionForms.length, sessionStatusForCurrent.type]);
+    }, [currentSessionId, sessionMessages, sessionPermissions.length, sessionQuestions.length, sessionForms.length, acpInputs.length, sessionStatusForCurrent.type]);
     const activeRetryStatus = React.useMemo(() => {
         if (!currentSessionId || sessionStatusForCurrent.type !== 'retry') {
             return null;
@@ -1777,6 +1790,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 sessionPermissions={sessionPermissions}
                 v2Permissions={v2Permissions}
                 acpPermissions={acpPermissions}
+                acpInputs={acpInputs}
+                acpHistoryIncomplete={currentSession?.metadata?.acpHistoryIncomplete === true}
                 sessionForms={sessionForms}
                 isProgrammaticFollowActive={isFollowingProgrammatically}
                 showLoadOlderButton={showLoadOlderButton}

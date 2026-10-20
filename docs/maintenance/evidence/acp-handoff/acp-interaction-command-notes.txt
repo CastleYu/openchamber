@@ -1,0 +1,15 @@
+# Command notes
+
+- PowerShell does not expand `packages/ui/src/sync/*.ts` for rg. The search returned OS error 123. Use the verified directory with `-g '*.ts'` instead.
+- A guessed MCP release-candidate URL was inaccessible through web. Followed the actual ACP documentation link to its locked MCP schema examples instead.
+- Node test runner was blocked by sandbox `spawn EPERM`; rerun the same focused test with narrow escalation, as required for the subprocess fixture.
+- Bun UI tests were blocked reading linked React/happy-dom dependencies (`EPERM`, reported happy-dom missing). Rerun the same focused command with narrow escalation; do not install dependencies.
+- A test precedent path was not present under chat. Use `rg --files` to locate it under hooks before reading.
+- The first locale patch expected untyped declarations; typed dictionaries use `Record<I18nKey, string>`. No changes applied on that failed patch; corrected declarations succeeded.
+
+## Runtime decisions
+
+- Web, Electron, hosted mobile and Capacitor use authenticated ACP HTTP/SSE and the existing external URL opener. URL pages never render inside chat or the app browser.
+- Standalone VS Code retains its explicit unsupported ACP connection behavior.
+- Session input uses the existing tagged blocking-input owner. Connection settings owns request-scoped authentication interactions while mounted, with SSE snapshots and manual retry after disconnection. No conversation ID is synthesized.
+- Authentication methods are dynamic entities and stay under the existing connection search anchor. No new settings registry entry is needed.

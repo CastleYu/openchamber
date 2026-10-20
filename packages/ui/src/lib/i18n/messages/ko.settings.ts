@@ -4,6 +4,14 @@ import { linearIntegrationI18n } from './linear-integration.i18n';
 import { thirdPartyIntegrationI18n } from './third-party-integrations.i18n';
 import { extensionCatalogI18n } from './extension-catalog.i18n';
 export const settingsDict = {
+  "settings.agentConnection.projectMappings": "프로젝트 디렉터리 매핑",
+  "settings.agentConnection.projectMappingsInfo": "정확히 일치하는 로컬 프로젝트는 새 세션과 세션 검색에 해당 원격 디렉터리를 사용합니다. 다른 프로젝트는 기본 원격 작업 디렉터리를 사용합니다. 기존 세션은 원래 원격 디렉터리를 유지합니다.",
+  "settings.agentConnection.projectDirectory": "로컬 프로젝트 디렉터리",
+  "settings.agentConnection.projectDirectoryRow": "로컬 프로젝트 디렉터리 {number}",
+  "settings.agentConnection.remoteCwdRow": "원격 작업 디렉터리 {number}",
+  "settings.agentConnection.removeMappingRow": "프로젝트 매핑 {number} 제거",
+  "settings.agentConnection.removeMapping": "매핑 제거",
+  "settings.agentConnection.addMapping": "프로젝트 매핑 추가",
   'settings.agentConnection.acpServer': "ACP 서버",
   'settings.agentConnection.transport': "전송 방식",
   'settings.agentConnection.http': "스트리밍 HTTP (실험적 HTTP/2)",
